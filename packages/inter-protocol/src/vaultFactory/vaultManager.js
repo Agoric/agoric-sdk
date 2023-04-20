@@ -1108,7 +1108,7 @@ export const prepareVaultManagerKit = (
               offerTo(
                 zcf,
                 depositInvitation,
-                harden({ Minted: 'Currency' }),
+                harden({ Minted: 'Bid' }),
                 harden({ give: { Collateral: totalCollateral } }),
                 liqSeat,
                 liqSeat,

@@ -582,7 +582,7 @@ export const startAuctioneer = async (
       governedContractInstallation: auctionInstallation,
       governed: {
         terms: auctionTerms,
-        issuerKeywordRecord: { Currency: runIssuer },
+        issuerKeywordRecord: { Bid: runIssuer },
         storageNode,
         marshaller,
         label: 'auctioneer',

@@ -7,7 +7,7 @@ import { createCommand, CommanderError } from 'commander';
 import { Far } from '@endo/far';
 import { boardSlottingMarshaller } from '../src/lib/rpc.js';
 
-import { fmtBid, makeInterCommand, KW } from '../src/commands/inter.js';
+import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 import { makeParseAmount } from '../src/lib/wallet.js';
 
 const { entries } = Object;
@@ -82,7 +82,7 @@ const offerSpec1 = harden({
       maxBuy: mk(bslot.ATOM, 1_000_000_000_000n),
     },
     proposal: {
-      give: { [KW.Bid]: mk(bslot.IST, 50_000_000n) },
+      give: { Bid: mk(bslot.IST, 50_000_000n) },
     },
   },
 });
@@ -208,7 +208,7 @@ const makeProcess = (t, keyring, out) => {
 
 /**
  * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+ *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
  */
 const offerStatus2 = harden({
   id: 'bid-234234',
@@ -226,12 +226,12 @@ const offerStatus2 = harden({
   },
   proposal: {
     give: {
-      [KW.Bid]: { brand: topBrands.IST, value: 20000000n },
+      Bid: { brand: topBrands.IST, value: 20000000n },
     },
   },
   payouts: {
     Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
-    [KW.Bid]: { brand: topBrands.IST, value: 37_000_000n },
+    Bid: { brand: topBrands.IST, value: 37_000_000n },
   },
 });
 
@@ -299,7 +299,7 @@ test.todo('want as max collateral wanted');
 
 /**
  * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+ *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
  */
 const offerStatus1 = harden({
   error: 'Error: "nameKey" not found: (a string)',
@@ -318,7 +318,7 @@ const offerStatus1 = harden({
   },
   proposal: {
     give: {
-      [KW.Bid]: { brand: topBrands.IST, value: 20000000n },
+      Bid: { brand: topBrands.IST, value: 20000000n },
     },
   },
 });
@@ -340,9 +340,9 @@ test('inter bid list: finds one bid', async t => {
     JSON.stringify({
       id: 'bid-234234',
       discount: 10,
-      give: { [KW.Bid]: '20 IST' },
+      give: { Bid: '20 IST' },
       maxBuy: '2 ATOM',
-      payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
+      payouts: { Collateral: '5 ATOM', Bid: '37 IST' },
     }),
   );
 });
@@ -421,7 +421,7 @@ test('formatBid', t => {
     t.deepEqual(actual, {
       id: 1678990150266,
       error: 'Error: "nameKey" not found: (a string)',
-      give: { [KW.Bid]: '20 IST' },
+      give: { Bid: '20 IST' },
       price: '10 IST/ATOM',
       maxBuy: '2 ATOM',
     });
@@ -430,8 +430,8 @@ test('formatBid', t => {
     const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
     t.deepEqual(actual, {
       id: 'bid-234234',
-      give: { [KW.Bid]: '20 IST' },
-      payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
+      give: { Bid: '20 IST' },
+      payouts: { Collateral: '5 ATOM', Bid: '37 IST' },
       maxBuy: '2 ATOM',
       discount: 10,
     });
@@ -442,7 +442,7 @@ test.todo('fmtBid with error does not show result');
 /*
 _not_ like this:
 
-{"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Currency":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
+{"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Bid":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
 */
 
 test.todo('execSwingsetTransaction returns non-0 code');
@@ -454,7 +454,7 @@ $ agops inter bid by-price --price 0.81 --give 0.5 --maxBuy 3 --from gov2
 bid is broadcast:
 {"timestamp":"2023-03-30T21:48:19Z","height":"49619","offerId":"bid-1680212903989","txhash":"472A47AAE24F27E747E3E64F4644860D2A5D3AD7EC5388C4C849805034E20D38"}
 first bid update:
-{"id":"bid-1680212903989","price":"0.81 IST/IbcATOM","give":{"Currency":"0.5IST"},"want":"3IbcATOM","result":"Your bid has been accepted"}
+{"id":"bid-1680212903989","price":"0.81 IST/IbcATOM","give":{"Bid":"0.5IST"},"want":"3IbcATOM","result":"Your bid has been accepted"}
 */
 
 test.todo('inter bid cancel shows resulting payouts');

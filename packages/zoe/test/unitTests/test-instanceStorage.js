@@ -19,30 +19,30 @@ const dirname = path.dirname(filename);
 const root = `${dirname}/bounty.js`;
 
 const setupIssuersForTest = () => {
-  const currencyKit = makeIssuerKit(
-    'currency',
+  const stableKit = makeIssuerKit(
+    'stable',
     AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
   const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
-  return { currencyKit, ticketKit };
+  return { stableKit, ticketKit };
 };
 
 test('makeInstanceRecordStorage', async t => {
-  const { currencyKit, ticketKit } = setupIssuersForTest();
+  const { stableKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
   const fakeInstallation = Far('fakeInstallation', { getBundle: () => bundle });
   const fakeInstance = /** @type {Instance} */ (
     Far('fakeInstance', { a: () => 0 })
   );
   const issuers = harden({
-    Currency: currencyKit.issuer,
+    Stable: stableKit.issuer,
     Ticket: ticketKit.issuer,
   });
   const brands = harden({
-    Currency: currencyKit.brand,
+    Stable: stableKit.brand,
     Ticket: ticketKit.brand,
   });
   const makeInstanceRecord = makeInstanceRecordStorage(
@@ -68,17 +68,17 @@ test('makeInstanceRecordStorage', async t => {
   t.deepEqual(instanceRecord.getIssuers(), issuers);
   t.deepEqual(instanceRecord.getBrands(), brands);
 
-  t.throws(() => instanceRecord.assertUniqueKeyword('Currency'), {
-    message: 'keyword "Currency" must be unique',
+  t.throws(() => instanceRecord.assertUniqueKeyword('Stable'), {
+    message: 'keyword "Stable" must be unique',
   });
   t.notThrows(() => instanceRecord.assertUniqueKeyword('Something'));
 
-  // Add currency again, but call it "money"
+  // Add stable again, but call it "money"
   instanceRecord.addIssuer(
     'Money',
     makeIssuerRecord(
-      currencyKit.brand,
-      currencyKit.issuer,
+      stableKit.brand,
+      stableKit.issuer,
       harden({
         assetKind: AssetKind.NAT,
         decimalPlaces: 18,
@@ -88,6 +88,6 @@ test('makeInstanceRecordStorage', async t => {
 
   t.deepEqual(instanceRecord.getIssuers(), {
     ...issuers,
-    Money: currencyKit.issuer,
+    Money: stableKit.issuer,
   });
 });

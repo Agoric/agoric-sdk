@@ -19,9 +19,9 @@ import {
 
 /** @typedef {import('../../src/vaultFactory/vault.js').Vault} Vault */
 
-const { brand: currencyBrand } = makeIssuerKit('ducats');
-const make = value => AmountMath.make(currencyBrand, value);
-const percent = n => makeRatio(BigInt(n), currencyBrand);
+const { brand: stableBrand } = makeIssuerKit('ducats');
+const make = value => AmountMath.make(stableBrand, value);
+const percent = n => makeRatio(BigInt(n), stableBrand);
 const { brand: collateralBrand } = makeIssuerKit('assets');
 const makeAssets = value => AmountMath.make(collateralBrand, value);
 
@@ -199,7 +199,7 @@ test('stable ordering as interest accrues', async t => {
   const vaults = makePrioritizedVaults(store);
 
   const fakeVaultID1 = 'id-fakeVault1';
-  const m = makeCompoundedInterestProvider(currencyBrand);
+  const m = makeCompoundedInterestProvider(stableBrand);
 
   // ACTUAL DEBTS AFTER 100% DAILY INTEREST
   // day 0

@@ -14,12 +14,12 @@ const test = anyTest;
 const trace = makeTracer('Test AuctContract', false);
 
 const makeTestContext = async () => {
-  const currency = withAmountUtils(makeIssuerKit('Currency'));
+  const bid = withAmountUtils(makeIssuerKit('Bid'));
   const collateral = withAmountUtils(makeIssuerKit('Collateral'));
 
   trace('makeContext');
   return {
-    currency,
+    bid,
     collateral,
   };
 };
@@ -32,7 +32,7 @@ test.before(async t => {
  * @see {distributeProportionalSharesWithLimits} for logical cases A-E
  *
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
- * @param {[collateralReturned: bigint, currencyRaise: bigint]} amountsReturned
+ * @param {[collateralReturned: bigint, bidRaise: bigint]} amountsReturned
  * @param {Array<{deposit: number, goal?: number}>} rawDeposits
  * @param {[transfers: Array<[bigint, bigint]>, leftovers: [bigint, bigint]]} rawExpected
  * @param {string} kwd
@@ -44,14 +44,14 @@ const checkProportions = (
   rawExpected,
   kwd = 'ATOM',
 ) => {
-  const { collateral, currency } = t.context;
+  const { collateral, bid } = t.context;
 
   const rawExp = rawExpected[0];
   t.is(rawDeposits.length, rawExp.length);
 
-  const [collateralReturned, currencyRaise] = amountsReturned;
+  const [collateralReturned, bidRaise] = amountsReturned;
   const fakeCollateralSeat = harden({});
-  const fakeCurrencySeat = harden({});
+  const fakeBidSeat = harden({});
   const fakeReserveSeat = harden({});
 
   const deposits = [];
@@ -62,16 +62,16 @@ const checkProportions = (
     deposits.push({
       seat,
       amount: collateral.make(BigInt(rawDeposits[i].deposit)),
-      goal: goal ? currency.make(BigInt(goal)) : null,
+      goal: goal ? bid.make(BigInt(goal)) : null,
     });
-    const currencyRecord = { Currency: currency.make(rawExp[i][1]) };
-    expectedXfer.push([fakeCurrencySeat, seat, currencyRecord]);
+    const bidRecord = { Bid: bid.make(rawExp[i][1]) };
+    expectedXfer.push([fakeBidSeat, seat, bidRecord]);
     const collateralRecord = { Collateral: collateral.make(rawExp[i][0]) };
     expectedXfer.push([fakeCollateralSeat, seat, collateralRecord]);
   }
   const expectedLeftovers = rawExpected[1];
-  const leftoverCurrency = { Currency: currency.make(expectedLeftovers[1]) };
-  expectedXfer.push([fakeCurrencySeat, fakeReserveSeat, leftoverCurrency]);
+  const leftoverBid = { Bid: bid.make(expectedLeftovers[1]) };
+  expectedXfer.push([fakeBidSeat, fakeReserveSeat, leftoverBid]);
   if (expectedLeftovers[0] > 0n) {
     expectedXfer.push([
       fakeCollateralSeat,
@@ -83,11 +83,11 @@ const checkProportions = (
 
   const transfers = distributeProportionalSharesWithLimits(
     collateral.make(collateralReturned),
-    currency.make(currencyRaise),
+    bid.make(bidRaise),
     // @ts-expect-error mocks for test
     deposits,
     fakeCollateralSeat,
-    fakeCurrencySeat,
+    fakeBidSeat,
     'ATOM',
     fakeReserveSeat,
     collateral.brand,
@@ -96,7 +96,7 @@ const checkProportions = (
   t.deepEqual(transfers, expectedXfer);
 };
 
-// Received 0 Collateral and 20 Currency from the auction to distribute to one
+// Received 0 Collateral and 20 Bid from the auction to distribute to one
 // vaultManager. Expect the one to get 0 and 20, and no leftovers
 test(
   'A: distributeProportionalShares',
@@ -106,7 +106,7 @@ test(
   [[[0n, 20n]], [0n, 0n]],
 );
 
-// received 100 Collateral and 2000 Currency from the auction to distribute to
+// received 100 Collateral and 2000 Bid from the auction to distribute to
 // two depositors in a ratio of 6:1. expect leftovers
 test(
   'A: proportional simple',
@@ -122,7 +122,7 @@ test(
   ],
 );
 
-// Received 100 Collateral and 2000 Currency from the auction to distribute to
+// Received 100 Collateral and 2000 Bid from the auction to distribute to
 // three depositors in a ratio of 1:3:1. expect no leftovers
 test(
   'A: proportional three way',
@@ -139,7 +139,7 @@ test(
   ],
 );
 
-// Received 0 Collateral and 2001 Currency from the auction to distribute to
+// Received 0 Collateral and 2001 Bid from the auction to distribute to
 // five depositors in a ratio of 20, 36, 17, 83, 42. expect leftovers
 // sum = 198
 test(
@@ -165,11 +165,11 @@ test(
   ],
 );
 
-// Received 0 Collateral and 2001 Currency from the auction to distribute to
+// Received 0 Collateral and 2001 Bid from the auction to distribute to
 // five depositors in a ratio of 20, 36, 17, 83, 42. expect leftovers
 // sum = 198
 test(
-  'A: proportional, no currency',
+  'A: proportional, no bid',
   checkProportions,
   [20n, 0n],
   [
@@ -197,7 +197,7 @@ const transferSharing20 = /** @type {Array<[bigint, bigint]>} */ ([
   [20n, 4n],
 ]);
 
-// currencyRaise < proceedsGoal so everyone gets prorated amounts of both
+// bidRaise < proceedsGoal so everyone gets prorated amounts of both
 test(
   'B: proportional of 20 limit',
   checkProportions,
@@ -224,10 +224,10 @@ test(
   [transferSharing20, [0n, 0n]],
 );
 
-// C if currencyRaise matches proceedsGoal, everyone gets the currency they
+// C if bidRaise matches proceedsGoal, everyone gets the bid they
 //   asked for, plus enough collateral to reach the same proportional payout.
 test(
-  'C: currencyRaise matches proceedsGoal, negligible collateral',
+  'C: bidRaise matches proceedsGoal, negligible collateral',
   checkProportions,
   [100n, 45n],
   [
@@ -245,10 +245,10 @@ test(
   ],
 );
 
-// C if currencyRaise matches proceedsGoal, everyone gets the currency they
+// C if bidRaise matches proceedsGoal, everyone gets the bid they
 //   asked for, plus enough collateral to reach the same proportional payout.
 test(
-  'C: currencyRaise matches proceedsGoal more collateral',
+  'C: bidRaise matches proceedsGoal more collateral',
   checkProportions,
   [100n, 450n],
   [
@@ -280,11 +280,11 @@ test(
   [transferSharing20, [0n, 0n]],
 );
 
-// D if currencyRaise > proceedsGoal && all depositors specified a limit,
+// D if bidRaise > proceedsGoal && all depositors specified a limit,
 //   all depositors get their goal first, then we distribute the
-//   remainder (collateral and currency) to get the same proportional payout.
+//   remainder (collateral and bid) to get the same proportional payout.
 test(
-  'D: currencyRaise > proceedsGoal && all depositors specified a limit a',
+  'D: bidRaise > proceedsGoal && all depositors specified a limit a',
   checkProportions,
   [100n, 200n],
   [
@@ -303,11 +303,11 @@ test(
   ],
 );
 
-// D if currencyRaise > proceedsGoal && all depositors specified a limit,
+// D if bidRaise > proceedsGoal && all depositors specified a limit,
 //   all depositors get their goal first, then we distribute the
-//   remainder (collateral and currency) to get the same proportional payout.
+//   remainder (collateral and bid) to get the same proportional payout.
 test(
-  'D: currencyRaise > proceedsGoal && all depositors specified a limit b',
+  'D: bidRaise > proceedsGoal && all depositors specified a limit b',
   checkProportions,
   [100n, 200n],
   [
@@ -325,12 +325,12 @@ test(
   ],
 );
 
-// E currencyRaise > proceedsGoal && some depositors didn't specify a limit
+// E bidRaise > proceedsGoal && some depositors didn't specify a limit
 // if proceedsGoal + value of collateralReturn >= limitedShare then those
 // who specified a limit can get all the excess over their limit in
 // collateral. Others share whatever is left.
 test(
-  'E: currencyRaise > proceedsGoal && some depositors didn`t specify a limit',
+  'E: bidRaise > proceedsGoal && some depositors didn`t specify a limit',
   checkProportions,
   [100n, 2000n],
   [
@@ -349,12 +349,12 @@ test(
   ],
 );
 
-// E currencyRaise > proceedsGoal && some depositors didn't specify a limit
+// E bidRaise > proceedsGoal && some depositors didn't specify a limit
 // if proceedsGoal + value of collateralReturn >= limitedShare then those
 // who specified a limit can get all the excess over their limit in
 // collateral. Others share whatever is left.
 test(
-  'E: currencyRaise > proceedsGoal && some depositors had no limit, enuf collateral returned for those who had',
+  'E: bidRaise > proceedsGoal && some depositors had no limit, enuf collateral returned for those who had',
   checkProportions,
   [1000n, 4000n],
   [
