@@ -575,7 +575,7 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
     id: 'bid-1680241587424',
     maxBuy: '1000000 ATOM',
     price: '8.55 IST/ATOM',
-    give: { Currency: '85 IST' },
+    give: { Bid: '85 IST' },
     result: 'Your bid has been accepted',
   };
 
