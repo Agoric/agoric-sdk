@@ -40,11 +40,11 @@
 // breaking the ambient typing
 /**
  * @template {ParamType} T
- * @typedef {T extends 'amount' ? Amount :
+ * @typedef {T extends 'amount' ? Amount<any> :
  * T extends 'brand' ? Brand :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
- * T extends 'invitation' ? Amount : // XXX this is the getter value but not the setter
+ * T extends 'invitation' ? Amount<'set'> : // XXX this is the getter value but not the setter
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :

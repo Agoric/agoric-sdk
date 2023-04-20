@@ -172,7 +172,6 @@ export const start = async (
     zcf,
     debtMint,
     harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
-    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     mintPowers,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );

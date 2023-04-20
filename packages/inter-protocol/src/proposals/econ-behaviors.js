@@ -274,7 +274,6 @@ export const startVaultFactory = async (
   } = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
-    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     governorTerms,
     harden({
       electorateCreatorFacet,
@@ -717,7 +716,6 @@ export const startStakeFactory = async (
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},
-    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     stakeTerms,
     {
       governed: {

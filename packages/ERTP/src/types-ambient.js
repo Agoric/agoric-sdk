@@ -232,7 +232,7 @@
  * this mint/issuer
  * @property {() => AssetKind} getAssetKind Get the kind of
  * MathHelpers used by this Issuer.
- * @property {() => DisplayInfo} getDisplayInfo Give information to UI
+ * @property {() => DisplayInfo<K>} getDisplayInfo Give information to UI
  *  on how to display amounts for this issuer.
  * @property {() => Purse<K>} makeEmptyPurse Make an empty purse of this
  * brand.

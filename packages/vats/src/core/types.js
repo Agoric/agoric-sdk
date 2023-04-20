@@ -181,6 +181,7 @@
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
  *       psm: Promise<Installation<import('@agoric/inter-protocol/src/psm/psm.js').start>>,
  *       reserve: Promise<Installation<import('@agoric/inter-protocol/src/reserve/assetReserve.js').start>>,
+ *       stakeFactory: Promise<Installation<import('@agoric/inter-protocol/src/stakeFactory/stakeFactory.js').start>>,
  *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
  *     },
