@@ -64,28 +64,28 @@ test('makeParamManagerFromTerms', async t => {
 test('readonly', async t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
-    Currency: [ParamTypes.BRAND, drachmaBrand],
+    Collateral: [ParamTypes.BRAND, drachmaBrand],
     Amt: [ParamTypes.AMOUNT, drachmas],
   });
   const getters = paramManager.readonly();
-  t.is(paramManager.getCurrency, getters.getCurrency);
+  t.is(paramManager.getCollateral, getters.getCollateral);
   t.is(paramManager.getAmt, getters.getAmt);
 });
 
 test('two parameters', async t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
-    Currency: [ParamTypes.BRAND, drachmaBrand],
+    Collateral: [ParamTypes.BRAND, drachmaBrand],
     Amt: [ParamTypes.AMOUNT, drachmas],
   });
 
-  t.is(paramManager.getCurrency(), drachmaBrand);
-  t.is(paramManager.readonly().getCurrency(), drachmaBrand);
+  t.is(paramManager.getCollateral(), drachmaBrand);
+  t.is(paramManager.readonly().getCollateral(), drachmaBrand);
   t.deepEqual(paramManager.getAmt(), drachmas);
   t.deepEqual(
     await paramManager.getParams(),
     harden({
-      Currency: {
+      Collateral: {
         type: ParamTypes.BRAND,
         value: drachmaBrand,
       },
@@ -238,14 +238,14 @@ test('Invitation', async t => {
   const paramManager = await makeParamManager(
     makeStoredPublisherKit(),
     {
-      Currency: [ParamTypes.BRAND, drachmaBrand],
+      Collateral: [ParamTypes.BRAND, drachmaBrand],
       Amt: [ParamTypes.AMOUNT, drachmaAmount],
       Invite: ['invitation', invitation],
     },
     zcf,
   );
 
-  t.is(paramManager.getCurrency(), drachmaBrand);
+  t.is(paramManager.getCollateral(), drachmaBrand);
   t.is(paramManager.getAmt(), drachmaAmount);
   // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   await eventLoopIteration();
@@ -262,7 +262,7 @@ test('Invitation', async t => {
         type: ParamTypes.AMOUNT,
         value: drachmaAmount,
       },
-      Currency: {
+      Collateral: {
         type: ParamTypes.BRAND,
         value: drachmaBrand,
       },

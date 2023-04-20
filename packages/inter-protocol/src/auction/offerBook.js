@@ -134,7 +134,7 @@ const PriceBookStateShape = harden({
 });
 
 /**
- * Prices in this book are actual prices expressed in terms of currency amount
+ * Prices in this book are actual prices expressed in terms of bid amount
  * and collateral amount.
  *
  * @param {Baggage} baggage

@@ -290,7 +290,7 @@ test('exit bid', async t => {
       numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
       payouts: {
         // got back the give
-        Currency: { value: { digits: '100000' } },
+        Bid: { value: { digits: '100000' } },
       },
     },
   });

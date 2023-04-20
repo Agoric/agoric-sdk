@@ -27,6 +27,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   const {
+    fakeStore = new Map(),
     weak = false,
     log,
     FinalizationRegistry = FakeFinalizationRegistry,
@@ -34,7 +35,6 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     addToPossiblyRetiredSet = () => {},
   } = options;
 
-  const fakeStore = new Map();
   let sortedKeys;
   let priorKeyReturned;
   let priorKeyIndex;

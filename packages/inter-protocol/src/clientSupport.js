@@ -228,12 +228,12 @@ const makeBidOffer = (_brands, opts) => {
   });
   const { parseAmount } = opts;
   const proposal = {
-    give: { Currency: parseAmount(opts.give) },
+    give: { Bid: parseAmount(opts.give) },
     ...(opts.wantMinimum
       ? { want: { Collateral: parseAmount(opts.wantMinimum) } }
       : {}),
   };
-  const istBrand = proposal.give.Currency.brand;
+  const istBrand = proposal.give.Bid.brand;
   const maxBuy = parseAmount(opts.maxBuy);
 
   const bounds = (x, lo, hi) => {
@@ -245,7 +245,7 @@ const makeBidOffer = (_brands, opts) => {
     'price' in opts || 'discount' in opts,
     'must specify price or discount',
   );
-  /** @type {import('./auction/auctionBook.js').BidSpec} */
+  /** @type {import('./auction/auctionBook.js').OfferSpec} */
   const offerArgs =
     'price' in opts
       ? {

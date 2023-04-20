@@ -17,12 +17,12 @@ test('two parameters', t => {
 
   const drachmaBrand = drachmaKit.brand;
   const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
-    .addBrand('Currency', drachmaBrand)
+    .addBrand('Collateral', drachmaBrand)
     .addAmount('Amt', AmountMath.make(drachmaBrand, 37n))
     .build();
 
-  t.is(paramManager.getBrand('Currency'), drachmaBrand);
-  t.is(paramManager.getCurrency(), drachmaBrand);
+  t.is(paramManager.getBrand('Collateral'), drachmaBrand);
+  t.is(paramManager.getCollateral(), drachmaBrand);
   t.deepEqual(
     paramManager.getAmount('Amt'),
     AmountMath.make(drachmaBrand, 37n),
@@ -35,14 +35,14 @@ test('getParams', async t => {
   const drachmaBrand = drachmaKit.brand;
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
-    .addBrand('Currency', drachmaBrand)
+    .addBrand('Collateral', drachmaBrand)
     .addAmount('Amt', drachmas)
     .build();
 
   t.deepEqual(
     await paramManager.getParams(),
     harden({
-      Currency: {
+      Collateral: {
         type: ParamTypes.BRAND,
         value: drachmaBrand,
       },
@@ -210,13 +210,13 @@ test('Invitation', async t => {
     makeStoredPublisherKit(),
     zoe,
   )
-    .addBrand('Currency', drachmaBrand)
+    .addBrand('Collateral', drachmaBrand)
     .addAmount('Amt', drachmaAmount);
   // addInvitation is async, so it can't be part of the cascade.
   await paramManagerBuilder.addInvitation('Invite', invitation);
   const paramManager = paramManagerBuilder.build();
 
-  t.is(paramManager.getBrand('Currency'), drachmaBrand);
+  t.is(paramManager.getBrand('Collateral'), drachmaBrand);
   t.is(paramManager.getAmount('Amt'), drachmaAmount);
   // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   await eventLoopIteration();
@@ -235,7 +235,7 @@ test('Invitation', async t => {
         type: ParamTypes.AMOUNT,
         value: drachmaAmount,
       },
-      Currency: {
+      Collateral: {
         type: ParamTypes.BRAND,
         value: drachmaBrand,
       },

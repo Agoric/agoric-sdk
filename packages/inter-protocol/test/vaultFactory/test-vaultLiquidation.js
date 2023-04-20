@@ -246,8 +246,8 @@ const setClockAndAdvanceNTimes = async (timer, times, start, incr = 1n) => {
 const bid = async (t, zoe, auctioneerKit, aeth, bidAmount, desired) => {
   const bidderSeat = await E(zoe).offer(
     E(auctioneerKit.publicFacet).makeBidInvitation(aeth.brand),
-    harden({ give: { Currency: bidAmount } }),
-    harden({ Currency: getRunFromFaucet(t, bidAmount.value) }),
+    harden({ give: { Bid: bidAmount } }),
+    harden({ Bid: getRunFromFaucet(t, bidAmount.value) }),
     { maxBuy: desired, offerPrice: makeRatioFromAmounts(bidAmount, desired) },
   );
   return bidderSeat;
@@ -276,8 +276,8 @@ const assertBidderPayout = async (t, bidderSeat, run, curr, aeth, coll) => {
   const bidderResult = await E(bidderSeat).getOfferResult();
   t.is(bidderResult, 'Your bid has been accepted');
   const payouts = await E(bidderSeat).getPayouts();
-  const { Collateral: bidderCollateral, Currency: bidderCurrency } = payouts;
-  await assertPayoutAmount(t, run.issuer, bidderCurrency, run.make(curr));
+  const { Collateral: bidderCollateral, Bid: bidderBid } = payouts;
+  await assertPayoutAmount(t, run.issuer, bidderBid, run.make(curr));
   await assertPayoutAmount(t, aeth.issuer, bidderCollateral, aeth.make(coll));
 };
 

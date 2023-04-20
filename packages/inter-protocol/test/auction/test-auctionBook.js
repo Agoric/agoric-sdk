@@ -113,7 +113,7 @@ test('simple addOffer', async t => {
     zoe,
     zcf,
     moola(100n),
-    'Currency',
+    'Bid',
     moolaKit,
   );
 
@@ -167,7 +167,7 @@ test('getOffers to a price limit', async t => {
     zoe,
     zcf,
     moola(100n),
-    'Currency',
+    'Bid',
     moolaKit,
   );
 
@@ -213,7 +213,7 @@ test('Bad keyword', async t => {
     zoe,
     zcf,
     moola(100n),
-    'Bid',
+    'NotBid',
     moolaKit,
   );
 
@@ -227,7 +227,7 @@ test('Bad keyword', async t => {
         zcfSeat,
         true,
       ),
-    { message: /give must include "Currency".*/ },
+    { message: /give must include "Bid".*/ },
   );
 });
 
@@ -255,7 +255,7 @@ test('getOffers w/discount', async t => {
     zoe,
     zcf,
     moola(100n),
-    'Currency',
+    'Bid',
     moolaKit,
   );
 

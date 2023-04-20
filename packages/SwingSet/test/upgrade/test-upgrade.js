@@ -844,7 +844,7 @@ test('failed upgrade - explode', async t => {
   // vat? only the console?
 });
 
-async function testMultiKindUpgradeChecks(t, mode, complaint) {
+async function testKindMode(t, v1mode, v2mode, complaint) {
   const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
     defaultReapInterval: 'never',
@@ -856,10 +856,10 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
   const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
-  await run('buildV1WithMultiKind', [mode]);
+  await run('buildV1KindModeTest', [v1mode]);
 
   // upgrade
-  const resultP = run('upgradeV2Simple', [mode]);
+  const resultP = run('upgradeV2KindModeTest', [v2mode]);
   if (!complaint) {
     await resultP;
     t.pass();
@@ -874,44 +874,42 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
   });
 }
 
-test('facet kind redefinition - fail on facet count mismatch', async t => {
-  await testMultiKindUpgradeChecks(
-    t,
-    'facetCountMismatch',
-    `durable kind "multi" facets don't match original definition`,
-  );
-});
-
-test('facet kind redefinition - fail on facet name mismatch', async t => {
-  await testMultiKindUpgradeChecks(
-    t,
-    'facetNameMismatch',
-    `durable kind "multi" facets don't match original definition`,
-  );
-});
-
-test('facet kind redefinition - succeed on facet order mismatch', async t => {
-  await testMultiKindUpgradeChecks(t, 'facetOrderMismatch', false);
+test('facet kind redefinition - succeed on single-single', async t => {
+  await testKindMode(t, 'single', 'single', false);
 });
 
 test('facet kind redefinition - succeed on exact facet match', async t => {
-  await testMultiKindUpgradeChecks(t, 'normal', false);
+  await testKindMode(t, 'multi', 'multi-foo-bar', false);
+});
+
+test('facet kind redefinition - succeed on facet order mismatch', async t => {
+  await testKindMode(t, 'multi', 'multi-bar-foo', false);
+});
+
+test('facet kind redefinition - succeed on new facet (early1)', async t => {
+  await testKindMode(t, 'multi', 'multi-foo-bar-arf', false);
+});
+
+test('facet kind redefinition - succeed on new facet (early2)', async t => {
+  await testKindMode(t, 'multi', 'multi-arf-foo-bar', false);
+});
+
+test('facet kind redefinition - succeed on new facet (late)', async t => {
+  await testKindMode(t, 'multi', 'multi-foo-bar-baz', false);
+});
+
+const err1 = `durable kind " kind " facets (..) is missing .. from original definition ..`;
+
+test('facet kind redefinition - fail on missing facets', async t => {
+  await testKindMode(t, 'multi', 'multi-foo', err1);
 });
 
 test('facet kind redefinition - fail on single- to multi-facet redefinition', async t => {
-  await testMultiKindUpgradeChecks(
-    t,
-    's2mFacetiousnessMismatch',
-    `durable kind "multi" originally defined as single-faceted`,
-  );
+  await testKindMode(t, 'single', 'multi-foo', err1);
 });
 
 test('facet kind redefinition - fail on multi- to single-facet redefinition', async t => {
-  await testMultiKindUpgradeChecks(
-    t,
-    'm2sFacetiousnessMismatch',
-    `durable kind "multi" originally defined as multi-faceted`,
-  );
+  await testKindMode(t, 'multi-foo', 'single', err1);
 });
 
 test('failed upgrade - unknown options', async t => {
