@@ -36,6 +36,8 @@ const bidInvitationShape = harden({
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
 /** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
+/** @typedef {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} ScheduleNotification */
+/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BookDataNotification} BookDataNotification */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
@@ -45,6 +47,7 @@ const bidInvitationShape = harden({
 const makeFormatters = assets => {
   const br = asBoardRemote;
   const fmtAmtTuple = makeAmountFormatter(assets);
+
   /** @param {Amount} amt */
   const amount = amt => (([l, m]) => `${m} ${l}`)(fmtAmtTuple(br(amt)));
   /** @param {Record<string, Amount> | undefined} r */
@@ -55,34 +58,38 @@ const makeFormatters = assets => {
     const [dl, dm] = fmtAmtTuple(br(r.denominator));
     return `${Number(nm) / Number(dm)} ${nl}/${dl}`;
   };
+  /** @param {Ratio} r */
   const discount = r =>
     100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100;
-  return { amount, record, price, discount };
-};
 
-/**
- * Format amounts in vaultManager metrics for JSON output.
- *
- * @param {*} metrics manager0.metrics
- * @param {*} quote manager0.quote
- * @param {*} assets agoricNames.vbankAssets
- */
-const fmtMetrics = (metrics, quote, assets) => {
-  const fmt = makeFormatters(assets);
-  const { liquidatingCollateral, liquidatingDebt } = metrics;
+  /** @param {import('@agoric/time/src/types.js').TimestampRecord} tr */
+  const absTime = tr => new Date(Number(tr.absValue) * 1000).toISOString();
+  /** @param {import('@agoric/time/src/types.js').RelativeTimeRecord} tr */
+  const relTime = tr =>
+    new Date(Number(tr.relValue) * 1000).toISOString().slice(11, 19);
 
-  const {
-    quoteAmount: {
-      value: [{ amountIn, amountOut }],
-    },
-  } = quote;
-  const price = fmt.price({ numerator: amountOut, denominator: amountIn });
+  /** @param {bigint} bp */
+  const basisPoints = bp => `${(Number(bp) / 100).toFixed(2)}%`;
 
-  const amounts = objectMap(
-    { liquidatingCollateral, liquidatingDebt },
-    fmt.amount,
-  );
-  return { ...amounts, price };
+  /**
+   * @template T
+   * @param {(_: T) => string} f
+   * @returns { (x: T | null | undefined ) => string | undefined }
+   */
+  const maybe = f => x => x ? f(x) : undefined;
+
+  return {
+    amount,
+    amountOpt: maybe(amount),
+    record,
+    price,
+    priceOpt: maybe(price),
+    discount,
+    absTime,
+    absTimeOpt: maybe(absTime),
+    relTime,
+    basisPoints,
+  };
 };
 
 /**
@@ -226,34 +233,84 @@ export const makeInterCommand = (
     }
   };
 
-  const liquidationCmd = interCmd
-    .command('liquidation')
-    .description('liquidation commands');
-  liquidationCmd
+  const auctionCmd = interCmd
+    .command('auction')
+    .description('auction commands');
+  auctionCmd
     .command('status')
     .description(
-      `show amount liquidating, vault manager price
+      `show auction status in JSON format
 
 For example:
 
+inter auction status
 {
-  "liquidatingCollateral": "10 IbcATOM",
-  "liquidatingDebt": "120 IST",
-  "price": "12.00 IST/IbcATOM"
+  "schedule": {
+    "activeStartTime": "2023-04-19T22:50:02.000Z",
+    "nextStartTime": "2023-04-19T23:00:02.000Z",
+    "nextDescendingStepTime": "2023-04-19T22:51:02.000Z"
+  },
+  "book0": {
+    "startPrice": "12.34 IST/IbcATOM",
+    "currentPriceLevel": "11.723 IST/IbcATOM",
+    "startCollateral": "0 IbcATOM",
+    "collateralAvailable": "0 IbcATOM"
+  },
+  "params": {
+    "DiscountStep": "5.00%",
+    "ClockStep": "00:00:20",
+    "LowestRate": "45.00%"
+  }
 }
 `,
     )
-    .option('--manager <number>', 'Vault Manager', Number, 0)
-    .action(async opts => {
-      const { agoricNames, readLatestHead } = await tryMakeUtils();
+    .option('--book <number>', 'Auction Book', Number, 0)
+    .action(
+      async (
+        /**
+         * @type {{
+         *   book: number,
+         * }}
+         */ opts,
+      ) => {
+        const { agoricNames, readLatestHead } = await tryMakeUtils();
 
-      const [metrics, quote] = await Promise.all([
-        readLatestHead(`published.vaultFactory.manager${opts.manager}.metrics`),
-        readLatestHead(`published.vaultFactory.manager${opts.manager}.quotes`),
-      ]);
-      const info = fmtMetrics(metrics, quote, values(agoricNames.vbankAsset));
-      show(info, true);
-    });
+        /** @type { [ScheduleNotification, BookDataNotification, *] } */
+        // @ts-expect-error dynamic cast
+        const [schedule, book, { current: params }] = await Promise.all([
+          readLatestHead(`published.auction.schedule`),
+          readLatestHead(`published.auction.book${opts.book}`),
+          readLatestHead(`published.auction.governance`),
+        ]);
+
+        const fmt = makeFormatters(Object.values(agoricNames.vbankAsset));
+        const info = {
+          schedule: {
+            activeStartTime: fmt.absTimeOpt(schedule.activeStartTime),
+            nextStartTime: fmt.absTime(schedule.nextStartTime),
+            nextDescendingStepTime: fmt.absTime(
+              schedule.nextDescendingStepTime,
+            ),
+          },
+          [`book${opts.book}`]: {
+            startPrice: fmt.priceOpt(book.startPrice),
+            currentPriceLevel: fmt.priceOpt(book.currentPriceLevel),
+            startProceedsGoal: fmt.amountOpt(book.startProceedsGoal),
+            remainingProceedsGoal: fmt.amountOpt(book.remainingProceedsGoal),
+            proceedsRaised: fmt.amountOpt(book.proceedsRaised),
+            startCollateral: fmt.amount(book.startCollateral),
+            collateralAvailable: fmt.amountOpt(book.collateralAvailable),
+          },
+          params: {
+            DiscountStep: fmt.basisPoints(params.DiscountStep.value),
+            ClockStep: fmt.relTime(params.ClockStep.value),
+            LowestRate: fmt.basisPoints(params.LowestRate.value),
+          },
+        };
+
+        show(info, true);
+      },
+    );
 
   const bidCmd = interCmd
     .command('bid')

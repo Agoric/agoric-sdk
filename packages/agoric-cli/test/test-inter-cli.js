@@ -407,7 +407,7 @@ const usageTest = (words, blurb = 'Command usage:') => {
   });
 };
 usageTest('inter');
-usageTest('inter liquidation status');
+usageTest('inter auction status');
 usageTest('inter bid by-price');
 usageTest('inter bid by-discount');
 usageTest('inter bid list');
