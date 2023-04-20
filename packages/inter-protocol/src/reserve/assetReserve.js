@@ -295,7 +295,12 @@ const start = async (zcf, privateArgs, baggage) => {
   });
 
   const { creatorFacet, publicFacet: pFacet } = makeAssetReserve();
-  return { creatorFacet, publicFacet: pFacet };
+  return {
+    /** @type {GovernedCreatorFacet<OriginalAssetReserveCreatorFacet>} */
+    // @ts-expect-error cast
+    creatorFacet,
+    publicFacet: pFacet,
+  };
 };
 
 harden(start);
@@ -325,4 +330,4 @@ export { start };
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
 /** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet the creator facet for the governor */
 /** @typedef {OriginalAssetReserveCreatorFacet} AssetReserveLimitedCreatorFacet */
-/** @typedef {GovernedContractFacetAccess<AssetReservePublicFacet,AssetReserveLimitedCreatorFacet>} GovernedAssetReserveFacetAccess */
+/** @typedef {GovernorCreatorFacet<typeof start>} GovernedAssetReserveFacetAccess */

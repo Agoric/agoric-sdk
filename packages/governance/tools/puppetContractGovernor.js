@@ -15,7 +15,7 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 // It adds the ability for tests to update parameters directly.
 
 /**
- * @template {import('../src/contractGovernor.js').GovernableStartFn} SF Start function of governed contract
+ * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
@@ -50,8 +50,7 @@ export const start = async (zcf, privateArgs) => {
   } = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-    // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     augmentedTerms,
     privateArgs.governed,
   );
@@ -90,7 +89,6 @@ export const start = async (zcf, privateArgs) => {
     changeParams,
     invokeAPI,
     setFilters,
-    /** @returns {Omit<Awaited<ReturnType<SF>>['creatorFacet'], 'getGovernedApis' | 'getGovernedApiNames' | 'setOfferFilter'>} */
     getCreatorFacet: () => limitedCreatorFacet,
     getAdminFacet: () => adminFacet,
     getInstance: () => governedInstance,
@@ -106,6 +104,6 @@ export const start = async (zcf, privateArgs) => {
 };
 harden(start);
 /**
- * @template {import('../src/contractGovernor.js').GovernableStartFn} SF Start function of governed contract
+ * @template {GovernableStartFn} SF Start function of governed contract
  * @typedef {Awaited<ReturnType<typeof start<SF>>>} PuppetContractGovernorKit<SF>
  */

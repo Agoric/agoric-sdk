@@ -22,7 +22,7 @@ const autoRefundBundleP = makeBundle(
 /**  */
 
 /**
- * @template {import('../src/contractGovernor.js').GovernableStartFn} T governed contract startfn
+ * @template {GovernableStartFn} T governed contract startfn
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Installation<T>>} governedP
  * @param {import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerService} timer

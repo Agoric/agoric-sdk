@@ -40,11 +40,11 @@
 // breaking the ambient typing
 /**
  * @template {ParamType} T
- * @typedef {T extends 'amount' ? Amount :
+ * @typedef {T extends 'amount' ? Amount<any> :
  * T extends 'brand' ? Brand :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
- * T extends 'invitation' ? Amount : // XXX this is the getter value but not the setter
+ * T extends 'invitation' ? Amount<'set'> : // XXX this is the getter value but not the setter
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :
@@ -518,15 +518,6 @@
 /** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
 
 /**
- * @template {{}} CF
- * @typedef {GovernedCreatorFacet<CF> & {
- * getGovernedApis: () => ERef<GovernedApis>;
- * getGovernedApiNames: () => (string | symbol)[];
- * setOfferFilter: (strings: string[]) => void;
- * }} GovernorFacet
- */
-
-/**
  * @typedef {object} GovernorPublic
  * @property {() => Promise<Instance>} getElectorate
  * @property {() => Instance} getGovernedContract
@@ -559,37 +550,27 @@
  */
 
 /**
- * @template {{}} PF Public facet of governed contract
- * @template {{}} CF Creator facet of governed contract
- * @typedef {object} GovernedContractFacetAccess
+ * @template {GovernableStartFn} SF Start function of governed contract
+ * @typedef {object} GovernorCreatorFacet
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {VoteOnOfferFilter} voteOnOfferFilter
- * @property {() => ERef<CF>} getCreatorFacet - creator
- *   facet of the governed contract, without the tightly held ability to change
+ * @property {() => LimitedCF<SF>} getCreatorFacet facet of the governed contract,
+ *   with creator-like powers but without the tightly held ability to change
  *   param values.
  * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
  * @property {() => AdminFacet} getAdminFacet
- * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
+ * @property {() => GovernedPublicFacet<Awaited<ReturnType<SF>>['publicFacet']>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract
  */
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
- * @property {() => Instance} getContractGovernor
- * @property {() => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
+ * @property {(key?: any) => StoredSubscription<GovernanceSubscriptionState>} getSubscription
+ * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
  *   all the governed parameters
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
  * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => any} getUnknown
  */
 
 /**
@@ -598,15 +579,24 @@
  */
 
 /**
+ * @template {GovernableStartFn} SF
+ * @typedef {ReturnType<Awaited<ReturnType<SF>>['creatorFacet']['getLimitedCreatorFacet']>} LimitedCF
+ */
+
+/**
  * @template {{}} CF creator facet
- * @typedef {CF} GovernedCreatorFacet
+ * @typedef GovernedCreatorFacet
+ * What a governed contract must return as its creatorFacet in order to be governed
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => CF} getLimitedCreatorFacet - the creator
+ * @property {() => ERef<CF>} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
+ * @property {() => ERef<GovernedApis>} getGovernedApis
+ * @property {() => (string | symbol)[]} getGovernedApiNames
+ * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**
@@ -664,16 +654,6 @@
  */
 
 /**
- * @callback SetupGovernance
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
- * @param {Instance} contractInstance
- * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @returns {ParamGovernor}
- */
-
-/**
  * @callback CreatedQuestion
  *   Was this question created by this ContractGovernor?
  * @param {Instance} questionInstance
@@ -711,4 +691,38 @@
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
+ */
+
+/**
+ * @typedef {import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
+ * & ((zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
+ */
+
+/**
+ * @typedef {import('./contractGovernor.js')['start']} GovernorSF
+ */
+
+// TODO find a way to parameterize the startInstance so the governed contract types flow
+/**
+ * @see {StartedInstanceKit}
+ * @template {ERef<Installation<GovernableStartFn>>} I
+ * @typedef GovernorStartedInstallationKit
+ * Same result as StartedInstanceKit but:
+ * - typed for contractGovernor installation being started by Zoe. (It in turn starts the governed contract.)
+ * - parameterized by Installation instead of StartFunction
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<GovernorSF>} instance
+ * @property {AdminFacet} adminFacet
+ * @property {GovernorCreatorFacet<InstallationStart<Awaited<I>>>} creatorFacet
+ * @property {GovernorPublic} publicFacet
+ */
+
+/**
+ * @see {StartedInstanceKit}
+ * @template {GovernableStartFn} SF
+ * @typedef GovernanceFacetKit
+ * Akin to StartedInstanceKit but designed for the results of starting governed contracts. Used in bootstrap space.
+ * @property {AdminFacet} adminFacet of the governing contract
+ * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed contract (without the powers the governor needs)
+ * @property {GovernorCreatorFacet<SF>} governorCreatorFacet of the governing contract
+ * @property {Awaited<ReturnType<SF>>['publicFacet']} publicFacet
  */
