@@ -389,7 +389,7 @@ test('stakeFactory API usage', async t => {
     want: { [KW.Debt]: AmountMath.make(runBrand, 200n * micro.unit) },
   });
   const seat = E(zoe).offer(
-    E(publicFacet).makeLoanInvitation(),
+    E(publicFacet).createDebtInvitation(),
     proposal,
     harden({ [KW.Attestation]: attPmt }),
   );
@@ -437,7 +437,7 @@ test('extra offer keywords are rejected', async t => {
     },
   });
   const seat = E(zoe).offer(
-    E(publicFacet).makeLoanInvitation(),
+    E(publicFacet).createDebtInvitation(),
     proposal,
     harden({ [KW.Attestation]: attPmt }),
   );
@@ -492,7 +492,7 @@ test('forged Attestation fails', async t => {
     want: { [KW.Debt]: AmountMath.make(runBrand, 200n * micro.unit) },
   });
   const seat = E(zoe).offer(
-    E(publicFacet).makeLoanInvitation(),
+    E(publicFacet).createDebtInvitation(),
     proposal,
     harden({ [KW.Attestation]: attPmt }),
   );
@@ -646,7 +646,7 @@ const makeWorld = async t => {
         want: { [KW.Debt]: AmountMath.make(runBrand, n * micro.unit) },
       });
       const seat = E(zoe).offer(
-        E(stakeFactory.publicFacet).makeLoanInvitation(),
+        E(stakeFactory.publicFacet).createDebtInvitation(),
         proposal,
         harden({ [KW.Attestation]: attPmt }),
       );
