@@ -89,7 +89,6 @@ export const start = async (zcf, privateArgs) => {
     changeParams,
     invokeAPI,
     setFilters,
-    /** @returns {Omit<Awaited<ReturnType<SF>>['creatorFacet'], 'getGovernedApis' | 'getGovernedApiNames' | 'setOfferFilter'>} */
     getCreatorFacet: () => limitedCreatorFacet,
     getAdminFacet: () => adminFacet,
     getInstance: () => governedInstance,

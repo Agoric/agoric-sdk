@@ -580,7 +580,7 @@
 
 /**
  * @template {GovernableStartFn} SF
- * @typedef {Awaited<ReturnType<Awaited<ReturnType<SF>>['creatorFacet']['getLimitedCreatorFacet']>>} LimitedCF
+ * @typedef {ReturnType<Awaited<ReturnType<SF>>['creatorFacet']['getLimitedCreatorFacet']>} LimitedCF
  */
 
 /**
@@ -707,6 +707,23 @@
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
  * & ((zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
  */
+
+/**
+ * @typedef {import('./contractGovernor.js')['start']} GovernorSF
+ */
+
+// TODO find a way to parameterize the startInstance so the governed contract types flow
+/**
+ * @see {StartedInstanceKit}
+ * @template {ERef<Installation<GovernableStartFn>>} I
+ * @typedef GovernorStartedInstallationKit
+ * Same result as StartedInstanceKit but:
+ * - typed for contractGovernor installation being started by Zoe. (It in turn starts the governed contract.)
+ * - parameterized by Installation instead of StartFunction
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<GovernorSF>} instance
+ * @property {AdminFacet} adminFacet
+ * @property {GovernorCreatorFacet<InstallationStart<Awaited<I>>>} creatorFacet
+ * @property {GovernorPublic} publicFacet
  */
 
 /**

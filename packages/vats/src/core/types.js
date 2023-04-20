@@ -173,6 +173,7 @@
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
+ *       auctioneer: Promise<Installation<import('@agoric/inter-protocol/src/auction/auctioneer.js').start>>,
  *       centralSupply: Promise<Installation<import('@agoric/vats/src/centralSupply.js').start>>,
  *       committee: Promise<Installation<import('@agoric/governance/src/committee.js').start>>,
  *       contractGovernor: Promise<Installation<import('@agoric/governance/src/contractGovernor.js').start>>,

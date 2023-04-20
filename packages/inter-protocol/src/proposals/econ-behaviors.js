@@ -35,7 +35,7 @@ const BASIS_POINTS = 10_000n;
  * @typedef {object} PSMKit
  * @property {Instance} psm
  * @property {Instance} psmGovernor
- * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
+ * @property {Awaited<ReturnType<Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']['getLimitedCreatorFacet']>>} psmCreatorFacet
  * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['start']>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
@@ -130,7 +130,7 @@ export const setupReserve = async ({
       },
     }),
   );
-  /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
+  /** @type {GovernorStartedInstallationKit<typeof reserveInstallation>} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -267,6 +267,7 @@ export const startVaultFactory = async (
     }),
   );
 
+  /** @type {GovernorStartedInstallationKit<typeof vaultFactoryInstallation>} */
   const {
     creatorFacet: governorCreatorFacet,
     instance: governorInstance,
@@ -568,11 +569,10 @@ export const startAuctioneer = async (
     }),
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernorCreatorFacet<import('../auction/auctioneer.js')['start']>, adminFacet: AdminFacet}} */
+  /** @type {GovernorStartedInstallationKit<typeof auctionInstallation>} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
-    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     governorTerms,
     harden({
       electorateCreatorFacet,
@@ -712,7 +712,7 @@ export const startStakeFactory = async (
     }),
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernorCreatorFacet<import('../stakeFactory/stakeFactory.js')['start']>, adminFacet: AdminFacet}} */
+  /** @type {GovernorStartedInstallationKit<typeof stakeFactoryInstallation>} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},

@@ -145,6 +145,7 @@ export const startPSM = async (
       },
     }),
   );
+  /** @type {GovernorStartedInstallationKit<typeof psmInstall>} */
   const governorFacets = await E(zoe).startInstance(
     contractGovernor,
     {},
