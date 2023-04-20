@@ -21,8 +21,8 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@endo/bundle-source": "^2.5.0",
-    "@endo/init": "^0.5.55",
+    "@endo/bundle-source": "^2.5.1",
+    "@endo/init": "^0.5.56",
     "ava": "^5.2.0",
     "c8": "^7.13.0",
     "rollup": "^2.58.0",
