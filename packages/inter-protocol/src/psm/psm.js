@@ -4,12 +4,14 @@ import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
+  CONTRACT_ELECTORATE,
   handleParamGovernance,
   ParamTypes,
   publicMixinAPI,
 } from '@agoric/governance';
+import { StorageNodeShape } from '@agoric/internal';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicRearrange,
@@ -18,6 +20,11 @@ import {
   floorDivideBy,
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  FeeMintAccessShape,
+  InstanceHandleShape,
+  InvitationShape,
+} from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -57,6 +64,36 @@ const { Fail } = assert;
  */
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+export const customTermsShape = {
+  anchorBrand: BrandShape,
+  anchorPerMinted: RatioShape,
+  electionManager: InstanceHandleShape,
+  governedParams: {
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.INVITATION,
+      value: AmountShape,
+    },
+    WantMintedFee: {
+      type: ParamTypes.RATIO,
+      value: RatioShape,
+    },
+    GiveMintedFee: {
+      type: ParamTypes.RATIO,
+      value: RatioShape,
+    },
+    MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
+  },
+};
+harden(customTermsShape);
+
+export const privateArgsShape = {
+  feeMintAccess: FeeMintAccessShape,
+  initialPoserInvitation: InvitationShape,
+  storageNode: StorageNodeShape,
+  marshaller: M.remotable('marshaller'),
+};
+harden(privateArgsShape);
 
 /**
  * @param {ZCF<GovernanceTerms<{
