@@ -11,15 +11,16 @@ import {
 } from '../question.js';
 
 /**
- * Make a pair of positions for a question about whether to update the offer
- * filter. If the vote passes, the list of blocked invitation strings will be
- * updated.
+ * Make a pair of positions for a question about whether to upgrade the contract.
+ * If the vote passes, the the specfied bundleId will be passed to `upgradeContract`.
  *
- * @param {string[]} strings
+ * @param {string} bundleId
  */
-const makeOfferFilterPositions = strings => {
-  const positive = harden({ strings });
-  const negative = harden({ dontUpdate: strings });
+const makeContractUpgradePositions = bundleId => {
+  /** @type {Position} */
+  const positive = harden({ bundleId });
+  /** @type {Position} */
+  const negative = harden({ dontUpgrade: bundleId });
   return { positive, negative };
 };
 
@@ -28,23 +29,25 @@ const makeOfferFilterPositions = strings => {
  *
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getPoser
- * @param {GovernorFacet<{}>} governedCF
- * @returns {QuestionProvenance & { voteOnFilter: VoteOnOfferFilter }}
+ * @param {AdminFacet} adminFacet
  */
-const setupFilterGovernance = (timer, getPoser, governedCF) => {
+const setupUpgradeGovernance = (timer, getPoser, adminFacet) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
-  /** @type {VoteOnOfferFilter} */
-  const voteOnFilter = async (voteCounterInstallation, deadline, strings) => {
-    mustMatch(strings, M.arrayOf(M.string()));
-    const { positive, negative } = makeOfferFilterPositions(strings);
+  /**
+   *
+   * @param {ERef<Installation>} voteCounterInstallation
+   * @param {import('@agoric/time').Timestamp} deadline
+   * @param {string} bundleId
+   */
+  const voteOnUpgrade = async (voteCounterInstallation, deadline, bundleId) => {
+    mustMatch(bundleId, M.string());
+    const { positive, negative } = makeContractUpgradePositions(bundleId);
 
-    /** @type {OfferFilterIssue} */
-    const issue = harden({ strings });
     const questionSpec = coerceQuestionSpec({
       method: ChoiceMethod.UNRANKED,
-      issue,
+      issue: harden({ bundleId }),
       positions: [positive, negative],
       electionType: ElectionType.OFFER_FILTER,
       maxChoices: 1,
@@ -74,8 +77,8 @@ const setupFilterGovernance = (timer, getPoser, governedCF) => {
         /** @type {(outcome: Position) => ERef<Position>} */
         outcome => {
           if (keyEQ(outcome, positive)) {
-            return E(governedCF)
-              .setOfferFilter(strings)
+            return E(adminFacet)
+              .upgradeContract(bundleId)
               .then(() => {
                 return positive;
               });
@@ -94,12 +97,15 @@ const setupFilterGovernance = (timer, getPoser, governedCF) => {
     });
   };
 
-  return Far('filterGovernor', {
-    voteOnFilter,
+  return Far('upgradeGovernor', {
+    voteOnUpgrade,
     createdQuestion: b => voteCounters.has(b),
   });
 };
 
-harden(setupFilterGovernance);
-harden(makeOfferFilterPositions);
-export { setupFilterGovernance, makeOfferFilterPositions };
+harden(setupUpgradeGovernance);
+harden(makeContractUpgradePositions);
+export {
+  setupUpgradeGovernance,
+  makeContractUpgradePositions as makeOfferUpgradePositions,
+};

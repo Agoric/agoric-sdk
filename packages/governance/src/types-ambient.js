@@ -74,7 +74,7 @@
 
 /**
  * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
- *   OfferFilterIssue } Issue
+ *   OfferFilterIssue | ContractUpgradeIssue } Issue
  */
 
 /**
@@ -93,7 +93,7 @@
 
 /**
  * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
- *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
+ *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition | UpgradeContractPosition | DontUpgradeContractPosition} Position
  */
 
 /**
@@ -392,6 +392,11 @@
  */
 
 /**
+ * @typedef {object} ContractUpgradeIssue
+ * @property {string} bundleId
+ */
+
+/**
  * @typedef {object} ParamChangePositions
  * @property {ChangeParamsPosition} positive
  * @property {NoChangeParamsPosition} negative
@@ -502,6 +507,17 @@
 /**
  * @typedef {object} DontInvokeApiPosition
  * @property {string} dontInvoke
+ */
+
+/**
+ * @typedef {object} UpgradeContractPosition
+ * @property {string} bundleId
+ * @property {unknown} [privateArgs]
+ */
+
+/**
+ * @typedef {object} DontUpgradeContractPosition
+ * @property {string} dontUpgrade
  */
 
 /**
@@ -646,38 +662,8 @@
  */
 
 /**
- * @typedef {object} ParamGovernor
- * @property {VoteOnParamChanges} voteOnParamChanges
- * @property {CreatedQuestion} createdQuestion
- */
-
-/**
- * @typedef {object} ApiGovernor
- * @property {VoteOnApiInvocation} voteOnApiInvocation
- * @property {CreatedQuestion} createdQuestion
- */
-
-/**
- * @typedef {object} FilterGovernor
- * @property {VoteOnOfferFilter} voteOnFilter
- * @property {CreatedQuestion} createdFilterQuestion
- */
-
-/**
- * @callback SetupGovernance
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
- * @param {Instance} contractInstance
- * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @returns {ParamGovernor}
- */
-
-/**
- * @callback CreatedQuestion
- *   Was this question created by this ContractGovernor?
- * @param {Instance} questionInstance
- * @returns {boolean}
+ * @typedef QuestionProvenance
+ * @property {(questionInstance: Instance) => boolean} createdQuestion Was this question created by this ContractGovernor?
  */
 
 /**

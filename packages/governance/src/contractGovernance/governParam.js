@@ -51,13 +51,18 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
     Fail`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`;
 };
 
-/** @type {SetupGovernance} */
-const setupParamGovernance = async (
-  zoe,
+/**
+ * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
+ * @param {Instance} contractInstance
+ * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {() => Promise<PoserFacet>} getPoser
+ * @returns {QuestionProvenance & { voteOnParamChanges: VoteOnParamChanges }}
+ */
+const setupParamGovernance = (
   paramManagerRetriever,
   contractInstance,
   timer,
-  getUpdatedPoserFacet,
+  getPoser,
 ) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
@@ -103,7 +108,7 @@ const setupParamGovernance = async (
     });
 
     const { publicFacet: counterPublicFacet, instance: voteCounter } = await E(
-      getUpdatedPoserFacet(),
+      getPoser(),
     ).addQuestion(voteCounterInstallation, questionSpec);
 
     voteCounters.add(voteCounter);
