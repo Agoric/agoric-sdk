@@ -1396,6 +1396,8 @@ function build(
     possiblyRetiredSet,
     slotToVal,
     valToSlot,
+    // eslint-disable-next-line no-use-before-define
+    afterDispatchActions,
   });
 
   function setVatOption(option, _value) {
