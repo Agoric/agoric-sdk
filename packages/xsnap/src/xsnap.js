@@ -16,6 +16,8 @@ import { racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
+// eslint-disable-next-line import/no-relative-packages
+import { Machine } from '../xsnap-native/xsnap/xsbug-node/xsbug-machine.js';
 
 // This will need adjustment, but seems to be fine for a start.
 export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
@@ -42,6 +44,42 @@ const noop = freeze(() => {});
 function echoCommand(arg) {
   return arg;
 }
+
+/** @param {import('child_process').ChildProcess} childProcess */
+const makeXSBug = childProcess => {
+  const stdioExtended = /** @type {unknown[]} */ (childProcess.stdio);
+  const xsbugOutput = /** @type {import('stream').Writable} */ (
+    stdioExtended[5]
+  );
+  const xsbugInput = /** @type {import('stream').Readable} */ (
+    stdioExtended[6]
+  );
+  const machine = new Machine(xsbugInput, xsbugOutput);
+  // machine.on('instruments', instruments => {
+  //   machine.reportInstruments(instruments);
+  // });
+
+  /** @returns {Promise<import('@agoric/xsnap/xsnap-native/xsnap/xsbug-node/xsbug-profile.js').Profile>} */
+  const stopProfiling = async () => {
+    return new Promise(resolve => {
+      machine.on('profile', resolve);
+
+      machine.doStopProfiling();
+    });
+  };
+
+  const startProfiling = async () => {
+    machine.doStartProfiling();
+  };
+
+  const getMachine = () => machine;
+
+  return harden({
+    getMachine,
+    startProfiling,
+    stopProfiling,
+  });
+};
 
 /**
  * @param {XSnapOptions} options
@@ -115,7 +153,7 @@ export function xsnap(options) {
     console.log('XSNAP_DEBUG_RR', { bin, args });
   }
   const xsnapProcess = spawn(bin, args, {
-    stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
+    stdio: ['ignore', stdout, stderr, 'pipe', 'pipe', 'pipe', 'pipe'],
   });
 
   xsnapProcess.once('exit', (code, signal) => {
@@ -137,6 +175,8 @@ export function xsnap(options) {
       vatExit.reject(reason);
     }
   });
+
+  const xsBug = makeXSBug(xsnapProcess);
 
   const vatCancelled = vatExit.promise.then(() => {
     throw Error(`${name} exited`);
@@ -346,5 +386,6 @@ export function xsnap(options) {
     execute,
     import: importModule,
     snapshot: writeSnapshot,
+    xsBug,
   });
 }

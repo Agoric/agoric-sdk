@@ -166,54 +166,6 @@ function makeSnapStoreIO() {
   };
 }
 
-/** @param {import('child_process').ChildProcess} childProcess */
-const makeXSBug = childProcess => {
-  const { pid } = childProcess;
-
-  const stdioExtended = /** @type {unknown[]} */ (childProcess.stdio);
-  const xsbugOutput = /** @type {import('stream').Writable} */ (
-    stdioExtended[5]
-  );
-  const xsbugInput = /** @type {import('stream').Readable} */ (
-    stdioExtended[6]
-  );
-  const machine = new Machine(xsbugInput, xsbugOutput);
-  // machine.on('instruments', instruments => {
-  //   machine.reportInstruments(instruments);
-  // });
-
-  /** @type {import('@agoric/xsnap/xsnap-native/xsnap/xsbug-node/xsbug-profile.js').Profile | undefined} */
-  let profile;
-
-  const stop = async () => {
-    await new Promise(resolve => {
-      machine.on('profile', prof => {
-        profile = prof;
-        // profile.reportHits();
-        resolve(
-          fs.promises.writeFile(`./worker-${pid}.cpuprofile`, prof.toString()),
-        );
-      });
-
-      machine.doStopProfiling();
-    });
-  };
-
-  const start = async () => {
-    machine.doStartProfiling();
-  };
-
-  const getProfile = () => profile;
-  const getMachine = () => machine;
-
-  return harden({
-    getProfile,
-    getMachine,
-    start,
-    stop,
-  });
-};
-
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
@@ -331,9 +283,9 @@ async function replay(transcriptFile) {
     );
   /**
    * @typedef {{
-   *  manager: import('../src/types-internal.js').VatManager;
+   *  manager: import('../src/types-internal.js').VatManager & {xsBug?: ReturnType<typeof import('@agoric/xsnap')['xsnap']>['xsBug']};
    *  xsnapPID: number | undefined;
-   *  xsBug: ReturnType<typeof makeXSBug> | undefined,
+   *  xsBug:  | undefined,
    *  deliveryTimeTotal: number;
    *  deliveryTimeSinceLastSnapshot: number;
    *  loadSnapshotID: string | undefined;
@@ -364,18 +316,9 @@ async function replay(transcriptFile) {
        * @param  {import('child_process').SpawnOptions} options
        */
       (cmd, args = [], options = {}) => {
-        const stdioWithDebug = [...(options.stdio || [])];
-        stdioWithDebug[5] = 'pipe';
-        stdioWithDebug[6] = 'pipe';
-        const child = spawn(cmd, args, {
-          ...options,
-          stdio: /** @type {import('child_process').StdioOptions} */ (
-            stdioWithDebug
-          ),
-        });
+        const child = spawn(cmd, args, options);
         const workerData = workers[workers.length - 1];
         workerData.xsnapPID = child.pid;
-        workerData.xsBug = makeXSBug(child);
         return child;
       }
     );
@@ -513,7 +456,7 @@ async function replay(transcriptFile) {
       managerOptions,
       {},
     );
-    await workerData.xsBug?.start();
+    await workerData.manager.xsBug?.startProfiling();
     return workerData;
   };
 
@@ -548,14 +491,19 @@ async function replay(transcriptFile) {
 
           const {
             manager,
-            xsBug,
             xsnapPID,
             deliveryTimeSinceLastSnapshot,
             deliveryTimeTotal,
             firstTranscriptNum,
           } = workerData;
           // eslint-disable-next-line no-await-in-loop
-          await xsBug?.stop();
+          const profile = await manager.xsBug?.stopProfiling();
+          if (profile) {
+            fs.promises.writeFile(
+              `./worker-${xsnapPID}.cpuprofile`,
+              profile.toString(),
+            );
+          }
           // eslint-disable-next-line no-await-in-loop
           await manager.shutdown();
           console.log(
@@ -832,13 +780,18 @@ async function replay(transcriptFile) {
       workers.map(
         async ({
           xsnapPID,
-          xsBug,
           manager,
           deliveryTimeSinceLastSnapshot,
           deliveryTimeTotal,
           firstTranscriptNum,
         }) => {
-          await xsBug?.stop();
+          const profile = await manager.xsBug?.stopProfiling();
+          if (profile) {
+            fs.promises.writeFile(
+              `./worker-${xsnapPID}.cpuprofile`,
+              profile.toString(),
+            );
+          }
           await manager?.shutdown();
           console.log(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${

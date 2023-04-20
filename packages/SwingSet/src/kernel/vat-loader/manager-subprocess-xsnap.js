@@ -226,7 +226,10 @@ export function makeXsSubprocessFactory({
       return snapStore.saveSnapshot(vatID, endPos, fn => worker.snapshot(fn));
     }
 
-    return mk.getManager(shutdown, makeSnapshot);
+    return Object.freeze({
+      ...mk.getManager(shutdown, makeSnapshot),
+      xsBug: worker.xsBug,
+    });
   }
 
   return harden({ createFromBundle });
