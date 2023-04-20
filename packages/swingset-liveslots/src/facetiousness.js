@@ -44,12 +44,15 @@ export function assessFacetiousness(obj) {
   return /** @type {Facetiousness} */ (result || 'one');
 }
 
+// note: mutates 'desc' in-place
 export const checkAndUpdateFacetiousness = (tag, desc, proposedFacetNames) => {
   // The first time a durable kind gets a definition, the saved
   // descriptor will have neither ".unfaceted" nor ".facets", and we
   // must update the details in the descriptor. When a later
   // incarnation redefines the behavior, we must check for
-  // compatibility (all old facets must still be defined).
+  // compatibility (all old facets must still be defined). We
+  // re-assign .facets/.unfaceted each time, even if we're not
+  // changing anything.
 
   if (desc.unfaceted && proposedFacetNames) {
     Fail`defineDurableKindMulti called for unfaceted KindHandle ${tag}`;
