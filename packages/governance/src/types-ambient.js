@@ -550,41 +550,37 @@
  */
 
 /**
- * @template {{}} PF Public facet of governed contract
- * @template {{}} CF Creator facet of governed contract
- * @typedef {object} GovernedContractFacetAccess
+ * @template {GovernableStartFn} SF Start function of governed contract
+ * @typedef {object} GovernorCreatorFacet
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {VoteOnOfferFilter} voteOnOfferFilter
- * @property {() => ERef<CF>} getCreatorFacet - creator
- *   facet of the governed contract, without the tightly held ability to change
+ * @property {() => LimitedCF<SF>} getCreatorFacet facet of the governed contract,
+ *   with creator-like powers but without the tightly held ability to change
  *   param values.
  * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
  * @property {() => AdminFacet} getAdminFacet
- * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
+ * @property {() => GovernedPublicFacet<Awaited<ReturnType<SF>>['publicFacet']>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract
  */
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
- * @property {() => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
+ * @property {(key?: any) => StoredSubscription<GovernanceSubscriptionState>} getSubscription
+ * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
  *   all the governed parameters
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
  * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => any} getUnknown
  */
 
 /**
  * @template {{}} PF Public facet
  * @typedef {PF & GovernedPublicFacetMethods} GovernedPublicFacet
+ */
+
+/**
+ * @template {GovernableStartFn} SF
+ * @typedef {Awaited<ReturnType<Awaited<ReturnType<SF>>['creatorFacet']['getLimitedCreatorFacet']>>} LimitedCF
  */
 
 /**
@@ -706,3 +702,8 @@
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
  */
+
+/**
+ * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<any>, publicFacet: GovernedPublicFacet<any>}>} GovernableStartFn
+ */
+

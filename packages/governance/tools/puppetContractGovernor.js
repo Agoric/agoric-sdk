@@ -15,7 +15,7 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 // It adds the ability for tests to update parameters directly.
 
 /**
- * @template {import('../src/contractGovernor.js').GovernableStartFn} SF Start function of governed contract
+ * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
@@ -106,6 +106,6 @@ export const start = async (zcf, privateArgs) => {
 };
 harden(start);
 /**
- * @template {import('../src/contractGovernor.js').GovernableStartFn} SF Start function of governed contract
+ * @template {GovernableStartFn} SF Start function of governed contract
  * @typedef {Awaited<ReturnType<typeof start<SF>>>} PuppetContractGovernorKit<SF>
  */

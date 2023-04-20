@@ -124,10 +124,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
- */
-
-/**
  * Start an instance of a governor, governing a "governed" contract specified in terms.
  *
  * @template {GovernableStartFn} SF Start function of governed contract
