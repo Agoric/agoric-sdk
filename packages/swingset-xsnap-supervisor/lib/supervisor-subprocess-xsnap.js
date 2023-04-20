@@ -270,10 +270,12 @@ function makeWorker(port) {
       lsEndowments,
       inescapableGlobalProperties,
     ) {
+      assert(bundle, 'bundle undefined (duplicate buildVatNamespace call?)');
       const vatNS = await importBundle(bundle, {
         endowments: { ...workerEndowments, ...lsEndowments },
         inescapableGlobalProperties,
       });
+      bundle = undefined; // overwrite to allow GC to discard big string
       workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
       return vatNS;
     }
