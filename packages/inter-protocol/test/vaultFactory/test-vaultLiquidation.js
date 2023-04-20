@@ -303,7 +303,7 @@ test('price drop', async t => {
   );
 
   const {
-    vaultFactory: { vaultFactory, vfPublic },
+    vaultFactory: { vaultFactory, aethCollateralManager },
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
     auctioneerKit,
@@ -315,7 +315,7 @@ test('price drop', async t => {
   /** @type {UserSeat<VaultKit>} */
 
   const vaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: wantMinted },
@@ -459,7 +459,7 @@ test('price falls precipitously', async t => {
   );
   // we start with time=0, price=2200
 
-  const { vaultFactory, vfPublic } = services.vaultFactory;
+  const { vaultFactory, aethCollateralManager } = services.vaultFactory;
 
   const {
     reserveKit: { reserveCreatorFacet },
@@ -473,7 +473,7 @@ test('price falls precipitously', async t => {
   const wantMinted = run.make(500n);
   /** @type {UserSeat<VaultKit>} */
   const userSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: wantMinted },
@@ -613,7 +613,7 @@ test('liquidate two loans', async t => {
   );
 
   const {
-    vaultFactory: { aethVaultManager, vfPublic },
+    vaultFactory: { aethVaultManager, aethCollateralManager },
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
     auctioneerKit,
@@ -656,7 +656,7 @@ test('liquidate two loans', async t => {
   const aliceWantMinted = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceWantMinted },
@@ -711,7 +711,7 @@ test('liquidate two loans', async t => {
   const bobWantMinted = run.make(630n);
   /** @type {UserSeat<VaultKit>} */
   const bobVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobWantMinted },
@@ -949,14 +949,14 @@ test('sell goods at auction', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   // initial loans /////////////////////////////////////
-  const { vfPublic } = services.vaultFactory;
+  const { aethCollateralManager } = services.vaultFactory;
 
   // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   const aliceCollateralAmount = aeth.make(1000n);
   const aliceWantMinted = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceWantMinted },
@@ -1001,7 +1001,7 @@ test('sell goods at auction', async t => {
   const bobWantMinted = run.make(740n);
   /** @type {UserSeat<VaultKit>} */
   const bobVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobWantMinted },
@@ -1115,7 +1115,7 @@ test('collect fees from loan', async t => {
   );
 
   const {
-    vaultFactory: { aethVaultManager, vfPublic },
+    vaultFactory: { aethVaultManager, aethCollateralManager },
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
     auctioneerKit,
@@ -1157,7 +1157,7 @@ test('collect fees from loan', async t => {
   const aliceWantMinted = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceWantMinted },
@@ -1358,7 +1358,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   );
 
   const {
-    vaultFactory: { aethVaultManager, vfPublic },
+    vaultFactory: { aethVaultManager, aethCollateralManager },
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
     auctioneerKit,
@@ -1399,7 +1399,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   const aliceWantMinted = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceWantMinted },
@@ -1569,7 +1569,7 @@ test('liquidation Margin matters', async t => {
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
-  const { vfPublic } = services.vaultFactory;
+  const { aethCollateralManager } = services.vaultFactory;
 
   const aliceCollateralAmount = aeth.make(15n);
 
@@ -1577,7 +1577,7 @@ test('liquidation Margin matters', async t => {
   const aliceWantMinted = run.make(95n);
   /** @type {UserSeat<VaultKit>} */
   const aliceVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceWantMinted },
@@ -1668,7 +1668,7 @@ test('reinstate vault', async t => {
   );
 
   const {
-    vaultFactory: { aethVaultManager, vfPublic },
+    vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit,
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
@@ -1703,7 +1703,7 @@ test('reinstate vault', async t => {
   const aliceWantMinted = run.make(95n);
   /** @type {UserSeat<VaultKit>} */
   const aliceVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceWantMinted },
@@ -1750,7 +1750,7 @@ test('reinstate vault', async t => {
   const bobWantMinted = run.make(150n);
   /** @type {UserSeat<VaultKit>} */
   const bobVaultSeat = await E(zoe).offer(
-    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    await E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobWantMinted },
@@ -1832,4 +1832,72 @@ test('reinstate vault', async t => {
     Aeth: aeth.make(4n),
     Fee: run.makeEmpty(),
   });
+});
+
+test('auction locks low price', async t => {
+  const { zoe, aeth, run } = t.context;
+  // vary just the want/numerator
+  const baseCollateral = 4n;
+
+  t.context.interestTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+  };
+
+  const manualTimer = buildManualTimer();
+  const services = await setupServices(
+    t,
+    makeRatio(600n, run.brand, baseCollateral, aeth.brand),
+    aeth.make(900n),
+    manualTimer,
+    undefined,
+    500n,
+  );
+  // we start with time=0, price=2200
+
+  const { aethCollateralManager } = services.vaultFactory;
+
+  const {
+    reserveKit: { reserveCreatorFacet },
+    auctioneerKit,
+    priceAuthority,
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+  trace('addIssuer awaited');
+
+  const wanted = 500n;
+
+  // Lock in a low price (zero)
+  // @ts-expect-error it's a mock
+  priceAuthority.setPrice(makeRatio(0n, run.brand, baseCollateral, aeth.brand));
+  await eventLoopIteration();
+  await startAuctionClock(auctioneerKit, manualTimer);
+  trace('auction started, binding lockedQuote in the vault manager state');
+
+  // Bump back up to a high price
+  // @ts-expect-error it's a mock
+  priceAuthority.setPrice(
+    makeRatio(100n * wanted, run.brand, baseCollateral, aeth.brand),
+  );
+
+  // make vault MCR uses the locked price
+  await t.throwsAsync(
+    // promise for the offer's result
+    E(
+      E(zoe).offer(
+        E(aethCollateralManager).makeVaultInvitation(),
+        harden({
+          give: { Collateral: aeth.make(baseCollateral) },
+          want: { Minted: run.make(wanted) },
+        }),
+        harden({
+          Collateral: aeth.mint.mintPayment(aeth.make(baseCollateral)),
+        }),
+      ),
+    ).getOfferResult(),
+    {
+      message:
+        'Proposed debt {"brand":"[Alleged: IST brand]","value":"[525n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[0n]"} for {"brand":"[Alleged: aEth brand]","value":"[4n]"} collateral',
+    },
+  );
 });
