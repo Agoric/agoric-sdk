@@ -746,7 +746,7 @@ test('change Schedule', async t => {
 
   const newFreq = 100n;
   const newStep = 40n;
-  paramManager.updateParams({
+  void paramManager.updateParams({
     StartFrequency: TimeMath.toRel(newFreq, timerBrand),
     ClockStep: TimeMath.toRel(newStep, timerBrand),
   });

@@ -979,8 +979,8 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   await assertPayouts(t, liqSeat, currency, collateral, 116n, 0n);
 
   await driver.advanceTo(186n, 'wait');
-  scheduleTracker.assertNoUpdate();
-  bookTracker.assertNoUpdate();
+  void scheduleTracker.assertNoUpdate();
+  void bookTracker.assertNoUpdate();
 
   await driver.advanceTo(210n, 'wait');
   await scheduleTracker.assertChange({

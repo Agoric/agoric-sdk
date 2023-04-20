@@ -148,7 +148,7 @@ test('borrow not enough collateral', async t => {
   // collateral is 0
   const { borrowSeat, borrowFacet } = await setupBorrowFacet(0n);
   // Sink unhandled rejection
-  E.when(
+  void E.when(
     borrowFacet,
     () => {},
     () => {},
@@ -374,7 +374,7 @@ test('borrow collateral just too low', async t => {
     await setupBorrowFacet(74n);
 
   // Sink unhandled rejection
-  E.when(
+  void E.when(
     borrowFacetBad,
     () => {},
     () => {},

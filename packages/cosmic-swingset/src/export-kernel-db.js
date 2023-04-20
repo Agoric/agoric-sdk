@@ -384,13 +384,13 @@ export const spawnSwingStoreExport = (
   cp.on('error', kits.done.reject).on('exit', onExit).on('message', onMessage);
 
   kits.done.promise
-    .catch(err => {
-      kits.started.reject(err);
-    })
     .then(() => {
       cp.off('error', kits.done.reject)
         .off('exit', onExit)
         .off('message', onMessage);
+    })
+    .catch(err => {
+      kits.started.reject(err);
     });
 
   if (cp.exitCode != null) {

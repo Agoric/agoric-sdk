@@ -80,7 +80,7 @@ export async function start(zcf, privateArgs, baggage) {
     runBrand,
   );
   let storedCollateralQuote;
-  observeNotifier(quoteNotifier, {
+  void observeNotifier(quoteNotifier, {
     updateState(value) {
       storedCollateralQuote = value;
     },

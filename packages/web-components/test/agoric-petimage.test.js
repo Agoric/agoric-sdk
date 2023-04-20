@@ -37,7 +37,9 @@ describe('AgoricPetimage', () => {
     );
 
     const inner = el.shadowRoot.querySelector('div');
-    expect(inner.getAttribute('data-powerbox-target')).to.equal('img-if-known');
-    expect(inner.getAttribute('data-powerbox-id')).to.equal('AG.1');
+    await expect(inner.getAttribute('data-powerbox-target')).to.equal(
+      'img-if-known',
+    );
+    await expect(inner.getAttribute('data-powerbox-id')).to.equal('AG.1');
   });
 });

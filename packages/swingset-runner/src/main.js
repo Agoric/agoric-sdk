@@ -583,7 +583,7 @@ export async function main() {
     // eslint-disable-next-line @jessie.js/no-nested-await
     await slogSender.forceFlush();
   }
-  controller.shutdown();
+  void controller.shutdown();
 
   function getCrankNumber() {
     return Number(kernelStorage.kvStore.get('crankNumber'));

@@ -11,4 +11,4 @@ import '@endo/init/pre.js';
 import '@endo/init';
 import { main } from './main.js';
 
-main();
+void main();

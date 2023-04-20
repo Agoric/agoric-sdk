@@ -28,8 +28,8 @@ test('race', async t => {
   t.is(await provider.provideAsync('a', make, finish), 'a 1');
   t.is(finishCalled, 1);
 
-  provider.provideAsync('b', make, finish);
-  provider.provideAsync('b', make, finish);
+  void provider.provideAsync('b', make, finish);
+  void provider.provideAsync('b', make, finish);
   t.is(await provider.provideAsync('b', make, finish), 'b 2');
   t.is(await provider.provideAsync('b', make, finish), 'b 2');
   t.is(finishCalled, 2);
@@ -88,8 +88,8 @@ test('far keys', async t => {
   t.is(await provider.provideAsync(moola, makeValue), 'moola 1');
   t.is(await provider.provideAsync(moola, makeValue), 'moola 1');
 
-  provider.provideAsync(moolb, makeValue);
-  provider.provideAsync(moolb, makeValue);
+  void provider.provideAsync(moolb, makeValue);
+  void provider.provideAsync(moolb, makeValue);
   t.is(await provider.provideAsync(moolb, makeValue), 'moolb 2');
   t.is(await provider.provideAsync(moolb, makeValue), 'moolb 2');
 });

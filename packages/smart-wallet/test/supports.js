@@ -85,7 +85,9 @@ const makeFakeBridgeManager = () =>
           assert.fail(`expected fromBridge`);
         },
         toBridge(obj) {
-          handler || Fail`No handler for ${bridgeId}`;
+          if (!handler) {
+            Fail`No handler for ${bridgeId}`;
+          }
           // Rely on interface guard for validation.
           // This should also be validated upstream but don't rely on it.
           // @ts-expect-error handler possibly undefined

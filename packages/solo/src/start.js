@@ -469,7 +469,7 @@ const start = async (basedir, argv) => {
 
   // Start timer here!
   startTimer(800);
-  resetOutdatedState();
+  void resetOutdatedState();
 
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});

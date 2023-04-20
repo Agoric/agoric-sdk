@@ -110,7 +110,7 @@ export const makeScheduler = async (
         now,
       ),
     });
-    scheduleRecorder.write(sched);
+    void scheduleRecorder.write(sched);
   };
 
   /**

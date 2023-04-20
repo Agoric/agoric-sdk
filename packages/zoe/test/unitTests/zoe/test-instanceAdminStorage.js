@@ -32,7 +32,7 @@ test('makeInstanceAdminStorage', async t => {
     getOfferFilter: () => ['filter'],
   });
 
-  ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin);
+  void ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin);
   t.is(await ias.accessor.getInstallation(mockInstance1), mockInstallation1);
   t.is(await ias.accessor.getBrands(mockInstance1), mockBrandRecord);
   t.is(await ias.accessor.getPublicFacet(mockInstance1), mockFacet);
@@ -56,7 +56,7 @@ test('add another instance admin for same instance', async t => {
     getOfferFilter: () => 'filter',
   });
 
-  ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
+  void ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
   t.is(await ias.accessor.getInstallation(mockInstance1), mockInstallation1);
 
   const mockInstanceAdmin2 = Far('mockInstanceAdmin', {});

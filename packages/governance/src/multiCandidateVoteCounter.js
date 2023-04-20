@@ -96,7 +96,7 @@ const makeMultiCandidateVoteCounter = (
         outcome: 'fail',
         reason: 'No quorum',
       };
-      E(publisher).publish(voteOutcome);
+      void E(publisher).publish(voteOutcome);
       return;
     }
 
@@ -139,7 +139,7 @@ const makeMultiCandidateVoteCounter = (
       outcomePromise.resolve(untiedPositions.concat(tieWinners));
     }
 
-    E.when(outcomePromise.promise, winPositions => {
+    void E.when(outcomePromise.promise, winPositions => {
       /** @type { MultiOutcomeRecord } */
       const voteOutcome = {
         question: details.questionHandle,

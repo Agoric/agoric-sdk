@@ -125,7 +125,7 @@ test('priceAuthority quoteWhenGTE', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  void E(priceAuthority)
     .quoteWhenGTE(moola(1n), bucks(40n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -152,7 +152,7 @@ test('priceAuthority quoteWhenLT', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  void E(priceAuthority)
     .quoteWhenLT(moola(1n), bucks(30n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -178,7 +178,7 @@ test('priceAuthority quoteWhenGT', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  void E(priceAuthority)
     .quoteWhenGT(moola(1n), bucks(40n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -204,7 +204,7 @@ test('priceAuthority quoteWhenLTE', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  void E(priceAuthority)
     .quoteWhenLTE(moola(1n), bucks(25n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];

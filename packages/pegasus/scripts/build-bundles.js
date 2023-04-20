@@ -6,4 +6,4 @@ import url from 'url';
 import { defaultProposalBuilder } from './init-core.js';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
-extractProposalBundles([['.', defaultProposalBuilder]], dirname);
+void extractProposalBundles([['.', defaultProposalBuilder]], dirname);

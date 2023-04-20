@@ -219,7 +219,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         const seat = await E(zoe).offer(firstInvitation, proposal, payments);
 
-        seat
+        void seat
           .getPayout('Asset')
           .then(payment => ccPurse.deposit(payment))
           .then(amountDeposited =>
@@ -230,7 +230,7 @@ test('zoe - non-fungible atomicSwap', async t => {
             ),
           );
 
-        seat
+        void seat
           .getPayout('Price')
           .then(payment => rpgPurse.deposit(payment))
           .then(amountDeposited =>

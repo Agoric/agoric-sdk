@@ -377,7 +377,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   const build = () => {
     // XXX let params be finished async. A concession to upgradability
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-    E.when(finishBuilding(), () => publish());
+    void E.when(finishBuilding(), () => publish());
 
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by

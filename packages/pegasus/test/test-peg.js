@@ -88,7 +88,7 @@ async function testRemotePeg(t) {
    * @type {import('@agoric/swingset-vat/src/vats/network').Connection?}
    */
   let gaiaConnection;
-  E(portP).addListener(
+  void E(portP).addListener(
     Far('acceptor', {
       async onAccept(_p, _localAddr, _remoteAddr) {
         return Far('handler', {
@@ -211,7 +211,7 @@ async function testRemotePeg(t) {
 
   // Wait for the packet to go through.
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
-  E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
+  void E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
 
   const sendAckData3 = await sendAckData3P;
   const sendAck3 = JSON.parse(sendAckData3);

@@ -71,10 +71,10 @@ test('multi candidate contested', async t => {
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 5);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 2n);
-  E(creatorFacet).submitVote(bobSeat, [positions[2]], 15n);
-  E(creatorFacet).submitVote(tedSeat, [positions[1]], 27n);
-  E(creatorFacet).submitVote(carolSeat, [positions[3]], 17n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]], 2n);
+  void E(creatorFacet).submitVote(bobSeat, [positions[2]], 15n);
+  void E(creatorFacet).submitVote(tedSeat, [positions[1]], 27n);
+  void E(creatorFacet).submitVote(carolSeat, [positions[3]], 17n);
   await E(creatorFacet).submitVote(jackSeat, [positions[4]], 14n);
   closeFacet.closeVoting();
 
@@ -121,12 +121,12 @@ test('multi candidate tie outcome', async t => {
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 7);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 3n);
-  E(creatorFacet).submitVote(bobSeat, [positions[2]], 5n);
-  E(creatorFacet).submitVote(tedSeat, [positions[1]], 5n);
-  E(creatorFacet).submitVote(carolSeat, [positions[3]], 8n);
-  E(creatorFacet).submitVote(johnSeat, [positions[5]], 5n);
-  E(creatorFacet).submitVote(charlieSeat, [positions[6]], 5n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]], 3n);
+  void E(creatorFacet).submitVote(bobSeat, [positions[2]], 5n);
+  void E(creatorFacet).submitVote(tedSeat, [positions[1]], 5n);
+  void E(creatorFacet).submitVote(carolSeat, [positions[3]], 8n);
+  void E(creatorFacet).submitVote(johnSeat, [positions[5]], 5n);
+  void E(creatorFacet).submitVote(charlieSeat, [positions[6]], 5n);
   await E(creatorFacet).submitVote(jackSeat, [positions[4]], 5n);
   closeFacet.closeVoting();
 
@@ -178,10 +178,10 @@ test('multi candidate tie outcome case #2', async t => {
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 7);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 3n);
-  E(creatorFacet).submitVote(bobSeat, [positions[2]], 5n);
-  E(creatorFacet).submitVote(tedSeat, [positions[1]], 5n);
-  E(creatorFacet).submitVote(carolSeat, [positions[3]], 7n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]], 3n);
+  void E(creatorFacet).submitVote(bobSeat, [positions[2]], 5n);
+  void E(creatorFacet).submitVote(tedSeat, [positions[1]], 5n);
+  void E(creatorFacet).submitVote(carolSeat, [positions[3]], 7n);
   await E(creatorFacet).submitVote(johnSeat, [positions[5]], 8n);
   closeFacet.closeVoting();
 
@@ -265,8 +265,8 @@ test('multi candidate revote', async t => {
 
   const positions = template.getDetails().positions;
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
-  E(creatorFacet).submitVote(bobSeat, [positions[1]], 15n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
+  void E(creatorFacet).submitVote(bobSeat, [positions[1]], 15n);
   await E(creatorFacet).submitVote(bobSeat, [positions[2]], 47n);
   closeFacet.closeVoting();
 
@@ -340,7 +340,7 @@ test('multi candidate no quorum', async t => {
   t.deepEqual(positions.length, 3);
   t.deepEqual(positions[0], FISH);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
   await E(creatorFacet).submitVote(bobSeat, [positions[1]]);
   closeFacet.closeVoting();
 
@@ -385,7 +385,7 @@ test('multi candidate specify multiple chocies', async t => {
   t.deepEqual(positions.length, 3);
   t.deepEqual(positions[0], FISH);
 
-  E(creatorFacet).submitVote(aliceSeat, [
+  void E(creatorFacet).submitVote(aliceSeat, [
     positions[0],
     positions[1],
     positions[2],
@@ -432,7 +432,7 @@ test('multi candidate specify multiple chocies with varying share weights', asyn
   t.deepEqual(positions.length, 3);
   t.deepEqual(positions[0], FISH);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0], positions[1]], 3n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0], positions[1]], 3n);
   await E(creatorFacet).submitVote(bobSeat, [positions[1], positions[2]], 4n);
   closeFacet.closeVoting();
 
@@ -475,8 +475,8 @@ test('multi candidate winners less than max winners', async t => {
   const positions = aliceTemplate.getDetails().positions;
   t.deepEqual(positions.length, 6);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
-  E(creatorFacet).submitVote(tedSeat, [positions[3]]);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
+  void E(creatorFacet).submitVote(tedSeat, [positions[3]]);
   await E(creatorFacet).submitVote(bobSeat, [positions[5]]);
   closeFacet.closeVoting();
 
@@ -519,8 +519,8 @@ test('multi candidate single winner', async t => {
   const positions = aliceTemplate.getDetails().positions;
   t.deepEqual(positions.length, 4);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
-  E(creatorFacet).submitVote(tedSeat, [positions[2]]);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
+  void E(creatorFacet).submitVote(tedSeat, [positions[2]]);
   await E(creatorFacet).submitVote(bobSeat, [positions[2]]);
   closeFacet.closeVoting();
 
@@ -563,7 +563,7 @@ test('multi candidate single winner tie outcome', async t => {
   const positions = aliceTemplate.getDetails().positions;
   t.deepEqual(positions.length, 4);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
   await E(creatorFacet).submitVote(bobSeat, [positions[1]]);
   closeFacet.closeVoting();
 

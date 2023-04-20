@@ -269,7 +269,7 @@ export const makeStartInstance = (
     );
     zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
 
-    E.when(
+    void E.when(
       E(adminNode).done(),
       completion => {
         instanceAdmin.exitAllSeats(completion);

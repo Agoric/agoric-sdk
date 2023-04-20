@@ -545,11 +545,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           },
         );
 
-        exportData.exporter.onDone().catch(() => {
+        exportData.exporter.onDone().catch(async () => {
           if (exportData === stateSyncExport) {
             stateSyncExport = undefined;
           }
-          exportData.cleanup();
+          await exportData.cleanup();
         });
 
         return exportData.exporter.onStarted().catch(err => {

@@ -124,7 +124,7 @@ export const watchWallet = async (leader, address, context, rpcs) => {
     void watchBank();
   };
 
-  watchCurrent();
+  void watchCurrent();
   watchChainBalances();
 
   return {

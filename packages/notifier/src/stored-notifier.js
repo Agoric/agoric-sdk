@@ -28,7 +28,7 @@ export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
 
   const marshallToStorage = makeSerializeToStorage(storageNode, marshaller);
 
-  observeNotifier(notifier, {
+  void observeNotifier(notifier, {
     updateState(value) {
       marshallToStorage(value).catch(reason =>
         console.error('StoredNotifier failed to updateState', reason),

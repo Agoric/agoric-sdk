@@ -104,7 +104,7 @@ export function buildRootObject(vatPowers) {
 
   const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
   const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
-  Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
+  void Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
     const walletAdmin = await E(wallet).getAdminFacet();
     // console.debug('introduce', { wallet, walletAdmin, attMaker });
     E(walletAdmin).resolveAttMaker(attMaker);
@@ -115,7 +115,7 @@ export function buildRootObject(vatPowers) {
       commandDevice = d;
 
       const replHandler = getReplHandler(replObjects, send, vatPowers);
-      registerURLHandler(replHandler, '/private/repl');
+      void registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
       const captpHandler = Far('captpHandler', {
@@ -134,7 +134,7 @@ export function buildRootObject(vatPowers) {
           return harden(exported);
         },
       });
-      registerURLHandler(captpHandler, '/private/captp');
+      void registerURLHandler(captpHandler, '/private/captp');
     },
 
     registerURLHandler,

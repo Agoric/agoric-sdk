@@ -52,7 +52,7 @@ const makeZoeKit = (
   let zcfBundleCap;
 
   const saveBundleCap = () => {
-    E.when(
+    void E.when(
       Promise.all([vatAdminSvcP, getZcfBundleCap(zcfSpec, vatAdminSvcP)]),
       ([vatAdminService, bundleCap]) => {
         zcfBundleCap = bundleCap;

@@ -156,7 +156,10 @@ export const createSeatManager = (
         assertActive(self);
         assertNoStagedAllocation(self);
         doExitSeat(self);
-        E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
+        void E(zoeInstanceAdmin).exitSeat(
+          zcfSeatToSeatHandle.get(self),
+          completion,
+        );
       },
       fail(
         reason = new Error(
@@ -173,7 +176,7 @@ export const createSeatManager = (
         }
         if (!hasExited(self)) {
           doExitSeat(self);
-          E(zoeInstanceAdmin).failSeat(
+          void E(zoeInstanceAdmin).failSeat(
             zcfSeatToSeatHandle.get(self),
             harden(reason),
           );

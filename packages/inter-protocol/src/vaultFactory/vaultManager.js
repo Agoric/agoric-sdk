@@ -954,7 +954,7 @@ export const prepareVaultManagerKit = (
               oldCollateral,
             );
             // debt accounting managed through minting and burning
-            facets.helper.updateMetrics();
+            void facets.helper.updateMetrics();
           }
         },
       },
@@ -1100,7 +1100,7 @@ export const prepareVaultManagerKit = (
           );
 
           helper.markLiquidating(totalDebt, totalCollateral);
-          helper.updateMetrics();
+          void helper.updateMetrics();
 
           const { userSeatPromise, deposited } = await E.when(
             E(auctionPF).getDepositInvitation(),
@@ -1122,7 +1122,7 @@ export const prepareVaultManagerKit = (
           const [proceeds] = await Promise.all([deposited, userSeatPromise]);
 
           trace(`LiqV after long wait`, proceeds);
-          helper.distributeProceeds(
+          void helper.distributeProceeds(
             proceeds,
             totalDebt,
             storedCollateralQuote,
@@ -1145,7 +1145,7 @@ export const prepareVaultManagerKit = (
         );
 
         // push initial state of metrics
-        helper.updateMetrics();
+        void helper.updateMetrics();
 
         void observeNotifier(periodNotifier, {
           updateState: updateTime =>

@@ -88,7 +88,7 @@ test('b0 export', async t => {
   const b0A = { moduleFormat: 'nestedEvaluate', source: '1+1' };
   const idA = makeB0ID(b0A);
   bundleStore.addBundle(idA, b0A);
-  hostStorage.commit();
+  void hostStorage.commit();
   t.is(exportData.get(`bundle.${idA}`), idA);
 
   const exporter = makeSwingStoreExporter(dbDir);

@@ -42,7 +42,7 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         dispatch,
         abort,
       });
-      doFallback('onOpen', obj, meta);
+      void doFallback('onOpen', obj, meta);
     },
     onClose(obj, meta) {
       console.debug(`Finishing CapTP`, meta);
@@ -52,7 +52,7 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         abort();
       }
       chans.delete(meta.channelHandle);
-      doFallback('onClose', obj, meta);
+      void doFallback('onClose', obj, meta);
     },
     onError(obj, meta) {
       console.debug(`Error in CapTP`, meta, obj.error);
@@ -61,7 +61,7 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         const { abort } = chan;
         abort(obj.error);
       }
-      doFallback('onError', obj, meta);
+      void doFallback('onError', obj, meta);
     },
     async onMessage(obj, meta) {
       console.debug('processing inbound', obj);

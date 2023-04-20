@@ -96,7 +96,7 @@ test('change a param', async t => {
     await E(publicFacet).getSubscription(),
   );
   const update1 = await notifier.getUpdateSince();
-  publicFacet.getGovernedParams();
+  void publicFacet.getGovernedParams();
   // This value isn't available synchronously and we don't have access here to the param manager to await its finish
   // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   // t.is(

@@ -41,7 +41,7 @@ module.exports = {
   extends: ['@agoric'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
-    '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
+    '@typescript-eslint/no-floating-promises': lintTypes ? 'error' : 'off',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
 

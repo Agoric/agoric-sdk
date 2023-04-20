@@ -23,4 +23,4 @@ const generateBundlesP = Promise.all(
   }),
 );
 
-generateBundlesP.then(() => console.log('contracts prepared'));
+void generateBundlesP.then(() => console.log('contracts prepared'));

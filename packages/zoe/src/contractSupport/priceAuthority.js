@@ -57,7 +57,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
   let haveFirstQuote = false;
 
-  E(notifier)
+  void E(notifier)
     .getUpdateSince()
     .then(_ => (haveFirstQuote = true));
 
@@ -169,7 +169,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
           );
           amountIn = coercedAmountIn;
           amountOutLimit = coercedAmountOutLimit;
-          fireTriggers(createQuote);
+          void fireTriggers(createQuote);
         },
         getPromise: () => triggerPK.promise,
       });

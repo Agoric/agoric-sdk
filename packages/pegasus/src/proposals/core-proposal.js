@@ -64,7 +64,7 @@ export const addPegasusTransferPort = async (
   pegasusConnectionsAdmin,
 ) => {
   const { handler, subscription } = await E(pegasus).makePegasusConnectionKit();
-  observeIteration(subscription, {
+  void observeIteration(subscription, {
     updateState(connectionState) {
       const { localAddr, actions } = connectionState;
       if (actions) {

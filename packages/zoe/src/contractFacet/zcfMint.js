@@ -165,7 +165,7 @@ export const makeZCFMintFactory = async (
   );
 
   for (const zcfMintBaggage of zcfMintBaggageSet.values()) {
-    provideDurableZcfMint(zcfMintBaggage);
+    void provideDurableZcfMint(zcfMintBaggage);
   }
 
   return zcfMintFactory;

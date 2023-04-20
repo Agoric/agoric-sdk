@@ -52,7 +52,7 @@ const start = zcf => {
   const sell = seat => {
     sellerSeat = seat;
 
-    observeIteration(
+    void observeIteration(
       subscribeLatest(sellerSeat.getSubscriber()),
       harden({
         updateState: sellerSeatAllocation =>

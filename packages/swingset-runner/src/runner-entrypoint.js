@@ -13,4 +13,4 @@ import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import { main } from './main.js';
 
-main();
+void main();

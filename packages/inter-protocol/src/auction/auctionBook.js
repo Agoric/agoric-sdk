@@ -468,7 +468,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
-          state.bookDataKit.recorder.write(bookData);
+          void state.bookDataKit.recorder.write(bookData);
         },
       },
       self: {
