@@ -73,17 +73,18 @@ const separateDigits = (
 };
 
 function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
-  const typeofObj = typeof obj;
-  if (typeofObj === 'undefined') {
-    return 'undefined';
+  // Handle enumerable primitives.
+  if (obj == null) {
+    return obj === null ? 'null' : 'undefined';
   }
-  if (obj === null) {
-    return 'null';
+  if (obj === true) {
+    return 'true';
   }
-  if (typeofObj === 'boolean') {
-    return obj ? 'true' : 'false';
+  if (obj === false) {
+    return 'false';
   }
 
+  const typeofObj = typeof obj;
   if (typeofObj === 'string') {
     return inspectString(obj, opts);
   }
