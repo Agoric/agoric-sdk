@@ -139,7 +139,7 @@ if (!vatName) {
         `Unexpected transcript item at position ${position} (expected to see item position ${expectedPosition})`,
       );
     }
-    // item is JSON.stringify({ d, syscalls }), syscall is { d, response }
+    // item is JSON.stringify({ d, sc: syscalls, r }), syscall is { s, r }
     const t = { transcriptNum, ...JSON.parse(item) };
     fs.writeSync(fd, `${JSON.stringify(t)}\n`);
     transcriptNum += 1;
