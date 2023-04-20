@@ -79,7 +79,7 @@ const checkExportMode = mode => {
  * @param {import('path')['resolve']} powers.pathResolve
  * @param {typeof import('@agoric/swing-store')['makeSwingStoreExporter']} [powers.makeSwingStoreExporter]
  * @param {typeof import('@agoric/swing-store')['openSwingStore']} [powers.openSwingStore]
- * @param {(...args: any[]) => void} [powers.log]
+ * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {StateSyncExporter}
  */
 export const initiateSwingStoreExport = (
@@ -274,7 +274,7 @@ export const main = async (
     {
       fs,
       pathResolve,
-      log: verbose ? console.log : undefined,
+      log: verbose ? console.log : null,
     },
   );
 
