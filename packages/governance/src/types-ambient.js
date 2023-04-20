@@ -518,15 +518,6 @@
 /** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
 
 /**
- * @template {{}} CF
- * @typedef {GovernedCreatorFacet<CF> & {
- * getGovernedApis: () => ERef<GovernedApis>;
- * getGovernedApiNames: () => (string | symbol)[];
- * setOfferFilter: (strings: string[]) => void;
- * }} GovernorFacet
- */
-
-/**
  * @typedef {object} GovernorPublic
  * @property {() => Promise<Instance>} getElectorate
  * @property {() => Instance} getGovernedContract
@@ -599,7 +590,8 @@
 
 /**
  * @template {{}} CF creator facet
- * @typedef {CF} GovernedCreatorFacet
+ * @typedef GovernedCreatorFacet
+ * What a governed contract must return as its creatorFacet in order to be governed
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
@@ -607,6 +599,9 @@
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
+ * @property {() => ERef<GovernedApis>} getGovernedApis
+ * @property {() => (string | symbol)[]} getGovernedApiNames
+ * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**

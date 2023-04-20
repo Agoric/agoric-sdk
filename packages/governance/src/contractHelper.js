@@ -108,19 +108,10 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
-   * Add required methods to a creatorFacet
-   *
-   * @template {{}} CF creator facet
-   * @param {CF} originalCreatorFacet
-   * @param {Record<string, (...args: any[]) => any>} governedApis
-   * @returns {GovernedCreatorFacet<CF>}
-   */
-
-  /**
    * @template {{}} CF
    * @param {CF} limitedCreatorFacet
    * @param {Record<string, (...any) => unknown>} [governedApis]
-   * @returns {GovernorFacet<CF>}
+   * @returns {GovernedCreatorFacet<CF>}
    */
   const makeFarGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
     const governorFacet = Far('governorFacet', {
@@ -140,7 +131,6 @@ const facetHelpers = (zcf, paramManager) => {
     });
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     return governorFacet;
   };
 
@@ -148,7 +138,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @template {{}} CF
    * @param {CF} originalCreatorFacet
    * @param {{}} [governedApis]
-   * @returns {GovernorFacet<CF>}
+   * @returns {GovernedCreatorFacet<CF>}
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     return makeFarGovernorFacet(originalCreatorFacet, governedApis);
@@ -162,7 +152,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<limitedCreatorFacet>>} */
+    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),

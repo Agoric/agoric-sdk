@@ -124,7 +124,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
+ * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
  */
 
 /**
