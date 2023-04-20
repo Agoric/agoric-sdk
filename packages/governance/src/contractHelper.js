@@ -16,7 +16,6 @@ export const GOVERNANCE_STORAGE_KEY = 'governance';
 
 const publicMixinAPI = harden({
   getSubscription: M.call().returns(M.remotable('StoredSubscription')),
-  getContractGovernor: M.call().returns(M.remotable('Instance')),
   getGovernedParams: M.call().returns(M.or(M.record(), M.promise())),
   getAmount: M.call().returns(AmountShape),
   getBrand: M.call().returns(BrandShape),
@@ -70,11 +69,8 @@ const facetHelpers = (zcf, paramManager) => {
     getUnknown: paramManager.getUnknown,
   };
 
-  const { electionManager } = terms;
-
   const commonPublicMethods = {
     getSubscription: () => paramManager.getSubscription(),
-    getContractGovernor: () => electionManager,
     getGovernedParams: () => paramManager.getParams(),
   };
 

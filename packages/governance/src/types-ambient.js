@@ -569,7 +569,6 @@
 /**
  * @typedef GovernedPublicFacetMethods
  * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
- * @property {() => Instance} getContractGovernor
  * @property {() => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
