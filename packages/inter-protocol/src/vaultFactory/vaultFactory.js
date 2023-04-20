@@ -8,7 +8,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 //
 // addVaultType is a closely held method that adds a brand new collateral type.
 // It specifies the initial exchange rate for that type. It depends on a
-// separately specified mechanism to liquidate loans that are
+// separately specified mechanism to liquidate vaults that are
 // in arrears.
 
 // This contract wants to be managed by a contractGovernor, but it isn't

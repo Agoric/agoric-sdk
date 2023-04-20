@@ -337,7 +337,7 @@ test('price drop', async t => {
   } = await legacyOfferResult(vaultSeat);
   trace(t, 'offer result', vault);
   const debtAmount = await E(vault).getCurrentDebt();
-  const fee = ceilMultiplyBy(wantMinted, rates.loanFee);
+  const fee = ceilMultiplyBy(wantMinted, rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(wantMinted, fee),
@@ -493,7 +493,7 @@ test('price falls precipitously', async t => {
     publicNotifiers: { vault: vaultNotifier },
   } = await legacyOfferResult(userSeat);
   const debtAmount = await E(vault).getCurrentDebt();
-  const fee = ceilMultiplyBy(run.make(500n), rates.loanFee);
+  const fee = ceilMultiplyBy(run.make(500n), rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(wantMinted, fee),
@@ -671,7 +671,7 @@ test('liquidate two loans', async t => {
   } = await legacyOfferResult(aliceVaultSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceWantMinted, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceWantMinted, fee);
 
   t.deepEqual(
@@ -726,7 +726,7 @@ test('liquidate two loans', async t => {
   } = await legacyOfferResult(bobVaultSeat);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
-  const bobFee = ceilMultiplyBy(bobWantMinted, rates.loanFee);
+  const bobFee = ceilMultiplyBy(bobWantMinted, rates.mintFee);
   const bobRunDebtLevel = AmountMath.add(bobWantMinted, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
@@ -971,7 +971,7 @@ test('sell goods at auction', async t => {
   } = await legacyOfferResult(aliceVaultSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceWantMinted, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceWantMinted, fee);
 
   t.deepEqual(
@@ -1016,7 +1016,7 @@ test('sell goods at auction', async t => {
   } = await legacyOfferResult(bobVaultSeat);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
-  const bobFee = ceilMultiplyBy(bobWantMinted, rates.loanFee);
+  const bobFee = ceilMultiplyBy(bobWantMinted, rates.mintFee);
   const bobRunDebtLevel = AmountMath.add(bobWantMinted, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
@@ -1182,7 +1182,7 @@ test('collect fees from loan', async t => {
   });
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceWantMinted, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceWantMinted, fee);
 
   t.deepEqual(
@@ -1414,7 +1414,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   } = await legacyOfferResult(aliceVaultSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceWantMinted, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceWantMinted, fee);
 
   t.deepEqual(
@@ -1592,7 +1592,7 @@ test('liquidation Margin matters', async t => {
   } = await legacyOfferResult(aliceVaultSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceWantMinted, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceWantMinted, fee);
 
   t.deepEqual(
@@ -1718,7 +1718,7 @@ test('reinstate vault', async t => {
   } = await legacyOfferResult(aliceVaultSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const aliceFee = ceilMultiplyBy(aliceWantMinted, rates.loanFee);
+  const aliceFee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceWantMinted, aliceFee);
 
   t.deepEqual(
@@ -1765,7 +1765,7 @@ test('reinstate vault', async t => {
   } = await legacyOfferResult(bobVaultSeat);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
-  const bobFee = ceilMultiplyBy(bobWantMinted, rates.loanFee);
+  const bobFee = ceilMultiplyBy(bobWantMinted, rates.mintFee);
   const bobRunDebtLevel = AmountMath.add(bobWantMinted, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');

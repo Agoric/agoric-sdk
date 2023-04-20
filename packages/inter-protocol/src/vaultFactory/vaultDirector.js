@@ -465,7 +465,7 @@ export const prepareVaultDirector = (
                   liquidationMargin: vm
                     .getGovernedParams()
                     .getLiquidationMargin(),
-                  stabilityFee: vm.getGovernedParams().getLoanFee(),
+                  stabilityFee: vm.getGovernedParams().getMintFee(),
                   marketPrice: makeRatioFromAmounts(
                     getAmountOut(priceQuote),
                     getAmountIn(priceQuote),

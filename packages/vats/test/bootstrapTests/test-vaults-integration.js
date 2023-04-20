@@ -207,7 +207,7 @@ test('close vault', async t => {
     updated: 'offerStatus',
     status: {
       id: 'close-well',
-      result: 'your loan is closed, thank you for your business',
+      result: 'your vault is closed, thank you for your business',
       // funds are returned
       payouts: likePayouts(giveCollateral, 0),
     },
