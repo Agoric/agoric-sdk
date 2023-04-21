@@ -29,7 +29,8 @@
   },
   "devDependencies": {
     "@endo/init": "^0.5.56",
-    "ava": "^5.2.0"
+    "ava": "^5.2.0",
+    "tsd": "^0.28.1"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
