@@ -4,30 +4,26 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
+import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
-import {
-  defineDurableExoClassKit,
-  makeKindHandle,
-  provideDurableMapStore,
-} from '@agoric/vat-data';
+import { prepareExoClassKit, provideDurableMapStore } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
   atomicRearrange,
   getAmountIn,
   getAmountOut,
-  makeRecorderTopic,
   makeRatioFromAmounts,
-  provideChildBaggage,
+  makeRecorderTopic,
+  provideCategorySingletons,
   provideEmptySeat,
-  unitAmount,
   SubscriberShape,
   TopicsRecordShape,
+  unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { scheduleLiquidationWakeups } from './liquidation.js';
 import {
@@ -51,7 +47,6 @@ const trace = makeTracer('VD', false);
  * }>} ImmutableState
  *
  * @typedef {{
- * managerCounter: number,
  * }} MutableState
  *
  * @typedef {ImmutableState & MutableState} State
@@ -97,12 +92,16 @@ export const prepareVaultDirector = (
   makeRecorderKit,
   makeERecorderKit,
 ) => {
-  /** For holding newly minted tokens until transferred */
-  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
+  const vaultManagers = provideCategorySingletons(
+    baggage,
+    'Vault Managers',
+    prepareVaultManagerKit,
+    [zcf, marshaller, makeRecorderKit, makeERecorderKit],
+  );
 
   const rewardPoolSeat = provideEmptySeat(zcf, baggage, 'rewardPoolSeat');
 
-  /** @type {MapStore<Brand, VaultManager>} */
+  /** @type {MapStore<Brand, number>} */
   const collateralTypes = provideDurableMapStore(baggage, 'collateralTypes');
 
   // Non-durable map because param managers aren't durable.
@@ -113,6 +112,13 @@ export const prepareVaultDirector = (
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
+
+  const managerForCollateral = brand => {
+    const managerIndex = collateralTypes.get(brand);
+    const manager = vaultManagers.get(managerIndex).self;
+    manager || Fail`no manager ${managerIndex} for collateral ${brand}`;
+    return manager;
+  };
 
   const metricsKit = makeERecorderKit(
     metricsNode,
@@ -127,7 +133,8 @@ export const prepareVaultDirector = (
   });
 
   const allManagersDo = fn => {
-    for (const vm of collateralTypes.values()) {
+    for (const managerIndex of collateralTypes.values()) {
+      const vm = vaultManagers.get(managerIndex).self;
       fn(vm);
     }
   };
@@ -139,18 +146,17 @@ export const prepareVaultDirector = (
   };
   const managersNode = E(storageNode).makeChildNode('managers');
 
-  const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
-
   /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
   let shortfallReporter;
+
+  /** For holding newly minted tokens until transferred */
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
   /**
    * @returns {State}
    */
   const initState = () => {
-    return {
-      managerCounter: 0,
-    };
+    return {};
   };
 
   /**
@@ -195,8 +201,9 @@ export const prepareVaultDirector = (
    * @param {VaultDirectorParamManager} directorParamManager
    * @param {ZCFMint<"nat">} debtMint
    */
-  const makeVaultDirector = defineDurableExoClassKit(
-    makeKindHandle('VaultDirector'),
+  const makeVaultDirector = prepareExoClassKit(
+    baggage,
+    'VaultDirector',
     {
       creator: M.interface('creator', {
         ...GovernorFacetShape,
@@ -281,7 +288,7 @@ export const prepareVaultDirector = (
           initialParamValues,
         ) {
           trace('addVaultType', collateralKeyword, initialParamValues);
-          const { state, facets } = this;
+          const { facets } = this;
           mustMatch(collateralIssuer, M.remotable(), 'collateralIssuer');
           assertKeywordName(collateralKeyword);
           mustMatch(
@@ -295,8 +302,9 @@ export const prepareVaultDirector = (
           !collateralTypes.has(collateralBrand) ||
             Fail`Collateral brand ${q(collateralBrand)} has already been added`;
 
-          // counter to be incremented at end of addVaultType
-          const managerId = `manager${state.managerCounter}`;
+          // zero-based index of the manager being made
+          const managerIndex = vaultManagers.length();
+          const managerId = `manager${managerIndex}`;
           const managerStorageNode = await E(managersNode).makeChildNode(
             managerId,
           );
@@ -359,6 +367,7 @@ export const prepareVaultDirector = (
             /**
              * @returns read-only params for this manager and its director
              */
+
             getGovernedParams: () =>
               Far('vault manager param manager', {
                 // merge direction and manager params
@@ -384,28 +393,23 @@ export const prepareVaultDirector = (
           const brandName = await E(collateralBrand).getAllegedName();
           const collateralUnit = await unitAmount(collateralBrand);
 
-          const makeVaultManager = managerBaggages.addChild(
-            brandName,
-            prepareVaultManagerKit,
-            zcf,
-            marshaller,
-            makeRecorderKit,
-            makeERecorderKit,
-            {
-              debtMint,
-              collateralBrand,
-              collateralUnit,
-              descriptionScope: managerId,
-              factoryPowers,
-              startTimeStamp,
-              storageNode: managerStorageNode,
-            },
-          );
+          // FIXME need to be able to restore these singletons.
+          // The whole "addChild" thing needs to go away. Start over with managing a list of singletons, retaining the precious arguments used to make them
 
-          const { self: vm } = makeVaultManager();
-          collateralTypes.init(collateralBrand, vm);
+          const result = vaultManagers.makeSingleton(brandName, {
+            debtMint,
+            collateralBrand,
+            collateralUnit,
+            descriptionScope: managerId,
+            factoryPowers,
+            startTimeStamp,
+            storageNode: managerStorageNode,
+          });
+          console.log('DEBUG result', result);
+          const { self: vm } = result;
+          vm || Fail`no vault`;
+          collateralTypes.init(collateralBrand, managerIndex);
           void facets.machine.updateMetrics();
-          state.managerCounter += 1;
           return vm;
         },
         makeCollectFeesInvitation() {
@@ -449,7 +453,7 @@ export const prepareVaultDirector = (
           collateralTypes.has(brandIn) ||
             Fail`Not a supported collateral type ${brandIn}`;
           /** @type {VaultManager} */
-          return collateralTypes.get(brandIn).getPublicFacet();
+          return managerForCollateral(brandIn).getPublicFacet();
         },
         /**
          * @deprecated get `collaterals` list from metrics
@@ -458,21 +462,24 @@ export const prepareVaultDirector = (
           // should be collateralTypes.map((vm, brand) => ({
           return harden(
             Promise.all(
-              [...collateralTypes.entries()].map(async ([brand, vm]) => {
-                const priceQuote = await vm.getCollateralQuote();
-                return {
-                  brand,
-                  interestRate: vm.getGovernedParams().getInterestRate(),
-                  liquidationMargin: vm
-                    .getGovernedParams()
-                    .getLiquidationMargin(),
-                  stabilityFee: vm.getGovernedParams().getMintFee(),
-                  marketPrice: makeRatioFromAmounts(
-                    getAmountOut(priceQuote),
-                    getAmountIn(priceQuote),
-                  ),
-                };
-              }),
+              [...collateralTypes.entries()].map(
+                async ([brand, managerIndex]) => {
+                  const vm = vaultManagers.get(managerIndex).self;
+                  const priceQuote = await vm.getCollateralQuote();
+                  return {
+                    brand,
+                    interestRate: vm.getGovernedParams().getInterestRate(),
+                    liquidationMargin: vm
+                      .getGovernedParams()
+                      .getLiquidationMargin(),
+                    stabilityFee: vm.getGovernedParams().getMintFee(),
+                    marketPrice: makeRatioFromAmounts(
+                      getAmountOut(priceQuote),
+                      getAmountIn(priceQuote),
+                    ),
+                  };
+                },
+              ),
             ),
           );
         },

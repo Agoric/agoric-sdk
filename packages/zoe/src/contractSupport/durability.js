@@ -1,11 +1,7 @@
+import { Fail } from '@agoric/assert';
 import { allValues, objectMap } from '@agoric/internal';
-import {
-  makeScalarBigMapStore,
-  provide,
-  provideDurableSetStore,
-} from '@agoric/vat-data';
+import { provide, provideDurableMapStore } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 /**
  * SCALE: Only for low cardinality provisioning. Every value from init() will
@@ -53,34 +49,81 @@ harden(provideEmptySeat);
 /**
  * For making singletons, so that each baggage carries a separate kind definition (albeit of the definer)
  *
+ * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: any[]) => any} M Maker function
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {string} category diagnostic tag
+ * @param {M} prepareSingleton
+ * @param {any[]} categoryArgs
  */
-export const provideChildBaggage = (baggage, category) => {
-  const baggageSet = provideDurableSetStore(baggage, `${category}Set`);
-  return Far('childBaggageManager', {
-    // TODO(types) infer args
-    /**
-     * @template {Array} R rest of args besides Baggage
-     * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: R) => any} M Maker function
-     * @param {string} childName diagnostic tag
-     * @param {M} makeChild
-     * @param {R} nonBaggageArgs
-     * @returns {ReturnType<M>}
-     */
-    addChild: (childName, makeChild, ...nonBaggageArgs) => {
-      const childStore = makeScalarBigMapStore(`${childName}${category}`, {
-        durable: true,
-      });
-      const result = makeChild(childStore, ...nonBaggageArgs);
-      baggageSet.add(childStore);
-      return result;
-    },
-    children: () => baggageSet.values(),
+export const provideCategorySingletons = (
+  baggage,
+  category,
+  prepareSingleton,
+  categoryArgs,
+) => {
+  /** @type {MapStore<number, unknown[]>} */
+  const singletonArgs = provideDurableMapStore(baggage, `args of ${category}`);
+  /** @type {MapStore<number, import('@agoric/vat-data').Baggage>} */
+  const singletonBaggages = provideDurableMapStore(
+    baggage,
+    `baggages of ${category}`,
+  );
+  singletonArgs.getSize() === singletonBaggages.getSize() ||
+    Fail`mismatched store sizes`;
+
+  // restore from baggage
+  const singletons = [...singletonArgs.entries()].map(([index, args]) => {
+    const singletonBaggage = singletonBaggages.get(index);
+    return prepareSingleton(singletonBaggage, ...categoryArgs, ...args);
   });
+
+  return {
+    /**
+     * @param {string} tag diagnostic tag
+     * @param {any[]} args
+     * @returns {ReturnType<ReturnType<M>>}
+     */
+    makeSingleton: (tag, ...args) => {
+      console.log(
+        'DURABILITY makeSingleton',
+        singletonArgs.getSize(),
+        singletonBaggages.getSize(),
+        ...args,
+      );
+      const index = singletonArgs.getSize();
+      index === singletonBaggages.getSize() || Fail`mismatched store sizes`;
+
+      // new data
+      const singletonBaggage = provideDurableMapStore(
+        baggage,
+        `${tag}${category}`,
+      );
+      const makeSingleton = prepareSingleton(
+        singletonBaggage,
+        ...categoryArgs,
+        ...args,
+      );
+      const singleton = makeSingleton();
+
+      // upon success, commit
+      singletons[index] = singleton;
+      singletonArgs.init(index, harden(args));
+      singletonBaggages.init(index, singletonBaggage);
+
+      return singleton;
+    },
+    /** @type {(index: number) => ReturnType<ReturnType<M>>} */
+    get: index => {
+      // assume the stores are equal size but check against the array
+      singletons.length === singletonBaggages.getSize() ||
+        Fail`mismatched lengths`;
+      index < singletons.length || Fail`no singleton at index ${index}`;
+      return singletons[index];
+    },
+    length: () => singletons.length,
+  };
 };
-harden(provideChildBaggage);
-/** @typedef {ReturnType<typeof provideChildBaggage>} ChildBaggageManager */
+harden(provideCategorySingletons);
 
 /**
  * For use in contract upgrades to provide values that come from other vats.

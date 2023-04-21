@@ -269,7 +269,6 @@ export const prepareVaultManagerKit = (
     };
   };
 
-  // TODO find a way to not have to indent a level deeper than defineDurableExoClassKit does
   return prepareExoClassKit(
     baggage,
     'VaultManagerKit',
