@@ -16,6 +16,7 @@ export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
 
   return Object.assign(slogSender, {
     forceFlush: async () => stream.flush(),
+    shutdown: async () => stream.close(),
     usesJsonObject: true,
   });
 };

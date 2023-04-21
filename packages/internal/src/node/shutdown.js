@@ -18,9 +18,11 @@ export const makeFreshShutdown = (verbose = true) => {
     }
     shuttingDown = true;
     // Allow an explicit exit to terminate the process.
-    process.off('beforeExit', shutdown);
     process.off('SIGINT', shutdown);
     process.off('SIGTERM', shutdown);
+    process.off('beforeExit', shutdown);
+    // eslint-disable-next-line no-use-before-define
+    process.off('uncaughtException', uncaughtShutdown);
     verbose && console.error(`Shutting down cleanly...`);
     const shutdowners = [...shutdownThunks.keys()];
     shutdownThunks.clear();
@@ -35,18 +37,23 @@ export const makeFreshShutdown = (verbose = true) => {
       })
       .catch(error => verbose && console.warn('Error shutting down', error))
       .finally(() => {
-        process.exit();
+        // Let `beforeExit` exit cleanly
+        if (!(code >= 0)) {
+          process.exit();
+        }
       });
+  };
+
+  const uncaughtShutdown = e => {
+    console.error(e);
+    shutdown(-1);
   };
 
   // gracefully shut down the thunks on process exit
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
   process.on('beforeExit', shutdown);
-  process.on('uncaughtException', e => {
-    console.error(e);
-    shutdown(-1);
-  });
+  process.on('uncaughtException', uncaughtShutdown);
 
   return {
     registerShutdown: thunk => {

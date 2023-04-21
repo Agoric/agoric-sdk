@@ -56,14 +56,16 @@ export const makeSlogSender = async opts => {
 
   // Cleanly shutdown if possible.
   const { registerShutdown } = makeShutdown();
-  registerShutdown(async () => {
+  const shutdown = async () => {
     finish();
     await tracingProvider.forceFlush();
     await tracingProvider.shutdown();
-  });
+  };
+  registerShutdown(shutdown);
 
   return Object.assign(slogSender, {
     forceFlush: async () => tracingProvider.forceFlush(),
+    shutdown,
     usesJsonObject: false,
   });
 };

@@ -160,7 +160,7 @@ export const makeSlogSender = async opts => {
     void pipeSend({ type: 'send', obj });
   };
 
-  registerShutdown(async () => {
+  const shutdown = async () => {
     // logger.log('shutdown');
     if (!cp.connected) {
       return;
@@ -168,7 +168,8 @@ export const makeSlogSender = async opts => {
 
     await flush();
     cp.disconnect();
-  });
+  };
+  registerShutdown(shutdown);
 
   const { hasSender } = await init(opts).catch(err => {
     cp.disconnect();
@@ -185,6 +186,7 @@ export const makeSlogSender = async opts => {
     forceFlush: async () => {
       await flush();
     },
+    shutdown,
     usesJsonObject: false,
   });
 };
