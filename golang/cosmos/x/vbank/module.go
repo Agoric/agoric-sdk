@@ -155,6 +155,19 @@ NextEvent:
 		}
 	}
 
+	// Prune the addressToUpdate map to only include module accounts.  We prune
+	// only after recording and consolidating all account updates to minimize the
+	// number of account keeper queries.
+	unfilteredAddresses := addressToUpdate
+	addressToUpdate = make(map[string]sdk.Coins, len(addressToUpdate))
+	for addr, denoms := range unfilteredAddresses {
+		accAddr, err := sdk.AccAddressFromBech32(addr)
+		if err == nil && am.keeper.IsModuleAccount(ctx, accAddr) {
+			// Pass through the module account.
+			addressToUpdate[addr] = denoms
+		}
+	}
+
 	// Dump all the addressToBalances entries to SwingSet.
 	action := getBalanceUpdate(ctx, am.keeper, addressToUpdate)
 	if action != nil {
@@ -162,7 +175,6 @@ NextEvent:
 		if err != nil {
 			panic(err)
 		}
-
 	}
 
 	if err := am.keeper.DistributeRewards(ctx); err != nil {

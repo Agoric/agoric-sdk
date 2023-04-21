@@ -22,7 +22,7 @@ The Vbank module maintains no significant state, but will access stored state th
 
 Purse operations which change the balance result in a downcall to this module to update the underlying account. A downcall is also made to query the account balance.
 
-Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VBANK_BALANCE_UPDATE` upcall for all denominations held in all mentioned accounts.
+Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VBANK_BALANCE_UPDATE` upcall for all denominations held in *only the mentioned module accounts*.
 
 The following fields are common to the Vbank messages:
 - `"address"`, `"recipient"`, `"sender"`: account address as a bech32-encoded string
