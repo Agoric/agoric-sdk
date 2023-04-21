@@ -47,7 +47,7 @@ import { prepareVaultDirector } from './vaultDirector.js';
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   const {
     feeMintAccess,
     initialPoserInvitation,
@@ -122,4 +122,4 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 };
 
-/** @typedef {ContractOf<typeof start>} VaultFactoryContract */
+/** @typedef {ContractOf<typeof prepare>} VaultFactoryContract */

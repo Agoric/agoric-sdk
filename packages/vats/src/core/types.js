@@ -188,7 +188,7 @@
  *       provisionPool: Promise<Installation<import('@agoric/vats/src/provisionPool.js')['prepare']>>,
  *       reserve: Promise<Installation<import('@agoric/inter-protocol/src/reserve/assetReserve.js').start>>,
  *       stakeFactory: Promise<Installation<import('@agoric/inter-protocol/src/stakeFactory/stakeFactory.js').start>>,
- *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start>>,
+ *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js')['prepare']>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
  *     },
  *   },
