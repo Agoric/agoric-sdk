@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-await-in-loop */
 const { freeze, entries } = Object;
 
@@ -8,6 +9,7 @@ const noOutput = ['ignore', 'ignore', 'ignore'];
 export const pspawn =
   (bin, { spawn, cwd }) =>
   (args = [], opts = {}) => {
+    /** @type {import('child_process').ChildProcess} */
     let child;
     const exit = new Promise((resolve, reject) => {
       // console.debug('spawn', bin, args, { cwd: makefileDir, ...opts });
@@ -20,7 +22,18 @@ export const pspawn =
         resolve(0);
       });
     });
-    return { child, exit };
+    const kill = sig => {
+      try {
+        child.kill(sig);
+      } catch (e) {
+        if (e.code !== 'ERSCH') {
+          throw e;
+        }
+      }
+    };
+
+    // @ts-expect-error child is set in the Promise constructor
+    return { kill, child, exit };
   };
 
 /**
@@ -28,7 +41,7 @@ export const pspawn =
  *
  * @param {object} io
  * @param {*} io.pspawnMake promise-style spawn of 'make' with cwd set
- * @param {*} io.pspawnAgd promise-style spawn of 'ag-chain-cosmos' with cwd set
+ * @param {*} io.pspawnAgd promise-style spawn of 'agd' with cwd set
  * @param {typeof console.log} io.log
  */
 export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
@@ -37,6 +50,11 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
     log('make', ...args);
 
     return pspawnMake(args, opts).exit;
+  };
+
+  const spawnMake = (args, opts = { stdio: onlyStderr }) => {
+    log('make', ...args);
+    return pspawnMake(args, opts);
   };
 
   // {X: 1} => ['X=1'], using JSON.stringify to mitigate injection risks.
@@ -48,6 +66,7 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
 
   return freeze({
     runMake,
+    spawnMake,
     setup: () => runMake(['scenario2-setup'], { stdio: noOutput }),
     runToHalt: ({
       BLOCKS_TO_RUN = undefined,
