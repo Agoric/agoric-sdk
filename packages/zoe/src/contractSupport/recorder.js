@@ -61,7 +61,11 @@ export const prepareRecorder = (baggage, marshaller) => {
      * @param {StorageNode} storageNode
      * @param {TypedMatcher<T>} [valueShape]
      */
-    (publisher, storageNode, valueShape = M.any()) => {
+    (
+      publisher,
+      storageNode,
+      valueShape = /** @type {TypedMatcher<any>} */ (M.any()),
+    ) => {
       return {
         closed: false,
         publisher,
