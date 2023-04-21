@@ -60,6 +60,8 @@ const BASIS_POINTS = 10_000n;
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmKit: MapStore<Brand, PSMKit>,
+ *   psmFeePurse: ERef<Purse<'nat'>>,
+ *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
  *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['start']>,
  *   stakeFactoryKit: GovernanceFacetKit<import('../stakeFactory/stakeFactory.js')['start']>,

@@ -6,6 +6,7 @@ import '../../src/vaultFactory/types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
@@ -16,12 +17,16 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-import { E } from '@endo/eventual-send';
+import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
+
+import { E, Far } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeTracer } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
@@ -29,6 +34,12 @@ import {
   subscriptionKey,
   withAmountUtils,
 } from '../supports.js';
+import {
+  makeAnchorAsset,
+  makeHistoryReviver,
+  mintPSMFees,
+  startPSM,
+} from '../../src/proposals/startPSM.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -98,21 +109,27 @@ const makeTestContext = async () => {
   const minted = withAmountUtils(mintedKit);
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
-  const committeeInstall = await E(zoe).install(committeeBundle);
-  const psmInstall = await E(zoe).install(psmBundle);
-  const centralSupply = await E(zoe).install(centralSupplyBundle);
+  const installs = {
+    contractGovernor: await E(zoe).install(contractGovernorBundle),
+    committeeInstall: await E(zoe).install(committeeBundle),
+    psmInstall: await E(zoe).install(psmBundle),
+    centralSupply: await E(zoe).install(centralSupplyBundle),
+    mintHolder: await E(zoe).install(mintHolderBundle),
+  };
 
-  const marshaller = makeBoard().getReadonlyMarshaller();
+  const board = makeBoard();
+  const marshaller = board.getReadonlyMarshaller();
 
+  const chainStorage = makeMockChainStorageRoot();
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
-    committeeInstall,
+    installs.committeeInstall,
     harden({}),
     {
       committeeName: 'Demos',
       committeeSize: 1,
     },
     {
-      storageNode: makeMockChainStorageRoot().makeChildNode('thisCommittee'),
+      storageNode: chainStorage.makeChildNode('thisCommittee'),
       marshaller,
     },
   );
@@ -126,10 +143,13 @@ const makeTestContext = async () => {
     bundles: { psmBundle },
     zoe: await zoe,
     feeMintAccess,
+    economicCommitteeCreatorFacet: committeeCreator,
     initialPoserInvitation,
+    chainStorage,
     minted,
     anchor,
-    installs: { committeeInstall, psmInstall, centralSupply },
+    installs,
+    board,
     marshaller,
     terms: {
       anchorBrand: anchor.brand,
@@ -699,4 +719,270 @@ test('extra give wantMintedInvitation', async t => {
         /"wantMinted" proposal: .* - Must not have unexpected properties: \["Extra"\]/,
     },
   );
+});
+
+/**
+ * Test data for restoring PSM state.
+ *
+ * Taken from mainnet; for example, the 1st value comes from...
+ *
+ * `agd --node https://main.rpc.agoric.net:443 query vstorage data published.agoricNames.brand -o json | jq .value`
+ *
+ * @type {Array<[key: string, value: string]>}
+ */
+const chainStorageEntries = [
+  [
+    'published.psm.IST.USDC_axl.governance',
+    '{"blockHeight":"9004077","values":["{\\"body\\":\\"{\\\\\\"current\\\\\\":{\\\\\\"Electorate\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"invitation\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: Zoe Invitation brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":[{\\\\\\"description\\\\\\":\\\\\\"questionPoser\\\\\\",\\\\\\"handle\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: InvitationHandle\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"installation\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: BundleInstallation\\\\\\",\\\\\\"index\\\\\\":2},\\\\\\"instance\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: InstanceHandle\\\\\\",\\\\\\"index\\\\\\":3}}]}},\\\\\\"GiveMintedFee\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"ratio\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"denominator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"10000\\\\\\"}},\\\\\\"numerator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}}}},\\\\\\"MintLimit\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"amount\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"1000000000000\\\\\\"}}},\\\\\\"WantMintedFee\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"ratio\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"denominator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"10000\\\\\\"}},\\\\\\"numerator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}}}}}}\\",\\"slots\\":[\\"board04016\\",\\"board00917\\",\\"board00218\\",\\"board0074\\",\\"board02314\\"]}"]}',
+  ],
+  [
+    'published.psm.IST.USDC_axl.metrics',
+    '{"blockHeight":"9555449","values":["{\\"body\\":\\"{\\\\\\"anchorPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: USDC_axl brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"487464281410\\\\\\"}},\\\\\\"feePoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}},\\\\\\"mintedPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"487464281410\\\\\\"}},\\\\\\"totalAnchorProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"4327825824427\\\\\\"}},\\\\\\"totalMintedProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"4815290105837\\\\\\"}}}\\",\\"slots\\":[\\"board0223\\",\\"board02314\\"]}"]}',
+  ],
+
+  [
+    'published.psm.IST.USDT_axl.governance',
+    '{"blockHeight":"9174468","values":["{\\"body\\":\\"{\\\\\\"current\\\\\\":{\\\\\\"Electorate\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"invitation\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: Zoe Invitation brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":[{\\\\\\"description\\\\\\":\\\\\\"questionPoser\\\\\\",\\\\\\"handle\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: InvitationHandle\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"installation\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: BundleInstallation\\\\\\",\\\\\\"index\\\\\\":2},\\\\\\"instance\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: InstanceHandle\\\\\\",\\\\\\"index\\\\\\":3}}]}},\\\\\\"GiveMintedFee\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"ratio\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"denominator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"10000\\\\\\"}},\\\\\\"numerator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}}}},\\\\\\"MintLimit\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"amount\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"650000000000\\\\\\"}}},\\\\\\"WantMintedFee\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"ratio\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"denominator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"10000\\\\\\"}},\\\\\\"numerator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}}}}}}\\",\\"slots\\":[\\"board04016\\",\\"board06120\\",\\"board00218\\",\\"board0074\\",\\"board02314\\"]}"]}',
+  ],
+  [
+    'published.psm.IST.USDT_axl.metrics',
+    '{"blockHeight":"9554534","values":["{\\"body\\":\\"{\\\\\\"anchorPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: USDT_axl brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"12155727701\\\\\\"}},\\\\\\"feePoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"58732736\\\\\\"}},\\\\\\"mintedPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"12155727701\\\\\\"}},\\\\\\"totalAnchorProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"301812236296\\\\\\"}},\\\\\\"totalMintedProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"313967963997\\\\\\"}}}\\",\\"slots\\":[\\"board0188\\",\\"board02314\\"]}"]}',
+  ],
+
+  [
+    'published.psm.IST.DAI_axl.governance',
+    '{"blockHeight":"7739600","values":["{\\"body\\":\\"{\\\\\\"current\\\\\\":{\\\\\\"Electorate\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"invitation\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: Zoe Invitation brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":[{\\\\\\"description\\\\\\":\\\\\\"questionPoser\\\\\\",\\\\\\"handle\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: InvitationHandle\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"installation\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: BundleInstallation\\\\\\",\\\\\\"index\\\\\\":2},\\\\\\"instance\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: InstanceHandle\\\\\\",\\\\\\"index\\\\\\":3}}]}},\\\\\\"GiveMintedFee\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"ratio\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"denominator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"10000\\\\\\"}},\\\\\\"numerator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}}}},\\\\\\"MintLimit\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"amount\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"1100000000000\\\\\\"}}},\\\\\\"WantMintedFee\\\\\\":{\\\\\\"type\\\\\\":\\\\\\"ratio\\\\\\",\\\\\\"value\\\\\\":{\\\\\\"denominator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"10000\\\\\\"}},\\\\\\"numerator\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":4},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}}}}}}\\",\\"slots\\":[\\"board04016\\",\\"board01759\\",\\"board00218\\",\\"board0074\\",\\"board02314\\"]}"]}',
+  ],
+  [
+    'published.psm.IST.DAI_axl.metrics',
+    '{"blockHeight":"9555443","values":["{\\"body\\":\\"{\\\\\\"anchorPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: DAI_axl brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"100064908627531159731648\\\\\\"}},\\\\\\"feePoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}},\\\\\\"mintedPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"100064908610\\\\\\"}},\\\\\\"totalAnchorProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"329326452472000000000000\\\\\\"}},\\\\\\"totalMintedProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"429391361082\\\\\\"}}}\\",\\"slots\\":[\\"board02656\\",\\"board02314\\"]}"]}',
+  ],
+];
+
+/**
+ * Sample of what appears in chain config file
+ *
+ * @type {AnchorOptions[]}
+ */
+const anchorAssets = [
+  {
+    keyword: 'USDC_axl',
+    proposedName: 'USD Coin',
+    decimalPlaces: 6,
+    denom: 'ibc/toyusdc',
+  },
+  {
+    keyword: 'USDT_axl',
+    proposedName: 'Tether USD',
+    decimalPlaces: 6,
+    denom:
+      'ibc/F2331645B9683116188EF36FC04A809C28BD36B54555E8705A37146D0182F045',
+  },
+  {
+    keyword: 'DAI_axl',
+    proposedName: 'DAI',
+    decimalPlaces: 18,
+    denom:
+      'ibc/3914BDEF46F429A26917E4D8D434620EC4817DC6B6E68FB327E190902F1E9242',
+  },
+];
+
+// XXX copied (with minor tweak) from packages/inter-protocol/test/test-gov-collateral.js
+const makeMockBankManager = t => {
+  /** @type {BankManager} */
+  const bankManager = Far('mock BankManager', {
+    getAssetSubscription: () => assert.fail('not impl'),
+    getModuleAccountAddress: () => assert.fail('not impl'),
+    getRewardDistributorDepositFacet: () =>
+      Far('depositFacet', {
+        receive: () => /** @type {any} */ (null),
+      }),
+    addAsset: async (denom, keyword, proposedName, kit) => {
+      t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
+      t.truthy(kit.mint);
+    },
+    getBankForAddress: () => assert.fail('not impl'),
+  });
+  return bankManager;
+};
+
+test('restore PSM: decode metrics, governance with old board IDs', async t => {
+  const toSlotReviver = makeHistoryReviver(chainStorageEntries);
+
+  const psmNames = toSlotReviver.children('published.psm.IST.');
+  t.true(psmNames.includes('USDC_axl'));
+
+  const a0 = {
+    metrics: toSlotReviver.getItem(`published.psm.IST.USDC_axl.metrics`),
+    governance: toSlotReviver.getItem(`published.psm.IST.USDC_axl.governance`),
+  };
+
+  t.deepEqual(
+    a0.metrics.anchorPoolBalance,
+    { brand: 'board0223', value: 487_464_281_410n },
+    'metrics.anchorPoolBalance',
+  );
+  t.deepEqual(
+    a0.governance.current.MintLimit.value,
+    { brand: 'board02314', value: 1_000_000_000_000n },
+    'governance.MintLimit',
+  );
+});
+
+test('restore PSM: startPSM with previous metrics, params', async t => {
+  /** @type { import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers } */
+  // @ts-expect-error mock
+  const { produce, consume } = makePromiseSpace();
+  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { zoe } = t.context;
+
+  // Prep bootstrap space
+  {
+    const {
+      installs,
+      board,
+      minted,
+      feeMintAccess,
+      economicCommitteeCreatorFacet,
+      chainStorage,
+    } = t.context;
+
+    const provisionPoolStartResult = harden({
+      creatorFacet: {
+        initPSM: (brand, psm) => t.log('initPSM', { brand, psm }),
+      },
+    });
+
+    const econCharterKit = harden({
+      creatorFacet: {
+        addInstance: (psm, creatorFacet, instance) =>
+          t.log('addInstance', { psm, creatorFacet, instance }),
+      },
+    });
+
+    for (const [name, value] of Object.entries({
+      agoricNamesAdmin,
+      board,
+      chainStorage,
+      zoe,
+      feeMintAccess,
+      economicCommitteeCreatorFacet,
+      econCharterKit,
+      provisionPoolStartResult,
+      bankManager: makeMockBankManager(t),
+      chainTimerService: null, // not used in this test
+    })) {
+      produce[name].resolve(value);
+    }
+
+    for (const [name, installation] of Object.entries({
+      ...installs,
+      psm: installs.psmInstall,
+    })) {
+      spaces.installation.produce[name].resolve(installation);
+    }
+
+    spaces.brand.produce[Stable.symbol].resolve(minted.brand);
+  }
+
+  const powers = {
+    vatParameters: { chainStorageEntries, anchorAssets },
+    produce,
+    consume,
+    ...spaces,
+  };
+
+  // Run code under test
+  await Promise.all([
+    mintPSMFees(powers),
+    ...anchorAssets.map(anchorOptions =>
+      makeAnchorAsset(powers, {
+        options: { anchorOptions },
+      }),
+    ),
+    ...anchorAssets.map(anchorOptions =>
+      startPSM(powers, {
+        options: { anchorOptions },
+      }),
+    ),
+  ]);
+
+  // Check results: USDC_axl metrics, params
+  const stableIssuer = E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
+  {
+    const anchorBrand = await agoricNames.lookup('brand', 'USDC_axl');
+    const expected = {
+      metrics: {
+        anchorPoolBalance: { brand: anchorBrand, value: 487_464_281_410n },
+        feePoolBalance: { brand: stableBrand, value: 0n },
+        mintedPoolBalance: { brand: stableBrand, value: 487_464_281_410n },
+        totalAnchorProvided: { brand: anchorBrand, value: 4_327_825_824_427n },
+        totalMintedProvided: { brand: stableBrand, value: 4_815_290_105_837n },
+      },
+      params: {
+        GiveMintedFee: {
+          type: 'ratio',
+          value: {
+            numerator: { brand: stableBrand, value: 0n },
+            denominator: { brand: stableBrand, value: 10_000n },
+          },
+        },
+        MintLimit: {
+          type: 'amount',
+          value: { brand: stableBrand, value: 1_000_000_000_000n },
+        },
+        WantMintedFee: {
+          type: 'ratio',
+          value: {
+            numerator: { brand: stableBrand, value: 0n },
+            denominator: { brand: stableBrand, value: 10_000n },
+          },
+        },
+      },
+    };
+
+    const instance0 = await E(E(agoricNamesAdmin).readonly()).lookup(
+      'instance',
+      'psm-IST-USDC_axl',
+    );
+    /** @type {ERef<PsmPublicFacet>} */
+    const pf0 = E(zoe).getPublicFacet(instance0);
+
+    const { value: contractMetrics } = await E(
+      E(pf0).getMetrics(),
+    ).getUpdateSince();
+    t.deepEqual(contractMetrics, expected.metrics);
+
+    const contractParams = await E(pf0).getGovernedParams();
+
+    /** @param {ParamStateRecord} p */
+    const omitElectorate = ({ Electorate: _, ...params }) => params;
+    t.deepEqual(omitElectorate(contractParams), expected.params);
+  }
+
+  // Check USDT fees
+  {
+    const expected = { brand: stableBrand, value: 58_732_736n };
+    const anchorBrand = await agoricNames.lookup('brand', 'USDT_axl');
+    const instance1 = await E(E(agoricNamesAdmin).readonly()).lookup(
+      'instance',
+      'psm-IST-USDT_axl',
+    );
+    /** @type {ERef<PsmPublicFacet>} */
+    const pf1 = E(zoe).getPublicFacet(instance1);
+
+    const { value: contractMetrics } = await E(
+      E(pf1).getMetrics(),
+    ).getUpdateSince();
+    t.deepEqual(contractMetrics.feePoolBalance, expected);
+
+    // actually collect the fees and see how much we got
+    const psmKit = await consume.psmKit;
+    const { psmCreatorFacet } = psmKit.get(anchorBrand);
+    const seat = E(zoe).offer(E(psmCreatorFacet).makeCollectFeesInvitation());
+    const pmt = await E.get(E(seat).getPayouts()).Fee;
+    const amt = await E(stableIssuer).getAmountOf(pmt);
+    t.deepEqual(amt, { brand: stableBrand, value: expected.value });
+  }
 });
