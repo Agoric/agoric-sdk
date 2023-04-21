@@ -315,50 +315,47 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     E(stableBrand).getAmountShape(),
   ]);
 
-  const PSMI = M.interface('PSM', {
-    getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
-    getPoolBalance: M.call().returns(anchorAmountShape),
-    makeWantMintedInvitation: M.call().returns(M.promise()),
-    makeGiveMintedInvitation: M.call().returns(M.promise()),
-    ...publicMixinAPI,
-  });
-
-  const methods = {
-    getMetrics() {
-      return metricsSubscriber;
-    },
-    getPoolBalance() {
-      return anchorPool.getAmountAllocated('Anchor', anchorBrand);
-    },
-    makeWantMintedInvitation() {
-      return zcf.makeInvitation(
-        wantMintedHook,
-        'wantMinted',
-        undefined,
-        M.splitRecord({
-          give: { In: anchorAmountShape },
-          want: M.or({ Out: stableAmountShape }, {}),
-        }),
-      );
-    },
-    makeGiveMintedInvitation() {
-      return zcf.makeInvitation(
-        giveMintedHook,
-        'giveMinted',
-        undefined,
-        M.splitRecord({
-          give: { In: stableAmountShape },
-          want: M.or({ Out: anchorAmountShape }, {}),
-        }),
-      );
-    },
-    ...publicMixin,
-  };
   const publicFacet = prepareExo(
     baggage,
     'Parity Stability Module',
-    PSMI,
-    methods,
+    M.interface('PSM', {
+      getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+      getPoolBalance: M.call().returns(anchorAmountShape),
+      makeWantMintedInvitation: M.call().returns(M.promise()),
+      makeGiveMintedInvitation: M.call().returns(M.promise()),
+      ...publicMixinAPI,
+    }),
+    {
+      getMetrics() {
+        return metricsSubscriber;
+      },
+      getPoolBalance() {
+        return anchorPool.getAmountAllocated('Anchor', anchorBrand);
+      },
+      makeWantMintedInvitation() {
+        return zcf.makeInvitation(
+          wantMintedHook,
+          'wantMinted',
+          undefined,
+          M.splitRecord({
+            give: { In: anchorAmountShape },
+            want: M.or({ Out: stableAmountShape }, {}),
+          }),
+        );
+      },
+      makeGiveMintedInvitation() {
+        return zcf.makeInvitation(
+          giveMintedHook,
+          'giveMinted',
+          undefined,
+          M.splitRecord({
+            give: { In: stableAmountShape },
+            want: M.or({ Out: anchorAmountShape }, {}),
+          }),
+        );
+      },
+      ...publicMixin,
+    },
   );
 
   // The creator facets are only accessibly to governance and bootstrap,
