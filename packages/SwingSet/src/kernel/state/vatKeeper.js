@@ -485,7 +485,7 @@ export function makeVatKeeper(
   /**
    * Append an entry to the vat's transcript.
    *
-   * @param {object} entry  The transcript entry to append.
+   * @param {TranscriptEntry} entry  The transcript entry to append.
    */
   function addToTranscript(entry) {
     transcriptStore.addItem(vatID, JSON.stringify(entry));

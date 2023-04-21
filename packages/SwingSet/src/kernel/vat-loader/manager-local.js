@@ -10,25 +10,19 @@ import {
   makeVatConsole,
 } from '../../supervisors/supervisor-helper.js';
 
-export function makeLocalVatManagerFactory(tools) {
-  const { allVatPowers, kernelKeeper, vatEndowments, gcTools, kernelSlog } =
-    tools;
-
+export function makeLocalVatManagerFactory({
+  allVatPowers,
+  vatEndowments,
+  gcTools,
+}) {
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, vatSyscallHandler, compareSyscalls, useTranscript) {
-    const mk = makeManagerKit(
-      vatID,
-      kernelSlog,
-      kernelKeeper,
-      vatSyscallHandler,
-      true,
-      compareSyscalls,
-      useTranscript,
-    );
+  function prepare(managerOptions) {
+    const { retainSyscall = false } = managerOptions;
+    const mk = makeManagerKit(retainSyscall);
 
     function finish(dispatch) {
       assert.typeof(dispatch, 'function');
@@ -45,16 +39,11 @@ export function makeLocalVatManagerFactory(tools) {
     return { syscall, finish };
   }
 
-  function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
+  function createFromSetup(vatID, managerOptions) {
+    const { setup } = managerOptions;
     assert.typeof(setup, 'function', 'setup is not an in-realm function');
 
-    const { compareSyscalls, useTranscript } = managerOptions;
-    const { syscall, finish } = prepare(
-      vatID,
-      vatSyscallHandler,
-      compareSyscalls,
-      useTranscript,
-    );
+    const { syscall, finish } = prepare(managerOptions);
     const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
@@ -69,22 +58,11 @@ export function makeLocalVatManagerFactory(tools) {
     bundle,
     managerOptions,
     liveSlotsOptions,
-    vatSyscallHandler,
   ) {
-    const {
-      enableSetup = false,
-      sourcedConsole,
-      compareSyscalls,
-      useTranscript,
-    } = managerOptions;
+    const { enableSetup = false, sourcedConsole } = managerOptions;
     assert(sourcedConsole, 'vats need managerOptions.sourcedConsole');
 
-    const { syscall, finish } = prepare(
-      vatID,
-      vatSyscallHandler,
-      compareSyscalls,
-      useTranscript,
-    );
+    const { syscall, finish } = prepare(managerOptions);
 
     const vatPowers = harden({
       ...baseVP,

@@ -49,8 +49,6 @@ test('child termination distinguished from meter exhaustion', async t => {
     kernelKeeper,
     // @ts-expect-error kernelSlog is not used in this test
     kernelSlog: {},
-    allVatPowers: undefined,
-    testLog: undefined,
   });
 
   const fn = new URL('vat-xsnap-hang.js', import.meta.url).pathname;
@@ -67,16 +65,15 @@ test('child termination distinguished from meter exhaustion', async t => {
     bundle,
     managerOptions,
     {},
-    schandler,
   );
 
-  await m.deliver(['startVat', kser()]);
+  await m.deliver(['startVat', kser()], schandler);
 
   const msg = { methargs: kser(['hang', []]) };
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 
-  const p = m.deliver(delivery); // won't resolve until child dies
+  const p = m.deliver(delivery, schandler); // won't resolve until child dies
 
   // please excuse ambient authority
   setTimeout(

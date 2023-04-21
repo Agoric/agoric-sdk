@@ -75,7 +75,7 @@
  * @typedef { [tag: 'error', err: string ] } VatSyscallResultError
  * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
  *
- * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
+ * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscallHandler
  *
  */
 

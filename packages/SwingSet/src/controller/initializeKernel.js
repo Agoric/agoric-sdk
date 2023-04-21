@@ -8,7 +8,7 @@ import { insistVatID } from '../lib/id.js';
 import { kser, kunser } from '../lib/kmarshal.js';
 import { makeVatSlot } from '../lib/parseVatSlots.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
-import { makeWorkerOptions } from '../lib/workerOptions.js';
+import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
 import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
 import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
@@ -27,6 +27,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
   const kernelSlog = null;
   const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const optionRecorder = makeVatOptionRecorder(kernelKeeper, bundleHandler);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);
@@ -85,28 +86,14 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         'critical',
         'reapInterval',
       ]);
-      const {
-        managerType = kernelKeeper.getDefaultManagerType(),
-        useTranscript = true,
-        reapInterval = kernelKeeper.getDefaultReapInterval(),
-        ...otherOptions
-      } = creationOptions;
-      // eslint-disable-next-line @jessie.js/no-nested-await,no-await-in-loop
-      const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
-      /** @type {import('../types-internal.js').RecordedVatOptions} */
-      const vatOptions = harden({
-        name,
-        useTranscript,
-        reapInterval,
-        workerOptions,
-        ...otherOptions,
-      });
-
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
-      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-      vatKeeper.setSourceAndOptions({ bundleID }, vatOptions);
-      vatKeeper.initializeReapCountdown(reapInterval);
+
+      const source = { bundleID };
+      const staticOptions = { name, ...creationOptions };
+      // eslint-disable-next-line @jessie.js/no-nested-await,no-await-in-loop
+      await optionRecorder.recordStatic(vatID, source, staticOptions);
+
       kernelKeeper.addToAcceptanceQueue(
         harden({ type: 'startVat', vatID, vatParameters: kser(vatParameters) }),
       );
