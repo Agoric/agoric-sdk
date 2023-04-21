@@ -207,9 +207,9 @@ export const start = async (zcf, privateArgs) => {
    */
   const sendInitialPayment = async (address, destBank) => {
     console.log('sendInitialPayment', address);
-    /** @type {Amount<'nat'>} */
-    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
-    const perAccountInitialAmount = params.getPerAccountInitialAmount();
+    const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
+      params.getPerAccountInitialAmount()
+    );
     const initialPmt = await E(fundPurse).withdraw(perAccountInitialAmount);
 
     const destPurse = E(destBank).getPurse(poolBrand);

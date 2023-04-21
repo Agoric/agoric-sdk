@@ -151,15 +151,11 @@ export function makeVirtualReferenceManager(
     const { baseRef, id, facet } = parseVatSlot(vref);
     const key = `vom.es.${baseRef}`;
     const esRaw = syscall.vatstoreGet(key);
-    // If `esRaw` is undefined, it means there's no export status information
-    // available, which can only happen when we are exporting the object for the
-    // first time, which in turn means that the object must be in memory (since
-    // export is happening when it's being serialized) and thus it has an
-    // instance or cohort record from which a facet count can be derived.  On
-    // the other hand, if `esRaw` does have a value, the value will be a string
-    // whose length is the facet count.  Either way, we will know how many
-    // facets there are.
-    const es = Array.from(esRaw || 'n'.repeat(getFacetCount(id)));
+    // 'esRaw' may be undefined (nothing is currently exported), and
+    // it might be short (saved by a previous version that had fewer
+    // facets). Pad it out to the current length, which is '1' for
+    // unfaceted Kinds
+    const es = Array.from((esRaw || '').padEnd(getFacetCount(id), 'n'));
     const facetIdx = facet === undefined ? 0 : facet;
     // The export status of each facet is encoded as:
     // 's' -> 'recognizable' ('s' for "see"), 'r' -> 'reachable', 'n' -> 'none'

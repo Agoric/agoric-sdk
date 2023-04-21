@@ -192,7 +192,7 @@ an alternative function that returns synchronously:
 ```javascript
   const paramManager = await makeParamManagerSync(
     {
-      'Currency': ['brand', drachmaBrand],
+      'Collateral': ['brand', drachmaBrand],
     },
   );
 ```
@@ -249,7 +249,7 @@ Governed methods and parameters must be included in terms.
 ```
 
 When a contract is written without benefit of `contractHelper`, it is
-responsible for adding `getSubscription`, `getContractGovernor`, and
+responsible for adding `getSubscription`, and
 `getGovernedParams` to its `PublicFacet`, and for adding
 `getParamMgrRetriever`, `getInvitation` and `getLimitedCreatorFacet` to its 
 `CreatorFacet`.

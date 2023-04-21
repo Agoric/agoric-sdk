@@ -14,23 +14,23 @@ const makeFakeQuote = (amountIn, amountOut) => {
   return { quoteAmount: { value: [{ amountIn, amountOut }] } };
 };
 
-const currency = withAmountUtils(makeIssuerKit('Currency'));
+const minted = withAmountUtils(makeIssuerKit('Minted'));
 const collateral = withAmountUtils(makeIssuerKit('Collateral'));
 
 test('normalizedCollRatio grows with coll margin', t => {
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const quote = makeFakeQuote(currency.make(5n), collateral.make(20n));
+  const quote = makeFakeQuote(minted.make(5n), collateral.make(20n));
   const compoundedInterest = makeRatioFromAmounts(
-    currency.make(1n),
+    minted.make(1n),
     collateral.make(1n),
   );
   const lowCollateralizationMargin = makeRatioFromAmounts(
-    currency.make(105n),
+    minted.make(105n),
     collateral.make(100n),
   );
   const highCollateralizationMargin = makeRatioFromAmounts(
-    currency.make(150n),
+    minted.make(150n),
     collateral.make(100n),
   );
 
@@ -52,19 +52,16 @@ test('normalizedCollRatio grows with coll margin', t => {
 test('CollRatio grows with interest', t => {
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const quote = makeFakeQuote(currency.make(5n), collateral.make(20n));
+  const quote = makeFakeQuote(minted.make(5n), collateral.make(20n));
   const lowInterest = makeRatioFromAmounts(
-    currency.make(1n),
+    minted.make(1n),
     collateral.make(1n),
   );
   const highInterest = makeRatioFromAmounts(
-    currency.make(12n),
+    minted.make(12n),
     collateral.make(10n),
   );
-  const margin = makeRatioFromAmounts(
-    currency.make(105n),
-    collateral.make(100n),
-  );
+  const margin = makeRatioFromAmounts(minted.make(105n), collateral.make(100n));
 
   const lowRate = normalizedCollRatio(quote, lowInterest, margin);
   t.deepEqual(lowRate, (105 * 5) / (20 * 100));
@@ -76,19 +73,16 @@ test('CollRatio grows with interest', t => {
 test('CollRatio grows with price', t => {
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const lowQuote = makeFakeQuote(currency.make(5n), collateral.make(20n));
+  const lowQuote = makeFakeQuote(minted.make(5n), collateral.make(20n));
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const highQuote = makeFakeQuote(currency.make(15n), collateral.make(20n));
+  const highQuote = makeFakeQuote(minted.make(15n), collateral.make(20n));
 
   const compoundedInterest = makeRatioFromAmounts(
-    currency.make(12n),
+    minted.make(12n),
     collateral.make(10n),
   );
-  const margin = makeRatioFromAmounts(
-    currency.make(105n),
-    collateral.make(100n),
-  );
+  const margin = makeRatioFromAmounts(minted.make(105n), collateral.make(100n));
 
   const lowRate = normalizedCollRatio(lowQuote, compoundedInterest, margin);
   t.deepEqual(lowRate, (105 * 5 * 12) / (20 * 100 * 10));

@@ -38,7 +38,7 @@ export const customTermsShape = harden({
 
 /**
  * @typedef {object} CollectibleContractFacet
- * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
  */
 
 /**

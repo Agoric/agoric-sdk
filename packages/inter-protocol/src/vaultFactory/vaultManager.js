@@ -53,11 +53,10 @@ import {
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { AuctionPFShape } from '../auction/auctioneer.js';
-import { priceFrom } from '../auction/util.js';
 import { checkDebtLimit, makeNatAmountShape } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
-import { calculateMinimumCollateralization } from './math.js';
+import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
@@ -830,7 +829,11 @@ export const prepareVaultManagerKit = (
         maxDebtFor(collateralAmount) {
           if (!storedCollateralQuote)
             throw Fail`maxDebtFor called before a collateral quote was available`;
-          const collateralPrice = priceFrom(storedCollateralQuote);
+          // use the lower price to prevent vault adjustments that put them imminently underwater
+          const collateralPrice = minimumPrice(
+            storedCollateralQuote,
+            this.state.lockedQuote,
+          );
           const collatlVal = ceilMultiplyBy(collateralAmount, collateralPrice);
           const minimumCollateralization = calculateMinimumCollateralization(
             factoryPowers.getGovernedParams().getLiquidationMargin(),
@@ -1108,7 +1111,7 @@ export const prepareVaultManagerKit = (
               offerTo(
                 zcf,
                 depositInvitation,
-                harden({ Minted: 'Currency' }),
+                harden({ Minted: 'Bid' }),
                 harden({ give: { Collateral: totalCollateral } }),
                 liqSeat,
                 liqSeat,

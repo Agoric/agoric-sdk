@@ -145,6 +145,7 @@ export const startPSM = async (
       },
     }),
   );
+  /** @type {GovernorStartedInstallationKit<typeof psmInstall>} */
   const governorFacets = await E(zoe).startInstance(
     contractGovernor,
     {},
@@ -174,7 +175,6 @@ export const startPSM = async (
     psmGovernor: governorFacets.instance,
     psmCreatorFacet,
     psmAdminFacet,
-    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     psmGovernorCreatorFacet: governorFacets.creatorFacet,
   };
 

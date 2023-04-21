@@ -40,7 +40,7 @@ const ParamChangesOfferArgsShape = M.splitRecord(
  */
 export const start = async zcf => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
-  /** @type {MapStore<Instance,GovernedContractFacetAccess<{},{}>>} */
+  /** @type {MapStore<Instance, GovernorCreatorFacet<any>>} */
   const instanceToGovernor = makeScalarMapStore();
 
   const makeParamInvitation = () => {
@@ -140,7 +140,7 @@ export const start = async zcf => {
   const creatorFacet = makeExo('Charter creatorFacet', charterCreatorI, {
     /**
      * @param {Instance} governedInstance
-     * @param {GovernedContractFacetAccess<{},{}>} governorFacet
+     * @param {GovernorCreatorFacet<any>} governorFacet
      * @param {string} [label] for diagnostic use only
      */
     addInstance: (governedInstance, governorFacet, label) => {

@@ -71,11 +71,15 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
  *   provideAttestationMaker: (addr: string) => AttestationTool,
- *   makeCollectFeesInvitation: () => Promise<Invitation>,
+ *   makeCollectFeesInvitation: () => Promise<Invitation<string, never>>,
  * }} StakeFactoryCreator
  *
- * @type {ContractStartFn<StakeFactoryPublic, ERef<GovernedCreatorFacet<StakeFactoryCreator>>,
- *                        StakeFactoryTerms, StakeFactoryPrivateArgs>}
+ */
+
+/**
+ *
+ * @param {ZCF<StakeFactoryTerms>} zcf
+ * @param {StakeFactoryPrivateArgs} privateArgs
  */
 export const start = async (
   zcf,
@@ -168,7 +172,6 @@ export const start = async (
     zcf,
     debtMint,
     harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
-    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     mintPowers,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
