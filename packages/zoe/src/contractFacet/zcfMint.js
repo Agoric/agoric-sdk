@@ -25,7 +25,7 @@ export const makeZCFMintFactory = async (
   makeEmptySeatKit,
   reallocator,
 ) => {
-  // The set of baggages for zcfMints
+  /** @type {SetStore<ZCFMint>} The set of baggages for zcfMints */
   const zcfMintBaggageSet = provideDurableSetStore(zcfBaggage, 'baggageSet');
 
   /**

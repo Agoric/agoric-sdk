@@ -134,16 +134,16 @@ harden(partialAssign);
  * `provide` violates the above prescription, and is called more
  * than once in the same vat incarnation with the same
  * baggage,key pair.
- *
- * @template K,V
- * @param {import('./types.js').Baggage} baggage
- * @param {K} key
- * @param {(key: K) => V} makeValue
- * @returns {V}
  */
-export const provide = provideLazy;
+
+export const provide =
+  // XXX cast because provideLazy is `any` due to broken type import
+  /** @type {<K, V>(baggage: import('./types.js').Baggage, key: K, makeValue: (key: K) => V) => V} */ (
+    provideLazy
+  );
 
 // TODO: Find a good home for this function used by @agoric/vat-data and testing code
+/** @param {import('@agoric/vat-data/src/types').VatData} VatData */
 export const makeStoreUtils = VatData => {
   const {
     // eslint-disable-next-line no-shadow -- these literally do shadow the globals
