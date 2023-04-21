@@ -28,7 +28,7 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
-import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { makeCollectFeesInvitation } from '../collectFees.js';
 import { scheduleLiquidationWakeups } from './liquidation.js';
 import {
   makeVaultParamManager,
@@ -408,12 +408,12 @@ export const prepareVaultDirector = (
           return vm;
         },
         makeCollectFeesInvitation() {
-          return makeMakeCollectFeesInvitation(
+          return makeCollectFeesInvitation(
             zcf,
             rewardPoolSeat,
             debtMint.getIssuerRecord().brand,
             'Minted',
-          ).makeCollectFeesInvitation();
+          );
         },
         updateMetrics() {
           return E(metricsKit.recorderP).write(sampleMetrics());
