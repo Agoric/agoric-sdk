@@ -1,10 +1,10 @@
 #! /usr/bin/env node
 
-import '@endo/init/pre-bundle-source.js';
+import '@endo/init/pre.js';
 
 import agcc from '@agoric/cosmos';
 
-import '@endo/init';
+import '@endo/init/unsafe-fast.js';
 
 import os from 'os';
 import path from 'path';
