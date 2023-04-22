@@ -331,7 +331,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 
 	snapshotter.activeSnapshot.retrieved = true
 
-	snapshotter.activeSnapshot.logger.Info("fully retrieved snapshot from", "exportDir", exportDir)
+	snapshotter.activeSnapshot.logger.Info("retrieved snapshot", "exportDir", exportDir)
 
 	return nil
 }
@@ -459,6 +459,8 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 	if err != nil {
 		return err
 	}
+
+	snapshotter.logger.Info("restored snapshot", "exportDir", exportDir, "height", height)
 
 	return nil
 }
