@@ -25,13 +25,14 @@ import (
 // Top-level paths for chain storage should remain synchronized with
 // packages/internal/src/chain-storage-paths.js
 const (
-	StoragePathActionQueue = "actionQueue"
-	StoragePathBeansOwing  = "beansOwing"
-	StoragePathEgress      = "egress"
-	StoragePathMailbox     = "mailbox"
-	StoragePathCustom      = "published"
-	StoragePathBundles     = "bundles"
-	StoragePathSwingStore  = "swingStore"
+	StoragePathActionQueue       = "actionQueue"
+	StoragePathHighPriorityQueue = "highPriorityQueue"
+	StoragePathBeansOwing        = "beansOwing"
+	StoragePathEgress            = "egress"
+	StoragePathMailbox           = "mailbox"
+	StoragePathCustom            = "published"
+	StoragePathBundles           = "bundles"
+	StoragePathSwingStore        = "swingStore"
 )
 
 // 2 ** 256 - 1
@@ -150,6 +151,11 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	return k.pushAction(ctx, StoragePathActionQueue, action)
 }
 
+// PushAction appends an action to the controller's highPriorityQueue.
+func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) error {
+	return k.pushAction(ctx, StoragePathHighPriorityQueue, action)
+}
+
 func (k Keeper) queueIndex(ctx sdk.Context, queuePath string, position string) (sdk.Int, error) {
 	// Position should be either "head" or "tail"
 	path := queuePath + "." + position
@@ -180,6 +186,13 @@ func (k Keeper) queueLength(ctx sdk.Context, queuePath string) (sdk.Int, error) 
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
 	size := sdk.NewInt(0)
+
+	highPriorityQueueLength, err := k.queueLength(ctx, StoragePathHighPriorityQueue)
+	if err != nil {
+		return 0, err
+	}
+	size = size.Add(highPriorityQueueLength)
+
 	actionQueueLength, err := k.queueLength(ctx, StoragePathActionQueue)
 	if err != nil {
 		return 0, err

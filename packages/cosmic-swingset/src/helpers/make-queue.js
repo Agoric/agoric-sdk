@@ -46,9 +46,9 @@ export const makeQueueStorageMock = init => {
  * - `tail`: the index *past* the last entry in the queue.
  * - `<index>`: the contents of the queue at the given index.
  *
- * For a cosmos inbound queue (e.g. `actionQueue`), the golang side will push
- * into the queue, updating the index stored at key `${queuePath}.tail` and
- * setting data for key `${queuePath}.${index}`.
+ * For the cosmos inbound queues (`actionQueue` or `highPriorityQueue`), the
+ * golang side will push into the queue, updating the index stored at key
+ * `${queuePath}.tail` and setting data for key `${queuePath}.${index}`.
  * The JS side will shift the queue, updating the index at key
  * `${queuePath}.head` and reading and deleting `${queuePath}.${index}`.
  *

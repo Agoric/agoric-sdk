@@ -250,6 +250,7 @@ function neverStop() {
 
 export async function launch({
   actionQueueStorage,
+  highPriorityQueueStorage,
   kernelStateDBDir,
   mailboxStorage,
   clearChainSends,
@@ -293,6 +294,8 @@ export async function launch({
   /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
   /** @type {InboundQueue} */
   const actionQueue = makeQueue(actionQueueStorage);
+  /** @type {InboundQueue} */
+  const highPriorityQueue = makeQueue(highPriorityQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -323,7 +326,9 @@ export async function launch({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const inboundQueueMetrics = makeInboundQueueMetrics(actionQueue.size());
+  const inboundQueueMetrics = makeInboundQueueMetrics(
+    actionQueue.size() + highPriorityQueue.size(),
+  );
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
@@ -545,6 +550,10 @@ export async function launch({
     let keepGoing = await runSwingset();
     if (!keepGoing) return;
 
+    // Then, process as much as we can from the priorityQueue.
+    keepGoing = await processActions(highPriorityQueue);
+    if (!keepGoing) return;
+
     // Then, update the timer device with the new external time, which might
     // push work onto the kernel run-queue (if any timers were ready to wake).
     const addedToQueue = timer.poll(blockTime);
@@ -569,7 +578,9 @@ export async function launch({
 
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
-    inboundQueueMetrics.updateLength(actionQueue.size());
+    inboundQueueMetrics.updateLength(
+      actionQueue.size() + highPriorityQueue.size(),
+    );
 
     // make a runPolicy that will be shared across all cycles
     const runPolicy = computronCounter(params.beansPerUnit);
