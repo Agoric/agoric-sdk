@@ -205,7 +205,7 @@ function makeWorker(port) {
       return result;
     }
 
-    const syscall = makeSupervisorSyscall(syscallToManager, true);
+    const syscall = makeSupervisorSyscall(syscallToManager);
 
     const vatPowers = {
       makeMarshal,
