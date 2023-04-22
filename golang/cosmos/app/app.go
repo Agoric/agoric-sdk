@@ -751,6 +751,22 @@ func NewAgoricApp(
 		upgrade10Handler(app, upgradeNameTest),
 	)
 
+	/* REVIEWER: confirm that this isn't needed
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+
+	if (upgradeInfo.Name == upgradeName || upgradeInfo.Name == upgradeNameTest) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := store.StoreUpgrades{
+			Added: []string{swingsettypes.StoreKey},
+		}
+
+		// configure store loader taht checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
+	*/
+
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
@@ -773,8 +789,7 @@ func NewAgoricApp(
 
 func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		// TODO: In next upgrade handler (bulldozer), run:
-		// app.VstorageKeeper.MigrateNoDataPlaceholders(ctx)
+		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx)
 		return fromVm, nil
 	}
 }
