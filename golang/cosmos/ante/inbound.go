@@ -12,19 +12,19 @@ import (
 )
 
 /*
-This AnteDecorator enforces a limit on the size of the Swingset
-inbound queue by scanning for Cosmos-messages which add Swingset-messages
-to that queue. Note that when running DeliverTx, inbound messages
-are staged in the actionQueue, then transferred to the inbound queue
-in end-block processing. Previous Txs in the block will have already
-been added to the actionQueue, so we must reject Txs which would
-grow the actionQueue beyond the allowed inbound size.
+This AnteDecorator enforces a limit on the size of the Swingset inbound queue
+by scanning for Cosmos-messages which end up on Swingset's message queue. Note
+that when running DeliverTx, inbound messages are placed in the actionQueue
+(which is currently in the only queue forming the Swingset inbound queue),
+and kept there until processed by SwingSet. Previous Txs in the block will have
+already been added to the inbound queue, so we must reject Txs which would grow
+the actionQueue beyond the allowed inbound size.
 
 We would like to reject messages during mempool admission (CheckTx)
 rather than during block execution (DeliverTx), but at CheckTx time
 we don't know how many messages will be allowed at DeliverTx time,
-nor the size of the actionQueue from preceding Txs in the block.
-To mitigate this, Swingset should implement hysteresis by computing
+nor the size of the inbound queue from preceding Txs in the block.
+To mitigate this, x/swingset implements an hysteresis by computing
 the number of messages allowed for mempool admission as if its max
 queue length was lower (e.g. 50%). This is the QueueInboundMempool
 entry in the Swingset state QueueAllowed field. At DeliverTx time
@@ -98,7 +98,7 @@ func (ia inboundAnte) allowedInbound(ctx sdk.Context) (int32, error) {
 		// if number of allowed entries not given, fail closed
 		return 0, nil
 	}
-	actions, err := ia.sk.ActionQueueLength(ctx)
+	actions, err := ia.sk.InboundQueueLength(ctx)
 	if err != nil {
 		return 0, err
 	}

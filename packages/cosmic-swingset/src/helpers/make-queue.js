@@ -46,9 +46,11 @@ export const makeQueueStorageMock = init => {
  * - `tail`: the index *past* the last entry in the queue.
  * - `<index>`: the contents of the queue at the given index.
  *
- * For the `actionQueue`, the Cosmos side of the queue will push into the queue,
- * updating `<prefix>tail` and `<prefix><index>`.  The JS side will shift the
- * queue, updating `<prefix>head` and reading and deleting `<prefix><index>`.
+ * For a cosmos inbound queue (e.g. `actionQueue`), the golang side will push
+ * into the queue, updating the index stored at key `${queuePath}.tail` and
+ * setting data for key `${queuePath}.${index}`.
+ * The JS side will shift the queue, updating the index at key
+ * `${queuePath}.head` and reading and deleting `${queuePath}.${index}`.
  *
  * Parallel access is not supported, only a single outstanding operation at a
  * time.

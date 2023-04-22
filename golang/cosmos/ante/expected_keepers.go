@@ -21,6 +21,6 @@ type FeegrantKeeper interface {
 }
 
 type SwingsetKeeper interface {
-	ActionQueueLength(ctx sdk.Context) (int32, error)
+	InboundQueueLength(ctx sdk.Context) (int32, error)
 	GetState(ctx sdk.Context) swingtypes.State
 }

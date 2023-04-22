@@ -92,7 +92,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     } else if (kp.state === 'redirected') {
       // TODO unimplemented
       // NOTE: When adding redirection / forwarding, we must handle any
-      // pipelined messages pending in the inbound queue
+      // pipelined messages pending in the kernel queues
       throw Error('not implemented yet');
     } else {
       throw Fail`unknown kernelPromise state '${kp.state}'`;

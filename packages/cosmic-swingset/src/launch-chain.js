@@ -290,8 +290,8 @@ export async function launch({
   });
   const { kvStore, commit } = hostStorage;
 
-  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} ActionQueue */
-  /** @type {ActionQueue} */
+  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
+  /** @type {InboundQueue} */
   const actionQueue = makeQueue(actionQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
@@ -498,7 +498,7 @@ export async function launch({
       });
       // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
       // that needs to be revisited, it used to be called once per
-      // block, now it's once per processed inboundQueue item
+      // block, now it's once per processed inbound queue item
       await crankScheduler(runPolicy);
       const remainingBeans = runPolicy.remainingBeans();
       controller.writeSlogObject({
@@ -514,6 +514,31 @@ export async function launch({
       });
       runNum += 1;
       return runPolicy.shouldRun();
+    }
+
+    /**
+     * Process as much as we can from an inbound queue, which contains
+     * first the old actions not previously processed, followed by actions
+     * newly added, running the kernel to completion after each.
+     *
+     * @param {InboundQueue} inboundQueue
+     */
+    async function processActions(inboundQueue) {
+      let keepGoing = true;
+      for (const { action, context } of inboundQueue.consumeAll()) {
+        const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
+        inboundQueueMetrics.decStat();
+        // eslint-disable-next-line no-await-in-loop
+        await performAction(action, inboundNum);
+        // eslint-disable-next-line no-await-in-loop
+        keepGoing = await runSwingset();
+        if (!keepGoing) {
+          // any leftover actions will remain on the inbound queue for possible
+          // processing in the next block
+          break;
+        }
+      }
+      return keepGoing;
     }
 
     // First, complete leftover work, if any
@@ -533,22 +558,8 @@ export async function launch({
     keepGoing = await runSwingset();
     if (!keepGoing) return;
 
-    // Finally, process as much as we can from the actionQueue, which contains
-    // first the old actions followed by the newActions, running the
-    // kernel to completion after each.
-    for (const { action, context } of actionQueue.consumeAll()) {
-      const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-      inboundQueueMetrics.decStat();
-      // eslint-disable-next-line no-await-in-loop
-      await performAction(action, inboundNum);
-      // eslint-disable-next-line no-await-in-loop
-      keepGoing = await runSwingset();
-      if (!keepGoing) {
-        // any leftover actions will remain on the actionQueue for possible
-        // processing in the next block
-        return;
-      }
-    }
+    // Finally, process as much as we can from the actionQueue.
+    await processActions(actionQueue);
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -760,7 +771,7 @@ export async function launch({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
-          actionQueueStats: inboundQueueMetrics.getStats(),
+          inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
         return undefined;
@@ -814,7 +825,7 @@ export async function launch({
           type: 'cosmic-swingset-end-block-finish',
           blockHeight,
           blockTime,
-          actionQueueStats: inboundQueueMetrics.getStats(),
+          inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
         endBlockFinish = Date.now();

@@ -39,8 +39,8 @@ var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewIn
 
 const stateKey string = "state"
 
-// Contextual information about the message source of an action on the queue.
-// This context should be unique per actionQueueRecord.
+// Contextual information about the message source of an action on an inbound queue.
+// This context should be unique per inboundQueueRecord.
 type actionContext struct {
 	// The block height in which the corresponding action was enqueued
 	BlockHeight int64 `json:"blockHeight"`
@@ -53,7 +53,7 @@ type actionContext struct {
 	// actionContext unique. (for example a counter per block and source module).
 	MsgIdx int `json:"msgIdx"`
 }
-type actionQueueRecord struct {
+type inboundQueueRecord struct {
 	Action  vm.Jsonable   `json:"action"`
 	Context actionContext `json:"context"`
 }
@@ -100,15 +100,15 @@ func NewKeeper(
 	}
 }
 
-// PushAction appends an action to the controller's action queue.  This queue is
-// kept in the kvstore so that changes to it are properly reverted if the
+// pushAction appends an action to the controller's specified inbound queue.
+// The queue is kept in the kvstore so that changes are properly reverted if the
 // kvstore is rolled back.  By the time the block manager runs, it can commit
 // its SwingSet transactions without fear of side-effecting the world with
 // intermediate transaction state.
 //
-// The actionQueue's format is documented by `makeChainQueue` in
+// The inbound queue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/helpers/make-queue.js`.
-func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Jsonable) error {
 	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
 	if !txHashOk {
 		txHash = "unknown"
@@ -117,7 +117,7 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	if !txHashOk || !msgIdxOk {
 		stdlog.Printf("error while extracting context for action %q\n", action)
 	}
-	record := actionQueueRecord{Action: action, Context: actionContext{BlockHeight: ctx.BlockHeight(), TxHash: txHash, MsgIdx: msgIdx}}
+	record := inboundQueueRecord{Action: action, Context: actionContext{BlockHeight: ctx.BlockHeight(), TxHash: txHash, MsgIdx: msgIdx}}
 	bz, err := json.Marshal(record)
 	if err != nil {
 		return err
@@ -125,29 +125,34 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 
 	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
 	// The `tail` is the value of the next index to be inserted
-	tail, err := k.actionQueueIndex(ctx, "tail")
+	tail, err := k.queueIndex(ctx, inboundQueuePath, "tail")
 	if err != nil {
 		return err
 	}
 
 	if tail.Equal(MaxSDKInt) {
-		return errors.New(StoragePathActionQueue + " overflow")
+		return errors.New(inboundQueuePath + " overflow")
 	}
 	nextTail := tail.Add(sdk.NewInt(1))
 
 	// Set the vstorage corresponding to the queue entry for the current tail.
-	path := StoragePathActionQueue + "." + tail.String()
+	path := inboundQueuePath + "." + tail.String()
 	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, string(bz)))
 
 	// Update the tail to point to the next available entry.
-	path = StoragePathActionQueue + ".tail"
+	path = inboundQueuePath + ".tail"
 	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, nextTail.String()))
 	return nil
 }
 
-func (k Keeper) actionQueueIndex(ctx sdk.Context, position string) (sdk.Int, error) {
+// PushAction appends an action to the controller's actionQueue.
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+	return k.pushAction(ctx, StoragePathActionQueue, action)
+}
+
+func (k Keeper) queueIndex(ctx sdk.Context, queuePath string, position string) (sdk.Int, error) {
 	// Position should be either "head" or "tail"
-	path := StoragePathActionQueue + "." + position
+	path := queuePath + "." + position
 	indexEntry := k.vstorageKeeper.GetEntry(ctx, path)
 	if !indexEntry.HasData() {
 		return sdk.NewInt(0), nil
@@ -160,19 +165,29 @@ func (k Keeper) actionQueueIndex(ctx sdk.Context, position string) (sdk.Int, err
 	return index, nil
 }
 
-func (k Keeper) ActionQueueLength(ctx sdk.Context) (int32, error) {
-	head, err := k.actionQueueIndex(ctx, "head")
+func (k Keeper) queueLength(ctx sdk.Context, queuePath string) (sdk.Int, error) {
+	head, err := k.queueIndex(ctx, queuePath, "head")
 	if err != nil {
-		return 0, err
+		return sdk.NewInt(0), err
 	}
-	tail, err := k.actionQueueIndex(ctx, "tail")
+	tail, err := k.queueIndex(ctx, queuePath, "tail")
 	if err != nil {
-		return 0, err
+		return sdk.NewInt(0), err
 	}
 	// The tail index is exclusive
-	size := tail.Sub(head)
+	return tail.Sub(head), nil
+}
+
+func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
+	size := sdk.NewInt(0)
+	actionQueueLength, err := k.queueLength(ctx, StoragePathActionQueue)
+	if err != nil {
+		return 0, err
+	}
+	size = size.Add(actionQueueLength)
+
 	if !size.IsInt64() {
-		return 0, fmt.Errorf("%s size too big: %s", StoragePathActionQueue, size)
+		return 0, fmt.Errorf("inbound queue size too big: %s", size)
 	}
 
 	int64Size := size.Int64()
@@ -190,7 +205,7 @@ func (k Keeper) UpdateQueueAllowed(ctx sdk.Context) error {
 	}
 	inboundMempoolQueueMax := inboundQueueMax / 2
 
-	inboundQueueSize, err := k.ActionQueueLength(ctx)
+	inboundQueueSize, err := k.InboundQueueLength(ctx)
 	if err != nil {
 		return err
 	}
