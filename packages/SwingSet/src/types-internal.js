@@ -16,17 +16,30 @@ export {};
  * @typedef { { meterID?: MeterID } } OptMeterID
  * @typedef { import('./types-external.js').BaseVatOptions } BaseVatOptions
  * @typedef { import('./types-external.js').OptManagerType } OptManagerType
- * @typedef { { workerOptions: WorkerOptions } } OptWorkerOptions
- * @typedef { import('./types-external.js').OptEnableDisavow } OptEnableDisavow
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
- * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallHandler } VatSyscallHandler
  *
  * // used by vatKeeper.setSourceAndOptions(source, RecordedVatOptions)
  *
  * @typedef { BaseVatOptions & OptMeterID & OptManagerType } InternalDynamicVatOptions
- * @typedef { BaseVatOptions & OptMeterID & OptWorkerOptions & OptEnableDisavow } RecordedVatOptions
  *
+ * RecordedVatOptions is fully-specified, no optional fields
+ *
+ * @typedef RecordedVatOptions
+ * @property { string } name
+ * @property { * } vatParameters
+ * @property { boolean } enableSetup
+ * @property { boolean } enablePipelining
+ * @property { boolean } useTranscript
+ * @property { number | 'never' } reapInterval
+ * @property { boolean } critical
+ * @property { MeterID } [meterID] // property must be present, but can be undefined
+ * @property { WorkerOptions } workerOptions
+ * @property { boolean } enableDisavow
+ */
+
+/**
  * @typedef {{
  *   enablePipelining: boolean,
  *   workerOptions: WorkerOptions,
@@ -35,16 +48,15 @@ export {};
  *   enableDisavow: boolean,
  *   useTranscript: boolean,
  *   name: string,
- *   compareSyscalls?: import('./kernel/vat-loader/transcript.js').CompareSyscalls,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
  *   enableSetup: boolean,
  *   setup?: unknown,
+ *   retainSyscall?: boolean
  *   bundle?: Bundle,
  * }} ManagerOptions
  *
- * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayOneDelivery: (delivery: VatDeliveryObject, expectedSyscalls: VatSyscallObject[], deliveryNum: number) => Promise<VatDeliveryResult>,
- *              replayTranscript: (startPos: number | undefined) => Promise<number?>,
+ * @typedef { { deliver: (delivery: VatDeliveryObject, vatSyscallHandler: VatSyscallHandler)
+ *                       => Promise<VatDeliveryResult>,
  *              makeSnapshot?: undefined | ((endPos: number, ss: SnapStore) => Promise<SnapshotResult>),
  *              shutdown: () => Promise<void>,
  *            } } VatManager
@@ -52,7 +64,7 @@ export {};
  *                                 bundle: Bundle,
  *                                 managerOptions: ManagerOptions,
  *                                 liveSlotsOptions: import('@agoric/swingset-liveslots').LiveSlotsOptions,
- *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
+ *                                ) => Promise<VatManager>
  *            } } VatManagerFactory
  *
  * @typedef {(problem: unknown, err?: Error) => void } KernelPanic

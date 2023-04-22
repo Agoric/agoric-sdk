@@ -5,6 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -80,6 +81,15 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 
 func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAddress {
 	return k.accountKeeper.GetModuleAddress(name)
+}
+
+func (k Keeper) IsModuleAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
+	acc := k.accountKeeper.GetAccount(ctx, addr)
+	if acc == nil {
+		return false
+	}
+	_, ok := acc.(authtypes.ModuleAccountI)
+	return ok
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {

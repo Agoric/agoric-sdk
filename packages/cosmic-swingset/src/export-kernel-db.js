@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 // @ts-check
-import '@endo/init';
+import '@endo/init/unsafe-fast.js';
 
 import os from 'os';
 import process from 'process';

@@ -1,7 +1,9 @@
 import { assert } from '@agoric/assert';
 import '../../types-ambient.js';
-import { insistVatDeliveryResult } from '../../lib/message.js';
-import { makeTranscriptManager } from './transcript.js';
+import {
+  insistVatDeliveryResult,
+  insistVatSyscallResult,
+} from '../../lib/message.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
@@ -62,6 +64,7 @@ import { makeTranscriptManager } from './transcript.js';
  */
 
 /**
+ * TODO: stale
  * This generic helper runs on the manager side. It handles transcript
  * record/replay, and errors in the manager-specific code.
  *
@@ -104,36 +107,12 @@ import { makeTranscriptManager } from './transcript.js';
  * The returned getManager() function will return a VatManager suitable for
  * handing to the kernel, which can use it to send deliveries to the vat.
  *
- * @param {string} vatID
- * @param {KernelKeeper} kernelKeeper
- * @param {KernelSlog} kernelSlog
- * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
- * @param {boolean} workerCanBlock
- * @param {import('./transcript.js').CompareSyscalls} [compareSyscalls]
- * @param {boolean} [useTranscript]
+ * @param {boolean} retainSyscall for unit tests: allow syscalls between deliveries
  * @returns {ManagerKit}
  */
 
-function makeManagerKit(
-  vatID,
-  kernelSlog,
-  kernelKeeper,
-  vatSyscallHandler,
-  workerCanBlock,
-  compareSyscalls,
-  useTranscript,
-) {
-  assert(kernelSlog);
-  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-  /** @type {ReturnType<typeof makeTranscriptManager> | undefined} */
-  let transcriptManager;
-  if (useTranscript) {
-    transcriptManager = makeTranscriptManager(
-      vatKeeper,
-      vatID,
-      compareSyscalls,
-    );
-  }
+function makeManagerKit(retainSyscall = false) {
+  let syscallHandler; // empty between deliveries
 
   /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
   let deliverToWorker;
@@ -149,12 +128,15 @@ function makeManagerKit(
   /**
    *
    * @param {VatDeliveryObject} delivery
+   * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
    * @returns {Promise<VatDeliveryResult>} // or Error
    */
-  async function deliver(delivery) {
-    if (transcriptManager) {
-      transcriptManager.startDispatch(delivery);
+  async function deliver(delivery, vatSyscallHandler) {
+    assert(vatSyscallHandler);
+    if (!retainSyscall) {
+      assert(!syscallHandler);
     }
+    syscallHandler = vatSyscallHandler;
     // metering faults (or other reasons why the vat should be
     // deterministically terminated) are reported with status= ['error',
     // err.message, null]. Any non-deterministic error (unexpected worker
@@ -163,72 +145,10 @@ function makeManagerKit(
     /** @type { VatDeliveryResult } */
     const status = await deliverToWorker(delivery);
     insistVatDeliveryResult(status);
-    // TODO: if the dispatch failed for whatever reason, and we choose to
-    // destroy the vat, change what we do with the transcript here.
-    if (transcriptManager) {
-      transcriptManager.finishDispatch();
+    if (!retainSyscall) {
+      syscallHandler = undefined;
     }
     return status;
-  }
-
-  async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
-    assert(transcriptManager, 'delivery replay with no transcript');
-    transcriptManager.startReplay();
-    transcriptManager.startReplayDelivery(expectedSyscalls);
-
-    // we slog the replay just like the original, but some fields are missing
-    /** @type {any} */
-    const newCrankNum = undefined; // TODO think of a way to correlate this
-    /** @type {any} */
-    const kd = undefined;
-    const vd = delivery;
-    const replay = true;
-    const finish = kernelSlog.delivery(
-      vatID,
-      newCrankNum,
-      deliveryNum,
-      kd,
-      vd,
-      replay,
-    );
-    const status = await deliver(delivery);
-    finish(status);
-    transcriptManager.finishReplayDelivery(deliveryNum);
-    transcriptManager.checkReplayError();
-    transcriptManager.finishReplay();
-    return status;
-  }
-
-  /**
-   * @param {number | undefined} startPos
-   * @returns {Promise<number?>} number of deliveries, or null if !useTranscript
-   */
-  async function replayTranscript(startPos) {
-    // console.log('replay from', { vatID, startPos });
-
-    if (transcriptManager) {
-      const total = vatKeeper.vatStats().transcriptCount;
-      kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
-      // TODO glean deliveryNum better, make sure we get the post-snapshot
-      // transcript starting point right. getTranscript() should probably
-      // return [deliveryNum, t] pairs. Think about how to provide an
-      // accurate crankNum, because I'm not sure I want that in transcript.
-      let deliveryNum = startPos || 0;
-      for (const t of vatKeeper.getTranscript(startPos)) {
-        // if (deliveryNum % 100 === 0) {
-        //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
-        // }
-        //
-        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
-        await replayOneDelivery(t.d, t.syscalls, deliveryNum);
-        deliveryNum += 1;
-      }
-      transcriptManager.checkReplayError();
-      kernelSlog.write({ type: 'finish-replay', vatID });
-      return deliveryNum;
-    }
-
-    return null;
   }
 
   /**
@@ -241,27 +161,10 @@ function makeManagerKit(
    * @param {VatSyscallObject} vso
    */
   function syscallFromWorker(vso) {
-    if (transcriptManager && transcriptManager.inReplay()) {
-      // We're replaying old messages to bring the vat's internal state
-      // up-to-date. It will make syscalls like a puppy chasing rabbits in
-      // its sleep. Gently prevent their twitching paws from doing anything.
-
-      // but if the puppy deviates one inch from previous twitches, explode
-      kernelSlog.syscall(vatID, undefined, vso);
-      const vres = transcriptManager.simulateSyscall(vso);
-      return vres;
-    }
-
-    const vres = vatSyscallHandler(vso);
-    // vres is ['error', reason] or ['ok', null] or ['ok', capdata] or ['ok', string]
-    const [successFlag, data] = vres;
-    if (successFlag === 'ok' && data && !workerCanBlock) {
-      console.log(`warning: syscall returns data, but worker cannot get it`);
-    }
-    if (transcriptManager) {
-      transcriptManager.addSyscall(vso, vres);
-    }
-    return vres;
+    const vsr = syscallHandler(vso);
+    // vsr is ['error', reason] or ['ok', null] or ['ok', capdata] or ['ok', string]
+    insistVatSyscallResult(vsr);
+    return vsr;
   }
 
   /**
@@ -272,8 +175,6 @@ function makeManagerKit(
    */
   function getManager(shutdown, makeSnapshot) {
     return harden({
-      replayTranscript,
-      replayOneDelivery,
       deliver,
       shutdown,
       makeSnapshot,

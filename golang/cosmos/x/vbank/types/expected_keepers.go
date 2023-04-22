@@ -2,6 +2,7 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // A subset of github.com/cosmos/cosmos-sdk/x/bank/keeper.Keeper
@@ -17,4 +18,5 @@ type BankKeeper interface {
 
 type AccountKeeper interface {
 	GetModuleAddress(name string) sdk.AccAddress
+	GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI
 }

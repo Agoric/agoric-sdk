@@ -8,7 +8,7 @@ import {
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscaller} VatSyscaller
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
@@ -58,7 +58,7 @@ export { makeSupervisorDispatch };
  * I should be given a `syscallToManager` function that accepts a
  * VatSyscallObject and (synchronously) returns a VatSyscallResult.
  *
- * @param {VatSyscaller} syscallToManager
+ * @param {VatSyscallHandler} syscallToManager
  * @param {boolean} workerCanBlock
  * @typedef { unknown } TheSyscallObjectWithMethodsThatLiveslotsWants
  * @returns {TheSyscallObjectWithMethodsThatLiveslotsWants}

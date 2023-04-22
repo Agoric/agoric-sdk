@@ -28,7 +28,7 @@ import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
-import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
+import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
@@ -324,145 +324,23 @@ async function replay(transcriptFile) {
       bundleHandler,
     });
     factory = makeXsSubprocessFactory({
-      allVatPowers,
+      startXSnap,
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
-      startXSnap,
       testLog,
     });
   } else if (worker === 'local') {
     factory = makeLocalVatManagerFactory({
       allVatPowers,
-      kernelKeeper: fakeKernelKeeper,
       vatEndowments: {},
       gcTools,
-      kernelSlog,
     });
   } else {
     throw Error(`unhandled worker type ${worker}`);
   }
 
-  const [
-    bestRequireIdentical,
-    extraSyscall,
-    missingSyscall,
-    vcSyscallRE,
-    supportsRelaxedSyscalls,
-  ] = await (async () => {
-    /** @type {any} */
-    const transcriptModule = await import(
-      '../src/kernel/vat-loader/transcript.js'
-    );
-
-    /** @type {RegExp} */
-    const syscallRE =
-      transcriptModule.vcSyscallRE || /^vc\.\d+\.\|(?:schemata|label)$/;
-
-    if (
-      typeof transcriptModule.requireIdenticalExceptStableVCSyscalls !==
-      'function'
-    ) {
-      return [
-        requireIdentical,
-        Symbol('never extra'),
-        Symbol('never missing'),
-        syscallRE,
-        false,
-      ];
-    }
-
-    /** @type {{requireIdenticalExceptStableVCSyscalls: import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}} */
-    const { requireIdenticalExceptStableVCSyscalls } = transcriptModule;
-
-    if (
-      typeof transcriptModule.extraSyscall === 'symbol' &&
-      typeof transcriptModule.missingSyscall === 'symbol'
-    ) {
-      return [
-        requireIdenticalExceptStableVCSyscalls,
-        /** @type {symbol} */ (transcriptModule.extraSyscall),
-        /** @type {symbol} */ (transcriptModule.missingSyscall),
-        syscallRE,
-        true,
-      ];
-    }
-
-    /** @type {unknown} */
-    const dynamicExtraSyscall = requireIdenticalExceptStableVCSyscalls(
-      'vat0',
-      ['vatstoreGet', 'vc.0.|label'],
-      ['vatstoreGet', 'ignoreExtraSyscall'],
-    );
-    /** @type {unknown} */
-    const dynamicMissingSyscall = requireIdenticalExceptStableVCSyscalls(
-      'vat0',
-      ['vatstoreGet', 'ignoreMissingSyscall'],
-      ['vatstoreGet', 'vc.0.|label'],
-    );
-
-    return [
-      requireIdenticalExceptStableVCSyscalls,
-      typeof dynamicExtraSyscall === 'symbol'
-        ? dynamicExtraSyscall
-        : Symbol('never extra'),
-      typeof dynamicMissingSyscall === 'symbol'
-        ? dynamicMissingSyscall
-        : Symbol('never missing'),
-      syscallRE,
-      typeof dynamicExtraSyscall === 'symbol' &&
-        typeof dynamicMissingSyscall === 'symbol',
-    ];
-  })();
-
-  if (
-    (argv.simulateVcSyscalls || argv.skipExtraVcSyscalls) &&
-    !supportsRelaxedSyscalls
-  ) {
-    console.warn(
-      'Transcript replay does not support relaxed replay. Cannot simulate or skip syscalls',
-    );
-  }
-
   /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
   let syscallResults = {};
-
-  const getResultKind = result => {
-    if (result === extraSyscall) {
-      return 'extra';
-    } else if (result === missingSyscall) {
-      return 'missing';
-    } else if (result) {
-      return 'error';
-    } else {
-      return 'success';
-    }
-  };
-
-  const reportWorkerResult = ({
-    xsnapPID,
-    result,
-    originalSyscall,
-    newSyscall,
-  }) => {
-    if (!result) return;
-    if (workers.length <= 1) return;
-    const resultKind = getResultKind(result);
-    let kindSummary = syscallResults[resultKind];
-    if (!kindSummary) {
-      /** @type {Map<string, number[]>} */
-      kindSummary = new Map();
-      syscallResults[resultKind] = kindSummary;
-    }
-    const syscallKey = JSON.stringify(
-      resultKind === 'extra' ? originalSyscall : newSyscall,
-    );
-    let workerList = kindSummary.get(syscallKey);
-    if (!workerList) {
-      workerList = [];
-      kindSummary.set(syscallKey, workerList);
-    }
-    workerList.push(xsnapPID);
-  };
 
   const analyzeSyscallResults = () => {
     const numWorkers = workers.length;
@@ -515,116 +393,14 @@ async function replay(transcriptFile) {
     workerData.deliveryTimeSinceLastSnapshot += deliveryTime;
   };
 
-  /** @type {Map<string, import('@agoric/swingset-liveslots').VatSyscallResult | undefined>} */
-  const knownVCSyscalls = new Map();
-
-  /**
-   * @param {import('../src/types-external.js').VatSyscallObject} vso
-   */
-  const vatSyscallHandler = vso => {
-    if (vso[0] === 'vatstoreGet') {
-      const response = knownVCSyscalls.get(vso[1]);
-
-      if (!response) {
-        throw new Error(`Unknown vc vatstore entry ${vso[1]}`);
-      }
-
-      return response;
-    }
-
-    throw new Error(`Unexpected syscall ${vso[0]}(${vso.slice(1).join(', ')})`);
-  };
-
-  /**
-   * @param {WorkerData} workerData
-   * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}
-   */
-  const makeCompareSyscalls = workerData => {
-    const doCompare = (
-      _vatID,
-      originalSyscall,
-      newSyscall,
-      originalResponse,
-    ) => {
-      const error = bestRequireIdentical(vatID, originalSyscall, newSyscall);
-      if (
-        error &&
-        JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
-      ) {
-        return undefined; // Errors are serialized differently, sometimes
-      }
-
-      if (error) {
-        console.error(
-          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID} (start delivery ${workerData.firstTranscriptNum})`,
-        );
-
-        if (
-          // @ts-expect-error may be a symbol in some versions
-          error === extraSyscall &&
-          !argv.skipExtraVcSyscalls
-        ) {
-          return new Error('Extra syscall disallowed');
-        }
-      }
-
-      const newSyscallKind = newSyscall[0];
-
-      if (
-        // @ts-expect-error may be a symbol in some versions
-        error === missingSyscall &&
-        !argv.simulateVcSyscalls
-      ) {
-        return new Error('Missing syscall disallowed');
-      }
-
-      if (
-        argv.simulateVcSyscalls &&
-        supportsRelaxedSyscalls &&
-        !error &&
-        (newSyscallKind === 'vatstoreGet' ||
-          newSyscallKind === 'vatstoreSet') &&
-        vcSyscallRE.test(newSyscall[1])
-      ) {
-        if (newSyscallKind === 'vatstoreGet') {
-          if (originalResponse !== undefined) {
-            knownVCSyscalls.set(newSyscall[1], originalResponse);
-          } else if (!knownVCSyscalls.has(newSyscall[1])) {
-            console.warn(
-              `Cannot store vc syscall result for vatstoreGet(${newSyscall[1]})`,
-            );
-            knownVCSyscalls.set(newSyscall[1], undefined);
-          }
-        } else if (newSyscallKind === 'vatstoreSet') {
-          knownVCSyscalls.set(newSyscall[1], ['ok', newSyscall[2]]);
-        }
-      }
-
-      return error;
-    };
-    const compareSyscalls = (
-      _vatID,
-      originalSyscall,
-      newSyscall,
-      originalResponse,
-    ) => {
+  const wrapWithTimeTracker = (handler, workerData) => {
+    const wrapped = vso => {
       updateDeliveryTime(workerData);
-      const result = doCompare(
-        _vatID,
-        originalSyscall,
-        newSyscall,
-        originalResponse,
-      );
-      reportWorkerResult({
-        xsnapPID: workerData.xsnapPID,
-        result,
-        originalSyscall,
-        newSyscall,
-      });
+      const vsr = handler(vso);
       workerData.timeOfLastCommand = performance.now();
-      return result;
+      return vsr;
     };
-    return compareSyscalls;
+    return wrapped;
   };
 
   let vatParameters;
@@ -656,7 +432,6 @@ async function replay(transcriptFile) {
         /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
           sourcedConsole: console,
           vatParameters,
-          compareSyscalls: makeCompareSyscalls(workerData),
           useTranscript: true,
           workerOptions: {
             type: worker === 'xs-worker' ? 'xsnap' : worker,
@@ -672,7 +447,6 @@ async function replay(transcriptFile) {
       vatSourceBundle,
       managerOptions,
       {},
-      vatSyscallHandler,
     );
     return workerData;
   };
@@ -886,7 +660,7 @@ async function replay(transcriptFile) {
           }
         }
       } else {
-        const { transcriptNum, d: delivery, syscalls } = data;
+        const { transcriptNum, ...transcriptEntry } = data;
         lastTranscriptNum = transcriptNum;
         if (startTranscriptNum == null) {
           startTranscriptNum = transcriptNum - 1;
@@ -914,18 +688,22 @@ async function replay(transcriptFile) {
         const snapshotIDs = await Promise.all(
           workers.map(async workerData => {
             workerData.timeOfLastCommand = performance.now();
-            await workerData.manager.replayOneDelivery(
-              delivery,
-              syscalls,
-              transcriptNum,
+            const deliveryNum = transcriptNum;
+            const simulator = makeSyscallSimulator(
+              kernelSlog,
+              vatID,
+              deliveryNum,
+              transcriptEntry,
             );
+            const timeTrackedSim = wrapWithTimeTracker(
+              simulator.syscallHandler,
+              workerData,
+            );
+            await workerData.manager.deliver(transcriptEntry.d, timeTrackedSim);
             updateDeliveryTime(workerData);
             workerData.firstTranscriptNum ??= transcriptNum - 1;
             completeWorkerStep(workerData);
             await workersSynced;
-
-            // console.log(`dr`, dr);
-
             return makeSnapshot ? snapshotWorker(workerData) : null;
           }),
         );

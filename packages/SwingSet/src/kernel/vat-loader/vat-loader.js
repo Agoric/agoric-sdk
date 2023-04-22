@@ -13,10 +13,8 @@ export function makeVatLoader(stuff) {
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
-    buildVatSyscallHandler,
   } = stuff;
 
-  /** @typedef {ReturnType<typeof import('../vatTranslator.js').makeVatTranslators>} Translators */
   /** @typedef {import('../../types-internal.js').VatManager} VatManager */
 
   const allowedOptions = [
@@ -53,14 +51,12 @@ export function makeVatLoader(stuff) {
    *    used, it must identify a bundle already known to the kernel (via the
    *    `config.bundles` table) which satisfies these constraints.
    *
-   * @param {Translators} details.translators
-   *
    * @param {import('../../types-internal.js').RecordedVatOptions} details.options
    *
    * @returns {Promise<VatManager>} A Promise which fires when the
    *    vat is ready for messages.
    */
-  async function create(vatID, { isDynamic, source, translators, options }) {
+  async function create(vatID, { isDynamic, source, options }) {
     assert(
       'bundle' in source || 'bundleName' in source || 'bundleID' in source,
       'broken source',
@@ -130,10 +126,8 @@ export function makeVatLoader(stuff) {
       relaxDurabilityRules: kernelKeeper.getRelaxDurabilityRules(),
     };
 
-    const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
-
     const finish = starting && kernelSlog.startup(vatID);
-    const manager = await vatManagerFactory(vatID, vatSyscallHandler, {
+    const manager = await vatManagerFactory(vatID, {
       managerOptions,
       liveSlotsOptions,
     });
@@ -141,17 +135,22 @@ export function makeVatLoader(stuff) {
     return manager;
   }
 
-  async function loadTestVat(vatID, setup, translators, creationOptions) {
+  async function loadTestVat(vatID, setup, options) {
+    const { name, workerOptions, enablePipelining, critical } = options;
     const managerOptions = {
-      ...creationOptions,
+      workerOptions,
       setup,
+      retainSyscall: true, // let unit test to drive syscall between deliveries
+      metered: false,
       enableSetup: true,
+      enablePipelining,
       useTranscript: true,
+      critical,
+      name,
       ...overrideVatManagerOptions,
     };
-    const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
     const liveSlotsOptions = {};
-    const manager = await vatManagerFactory(vatID, vatSyscallHandler, {
+    const manager = await vatManagerFactory(vatID, {
       managerOptions,
       liveSlotsOptions,
     });

@@ -86,7 +86,7 @@ function unhandledRejectionHandler(e, pr) {
  *   slogCallbacks?: unknown,
  *   slogSender?: import('@agoric/telemetry').SlogSender,
  *   testTrackDecref?: unknown,
- *   warehousePolicy?: { maxVatsOnline?: number },
+ *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy,
  *   overrideVatManagerOptions?: unknown,
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>,
