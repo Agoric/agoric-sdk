@@ -28,7 +28,7 @@ const { freeze } = Object;
 const globalAssert = globalThis.assert;
 
 if (globalAssert === undefined) {
-  throw new Error(
+  throw Error(
     `Cannot initialize @agoric/assert, missing globalThis.assert, import 'ses' before '@agoric/assert'`,
   );
 }
@@ -45,7 +45,7 @@ const missing = /** @type {const} */ ([
   'makeAssert',
 ]).filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {
-  throw new Error(
+  throw Error(
     `Cannot initialize @agoric/assert, missing globalThis.assert methods ${missing.join(
       ', ',
     )}`,

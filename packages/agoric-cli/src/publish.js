@@ -207,7 +207,7 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
         'string',
         X`Expected "rej" property on JSON response body with "ok": false, got ${response}`,
       );
-      throw new Error(
+      throw Error(
         `Cannot publish bundle, HTTP 200 OK, JSON well-formed, but error message from service: ${rej}`,
       );
     }
@@ -464,7 +464,7 @@ const publishBundle = async (
     // source bundles in-band.
     return bundle;
   } else {
-    throw new Error(`Unsupported connection type ${type}`);
+    throw Error(`Unsupported connection type ${type}`);
   }
 
   await p;

@@ -50,7 +50,7 @@ export default async function priceAuthorityFromNotifier(
     );
     if (invitations.length > 1) {
       console.error('Multiple oracle invitations found', invitations);
-      throw new Error('You need an AGGREGATOR_INSTANCE_LOOKUP to disambiguate');
+      throw Error('You need an AGGREGATOR_INSTANCE_LOOKUP to disambiguate');
     }
     if (invitations.length === 0) {
       console.error(

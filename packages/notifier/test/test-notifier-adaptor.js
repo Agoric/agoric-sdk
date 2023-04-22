@@ -54,7 +54,7 @@ test('observeIteration - synchronous throw from observer stops hard', async t =>
       observeIteration(finiteStream, {
         updateState: state => {
           t.is(state, 1);
-          throw new Error('sync propagates');
+          throw Error('sync propagates');
         },
         finish: state => {
           t.fail(`unexpected finish with state ${state}`);

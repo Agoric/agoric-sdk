@@ -1038,11 +1038,11 @@ function build(
   function D(x) {
     // results = D(devicenode).name(args)
     if (outstandingProxies.has(x)) {
-      throw new Error('D(D(x)) is invalid');
+      throw Error('D(D(x)) is invalid');
     }
     const slot = valToSlot.get(x);
     if (!slot || parseVatSlot(slot).type !== 'device') {
-      throw new Error('D() must be given a device node');
+      throw Error('D() must be given a device node');
     }
     const handler = DeviceHandler(slot);
     const pr = harden(new Proxy({}, handler));

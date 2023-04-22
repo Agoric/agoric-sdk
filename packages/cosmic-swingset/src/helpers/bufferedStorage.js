@@ -93,7 +93,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
      */
     getNextKey(previousKey) {
       assert.typeof(previousKey, 'string');
-      throw new Error('not implemented');
+      throw Error('not implemented');
     },
   };
   function commit() {
@@ -172,7 +172,7 @@ export const makeReadCachingStorage = kvStore => {
       kvStore.delete(key);
     },
     getNextKey(_previousKey) {
-      throw new Error('not implemented');
+      throw Error('not implemented');
     },
   });
   const {

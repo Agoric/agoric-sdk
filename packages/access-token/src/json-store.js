@@ -51,7 +51,7 @@ function makeStorageInMemory() {
    */
   function has(key) {
     if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
+      throw Error(`non-string key ${key}`);
     }
     return state.has(key);
   }
@@ -74,10 +74,10 @@ function makeStorageInMemory() {
    */
   function* getKeys(start, end) {
     if (`${start}` !== start) {
-      throw new Error(`non-string start ${start}`);
+      throw Error(`non-string start ${start}`);
     }
     if (`${end}` !== end) {
-      throw new Error(`non-string end ${end}`);
+      throw Error(`non-string end ${end}`);
     }
 
     const keys = Array.from(state.keys()).sort();
@@ -100,7 +100,7 @@ function makeStorageInMemory() {
    */
   function get(key) {
     if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
+      throw Error(`non-string key ${key}`);
     }
     return state.get(key);
   }
@@ -116,10 +116,10 @@ function makeStorageInMemory() {
    */
   function set(key, value) {
     if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
+      throw Error(`non-string key ${key}`);
     }
     if (`${value}` !== value) {
-      throw new Error(`non-string value ${value}`);
+      throw Error(`non-string value ${value}`);
     }
     state.set(key, value);
   }
@@ -134,7 +134,7 @@ function makeStorageInMemory() {
    */
   function del(key) {
     if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
+      throw Error(`non-string key ${key}`);
     }
     state.delete(key);
   }
@@ -244,7 +244,7 @@ function makeJSONStore(dirPath, forceReset = false) {
  */
 export function initJSONStore(dirPath) {
   if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
-    throw new Error('dirPath must be a string or nullish');
+    throw Error('dirPath must be a string or nullish');
   }
   return makeJSONStore(dirPath, true);
 }
@@ -268,7 +268,7 @@ export function initJSONStore(dirPath) {
  */
 export function openJSONStore(dirPath) {
   if (`${dirPath}` !== dirPath) {
-    throw new Error('dirPath must be a string');
+    throw Error('dirPath must be a string');
   }
   return makeJSONStore(dirPath, false);
 }
@@ -324,7 +324,7 @@ export function setAllState(storage, stuff) {
  */
 export function isJSONStore(dirPath) {
   if (`${dirPath}` !== dirPath) {
-    throw new Error('dirPath must be a string');
+    throw Error('dirPath must be a string');
   }
   if (fs.existsSync(dirPath)) {
     const storeFile = path.resolve(dirPath, DATA_FILE);

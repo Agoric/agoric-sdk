@@ -1834,7 +1834,7 @@ export function makeWalletRoot({
       case 'suggestIssuer':
         return handleSuggestIssuerAction(data);
       default:
-        throw new Error(`Unknown wallet action ${type}`);
+        throw Error(`Unknown wallet action ${type}`);
     }
   };
 

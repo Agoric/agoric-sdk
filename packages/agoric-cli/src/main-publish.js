@@ -15,12 +15,10 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
   const { node: rpcAddress, home: homeDirectory, chainID = 'agoric' } = opts;
 
   if (typeof rpcAddress !== 'string') {
-    throw new Error(
-      `Required flag for agoric publish: -n, --node <rpcAddress>`,
-    );
+    throw Error(`Required flag for agoric publish: -n, --node <rpcAddress>`);
   }
   if (typeof homeDirectory !== 'string') {
-    throw new Error(
+    throw Error(
       `Required flag for agoric publish: -h, --home <directory>, containing ag-solo-mnemonic`,
     );
   }
@@ -47,7 +45,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     });
     const publishBundle = makeBundlePublisher({
       getDefaultConnection() {
-        throw new Error(
+        throw Error(
           'Invariant: publishBundle will never call getDefaultConnection because we provide an explicit connectionSpec',
         );
       },

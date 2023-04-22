@@ -12,7 +12,7 @@ export const getChainInfo = async networkConfig => {
     chainId = chainName;
     rpcs = rpcAddrs;
   } catch {
-    throw new Error(Errors.networkConfig);
+    throw Error(Errors.networkConfig);
   }
 
   return { chainId, rpcs };

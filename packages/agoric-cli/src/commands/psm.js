@@ -39,7 +39,7 @@ export const makePsmCommand = logger => {
     `
   WALLET=my-wallet
   export AGORIC_NET=ollinet
-  
+
   # provision wallet if necessary
   agd keys add $WALLET
   # provision with faucet, e.g.
@@ -52,7 +52,7 @@ export const makePsmCommand = logger => {
   # prepare an offer to send
   # (offerId is optional but best to specify as each must be higher than the last and the default value is a huge number)
   agops psm swap --wantMinted 6 --feePct 0.01 --offerId 12 > offer-12.json
-  
+
   # watch for results in one terminal
   agoric wallet watch --from $WALLET
 
@@ -70,7 +70,7 @@ export const makePsmCommand = logger => {
       const instance = utils.agoricNames.instance[name];
       if (!instance) {
         logger.debug('known instances:', utils.agoricNames.instance);
-        throw new Error(`Unknown instance ${name}`);
+        throw Error(`Unknown instance ${name}`);
       }
       return instance;
     };

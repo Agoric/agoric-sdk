@@ -83,7 +83,7 @@ export function xsnap(options) {
   }[os];
 
   if (platform === undefined) {
-    throw new Error(`xsnap does not support platform ${os}`);
+    throw Error(`xsnap does not support platform ${os}`);
   }
 
   let bin = new URL(
@@ -178,7 +178,7 @@ export function xsnap(options) {
         // A protocol error kills the xsnap child process and breaks the baton
         // chain with a terminal error.
         xsnapProcess.kill();
-        throw new Error('xsnap protocol error: received empty message');
+        throw Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
         let meterInfo = { compute: null, allocate: null, timestamps: [] };
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
@@ -199,7 +199,7 @@ export function xsnap(options) {
           meterUsage,
         };
       } else if (message[0] === ERROR) {
-        throw new Error(
+        throw Error(
           `Uncaught exception in ${name}: ${decoder.decode(
             message.subarray(1),
           )}`,
@@ -213,9 +213,7 @@ export function xsnap(options) {
         // unrecognized responses also kill the process
         xsnapProcess.kill();
         const m = decoder.decode(message);
-        throw new Error(
-          `xsnap protocol error: received unknown message <<${m}>>`,
-        );
+        throw Error(`xsnap protocol error: received unknown message <<${m}>>`);
       }
     }
     throw Error(`unreachable, but tools don't know that`);
@@ -318,7 +316,7 @@ export function xsnap(options) {
       ]);
       await (running && messagesToXsnap.next(encoder.encode(`q`)));
       await messagesToXsnap.return(undefined);
-      throw new Error(`${name} closed`);
+      throw Error(`${name} closed`);
     });
     baton.catch(noop); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
@@ -329,7 +327,7 @@ export function xsnap(options) {
    */
   async function terminate() {
     xsnapProcess.kill();
-    baton = Promise.reject(new Error(`${name} terminated`));
+    baton = Promise.reject(Error(`${name} terminated`));
     baton.catch(noop); // Suppress Node.js unhandled exception warning.
     // Mute the vatExit exception: it is expected.
     return vatExit.promise.catch(noop);

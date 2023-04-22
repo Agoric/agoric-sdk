@@ -263,10 +263,10 @@ export const makeCosmjsFollower = (
         prove: false,
       });
       if (response.code !== 0) {
-        throw new Error(`Tendermint ABCI query failed: ${response.log}`);
+        throw Error(`Tendermint ABCI query failed: ${response.log}`);
       }
       if (!response.height) {
-        throw new Error('No query height returned');
+        throw Error('No query height returned');
       }
       return {
         value: response.value,
@@ -539,7 +539,7 @@ export const makeCosmjsFollower = (
       while (rightBlockHeight > cursorBlockHeight) {
         if (rightStreamCell.blockHeight > rightBlockHeight) {
           const { storeName, storeSubkey } = await castingSpecP;
-          throw new Error(
+          throw Error(
             `Corrupt storage cell for ${storeName} under key ${storeSubkey} at block-height ${rightBlockHeight} claims to being published at a later block height ${rightStreamCell.blockHeight}`,
           );
         }

@@ -183,7 +183,7 @@ export const makeZCFZygote = async (
 
         const offerResultPromise = offerResultP.catch(reason => {
           if (reason === undefined) {
-            const newErr = new Error(
+            const newErr = Error(
               `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
             );
             throw zcfSeat.fail(newErr);

@@ -48,14 +48,14 @@ export const makeJsonHttpClient = ({ http }) => {
             const responseBytes = Buffer.concat(chunks);
             const responseText = textDecoder.decode(responseBytes);
             if (response.statusCode !== 200) {
-              throw new Error(`${responseText}`);
+              throw Error(`${responseText}`);
             }
             // May throw: becomes rejection below.
             const responseBody = JSON.parse(responseText);
             resolve(responseBody);
           })().catch(cause => {
             reject(
-              new Error(`JSON HTTP RPC failed with error: ${cause.message}`, {
+              Error(`JSON HTTP RPC failed with error: ${cause.message}`, {
                 cause,
               }),
             );

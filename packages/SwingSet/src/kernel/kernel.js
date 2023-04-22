@@ -208,7 +208,7 @@ export default function buildKernel(
 
   function addImport(forVatID, what) {
     if (!started) {
-      throw new Error('must do kernel.start() before addImport()');
+      throw Error('must do kernel.start() before addImport()');
       // because otherwise we can't get the vatManager
     }
     insistVatID(forVatID);
@@ -224,7 +224,7 @@ export default function buildKernel(
 
   function addExport(fromVatID, vatSlot) {
     if (!started) {
-      throw new Error('must do kernel.start() before addExport()');
+      throw Error('must do kernel.start() before addExport()');
       // because otherwise we can't get the vatKeeper
     }
     return doAddExport(kernelKeeper, fromVatID, vatSlot);
@@ -237,7 +237,7 @@ export default function buildKernel(
   /** @type {import('../types-internal.js').KernelPanic} */
   function panic(problem, err = undefined) {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
-    kernelPanic = err || new Error(`kernel panic ${problem}`);
+    kernelPanic = err || Error(`kernel panic ${problem}`);
   }
 
   const { doSend, doSubscribe, doResolve, resolveToError, queueToKref } =
@@ -1748,7 +1748,7 @@ export default function buildKernel(
       throw kernelPanic;
     }
     if (!started) {
-      throw new Error('must do kernel.start() before step()');
+      throw Error('must do kernel.start() before step()');
     }
     kernelKeeper.startCrank();
     try {
@@ -1782,7 +1782,7 @@ export default function buildKernel(
       throw kernelPanic;
     }
     if (!started) {
-      throw new Error('must do kernel.start() before run()');
+      throw Error('must do kernel.start() before run()');
     }
     let count = 0;
     for (;;) {

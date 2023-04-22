@@ -35,7 +35,7 @@ function convert(data) {
   } else if (data instanceof ArrayBuffer) {
     return new Uint8Array(data);
   }
-  throw new TypeError(
+  throw TypeError(
     `crc requires 32 bit number, a string or TypedArray for input`,
   );
 }

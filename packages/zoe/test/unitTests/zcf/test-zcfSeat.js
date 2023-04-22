@@ -56,8 +56,8 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   };
 
   const failSeat = secondSeat => {
-    firstSeat.fail(new Error('first seat failed'));
-    throw secondSeat.fail(new Error('second seat failed'));
+    firstSeat.fail(Error('first seat failed'));
+    throw secondSeat.fail(Error('second seat failed'));
   };
 
   const invitation1 = await zcf.makeInvitation(grabSeat, 'seat1');

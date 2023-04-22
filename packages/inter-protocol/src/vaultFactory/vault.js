@@ -464,7 +464,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
               vaultSeat.getCurrentAllocation(),
             );
           } else {
-            throw new Error('only active and liquidated vaults can be closed');
+            throw Error('only active and liquidated vaults can be closed');
           }
 
           seat.exit();

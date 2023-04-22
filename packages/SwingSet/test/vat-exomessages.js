@@ -13,7 +13,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
     } else if (mode === 'presence') {
       return other;
     } else if (mode === 'reject') {
-      throw new Error('gratuitous error');
+      throw Error('gratuitous error');
     }
     return undefined;
   }

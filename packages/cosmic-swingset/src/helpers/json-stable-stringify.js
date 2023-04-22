@@ -74,7 +74,7 @@ export default function stableStringify(obj, opts) {
     }
     if (seen.indexOf(node) !== -1) {
       if (cycles) return JSON.stringify('__cycle__');
-      throw new TypeError('Converting circular structure to JSON');
+      throw TypeError('Converting circular structure to JSON');
     } else seen.push(node);
 
     const keys = objectKeys(node).sort(cmp && cmp(node));

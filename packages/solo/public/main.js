@@ -85,7 +85,7 @@ function run() {
     if (j.ok) {
       return j.res;
     }
-    throw new Error(`server error: ${JSON.stringify(j.rej)}`);
+    throw Error(`server error: ${JSON.stringify(j.rej)}`);
   }
 
   const protocol = window.location.protocol.replace(/^http/, 'ws');

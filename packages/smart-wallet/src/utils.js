@@ -65,7 +65,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
         break;
       }
       default:
-        throw new Error(`unknown record updated ${updated}`);
+        throw Error(`unknown record updated ${updated}`);
     }
   };
 

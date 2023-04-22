@@ -102,7 +102,7 @@ test('makeNotifierFromSubscriber(finishes) - getUpdateSince', async t => {
 });
 
 test('makeNotifierFromSubscriber(fails) - for-await-of iteration', async t => {
-  const failure = new Error('failure');
+  const failure = Error('failure');
   const { initialize, publishNextBatch, subscriber } = makeBatchPublishKit({
     conclusionMethod: 'fail',
     conclusionValue: failure,
@@ -116,7 +116,7 @@ test('makeNotifierFromSubscriber(fails) - for-await-of iteration', async t => {
       results.push(result);
       publishNextBatch();
     }
-    throw new Error('for-await-of completed successfully');
+    throw Error('for-await-of completed successfully');
   } catch (err) {
     t.is(err, failure, 'for-await-of should throw the failure value');
   }
@@ -129,7 +129,7 @@ test('makeNotifierFromSubscriber(fails) - for-await-of iteration', async t => {
 });
 
 test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
-  const failure = new Error('failure');
+  const failure = Error('failure');
   const { initialize, publishNextBatch, subscriber } = makeBatchPublishKit({
     conclusionMethod: 'fail',
     conclusionValue: failure,
@@ -154,7 +154,7 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
       // eslint-disable-next-line no-await-in-loop
       await publishNextBatch();
     }
-    throw new Error('for-await-of completed successfully');
+    throw Error('for-await-of completed successfully');
   } catch (err) {
     t.is(err, failure, 'await should throw the failure value');
   }
@@ -353,7 +353,7 @@ test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t =>
   ({ updateCount } = await failureNotifier.getUpdateSince());
   const failureP = failureNotifier.getUpdateSince();
   const failureP2 = failureNotifier.getUpdateSince();
-  const failure = new Error('failure');
+  const failure = Error('failure');
   publisher.fail(failure);
   t.deepEqual(
     new Set(

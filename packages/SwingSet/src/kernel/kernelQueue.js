@@ -13,7 +13,7 @@ export function makeKernelQueueHandler(tools) {
   const {
     kernelKeeper,
     panic = (problem, err) => {
-      throw err || new Error(`kernel panic ${problem}`);
+      throw err || Error(`kernel panic ${problem}`);
     },
   } = tools;
 

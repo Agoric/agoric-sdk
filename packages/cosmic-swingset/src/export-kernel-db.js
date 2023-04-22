@@ -199,7 +199,7 @@ export const initiateSwingStoreExport = (
     onStarted: async () => startedKit.promise,
     onDone: async () => done,
     stop: async () => {
-      stopped ||= new Error(`Interrupted`);
+      stopped ||= Error(`Interrupted`);
       return done.catch(err => {
         if (err !== stopped) {
           throw err;
@@ -241,7 +241,7 @@ export const main = async (
 
   const stateDirStat = await fs.stat(stateDir);
   if (!stateDirStat.isDirectory()) {
-    throw new Error('state-dir must be an exiting directory');
+    throw Error('state-dir must be an exiting directory');
   }
 
   const exportDir = pathResolve(
@@ -352,7 +352,7 @@ export const spawnSwingStoreExport = (
   const onExit = (code, signal) => {
     exited = true;
     kits.done.reject(
-      new Error(`Process exited before done. code=${code}, signal=${signal}`),
+      Error(`Process exited before done. code=${code}, signal=${signal}`),
     );
   };
 
