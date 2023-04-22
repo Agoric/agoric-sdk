@@ -20,6 +20,7 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublishKit } from '../contractSupport.js';
 
@@ -133,6 +134,45 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
   };
   updateMetrics();
+
+  /** @param {Brand<'nat'>} b */
+  const amtShape = b => harden({ brand: b, value: M.nat() });
+
+  /**
+   * @param {ZCFSeat} seat
+   * @param {Omit<MetricsNotification, 'anchorPoolBalance' | 'feePoolBalance'>} target
+   */
+  const restoreMetricsHook = (seat, target) => {
+    assert(
+      AmountMath.isEmpty(anchorPool.getAmountAllocated('Anchor', anchorBrand)),
+      'cannot restoreMetrics: anchorPool is not empty',
+    );
+    assert(
+      AmountMath.isEmpty(anchorPool.getAmountAllocated('Minted', anchorBrand)),
+      'cannot restoreMetrics: feePool is not empty',
+    );
+    mustMatch(
+      target,
+      harden({
+        mintedPoolBalance: amtShape(stableBrand),
+        totalAnchorProvided: amtShape(anchorBrand),
+        totalMintedProvided: amtShape(stableBrand),
+      }),
+    );
+    const {
+      give: { Anchor, Minted },
+    } = seat.getProposal();
+    atomicRearrange(
+      zcf,
+      harden([
+        [seat, anchorPool, { Anchor }, { Anchor }],
+        [seat, feePool, { Minted }, { Minted }],
+      ]),
+    );
+    ({ mintedPoolBalance, totalAnchorProvided, totalMintedProvided } = target);
+    seat.exit();
+    updateMetrics();
+  };
 
   /**
    * @param {Amount<'nat'>} toMint
@@ -293,6 +333,19 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     makeCollectFeesInvitation() {
       return makeCollectFeesInvitation(zcf, feePool, stableBrand, 'Minted');
+    },
+    makeRestoreMetricsInvitation() {
+      return zcf.makeInvitation(
+        restoreMetricsHook,
+        'restoreMetrics',
+        undefined,
+        M.splitRecord({
+          give: {
+            Minted: amtShape(stableBrand),
+            Anchor: amtShape(anchorBrand),
+          },
+        }),
+      );
     },
   });
 
