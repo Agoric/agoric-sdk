@@ -35,7 +35,7 @@ export function makeLocalVatManagerFactory({
 
       return mk.getManager(shutdown);
     }
-    const syscall = makeSupervisorSyscall(mk.syscallFromWorker, true);
+    const syscall = makeSupervisorSyscall(mk.syscallFromWorker);
     return { syscall, finish };
   }
 
