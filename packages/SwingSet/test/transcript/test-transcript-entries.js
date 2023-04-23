@@ -23,7 +23,10 @@ test('transcript of new vats', async t => {
     },
     vats: {
       static1: { bundleName: 'bundle' },
-      static2: { bundleName: 'bundle' },
+      static2: {
+        bundleName: 'bundle',
+        creationOptions: { managerType: 'local' },
+      },
     },
   };
   const kernelStorage = initSwingStore().kernelStorage;
@@ -69,6 +72,11 @@ test('transcript of new vats', async t => {
     t2.map(te => te.d[0]),
     ['initialize-worker', 'startVat'],
   );
+
+  // static2 is always managerType='local', so it should never have 'metering'
+  // in the transcript results
+  const teStartVat = t2[1];
+  t.falsy(teStartVat.r.metering);
 
   const kpid = c.queueToVatRoot('static1', 'create', [], 'panic');
   await c.run();
@@ -220,6 +228,12 @@ test('transcript spans', async t => {
   t.deepEqual(curSummary(), [].concat(load, boot, notify));
   t.deepEqual(fullSummary(), expectedFull);
 
+  // all delivery events should record computrons
+  const teStartVat = old(0)[1];
+  t.is(teStartVat.d[0], 'startVat');
+  t.truthy(teStartVat.r.metering);
+  t.is(typeof teStartVat.r.metering.computrons, 'number');
+
   // do some deliveries to trigger an XS heap snapshot event, creating
   // a new span
   const doSomeNothing = async () => {
@@ -235,6 +249,11 @@ test('transcript spans', async t => {
   t.deepEqual(bounds(), [3, 7]);
   t.deepEqual(curSummary(), [].concat(load, boot, notify, msgN(1)));
   t.deepEqual(fullSummary(), expectedFull);
+
+  const teNothing1 = cur().slice(-1)[0];
+  t.is(teNothing1.d[0], 'message');
+  t.truthy(teNothing1.r.metering);
+  t.is(typeof teNothing1.r.metering.computrons, 'number');
 
   c = await restart();
   t.deepEqual(curSummary(), [].concat(load, boot, notify, msgN(1)));

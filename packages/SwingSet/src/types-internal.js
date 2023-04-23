@@ -112,7 +112,7 @@ export {};
  *          } TranscriptDelivery
  * @typedef { { s: VatSyscallObject, r: VatSyscallResult } } TranscriptSyscall
  * @typedef { { status: string, snapshotID: string } } TranscriptDeliverySaveSnapshotResults
- * @typedef { { status: string } } TranscriptDeliveryGenericResults
+ * @typedef { { status: string, metering?: { computrons: number } } } TranscriptDeliveryGenericResults
  * @typedef { TranscriptDeliverySaveSnapshotResults | TranscriptDeliveryGenericResults } TranscriptDeliveryResults
  * @typedef { { d: TranscriptDelivery, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
  *

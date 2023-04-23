@@ -46,6 +46,12 @@ function recordSyscalls(origHandler) {
     // TODO add metering computrons to results
     /** @type {TranscriptDeliveryResults} */
     const tdr = { status: deliveryResult[0] };
+    if (deliveryResult[0] === 'ok') {
+      const usage = deliveryResult[2];
+      if (usage) {
+        tdr.metering = { computrons: usage.compute };
+      }
+    }
     const transcriptEntry = { d: vd, sc: syscalls, r: tdr };
     return transcriptEntry;
   };
