@@ -1,6 +1,7 @@
 package ante
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -24,6 +25,7 @@ func TestInboundAnteHandle(t *testing.T) {
 		inboundLimit          int32
 		mempoolLimit          int32
 		errMsg                string
+		isHighPriorityOwner   bool
 	}{
 		{
 			name: "empty-empty",
@@ -100,9 +102,32 @@ func TestInboundAnteHandle(t *testing.T) {
 			inboundQueueLength: 5,
 			errMsg:             ErrInboundQueueFull.Error(),
 		},
+		{
+			name:                "priority-limit-bypass",
+			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{}),
+			isHighPriorityOwner: true,
+		},
+		{
+			name:                "priority-multi-bypass",
+			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{}, &swingtypes.MsgWalletSpendAction{}),
+			isHighPriorityOwner: true,
+		},
+		{
+			name:                "mixed-priority-limit-first-fail",
+			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{}, &swingtypes.MsgProvision{}),
+			isHighPriorityOwner: true,
+			inboundLimit:        1,
+			errMsg:              ErrInboundQueueFull.Error(),
+		},
+		{
+			name:                "mixed-priority-limit-last-succeed",
+			tx:                  makeTestTx(&swingtypes.MsgProvision{}, &swingtypes.MsgWalletSpendAction{}),
+			isHighPriorityOwner: true,
+			inboundLimit:        1,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := sdk.Context{}.WithIsCheckTx(tt.checkTx)
+			ctx := sdk.Context{}.WithContext(context.Background()).WithIsCheckTx(tt.checkTx)
 			emptyQueueAllowed := false
 			if tt.inboundLimit == -1 {
 				emptyQueueAllowed = true
@@ -113,6 +138,7 @@ func TestInboundAnteHandle(t *testing.T) {
 				inboundLimit:          tt.inboundLimit,
 				mempoolLimit:          tt.mempoolLimit,
 				emptyQueueAllowed:     emptyQueueAllowed,
+				isHighPriorityOwner:   tt.isHighPriorityOwner,
 			}
 			decorator := NewInboundDecorator(mock)
 			newCtx, err := decorator.AnteHandle(ctx, tt.tx, tt.simulate, nilAnteHandler)
@@ -158,9 +184,11 @@ type mockSwingsetKeeper struct {
 	inboundLimit          int32
 	mempoolLimit          int32
 	emptyQueueAllowed     bool
+	isHighPriorityOwner   bool
 }
 
 var _ SwingsetKeeper = mockSwingsetKeeper{}
+var _ swingtypes.SwingSetKeeper = mockSwingsetKeeper{}
 
 func (msk mockSwingsetKeeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
 	return msk.inboundQueueLength, msk.inboundQueueLengthErr
@@ -176,4 +204,16 @@ func (msk mockSwingsetKeeper) GetState(ctx sdk.Context) swingtypes.State {
 			swingtypes.NewQueueSize(swingtypes.QueueInboundMempool, msk.mempoolLimit),
 		},
 	}
+}
+
+func (msk mockSwingsetKeeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
+	return msk.isHighPriorityOwner, nil
+}
+
+func (msk mockSwingsetKeeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint {
+	return nil
+}
+
+func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error {
+	return fmt.Errorf("not implemented")
 }

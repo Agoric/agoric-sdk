@@ -72,6 +72,11 @@ func (msg MsgDeliverInbound) GetInboundMsgCount() int32 {
 	return 1
 }
 
+// IsHighPriority implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgDeliverInbound) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
+	return false, nil
+}
+
 // Route should return the name of the module
 func (msg MsgDeliverInbound) Route() string { return RouterKey }
 
@@ -131,6 +136,11 @@ func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{})
 // GetInboundMsgCount implements InboundMsgCarrier.
 func (msg MsgWalletAction) GetInboundMsgCount() int32 {
 	return 1
+}
+
+// IsHighPriority implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgWalletAction) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
+	return false, nil
 }
 
 func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
@@ -194,6 +204,17 @@ func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interfa
 func (msg MsgWalletSpendAction) GetInboundMsgCount() int32 {
 	return 1
 }
+
+// IsHighPriority implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return false, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return keeper.IsHighPriorityAddress(ctx, msg.Owner)
+}
+
 func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
@@ -253,6 +274,11 @@ func (msg MsgProvision) GetInboundMsgCount() int32 {
 	return 1
 }
 
+// IsHighPriority implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgProvision) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
+	return false, nil
+}
+
 // GetSignBytes encodes the message for signing
 func (msg MsgProvision) GetSignBytes() []byte {
 	if msg.PowerFlags == nil {
@@ -286,6 +312,11 @@ func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}
 // GetInboundMsgCount implements InboundMsgCarrier.
 func (msg MsgInstallBundle) GetInboundMsgCount() int32 {
 	return 1
+}
+
+// IsHighPriority implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgInstallBundle) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
+	return false, nil
 }
 
 // Route should return the name of the module
