@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';

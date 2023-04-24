@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * Don't trigger Node.js's UnhandledPromiseRejectionWarning.
  * This does not suppress any error messages.

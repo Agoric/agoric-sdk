@@ -1,3 +1,5 @@
+// @jessie-check
+
 /// <reference types="ses"/>
 
 /**

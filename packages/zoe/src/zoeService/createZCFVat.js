@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { E } from '@endo/eventual-send';
 
 const { Fail, quote: q } = assert;
