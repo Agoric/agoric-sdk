@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { initEmpty } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 

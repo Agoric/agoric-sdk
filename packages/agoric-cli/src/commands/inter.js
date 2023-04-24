@@ -45,6 +45,8 @@ const bidInvitationShape = harden({
  * @param {AssetDescriptor[]} assets
  */
 const makeFormatters = assets => {
+  const r4 = x => Math.round(x * 10_000) / 10_000;
+
   const br = asBoardRemote;
   const fmtAmtTuple = makeAmountFormatter(assets);
 
@@ -56,11 +58,11 @@ const makeFormatters = assets => {
   const price = r => {
     const [nl, nm] = fmtAmtTuple(br(r.numerator));
     const [dl, dm] = fmtAmtTuple(br(r.denominator));
-    return `${Number(nm) / Number(dm)} ${nl}/${dl}`;
+    return `${r4(Number(nm) / Number(dm))} ${nl}/${dl}`;
   };
   /** @param {Ratio} r */
   const discount = r =>
-    100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100;
+    r4(100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100);
 
   /** @param {import('@agoric/time/src/types.js').TimestampRecord} tr */
   const absTime = tr => new Date(Number(tr.absValue) * 1000).toISOString();
@@ -146,7 +148,7 @@ export const fmtBid = (bid, assets) => {
 
   const {
     id,
-    proposal: { give },
+    proposal: { give, want },
     offerArgs: { maxBuy },
     payouts,
     result,
@@ -156,6 +158,7 @@ export const fmtBid = (bid, assets) => {
     !error && result && result !== 'UNPUBLISHED' ? { result } : {};
   const props = {
     ...(give ? { give: fmt.record(give) } : {}),
+    ...(want ? { give: fmt.record(want) } : {}),
     ...(maxBuy ? { maxBuy: fmt.amount(maxBuy) } : {}),
     ...(payouts ? { payouts: fmt.record(payouts) } : resultProp),
     ...(error ? { error } : {}),

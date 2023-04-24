@@ -75,12 +75,18 @@ export const asPercent = ratio => {
   return (100 * Number(numerator.value)) / Number(denominator.value);
 };
 
+const { Fail, quote: q } = assert;
+
+const isObject = x => typeof x === 'object' && x !== null;
+
 /**
  * @param {Amount} x
  * @returns {Amount & { brand: BoardRemote }}
  */
 export const asBoardRemote = x => {
-  assert('getBoardId' in x.brand);
+  isObject(x) || Fail`not object: ${q(x)}`;
+  isObject(x.brand) || Fail`not object: ${q(x.brand)}`;
+  'getBoardId' in x.brand || Fail`missing getBoardId: ${q(x.brand)}`;
   // @ts-expect-error dynamic check
   return x;
 };
