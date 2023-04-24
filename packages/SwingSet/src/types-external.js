@@ -185,6 +185,10 @@ export {};
  * @typedef {object} SwingSetOptions
  * @property {string} [bootstrap]
  * @property {ConfigProposal[]} [coreProposals]
+ * @property {string[]} [exportStorageSubtrees] chain storage paths
+ *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
+ *   (e.g., `exportStorageSubtrees: ['a.b']` might result in vatParameters including
+ *   `chainStorageEntries: [ ['a.b', ''], ['a.b.c', '"foo"'], ['a.b.c2', '42'] ]`).
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.

@@ -105,20 +105,47 @@ export async function buildSwingset(
       return;
     }
     if (!config) throw Fail`config not yet set`;
+    const { coreProposals, exportStorageSubtrees } = config;
+
+    // XXX `initializeSwingset` does not have a default for `config.bootstrap`;
+    // should we universally ensure its presence in `config` above?
+    const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+
     // Find the entrypoints for all the core proposals.
-    if (config.coreProposals) {
+    if (coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
-        config.coreProposals,
+        coreProposals,
         vatconfig,
       );
-      const bootVat = config.vats[config.bootstrap || 'bootstrap'];
       config.bundles = { ...config.bundles, ...bundles };
 
       // Tell the bootstrap code how to run the core proposals.
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
-    config.pinBootstrapRoot = true;
 
+    // Extract data from chain storage.
+    if (exportStorageSubtrees) {
+      const callChainStorage = (method, path) =>
+        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
+      const chainStorageEntries = [];
+      // Preserve the ordering of each subtree via depth-first traversal.
+      let pendingEntries = exportStorageSubtrees.map(path => {
+        const value = callChainStorage('get', path);
+        return [path, value];
+      });
+      while (pendingEntries.length > 0) {
+        const entry = /** @type {[path: string, value: string]} */ (
+          pendingEntries.shift()
+        );
+        chainStorageEntries.push(entry);
+        const [path] = entry;
+        const childEntries = callChainStorage('entries', path);
+        pendingEntries = [...childEntries, ...pendingEntries];
+      }
+      bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
+    }
+
+    config.pinBootstrapRoot = true;
     await initializeSwingset(config, bootstrapArgs, kernelStorage, {
       // @ts-expect-error debugPrefix? what's that?
       debugPrefix,
