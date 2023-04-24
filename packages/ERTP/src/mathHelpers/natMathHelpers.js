@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Nat, isNat } from '@endo/nat';
 
 import '../types-ambient.js';

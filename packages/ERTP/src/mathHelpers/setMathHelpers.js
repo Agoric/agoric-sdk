@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { passStyleOf } from '@endo/marshal';
 import {
   assertKey,

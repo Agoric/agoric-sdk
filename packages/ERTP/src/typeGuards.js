@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { M, matches } from '@agoric/store';
 
 export const BrandShape = M.remotable('Brand');
