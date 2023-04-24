@@ -361,6 +361,7 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
         namesByAddressAdmin: true,
         economicCommitteeCreatorFacet: true,
         econCharterKit: true,
+        highPrioritySendersManager: true,
       },
     },
     [inviteToEconCharter.name]: {

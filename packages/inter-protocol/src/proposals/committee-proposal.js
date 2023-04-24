@@ -149,7 +149,11 @@ export const getManifestForInviteCommittee = async (
   return {
     manifest: {
       [inviteCommitteeMembers.name]: {
-        consume: { namesByAddressAdmin: t, economicCommitteeCreatorFacet: t },
+        consume: {
+          namesByAddressAdmin: t,
+          economicCommitteeCreatorFacet: t,
+          highPrioritySendersManager: t,
+        },
       },
       [startEconCharter.name]: {
         consume: { zoe: t },

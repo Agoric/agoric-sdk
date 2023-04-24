@@ -17,7 +17,7 @@ import {
 import { importBundle } from '@endo/import-bundle';
 import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
-
+import { makePrioritySendersManager } from '@agoric/internal/src/priority-senders.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { PowerFlags } from '../walletFlags.js';
@@ -360,26 +360,66 @@ harden(makeBridgeManager);
  */
 export const makeChainStorage = async ({
   consume: { loadCriticalVat, bridgeManager: bridgeManagerP },
-  produce: { chainStorage: chainStorageP },
+  produce: {
+    chainStorage: chainStorageP,
+    storageBridgeManager: storageBridgeManagerP,
+  },
 }) => {
   const bridgeManager = await bridgeManagerP;
   if (!bridgeManager) {
     console.warn('Cannot support chainStorage without an actual chain.');
     chainStorageP.resolve(null);
+    storageBridgeManagerP.resolve(null);
     return;
   }
 
-  const ROOT_PATH = STORAGE_PATH.CUSTOM;
-
   const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
+  storageBridgeManagerP.resolve(storageBridgeManager);
 
   const vat = E(loadCriticalVat)('bridge');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     storageBridgeManager,
-    ROOT_PATH,
+    STORAGE_PATH.CUSTOM,
     { sequence: true },
   );
   chainStorageP.resolve(rootNodeP);
+};
+
+/**
+ * @param {BootstrapSpace & {
+ *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ * }} powers
+ */
+export const produceHighPrioritySendersManager = async ({
+  consume: { loadCriticalVat, storageBridgeManager: storageBridgeManagerP },
+  produce: { highPrioritySendersManager: managerP },
+}) => {
+  const storageBridgeManager = await storageBridgeManagerP;
+  if (!storageBridgeManager) {
+    console.warn(
+      'Cannot provide highPrioritySendersManager without an actual chain.',
+    );
+    managerP.resolve(null);
+    return;
+  }
+
+  const sendersNode = E(
+    E(loadCriticalVat)('bridge'),
+  ).makeBridgedChainStorageRoot(
+    storageBridgeManager,
+    STORAGE_PATH.HIGH_PRIORITY_SENDERS,
+    { sequence: false },
+  );
+
+  // NB: this is a non-durable Far object. If the bootstrap vat (where this object is made)
+  // were to be terminated, the object references to this would be severed.
+  // When bootstrap vat is restarted by bootstrap config containing the state
+  // extracted from IAVL but the contracts holding this manager will need to be
+  // updated with the new object. That can be done without a contract upgrade by
+  // restarting the contracts with the new object in privateArgs.
+  const manager = makePrioritySendersManager(sendersNode);
+
+  managerP.resolve(manager);
 };
 
 /**
@@ -583,6 +623,13 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     consume: { loadCriticalVat: true, bridgeManager: true },
     produce: {
       chainStorage: 'bridge',
+      storageBridgeManager: 'bridge',
+    },
+  },
+  [produceHighPrioritySendersManager.name]: {
+    consume: { loadCriticalVat: true, storageBridgeManager: true },
+    produce: {
+      highPrioritySendersManager: 'bridge',
     },
   },
   [publishAgoricNames.name]: {
