@@ -1,3 +1,5 @@
+// @jessie-check
+
 import '@agoric/governance/exported.js';
 import { makeScalarMapStore, M, makeExo, mustMatch } from '@agoric/store';
 import '@agoric/zoe/exported.js';

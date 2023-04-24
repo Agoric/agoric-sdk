@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * For example, an agoric1... Cosmos address
  *
