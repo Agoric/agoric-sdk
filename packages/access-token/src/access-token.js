@@ -26,6 +26,10 @@ export function generateAccessToken({
   );
 }
 
+/**
+ * @param {string|number} port
+ * @returns {Promise<string>}
+ */
 export async function getAccessToken(port) {
   if (typeof port === 'string') {
     const match = port.match(/^(.*:)?(\d+)$/);
@@ -47,5 +51,8 @@ export async function getAccessToken(port) {
   }
   const accessToken = storage.get(accessTokenKey);
   await close();
+  if (typeof accessToken !== 'string') {
+    throw Error(`Could not find access token for ${port}`);
+  }
   return accessToken;
 }

@@ -379,7 +379,7 @@ export const makeCosmosBundlePublisher = ({
  * @param {object} powers
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
- * @param {() => ConnectionSpec} [powers.getDefaultConnection]
+ * @param {() => Promise<ConnectionSpec>} [powers.getDefaultConnection]
  * @returns {Promise<Bundle>}
  */
 const publishBundle = async (
@@ -477,7 +477,7 @@ const publishBundle = async (
  * @param {(hostPort: string) => Promise<string>} [powers.getAccessToken]
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
- * @param {() => ConnectionSpec} [powers.getDefaultConnection]
+ * @param {() => Promise<ConnectionSpec>} [powers.getDefaultConnection]
  */
 export const makeBundlePublisher = powers => {
   /**
