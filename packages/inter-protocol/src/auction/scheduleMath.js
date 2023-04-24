@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '@agoric/internal';

@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @typedef {import('./vault').VaultNotification} VaultNotification
  * @typedef {import('./vault').Vault} Vault

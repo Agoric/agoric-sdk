@@ -1,3 +1,5 @@
+// @jessie-check
+
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';

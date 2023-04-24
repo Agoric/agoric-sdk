@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Stable } from '@agoric/vats/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';

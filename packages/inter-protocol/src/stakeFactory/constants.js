@@ -1,3 +1,5 @@
+// @jessie-check
+
 export const AttKW = /** @type { const } */ ({
   /** seat keyword for use in offers to return an attestation. */
   Attestation: 'Attestation',

@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
 const makeReserveTerms = (poserInvitationAmount, timer) => ({
