@@ -11,6 +11,8 @@ import djson from '../lib/djson.js';
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
  * @typedef {import('../types-internal.js').VatManager} VatManager
+ * @typedef {import('../types-internal.js').TranscriptDeliveryResults} TranscriptDeliveryResults
+ * @typedef {import('../types-internal.js').TranscriptEntry} TranscriptEntry
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
@@ -49,7 +51,7 @@ function recordSyscalls(origHandler) {
  * @param {*} kernelSlog
  * @param {string} vatID
  * @param {number} deliveryNum
- * @param {import('../types-external.js').TranscriptEntry} transcriptEntry
+ * @param {TranscriptEntry} transcriptEntry
  * @returns { {
  *   syscallHandler: (vso: VatSyscallObject) => VatSyscallResult,
  *   finishSimulation: () => void,
@@ -489,7 +491,7 @@ export function makeVatWarehouse({
     // destroy the vat, change what we do with the transcript here.
     if (options.useTranscript) {
       // record transcript entry
-      /** @type { import('../types-external.js').TranscriptDeliveryResults} */
+      /** @type {TranscriptDeliveryResults} */
       const tdr = { status: deliveryResult[0] };
       const transcriptEntry = { d: vd, sc: getTranscriptSyscalls(), r: tdr };
       vatKeeper.addToTranscript(transcriptEntry);

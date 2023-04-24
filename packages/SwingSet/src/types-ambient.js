@@ -69,7 +69,6 @@
  * @typedef { import('./types-external.js').DeviceInvocationResultError } DeviceInvocationResultError
  * @typedef { import('./types-external.js').DeviceInvocationResult } DeviceInvocationResult
  *
- * @typedef { import('./types-external.js').TranscriptEntry } TranscriptEntry
  * @typedef { import('./types-external.js').VatStats } VatStats
  * @typedef { import('./types-external.js').VatKeeper } VatKeeper
  * @typedef { import('./types-external.js').KernelKeeper } KernelKeeper

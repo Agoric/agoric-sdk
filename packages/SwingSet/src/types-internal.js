@@ -18,6 +18,8 @@ export {};
  * @typedef { import('./types-external.js').OptManagerType } OptManagerType
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallHandler } VatSyscallHandler
  *
  * // used by vatKeeper.setSourceAndOptions(source, RecordedVatOptions)
@@ -93,4 +95,10 @@ export {};
  *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
  *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead
  *          } RunQueueEvent
+ */
+
+/**
+ * @typedef { { s: VatSyscallObject, r: VatSyscallResult } } TranscriptSyscall
+ * @typedef { { status: string } } TranscriptDeliveryResults
+ * @typedef { { d: VatDeliveryObject, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
  */

@@ -121,9 +121,6 @@ export {};
  * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
  *
- * @typedef { { s: VatSyscallObject, r: VatSyscallResult } } TranscriptSyscall
- * @typedef { { status: string } } TranscriptDeliveryResults
- * @typedef { { d: VatDeliveryObject, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
  * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
  * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
