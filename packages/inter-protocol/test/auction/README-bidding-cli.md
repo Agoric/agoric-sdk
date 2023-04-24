@@ -16,6 +16,7 @@ bid is broadcast:
   "id": "bid-1680241587424",
   "price": "8.50 IST/ATOM",
   "give": { "Currency": "85 IST" },
+  "maxBuy": "1000000 ATOM",
   "result": "Your bid has been accepted"
 }
 ```
@@ -228,7 +229,7 @@ $ inter bid by-price --give 5IST --price 9.50 --from test-acct
 2023-03-31T07:07:33.319399551Z tx not in block 55762 retrying...
 bid is broadcast:
 {"timestamp":"2023-03-31T07:07:38Z","height":"55763","offerId":"bid-1680246460034","txhash":"FDB98EEC71E987FEEE4A..."}
-{"id":"bid-1680246460034","price":"9.5 IST/ATOM","give":{"Currency":"5 IST"},"result":"Your bid has been accepted"}
+{"id":"bid-1680246460034","price":"9.5 IST/ATOM","give":{"Currency":"5 IST"},"maxBuy": "1000000 ATOM","result":"Your bid has been accepted"}
 ```
 
 This command does several things:
@@ -243,7 +244,7 @@ This command does several things:
 
 ```
 $ inter bid list --from test-acct
-{"id":"bid-1680246460034","price":"9.5 IST/ATOM","give":{"Currency":"5 IST"},"result":"Your bid has been accepted"}
+{"id":"bid-1680246460034","price":"9.5 IST/ATOM","give":{"Currency":"5 IST"},"maxBuy": "1000000 ATOM","result":"Your bid has been accepted"}
 ```
 
 ### Listing all bids, including payouts, with `--all`
@@ -252,8 +253,8 @@ If you win an auction, the winning bid will no longer be open; so use `--all`:
 
 ```
 $ inter bid list --from test-acct --all
-{"id":"bid-123142131231","price":"10 IST/ATOM","give":{"Currency":"10 IST"},"payouts":{"Currency":"10IST"}}
-{"id":"bid-1680232100993","price":"5 IST/ATOM","give":{"Currency":"0.7 IST"},"result":"Your bid has been accepted"}
+{"id":"bid-123142131231","price":"10 IST/ATOM","give":{"Currency":"10 IST"},"maxBuy": "1000000 ATOM","payouts":{"Currency":"10IST"}}
+{"id":"bid-1680232100993","price":"5 IST/ATOM","give":{"Currency":"0.7 IST"},"maxBuy": "1000000 ATOM","result":"Your bid has been accepted"}
 ```
 
 
@@ -273,7 +274,7 @@ A cancelled bid is refunded; this is shown as `payouts` when using `inter bid li
 
 ```
 $ inter bid list --all --from test-acct | grep bid-1680246460034
-{"id":"bid-1680246460034","price":"9.5 IST/ATOM","give":{"Currency":"5 IST"},"payouts":{"Collateral":"0 ATOM","Currency":"5 IST"}}
+{"id":"bid-1680246460034","price":"9.5 IST/ATOM","give":{"Currency":"5 IST"},"maxBuy": "1000000 ATOM","payouts":{"Collateral":"0 ATOM","Currency":"5 IST"}}
 ```
 
 ## Bid History and Pruning
