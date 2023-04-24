@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Fail } from '@agoric/assert';
 import { mustMatch } from '@agoric/store';
 
