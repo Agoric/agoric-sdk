@@ -223,7 +223,7 @@ const getEphemeralKey = facets => facets.publisher;
  * @property {Promise<*> | undefined} currentP The current-result promise
  *   (undefined unless resolved with unrecoverable ephemeral data)
  * @property {Promise<*>} tailP The next-result promise
- * @property {import('@endo/promise-kit').PromiseKit<*>['resolve'] | undefined} tailR The next-result resolver
+ * @property {((value: any) => void) | undefined} tailR The next-result resolver
  *   (undefined when the publish kit has terminated)
  */
 
