@@ -60,6 +60,10 @@
     "rules": {
       "import/no-extraneous-dependencies": "off",
       "prettier/prettier": "off"
+    },
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": "./jsconfig.json"
     }
   },
   "publishConfig": {

@@ -37,10 +37,10 @@ describe('AgoricPetname', () => {
     );
 
     const inner = el.shadowRoot.querySelector('span');
-    expect(inner.getAttribute('data-powerbox-target')).to.equal(
+    await expect(inner.getAttribute('data-powerbox-target')).to.equal(
       'petname-if-known',
     );
-    expect(inner.getAttribute('data-powerbox-id')).to.equal('AG.1');
-    expect(inner.innerText).to.equal('AG.1');
+    await expect(inner.getAttribute('data-powerbox-id')).to.equal('AG.1');
+    await expect(inner.innerText).to.equal('AG.1');
   });
 });

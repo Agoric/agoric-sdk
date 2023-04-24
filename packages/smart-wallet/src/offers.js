@@ -180,11 +180,11 @@ export const makeOfferExecutor = ({
           }
         });
         if (seatRef) {
-          E(seatRef)
+          void E(seatRef)
             .hasExited()
             .then(hasExited => {
               if (!hasExited) {
-                E(seatRef).tryExit();
+                void E(seatRef).tryExit();
               }
             });
         }

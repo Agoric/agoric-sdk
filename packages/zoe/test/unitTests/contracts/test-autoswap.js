@@ -511,7 +511,7 @@ test('autoSwap - trade attempt before init, no jig', async t => {
     proposal,
     payment,
   );
-  t.throwsAsync(
+  await t.throwsAsync(
     seat.getOfferResult(),
     { message: /Pool not initialized/ },
     'The pool has not been initialized',
@@ -662,7 +662,7 @@ test('autoSwap jig - swap varying amounts', async t => {
   // Attempt (unsuccessfully) to trade for a specified amount
   const failedSeat = await alice.offerAndTrade(simoleans(75n), moola(3n));
 
-  t.throwsAsync(
+  await t.throwsAsync(
     failedSeat.getOfferResult(),
     { message: /amountIn insufficient/ },
     'amountIn insufficient when want specified',

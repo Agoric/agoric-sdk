@@ -208,9 +208,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     publishBundleHttp,
   });
 
-  const retryWebsocket = async () => {
-    const accessToken = await getAccessToken(`${wsurl.hostname}:${myPort}`);
-
+  const retryWebsocket = accessToken => {
     // For a WebSocket we need to put the token in the query string.
     const wsWebkey = `${wsurl}?accessToken=${encodeURIComponent(accessToken)}`;
 
@@ -509,7 +507,11 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
       exit.reject(e);
     });
   };
+
+  const accessToken = await getAccessToken(`${wsurl.hostname}:${myPort}`);
+
   // Start the retry process.
-  retryWebsocket();
+  retryWebsocket(accessToken);
+
   return exit.promise;
 }

@@ -384,7 +384,7 @@ export const spawnSwingStoreExport = (
 
   cp.on('error', kits.done.reject).on('exit', onExit).on('message', onMessage);
 
-  kits.done.promise
+  void kits.done.promise
     .catch(err => {
       kits.started.reject(err);
     })
