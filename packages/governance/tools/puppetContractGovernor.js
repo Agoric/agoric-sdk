@@ -20,7 +20,7 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
- *     issuerKeywordRecord: IssuerKeywordRecord,
+ *     issuerKeywordRecord?: IssuerKeywordRecord,
  *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('../src/contractGovernance/typedParamManager.js').InvitationParam }},
  *   }
  * }>} zcf

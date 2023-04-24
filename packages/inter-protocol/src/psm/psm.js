@@ -1,26 +1,26 @@
 // @jessie-check
 
+import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-import '@agoric/governance/exported.js';
 
-import { E } from '@endo/eventual-send';
-import {
-  ceilMultiplyBy,
-  floorDivideBy,
-  floorMultiplyBy,
-  atomicRearrange,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
 import {
   handleParamGovernance,
   ParamTypes,
   publicMixinAPI,
 } from '@agoric/governance';
-import { M, provide, prepareExo } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
+import { M, prepareExo, provide } from '@agoric/vat-data';
+import {
+  atomicRearrange,
+  ceilMultiplyBy,
+  floorDivideBy,
+  floorMultiplyBy,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublishKit } from '../contractSupport.js';
 
 const { Fail } = assert;
@@ -284,14 +284,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     methods,
   );
 
-  // TODO why does this operation return an object with a single operation?
-  const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
-    zcf,
-    feePool,
-    stableBrand,
-    'Minted',
-  );
-
   // The creator facets are only accessibly to governance and bootstrap,
   // and so do not need interface protection at this time. Additionally,
   // all the operations take no arguments and so are largely defensive as is.
@@ -300,7 +292,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       return feePool.getCurrentAllocation();
     },
     makeCollectFeesInvitation() {
-      return makeCollectFeesInvitation();
+      return makeCollectFeesInvitation(zcf, feePool, stableBrand, 'Minted');
     },
   });
 

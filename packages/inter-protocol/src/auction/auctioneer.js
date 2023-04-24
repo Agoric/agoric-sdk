@@ -596,7 +596,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     return 'deposited';
   };
 
-  const getDepositInvitation = () =>
+  const makeDepositInvitation = () =>
     zcf.makeInvitation(
       depositOfferHandler,
       'deposit Collateral',
@@ -661,7 +661,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           schedule: makeRecorderTopic('Auction schedule', scheduleKit),
         };
       },
-      getDepositInvitation,
+      makeDepositInvitation,
       ...params,
     }),
   );

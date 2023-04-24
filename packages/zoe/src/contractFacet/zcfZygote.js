@@ -361,7 +361,7 @@ export const makeZCFZygote = async (
       privateArgs = undefined,
     ) => {
       zoeInstanceAdmin = instanceAdminFromZoe;
-      initSeatMgrAndMintFactory();
+      await initSeatMgrAndMintFactory();
 
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
       instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
@@ -417,7 +417,7 @@ export const makeZCFZygote = async (
       prepare || Fail`prepare must be defined to upgrade a contract`;
       zoeInstanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
-      initSeatMgrAndMintFactory();
+      await initSeatMgrAndMintFactory();
 
       // restart an upgradeable contract
       return E.when(

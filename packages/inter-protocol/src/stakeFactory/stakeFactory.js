@@ -4,7 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { E, Far } from '@endo/far';
-import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
 import { makeStakeFactoryKit } from './stakeFactoryKit.js';
@@ -212,12 +212,12 @@ export const start = async (
   const creatorFacet = Far('stakeFactory creator', {
     provideAttestationMaker: att.creatorFacet.provideAttestationTool,
     makeCollectFeesInvitation: () => {
-      return makeMakeCollectFeesInvitation(
+      return makeCollectFeesInvitation(
         zcf,
         rewardPoolSeat,
         debtBrand,
         'Minted',
-      ).makeCollectFeesInvitation();
+      );
     },
   });
 

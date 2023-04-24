@@ -23,6 +23,7 @@
     "@agoric/zone": "^0.1.0",
     "@endo/far": "^0.2.18",
     "@endo/marshal": "^0.8.5",
+    "@endo/patterns": "^0.2.2",
     "@endo/promise-kit": "^0.2.56",
     "anylogger": "^0.21.0",
     "jessie.js": "^0.3.2"

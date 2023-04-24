@@ -7,10 +7,14 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
+
+// to retain for ESlint, used by typedef
+E;
 
 const sink = () => {};
 
@@ -100,13 +104,13 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
   };
 
   /**
-   * @type {( (presence: unknown) => Record<string, (...args: any) => Promise<any>> ) & {
+   * @type {typeof E & {
    *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>,
-   *   get: (presence: unknown) => Record<string, Promise<any>>,
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
    *   rawBoot: Record<string, (...args: any) => Promise<any>>,
    * }}
    */
+  // @ts-expect-error cast, approximate
   const EV = presence =>
     new Proxy(harden({}), {
       get: (_t, methodName, _rx) =>
@@ -128,6 +132,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     get: (_t, methodName, _rx) =>
       harden((...args) => runMethod(methodName, args)),
   });
+  // @ts-expect-error xxx
   EV.sendOnly = presence =>
     new Proxy(
       {},
@@ -140,6 +145,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
             ]),
       },
     );
+  // @ts-expect-error xxx
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
@@ -190,7 +196,7 @@ export const makeWalletFactoryDriver = async (
     },
     /**
      * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
-     * @returns {void}
+     * @returns {Promise<void>}
      */
     sendOffer(offer) {
       const offerCapData = marshaller.serialize({

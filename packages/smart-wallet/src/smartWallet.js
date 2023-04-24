@@ -7,7 +7,7 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import { makeTypeGuards } from '@agoric/internal';
+import { StorageNodeShape } from '@agoric/internal';
 import { observeNotifier } from '@agoric/notifier';
 import { M, mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
@@ -24,7 +24,6 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 
 const { Fail, quote: q } = assert;
-const { StorageNodeShape } = makeTypeGuards(M);
 
 /**
  * @file Smart wallet module

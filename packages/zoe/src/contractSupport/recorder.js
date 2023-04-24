@@ -1,5 +1,5 @@
 import { Fail } from '@agoric/assert';
-import { makeTypeGuards } from '@agoric/internal';
+import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import {
   makeFakeMarshaller,
@@ -8,9 +8,6 @@ import {
 import { mustMatch } from '@agoric/store';
 import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-
-// XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/7090
-const { StorageNodeShape } = makeTypeGuards(M);
 
 /**
  * Recorders support publishing data to vstorage.

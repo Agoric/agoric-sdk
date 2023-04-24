@@ -1106,7 +1106,7 @@ export const prepareVaultManagerKit = (
           helper.updateMetrics();
 
           const { userSeatPromise, deposited } = await E.when(
-            E(auctionPF).getDepositInvitation(),
+            E(auctionPF).makeDepositInvitation(),
             depositInvitation =>
               offerTo(
                 zcf,
