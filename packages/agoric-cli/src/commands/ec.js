@@ -237,7 +237,9 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
       const info = await readLatestHead(
         'published.committees.Economic_Committee.latestQuestion',
-      );
+      ).catch(err => {
+        throw new CommanderError(1, 'VSTORAGE_FAILURE', err.message);
+      });
       // XXX runtime shape-check
       const questionDesc = /** @type {any} */ (info);
 

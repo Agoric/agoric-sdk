@@ -71,9 +71,21 @@ export const makeVStorage = (powers, config = networkConfig) => {
     `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`;
 
   const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
-    getJSON(url(path, { kind, height })).catch(err => {
-      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
-    });
+    getJSON(url(path, { kind, height }))
+      .catch(err => {
+        throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+      })
+      .then(data => {
+        const {
+          result: { response },
+        } = data;
+        if (response?.code !== 0) {
+          throw Error(
+            `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
+          );
+        }
+        return data;
+      });
 
   return {
     url,
