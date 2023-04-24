@@ -15,10 +15,9 @@ const makeQuietRejection = reason => {
   void E.when(rejection, sink, sink);
   return rejection;
 };
-const makeTooFarRejection = () => {
-  const err = harden(new Error('Cannot read past end of iteration.'));
-  return makeQuietRejection(err);
-};
+const tooFarRejection = makeQuietRejection(
+  harden(new Error('Cannot read past end of iteration.')),
+);
 
 export const PublisherI = M.interface('Publisher', {
   publish: M.call(M.any()).returns(),
@@ -101,7 +100,7 @@ export const makePublishKit = () => {
     const resolveCurrent = tailR;
 
     if (done) {
-      tailP = makeTooFarRejection();
+      tailP = tooFarRejection;
       tailR = undefined;
     } else {
       ({ promise: tailP, resolve: tailR } = makePromiseKit());
@@ -294,7 +293,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
     ({ promise: tailP, resolve: tailR } = makePromiseKit());
     void E.when(tailP, sink, sink);
   } else if (status === 'finished' || status === 'failed') {
-    tailP = makeTooFarRejection();
+    tailP = tooFarRejection;
   } else {
     throw Fail`Invalid durable promise kit status: ${q(status)}`;
   }
@@ -332,7 +331,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   let tailR;
   if (done) {
     state.status = targetStatus;
-    tailP = makeTooFarRejection();
+    tailP = tooFarRejection;
     tailR = undefined;
   } else {
     ({ promise: tailP, resolve: tailR } = makePromiseKit());
