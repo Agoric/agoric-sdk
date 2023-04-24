@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @template T
  * @typedef {import('@endo/far').ERef<T>} ERef
