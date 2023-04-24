@@ -99,6 +99,7 @@ export const createPriceFeed = async (
       client,
       econCharterKit,
       economicCommitteeCreatorFacet,
+      highPrioritySendersManager,
       namesByAddressAdmin,
       priceAuthority,
       priceAuthorityAdmin,
@@ -195,6 +196,7 @@ export const createPriceFeed = async (
     governorTerms,
     {
       governed: {
+        highPrioritySendersManager,
         initialPoserInvitation,
         marshaller,
         namesByAddressAdmin,
@@ -276,6 +278,7 @@ export const getManifestForPriceFeed = async (
         contractGovernor: t,
         econCharterKit: t,
         economicCommitteeCreatorFacet: t,
+        highPrioritySendersManager: t,
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
