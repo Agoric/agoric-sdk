@@ -1,4 +1,4 @@
-/* global setTimeout, WeakRef, setImmediate, process */
+/* global setTimeout, FinalizationRegistry, setImmediate, process */
 import '@endo/init/debug.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -348,16 +348,18 @@ test('normal close of pathological script', async t => {
 });
 
 async function runToGC() {
-  const trashCan = [{}];
-  const wr = new WeakRef(trashCan[0]);
-  // @ts-expect-error
-  trashCan[0] = undefined;
+  let collected = false;
+  const fr = new FinalizationRegistry(() => {
+    collected = true;
+  });
+  fr.register({}, undefined);
+  const trashCan = [];
 
   let qty;
-  for (qty = 0; wr.deref(); qty += 1) {
+  for (qty = 0; !collected; qty += 1) {
     // eslint-disable-next-line no-await-in-loop
     await new Promise(setImmediate);
-    trashCan[1] = Array(10_000).map(() => ({}));
+    trashCan.push(Array(10_000).map(() => ({})));
   }
   return qty;
 }
