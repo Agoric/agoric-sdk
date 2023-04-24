@@ -1,3 +1,5 @@
+// @jessie-check
+
 import './types.js';
 
 import {
@@ -32,9 +34,9 @@ export const vaultDirectorParamTypes = {
 harden(vaultDirectorParamTypes);
 
 /**
- * @param {Amount} electorateInvitationAmount
+ * @param {Amount<'set'>} electorateInvitationAmount
  * @param {Amount<'nat'>} minInitialDebt
- * @param {Amount} shortfallInvitationAmount
+ * @param {Amount<'set'>} shortfallInvitationAmount
  * @param {string} endorsedUi
  * @param {InterestTiming} interestTiming
  */
@@ -119,14 +121,14 @@ export const vaultParamPattern = M.splitRecord(
 /**
  * @param {{
  *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
- *   electorateInvitationAmount: Amount,
+ *   electorateInvitationAmount: Amount<'set'>,
  *   minInitialDebt: Amount<'nat'>,
  *   bootstrapPaymentValue: bigint,
  *   priceAuthority: ERef<PriceAuthority>,
  *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   interestTiming: InterestTiming,
- *   shortfallInvitationAmount: Amount,
+ *   shortfallInvitationAmount: Amount<'set'>,
  *   endorsedUi?: string,
  * }} opts
  */

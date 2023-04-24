@@ -112,7 +112,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * template {ContractPowerfulCreatorFacet} CF Creator facet of governed
  * type {ContractStartFn<
  * GovernorPublic,
- * GovernedContractFacetAccess<PF,CF>,
+ * GovernorCreatorFacet<PF,CF>,
  * {
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<CF>,
@@ -121,10 +121,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *     terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam}},
  *   }
  * }>}
- */
-
-/**
- * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
  */
 
 /**
@@ -143,6 +139,10 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * @param {{
  *   governed: Record<string, unknown>
  * }} privateArgs
+ * @returns {Promise<{
+ *   creatorFacet: GovernorCreatorFacet<SF>,
+ *   publicFacet: GovernorPublic,
+ * }>}
  */
 const start = async (zcf, privateArgs) => {
   trace('start');
@@ -214,8 +214,7 @@ const start = async (zcf, privateArgs) => {
   trace('awaiting setupParamGovernance');
   // All governed contracts have at least a governed electorate
   const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
-    await setupParamGovernance(
-      zoe,
+    setupParamGovernance(
       E(governedCF).getParamMgrRetriever(),
       governedInstance,
       timer,
@@ -223,9 +222,7 @@ const start = async (zcf, privateArgs) => {
     );
 
   trace('awaiting setupFilterGovernance');
-  const { voteOnFilter, createdFilterQuestion } = await setupFilterGovernance(
-    zoe,
-    governedInstance,
+  const { voteOnFilter, createdFilterQuestion } = setupFilterGovernance(
     timer,
     getUpdatedPoserFacet,
     governedCF,
@@ -308,6 +305,8 @@ const start = async (zcf, privateArgs) => {
     });
   };
 
+  /** @type {GovernorCreatorFacet<SF>} */
+  // @ts-expect-error cast
   const creatorFacet = Far('governor creatorFacet', {
     replaceElectorate,
     voteOnParamChanges,

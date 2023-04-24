@@ -39,6 +39,7 @@ const main = async () => {
 
   registerShutdown(async () => {
     await slogSender?.forceFlush?.();
+    await slogSender?.shutdown?.();
     process.disconnect?.();
   });
 

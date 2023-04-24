@@ -485,9 +485,13 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         if (typeof exportDir !== 'string') {
           throw Fail`Invalid exportDir argument ${q(exportDir)}`;
         }
+        console.info(
+          'Restoring SwingSet state from snapshot at block height',
+          blockHeight,
+        );
         return performStateSyncImport(
           { exportDir, stateDir: stateDBDir, blockHeight },
-          { fs: { ...fs, ...fsPromises }, pathResolve },
+          { fs: { ...fs, ...fsPromises }, pathResolve, log: null },
         );
       }
       case 'initiate': {
@@ -534,6 +538,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           );
         });
 
+        console.info(
+          'Initiating SwingSet state snapshot at block height',
+          blockHeight,
+        );
         exportData.exporter = spawnSwingStoreExport(
           {
             stateDir: stateDBDir,

@@ -1,4 +1,3 @@
-import { assert } from '@agoric/assert';
 import {
   insistVatSyscallObject,
   insistVatSyscallResult,
@@ -9,7 +8,7 @@ import '../types-ambient.js';
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscaller} VatSyscaller
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
@@ -59,12 +58,11 @@ export { makeSupervisorDispatch };
  * I should be given a `syscallToManager` function that accepts a
  * VatSyscallObject and (synchronously) returns a VatSyscallResult.
  *
- * @param {VatSyscaller} syscallToManager
- * @param {boolean} workerCanBlock
+ * @param {VatSyscallHandler} syscallToManager
  * @typedef { unknown } TheSyscallObjectWithMethodsThatLiveslotsWants
  * @returns {TheSyscallObjectWithMethodsThatLiveslotsWants}
  */
-function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
+function makeSupervisorSyscall(syscallToManager) {
   function doSyscall(fields) {
     insistVatSyscallObject(fields);
     /** @type { VatSyscallObject } */
@@ -75,10 +73,6 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     } catch (err) {
       console.warn(`worker got error during syscall:`, err);
       throw err;
-    }
-    if (!workerCanBlock) {
-      // we don't expect an answer
-      return null;
     }
     const vsr = r;
     insistVatSyscallResult(vsr);
@@ -126,21 +120,6 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),
   };
-
-  const blocking = [
-    'callNow',
-    'vatstoreGet',
-    'vatstoreGetNextKey',
-    'vatstoreSet',
-    'vatstoreDelete',
-  ];
-
-  if (!workerCanBlock) {
-    for (const name of blocking) {
-      const err = `this non-blocking worker transport cannot syscall.${name}`;
-      syscallForVat[name] = () => assert.fail(err);
-    }
-  }
 
   return harden(syscallForVat);
 }

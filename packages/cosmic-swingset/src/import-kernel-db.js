@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 // @ts-check
-import '@endo/init';
+import '@endo/init/unsafe-fast.js';
 
 import os from 'os';
 import process from 'process';
@@ -31,7 +31,7 @@ import { makeProcessValue } from './helpers/process-value.js';
  * @param {Pick<import('fs/promises'), 'readFile'> & Pick<import('fs'), 'createReadStream'>} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
  * @param {typeof import('@agoric/swing-store')['importSwingStore']} [powers.importSwingStore]
- * @param {(...args: any[]) => void} [powers.log]
+ * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {Promise<void>}
  */
 export const performStateSyncImport = async (
@@ -40,7 +40,7 @@ export const performStateSyncImport = async (
     fs: { createReadStream, readFile },
     pathResolve,
     importSwingStore: importDB = importSwingStore,
-    log,
+    log = console.log,
   },
 ) => {
   /** @param {string} allegedRelativeFilename */

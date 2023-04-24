@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @typedef {Readonly<{
  *   address: Address,

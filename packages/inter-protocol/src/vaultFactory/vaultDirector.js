@@ -223,7 +223,6 @@ export const prepareVaultDirector = (
         getGovernedParams: M.call({ collateralBrand: BrandShape }).returns(
           M.record(),
         ),
-        getContractGovernor: M.call().returns(M.remotable()),
         getInvitationAmount: M.call(M.string()).returns(AmountShape),
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
@@ -258,7 +257,9 @@ export const prepareVaultDirector = (
         getLimitedCreatorFacet() {
           return this.facets.machine;
         },
+        /** @returns {ERef<GovernedApis>} */
         getGovernedApis() {
+          // @ts-expect-error cast
           return Far('governedAPIs', {});
         },
         getGovernedApiNames() {
@@ -506,15 +507,6 @@ export const prepareVaultDirector = (
         getGovernedParams({ collateralBrand }) {
           // TODO use named getters of TypedParamManager
           return vaultParamManagers.get(collateralBrand).getParams();
-        },
-        /**
-         * @returns {Promise<GovernorPublic>}
-         */
-        getContractGovernor() {
-          // PERF consider caching
-          return E(zcf.getZoeService()).getPublicFacet(
-            zcf.getTerms().electionManager,
-          );
         },
         /**
          * @param {string} name

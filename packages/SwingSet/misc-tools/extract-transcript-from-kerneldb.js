@@ -37,11 +37,20 @@ const allVatNames = JSON.parse(get('vat.names'));
 const allDynamicVatIDs = JSON.parse(get('vat.dynamicIDs'));
 
 if (!vatName) {
-  console.log(`all vats:`);
+  console.log(`all vats:              status            startPos - endPos`);
   for (const name of allVatNames) {
     const vatID = get(`vat.name.${name}`);
     const status = `(static)`;
-    console.log(`${vatID.padEnd(3)} : ${name.padEnd(15)} ${status.padEnd(20)}`);
+    const bounds = transcriptStore.getCurrentSpanBounds(vatID);
+    const { startPos, endPos } = bounds;
+    const boundsStr = `${startPos.toString().padStart(6)} - ${endPos
+      .toString()
+      .padStart(6)}`;
+    console.log(
+      `${vatID.padEnd(3)} : ${name.padEnd(15)} ${status.padEnd(
+        20,
+      )} ${boundsStr}`,
+    );
   }
   for (const vatID of allDynamicVatIDs) {
     const options = JSON.parse(get(`${vatID}.options`));
@@ -130,7 +139,7 @@ if (!vatName) {
         `Unexpected transcript item at position ${position} (expected to see item position ${expectedPosition})`,
       );
     }
-    // item is JSON.stringify({ d, syscalls }), syscall is { d, response }
+    // item is JSON.stringify({ d, sc: syscalls, r }), syscall is { s, r }
     const t = { transcriptNum, ...JSON.parse(item) };
     fs.writeSync(fd, `${JSON.stringify(t)}\n`);
     transcriptNum += 1;

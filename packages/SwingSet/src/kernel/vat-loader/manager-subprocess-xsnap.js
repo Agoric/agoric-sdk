@@ -28,7 +28,6 @@ const decoder = new TextDecoder();
 
 /**
  * @param {{
- *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
  *   startXSnap: (vatID: string, name: string,
@@ -55,20 +54,17 @@ export function makeXsSubprocessFactory({
    * @param {unknown} bundle
    * @param {import('../../types-internal.js').ManagerOptions} managerOptions
    * @param {LiveSlotsOptions} liveSlotsOptions
-   * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
    */
   async function createFromBundle(
     vatID,
     bundle,
     managerOptions,
     liveSlotsOptions,
-    vatSyscallHandler,
   ) {
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
       name: vatName,
       metered,
-      compareSyscalls,
       useTranscript,
       sourcedConsole,
       workerOptions,
@@ -82,15 +78,7 @@ export function makeXsSubprocessFactory({
     const { bundleIDs } = workerOptions;
     assert(bundleIDs, 'bundleIDs required for xsnap');
 
-    const mk = makeManagerKit(
-      vatID,
-      kernelSlog,
-      kernelKeeper,
-      vatSyscallHandler,
-      true,
-      compareSyscalls,
-      useTranscript,
-    );
+    const mk = makeManagerKit();
 
     /** @type { (item: Tagged) => unknown } */
     function handleUpstream([type, ...args]) {

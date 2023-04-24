@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { M } from '@agoric/store';
 
 /**

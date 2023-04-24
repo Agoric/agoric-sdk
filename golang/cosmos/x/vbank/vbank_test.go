@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -98,7 +99,7 @@ func decodeBalances(encoded []byte) (balances, uint64, error) {
 		return nil, 0, err
 	}
 	b := newBalances()
-	fmt.Printf("updated balances %v\n", balanceUpdate.Updated)
+	// fmt.Printf("updated balances %v\n", balanceUpdate.Updated)
 	for _, u := range balanceUpdate.Updated {
 		account(u.Address, coin(u.Denom, u.Amount))(b)
 	}
@@ -514,7 +515,14 @@ func Test_EndBlock_Events(t *testing.T) {
 			sdk.NewInt64Coin("arcadeTokens", 7),
 		),
 	}}
-	keeper, ctx := makeTestKit(nil, bank)
+	acct := &mockAuthKeeper{
+		accounts: map[string]authtypes.AccountI{
+			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}},
+			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}},
+			addr3: &authtypes.BaseAccount{},
+		},
+	}
+	keeper, ctx := makeTestKit(acct, bank)
 	// Turn off rewards.
 	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec()})
 	msgsSent := []string{}
@@ -550,6 +558,14 @@ func Test_EndBlock_Events(t *testing.T) {
 				{Key: []byte("receiver"), Value: []byte(addr4)},
 				{Key: []byte("spender"), Value: []byte(addr4)},
 				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+			},
+		},
+		{
+			Type: "non_modaccount",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("receiver"), Value: []byte(addr3)},
+				{Key: []byte("spender"), Value: []byte(addr4)},
+				{Key: []byte("amount"), Value: []byte("100ubld")},
 			},
 		},
 	}
@@ -730,16 +746,38 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 }
 
-type mockAccount struct{}
+type mockAuthKeeper struct{
+	accounts map[string]authtypes.AccountI
+}
 
-func (ma mockAccount) GetModuleAddress(name string) sdk.AccAddress {
+func (ma mockAuthKeeper) GetModuleAddress(name string) sdk.AccAddress {
 	return sdk.AccAddress(name)
 }
 
+func (ma mockAuthKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+	// fmt.Printf("GetAccount %s\n", addr.String())
+	return ma.accounts[addr.String()]
+}
+
 func Test_Module_Account(t *testing.T) {
-	account := &mockAccount{}
-	keeper, ctx := makeTestKit(account, nil)
-	ch := NewPortHandler(AppModule{}, keeper)
+	moduleBech32 := "cosmos1we3xzmnt9aex2um9wfmx2em0pd0"
+	moduleJson, err := json.Marshal(moduleBech32)
+	if err != nil {
+		t.Fatalf("got error = %v", err)
+	}
+
+	acct := &mockAuthKeeper{
+		accounts: map[string]authtypes.AccountI{
+			moduleBech32: &authtypes.ModuleAccount{
+				BaseAccount: &authtypes.BaseAccount{},
+				Name:        "vbank/reserve",
+			},
+			addr1: &authtypes.BaseAccount{},
+		},
+	}
+	keeper, ctx := makeTestKit(acct, nil)
+	am := AppModule{keeper: keeper}
+	ch := NewPortHandler(am, keeper)
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
 	mod1 := "vbank/reserve"
@@ -750,8 +788,22 @@ func Test_Module_Account(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got error = %v", err)
 	}
-	expected := `"cosmos1we3xzmnt9aex2um9wfmx2em0pd0"`
+
+	expected := string(moduleJson)
 	if ret != expected {
 		t.Errorf("got ret = %v, want %v", ret, expected)
+	}
+
+	modAddr := sdk.MustAccAddressFromBech32(moduleBech32)
+	if !keeper.IsModuleAccount(ctx, modAddr) {
+		t.Errorf("got IsModuleAccount modAddr = false, want true")
+	}
+	notModAddr := sdk.MustAccAddressFromBech32(addr1)
+	if keeper.IsModuleAccount(ctx, notModAddr) {
+		t.Errorf("got IsModuleAccount notModAddr = true, want false")
+	}
+	missingAddr := sdk.MustAccAddressFromBech32(addr2)
+	if keeper.IsModuleAccount(ctx, missingAddr) {
+		t.Errorf("got IsModuleAccount missingAddr = false, want true")
 	}
 }

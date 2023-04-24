@@ -68,11 +68,9 @@ export {};
  * @typedef {{ name: string, upgradeMessage: string, incarnationNumber: number }} DisconnectObject
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
- * @typedef { import('@agoric/swingset-liveslots').VatOneResolution } VatOneResolution
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
- * @typedef { import('@agoric/swingset-liveslots').VatSyscaller } VatSyscaller
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
  * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
@@ -123,7 +121,9 @@ export {};
  * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
  *
- * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
+ * @typedef { { s: VatSyscallObject, r: VatSyscallResult } } TranscriptSyscall
+ * @typedef { { status: string } } TranscriptDeliveryResults
+ * @typedef { { d: VatDeliveryObject, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
  * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
  * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
@@ -232,6 +232,9 @@ export {};
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
  *             } } RunPolicy
+ *
+ * @typedef {object} VatWarehousePolicy
+ * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
  */
 
 /**
@@ -270,7 +273,6 @@ export {};
  *
  * @typedef { object } BaseVatOptions
  * @property { string } name
- * @property { string } [description]
  * @property { * } [vatParameters]
  * @property { boolean } [enableSetup]
  *           If true, permits the vat to construct itself using the

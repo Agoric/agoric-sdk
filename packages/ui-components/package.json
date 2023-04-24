@@ -7,9 +7,9 @@
   "dependencies": {
     "@agoric/assert": "^0.5.1",
     "@agoric/ertp": "^0.15.3",
-    "@endo/nat": "^4.1.26",
-    "@endo/eventual-send": "^0.17.1",
-    "@endo/init": "^0.5.55",
+    "@endo/nat": "^4.1.27",
+    "@endo/eventual-send": "^0.17.2",
+    "@endo/init": "^0.5.56",
     "clsx": "^1.1.1"
   },
   "peerDependencies": {

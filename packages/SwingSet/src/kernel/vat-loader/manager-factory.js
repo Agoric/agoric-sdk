@@ -13,17 +13,14 @@ export function makeVatManagerFactory({
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
-    kernelKeeper,
     vatEndowments,
     gcTools,
-    kernelSlog,
   });
 
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
     kernelSlog,
-    allVatPowers,
     testLog: allVatPowers.testLog,
   });
 
@@ -32,6 +29,7 @@ export function makeVatManagerFactory({
       'enablePipelining',
       'workerOptions',
       'setup',
+      'retainSyscall',
       'bundle',
       'metered',
       'enableDisavow',
@@ -41,7 +39,6 @@ export function makeVatManagerFactory({
       'reapInterval',
       'sourcedConsole',
       'name',
-      'compareSyscalls',
     ]);
     const { setup, bundle, enableSetup = false } = managerOptions;
     assert(setup || bundle);
@@ -59,7 +56,6 @@ export function makeVatManagerFactory({
    * syscall.
    *
    * @param {import('../../types-internal.js').VatID} vatID
-   * @param {import('../vat-warehouse.js').VatSyscallHandler} vatSyscallHandler
    * @param {object} options
    * @param {import('../../types-internal.js').ManagerOptions} options.managerOptions
    * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} options.liveSlotsOptions
@@ -67,7 +63,6 @@ export function makeVatManagerFactory({
    */
   async function vatManagerFactory(
     vatID,
-    vatSyscallHandler,
     { managerOptions, liveSlotsOptions },
   ) {
     validateManagerOptions(managerOptions);
@@ -79,19 +74,13 @@ export function makeVatManagerFactory({
     }
     if (enableSetup) {
       if (managerOptions.setup) {
-        return localFactory.createFromSetup(
-          vatID,
-          managerOptions.setup,
-          managerOptions,
-          vatSyscallHandler,
-        );
+        return localFactory.createFromSetup(vatID, managerOptions);
       } else {
         return localFactory.createFromBundle(
           vatID,
           managerOptions.bundle,
           managerOptions,
           liveSlotsOptions,
-          vatSyscallHandler,
         );
       }
     } else if (type === 'local') {
@@ -100,7 +89,6 @@ export function makeVatManagerFactory({
         managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
-        vatSyscallHandler,
       );
     }
 
@@ -111,7 +99,6 @@ export function makeVatManagerFactory({
         managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
-        vatSyscallHandler,
       );
     }
 

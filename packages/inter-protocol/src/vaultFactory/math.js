@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @file calculations specific to the Vault Factory contract
  * See also ../interest-math.js
@@ -9,7 +11,9 @@ import {
   addRatios,
   ceilMultiplyBy,
   floorDivideBy,
+  ratioGTE,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 
 /**
@@ -24,6 +28,27 @@ export const calculateMinimumCollateralization = (
   liquidationMargin,
   liquidationPadding,
 ) => addRatios(liquidationMargin, liquidationPadding);
+
+/**
+ * Calculate the lesser price of the given quotes.
+ *
+ * @param {PriceQuote} quoteA
+ * @param {PriceQuote} [quoteB]
+ * @returns {Ratio}
+ */
+export const minimumPrice = (quoteA, quoteB) => {
+  const priceA = priceFrom(quoteA);
+  if (quoteB === undefined) {
+    return priceA;
+  }
+  const priceB = priceFrom(quoteB);
+  if (ratioGTE(priceA, priceB)) {
+    return priceB;
+  } else {
+    return priceA;
+  }
+};
+harden(minimumPrice);
 
 /**
  * Calculate the maximum debt allowed based on the price quote and the lesser of

@@ -38,7 +38,7 @@ async function makeKernel() {
   return buildKernel(endowments, {}, {});
 }
 
-const tsv = [{ d: ['startVat', kser({})], syscalls: [] }];
+const tsv = [{ d: ['startVat', kser({})], sc: [], r: { status: 'ok' } }];
 
 test('build kernel', async t => {
   const kernel = await makeKernel();
@@ -150,10 +150,7 @@ test('vat store', async t => {
   ]);
   const data = kernel.dump();
   // check that we're not sticking an undefined into the transcript
-  t.deepEqual(data.vatTables[0].state.transcript[1].syscalls[0].response, [
-    'ok',
-    null,
-  ]);
+  t.deepEqual(data.vatTables[0].state.transcript[1].sc[0].r, ['ok', null]);
 });
 
 test('map inbound', async t => {
@@ -1183,16 +1180,17 @@ test('transcript', async t => {
         result: 'p-60',
       },
     ],
-    syscalls: [
+    sc: [
       {
-        d: [
+        s: [
           'send',
           bobForAlice,
           { methargs: kser(['foo', ['fooarg']]), result: 'p+5' },
         ],
-        response: ['ok', null],
+        r: ['ok', null],
       },
     ],
+    r: { status: 'ok' },
   });
 });
 

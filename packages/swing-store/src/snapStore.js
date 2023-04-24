@@ -563,6 +563,20 @@ export function makeSnapStore(
     );
   }
 
+  const sqlListAllSnapshots = db.prepare(`
+    SELECT vatID, endPos, inUse, hash, uncompressedSize, compressedSize
+    FROM snapshots
+    ORDER BY vatID, endPos
+  `);
+
+  /**
+   * debug function to list all snapshots
+   *
+   */
+  function* listAllSnapshots() {
+    yield* sqlListAllSnapshots.iterate();
+  }
+
   const sqlDumpCurrentSnapshots = db.prepare(`
     SELECT vatID, endPos, hash, compressedSnapshot, inUse
     FROM snapshots
@@ -614,6 +628,7 @@ export function makeSnapStore(
     importSnapshot,
 
     hasHash,
+    listAllSnapshots,
     dumpSnapshots,
     deleteSnapshotByHash,
   });

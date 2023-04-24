@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { mustMatch } from '@agoric/store';
 import { E } from '@endo/far';
 import { AmountMath } from './amountMath.js';
