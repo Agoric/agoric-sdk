@@ -7,12 +7,20 @@ const { values } = Object;
 /** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
+const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
+
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> }}} param1
  */
 export const inviteCommitteeMembers = async (
-  { consume: { namesByAddressAdmin, economicCommitteeCreatorFacet } },
+  {
+    consume: {
+      namesByAddressAdmin,
+      economicCommitteeCreatorFacet,
+      highPrioritySendersManager,
+    },
+  },
   { options: { voterAddresses } },
 ) => {
   const invitations = await E(
@@ -31,6 +39,10 @@ export const inviteCommitteeMembers = async (
           namesByAddressAdmin,
           addr,
           [invitationP],
+        );
+        await E(highPrioritySendersManager)?.add(
+          EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
+          addr,
         );
       }),
     );
