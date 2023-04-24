@@ -80,7 +80,11 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 }
 
 func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAddress {
-	return k.accountKeeper.GetModuleAddress(name)
+	acct := k.accountKeeper.GetModuleAccount(ctx, name)
+	if acct == nil {
+		return nil
+	}
+	return acct.GetAddress()
 }
 
 func (k Keeper) IsModuleAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
