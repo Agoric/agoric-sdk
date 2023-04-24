@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { E, Far } from '@endo/far';
 
 import { makeScalarStoreCoordinator } from './store.js';
