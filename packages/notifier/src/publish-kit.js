@@ -15,8 +15,10 @@ const makeQuietRejection = reason => {
   void E.when(rejection, sink, sink);
   return rejection;
 };
-const makeTooFarRejection = () =>
-  makeQuietRejection(new Error('Cannot read past end of iteration.'));
+const makeTooFarRejection = () => {
+  const err = harden(new Error('Cannot read past end of iteration.'));
+  return makeQuietRejection(err);
+};
 
 export const PublisherI = M.interface('Publisher', {
   publish: M.call(M.any()).returns(),
