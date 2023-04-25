@@ -5,8 +5,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
-
 import { E } from '@endo/eventual-send';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
@@ -14,7 +14,6 @@ import { makeZoeKit } from '../../src/zoeService/zoe.js';
 
 import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
-import { eventLoopIteration } from '../../tools/eventLoopIteration.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';

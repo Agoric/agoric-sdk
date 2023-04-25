@@ -4,8 +4,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import { E } from '@endo/eventual-send';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
-import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';

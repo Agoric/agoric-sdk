@@ -5,7 +5,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSourceAmbient from '@endo/bundle-source';
 import { E, passStyleOf } from '@endo/far';
 
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
 import { buildRootObject } from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';

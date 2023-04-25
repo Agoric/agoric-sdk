@@ -1,4 +1,4 @@
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 /**
  * @param {import('ava').ExecutionContext<unknown>} t

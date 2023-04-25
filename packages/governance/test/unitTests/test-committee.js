@@ -10,7 +10,7 @@ import bundleSource from '@endo/bundle-source';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import {
   ChoiceMethod,

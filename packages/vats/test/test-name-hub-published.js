@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeMockChainStorageRoot } from '@agoric/inter-protocol/test/supports.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import {
