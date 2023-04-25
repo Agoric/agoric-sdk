@@ -866,6 +866,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   const transcriptStorePublic = {
     initTranscript: transcriptStore.initTranscript,
     rolloverSpan: transcriptStore.rolloverSpan,
+    rolloverIncarnation: transcriptStore.rolloverIncarnation,
     getCurrentSpanBounds: transcriptStore.getCurrentSpanBounds,
     addItem: transcriptStore.addItem,
     readSpan: transcriptStore.readSpan,

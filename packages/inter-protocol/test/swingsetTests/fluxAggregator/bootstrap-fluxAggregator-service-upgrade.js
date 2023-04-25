@@ -228,7 +228,7 @@ export const buildRootObject = async () => {
         ...staticPrivateArgs,
         initialPoserInvitation,
       });
-      assert.equal(upgradeResult.incarnationNumber, 2);
+      assert.equal(upgradeResult.incarnationNumber, 1);
       trace(`BOOT nullUpgradeV1 upgradeContract completed`);
 
       await timer.tickN(1);

@@ -77,7 +77,7 @@ async function testPromiseWatcher(t) {
   const [v2status /* , v2capdata */] = await run('upgradeV2', []);
   t.is(v2status, 'fulfilled');
   const doString =
-    '{"incarnationNumber":1,"name":"vatUpgraded","upgradeMessage":"test upgrade"}';
+    '{"incarnationNumber":0,"name":"vatUpgraded","upgradeMessage":"test upgrade"}';
   t.deepEqual(c.dump().log, [
     ...beforeReference,
     `lp3-pw rejected ${doString} version v2 via watcher []`,

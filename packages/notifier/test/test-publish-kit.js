@@ -387,7 +387,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   ]);
   const assertDisconnection = (p, label) => {
     const expected = {
-      incarnationNumber: 1,
+      incarnationNumber: 0,
       name: 'vatUpgraded',
       upgradeMessage: 'vat upgraded',
     };
