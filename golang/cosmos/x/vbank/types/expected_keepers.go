@@ -17,6 +17,6 @@ type BankKeeper interface {
 }
 
 type AccountKeeper interface {
-	GetModuleAddress(name string) sdk.AccAddress
+	GetModuleAccount(ctx sdk.Context, name string) authtypes.ModuleAccountI
 	GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI
 }
