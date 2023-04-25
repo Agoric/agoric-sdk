@@ -116,48 +116,6 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
 };
 
 /**
- * Mint IST needed to restore feePoolBalance for each PSM.
- *
- * @param { EconomyBootstrapPowers &  ChainStorageVatParams } powers
- */
-export const mintPSMFees = async ({
-  vatParameters: { chainStorageEntries },
-  consume: { feeMintAccess: feeMintAccessP, zoe },
-  produce: { psmFeePurse },
-  installation: {
-    consume: { centralSupply },
-  },
-}) => {
-  const old = makeHistoryReviver(chainStorageEntries || []);
-  const psmRootKey = `published.psm.${Stable.symbol}.`;
-  const psmNames = old.children(psmRootKey);
-  const purse = E(E(zoe).getFeeIssuer()).makeEmptyPurse();
-
-  const depositPayment = async () => {
-    const values = psmNames.map(
-      a => old.getItem(`${psmRootKey}${a}.metrics`).feePoolBalance.value,
-    );
-    const total = values.reduce((tot, v) => tot + v);
-    console.log('minting', total, ' fees for ', psmNames);
-
-    const feeMintAccess = await feeMintAccessP;
-    /** @type {Awaited<ReturnType<typeof import('@agoric/vats/src/centralSupply.js').start>>} */
-    const { creatorFacet } = await E(zoe).startInstance(
-      centralSupply,
-      {},
-      { bootstrapPaymentValue: total },
-      { feeMintAccess },
-      'centralSupply',
-    );
-    const payment = await E(creatorFacet).getBootstrapPayment();
-    await E(purse).deposit(payment);
-  };
-  await (psmNames.length > 0 && depositPayment());
-  psmFeePurse.resolve(purse);
-};
-harden(mintPSMFees);
-
-/**
  * @typedef {{
  *   vatParameters: { chainStorageEntries?: Array<[k: string, v: string]>,
  * }}} ChainStorageVatParams
@@ -183,7 +141,6 @@ export const startPSM = async (
       chainTimerService,
       psmKit,
       anchorBalancePayments: anchorBalancePaymentsP,
-      psmFeePurse,
     },
     produce: { psmKit: producepsmKit },
     installation: {
@@ -318,23 +275,13 @@ export const startPSM = async (
   const restoreMetrics = async metrics => {
     const anchorBalancePayments = await anchorBalancePaymentsP;
     const anchorPmt = anchorBalancePayments.get(anchorBrand);
-    const feePoolPmt = await E(psmFeePurse).withdraw(metrics.feePoolBalance);
 
-    const {
-      feePoolBalance: _f,
-      anchorPoolBalance: _a,
-      ...nonPaymentMetrics
-    } = metrics;
+    const { anchorPoolBalance: _a, ...nonPaymentMetrics } = metrics;
 
     const seat = E(zoe).offer(
       E(psmCreatorFacet).makeRestoreMetricsInvitation(),
-      harden({
-        give: {
-          Anchor: metrics.anchorPoolBalance,
-          Minted: metrics.feePoolBalance,
-        },
-      }),
-      harden({ Anchor: anchorPmt, Minted: feePoolPmt }),
+      harden({ give: { Anchor: metrics.anchorPoolBalance } }),
+      harden({ Anchor: anchorPmt }),
       harden(nonPaymentMetrics),
     );
     await E(seat).getPayouts();
@@ -569,14 +516,6 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
 
 /** @type {BootstrapManifest} */
 export const PSM_MANIFEST = {
-  [mintPSMFees.name]: {
-    vatParameters: { chainStorageEntries: true },
-    consume: { feeMintAccess: 'zoe', zoe: 'zoe' },
-    produce: { psmFeePurse: true },
-    installation: {
-      consume: { centralSupply: 'zoe' },
-    },
-  },
   [makeAnchorAsset.name]: {
     vatParameters: { chainStorageEntries: true },
     consume: {
@@ -602,7 +541,6 @@ export const PSM_MANIFEST = {
       chainTimerService: 'timer',
       psmKit: true,
       anchorBalancePayments: true,
-      psmFeePurse: true,
     },
     produce: { psmKit: 'true' },
     installation: {

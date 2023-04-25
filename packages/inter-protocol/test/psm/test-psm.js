@@ -37,7 +37,6 @@ import {
 import {
   makeAnchorAsset,
   makeHistoryReviver,
-  mintPSMFees,
   startPSM,
 } from '../../src/proposals/startPSM.js';
 
@@ -894,7 +893,6 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
 
   // Run code under test
   await Promise.all([
-    mintPSMFees(powers),
     ...anchorAssets.map(anchorOptions =>
       makeAnchorAsset(powers, {
         options: { anchorOptions },

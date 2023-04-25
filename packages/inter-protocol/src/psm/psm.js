@@ -140,7 +140,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {ZCFSeat} seat
-   * @param {Omit<MetricsNotification, 'anchorPoolBalance' | 'feePoolBalance'>} target
+   * @param {Omit<MetricsNotification, 'anchorPoolBalance'>} target
    */
   const restoreMetricsHook = (seat, target) => {
     assert(
@@ -148,27 +148,23 @@ export const start = async (zcf, privateArgs, baggage) => {
       'cannot restoreMetrics: anchorPool is not empty',
     );
     assert(
-      AmountMath.isEmpty(anchorPool.getAmountAllocated('Minted', anchorBrand)),
+      AmountMath.isEmpty(feePool.getAmountAllocated('Minted', stableBrand)),
       'cannot restoreMetrics: feePool is not empty',
     );
     mustMatch(
       target,
       harden({
+        feePoolBalance: amtShape(stableBrand),
         mintedPoolBalance: amtShape(stableBrand),
         totalAnchorProvided: amtShape(anchorBrand),
         totalMintedProvided: amtShape(stableBrand),
       }),
     );
     const {
-      give: { Anchor, Minted },
+      give: { Anchor },
     } = seat.getProposal();
-    atomicRearrange(
-      zcf,
-      harden([
-        [seat, anchorPool, { Anchor }, { Anchor }],
-        [seat, feePool, { Minted }, { Minted }],
-      ]),
-    );
+    stableMint.mintGains({ Minted: target.feePoolBalance }, feePool);
+    atomicRearrange(zcf, harden([[seat, anchorPool, { Anchor }, { Anchor }]]));
     ({ mintedPoolBalance, totalAnchorProvided, totalMintedProvided } = target);
     seat.exit();
     updateMetrics();
@@ -341,7 +337,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         undefined,
         M.splitRecord({
           give: {
-            Minted: amtShape(stableBrand),
             Anchor: amtShape(anchorBrand),
           },
         }),
