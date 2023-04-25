@@ -139,7 +139,12 @@ export async function buildSwingset(
         );
         chainStorageEntries.push(entry);
         const [path] = entry;
-        const childEntries = callChainStorage('entries', path);
+        const childEntrySuffixes = callChainStorage('entries', path);
+        const childEntries = childEntrySuffixes.map(([nextSegment, value]) => {
+          const fullPath =
+            !path || path === '.' ? `${nextSegment}` : `${path}.${nextSegment}`;
+          return [fullPath, value];
+        });
         pendingEntries = [...childEntries, ...pendingEntries];
       }
       bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };

@@ -255,4 +255,40 @@ func TestSetWithoutNotify(t *testing.T) {
 
 // TODO: TestValues
 
-// TODO: TestEntries
+func TestEntries(t *testing.T) {
+	kit := makeTestKit()
+	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
+
+	keeper.SetStorage(ctx, types.NewStorageEntry("key1", "value1"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.grandchild1", "value1grandchild"))
+	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1.grandchild2"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.empty-non-terminal.leaf", ""))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2", "value2grandchild"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2a", "value2grandchilda"))
+
+	type testCase struct {
+		path string
+		want string
+	}
+	cases := []testCase{
+		{path: "key1", want: `[["child1",null]]`},
+		{path: "key1.child1",
+			// Empty non-terminals are included, empty leaves are not.
+			want: `[["empty-non-terminal",null],["grandchild1","value1grandchild"]]`},
+		{path: "key1.child1.grandchild1", want: `[]`},
+		{path: "key1.child1.empty-non-terminal", want: `[["leaf",""]]`},
+		{path: "key2", want: `[["child2",null]]`},
+		{path: "key2.child2",
+			want: `[["grandchild2","value2grandchild"],["grandchild2a","value2grandchilda"]]`},
+		{path: "nosuchkey", want: `[]`},
+	}
+	for _, desc := range cases {
+		got, err := callReceive(handler, cctx, "entries", []interface{}{desc.path})
+		if got != desc.want {
+			t.Errorf("%s: got %q; want %q", desc.path, got, desc.want)
+		}
+		if err != nil {
+			t.Errorf("%s: got unexpected error %v", desc.path, err)
+		}
+	}
+}
