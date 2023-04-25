@@ -114,10 +114,10 @@ const makeEachIterator = (topic, nextCellP) => {
       // with an eager consumer that doesn't wait for results to settle.
       nextCellP = reconnectAsNeeded(getSuccessor, [tailP]);
 
-      // We expect the tail to be the "cannot read past end" error at the end
-      // of the happy path.
-      // Since we are wrapping that error with eventual send, we sink the
-      // rejections here too to avoid invalid unhandled rejection issues later.
+      // Avoid unhandled rejection warnings here if the previous cell was rejected or
+      // there is no further request of this iterator.
+      // `tailP` is handled inside `reconnectAsNeeded` and `resultP` is the caller's
+      // concern, leaving only `publishCountP` and the new `nextCellP`.
       void E.when(publishCountP, sink, sink);
       void E.when(nextCellP, sink, sink);
       return resultP;
