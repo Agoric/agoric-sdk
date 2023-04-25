@@ -255,14 +255,13 @@ func TestSetWithoutNotify(t *testing.T) {
 
 // TODO: TestChildrenAndSize
 
-// TODO: TestValues
-
 func TestEntries(t *testing.T) {
 	kit := makeTestKit()
 	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
 
 	keeper.SetStorage(ctx, types.NewStorageEntry("key1", "value1"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.grandchild1", "value1grandchild"))
+	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1.grandchild2"))
 	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.empty-non-terminal.leaf", ""))
 	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key2"))
