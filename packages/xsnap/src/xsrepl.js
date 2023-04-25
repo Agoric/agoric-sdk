@@ -10,6 +10,8 @@ import '@endo/init';
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 import * as childProcess from 'child_process';
+import fs from 'fs';
+import { tmpName } from 'tmp';
 import * as os from 'os';
 import * as readline from 'readline';
 import { xsnap } from './xsnap.js';
@@ -20,6 +22,7 @@ const decoder = new TextDecoder();
 async function main() {
   const xsnapOptions = {
     spawn: childProcess.spawn,
+    fs: { ...fs, ...fs.promises, tmpName },
     os: os.type(),
     meteringLimit: 0,
   };
@@ -78,7 +81,7 @@ async function main() {
       vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: file });
     } else if (answer === 'save') {
       const file = await ask('file> ');
-      await vat.snapshot(file);
+      await fs.promises.writeFile(file, vat.makeSnapshot(file));
     } else {
       await vat.issueStringCommand(answer);
     }

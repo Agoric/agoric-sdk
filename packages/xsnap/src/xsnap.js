@@ -10,10 +10,12 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
+import { promisify } from 'util';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
+import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
 
@@ -49,6 +51,7 @@ function echoCommand(arg) {
  * @typedef {object} XSnapOptions
  * @property {string} os
  * @property {Spawn} spawn
+ * @property {Pick<typeof import('fs/promises'), 'open' | 'stat' | 'unlink'> & Pick<typeof import('fs'), 'createReadStream'> & Pick<typeof import('tmp'), 'tmpName'>} fs
  * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
  * @property {string} [name]
  * @property {boolean} [debug]
@@ -64,6 +67,7 @@ export function xsnap(options) {
   const {
     os,
     spawn,
+    fs,
     name = '<unnamed xsnap worker>',
     handleCommand = echoCommand,
     debug = false,
@@ -85,6 +89,9 @@ export function xsnap(options) {
   if (platform === undefined) {
     throw Error(`xsnap does not support platform ${os}`);
   }
+
+  /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
+  const ptmpName = promisify(fs.tmpName);
 
   let bin = new URL(
     `../xsnap-native/xsnap/build/bin/${platform}/${
@@ -293,16 +300,34 @@ export function xsnap(options) {
   }
 
   /**
-   * @param {string} file
-   * @returns {Promise<void>}
+   * @param {string} [description]
+   * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
-  async function writeSnapshot(file) {
-    const result = baton.then(async () => {
-      await messagesToXsnap.next(encoder.encode(`w${file}`));
-      await runToIdle();
+  async function* makeSnapshot(description = 'unknown') {
+    // TODO: Refactor to use tmpFile rather than tmpName.
+    const tmpSnapPath = await ptmpName({
+      template: `make-snapshot-${description.replaceAll(
+        /[^a-zA-Z0-9_.-]/g,
+        '-',
+      )}-XXXXXX.xss`,
     });
-    baton = result.then(noop, noop);
-    return racePromises([vatExit.promise, baton]);
+
+    try {
+      const result = baton.then(async () => {
+        await messagesToXsnap.next(encoder.encode(`w${tmpSnapPath}`));
+        await runToIdle();
+      });
+      baton = result.then(noop, noop);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await racePromises([vatExit.promise, baton]);
+      const snapReader = fs.createReadStream(tmpSnapPath);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await fsStreamReady(snapReader);
+      yield* snapReader;
+    } finally {
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await fs.unlink(tmpSnapPath);
+    }
   }
 
   /**
@@ -343,6 +368,6 @@ export function xsnap(options) {
     evaluate,
     execute,
     import: importModule,
-    snapshot: writeSnapshot,
+    makeSnapshot,
   });
 }

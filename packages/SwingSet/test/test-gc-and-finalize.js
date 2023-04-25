@@ -3,7 +3,9 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import * as childProcess from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 import { xsnap } from '@agoric/xsnap';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
@@ -47,6 +49,7 @@ test(`can provoke gc on Node.js`, async t => {
 const xsnapOptions = {
   name: 'xsnap test worker',
   spawn: childProcess.spawn,
+  fs: { ...fs, ...fs.promises, tmpName },
   os: os.type(),
   stderr: 'inherit',
   stdout: 'inherit',

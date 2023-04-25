@@ -1,11 +1,11 @@
 // @ts-check
 import test from 'ava';
 import '@endo/init/debug.js';
-import fs from 'fs';
+import { Buffer } from 'node:buffer';
 import { initSwingStore } from '../src/swingStore.js';
 
-async function dosnap(filePath) {
-  fs.writeFileSync(filePath, 'abc');
+async function* getSnapshotStream() {
+  yield Buffer.from('abc');
 }
 
 test('delete snapshots with export callback', async t => {
@@ -20,9 +20,9 @@ test('delete snapshots with export callback', async t => {
   const { snapStore } = kernelStorage;
   const { commit } = hostStorage;
 
-  await snapStore.saveSnapshot('v1', 10, dosnap);
-  await snapStore.saveSnapshot('v1', 11, dosnap);
-  await snapStore.saveSnapshot('v1', 12, dosnap);
+  await snapStore.saveSnapshot('v1', 10, getSnapshotStream());
+  await snapStore.saveSnapshot('v1', 11, getSnapshotStream());
+  await snapStore.saveSnapshot('v1', 12, getSnapshotStream());
   // nothing is written to exportCallback until endCrank() or commit()
   t.deepEqual(exportLog, []);
 

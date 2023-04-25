@@ -5,13 +5,15 @@ import '@endo/init/debug.js';
 import test from 'ava';
 
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 import { xsnap } from '../src/xsnap.js';
 
 import { makeGcAndFinalize } from './gc.js';
 import { options } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
 function makeVictim() {
   const victim = { doomed: 'oh no' };

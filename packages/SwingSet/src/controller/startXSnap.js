@@ -1,4 +1,3 @@
-import fs from 'fs';
 import path from 'path';
 import { Fail } from '@agoric/assert';
 import { type as osType } from 'os';
@@ -11,6 +10,8 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   bundleHandler: import('./bundle-handler.js').BundleHandler,
  *   snapStore?: import('@agoric/swing-store').SnapStore,
  *   spawn: typeof import('child_process').spawn
+ *   fs: import('fs'),
+ *   tmpName: import('tmp')['tmpName'],
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
  *   overrideBundles?: import('../types-external.js').Bundle[],
@@ -21,6 +22,8 @@ export function makeStartXSnap(options) {
   // 'startXSnap' function we return
   const {
     spawn,
+    fs,
+    tmpName,
     bundleHandler, // required unless bundleIDs is empty
     snapStore,
     workerTraceRootPath,
@@ -51,6 +54,7 @@ export function makeStartXSnap(options) {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
+    fs: { ...fs, ...fs.promises, tmpName },
     spawn,
     stdout: 'inherit',
     stderr: 'inherit',

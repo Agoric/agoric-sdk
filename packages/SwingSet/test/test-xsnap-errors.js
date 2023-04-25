@@ -3,6 +3,8 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
+import fs from 'fs';
+import { tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
 
@@ -32,6 +34,8 @@ test('child termination distinguished from meter exhaustion', async t => {
       theProc = spawn(command, [args, ...noMetering], opts);
       return theProc;
     },
+    fs,
+    tmpName,
   });
 
   // just enough methods to not crash

@@ -6,9 +6,9 @@ import test from 'ava';
 
 import * as proc from 'child_process';
 import * as os from 'os';
-import fs, { unlinkSync } from 'fs';
+import fs from 'fs';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import tmp from 'tmp';
+import { tmpName, fileSync } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';
 import { recordXSnap } from '../src/replay.js';
@@ -16,7 +16,7 @@ import { ExitCode, ErrorCode } from '../api.js';
 
 import { options, decode, encode, loader } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 const ld = loader(import.meta.url);
 
 test('evaluate and issueCommand', async t => {
@@ -258,7 +258,7 @@ test('serialize concurrent messages', async t => {
 });
 
 test('write and read snapshot', async t => {
-  const work = tmp.fileSync({ postfix: '.xss' });
+  const work = fileSync({ postfix: '.xss' });
   t.teardown(() => work.removeCallback());
 
   const messages = [];
@@ -274,7 +274,7 @@ test('write and read snapshot', async t => {
   await vat0.evaluate(`
     globalThis.hello = "Hello, World!";
   `);
-  await vat0.snapshot(snapshot);
+  await fs.promises.writeFile(snapshot, vat0.makeSnapshot());
   await vat0.close();
 
   const vat1 = xsnap({ ...options(io), handleCommand, snapshot });
@@ -406,9 +406,11 @@ test('GC after snapshot vs restore', async t => {
 
   const beforeClone = await nextGC(worker, opts);
 
-  const snapshot = './bloated.xss';
-  await worker.snapshot(snapshot);
-  t.teardown(() => unlinkSync(snapshot));
+  const work = fileSync({ prefix: 'bloated', postfix: '.xss' });
+  t.teardown(() => work.removeCallback());
+
+  const snapshot = work.name;
+  await fs.promises.writeFile(snapshot, worker.makeSnapshot());
 
   const optClone = { ...options(io), name: 'clone', snapshot };
   const clone = xsnapr(optClone);

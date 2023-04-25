@@ -5,12 +5,14 @@ import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 import { encodeBase64 } from '@endo/base64';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
 test('reject odd regex range', async t => {
   const opts = options(io);

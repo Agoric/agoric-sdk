@@ -223,7 +223,11 @@ export function makeXsSubprocessFactory({
      * @returns {Promise<SnapshotResult>}
      */
     function makeSnapshot(snapPos, snapStore) {
-      return snapStore.saveSnapshot(vatID, snapPos, fn => worker.snapshot(fn));
+      return snapStore.saveSnapshot(
+        vatID,
+        snapPos,
+        worker.makeSnapshot(`${vatID}-${snapPos}`),
+      );
     }
 
     return mk.getManager(shutdown, makeSnapshot);

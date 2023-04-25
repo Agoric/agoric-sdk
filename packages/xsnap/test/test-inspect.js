@@ -2,14 +2,16 @@ import test from 'ava';
 import '@endo/init/debug.js';
 
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
 const getBootScript = () =>
   getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 const testCases = [
   '1',
   '1n',

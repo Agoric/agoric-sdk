@@ -12,9 +12,9 @@ import { buffer } from './util.js';
  * @typedef {object} SnapshotResult
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number} uncompressedSize size of (uncompressed) snapshot
- * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
+ * @property {number} dbSaveSeconds time to write snapshot in DB
  * @property {number} compressedSize size of (compressed) snapshot
- * @property {number} compressSeconds time to compress and save snapshot
+ * @property {number} compressSeconds time to generate and compress the snapshot
  */
 
 /**
@@ -30,7 +30,7 @@ import { buffer } from './util.js';
  *
  * @typedef {{
  *   loadSnapshot: <T>(vatID: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
- *   saveSnapshot: (vatID: string, snapPos: number, saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotResult>,
+ *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterableIterator<Uint8Array>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
  *   deleteVatSnapshots: (vatID: string) => void,
  *   stopUsingLastSnapshot: (vatID: string) => void,
@@ -62,14 +62,9 @@ const noPath = /** @type {import('fs').PathLike} */ (
  * @param {*} db
  * @param {() => void} ensureTxn
  * @param {{
- *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
  *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
- *   open: typeof import('fs').promises.open,
- *   stat: typeof import('fs').promises.stat,
  *   tmpFile: typeof import('tmp').file,
- *   tmpName: typeof import('tmp').tmpName,
- *   unlink: typeof import('fs').promises.unlink,
  * }} io
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
@@ -79,15 +74,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
 export function makeSnapStore(
   db,
   ensureTxn,
-  {
-    createReadStream,
-    createWriteStream,
-    measureSeconds,
-    stat,
-    tmpFile,
-    tmpName,
-    unlink,
-  },
+  { createWriteStream, measureSeconds, tmpFile },
   noteExport = () => {},
   { keepSnapshots = false } = {},
 ) {
@@ -105,9 +92,6 @@ export function makeSnapStore(
       CHECK(compressedSnapshot is not null or inUse is null)
     )
   `);
-
-  /** @type {(opts: unknown) => Promise<string>} */
-  const ptmpName = promisify(tmpName);
 
   // Manually promisify `tmpFile` to preserve its post-`error` callback arguments.
   const ptmpFile = (options = {}) => {
@@ -203,70 +187,69 @@ export function makeSnapStore(
    *
    * @param {string} vatID
    * @param {number} snapPos
-   * @param {(filePath: string) => Promise<void>} saveRaw
+   * @param {AsyncIterableIterator<Uint8Array>} snapshotStream
    * @returns {Promise<SnapshotResult>}
    */
-  async function saveSnapshot(vatID, snapPos, saveRaw) {
+  async function saveSnapshot(vatID, snapPos, snapshotStream) {
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
-        // TODO: Refactor to use tmpFile rather than tmpName.
-        const tmpSnapPath = await ptmpName({ template: 'save-raw-XXXXXX.xss' });
-        cleanup.push(() => unlink(tmpSnapPath));
-        const { duration: rawSaveSeconds } = await measureSeconds(async () =>
-          saveRaw(tmpSnapPath),
-        );
-        const { size: uncompressedSize } = await stat(tmpSnapPath);
-
-        // Perform operations that read snapshot data in parallel.
-        // We still serialize the stat and opening of tmpSnapPath
-        // and creation of tmpGzPath for readability, but we could
-        // parallelize those as well if the cost is significant.
-        const snapReader = createReadStream(tmpSnapPath);
-        cleanup.push(() => {
-          snapReader.destroy();
-        });
-
-        await fsStreamReady(snapReader);
-
         const hashStream = createHash('sha256');
         const gzip = createGzip();
         let compressedSize = 0;
+        let uncompressedSize = 0;
 
-        const { result: hash, duration: compressSeconds } =
+        const { duration: compressSeconds, result: compressedSnapshot } =
           await measureSeconds(async () => {
-            snapReader.pipe(hashStream);
-            const compressedSnapshot = await buffer(snapReader.pipe(gzip));
-            await finished(snapReader);
+            const snapReader = Readable.from(snapshotStream);
+            cleanup.push(
+              () =>
+                new Promise((resolve, reject) =>
+                  snapReader.destroy(
+                    null,
+                    // @ts-expect-error incorrect types
+                    err => (err ? reject(err) : resolve()),
+                  ),
+                ),
+            );
 
-            const h = hashStream.digest('hex');
-            ensureTxn();
-            stopUsingLastSnapshot(vatID);
-            compressedSize = compressedSnapshot.length;
-            sqlSaveSnapshot.run(
-              vatID,
-              snapPos,
-              1,
-              h,
-              uncompressedSize,
-              compressedSize,
-              compressedSnapshot,
-            );
-            const rec = snapshotRec(vatID, snapPos, h, 1);
-            const exportKey = snapshotMetadataKey(rec);
-            noteExport(exportKey, JSON.stringify(rec));
-            noteExport(
-              currentSnapshotMetadataKey(rec),
-              snapshotArtifactName(rec),
-            );
-            return h;
+            snapReader.on('data', chunk => {
+              uncompressedSize += chunk.length;
+            });
+            snapReader.pipe(hashStream);
+            const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
+            await finished(snapReader);
+            return compressedSnapshotData;
           });
+        const hash = hashStream.digest('hex');
+
+        const { duration: dbSaveSeconds } = await measureSeconds(async () => {
+          ensureTxn();
+          stopUsingLastSnapshot(vatID);
+          compressedSize = compressedSnapshot.length;
+          sqlSaveSnapshot.run(
+            vatID,
+            snapPos,
+            1,
+            hash,
+            uncompressedSize,
+            compressedSize,
+            compressedSnapshot,
+          );
+          const rec = snapshotRec(vatID, snapPos, hash, 1);
+          const exportKey = snapshotMetadataKey(rec);
+          noteExport(exportKey, JSON.stringify(rec));
+          noteExport(
+            currentSnapshotMetadataKey(rec),
+            snapshotArtifactName(rec),
+          );
+        });
 
         return harden({
           hash,
           uncompressedSize,
-          rawSaveSeconds,
           compressSeconds,
+          dbSaveSeconds,
           compressedSize,
         });
       },

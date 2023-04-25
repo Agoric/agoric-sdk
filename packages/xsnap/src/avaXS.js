@@ -8,6 +8,10 @@ Usage:
 
 /* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 import '@endo/init';
+
+import fs from 'fs';
+import { tmpName } from 'tmp';
+
 import { assert, q, Fail } from '@agoric/assert';
 import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
@@ -320,6 +324,7 @@ export async function main(
       ...opts,
       debug,
       spawn,
+      fs: { ...fs, ...fs.promises, tmpName },
       os: osType(),
       meteringLimit: 0,
       stdout: 'inherit',

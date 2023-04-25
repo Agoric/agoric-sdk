@@ -559,7 +559,7 @@ export function makeVatKeeper(
     const {
       hash: snapshotID,
       uncompressedSize,
-      rawSaveSeconds,
+      dbSaveSeconds,
       compressedSize,
       compressSeconds,
     } = info;
@@ -580,7 +580,7 @@ export function makeVatKeeper(
       vatID,
       snapshotID,
       uncompressedSize,
-      rawSaveSeconds,
+      dbSaveSeconds,
       compressedSize,
       compressSeconds,
       endPosition,
