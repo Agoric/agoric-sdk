@@ -160,20 +160,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   space.produce.loadVat.resolve(loadVat);
   space.produce.loadCriticalVat.resolve(loadVat);
 
-  const emptyRunPayment = async () => {
-    const {
-      issuer: {
-        consume: { [Stable.symbol]: runIssuer },
-      },
-      brand: {
-        consume: { [Stable.symbol]: runBrand },
-      },
-    } = space;
-    return E(E(runIssuer).makeEmptyPurse()).withdraw(
-      AmountMath.make(await runBrand, 0n),
-    );
-  };
-
   /** @type {PromiseKit<{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand}>} */
   const ibcKitP = makePromiseKit();
 
