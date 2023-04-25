@@ -72,7 +72,8 @@ func TestGetAndHas(t *testing.T) {
 
 	keeper.SetStorage(ctx, types.NewStorageEntry("foo", "bar"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("empty", ""))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("special.nodata"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("top.empty-non-terminal.leaf", ""))
+	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("top.empty-non-terminal"))
 
 	type testCase struct {
 		label       string
@@ -83,7 +84,8 @@ func TestGetAndHas(t *testing.T) {
 	cases := []testCase{
 		{label: "nonempty value", args: []interface{}{"foo"}, want: `"bar"`},
 		{label: "empty string value", args: []interface{}{"empty"}, want: `""`},
-		{label: "no value", args: []interface{}{"special.nodata"}, want: `null`},
+		{label: "deep empty string", args: []interface{}{"top.empty-non-terminal.leaf"}, want: `""`},
+		{label: "empty non-terminal", args: []interface{}{"top.empty-non-terminal"}, want: `null`},
 		{label: "no entry", args: []interface{}{"nosuchpath"}, want: `null`},
 		{label: "empty args", args: []interface{}{}, errContains: ptr(`missing`)},
 		{label: "non-string arg", args: []interface{}{42}, errContains: ptr(`json`)},
@@ -261,8 +263,10 @@ func TestEntries(t *testing.T) {
 
 	keeper.SetStorage(ctx, types.NewStorageEntry("key1", "value1"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.grandchild1", "value1grandchild"))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1.grandchild2"))
+	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.empty-non-terminal.leaf", ""))
+	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key2"))
+	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key2.child2"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2", "value2grandchild"))
 	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2a", "value2grandchilda"))
 
