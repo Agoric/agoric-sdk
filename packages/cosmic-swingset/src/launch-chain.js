@@ -16,11 +16,12 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
@@ -125,6 +126,15 @@ export async function buildSwingset(
 
     // Extract data from chain storage.
     if (exportStorageSubtrees) {
+      // Disallow exporting internal details like bundle contents and the action queue.
+      const exportRoot = STORAGE_PATH.CUSTOM;
+      const badPaths = exportStorageSubtrees.filter(
+        path => path !== exportRoot && !path.startsWith(`${exportRoot}.`),
+      );
+      badPaths.length === 0 ||
+        // prettier-ignore
+        Fail`Exported chain storage paths ${q(badPaths)} must start with ${q(exportRoot)}`;
+
       const callChainStorage = (method, path) =>
         bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
       const chainStorageEntries = [];
@@ -134,16 +144,12 @@ export async function buildSwingset(
         return [path, value];
       });
       while (pendingEntries.length > 0) {
-        const entry = /** @type {[path: string, value: string]} */ (
-          pendingEntries.shift()
-        );
+        const entry = /** @type {[string, string]} */ (pendingEntries.shift());
         chainStorageEntries.push(entry);
-        const [path] = entry;
-        const childEntrySuffixes = callChainStorage('entries', path);
-        const childEntries = childEntrySuffixes.map(([nextSegment, value]) => {
-          const fullPath =
-            !path || path === '.' ? `${nextSegment}` : `${path}.${nextSegment}`;
-          return [fullPath, value];
+        const [path, _value] = entry;
+        const childEntryData = callChainStorage('entries', path);
+        const childEntries = childEntryData.map(([pathSegment, value]) => {
+          return [`${path}.${pathSegment}`, value];
         });
         pendingEntries = [...childEntries, ...pendingEntries];
       }
