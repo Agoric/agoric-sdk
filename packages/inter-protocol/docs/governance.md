@@ -2,7 +2,7 @@
 
 Inter Protocol is subject to two forms of governance. Like the entire chain, it's subject to BLDer DAO governance. This is sometimes called the "big hammer" because the DAO can approve running any code in the core ("core eval").
 
-There is also governance by a contract governor contract (see `@agoric/governance`). This allows invited members to execute governed API methods or set governed parameters. In the conventional configuration of the Inter Protocol contracts there is one governing group, which is called the "Economic Committee".
+There is also governance by an configurable electorate using a contract governor (see `@agoric/governance`). The _governor_ contract allows the electorate to execute governed API methods or set governed parameters of the _governed_ contract. In the conventional configuration of the Inter Protocol contracts there is electorate, which is called the "Economic Committee".
 
 The *Economic Committee* (EC) can enact proposals through contracts governed by their charter. A contract is put under EC governance by adding its governance facet to the EC charter creatorFacet. At the time of writing, governed contracts include:
 
@@ -16,9 +16,9 @@ The *Economic Committee* (EC) can enact proposals through contracts governed by 
 
 ## API Methods
 
-The Zoe contract framework to allow contracts to set filters on what offers they accept, by matching a string in the offer description. The governed contracts above grant to EC the ability to `setOfferFilter` that match a certain string description. (Note this has to be an exact match or a prefix match. [Other criteria are not yet supported](https://github.com/Agoric/agoric-sdk/issues/7317).)
+The Zoe contract framework allows contracts to set filters on what offers they accept, by matching a string in the offer description. The governed contracts above grant to EC the ability to pause the creation of offers by calling `setOfferFilter` to set a list of strings. (Offers are blocked when their 'descriptions are an exact match or a prefix match to one of the strings in the list.  Other criteria are not yet supported](https://github.com/Agoric/agoric-sdk/issues/7317).)
 
-Specific contracts also grant other API methods to the EC:
+Specific contracts also grant to the EC permission to invoke other API methods:
 - Oracle / Price feed / fluxAggregator
 -- [addOracles](https://github.com/Agoric/agoric-sdk/blob/5cbc847618dfb22f80e4641e5221b80e6daa109a/packages/inter-protocol/src/price/fluxAggregatorContract.js#L113-L121)
 -- [removeOracles]https://github.com/Agoric/agoric-sdk/blob/5cbc847618dfb22f80e4641e5221b80e6daa109a/packages/inter-protocol/src/price/fluxAggregatorContract.js#L123-L131
@@ -39,9 +39,9 @@ the Inter Protocol Whitepaper, v0.8.
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
 | MinInitialDebt     | Amount            |     |
-| EndorsedUi         | Ratio             | No  |
-| ChargingPeriod     | NatValue          |     |
-| RecordingPeriod    | NatValue          |     |
+| EndorsedUi         | String            | No  |
+| ChargingPeriod     | RelativeTime      |     |
+| RecordingPeriod    | RelativeTime      |     |
 
 
 ### Vault Manager
@@ -68,10 +68,10 @@ In `packages/inter-protocol/src/stakeFactory/stakeFactory.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
-| DebtLimit          | ParamTypes.AMOUNT   | Yes |
-| InterestRate       | ParamTypes.RATIO    | Yes |
-| LoanFee            | ParamTypes.RATIO    | Yes |
-| MintingRatio       | ParamTypes.RATIO    | Yes |
+| DebtLimit          | Amount              | Yes |
+| InterestRate       | Ratio               | Yes |
+| LoanFee            | Ratio               | Yes |
+| MintingRatio       | Ratio               | Yes |
 
 From Inter Protocol Whitepaper, v0.8:  
 >Governance through the BLDer DAO determines the parameters for stakeFactory. These include the total debt limit, the minting limit per account, and minting fees and interest rates. 
