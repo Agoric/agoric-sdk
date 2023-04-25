@@ -203,19 +203,19 @@ async function testTranscriptStore(t, dbDir) {
     [
       [
         'transcript.empty.current',
-        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1}',
+        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1,"incarnation":0}',
       ],
       [
         'transcript.st1.0',
-        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0}',
+        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0,"incarnation":0}',
       ],
       [
         'transcript.st1.current',
-        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"789342fab468506c624c713c46953992f53a7eaae390d634790d791636b96cab","isCurrent":1}',
+        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"789342fab468506c624c713c46953992f53a7eaae390d634790d791636b96cab","isCurrent":1,"incarnation":0}',
       ],
       [
         'transcript.st2.current',
-        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"45de7ae9d2be34148f9cf3000052e5d1374932d663442fe9f39a342d221cebf1","isCurrent":1}',
+        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"45de7ae9d2be34148f9cf3000052e5d1374932d663442fe9f39a342d221cebf1","isCurrent":1,"incarnation":0}',
       ],
     ],
   ]);

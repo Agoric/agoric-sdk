@@ -577,12 +577,12 @@ export function makeVatWarehouse({
    * with new source code)
    *
    * @param {string} vatID
-   * @returns {Promise<void>}
+   * @returns {Promise<number>} the incarnation number of the new incarnation
    */
-  async function resetWorker(vatID) {
+  async function beginNewWorkerIncarnation(vatID) {
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.dropSnapshotAndResetTranscript();
+    return vatKeeper.beginNewIncarnation();
   }
 
   /**
@@ -625,7 +625,7 @@ export function makeVatWarehouse({
     maybeSaveSnapshot,
     setSnapshotInterval,
 
-    resetWorker,
+    beginNewWorkerIncarnation,
     stopWorker,
 
     // mostly for testing?

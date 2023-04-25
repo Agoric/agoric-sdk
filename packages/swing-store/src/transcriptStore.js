@@ -10,8 +10,9 @@ import { createSHA256 } from './hasher.js';
  *
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
- *   rolloverSpan: (vatID: string) => void,
- *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string },
+ *   rolloverSpan: (vatID: string) => number,
+ *   rolloverIncarnation: (vatID: string) => number,
+ *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string, incarnation: number },
  *   deleteVatTranscripts: (vatID: string) => void,
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
@@ -64,6 +65,7 @@ export function makeTranscriptStore(
       vatID TEXT,
       position INTEGER,
       item TEXT,
+      incarnation INTEGER,
       PRIMARY KEY (vatID, position)
     )
   `);
@@ -89,6 +91,7 @@ export function makeTranscriptStore(
       endPos INTEGER, -- exclusive
       hash TEXT, -- cumulative hash of this item and previous cumulative hash
       isCurrent INTEGER CHECK (isCurrent = 1),
+      incarnation INTEGER,
       PRIMARY KEY (vatID, startPos),
       UNIQUE (vatID, isCurrent)
     )
@@ -106,7 +109,7 @@ export function makeTranscriptStore(
   `);
 
   const sqlDumpSpansQuery = db.prepare(`
-    SELECT vatID, startPos, endPos, isCurrent
+    SELECT vatID, startPos, endPos, isCurrent, incarnation
     FROM transcriptSpans
     ORDER BY vatID, startPos
   `);
@@ -160,9 +163,9 @@ export function makeTranscriptStore(
     }
   }
 
-  function spanRec(vatID, startPos, endPos, hash, isCurrent) {
+  function spanRec(vatID, startPos, endPos, hash, isCurrent, incarnation) {
     isCurrent = isCurrent ? 1 : 0;
-    return { vatID, startPos, endPos, hash, isCurrent };
+    return { vatID, startPos, endPos, hash, isCurrent, incarnation };
   }
 
   /**
@@ -188,8 +191,8 @@ export function makeTranscriptStore(
 
   const sqlWriteSpan = db.prepare(`
     INSERT INTO transcriptSpans
-      (vatID, startPos, endPos, hash, isCurrent)
-    VALUES (?, ?, ?, ?, ?)
+      (vatID, startPos, endPos, hash, isCurrent, incarnation)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
 
   /**
@@ -199,13 +202,14 @@ export function makeTranscriptStore(
    */
   function initTranscript(vatID) {
     ensureTxn();
-    sqlWriteSpan.run(vatID, 0, 0, initialHash, 1);
-    const newRec = spanRec(vatID, 0, 0, initialHash, 1);
+    const initialIncarnation = 0;
+    sqlWriteSpan.run(vatID, 0, 0, initialHash, 1, initialIncarnation);
+    const newRec = spanRec(vatID, 0, 0, initialHash, 1, 0);
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
   const sqlGetCurrentSpanBounds = db.prepare(`
-    SELECT startPos, endPos, hash
+    SELECT startPos, endPos, hash, incarnation
     FROM transcriptSpans
     WHERE vatID = ? AND isCurrent = 1
   `);
@@ -215,7 +219,7 @@ export function makeTranscriptStore(
    *
    * @param {string} vatID  The vat in question
    *
-   * @returns {{startPos: number, endPos: number, hash: string}}
+   * @returns {{startPos: number, endPos: number, hash: string, incarnation: number}}
    */
   function getCurrentSpanBounds(vatID) {
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
@@ -234,24 +238,53 @@ export function makeTranscriptStore(
     WHERE vatID = ? AND position < ?
   `);
 
-  /**
-   * End the current transcript span for a vat and start a new one.
-   *
-   * @param {string} vatID  The vat whose transcript is to rollover to a new
-   *    span.
-   */
-  function rolloverSpan(vatID) {
+  function doSpanRollover(vatID, isNewIncarnation) {
     ensureTxn();
-    const { hash, startPos, endPos } = getCurrentSpanBounds(vatID);
-    const rec = spanRec(vatID, startPos, endPos, hash, 0);
+    const { hash, startPos, endPos, incarnation } = getCurrentSpanBounds(vatID);
+    const rec = spanRec(vatID, startPos, endPos, hash, 0, incarnation);
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
     sqlEndCurrentSpan.run(vatID);
-    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1);
-    const newRec = spanRec(vatID, endPos, endPos, initialHash, 1);
+    const incarnationToUse = isNewIncarnation ? incarnation + 1 : incarnation;
+    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, incarnationToUse);
+    const newRec = spanRec(
+      vatID,
+      endPos,
+      endPos,
+      initialHash,
+      1,
+      incarnationToUse,
+    );
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
     if (!keepTranscripts) {
       sqlDeleteOldItems.run(vatID, endPos);
     }
+    return incarnationToUse;
+  }
+
+  /**
+   * End the current transcript span for a vat and start a new span in a new
+   * incarnation (e.g., after a vat upgrade).
+   *
+   * @param {string} vatID  The vat whose transcript is to rollover to a new
+   *    span.
+   *
+   * @returns {number} the new incarnation number
+   */
+  function rolloverIncarnation(vatID) {
+    return doSpanRollover(vatID, true);
+  }
+
+  /**
+   * End the current transcript span for a vat and start a new span in the
+   * current incarnation (e.g., after a heap snapshot event).
+   *
+   * @param {string} vatID  The vat whose transcript is to rollover to a new
+   *    span.
+   *
+   * @returns {number} the incarnation number
+   */
+  function rolloverSpan(vatID) {
+    return doSpanRollover(vatID, false);
   }
 
   const sqlDeleteVatSpans = db.prepare(`
@@ -287,13 +320,13 @@ export function makeTranscriptStore(
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
-    SELECT vatID, startPos, endPos, hash, isCurrent
+    SELECT vatID, startPos, endPos, hash, isCurrent, incarnation
     FROM transcriptSpans
     ORDER BY vatID, startPos
   `);
 
   const sqlGetCurrentSpanMetadata = db.prepare(`
-    SELECT vatID, startPos, endPos, hash, isCurrent
+    SELECT vatID, startPos, endPos, hash, isCurrent, incarnation
     FROM transcriptSpans
     WHERE isCurrent = 1
     ORDER BY vatID, startPos
@@ -331,8 +364,15 @@ export function makeTranscriptStore(
       ? sqlGetAllSpanMetadata
       : sqlGetCurrentSpanMetadata;
     for (const rec of sql.iterate()) {
-      const { vatID, startPos, endPos, hash, isCurrent } = rec;
-      const exportRec = spanRec(vatID, startPos, endPos, hash, isCurrent);
+      const { vatID, startPos, endPos, hash, isCurrent, incarnation } = rec;
+      const exportRec = spanRec(
+        vatID,
+        startPos,
+        endPos,
+        hash,
+        isCurrent,
+        incarnation,
+      );
       yield [spanMetadataKey(rec), JSON.stringify(exportRec)];
     }
   }
@@ -449,8 +489,8 @@ export function makeTranscriptStore(
   }
 
   const sqlAddItem = db.prepare(`
-    INSERT INTO transcriptItems (vatID, item, position)
-    VALUES (?, ?, ?)
+    INSERT INTO transcriptItems (vatID, item, position, incarnation)
+    VALUES (?, ?, ?, ?)
   `);
 
   const sqlUpdateSpan = db.prepare(`
@@ -467,12 +507,12 @@ export function makeTranscriptStore(
    */
   const addItem = (vatID, item) => {
     ensureTxn();
-    const { startPos, endPos, hash } = getCurrentSpanBounds(vatID);
-    sqlAddItem.run(vatID, item, endPos);
+    const { startPos, endPos, hash, incarnation } = getCurrentSpanBounds(vatID);
+    sqlAddItem.run(vatID, item, endPos, incarnation);
     const newEndPos = endPos + 1;
     const newHash = updateSpanHash(hash, item);
     sqlUpdateSpan.run(newEndPos, newHash, vatID);
-    const rec = spanRec(vatID, startPos, newEndPos, newHash, 1);
+    const rec = spanRec(vatID, startPos, newEndPos, newHash, 1, incarnation);
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
   };
 
@@ -510,7 +550,7 @@ export function makeTranscriptStore(
     let pos = startPos;
     for await (const line of lineStream) {
       const item = line.trimEnd();
-      sqlAddItem.run(vatID, item, pos);
+      sqlAddItem.run(vatID, item, pos, info.incarnation);
       hash = updateSpanHash(hash, item);
       pos += 1;
     }
@@ -523,12 +563,14 @@ export function makeTranscriptStore(
       info.endPos,
       info.hash,
       info.isCurrent ? 1 : null,
+      info.incarnation,
     );
   }
 
   return harden({
     initTranscript,
     rolloverSpan,
+    rolloverIncarnation,
     getCurrentSpanBounds,
     addItem,
     readSpan,
