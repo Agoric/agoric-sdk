@@ -1,8 +1,63 @@
 import { E, Far } from '@endo/far';
+import { isObject } from '@endo/marshal';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import './types-ambient.js';
 
+const { details: X, Fail } = assert;
 const sink = () => {};
+
+/**
+ * Check the promise returned by a function for rejection by vat upgrade,
+ * and refetch upon encountering that condition.
+ *
+ * @template T
+ * @param {() => ERef<T>} getter
+ * @param {ERef<T>[]} [seed]
+ * @returns {Promise<T>}
+ */
+const reconnectAsNeeded = async (getter, seed = []) => {
+  let disconnection;
+  let lastVersion = -Infinity;
+  // End synchronous prelude.
+  await null;
+  for (let i = 0; ; i += 1) {
+    try {
+      const resultP = i < seed.length ? seed[i] : getter();
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+      const result = await resultP;
+      return result;
+    } catch (err) {
+      if (isUpgradeDisconnection(err)) {
+        if (!disconnection) {
+          disconnection = err;
+        }
+        const { incarnationNumber: version } = err;
+        if (version > lastVersion) {
+          // We don't expect another upgrade in between receiving
+          // a disconnection and re-requesting an update, but must
+          // nevertheless be prepared for that.
+          lastVersion = version;
+          continue;
+        }
+      }
+      // if `err` is an (Error) object, we can try to associate it with
+      // information about the disconnection that prompted the request
+      // for which it is a result.
+      if (isObject(err) && disconnection && disconnection !== err) {
+        try {
+          assert.note(
+            err,
+            X`Attempting to recover from disconnection: ${disconnection}`,
+          );
+        } catch (_err) {
+          // eslint-disable-next-line no-empty
+        }
+      }
+      throw err;
+    }
+  }
+};
 
 /**
  * Create a near iterable that corresponds to a potentially far one.
@@ -26,25 +81,48 @@ export const subscribe = itP =>
  * longer needed so they can be garbage collected.
  *
  * @template T
- * @param {ERef<PublicationRecord<T>>} pubList
+ * @param {ERef<EachTopic<T>>} topic
+ * @param {ERef<PublicationRecord<T>>} nextCellP
+ *   PublicationRecord corresponding with the first iteration result
  * @returns {ForkableAsyncIterator<T, T>}
  */
-const makeEachIterator = pubList => {
+const makeEachIterator = (topic, nextCellP) => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return Far('EachIterator', {
     next: () => {
-      const resultP = E.get(pubList).head;
-      pubList = E.get(pubList).tail;
-      // We expect the tail to be the "cannot read past end" error at the end
-      // of the happy path.
-      // Since we are wrapping that error with eventual send, we sink the
-      // rejection here too so it doesn't become an invalid unhandled rejection
-      // later.
-      void E.when(pubList, sink, sink);
+      const {
+        head: resultP,
+        publishCount: publishCountP,
+        tail: tailP,
+      } = E.get(nextCellP);
+
+      // If tailP is broken by upgrade, we will need to re-request it
+      // directly from `topic`.
+      const getSuccessor = async () => {
+        const publishCount = await publishCountP;
+        assert.typeof(publishCount, 'bigint');
+        const successor = await E(topic).subscribeAfter(publishCount);
+        const newPublishCount = successor.publishCount;
+        if (newPublishCount !== publishCount + 1n) {
+          Fail`eachIterator broken by gap from publishCount ${publishCount} to ${newPublishCount}`;
+        }
+        return successor;
+      };
+
+      // Replace nextCellP on every call to next() so things work even
+      // with an eager consumer that doesn't wait for results to settle.
+      nextCellP = reconnectAsNeeded(getSuccessor, [tailP]);
+
+      // Avoid unhandled rejection warnings here if the previous cell was rejected or
+      // there is no further request of this iterator.
+      // `tailP` is handled inside `reconnectAsNeeded` and `resultP` is the caller's
+      // concern, leaving only `publishCountP` and the new `nextCellP`.
+      void E.when(publishCountP, sink, sink);
+      void E.when(nextCellP, sink, sink);
       return resultP;
     },
-    fork: () => makeEachIterator(pubList),
+    fork: () => makeEachIterator(topic, nextCellP),
   });
 };
 
@@ -53,7 +131,10 @@ const makeEachIterator = pubList => {
  * provides "prefix lossy" iterations of the underlying PublicationList.
  * By "prefix lossy", we mean that you may miss everything published before
  * you ask the returned iterable for an iterator. But the returned iterator
- * will enumerate each thing published from that iterator's starting point.
+ * will enumerate each thing published from that iterator's starting point
+ * up to a disconnection result indicating upgrade of the producer
+ * (which breaks the gap-free guarantee and therefore terminates any active
+ * iterator while still supporting creation of new iterators).
  *
  * If the underlying PublicationList is terminated, that terminal value will be
  * reported losslessly.
@@ -64,8 +145,8 @@ const makeEachIterator = pubList => {
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
     [Symbol.asyncIterator]: () => {
-      const pubList = E(topic).subscribeAfter();
-      return makeEachIterator(pubList);
+      const firstCellP = reconnectAsNeeded(() => E(topic).subscribeAfter());
+      return makeEachIterator(topic, firstCellP);
     },
   });
   return iterable;
@@ -95,9 +176,10 @@ const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
       return terminalResult;
     }
 
-    // Send the next request now, skipping past intermediate updates.
-    const { value, updateCount } = await E(topic).getUpdateSince(
-      localUpdateCount,
+    // Send the next request now, skipping past intermediate updates
+    // and upgrade disconnections.
+    const { value, updateCount } = await reconnectAsNeeded(() =>
+      E(topic).getUpdateSince(localUpdateCount),
     );
     // Make sure the next request is for a fresher value.
     localUpdateCount = updateCount;
@@ -161,8 +243,9 @@ const makeLatestIterator = topic => cloneLatestIterator(topic);
  * By "lossy", we mean that you may miss any published state if a more
  * recent published state can be reported instead.
  *
- * If the underlying PublicationList is terminated, that terminal value will be
- * reported losslessly.
+ * If the underlying PublicationList is terminated by upgrade of the producer,
+ * it will be re-requested. All other terminal values will be losslessly
+ * propagated.
  *
  * @template T
  * @param {ERef<LatestTopic<T>>} topic

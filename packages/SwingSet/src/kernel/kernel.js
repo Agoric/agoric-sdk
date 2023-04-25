@@ -1,6 +1,7 @@
 import { assert, Fail } from '@agoric/assert';
 import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
+import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
 import { kser, kslot, makeError } from '../lib/kmarshal.js';
@@ -815,12 +816,11 @@ export default function buildKernel(
     const { meterID } = vatInfo;
     let computrons;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const disconnectObject = {
-      name: 'vatUpgraded',
+    const disconnectionObject = makeUpgradeDisconnection(
       upgradeMessage,
-      incarnationNumber: vatKeeper.getIncarnationNumber(),
-    };
-    const disconnectionCapData = kser(disconnectObject);
+      vatKeeper.getIncarnationNumber(),
+    );
+    const disconnectionCapData = kser(disconnectionObject);
 
     /**
      * Terminate the vat and translate internal-delivery results into
