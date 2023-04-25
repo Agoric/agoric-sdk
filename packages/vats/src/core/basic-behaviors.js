@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
