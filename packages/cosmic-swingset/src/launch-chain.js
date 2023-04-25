@@ -16,11 +16,12 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
@@ -105,20 +106,57 @@ export async function buildSwingset(
       return;
     }
     if (!config) throw Fail`config not yet set`;
+    const { coreProposals, exportStorageSubtrees } = config;
+
+    // XXX `initializeSwingset` does not have a default for `config.bootstrap`;
+    // should we universally ensure its presence in `config` above?
+    const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+
     // Find the entrypoints for all the core proposals.
-    if (config.coreProposals) {
+    if (coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
-        config.coreProposals,
+        coreProposals,
         vatconfig,
       );
-      const bootVat = config.vats[config.bootstrap || 'bootstrap'];
       config.bundles = { ...config.bundles, ...bundles };
 
       // Tell the bootstrap code how to run the core proposals.
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
-    config.pinBootstrapRoot = true;
 
+    // Extract data from chain storage.
+    if (exportStorageSubtrees) {
+      // Disallow exporting internal details like bundle contents and the action queue.
+      const exportRoot = STORAGE_PATH.CUSTOM;
+      const badPaths = exportStorageSubtrees.filter(
+        path => path !== exportRoot && !path.startsWith(`${exportRoot}.`),
+      );
+      badPaths.length === 0 ||
+        // prettier-ignore
+        Fail`Exported chain storage paths ${q(badPaths)} must start with ${q(exportRoot)}`;
+
+      const callChainStorage = (method, path) =>
+        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
+      const chainStorageEntries = [];
+      // Preserve the ordering of each subtree via depth-first traversal.
+      let pendingEntries = exportStorageSubtrees.map(path => {
+        const value = callChainStorage('get', path);
+        return [path, value];
+      });
+      while (pendingEntries.length > 0) {
+        const entry = /** @type {[string, string]} */ (pendingEntries.shift());
+        chainStorageEntries.push(entry);
+        const [path, _value] = entry;
+        const childEntryData = callChainStorage('entries', path);
+        const childEntries = childEntryData.map(([pathSegment, value]) => {
+          return [`${path}.${pathSegment}`, value];
+        });
+        pendingEntries = [...childEntries, ...pendingEntries];
+      }
+      bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
+    }
+
+    config.pinBootstrapRoot = true;
     await initializeSwingset(config, bootstrapArgs, kernelStorage, {
       // @ts-expect-error debugPrefix? what's that?
       debugPrefix,
