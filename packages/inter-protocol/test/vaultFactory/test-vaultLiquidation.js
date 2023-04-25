@@ -641,8 +641,8 @@ test('liquidate two loans', async t => {
     totalOverageReceived: run.make(0n),
     totalProceedsReceived: run.make(0n),
     totalCollateralSold: aeth.make(0n),
-    liquidatingCollateral: aeth.make(0n),
-    liquidatingDebt: run.make(0n),
+    TotalCollateralLiquidated: aeth.make(0n),
+    TotalDebtLiquidated: run.make(0n),
     totalShortfallReceived: run.make(0n),
   });
 
@@ -816,8 +816,8 @@ test('liquidate two loans', async t => {
     numActiveVaults: 1,
     numLiquidatingVaults: 1,
     totalDebt: { value: totalDebt },
-    liquidatingCollateral: { value: 700n },
-    liquidatingDebt: { value: 5282n },
+    TotalCollateralLiquidated: { value: 700n },
+    TotalDebtLiquidated: { value: 5282n },
   });
 
   shortfallBalance += 137n;
@@ -835,8 +835,8 @@ test('liquidate two loans', async t => {
 
   totalDebt -= 5145n + shortfallBalance - 1n;
   await aethVaultMetrics.assertChange({
-    liquidatingDebt: { value: 0n },
-    liquidatingCollateral: { value: 0n },
+    TotalDebtLiquidated: { value: 0n },
+    TotalCollateralLiquidated: { value: 0n },
     totalCollateral: { value: 100n },
     totalDebt: { value: totalDebt },
     numLiquidatingVaults: 0,
@@ -863,8 +863,8 @@ test('liquidate two loans', async t => {
 
   totalDebt += 13n;
   await aethVaultMetrics.assertChange({
-    liquidatingDebt: { value: 680n },
-    liquidatingCollateral: { value: 100n },
+    TotalDebtLiquidated: { value: 680n },
+    TotalCollateralLiquidated: { value: 100n },
     totalDebt: { value: totalDebt },
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
@@ -884,8 +884,8 @@ test('liquidate two loans', async t => {
 
   totalDebt = 0n;
   await aethVaultMetrics.assertChange({
-    liquidatingDebt: { value: 0n },
-    liquidatingCollateral: { value: 0n },
+    TotalDebtLiquidated: { value: 0n },
+    TotalCollateralLiquidated: { value: 0n },
     totalCollateral: { value: 0n },
     totalDebt: { value: totalDebt },
     numLiquidatingVaults: 0,
@@ -1142,8 +1142,8 @@ test('collect fees from loan', async t => {
     totalOverageReceived: run.make(0n),
     totalProceedsReceived: run.make(0n),
     totalCollateralSold: aeth.make(0n),
-    liquidatingCollateral: aeth.make(0n),
-    liquidatingDebt: run.make(0n),
+    TotalCollateralLiquidated: aeth.make(0n),
+    TotalDebtLiquidated: run.make(0n),
     totalShortfallReceived: run.make(0n),
   });
 
@@ -1301,8 +1301,8 @@ test('collect fees from loan', async t => {
     numLiquidatingVaults: 1,
 
     // running
-    liquidatingCollateral: { value: 700n },
-    liquidatingDebt: { value: 5250n },
+    TotalCollateralLiquidated: { value: 700n },
+    TotalDebtLiquidated: { value: 5250n },
   });
 
   await aethVaultMetrics.assertChange({
@@ -1315,8 +1315,8 @@ test('collect fees from loan', async t => {
     numLiquidationsCompleted: 1,
     totalProceedsReceived: { value: 2940n },
     totalShortfallReceived: { value: 2310n },
-    liquidatingCollateral: { value: 0n },
-    liquidatingDebt: { value: 0n },
+    TotalCollateralLiquidated: { value: 0n },
+    TotalDebtLiquidated: { value: 0n },
   });
 
   //  Bidder bought 400 Aeth
@@ -1386,8 +1386,8 @@ test('Auction sells all collateral w/shortfall', async t => {
     totalOverageReceived: run.make(0n),
     totalProceedsReceived: run.make(0n),
     totalCollateralSold: aeth.make(0n),
-    liquidatingCollateral: aeth.make(0n),
-    liquidatingDebt: run.make(0n),
+    TotalCollateralLiquidated: aeth.make(0n),
+    TotalDebtLiquidated: run.make(0n),
     totalShortfallReceived: run.make(0n),
   });
 
@@ -1514,8 +1514,8 @@ test('Auction sells all collateral w/shortfall', async t => {
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
     totalDebt: { value: totalDebt },
-    liquidatingCollateral: { value: 700n },
-    liquidatingDebt: { value: 5280n },
+    TotalCollateralLiquidated: { value: 700n },
+    TotalDebtLiquidated: { value: 5280n },
   });
 
   shortfallBalance += 2095n;
@@ -1524,8 +1524,8 @@ test('Auction sells all collateral w/shortfall', async t => {
   });
 
   await aethVaultMetrics.assertChange({
-    liquidatingDebt: { value: 0n },
-    liquidatingCollateral: { value: 0n },
+    TotalDebtLiquidated: { value: 0n },
+    TotalCollateralLiquidated: { value: 0n },
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     numLiquidatingVaults: 0,
@@ -1691,8 +1691,8 @@ test('reinstate vault', async t => {
     totalOverageReceived: run.make(0n),
     totalProceedsReceived: run.make(0n),
     totalCollateralSold: aeth.make(0n),
-    liquidatingCollateral: aeth.make(0n),
-    liquidatingDebt: run.make(0n),
+    TotalCollateralLiquidated: aeth.make(0n),
+    TotalDebtLiquidated: run.make(0n),
     totalShortfallReceived: run.make(0n),
   });
 
@@ -1800,8 +1800,8 @@ test('reinstate vault', async t => {
 
   await aethVaultMetrics.assertChange({
     numActiveVaults: 0,
-    liquidatingDebt: { value: 258n },
-    liquidatingCollateral: { value: 63n },
+    TotalDebtLiquidated: { value: 258n },
+    TotalCollateralLiquidated: { value: 63n },
     numLiquidatingVaults: 2,
   });
 

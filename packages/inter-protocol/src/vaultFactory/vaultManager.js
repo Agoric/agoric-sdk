@@ -77,8 +77,8 @@ const trace = makeTracer('VM', false);
  * @property {Amount<'nat'>}  totalDebt          present sum of debt across all vaults
  * @property {Amount<'nat'>}  retainedCollateral collateral held as a result of not returning excess refunds
  *                                                to owners of vaults liquidated with shortfalls
- * @property {Amount<'nat'>}  liquidatingCollateral  present sum of collateral in vaults sent for liquidation
- * @property {Amount<'nat'>}  liquidatingDebt        present sum of debt in vaults sent for liquidation
+ * @property {Amount<'nat'>}  TotalCollateralLiquidated  running sum of collateral in vaults sent for liquidation
+ * @property {Amount<'nat'>}  TotalDebtLiquidated        running sum of debt in vaults sent for liquidation
  *
  * @property {Amount<'nat'>}  totalCollateralSold       running sum of collateral sold in liquidation
  * @property {Amount<'nat'>}  totalOverageReceived      running sum of overages, central received greater than debt
@@ -117,8 +117,8 @@ const trace = makeTracer('VM', false);
  *   totalCollateral: Amount<'nat'>,
  *   totalCollateralSold: Amount<'nat'>,
  *   totalDebt: Amount<'nat'>,
- *   liquidatingCollateral: Amount<'nat'>,
- *   liquidatingDebt: Amount<'nat'>,
+ *   TotalCollateralLiquidated: Amount<'nat'>,
+ *   TotalDebtLiquidated: Amount<'nat'>,
  *   totalOverageReceived: Amount<'nat'>,
  *   totalProceedsReceived: Amount<'nat'>,
  *   totalShortfallReceived: Amount<'nat'>,
@@ -259,8 +259,8 @@ export const prepareVaultManagerKit = (
       totalCollateral: zeroCollateral,
       totalCollateralSold: zeroCollateral,
       totalDebt: zeroDebt,
-      liquidatingCollateral: zeroCollateral,
-      liquidatingDebt: zeroDebt,
+      TotalCollateralLiquidated: zeroCollateral,
+      TotalDebtLiquidated: zeroDebt,
       totalOverageReceived: zeroDebt,
       totalProceedsReceived: zeroDebt,
       totalShortfallReceived: zeroDebt,
@@ -486,22 +486,25 @@ export const prepareVaultManagerKit = (
         markLiquidating(debt, collateral) {
           const { state } = this;
 
-          state.liquidatingCollateral = AmountMath.add(
-            state.liquidatingCollateral,
+          state.TotalCollateralLiquidated = AmountMath.add(
+            state.TotalCollateralLiquidated,
             collateral,
           );
 
-          state.liquidatingDebt = AmountMath.add(state.liquidatingDebt, debt);
+          state.TotalDebtLiquidated = AmountMath.add(
+            state.TotalDebtLiquidated,
+            debt,
+          );
         },
         markDoneLiquidating(debt, collateral) {
           const { state } = this;
 
-          state.liquidatingCollateral = AmountMath.subtract(
-            state.liquidatingCollateral,
+          state.TotalCollateralLiquidated = AmountMath.subtract(
+            state.TotalCollateralLiquidated,
             collateral,
           );
-          state.liquidatingDebt = AmountMath.subtract(
-            state.liquidatingDebt,
+          state.TotalDebtLiquidated = AmountMath.subtract(
+            state.TotalDebtLiquidated,
             debt,
           );
         },
@@ -542,8 +545,8 @@ export const prepareVaultManagerKit = (
             numLiquidationsCompleted: state.numLiquidationsCompleted,
             numLiquidationsAborted: state.numLiquidationsAborted,
             totalCollateralSold: state.totalCollateralSold,
-            liquidatingCollateral: state.liquidatingCollateral,
-            liquidatingDebt: state.liquidatingDebt,
+            TotalCollateralLiquidated: state.TotalCollateralLiquidated,
+            TotalDebtLiquidated: state.TotalDebtLiquidated,
             totalOverageReceived: state.totalOverageReceived,
             totalProceedsReceived: state.totalProceedsReceived,
             totalShortfallReceived: state.totalShortfallReceived,

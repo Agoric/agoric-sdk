@@ -1741,8 +1741,8 @@ test('manager notifiers, with snapshot', async t => {
     totalOverageReceived: run.make(0n),
     totalProceedsReceived: run.make(0n),
     totalCollateralSold: aeth.make(0n),
-    liquidatingCollateral: aeth.make(0n),
-    liquidatingDebt: run.make(0n),
+    TotalCollateralLiquidated: aeth.make(0n),
+    TotalDebtLiquidated: run.make(0n),
     totalShortfallReceived: run.make(0n),
   });
 
