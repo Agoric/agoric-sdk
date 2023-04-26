@@ -183,9 +183,7 @@ export const deserializeVstorageValue = cellText => {
   const values = parsedValuesFromStreamCellText(cellText);
 
   assert.equal(values.length, 1);
-  const [value] = values;
-  assert.typeof(value, 'string');
-  const data = JSON.parse(value);
+  const [data] = values;
   assertCapData(data);
   return data;
 };
