@@ -6,7 +6,6 @@ import (
 	"fmt"
 	stdlog "log"
 	"math"
-	"math/big"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -34,9 +33,6 @@ const (
 	StoragePathBundles           = "bundles"
 	StoragePathSwingStore        = "swingStore"
 )
-
-// 2 ** 256 - 1
-var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
 
 const stateKey string = "state"
 
@@ -124,26 +120,7 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.J
 		return err
 	}
 
-	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
-	// The `tail` is the value of the next index to be inserted
-	tail, err := k.queueIndex(ctx, inboundQueuePath, "tail")
-	if err != nil {
-		return err
-	}
-
-	if tail.Equal(MaxSDKInt) {
-		return errors.New(inboundQueuePath + " overflow")
-	}
-	nextTail := tail.Add(sdk.NewInt(1))
-
-	// Set the vstorage corresponding to the queue entry for the current tail.
-	path := inboundQueuePath + "." + tail.String()
-	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, string(bz)))
-
-	// Update the tail to point to the next available entry.
-	path = inboundQueuePath + ".tail"
-	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, nextTail.String()))
-	return nil
+	return k.vstorageKeeper.PushQueueItem(ctx, inboundQueuePath, string(bz))
 }
 
 // PushAction appends an action to the controller's actionQueue.
@@ -156,44 +133,16 @@ func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) erro
 	return k.pushAction(ctx, StoragePathHighPriorityQueue, action)
 }
 
-func (k Keeper) queueIndex(ctx sdk.Context, queuePath string, position string) (sdk.Int, error) {
-	// Position should be either "head" or "tail"
-	path := queuePath + "." + position
-	indexEntry := k.vstorageKeeper.GetEntry(ctx, path)
-	if !indexEntry.HasData() {
-		return sdk.NewInt(0), nil
-	}
-
-	index, ok := sdk.NewIntFromString(indexEntry.StringValue())
-	if !ok {
-		return index, fmt.Errorf("couldn't parse %s as Int: %s", path, indexEntry.StringValue())
-	}
-	return index, nil
-}
-
-func (k Keeper) queueLength(ctx sdk.Context, queuePath string) (sdk.Int, error) {
-	head, err := k.queueIndex(ctx, queuePath, "head")
-	if err != nil {
-		return sdk.NewInt(0), err
-	}
-	tail, err := k.queueIndex(ctx, queuePath, "tail")
-	if err != nil {
-		return sdk.NewInt(0), err
-	}
-	// The tail index is exclusive
-	return tail.Sub(head), nil
-}
-
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
 	size := sdk.NewInt(0)
 
-	highPriorityQueueLength, err := k.queueLength(ctx, StoragePathHighPriorityQueue)
+	highPriorityQueueLength, err := k.vstorageKeeper.GetQueueLength(ctx, StoragePathHighPriorityQueue)
 	if err != nil {
 		return 0, err
 	}
 	size = size.Add(highPriorityQueueLength)
 
-	actionQueueLength, err := k.queueLength(ctx, StoragePathActionQueue)
+	actionQueueLength, err := k.vstorageKeeper.GetQueueLength(ctx, StoragePathActionQueue)
 	if err != nil {
 		return 0, err
 	}
