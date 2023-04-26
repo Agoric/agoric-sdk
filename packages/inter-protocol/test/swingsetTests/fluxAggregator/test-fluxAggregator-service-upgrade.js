@@ -14,7 +14,6 @@ test('fluxAggregator service upgrade', async t => {
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // test's bootstrap has some deps not needed in production
-    defaultManagerType: 'local',
     bundleCachePath: 'bundles/',
     bootstrap: 'bootstrap',
     vats: {

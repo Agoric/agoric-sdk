@@ -11,7 +11,6 @@ test('ertp service upgrade', async t => {
   /** @type {SwingSetConfig} */
   const config = {
     // includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'local',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,

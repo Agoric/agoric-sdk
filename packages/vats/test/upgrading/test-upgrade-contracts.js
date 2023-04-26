@@ -32,7 +32,6 @@ test('upgrade mintHolder', async t => {
 
   /** @type {SwingSetConfig} */
   const config = harden({
-    defaultManagerType: 'local', // Overridden in CI with SWINGSET_WORKER_TYPE=xs-worker
     bootstrap: 'bootstrap',
     vats: {
       // TODO refactor to use bootstrap-relay.js
