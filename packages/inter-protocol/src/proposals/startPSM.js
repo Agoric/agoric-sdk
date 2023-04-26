@@ -32,7 +32,7 @@ export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
  * @param {Array<[key: string, value: string]>} chainStorageEntries
  * @param {string} keyword
  * @param {{ minted: Brand<'nat'>, anchor: Brand<'nat'> }} brands
- * @returns {{ metrics?: MetricsNotification, governance?: Record<string, *> }}
+ * @returns {{ metrics?: MetricsNotification, governance?: GovernanceSubscriptionState }}
  */
 const findOldPSMState = (chainStorageEntries, keyword, brands) => {
   // In this reviver, object references are revived as boardIDs
@@ -54,8 +54,7 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
   );
   return {
     metrics: brandReviver.getItem(`published.psm.IST.${keyword}.metrics`),
-    governance: brandReviver.getItem(`published.psm.IST.${keyword}.governance`)
-      .current,
+    governance: brandReviver.getItem(`published.psm.IST.${keyword}.governance`),
   };
 };
 
@@ -160,7 +159,7 @@ export const startPSM = async (
           value: makeRatio(GiveMintedFeeBP, minted, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
-        ...oldState.governance,
+        ...oldState.governance?.current,
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
           value: electorateInvitationAmount,
