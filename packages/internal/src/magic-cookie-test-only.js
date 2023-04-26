@@ -1,3 +1,5 @@
+// @jessie-check
+
 const cookie = harden({});
 
 /**
