@@ -4,10 +4,11 @@
  * Put together information about the issuer in a standard format that
  * is synchronously accessible.
  *
- * @param {Brand} brand
- * @param {Issuer} issuer
- * @param {DisplayInfo} displayInfo
- * @returns {IssuerRecord}
+ * @template {AssetKind} K
+ * @param {Brand<K>} brand
+ * @param {Issuer<K>} issuer
+ * @param {DisplayInfo<K>} displayInfo
+ * @returns {IssuerRecord<K>}
  */
 export const makeIssuerRecord = (brand, issuer, displayInfo) =>
   harden({
