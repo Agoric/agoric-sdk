@@ -1,3 +1,5 @@
+// @jessie-check
+
 // XXX package factoring debt
 import '@agoric/notifier/exported.js';
 import '@agoric/store/exported.js';
