@@ -24,7 +24,7 @@ import {
 /** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
 
 const BASIS_POINTS = 10000n;
-const { details: X, Fail } = assert;
+const { details: X } = assert;
 
 export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 
