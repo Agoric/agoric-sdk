@@ -59,7 +59,7 @@ export {};
  *
  * @typedef { { deliver: (delivery: VatDeliveryObject, vatSyscallHandler: VatSyscallHandler)
  *                       => Promise<VatDeliveryResult>,
- *              makeSnapshot?: undefined | ((endPos: number, ss: SnapStore) => Promise<SnapshotResult>),
+ *              makeSnapshot?: undefined | ((snapPos: number, ss: SnapStore) => Promise<SnapshotResult>),
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { { createFromBundle: (vatID: string,

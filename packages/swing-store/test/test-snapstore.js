@@ -61,13 +61,13 @@ test('build temp file; compress to cache file', async t => {
   });
   const snapshotInfo = store.getSnapshotInfo('fakeVatID');
   const dbInfo = {
-    endPos: 47,
+    snapPos: 47,
     hash: expectedHash,
     uncompressedSize: 3,
     compressedSize: 23,
   };
   const exportInfo = {
-    endPos: 47,
+    snapPos: 47,
     hash: expectedHash,
     inUse: 1,
   };

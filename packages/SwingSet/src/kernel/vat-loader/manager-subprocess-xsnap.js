@@ -218,12 +218,12 @@ export function makeXsSubprocessFactory({
       return worker.close().then(_ => undefined);
     }
     /**
-     * @param {number} endPos
+     * @param {number} snapPos
      * @param {SnapStore} snapStore
      * @returns {Promise<SnapshotResult>}
      */
-    function makeSnapshot(endPos, snapStore) {
-      return snapStore.saveSnapshot(vatID, endPos, fn => worker.snapshot(fn));
+    function makeSnapshot(snapPos, snapStore) {
+      return snapStore.saveSnapshot(vatID, snapPos, fn => worker.snapshot(fn));
     }
 
     return mk.getManager(shutdown, makeSnapshot);

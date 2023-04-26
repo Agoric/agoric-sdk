@@ -57,7 +57,7 @@ import {
 /**
  *
  * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>) => VatManager,
+ *                           makeSnapshot?: (snapPos: number, ss: SnapStore) => Promise<SnapshotResult>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -170,7 +170,7 @@ function makeManagerKit(retainSyscall = false) {
   /**
    *
    * @param { () => Promise<void>} shutdown
-   * @param {(endPos: number, ss: SnapStore) => Promise<SnapshotResult>} [makeSnapshot]
+   * @param {(snapPos: number, ss: SnapStore) => Promise<SnapshotResult>} [makeSnapshot]
    * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {

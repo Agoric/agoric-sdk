@@ -177,7 +177,7 @@ test('xsnap bundles are stable', async t => {
   // save-snapshot as deliveryNum=2
   t.is(snapStore.getSnapshotInfo('v1'), undefined);
   await c2.run();
-  t.is(snapStore.getSnapshotInfo('v1')?.endPos, 2);
+  t.is(snapStore.getSnapshotInfo('v1')?.snapPos, 2);
   await c2.shutdown;
 
   // now that the worker has a snapshot, the vat preload won't fetch

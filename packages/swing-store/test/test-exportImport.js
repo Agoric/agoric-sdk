@@ -268,16 +268,16 @@ async function testExportImport(
     ['kv.vatB.vval', 'stuff in 15'],
     [
       'snapshot.vatA.2',
-      '{"vatID":"vatA","endPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6","inUse":0}',
+      '{"vatID":"vatA","snapPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6","inUse":0}',
     ],
     [
       'snapshot.vatA.8',
-      '{"vatID":"vatA","endPos":8,"hash":"f010b0f3e7d48e378cc59b678388d2aae6667c4ff233454a6d8f08caebfda681","inUse":1}',
+      '{"vatID":"vatA","snapPos":8,"hash":"f010b0f3e7d48e378cc59b678388d2aae6667c4ff233454a6d8f08caebfda681","inUse":1}',
     ],
     ['snapshot.vatA.current', 'snapshot.vatA.8'],
     [
       'snapshot.vatB.4',
-      '{"vatID":"vatB","endPos":4,"hash":"afd477014db678fbc1aa58beab50f444deb653b8cc8e8583214a363fd12ed57a","inUse":1}',
+      '{"vatID":"vatB","snapPos":4,"hash":"afd477014db678fbc1aa58beab50f444deb653b8cc8e8583214a363fd12ed57a","inUse":1}',
     ],
     ['snapshot.vatB.current', 'snapshot.vatB.4'],
     [

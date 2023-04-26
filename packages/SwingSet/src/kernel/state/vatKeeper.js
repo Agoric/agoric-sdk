@@ -512,7 +512,7 @@ export function makeVatKeeper(
   function transcriptSnapshotStats() {
     const totalEntries = getTranscriptEndPosition();
     const snapshotInfo = getSnapshotInfo();
-    const snapshottedEntries = snapshotInfo ? snapshotInfo.endPos : 0;
+    const snapshottedEntries = snapshotInfo ? snapshotInfo.snapPos : 0;
     return { totalEntries, snapshottedEntries };
   }
 

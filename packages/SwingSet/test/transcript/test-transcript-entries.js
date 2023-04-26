@@ -135,7 +135,7 @@ test('transcript spans', async t => {
   c.pinVatRoot('bootstrap');
   const vatID = c.vatNameToID('bootstrap');
 
-  const snapInfo = () => snapStore.getSnapshotInfo(vatID)?.endPos;
+  const snapInfo = () => snapStore.getSnapshotInfo(vatID)?.snapPos;
   const readFull = () => [...transcriptStore.readFullVatTranscript(vatID)];
   const full = () => readFull().map(row => JSON.parse(row.item));
   const readOld = startPos => [...transcriptStore.readSpan(vatID, startPos)];
@@ -166,7 +166,7 @@ test('transcript spans', async t => {
 
   // snapshotInitial=2 and snapshotInterval=7, so we'll see a
   // save-snapshot on deliveryNum 2, and when (deliveryNum -
-  // snapshot.endPos) = k*7. Until an upgrade causes a span to end
+  // snapshot.snapPos) = k*7. Until an upgrade causes a span to end
   // early, that means save-snapshot on deliveries 2, 9, 16, 23
 
   // the full sequence of deliveries will be:
