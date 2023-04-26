@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Nat } from '@endo/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });

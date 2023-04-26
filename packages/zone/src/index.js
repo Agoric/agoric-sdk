@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { makeExo, defineExoClass, defineExoClassKit } from '@agoric/store';
 
 export * from './heap.js';

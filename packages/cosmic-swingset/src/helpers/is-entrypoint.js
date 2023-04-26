@@ -1,3 +1,5 @@
+// @jessie-check
+
 // Detect if this is run as a script.
 import url from 'url';
 import process from 'process';
