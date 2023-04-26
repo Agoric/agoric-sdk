@@ -23,7 +23,10 @@ import { Far } from '@endo/marshal';
 
 import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import { makeMetricsPublishKit } from '../contractSupport.js';
+import {
+  makeMetricsPublishKit,
+  makeNatAmountShape,
+} from '../contractSupport.js';
 
 const { Fail } = assert;
 
@@ -136,8 +139,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
   updateMetrics();
 
-  /** @param {Brand<'nat'>} b */
-  const amtShape = b => harden({ brand: b, value: M.nat() });
+  const AnchorAmountShape = makeNatAmountShape(anchorBrand);
+  const StableAmountShape = makeNatAmountShape(stableBrand);
 
   /**
    * @param {ZCFSeat} seat
@@ -155,10 +158,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     mustMatch(
       target,
       harden({
-        feePoolBalance: amtShape(stableBrand),
-        mintedPoolBalance: amtShape(stableBrand),
-        totalAnchorProvided: amtShape(anchorBrand),
-        totalMintedProvided: amtShape(stableBrand),
+        feePoolBalance: StableAmountShape,
+        mintedPoolBalance: StableAmountShape,
+        totalAnchorProvided: AnchorAmountShape,
+        totalMintedProvided: StableAmountShape,
       }),
     );
     const {
@@ -338,7 +341,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         undefined,
         M.splitRecord({
           give: {
-            Anchor: amtShape(anchorBrand),
+            Anchor: AnchorAmountShape,
           },
         }),
       );
