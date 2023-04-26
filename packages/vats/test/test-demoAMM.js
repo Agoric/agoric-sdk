@@ -81,7 +81,7 @@ test('poolRates: spot check WETH', t => {
     initialMargin: '1.5',
     liquidationMargin: '1.25',
     interestRate: '0.025',
-    loanFee: '0.0001',
+    mintFee: '0.0001',
   };
   Object.entries(expected).forEach(([prop, val]) =>
     t.is(showRatio(rates[prop]), val),

@@ -19,7 +19,7 @@ import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { E } from '@endo/eventual-send';
 import { NonNullish } from '@agoric/assert';
 import path from 'path';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeTracer } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import {

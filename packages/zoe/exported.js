@@ -1,3 +1,5 @@
+// @jessie-check
+
 import './src/contractFacet/types.js';
 import './src/zoeService/types.js';
 import './src/contractSupport/types.js';

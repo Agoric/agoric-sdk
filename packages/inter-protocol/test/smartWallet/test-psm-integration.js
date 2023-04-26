@@ -4,7 +4,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { buildRootObject as buildPSMRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import '@agoric/vats/src/core/types.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 

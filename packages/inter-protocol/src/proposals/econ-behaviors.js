@@ -619,7 +619,7 @@ export const startAuctioneer = async (
  * @param {bigint} [config.debtLimit] count of Minted
  * @param {Rational} [config.mintingRatio] ratio of Minted to BLD
  * @param {bigint} [config.interestRateBP]
- * @param {bigint} [config.loanFeeBP]
+ * @param {bigint} [config.mintFeeBP]
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
@@ -660,7 +660,7 @@ export const startStakeFactory = async (
     debtLimit = 1_000_000_000_000n,
     mintingRatio = [1n, 4n],
     interestRateBP = 250n,
-    loanFeeBP = 200n,
+    mintFeeBP = 200n,
     chargingPeriod = SECONDS_PER_HOUR,
     recordingPeriod = SECONDS_PER_DAY,
   } = {},
@@ -694,7 +694,7 @@ export const startStakeFactory = async (
         bldBrand,
       ),
       interestRate: makeRatio(interestRateBP, runBrand, BASIS_POINTS),
-      loanFee: makeRatio(loanFeeBP, runBrand, BASIS_POINTS),
+      mintFee: makeRatio(mintFeeBP, runBrand, BASIS_POINTS),
       electorateInvitationAmount,
     },
   );

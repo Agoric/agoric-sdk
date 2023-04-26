@@ -14,5 +14,5 @@ export const ParamKW = /** @type { const } */ ({
   DebtLimit: 'DebtLimit',
   MintingRatio: 'MintingRatio',
   InterestRate: 'InterestRate',
-  LoanFee: 'LoanFee',
+  MintFee: 'MintFee',
 });

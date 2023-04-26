@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { ToFarFunction } from '@endo/marshal';
 import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';

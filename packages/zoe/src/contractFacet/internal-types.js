@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @typedef {( {zcf: ZCF} ) => void} TestJigSetter
  */

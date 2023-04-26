@@ -6,7 +6,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -207,7 +207,7 @@ test('close vault', async t => {
     updated: 'offerStatus',
     status: {
       id: 'close-well',
-      result: 'your loan is closed, thank you for your business',
+      result: 'your vault is closed, thank you for your business',
       // funds are returned
       payouts: likePayouts(giveCollateral, 0),
     },

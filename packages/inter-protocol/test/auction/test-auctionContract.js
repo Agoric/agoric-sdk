@@ -6,7 +6,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { subscribeEach } from '@agoric/notifier';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';

@@ -13,7 +13,7 @@ import { WalletName } from '@agoric/internal';
 import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import path from 'path';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';

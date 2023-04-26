@@ -47,7 +47,7 @@ export const defaultParamValues = debtBrand =>
     // periodic interest rate (per charging period)
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
-    loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
+    mintFee: makeRatio(500n, debtBrand, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
   });
 

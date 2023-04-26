@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
