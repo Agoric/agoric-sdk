@@ -212,7 +212,7 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
       ...new Set(
         entries
           .map(([k, _]) => k)
-          .filter(k => k.length > prefix.length && k.startsWith(prefix))
+          .filter(k => k.startsWith(prefix))
           .map(k => k.slice(prefix.length).split('.')[0]),
       ),
     ];
