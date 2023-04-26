@@ -13,6 +13,7 @@ import {
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicRearrange,
+  atomicTransfer,
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
@@ -164,7 +165,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       give: { Anchor },
     } = seat.getProposal();
     stableMint.mintGains({ Minted: target.feePoolBalance }, feePool);
-    atomicRearrange(zcf, harden([[seat, anchorPool, { Anchor }, { Anchor }]]));
+    atomicTransfer(zcf, seat, anchorPool, { Anchor });
     ({ mintedPoolBalance, totalAnchorProvided, totalMintedProvided } = target);
     seat.exit();
     updateMetrics();
