@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';

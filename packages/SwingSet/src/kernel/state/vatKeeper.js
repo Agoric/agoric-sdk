@@ -43,7 +43,6 @@ export function initializeVatState(kvStore, transcriptStore, vatID) {
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
   kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
-  kvStore.set(`${vatID}.incarnationNumber`, `1`);
   transcriptStore.initTranscript(vatID);
 }
 
@@ -171,13 +170,8 @@ export function makeVatKeeper(
   }
 
   function getIncarnationNumber() {
-    return Number(getRequired(`${vatID}.incarnationNumber`));
-  }
-
-  function incIncarnationNumber() {
-    const newIncarnationNumber = getIncarnationNumber() + 1;
-    kvStore.set(`${vatID}.incarnationNumber`, `${newIncarnationNumber}`);
-    return newIncarnationNumber;
+    const { incarnation } = transcriptStore.getCurrentSpanBounds(vatID);
+    return incarnation;
   }
 
   function getReachableFlag(kernelSlot) {
@@ -549,11 +543,11 @@ export function makeVatKeeper(
     transcriptStore.deleteVatTranscripts(vatID);
   }
 
-  function dropSnapshotAndResetTranscript() {
+  function beginNewIncarnation() {
     if (snapStore) {
       snapStore.stopUsingLastSnapshot(vatID);
     }
-    transcriptStore.rolloverSpan(vatID);
+    return transcriptStore.rolloverIncarnation(vatID);
   }
 
   function vatStats() {
@@ -607,7 +601,6 @@ export function makeVatKeeper(
     updateReapInterval,
     nextDeliveryNum,
     getIncarnationNumber,
-    incIncarnationNumber,
     importsKernelSlot,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
@@ -626,6 +619,6 @@ export function makeVatKeeper(
     saveSnapshot,
     getSnapshotInfo,
     deleteSnapshotsAndTranscript,
-    dropSnapshotAndResetTranscript,
+    beginNewIncarnation,
   });
 }

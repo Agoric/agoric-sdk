@@ -33,12 +33,6 @@ export const DISCOUNT_STEP_BP = 'DiscountStep';
  * Auctions start this long after the hour to give vaults time to finish.
  */
 export const AUCTION_START_DELAY = 'AuctionStartDelay';
-/**
- * Basis Points to charge in penalty against vaults that are liquidated.  Notice
- * that if the penalty is less than the LOWEST_RATE_BP discount, vault holders
- * could buy their assets back at an advantageous price.
- */
-export const LIQUIDATION_PENALTY = 'LiquidationPenalty';
 
 // /////// used by VaultDirector /////////////////////
 // time before each auction that the prices are locked.

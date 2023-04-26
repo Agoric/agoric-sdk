@@ -460,7 +460,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
     data: ['some', 'data'],
     remoerr: Error('vat terminated'),
   });
-  t.deepEqual(v2result.upgradeResult, { incarnationNumber: 2 });
+  t.deepEqual(v2result.upgradeResult, { incarnationNumber: 1 });
   const v2MarkerKref = verifyPresence(v2result.marker, 'marker');
   t.deepEqual(v2MarkerKref, v1MarkerKref);
 
@@ -479,7 +479,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const vatUpgradedError = {
     name: 'vatUpgraded',
     upgradeMessage: 'test upgrade',
-    incarnationNumber: 1,
+    incarnationNumber: 0,
   };
   t.deepEqual(kunser(c.kpResolution(v1p1Kref)), vatUpgradedError);
   t.is(c.kpStatus(v1p2Kref), 'rejected');

@@ -11,7 +11,7 @@ import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 

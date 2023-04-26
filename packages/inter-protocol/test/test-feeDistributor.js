@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';

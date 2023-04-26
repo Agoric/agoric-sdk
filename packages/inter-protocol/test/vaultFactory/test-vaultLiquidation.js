@@ -9,7 +9,7 @@ import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -76,7 +76,9 @@ test.before(async t => {
   const runBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
   const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
-  const aeth = withAmountUtils(makeIssuerKit('aEth'));
+  const aeth = withAmountUtils(
+    makeIssuerKit('aEth', 'nat', { decimalPlaces: 6 }),
+  );
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
   // note that the liquidation might be a different bundle name
@@ -253,6 +255,24 @@ const bid = async (t, zoe, auctioneerKit, aeth, bidAmount, desired) => {
   return bidderSeat;
 };
 
+const bidDiscount = async (
+  t,
+  zoe,
+  auctioneerKit,
+  aeth,
+  bidAmount,
+  desired,
+  scale,
+) => {
+  const bidderSeat = await E(zoe).offer(
+    E(auctioneerKit.publicFacet).makeBidInvitation(aeth.brand),
+    harden({ give: { Bid: bidAmount } }),
+    harden({ Bid: getRunFromFaucet(t, bidAmount.value) }),
+    { maxBuy: desired, offerBidScaling: scale },
+  );
+  return bidderSeat;
+};
+
 // Calculate the nominalStart time (when liquidations happen), and the priceLock
 // time (when prices are locked). Advance the clock to the priceLock time, then
 // to the nominal start time. return the nominal start time and the auction
@@ -277,8 +297,16 @@ const assertBidderPayout = async (t, bidderSeat, run, curr, aeth, coll) => {
   t.is(bidderResult, 'Your bid has been accepted');
   const payouts = await E(bidderSeat).getPayouts();
   const { Collateral: bidderCollateral, Bid: bidderBid } = payouts;
-  await assertPayoutAmount(t, run.issuer, bidderBid, run.make(curr));
-  await assertPayoutAmount(t, aeth.issuer, bidderCollateral, aeth.make(coll));
+  curr === 0n ||
+    (await assertPayoutAmount(t, run.issuer, bidderBid, run.make(curr)));
+  coll === 0n ||
+    (await assertPayoutAmount(
+      t,
+      aeth.issuer,
+      bidderCollateral,
+      aeth.make(coll),
+      'amount ',
+    ));
 };
 
 test('price drop', async t => {
@@ -1900,4 +1928,199 @@ test('auction locks low price', async t => {
         'Proposed debt {"brand":"[Alleged: IST brand]","value":"[525n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[0n]"} for {"brand":"[Alleged: aEth brand]","value":"[4n]"} collateral',
     },
   );
+});
+
+test('Bug 7422 vault reinstated with no assets', async t => {
+  const { zoe, aeth, run, rates: defaultRates } = t.context;
+
+  const rates = harden({
+    ...defaultRates,
+    liquidationPenalty: makeRatio(5n, run.brand),
+    liquidationMargin: run.makeRatio(150n),
+  });
+  t.context.rates = rates;
+
+  const manualTimer = buildManualTimer();
+  const services = await setupServices(
+    t,
+    makeRatio(1250n, run.brand, 100n, aeth.brand),
+    aeth.make(1000n),
+    manualTimer,
+    SECONDS_PER_WEEK,
+    500n,
+  );
+
+  const {
+    vaultFactory: { aethVaultManager, aethCollateralManager },
+    auctioneerKit: auctKit,
+    priceAuthority,
+    reserveKit: { reserveCreatorFacet },
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+
+  const cm = await E(aethVaultManager).getPublicFacet();
+  const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
+  await aethVaultMetrics.assertInitial({
+    // present
+    numActiveVaults: 0,
+    numLiquidatingVaults: 0,
+    totalCollateral: aeth.make(0n),
+    totalDebt: run.make(0n),
+    retainedCollateral: aeth.make(0n),
+
+    // running
+    numLiquidationsCompleted: 0,
+    numLiquidationsAborted: 0,
+    totalOverageReceived: run.make(0n),
+    totalProceedsReceived: run.make(0n),
+    totalCollateralSold: aeth.make(0n),
+    liquidatingCollateral: aeth.make(0n),
+    liquidatingDebt: run.make(0n),
+    totalShortfallReceived: run.make(0n),
+  });
+
+  const openVault = (collateral, want) =>
+    E(zoe).offer(
+      E(aethCollateralManager).makeVaultInvitation(),
+      harden({
+        give: { Collateral: collateral },
+        want: { Minted: want },
+      }),
+      harden({
+        Collateral: aeth.mint.mintPayment(collateral),
+      }),
+    );
+
+  const aliceWantMinted = run.make(100n);
+  const collateral = aeth.make(15n);
+  /** @type {UserSeat<VaultKit>} */
+  const aliceVaultSeat = await openVault(collateral, aliceWantMinted);
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await legacyOfferResult(aliceVaultSeat);
+  let aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 1,
+    totalCollateral: { value: 15n },
+    totalDebt: { value: 105n },
+  });
+
+  const bobWantMinted = run.make(105n);
+  /** @type {UserSeat<VaultKit>} */
+  const bobVaultSeat = await openVault(collateral, bobWantMinted);
+  const {
+    vault: bobVault,
+    publicNotifiers: { vault: bobNotifier },
+  } = await legacyOfferResult(bobVaultSeat);
+  const bobUpdate = await E(bobNotifier).getUpdateSince();
+  t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
+
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 2,
+    totalCollateral: { value: 30n },
+    totalDebt: { value: 216n },
+  });
+
+  const carolWantMinted = run.make(110n);
+  /** @type {UserSeat<VaultKit>} */
+  const carolVaultSeat = await openVault(collateral, carolWantMinted);
+  const {
+    vault: carolVault,
+    publicNotifiers: { vault: carolNotifier },
+  } = await legacyOfferResult(carolVaultSeat);
+  const carolUpdate = await E(carolNotifier).getUpdateSince();
+  t.is(carolUpdate.value.vaultState, Phase.ACTIVE);
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 3,
+    totalCollateral: { value: 45n },
+    totalDebt: { value: 332n },
+  });
+
+  const { Minted: aliceLentAmount } = await E(
+    aliceVaultSeat,
+  ).getFinalAllocation();
+  const aliceProceeds = await E(aliceVaultSeat).getPayouts();
+  t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
+
+  const aliceRunLent = await aliceProceeds.Minted;
+  t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), aliceWantMinted);
+
+  // BIDDERs place BIDs //////////////////////////
+  const bidderSeat1 = await bidDiscount(
+    t,
+    zoe,
+    auctKit,
+    aeth,
+    run.make(50n),
+    aeth.make(100n),
+    makeRatio(70n, run.brand),
+  );
+  const bidderSeat2 = await bid(
+    t,
+    zoe,
+    auctKit,
+    aeth,
+    run.make(50n),
+    aeth.make(10n),
+  );
+  const bidderSeat3 = await bidDiscount(
+    t,
+    zoe,
+    auctKit,
+    aeth,
+    run.make(75n),
+    aeth.make(100n),
+    makeRatio(78n, run.brand),
+  );
+
+  // price falls
+  // @ts-expect-error setupServices() should return the right type
+  await priceAuthority.setPrice(makeRatio(999n, run.brand, 1000n, aeth.brand));
+  await eventLoopIteration();
+
+  const { startTime } = await startAuctionClock(auctKit, manualTimer);
+
+  await setClockAndAdvanceNTimes(manualTimer, 2n, startTime, 2n);
+
+  await aethVaultMetrics.assertChange({
+    liquidatingDebt: { value: 332n },
+    liquidatingCollateral: { value: 45n },
+    numActiveVaults: 0,
+    numLiquidatingVaults: 3,
+  });
+
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
+
+  await aethVaultMetrics.assertChange({
+    liquidatingDebt: { value: 0n },
+    totalDebt: { value: 0n },
+    liquidatingCollateral: { value: 0n },
+    totalCollateral: { value: 0n },
+    totalCollateralSold: { value: 45n },
+    totalProceedsReceived: { value: 34n },
+    totalShortfallReceived: { value: 298n },
+    numLiquidatingVaults: 0,
+    numLiquidationsCompleted: 3,
+  });
+
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(0n));
+  t.deepEqual(await E(aliceVault).getCurrentDebt(), run.makeEmpty());
+  t.deepEqual(await E(bobVault).getCollateralAmount(), aeth.make(0n));
+  t.deepEqual(await E(bobVault).getCurrentDebt(), run.makeEmpty());
+  t.deepEqual(await E(carolVault).getCollateralAmount(), aeth.make(0n));
+  t.deepEqual(await E(carolVault).getCurrentDebt(), run.makeEmpty());
+
+  t.false(await E(bidderSeat3).hasExited());
+  await E(bidderSeat3).tryExit();
+  t.true(await E(bidderSeat3).hasExited());
+  await assertBidderPayout(t, bidderSeat3, run, 75n, aeth, 0n);
+  await E(bidderSeat1).tryExit();
+  await assertBidderPayout(t, bidderSeat1, run, 0n, aeth, 35n);
+  await assertBidderPayout(t, bidderSeat2, run, 39n, aeth, 10n);
+
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {});
 });

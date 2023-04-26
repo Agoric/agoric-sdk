@@ -3,7 +3,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { makeIssuerKit } from '@agoric/ertp';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { makeMockTestSpace } from './supports.js';
 

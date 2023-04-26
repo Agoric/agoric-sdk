@@ -1,3 +1,5 @@
+// @jessie-check
+
 /* global globalThis */
 import fetch from 'node-fetch';
 

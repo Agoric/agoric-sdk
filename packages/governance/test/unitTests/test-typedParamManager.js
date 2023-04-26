@@ -7,7 +7,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ParamTypes } from '../../src/index.js';
 import {
   makeParamManager,

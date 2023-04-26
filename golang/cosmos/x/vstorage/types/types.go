@@ -62,6 +62,10 @@ func (se StorageEntry) Path() string {
 	return se.path
 }
 
+func (se StorageEntry) Value() *string {
+	return se.value
+}
+
 func (se StorageEntry) StringValue() string {
 	if se.value != nil {
 		return *se.value

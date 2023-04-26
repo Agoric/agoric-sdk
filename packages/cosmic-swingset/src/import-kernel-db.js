@@ -1,6 +1,7 @@
 #! /usr/bin/env node
-
 // @ts-check
+// @jessie-check
+
 import '@endo/init/unsafe-fast.js';
 
 import os from 'os';

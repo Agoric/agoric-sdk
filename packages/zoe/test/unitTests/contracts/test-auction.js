@@ -7,9 +7,9 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
-import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
 

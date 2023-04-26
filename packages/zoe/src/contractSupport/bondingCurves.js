@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Nat } from '@endo/nat';
 import { natSafeMath } from './safeMath.js';
 

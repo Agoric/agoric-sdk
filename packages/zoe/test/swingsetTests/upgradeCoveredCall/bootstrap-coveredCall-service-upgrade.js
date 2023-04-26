@@ -159,7 +159,7 @@ export const buildRootObject = () => {
       const doubloonsPurse = await E(doubloonsKit.issuer).makeEmptyPurse();
 
       const upgradeResult = await E(instanceAdmin2).upgradeContract(v3BundleId);
-      assert.equal(upgradeResult.incarnationNumber, 2);
+      assert.equal(upgradeResult.incarnationNumber, 1);
       console.log('Boot  starting upgrade V2');
 
       // exercise an invitation from before the upgrade

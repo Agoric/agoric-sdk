@@ -918,7 +918,7 @@ export default function buildKernel(
     // cleanup done, now we reset the worker to a clean state with no
     // transcript or snapshot and prime everything for the next incarnation.
 
-    await vatWarehouse.resetWorker(vatID);
+    const newIncarnation = await vatWarehouse.beginNewWorkerIncarnation(vatID);
     // update source and bundleIDs, store back to vat metadata
     const source = { bundleID };
     const origOptions = vatKeeper.getOptions();
@@ -927,7 +927,6 @@ export default function buildKernel(
     });
     const vatOptions = harden({ ...origOptions, workerOptions });
     vatKeeper.setSourceAndOptions(source, vatOptions);
-    const incarnationNumber = vatKeeper.incIncarnationNumber();
     // TODO: decref the bundleID once setSourceAndOptions increfs it
 
     // pause, take a deep breath, appreciate this moment of silence
@@ -960,7 +959,7 @@ export default function buildKernel(
       return results;
     }
 
-    const args = [upgradeID, true, undefined, incarnationNumber];
+    const args = [upgradeID, true, undefined, newIncarnation];
     /** @type {RawMethargs} */
     const vatAdminMethargs = ['vatUpgradeCallback', args];
     const results = harden({

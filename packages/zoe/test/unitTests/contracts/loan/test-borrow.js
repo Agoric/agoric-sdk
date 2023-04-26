@@ -7,6 +7,7 @@ import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   setupLoanUnitTest,
   makeSeatKit,
@@ -20,7 +21,6 @@ import {
 
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
-import { eventLoopIteration } from '../../../../tools/eventLoopIteration.js';
 
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';

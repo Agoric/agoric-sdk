@@ -9,7 +9,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeParamManagerBuilder, ParamTypes } from '../../src/index.js';
 
 test('two parameters', t => {

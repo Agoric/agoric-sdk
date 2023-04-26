@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Far } from '@endo/far';
 import './types-ambient.js';
 
