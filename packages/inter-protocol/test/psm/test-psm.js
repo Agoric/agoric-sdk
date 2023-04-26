@@ -6,9 +6,11 @@ import '../../src/vaultFactory/types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import {
   floorDivideBy,
@@ -16,17 +18,16 @@ import {
   makeRatio,
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 
-import { E, Far } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
-import path from 'path';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeTracer } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { makeTracer } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { Stable } from '@agoric/vats/src/tokens.js';
+import { E, Far } from '@endo/far';
+import path from 'path';
+import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
@@ -34,7 +35,6 @@ import {
   subscriptionKey,
   withAmountUtils,
 } from '../supports.js';
-import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -150,6 +150,7 @@ const makeTestContext = async () => {
     terms: {
       anchorBrand: anchor.brand,
       anchorPerMinted: makeRatio(100n, anchor.brand, 100n, minted.brand),
+      electionManager: Far('mock election manager instance'),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -262,7 +263,7 @@ async function makePsmDriver(t, customTerms) {
     async getFeePayout() {
       const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
       const collectFeesSeat = await E(zoe).offer(
-        E(limitedCreatorFacet).makeCollectFeesInvitation(),
+        await E(limitedCreatorFacet).makeCollectFeesInvitation(),
       );
       await E(collectFeesSeat).getOfferResult();
       const feePayoutAmount = await E.get(

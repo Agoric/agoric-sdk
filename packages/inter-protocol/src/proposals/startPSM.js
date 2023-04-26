@@ -171,7 +171,7 @@ export const startPSM = async (
   );
 
   const psmStorageNode = await makeStorageNodeChild(chainStorage, 'psm');
-  const storageNode = E(
+  const storageNode = await E(
     E(psmStorageNode).makeChildNode(Stable.symbol),
   ).makeChildNode(keyword);
 
