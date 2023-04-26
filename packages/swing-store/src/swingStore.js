@@ -1073,7 +1073,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
       transcriptInfo.startPos === 0 ||
         Fail`missing current snapshot for vat ${q(vatID)}`;
     } else {
-      snapshotInfo.endPos === transcriptInfo.startPos ||
+      snapshotInfo.endPos + 1 === transcriptInfo.startPos ||
         Fail`current transcript for vat ${q(vatID)} doesn't go with snapshot`;
       fetchedArtifacts.add(vatInfo.snapshotKey);
     }

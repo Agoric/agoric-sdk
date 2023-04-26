@@ -91,7 +91,11 @@ async function fakeAVatSnapshot(vat, ks) {
       `snapshot of vat ${vat.vatID} as of ${vat.endPos}`,
     );
   });
+  ks.transcriptStore.addItem(vat.vatID, 'save-snapshot');
+  vat.endPos += 1;
   ks.transcriptStore.rolloverSpan(vat.vatID);
+  ks.transcriptStore.addItem(vat.vatID, 'load-snapshot');
+  vat.endPos += 1;
 }
 
 const compareElems = (a, b) => a[0].localeCompare(b[0]);
@@ -267,10 +271,10 @@ async function testExportImport(
       '{"vatID":"vatA","endPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6","inUse":0}',
     ],
     [
-      'snapshot.vatA.6',
-      '{"vatID":"vatA","endPos":6,"hash":"36afc9e2717c395759e308c4a877d491f967e9768d73520bde758ff4fac5d8b9","inUse":1}',
+      'snapshot.vatA.8',
+      '{"vatID":"vatA","endPos":8,"hash":"f010b0f3e7d48e378cc59b678388d2aae6667c4ff233454a6d8f08caebfda681","inUse":1}',
     ],
-    ['snapshot.vatA.current', 'snapshot.vatA.6'],
+    ['snapshot.vatA.current', 'snapshot.vatA.8'],
     [
       'snapshot.vatB.4',
       '{"vatID":"vatB","endPos":4,"hash":"afd477014db678fbc1aa58beab50f444deb653b8cc8e8583214a363fd12ed57a","inUse":1}',
@@ -278,23 +282,23 @@ async function testExportImport(
     ['snapshot.vatB.current', 'snapshot.vatB.4'],
     [
       'transcript.vatA.0',
-      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"ea8ac1a751712ad66e4a9182adc65afe9bb0f4cd0ee0b828c895c63fbd2e3157","isCurrent":0,"incarnation":0}',
+      '{"vatID":"vatA","startPos":0,"endPos":3,"hash":"86a0ba16ef38704dea3d04f8d8e4b104f162e6396249bf153f3808b0f9c0e36e","isCurrent":0,"incarnation":0}',
     ],
     [
-      'transcript.vatA.2',
-      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"88f299ca67b8acdf6023a83bb8e899af5adcf3271c7a1a2a495dcd6f1fbaac9f","isCurrent":0,"incarnation":0}',
+      'transcript.vatA.3',
+      '{"vatID":"vatA","startPos":3,"endPos":9,"hash":"e71df351455b00971357c15d86e35556d7ee77a8a13149bd06bff80822238daa","isCurrent":0,"incarnation":0}',
     ],
     [
       'transcript.vatA.current',
-      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"fe5d692b24a32d53bf617ba9ed3391b60c36a402c70a07a6aa984fc316e4efcc","isCurrent":1,"incarnation":0}',
+      '{"vatID":"vatA","startPos":9,"endPos":12,"hash":"17ef3fbe1a34ba8c8145fe21c16bee5ef6ec7b9132b740cc848849b67f449320","isCurrent":1,"incarnation":0}',
     ],
     [
       'transcript.vatB.0',
-      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"41dbf60cdec066106c7030517cb9f9f34a50fe2259705cf5fdbdd0b39ae12e46","isCurrent":0,"incarnation":0}',
+      '{"vatID":"vatB","startPos":0,"endPos":5,"hash":"0de691725ef5d53c8016f6a064e1106c25e29f659d13bb8a72fcc21a5d1cd67c","isCurrent":0,"incarnation":0}',
     ],
     [
       'transcript.vatB.current',
-      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"34fa09207bfb7af5fc3e65acb07f13b60834d0fbd2c6b9708f794c4397bd865d","isCurrent":1,"incarnation":0}',
+      '{"vatID":"vatB","startPos":5,"endPos":10,"hash":"69f5d2db6891b35fb992b9c42fc39db15f1bb8066fada3d697826e703fad994b","isCurrent":1,"incarnation":0}',
     ],
   ]);
 
@@ -318,7 +322,7 @@ async function testExportImport(
     });
   } catch (e) {
     if (failureMode === 'transcript') {
-      t.is(e.message, 'artifact "transcript.vatA.0.2" is not available');
+      t.is(e.message, 'artifact "transcript.vatA.0.3" is not available');
       return;
     } else if (failureMode === 'snapshot') {
       t.is(e.message, 'artifact "snapshot.vatA.2" is not available');
@@ -337,31 +341,31 @@ async function testExportImport(
 }
 
 const expectedCurrentArtifacts = [
-  'snapshot.vatA.6',
+  'snapshot.vatA.8',
   'snapshot.vatB.4',
-  'transcript.vatA.6.8',
-  'transcript.vatB.4.8',
+  'transcript.vatA.9.12',
+  'transcript.vatB.5.10',
 ];
 
 const expectedArchivalArtifacts = [
-  'snapshot.vatA.6',
+  'snapshot.vatA.8',
   'snapshot.vatB.4',
-  'transcript.vatA.0.2',
-  'transcript.vatA.2.6',
-  'transcript.vatA.6.8',
-  'transcript.vatB.0.4',
-  'transcript.vatB.4.8',
+  'transcript.vatA.0.3',
+  'transcript.vatA.3.9',
+  'transcript.vatA.9.12',
+  'transcript.vatB.0.5',
+  'transcript.vatB.5.10',
 ];
 
 const expectedDebugArtifacts = [
-  'snapshot.vatA.6',
+  'snapshot.vatA.8',
   'snapshot.vatB.4',
   'snapshot.vatA.2',
-  'transcript.vatA.0.2',
-  'transcript.vatA.2.6',
-  'transcript.vatA.6.8',
-  'transcript.vatB.0.4',
-  'transcript.vatB.4.8',
+  'transcript.vatA.0.3',
+  'transcript.vatA.3.9',
+  'transcript.vatA.9.12',
+  'transcript.vatB.0.5',
+  'transcript.vatB.5.10',
 ];
 
 const C = 'current';
