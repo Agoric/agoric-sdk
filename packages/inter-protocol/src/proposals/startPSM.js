@@ -61,9 +61,6 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
 };
 
 /**
- * @typedef {{
- *   vatParameters: { chainStorageEntries?: Array<[k: string, v: string]>,
- * }}} ChainStorageVatParams
  * @param {EconomyBootstrapPowers & WellKnownSpaces & ChainStorageVatParams} powers
  * @param {object} [config]
  * @param {bigint} [config.WantMintedFeeBP]
