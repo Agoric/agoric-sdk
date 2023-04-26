@@ -1,13 +1,13 @@
 // @jessie-check
 
-import { makeMap, makeSet } from 'jessie.js';
+import { makeMap } from 'jessie.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
+import { makeHistoryReviver } from '@agoric/vats/tools/board-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/vat-data';
 
@@ -27,62 +27,6 @@ const BASIS_POINTS = 10000n;
 const { details: X, Fail } = assert;
 
 export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
-
-/**
- * Decode vstorage value to CapData
- * XXX already written somewhere?
- *
- * @param {unknown} value
- */
-const decodeToCapData = value => {
-  assert.typeof(value, 'string');
-
-  // { blockHeight: 123, values: [ ... ] }
-  const item = JSON.parse(value); // or throw
-  assert.typeof(item, 'object');
-  assert(item);
-  const { values } = item;
-  assert(Array.isArray(values));
-
-  assert.equal(values.length, 1);
-  // { body: "...", slots: [ ... ] }
-  const data = JSON.parse(values[0]);
-  assert.typeof(data, 'object');
-  assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-
-  /** @type {import('@endo/marshal').CapData<string>} */
-  // @ts-expect-error cast
-  const capData = data;
-  return capData;
-};
-
-/**
- * Provide access to object graphs serialized in vstorage.
- *
- * @param {Array<[string, string]>} entries
- * @param {(slot: string, iface?: string) => any} [slotToVal]
- */
-export const makeHistoryReviver = (entries, slotToVal = undefined) => {
-  const board = boardSlottingMarshaller(slotToVal);
-  const vsMap = makeMap(entries);
-
-  const getItem = key => {
-    const raw = vsMap.get(key) || Fail`no ${key}`;
-    const capData = decodeToCapData(raw);
-    return harden(board.fromCapData(capData));
-  };
-  const children = prefix => [
-    ...makeSet(
-      entries
-        .map(([k, _]) => k)
-        .filter(k => k.length > prefix.length && k.startsWith(prefix))
-        .map(k => k.slice(prefix.length).split('.')[0]),
-    ),
-  ];
-  return harden({ getItem, children, has: k => vsMap.has(k) });
-};
 
 /**
  * @param {Array<[key: string, value: string]>} chainStorageEntries
