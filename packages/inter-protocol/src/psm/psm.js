@@ -19,8 +19,11 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
+  makeRecorderTopic,
+  prepareRecorderKitMakers,
   provideAll,
   provideEmptySeat,
+  TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   AmountKeywordRecordShape,
@@ -32,10 +35,7 @@ import { E } from '@endo/eventual-send';
 
 import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import {
-  makeMetricsPublishKit,
-  makeNatAmountShape,
-} from '../contractSupport.js';
+import { makeNatAmountShape } from '../contractSupport.js';
 
 const { Fail } = assert;
 
@@ -113,6 +113,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    privateArgs.marshaller,
+  );
+
   const { stableMint } = await provideAll(baggage, {
     stableMint: () => zcf.registerFeeMint('Minted', privateArgs.feeMintAccess),
   });
@@ -145,7 +150,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const stage = provideEmptySeat(zcf, baggage, 'stageSeat');
 
   // XXX access these through baggage directly so changes are saved
-  // TODO move into an Exo class state
+  // Normally these would be in Exo class state but that's too big a change atm
   provide(baggage, 'mintedPoolBalance', () =>
     AmountMath.makeEmpty(stableBrand),
   );
@@ -156,13 +161,23 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     AmountMath.makeEmpty(stableBrand),
   );
 
-  /** @type {import('../contractSupport.js').MetricsPublishKit<MetricsNotification>} */
-  const { metricsPublisher, metricsSubscriber } = makeMetricsPublishKit(
-    privateArgs.storageNode,
-    privateArgs.marshaller,
-  );
+  const { metricsKit } = await provideAll(baggage, {
+    metricsKit: () =>
+      E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
+        makeRecorderKit(
+          node,
+          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+            M.any()
+          ),
+        ),
+      ),
+  });
+  const topics = harden({
+    metrics: makeRecorderTopic('PSM metrics', metricsKit),
+  });
+
   const updateMetrics = () => {
-    metricsPublisher.publish(
+    void E(metricsKit.recorder).write(
       harden({
         anchorPoolBalance: anchorPool.getAmountAllocated('Anchor', anchorBrand),
         feePoolBalance: feePool.getAmountAllocated('Minted', stableBrand),
@@ -336,16 +351,20 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     M.interface('PSM', {
       getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
       getPoolBalance: M.call().returns(anchorAmountShape),
+      getPublicTopics: M.call().returns(TopicsRecordShape),
       makeWantMintedInvitation: M.call().returns(M.promise()),
       makeGiveMintedInvitation: M.call().returns(M.promise()),
       ...publicMixinAPI,
     }),
     {
       getMetrics() {
-        return metricsSubscriber;
+        return metricsKit.subscriber;
       },
       getPoolBalance() {
         return anchorPool.getAmountAllocated('Anchor', anchorBrand);
+      },
+      getPublicTopics() {
+        return topics;
       },
       makeWantMintedInvitation() {
         return zcf.makeInvitation(

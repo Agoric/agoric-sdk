@@ -546,8 +546,12 @@ test('governance', async t => {
 
 test('metrics, with snapshot', async t => {
   const driver = await makePsmDriver(t);
+  const publicTopics = await E(driver.publicFacet).getPublicTopics();
+  t.like(publicTopics, {
+    metrics: { description: 'PSM metrics' },
+  });
   t.is(
-    await subscriptionKey(E(driver.publicFacet).getMetrics()),
+    await publicTopics.metrics.storagePath,
     'mockChainStorageRoot.psm.IST.AUSD.metrics',
   );
 
