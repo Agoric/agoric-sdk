@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
