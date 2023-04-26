@@ -28,6 +28,8 @@ const { details: X } = assert;
 
 export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 
+const stablePsmKey = `published.psm.${Stable.symbol}`;
+
 /**
  * @param {Array<[key: string, value: string]>} chainStorageEntries
  * @param {string} keyword
@@ -38,11 +40,11 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
   // In this reviver, object references are revived as boardIDs
   // from the pre-bulldozer board.
   const toSlotReviver = makeHistoryReviver(chainStorageEntries);
-  if (!toSlotReviver.has(`published.psm.${Stable.symbol}.${keyword}.metrics`)) {
+  if (!toSlotReviver.has(`${stablePsmKey}.${keyword}.metrics`)) {
     return {};
   }
   const metricsWithOldBoardIDs = toSlotReviver.getItem(
-    `published.psm.${Stable.symbol}.${keyword}.metrics`,
+    `${stablePsmKey}.${keyword}.metrics`,
   );
   const oldIDtoNewBrand = makeMap([
     [metricsWithOldBoardIDs.feePoolBalance.brand, brands.minted],
@@ -53,8 +55,8 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
     oldIDtoNewBrand.get(s),
   );
   return {
-    metrics: brandReviver.getItem(`published.psm.IST.${keyword}.metrics`),
-    governance: brandReviver.getItem(`published.psm.IST.${keyword}.governance`),
+    metrics: brandReviver.getItem(`${stablePsmKey}.${keyword}.metrics`),
+    governance: brandReviver.getItem(`${stablePsmKey}.${keyword}.governance`),
   };
 };
 
@@ -338,7 +340,7 @@ export const makeAnchorAsset = async (
   testFirstAnchorKit.resolve(kit);
 
   const toSlotReviver = makeHistoryReviver(chainStorageEntries || []);
-  const metricsKey = `published.psm.${Stable.symbol}.${keyword}.metrics`;
+  const metricsKey = `${stablePsmKey}.${keyword}.metrics`;
   if (toSlotReviver.has(metricsKey)) {
     const metrics = toSlotReviver.getItem(metricsKey);
     produceAnchorBalancePayments.resolve(makeScalarMapStore());
