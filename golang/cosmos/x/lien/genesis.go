@@ -14,8 +14,16 @@ func DefaultGenesisState() types.GenesisState {
 // Since liens can apply to otherwise empty accounts and the source of truth
 // is stored at the Swingset level, we can only validate the addresses.
 func ValidateGenesis(genesisState types.GenesisState) error {
-	for _, lien := range genesisState.Liens {
-		_, err := sdk.AccAddressFromBech32(lien.Address)
+	for _, accountLien := range genesisState.Liens {
+		_, err := sdk.AccAddressFromBech32(accountLien.Address)
+		if err != nil {
+			return err
+		}
+		err = accountLien.Lien.Coins.Validate()
+		if err != nil {
+			return err
+		}
+		err = accountLien.Lien.Delegated.Validate()
 		if err != nil {
 			return err
 		}
@@ -30,10 +38,8 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, genesisState types.GenesisState
 		if err != nil {
 			panic(err) // not possible if genesis state was validated
 		}
-		lien := types.Lien{
-			Coins: accLien.GetLien(),
-		}
-		keeper.SetLien(ctx, addr, lien)
+		lien := accLien.GetLien()
+		keeper.SetLien(ctx, addr, *lien)
 	}
 }
 
@@ -43,7 +49,7 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper) types.GenesisState {
 	keeper.IterateLiens(ctx, func(addr sdk.AccAddress, lien types.Lien) bool {
 		accLien := types.AccountLien{
 			Address: addr.String(),
-			Lien:    lien.GetCoins(),
+			Lien:    &lien,
 		}
 		genesisState.Liens = append(genesisState.Liens, accLien)
 		return false

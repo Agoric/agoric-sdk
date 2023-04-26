@@ -12,7 +12,7 @@ entirely at the ERTP level.
 ## Parameters
 
 - `feeCollectorName`: the module which handles fee distribution to stakers.
-- `fee_epoch_duration_blocks`: the duration (in blocks) over which fees should be given to the fee collector.
+- `reward_epoch_duration_blocks`: the duration (in blocks) over which fees should be given to the fee collector.
 
 ## State
 
@@ -22,7 +22,7 @@ The Vbank module maintains no significant state, but will access stored state th
 
 Purse operations which change the balance result in a downcall to this module to update the underlying account. A downcall is also made to query the account balance.
 
-Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VBANK_BALANCE_UPDATE` upcall for all denominations held in all mentioned accounts.
+Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VBANK_BALANCE_UPDATE` upcall for all denominations held in *only the mentioned module accounts*.
 
 The following fields are common to the Vbank messages:
 - `"address"`, `"recipient"`, `"sender"`: account address as a bech32-encoded string
@@ -48,16 +48,16 @@ Test the following transfer scenarios:
 - bank-purse-to-purse
 - bank-purse-to-bank-purse
 
-The initial BLD and RUN purses are bank purses, but newly-created purses will
+The initial BLD and IST purses are bank purses, but newly-created purses will
 not be bank purses by default.
 
 ## Governance
 
-To use Cosmos governance to change the `fee_epoch_duration_blocks` value:
+To use Cosmos governance to change the `reward_epoch_duration_blocks` value:
 
 ```sh
 $ agd query vbank params
-fee_epoch_duration_blocks: "720"
+reward_epoch_duration_blocks: "720"
 $ cat <<EOF > epoch-duration-proposal.json
 {
   "title": "Vbank param-change test",
@@ -65,7 +65,7 @@ $ cat <<EOF > epoch-duration-proposal.json
   "changes": [
     {
       "subspace": "vbank",
-      "key": "fee_epoch_duration_blocks",
+      "key": "reward_epoch_duration_blocks",
       "value": "30"
     }
   ],
@@ -77,6 +77,6 @@ $ agd tx gov submit-proposal param-change epoch-duration-proposal.json --from=my
 $ agd tx vote ...
 # After passing,
 $ agd query vbank params
-fee_epoch_duration_blocks: "30"
+reward_epoch_duration_blocks: "30"
 $
 ```

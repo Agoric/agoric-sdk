@@ -1,16 +1,34 @@
 // @ts-check
-
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-/** @type {MakeOfferAndFindInvitationAmount} */
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+
+/**
+ * @typedef {object} OfferHelperConfig
+ * @property {ERef<Invitation>} [invitation]
+ * @property {Partial<InvitationDetails>} [partialInvitationDetails]
+ * @property {Proposal} proposal
+ * @property {Record<Keyword, Petname>} paymentsWithPursePetnames
+ * @property {Record<Keyword, Petname>} payoutPursePetnames
+ */
+
+/**
+ * @param {ERef<any>} walletAdmin - an internal type of the
+ * wallet, not defined here
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<Purse>} zoeInvitationPurse
+ */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
   zoe,
   zoeInvitationPurse,
 ) => {
-  /** @type {FindInvitationAmount} */
+  /**
+   * @param {Record<string, any>} invitationDetailsCriteria
+   * @returns {Promise<Amount>} invitationAmount
+   */
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();
 
@@ -73,16 +91,18 @@ export const makeOfferAndFindInvitationAmount = (
       const allDepositedP = Promise.all(
         Object.entries(paymentsP).map(([keyword, paymentP]) => {
           const depositInPurse = makeDepositInPurse(keyword);
-          return paymentP.then(depositInPurse);
+          return E.when(paymentP, depositInPurse);
         }),
       );
       return allDepositedP;
     };
     const paymentsPP = E(seat).getPayouts();
-    return paymentsPP.then(handlePayments);
+    return E.when(paymentsPP, handlePayments);
   };
 
-  /** @type {OfferHelper} */
+  /**
+   * @param {OfferHelperConfig} config
+   */
   const offer = async config => {
     const {
       invitation,

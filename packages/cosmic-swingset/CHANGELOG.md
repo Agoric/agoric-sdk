@@ -3,6 +3,209 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.39.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.39.1...@agoric/cosmic-swingset@0.39.2) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.39.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.39.0...@agoric/cosmic-swingset@0.39.1) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+## [0.39.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.38.0...@agoric/cosmic-swingset@0.39.0) (2022-10-05)
+
+
+### Features
+
+* compute separate mempool limit for allowed inbound ([ebfc852](https://github.com/Agoric/agoric-sdk/commit/ebfc85272ab9c589d6a0ecb6dac5b59f931f3001))
+* **cosmic-swingset:** flush slog senders after commit ([b57c1d2](https://github.com/Agoric/agoric-sdk/commit/b57c1d202367833a7de09af1ef1822b4b6481a78))
+* **cosmic-swingset:** inboundQueue limit ([1b2d08f](https://github.com/Agoric/agoric-sdk/commit/1b2d08fcb4dd3de42f92358646d2c88e3b3687f5))
+* **cosmic-swingset:** parse go->node send results as JSON ([2839223](https://github.com/Agoric/agoric-sdk/commit/2839223f4447deed7c32e73ca37ff142f7c563ef))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** check block params state ([525ad88](https://github.com/Agoric/agoric-sdk/commit/525ad88ec0aac91ebaa3d344f25ca11e9a6f3f39))
+* add kernel stats as a slog entry at completion of each block ([8a38c52](https://github.com/Agoric/agoric-sdk/commit/8a38c52a0a4eb665e03fdba7c96e944221ab8bc9)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+* avoid colliding with 'agoric' chain, e.g. in Keplr ([692084c](https://github.com/Agoric/agoric-sdk/commit/692084ce9328b11e23ab8b46025f83eb8d1b5b3d))
+* **cosmic-swingset:** correctly handle missing slogSender ([808d8f8](https://github.com/Agoric/agoric-sdk/commit/808d8f8a944e946b7150883be7f66538048428b0))
+* **telemetry:** forceFlush is async ([5cf56b9](https://github.com/Agoric/agoric-sdk/commit/5cf56b9d22a4e9436f1ce1b5020ea68071ef7f55))
+
+
+
+## [0.38.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.37.0...@agoric/cosmic-swingset@0.38.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **run-protocol:** rename to inter-protocol
+
+### Features
+
+* **cosmic-swingset:** break up inbound queue processing ([e0d844d](https://github.com/Agoric/agoric-sdk/commit/e0d844da0cae132f63039404c42e5979c12977ce))
+* **cosmic-swingset:** new `fund-provision-pool` target ([a8890db](https://github.com/Agoric/agoric-sdk/commit/a8890db5185ec5e6a729bd32c944b0fc9845ef3f))
+* add env to keep old snapshots on disk ([96e1077](https://github.com/Agoric/agoric-sdk/commit/96e1077683c64ff0c66fdfaa3993043006c8f368))
+* ensure voting via PSMCharter works with a unit test ([#6167](https://github.com/Agoric/agoric-sdk/issues/6167)) ([ff9471b](https://github.com/Agoric/agoric-sdk/commit/ff9471bf3a90ffab050e8b659d64d4cbd7c2d764))
+* **cosmos:** pay per provisioning power flag ([b22417e](https://github.com/Agoric/agoric-sdk/commit/b22417ec638158945fb35cdfa2c14f56136b90df))
+* add 'pinBootstrap' swingset configuration option ([131d74d](https://github.com/Agoric/agoric-sdk/commit/131d74d96570ac34feab74e26e682f36fe632dbc)), closes [#5771](https://github.com/Agoric/agoric-sdk/issues/5771)
+* read only smart wallet ([#5741](https://github.com/Agoric/agoric-sdk/issues/5741)) ([9f3745d](https://github.com/Agoric/agoric-sdk/commit/9f3745da424424ff9a2e4c8f7b26bb0de89dd3eb))
+* **cosmic-swingset:** Add chainStorage interface ([#5385](https://github.com/Agoric/agoric-sdk/issues/5385)) ([109ff65](https://github.com/Agoric/agoric-sdk/commit/109ff65845caaa503b03e2663437f62e7cdc686e)), closes [#4558](https://github.com/Agoric/agoric-sdk/issues/4558)
+* **cosmic-swingset:** add commit-block slog events ([8335928](https://github.com/Agoric/agoric-sdk/commit/8335928e933b96dc7db78a0895a7582b93ef4f73))
+* **cosmic-swingset:** Add heap snapshots ([42e43bc](https://github.com/Agoric/agoric-sdk/commit/42e43bce417a7538aa7bc6ed59320dfef45c1adb))
+* **cosmic-swingset:** Add memory usage stats ([d8cf4af](https://github.com/Agoric/agoric-sdk/commit/d8cf4af39855b96febb45409d1b1598070cc56e6))
+* **cosmic-swingset:** Force GC after block commit ([444325d](https://github.com/Agoric/agoric-sdk/commit/444325dcbef68d5c11e828a4950b2137ffa3c214))
+* **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** add inboundQueue metrics ([44db0eb](https://github.com/Agoric/agoric-sdk/commit/44db0eb07c5d9592e763b999ca3daff4bed91c0e)), closes [#6245](https://github.com/Agoric/agoric-sdk/issues/6245)
+* **cosmic-swingset:** do not clear replayed chain sends ([cc76483](https://github.com/Agoric/agoric-sdk/commit/cc76483928f864d7230aff3544831e33d27e1ac0))
+* **cosmic-swingset:** Fix consensus failure on bundle parse errors ([5f9eacf](https://github.com/Agoric/agoric-sdk/commit/5f9eacf7671053ad29e1eb3f9e80f908dff1c716)), closes [#6169](https://github.com/Agoric/agoric-sdk/issues/6169)
+* **cosmic-swingset:** more meaningfull bootstrap height error ([ed1ece8](https://github.com/Agoric/agoric-sdk/commit/ed1ece81a804233f43010455fd35e43a2cb2ad2e))
+* **wallet-ui:** get offer completion working again ([2e838a0](https://github.com/Agoric/agoric-sdk/commit/2e838a091b77b6f0adb77810c02a5b3f844a9307))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **cosmic-swingset:** Publish installation success and failure topic ([6a9f533](https://github.com/Agoric/agoric-sdk/commit/6a9f533b5b9095768f25b5642e001fd6e9aa8b47))
+* **cosmic-swingset:** Use Endo debug mode for tests and scripts ([ab9728d](https://github.com/Agoric/agoric-sdk/commit/ab9728dab68c32b7eb953cc90d05712bd229eab3))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+
+
+### Code Refactoring
+
+* **run-protocol:** rename to inter-protocol ([f49b342](https://github.com/Agoric/agoric-sdk/commit/f49b342aa468e0cac08bb6cfd313918674e924d7))
+
+
+
+## [0.37.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.36.0...@agoric/cosmic-swingset@0.37.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **extract-proposal:** insist on an explicit `entrypoint`
+
+### Features
+
+* **cosmic-swingset:** extract environment from swingset config ([151d8ba](https://github.com/Agoric/agoric-sdk/commit/151d8ba4be0e577b8f89bbcf5ac49a86aaa30e58))
+* **cosmic-swingset:** Handle InstallBundle messages ([e3ae969](https://github.com/Agoric/agoric-sdk/commit/e3ae969e4824ad5fb43c18e17c6ed863743a08e2))
+* **cosmic-swingset:** implement `make scenario2-run-chain-economy` ([82a6ee9](https://github.com/Agoric/agoric-sdk/commit/82a6ee9edba0eec562e12bd325b893010ddb94ce))
+* **cosmic-swingset:** provide ibc assets to bootstrap, solo ([5985efb](https://github.com/Agoric/agoric-sdk/commit/5985efb5ecb2381029d1a11e7612ed40f3fee83d))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** generate economy config from core config ([bedb020](https://github.com/Agoric/agoric-sdk/commit/bedb020131a5f0b3f833a506097e6d3b80f36924))
+* **cosmic-swingset:** start with more coins to avoid running out ([0216990](https://github.com/Agoric/agoric-sdk/commit/0216990980e51b8576078d45ba73a9ad57bb16d8))
+* **extract-proposal:** insist on an explicit `entrypoint` ([02df38b](https://github.com/Agoric/agoric-sdk/commit/02df38b8a5ef96a78fd6ff7f5c20ffcdba161038))
+* **launch-chain:** only load `coreProposals` when initializing SwingSet ([a0eafa9](https://github.com/Agoric/agoric-sdk/commit/a0eafa93600f354fccf49b18971c2db6eac5eb5f))
+* **run-protocol:** adapt startPSM to core proposal conventions ([4e47405](https://github.com/Agoric/agoric-sdk/commit/4e474050d42727a2527026251fa40dd35a0db105))
+
+
+
+## [0.36.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.35.0...@agoric/cosmic-swingset@0.36.0) (2022-05-09)
+
+
+### Features
+
+* Accept path for swingStore trace ([63a209c](https://github.com/Agoric/agoric-sdk/commit/63a209c8c7906f8be07f87aedf1313e607df7b42))
+* Plumb env into makeSwingsetController ([53c2c93](https://github.com/Agoric/agoric-sdk/commit/53c2c93e6bf4fa569e1194c8a6126d187ecbdb84))
+* **swingset:** Add swing store trace option ([25c7e79](https://github.com/Agoric/agoric-sdk/commit/25c7e79d699e8894a283518490add19f60840f4b))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** Fully drain actionQueue when recovering an interrupted block ([#5198](https://github.com/Agoric/agoric-sdk/issues/5198)) ([70c5463](https://github.com/Agoric/agoric-sdk/commit/70c5463d318288bec7d0947793f8cc24e676ef5b)), closes [#5196](https://github.com/Agoric/agoric-sdk/issues/5196)
+* **cosmic-swingset:** stay alive with unresolved promise instead of 30s timer ([5ecbb51](https://github.com/Agoric/agoric-sdk/commit/5ecbb51cf099ab65365085b82337879b54449045))
+* **extract-proposal:** make results deterministic ([8fba48a](https://github.com/Agoric/agoric-sdk/commit/8fba48ae6182b31b5d595f193d1f9209a7e56455))
+
+
+
+## [0.35.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.6...@agoric/cosmic-swingset@0.35.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **cosmic-swingset:** `extractCoreProposalBundles` for bootstrap ([4e30195](https://github.com/Agoric/agoric-sdk/commit/4e30195fabf38600522eaa6ea8ec9a7ff8eaa457))
+* **cosmic-swingset:** grant addVaultType based on addr ([#4641](https://github.com/Agoric/agoric-sdk/issues/4641)) ([e439024](https://github.com/Agoric/agoric-sdk/commit/e439024788f27ea668b2ff0c5e486ab901807eb0))
+* **cosmic-swingset:** new `scripts/clean-core-eval.js` ([b2b0b5a](https://github.com/Agoric/agoric-sdk/commit/b2b0b5aecfcccd23121b04b72ec396f4533a46ed))
+* **deploy-script-suppport:** e2e `writeCoreProposal` ([88a0cf7](https://github.com/Agoric/agoric-sdk/commit/88a0cf70c9078f0e9e2c46a6cc30bcb736e6e379))
+* **runStake:** checkGov to find, e.g. SES_IMPORT_REJECTED ([f20addf](https://github.com/Agoric/agoric-sdk/commit/f20addf2269e63bcdeddae9e5d8caa27eb859d9e))
+* **SOLO_OTEL_EXPORTER_PROMETHEUS_PORT:** new env var ([46f0a31](https://github.com/Agoric/agoric-sdk/commit/46f0a3188149b32dccec14a5c5d02b8b35ca2494))
+* **SwingSet:** report empty cranks to run policy ([5b7a694](https://github.com/Agoric/agoric-sdk/commit/5b7a694c6291c45e24ec1bc8f8e5eeacca0ef8c5))
+* **telemetry:** upgrade to latest `[@opentelemetry](https://github.com/opentelemetry)` ([de82224](https://github.com/Agoric/agoric-sdk/commit/de82224eb08a40e139f20e74d6f1038e50fbfa40))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** give much more RUN to the local-solo ([f1e3fda](https://github.com/Agoric/agoric-sdk/commit/f1e3fdafb5d137b1b06f6e1394b2e9794d235e29))
+* rip out the remainder of consensusMode ([744b561](https://github.com/Agoric/agoric-sdk/commit/744b561016567a1c6a82392bcb8a86e02f35b7b1))
+* **cosmic-swingset:** update deep-import paths ([9c6d902](https://github.com/Agoric/agoric-sdk/commit/9c6d902c86ccbeca4ee77d43746ea0b196b1e8f7))
+* **telemetry:** rework Prometheus metrics ([38a1922](https://github.com/Agoric/agoric-sdk/commit/38a1922ce2c21e4f31b4a1bedd634bbe627990f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+### [0.34.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.5...@agoric/cosmic-swingset@0.34.6) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+* **cosmos:** robustly handle kvstore rollback ([c58ddb4](https://github.com/Agoric/agoric-sdk/commit/c58ddb490229741e57ef2130493608cbe9b13d4c))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** handle begin/end block without explicit queue ([05352e9](https://github.com/Agoric/agoric-sdk/commit/05352e99d7b9488f756103979ec4632d53ff7d3d))
+
+
+
+### [0.34.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.4...@agoric/cosmic-swingset@0.34.5) (2022-02-21)
+
+
+### Features
+
+* **cosmic-swingset:** honour `CHAIN_BOOTSTRAP_VAT_CONFIG` ([cf93481](https://github.com/Agoric/agoric-sdk/commit/cf93481969043948985e21a78d1680bc7925cd62))
+* **cosmic-swingset:** use `bootMsg.params.bootstrap_vat_config` ([28d3efd](https://github.com/Agoric/agoric-sdk/commit/28d3efdab7f7f91e17ba49cdb57408988dc5c58e))
+* **solo:** run sim-chain in a separate process ([a9bc83d](https://github.com/Agoric/agoric-sdk/commit/a9bc83dc8f74a77a39feef4f1de45a0eee9439ae))
+* **swing-store:** enable `LMDB_MAP_SIZE` and `SOLO_LMDB_MAP_SIZE` ([77f67a8](https://github.com/Agoric/agoric-sdk/commit/77f67a8010d84b4f595e1fbd524b344050ae47d6))
+* **telemetry:** use `makeSlogSenderFromModule` ([2892da9](https://github.com/Agoric/agoric-sdk/commit/2892da96eff902c5f616424d6fb9946aaaef1b0f))
+
+
+### Bug Fixes
+
+* **anylogger:** coherent DEBUG levels, `$DEBUG` always says more ([5e482fe](https://github.com/Agoric/agoric-sdk/commit/5e482feb3912a0a3dd409d5f028ebe17e6b8ec0b))
+* **cosmic-swingset:** enforce consensusMode, not by sniffing `$DEBUG` ([960aa17](https://github.com/Agoric/agoric-sdk/commit/960aa173c33fedead0ff22e32971798c2f01a911))
+* **cosmic-swingset:** straighten out shutdown signals and exit code ([118fc21](https://github.com/Agoric/agoric-sdk/commit/118fc21b62b8f03333831640c60d508b79790bd5))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **cosmic-swingset:** use `@agoric/telemetry` ([e22742a](https://github.com/Agoric/agoric-sdk/commit/e22742a73949d63d599ba6e9e433624a31582d86))
+* make `default-params.go` match `sim-params.js` ([550ba3a](https://github.com/Agoric/agoric-sdk/commit/550ba3a058cc2f7e0200479c6c3ceaf5dc39e21e))
+* **sim-params:** update parameters to charge higher SwingSet fees ([341ddbb](https://github.com/Agoric/agoric-sdk/commit/341ddbbf43637c38eb194f3e7c6fd20fb1e5cb4e))
+
+
+
+### [0.34.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.3...@agoric/cosmic-swingset@0.34.4) (2021-12-22)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
 ### [0.34.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.2...@agoric/cosmic-swingset@0.34.3) (2021-12-02)
 
 
@@ -1076,7 +1279,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **agoric-cli:** changes to make `agoric --sdk` basically work again ([#459](https://github.com/Agoric/agoric-sdk/issues/459)) ([1dc046a](https://github.com/Agoric/agoric-sdk/commit/1dc046a02d5e616d33f48954e307692b43008442))
 * **bundle:** deprecate the experimental E.C() syntax ([07f46cc](https://github.com/Agoric/agoric-sdk/commit/07f46cc47f726414410126400a7d34141230c967))
 * **bundle:** use the same HandledPromise ([e668d3c](https://github.com/Agoric/agoric-sdk/commit/e668d3c9106ef6c47c66319afb8d954094b128eb)), closes [#606](https://github.com/Agoric/agoric-sdk/issues/606)
-* **captp:** use new @agoric/eventual-send interface ([d1201a1](https://github.com/Agoric/agoric-sdk/commit/d1201a1a1de324ae5e21736057f3bb03f97d2bc7))
+* **captp:** use new @endo/eventual-send interface ([d1201a1](https://github.com/Agoric/agoric-sdk/commit/d1201a1a1de324ae5e21736057f3bb03f97d2bc7))
 * **chain:** properly commit state ([7703aa7](https://github.com/Agoric/agoric-sdk/commit/7703aa753769d89dc1b2c7a899cfcf37c2f3626f))
 * **chain:** state is being stored correctly again ([fe0b33d](https://github.com/Agoric/agoric-sdk/commit/fe0b33d2d33b4989f63d1e7030de61b5e886e69f))
 * **cli:** improve install, template, fake-chain ([0890171](https://github.com/Agoric/agoric-sdk/commit/08901713bd3db18b52ed1793efca21b459e3713e))

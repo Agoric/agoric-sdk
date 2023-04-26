@@ -1,18 +1,14 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import { E } from '@endo/eventual-send';
+import bundleSource from '@endo/bundle-source';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-
-import '../../../exported.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -26,14 +22,13 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     testJig = jig;
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService } = makeZoeKit(fakeVatAdminSvc);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID('b1-zcftester');
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
@@ -49,7 +44,8 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
+  // @ts-expect-error cast
   const zcf = testJig.zcf;
 
   let firstSeat;
@@ -70,15 +66,17 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   const userSeat1 = await E(zoe).offer(invitation1);
   const userSeat2 = await E(zoe).offer(invitation2);
 
-  t.is(await E(userSeat1).getOfferResult(), 'ok', `userSeat1 offer result`);
+  const result = await E(userSeat1).getOfferResult();
+  t.is(result, 'ok', `userSeat1 offer result`);
 
-  t.deepEqual(await E(userSeat2).getPayouts(), {});
+  const payouts = await E(userSeat2).getPayouts();
+  t.deepEqual(payouts, {});
 
   await t.throwsAsync(E(userSeat2).getOfferResult(), {
     message: 'second seat failed',
   });
   await t.throwsAsync(() => E(userSeat1).tryExit(), {
-    message: 'seat has been exited',
+    message: 'Cannot exit; seat has already exited',
   });
   t.falsy(vatAdminState.getHasExited());
 });

@@ -1,5 +1,4 @@
-import { Far } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   let A = Far('A', { hello() {} });

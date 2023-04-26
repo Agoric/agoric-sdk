@@ -1,12 +1,12 @@
-// @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { initEmpty, M } from '@agoric/store';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
 
+import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
+import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');
@@ -26,7 +26,13 @@ test('mint.mintPayment default nat AssetKind', async t => {
 });
 
 test('mint.mintPayment set w strings AssetKind', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
+  const { mint, issuer, brand } = makeIssuerKit(
+    'items',
+    AssetKind.SET,
+    undefined,
+    undefined,
+    { elementShape: M.string() },
+  );
   const items1and2and4 = AmountMath.make(brand, harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -36,13 +42,25 @@ test('mint.mintPayment set w strings AssetKind', async t => {
   const payment2 = mint.mintPayment(items5and6);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
   t.assert(AmountMath.isEqual(paymentBalance2, items5and6));
+
+  const badAmount = AmountMath.make(brand, harden([['badElement']]));
+  t.throws(() => mint.mintPayment(badAmount), {
+    message:
+      'In "mintPayment" method of (items mint): arg 0: value: [0]: copyArray ["badElement"] - Must be a string',
+  });
 });
+
+const makeDurableHandle = name => {
+  const kindHandle = makeKindHandle(name);
+  const maker = defineDurableKind(kindHandle, initEmpty, {});
+  return maker();
+};
 
 test('mint.mintPayment set AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
-  const item1handle = Far('iface', {});
-  const item2handle = Far('iface', {});
-  const item3handle = Far('iface', {});
+  const item1handle = makeDurableHandle('iface');
+  const item2handle = makeDurableHandle('iface');
+  const item3handle = makeDurableHandle('iface');
   const items1and2 = AmountMath.make(brand, harden([item1handle, item2handle]));
   const payment1 = mint.mintPayment(items1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -62,18 +80,18 @@ test('mint.mintPayment set AssetKind', async t => {
 
 test('mint.mintPayment set AssetKind with invites', async t => {
   const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
-  const instanceHandle1 = Far('iface', {});
+  const instanceHandle1 = makeDurableHandle('iface');
   const invite1Value = {
-    handle: Far('iface', {}),
+    handle: makeDurableHandle('iface'),
     instanceHandle: instanceHandle1,
   };
   const invite2Value = {
-    handle: Far('iface', {}),
+    handle: makeDurableHandle('iface'),
     instanceHandle: instanceHandle1,
   };
   const invite3Value = {
-    handle: Far('iface', {}),
-    instanceHandle: Far('iface', {}),
+    handle: makeDurableHandle('iface'),
+    instanceHandle: makeDurableHandle('iface'),
   };
   const invites1and2 = AmountMath.make(
     brand,
@@ -122,16 +140,21 @@ test('non-fungible tokens example', async t => {
   // Alice will buy ticket 1
   const paymentForAlice = balletTicketPayments[0];
   // Bob will buy tickets 3 and 4
-  const paymentForBob = balletTicketIssuer.combine(
+  const paymentForBob = combine(
+    balletTicketIssuer.makeEmptyPurse(),
     harden([balletTicketPayments[2], balletTicketPayments[3]]),
   );
 
   // ALICE SIDE
-  // Alice bought ticket 1 and has access to the balletTicketIssuer, because it's public
-  const myTicketPaymentAlice = await balletTicketIssuer.claim(paymentForAlice);
+  // Alice bought ticket 1 and has access to the balletTicketIssuer, because
+  // it's public
+  const myTicketPaymentAlice = await claim(
+    balletTicketIssuer.makeEmptyPurse(),
+    paymentForAlice,
+  );
   // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
-  // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive access
-  // to its handle
+  // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive
+  // access to its handle
   const paymentAmountAlice = await balletTicketIssuer.getAmountOf(
     myTicketPaymentAlice,
   );
@@ -142,15 +165,19 @@ test('non-fungible tokens example', async t => {
   t.is(paymentAmountAlice.value[0].start, startDateString);
 
   // BOB SIDE
-  // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because it's public
-  const bobTicketPayment = await balletTicketIssuer.claim(paymentForBob);
+  // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because
+  // it's public
+  const bobTicketPayment = await claim(
+    balletTicketIssuer.makeEmptyPurse(),
+    paymentForBob,
+  );
   const paymentAmountBob = await balletTicketIssuer.getAmountOf(
     bobTicketPayment,
   );
   assert(Array.isArray(paymentAmountBob.value));
   t.is(paymentAmountBob.value.length, 2);
-  t.is(paymentAmountBob.value[0].seat, 3);
-  t.is(paymentAmountBob.value[1].seat, 4);
+  t.is(paymentAmountBob.value[0].seat, 4);
+  t.is(paymentAmountBob.value[1].seat, 3);
   t.is(paymentAmountBob.value[0].show, 'The Sofa');
   t.is(paymentAmountBob.value[1].show, 'The Sofa');
   t.is(paymentAmountBob.value[0].start, startDateString);

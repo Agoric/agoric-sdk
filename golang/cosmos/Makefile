@@ -4,6 +4,7 @@ NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
 PR_TARGET_REPO = ../../.git
+# TODO: figure out how to handle other branches like pismo-release
 PR_TARGET_BRANCH = master
 
 default: all
@@ -15,7 +16,7 @@ BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 include Makefile.ledger
 
 whitespace :=
-whitespace += $(whitespace)
+whitespace := $(whitespace) $(whitespace)
 comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
@@ -106,7 +107,7 @@ t:
 
 TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
 GOGO_PROTO_URL   := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
-IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v2)/proto/ibc/core
+IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v3)/proto/ibc/core
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
@@ -177,10 +178,9 @@ buf-stamp:
 GATEWAY_PKGS = \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
-	github.com/golang/protobuf/protoc-gen-go
+	google.golang.org/protobuf/cmd/protoc-gen-go
 
 grpc-gateway-stamp:
-	go get $(GATEWAY_PKGS)
 	go install $(GATEWAY_PKGS)
 	touch $@
 

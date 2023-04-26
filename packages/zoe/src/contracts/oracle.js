@@ -1,18 +1,14 @@
-// @ts-check
-
-import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { assert, Fail } from '@agoric/assert';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
-
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
+import { atomicTransfer } from '../contractSupport/index.js';
 
 /**
  * This contract provides oracle queries for a fee or for free.
  *
- * @type {ContractStartFn}
- *
+ * @param {ZCF} zcf
  */
 const start = async zcf => {
   const feeBrand = zcf.getTerms().brands.Fee;
@@ -34,8 +30,8 @@ const start = async zcf => {
           ? feeSeat.getCurrentAllocation()
           : seat.getProposal().want;
 
-        seat.incrementBy(feeSeat.decrementBy(harden(gains)));
-        zcf.reallocate(seat, feeSeat);
+        atomicTransfer(zcf, feeSeat, seat, gains);
+
         seat.exit();
         return 'Successfully withdrawn';
       }, 'withdraw');
@@ -46,10 +42,8 @@ const start = async zcf => {
     makeShutdownInvitation: () => {
       const shutdown = seat => {
         revoked = true;
-        seat.incrementBy(
-          feeSeat.decrementBy(harden(feeSeat.getCurrentAllocation())),
-        );
-        zcf.reallocate(seat, feeSeat);
+        atomicTransfer(zcf, feeSeat, seat, feeSeat.getCurrentAllocation());
+
         zcf.shutdown(revokedMsg);
       };
       return zcf.makeInvitation(shutdown, 'shutdown');
@@ -64,21 +58,22 @@ const start = async zcf => {
   });
 
   const publicFacet = Far('publicFacet', {
+    /** @param {OracleQuery} query */
     async query(query) {
       try {
         assert(!revoked, revokedMsg);
         const noFee = AmountMath.makeEmpty(feeBrand);
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
-        assert(
-          !requiredFee || AmountMath.isGTE(noFee, requiredFee),
-          X`Oracle required a fee but the query had none`,
-        );
+        !requiredFee ||
+          AmountMath.isGTE(noFee, requiredFee) ||
+          Fail`Oracle required a fee but the query had none`;
         return reply;
       } catch (e) {
         E(handler).onError(query, e);
         throw e;
       }
     },
+    /** @param {OracleQuery} query */
     async makeQueryInvitation(query) {
       /** @type {OfferHandler} */
       const doQuery = async querySeat => {
@@ -86,10 +81,7 @@ const start = async zcf => {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);
           if (requiredFee) {
-            feeSeat.incrementBy(
-              querySeat.decrementBy(harden({ Fee: requiredFee })),
-            );
-            zcf.reallocate(feeSeat, querySeat);
+            atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
           }
           querySeat.exit();
           E(handler).onReply(query, reply, requiredFee);
@@ -108,3 +100,5 @@ const start = async zcf => {
 
 harden(start);
 export { start };
+/** @typedef {ContractOf<typeof start>} OracleContract */
+/** @typedef {typeof start} OracleStart */

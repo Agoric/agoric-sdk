@@ -11,14 +11,31 @@ import (
 
 // Parameter keys
 var (
-	ParamStoreKeyBeansPerUnit = []byte("beans_per_unit")
-	ParamStoreKeyFeeUnitPrice = []byte("fee_unit_price")
+	ParamStoreKeyBeansPerUnit       = []byte("beans_per_unit")
+	ParamStoreKeyBootstrapVatConfig = []byte("bootstrap_vat_config")
+	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
+	ParamStoreKeyPowerFlagFees      = []byte("power_flag_fees")
+	ParamStoreKeyQueueMax           = []byte("queue_max")
 )
 
 func NewStringBeans(key string, beans sdk.Uint) StringBeans {
 	return StringBeans{
 		Key:   key,
 		Beans: beans,
+	}
+}
+
+func NewPowerFlagFee(powerFlag string, fee sdk.Coins) PowerFlagFee {
+	return PowerFlagFee{
+		PowerFlag: powerFlag,
+		Fee:       fee,
+	}
+}
+
+func NewQueueSize(key string, sz int32) QueueSize {
+	return QueueSize{
+		Key:   key,
+		Size_: sz,
 	}
 }
 
@@ -30,8 +47,11 @@ func ParamKeyTable() paramtypes.KeyTable {
 // DefaultParams returns default swingset parameters
 func DefaultParams() Params {
 	return Params{
-		BeansPerUnit: DefaultBeansPerUnit,
-		FeeUnitPrice: DefaultFeeUnitPrice,
+		BeansPerUnit:       DefaultBeansPerUnit(),
+		BootstrapVatConfig: DefaultBootstrapVatConfig,
+		FeeUnitPrice:       DefaultFeeUnitPrice,
+		PowerFlagFees:      DefaultPowerFlagFees,
+		QueueMax:           DefaultQueueMax,
 	}
 }
 
@@ -45,6 +65,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyBeansPerUnit, &p.BeansPerUnit, validateBeansPerUnit),
 		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPrice, &p.FeeUnitPrice, validateFeeUnitPrice),
+		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
+		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
+		paramtypes.NewParamSetPair(ParamStoreKeyQueueMax, &p.QueueMax, validateQueueMax),
 	}
 }
 
@@ -54,6 +77,15 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateFeeUnitPrice(p.FeeUnitPrice); err != nil {
+		return err
+	}
+	if err := validateBootstrapVatConfig(p.BootstrapVatConfig); err != nil {
+		return err
+	}
+	if err := validatePowerFlagFees(p.PowerFlagFees); err != nil {
+		return err
+	}
+	if err := validateQueueMax(p.QueueMax); err != nil {
 		return err
 	}
 
@@ -90,5 +122,44 @@ func validateFeeUnitPrice(i interface{}) error {
 		}
 	}
 
+	return nil
+}
+
+func validateBootstrapVatConfig(i interface{}) error {
+	v, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v == "" {
+		return fmt.Errorf("bootstrap vat config must not be empty")
+	}
+
+	return nil
+}
+
+func validatePowerFlagFees(i interface{}) error {
+	v, ok := i.([]PowerFlagFee)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	for _, pff := range v {
+		if pff.PowerFlag == "" {
+			return fmt.Errorf("power flag must not be empty")
+		}
+		if err := pff.Fee.Validate(); err != nil {
+			return fmt.Errorf("poer flag %s fee must be valid: %e", pff.PowerFlag, err)
+		}
+	}
+
+	return nil
+}
+
+func validateQueueMax(i interface{}) error {
+	_, ok := i.([]QueueSize)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
 	return nil
 }

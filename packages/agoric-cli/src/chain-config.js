@@ -1,49 +1,59 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
-export const CENTRAL_DENOM = 'urun';
-export const MINT_DENOM = 'ubld';
-export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
-
-export const DENOM_METADATA = [
-  {
-    name: 'Agoric Staking Token',
-    description: 'The token used by delegates to stake on the Agoric chain',
-    denom_units: [
-      {
-        denom: 'ubld',
-        exponent: 0,
-      },
-      {
-        denom: 'bld',
-        exponent: 6,
-      },
-    ],
-    base: 'ubld',
-    display: 'bld',
-    symbol: 'BLD',
-  },
-  {
-    name: 'Agoric Stable Local Currency',
-    description: 'The stable local currency ($USD) used by the Agoric chain',
-    denom_units: [
-      {
-        denom: 'urun',
-        exponent: 0,
-      },
-      {
-        denom: 'run',
-        exponent: 6,
-      },
-    ],
-    base: 'urun',
-    display: 'run',
-    symbol: 'RUN',
-  },
+// Required for IBC connections not to time out.
+export const STAKING_MIN_HISTORICAL_ENTRIES = 10000;
+export const ICA_HOST_ALLOW_MESSAGES = [
+  '/agoric.*',
+  '/ibc.*',
+  // Everything except for cosmos.st*
+  '/cosmos.[a-rt-z]*',
+  '/cosmos.s[a-su-z]*',
 ];
 
+const Stake = /** @type {const} */ ({
+  name: 'Agoric Staking Token',
+  description: 'The token used by delegates to stake on the Agoric chain',
+  denom_units: [
+    {
+      denom: 'ubld',
+      exponent: 0,
+    },
+    {
+      denom: 'bld',
+      exponent: 6,
+    },
+  ],
+  base: 'ubld',
+  display: 'bld',
+  symbol: 'BLD',
+});
+const Stable = /** @type {const} */ ({
+  name: 'Agoric stable token',
+  description: 'The stable token used by the Agoric chain',
+  denom_units: [
+    {
+      denom: 'uist',
+      exponent: 0,
+    },
+    {
+      denom: 'ist',
+      exponent: 6,
+    },
+  ],
+  base: 'uist',
+  display: 'ist',
+  symbol: 'IST',
+});
+export const DENOM_METADATA = /** @type {const} */ ([Stake, Stable]);
+
+export const CENTRAL_DENOM = Stable.base;
+export const MINT_DENOM = Stake.base;
+export const STAKING_DENOM = Stake.base;
+
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
+export const GOV_VOTING_PERIOD = '36h';
 export const DEFAULT_MINIMUM_GAS_PRICES = `0${CENTRAL_DENOM}`;
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
@@ -55,11 +65,16 @@ export const RPC_BROADCAST_TIMEOUT_S = 30;
 export const RPC_MAX_BODY_BYTES = 15_000_000;
 
 export const EPOCH_DURATION_S = 60 * 60; // 1 hour
-export const BLOCKS_PER_EPOCH = Math.floor(EPOCH_DURATION_S / BLOCK_CADENCE_S);
+export const BLOCKS_PER_EPOCH =
+  BigInt(EPOCH_DURATION_S) / BigInt(BLOCK_CADENCE_S);
+export const PER_EPOCH_REWARD_FRACTION = '0.1';
 
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
+export const SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER = 100;
 
+export const DEFAULT_CHAIN_ID = 'agoriclocal';
+export const DEFAULT_ROSETTA_PORT = 8080;
 export const DEFAULT_GRPC_PORT = 9090;
 export const DEFAULT_RPC_PORT = 26657;
 export const DEFAULT_PROM_PORT = 26660;
@@ -71,6 +86,9 @@ export function finishCosmosApp({
   enableCors,
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
+  chainId = DEFAULT_CHAIN_ID,
+  enableRosetta = true,
+  rosettaPort = `${DEFAULT_ROSETTA_PORT}`,
 }) {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
@@ -85,9 +103,9 @@ export function finishCosmosApp({
   }
 
   // Offset the GRPC listener from our rpc port.
-  app.grpc.address = `0.0.0.0:${rpcPort +
-    DEFAULT_GRPC_PORT -
-    DEFAULT_RPC_PORT}`;
+  app.grpc.address = `0.0.0.0:${
+    rpcPort + DEFAULT_GRPC_PORT - DEFAULT_RPC_PORT
+  }`;
 
   // Lengthen the pruning span.
   app.pruning = 'custom';
@@ -95,12 +113,25 @@ export function finishCosmosApp({
   app['pruning-keep-every'] = '50000';
   app['pruning-interval'] = '1000';
 
-  const apiPort = DEFAULT_API_PORT + (rpcPort - DEFAULT_RPC_PORT) / 100;
+  const apiPort =
+    DEFAULT_API_PORT + Math.ceil((rpcPort - DEFAULT_RPC_PORT) / 100);
   if (exportMetrics) {
     app.api.laddr = `tcp://0.0.0.0:${apiPort}`;
     app.api.enable = true;
     app.telemetry.enabled = true;
     app.telemetry['prometheus-retention-time'] = 60;
+  }
+
+  // Optionally enable the rosetta service
+  if (enableRosetta) {
+    app.rosetta.enable = enableRosetta;
+    app.rosetta.network = chainId;
+    app.rosetta.retries = 30;
+  }
+
+  if (rosettaPort !== `${DEFAULT_ROSETTA_PORT}`) {
+    // Rosetta doesn't want a scheme
+    app.rosetta.address = `0.0.0.0:${rosettaPort}`;
   }
 
   return TOML.stringify(app);
@@ -133,6 +164,7 @@ export function finishTendermintConfig({
   config.p2p.seeds = seeds;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
   config.rpc.max_body_bytes = RPC_MAX_BODY_BYTES;
+  config.mempool.max_tx_bytes = RPC_MAX_BODY_BYTES;
   config.rpc.timeout_broadcast_tx_commit = `${RPC_BROADCAST_TIMEOUT_S}s`;
 
   if (
@@ -175,15 +207,26 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.capability = initState.capability;
 
   genesis.app_state.bank.denom_metadata = DENOM_METADATA;
+  genesis.app_state.interchainaccounts.host_genesis_state.params.allow_messages =
+    ICA_HOST_ALLOW_MESSAGES;
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;
+  const { historical_entries: existingHistoricalEntries = 0 } =
+    genesis.app_state.staking.params;
+  genesis.app_state.staking.params.historical_entries = Math.max(
+    existingHistoricalEntries,
+    STAKING_MIN_HISTORICAL_ENTRIES,
+  );
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
-  genesis.app_state.slashing.params.signed_blocks_window = `${Math.ceil(
-    (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
-  )}`;
+  genesis.app_state.slashing.params.signed_blocks_window = `${
+    SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER *
+    Math.ceil(
+      (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
+    )
+  }`;
 
   // Zero inflation, for now.
   genesis.app_state.mint.minter.inflation = '0.0';
@@ -194,22 +237,24 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;
   genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
   genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+  genesis.app_state.gov.voting_params.voting_period = GOV_VOTING_PERIOD;
 
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
 
   // Until we have epoched distribution, we manually set the fee disbursement.
   if (
-    genesis.app_state.vbank.params &&
-    genesis.app_state.vbank.params.fee_epoch_duration_blocks
+    genesis.app_state.vbank.params?.reward_epoch_duration_blocks !== undefined
   ) {
-    genesis.app_state.vbank.params.fee_epoch_duration_blocks = BLOCKS_PER_EPOCH;
+    genesis.app_state.vbank.params.reward_epoch_duration_blocks = `${BLOCKS_PER_EPOCH}`;
   }
-
-  // Use the same consensus_params.
-  if ('consensus_params' in exported) {
-    genesis.consensus_params = exported.consensus_params;
-  }
+  genesis.app_state.vbank.params.per_epoch_reward_fraction =
+    PER_EPOCH_REWARD_FRACTION;
+  if (genesis.app)
+    if ('consensus_params' in exported) {
+      // Use the same consensus_params.
+      genesis.consensus_params = exported.consensus_params;
+    }
 
   // Give some continuity between chains.
   if ('initial_height' in exported) {

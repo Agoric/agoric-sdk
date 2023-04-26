@@ -1,0 +1,56 @@
+@startuml Zoe/ZCF: Invitations, Offers, Seats
+
+actor user
+participant "Zoe\n<size:12>(shared state)" as Zoe
+participant "Zoe\n<size:12>(instance state)" as ZoeInstance
+participant ZCF
+participant contract
+
+== making invitations ==
+
+contract -> ZCF : makeInvitation(handler, desc, ...)
+ZCF -> ZCF : handle = storeOfferHandler(handler)
+ZCF -> Zoe : makeInvitation(handle,desc,...)
+ZCF /- Zoe : <font color=gray><size:12>invitation
+contract /- ZCF : <font color=gray><size:12>invitation
+note bottom
+The invitation might be returned via a public facet,
+or from a method on a seat, or some other way.
+end note
+
+== making an offer ==
+
+user -> Zoe : E(zoe).offer(invitation,\nproposal, payment, ...)
+Zoe -> Zoe : find instance from invitation\nburn invitation\nvalidate acceptingOffers()\nclean proposal\ndeposit Payments
+Zoe -> ZoeInstance : makeUserSeat()
+ZoeInstance -> ZoeInstance :make:\n  offefResultPromiseKit\n  exitObjPromiseKit\n  seatHandle
+ZoeInstance -> ZoeInstance : { userSeat, zoeSeatAdmin } =\n  makeSeatAdminKit(alloc, proposal, promises, ...)
+ZoeInstance -> ZoeInstance : store zoeSeatAdmin
+ZoeInstance -> ZCF : handleOffer(invitation, seatData)
+ZCF -> ZCF : makeZcfSeat()
+ZCF -> contract : handler(zcfSeat, offerArgs)
+contract -> contract : whatever
+ZCF -> ZCF : make offerResultPromiseKit
+ZCF -> ZCF : exitObj = makeExitObj()
+ZoeInstance /- ZCF : <font color=gray><size:12>offerResultPromise, exitObj
+user /- ZoeInstance : <font color=gray><size:12>userSeat
+ZCF /- contract : <font color=gray><size:12>offerResult, exitObj
+ZCF -> ZCF : wait for result, then\n  resolve promise or fail seat
+ZCF -> ZoeInstance : <font color=gray><size:12>promise resolution
+ZoeInstance -> ZoeInstance : resolvePromises or throw()
+
+== creating empty seats ==
+
+contract -> ZCF : makeEmptySeatKit()
+ZCF -> ZCF : promise = makePromiseKit
+ZCF -> ZCF : seatHandle = makeSeatHandle()
+ZCF -> ZCF : makeZcfSeat({}, {}, seatHandle)
+ZCF -> ZCF : exitObj = makeExitObj({}, handle)
+ZCF -> ZoeInstance : makeNoEscrowSeat({}, {}, exitObj, seatHandle)
+ZCF -> contract : <font color=gray><size:12>{ zcfSeat, userSeat: promise }
+ZoeInstance -> ZoeInstance : { userSeat, notifier, zoeSeatAdmin } =\n  makeSeatAdminKit(alloc, proposal,\n  promises, ...)
+ZoeInstance -> ZoeInstance : store zoeSeatAdmin
+ZCF /- ZoeInstance : <font color=gray><size:12>useSeat, notifier
+ZCF -> ZCF : <font color=gray>resolve userSeat promise
+
+@enduml

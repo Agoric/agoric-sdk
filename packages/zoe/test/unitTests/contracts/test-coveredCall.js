@@ -1,14 +1,14 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { sameStructure } from '@agoric/same-structure';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { keyEQ } from '@agoric/store';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -31,6 +31,7 @@ test('zoe - coveredCall', async t => {
     simoleans,
     bucks,
     zoe,
+    vatAdminState,
   } = setup();
 
   const makeAlice = async (timer, moolaPayment) => {
@@ -42,7 +43,8 @@ test('zoe - coveredCall', async t => {
         // pack the contract
         const bundle = await bundleSource(coveredCallRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-coveredcall', bundle);
+        const installationP = E(zoe).installBundleID('b1-coveredcall');
         return installationP;
       },
       startInstance: async installation => {
@@ -77,7 +79,7 @@ test('zoe - coveredCall', async t => {
       processPayouts: async seat => {
         await E(seat)
           .getPayout('Moola')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -88,7 +90,7 @@ test('zoe - coveredCall', async t => {
 
         await E(seat)
           .getPayout('Simoleans')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -99,7 +101,7 @@ test('zoe - coveredCall', async t => {
 
         await E(seat)
           .getPayout('Bucks')
-          .then(bucksPurse.deposit)
+          .then(payment => bucksPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -121,7 +123,10 @@ test('zoe - coveredCall', async t => {
 
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -133,18 +138,18 @@ test('zoe - coveredCall', async t => {
         t.is(invitationValue.description, 'exerciseOption');
 
         t.deepEqual(
-          invitationValue.underlyingAssets,
+          invitationValue.customDetails?.underlyingAssets,
           { Moola: moola(3n) },
           `underlying assets are 3 moola`,
         );
         t.deepEqual(
-          invitationValue.strikePrice,
+          invitationValue.customDetails?.strikePrice,
           { Simoleans: simoleans(7n), Bucks: bucks(2n) },
           `strike price is 7 simoleans and 2 bucks, so bob must give that`,
         );
 
-        t.is(invitationValue.expirationDate, 1n);
-        t.deepEqual(invitationValue.timeAuthority, timer);
+        t.is(invitationValue.customDetails?.expirationDate, 1n);
+        t.deepEqual(invitationValue.customDetails?.timeAuthority, timer);
 
         const proposal = harden({
           give: { StrikePrice1: simoleans(7n), StrikePrice2: bucks(2n) },
@@ -167,14 +172,14 @@ test('zoe - coveredCall', async t => {
       processPayouts: async seat => {
         await E(seat)
           .getPayout('UnderlyingAsset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(3n), `Bob got what he wanted`),
           );
 
         await E(seat)
           .getPayout('StrikePrice1')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -185,7 +190,7 @@ test('zoe - coveredCall', async t => {
 
         await E(seat)
           .getPayout('StrikePrice2')
-          .then(bucksPurse.deposit)
+          .then(payment => bucksPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -197,7 +202,7 @@ test('zoe - coveredCall', async t => {
     });
   };
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
@@ -225,26 +230,30 @@ test('zoe - coveredCall', async t => {
 
 test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
   t.plan(13);
-  const { moolaR, simoleanR, moola, simoleans, zoe } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  const coveredCallInstallation = await E(zoe).install(bundle);
-  const timer = buildManualTimer(console.log);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
+  const timer = buildManualTimer(t.log);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Alice creates a coveredCall instance
   const issuerKeywordRecord = harden({
-    UnderlyingAsset: moolaR.issuer,
-    StrikePrice: simoleanR.issuer,
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     coveredCallInstallation,
@@ -269,7 +278,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     aliceProposal,
     alicePayments,
   );
-  timer.tick();
+  await timer.tick();
 
   const optionP = E(aliceSeat).getOfferResult();
 
@@ -281,20 +290,26 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const { customDetails } = optionValue;
+  assert(typeof customDetails === 'object');
+
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionValue.expirationDate, 1n);
-  t.deepEqual(optionValue.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 1n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
 
   const bobProposal = harden({
-    want: optionValue.underlyingAssets,
-    give: optionValue.strikePrice,
+    want: customDetails.underlyingAssets,
+    give: customDetails.strikePrice,
   });
 
   // Bob escrows
@@ -313,11 +328,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const aliceSimoleanPayout = await E(aliceSeat).getPayout('StrikePrice');
 
   // Alice gets back what she put in
-  t.deepEqual(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(3n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(aliceMoolaPayout), moola(3n));
 
   // Alice doesn't get what she wanted
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(0n),
   );
 
@@ -345,40 +360,53 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
-  const timer = buildManualTimer(console.log);
-  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
+  const timer = buildManualTimer(t.log);
+  const {
+    moolaKit,
+    simoleanKit,
+    bucksKit,
+    moola,
+    simoleans,
+    bucks,
+    zoe,
+    vatAdminState,
+  } = setup();
   // Pack the contract.
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-  const coveredCallInstallation = await E(zoe).install(coveredCallBundle);
+  vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-  const swapInstallationId = await E(zoe).install(atomicSwapBundle);
+  vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
+  const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
 
   // Setup Alice
   // Alice starts with 3 moola
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
   // Bob starts with nothing
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const bobBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck
-  const daveSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
-  const daveBucksPayment = bucksR.mint.mintPayment(bucks(1n));
-  const daveMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const daveSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const daveBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const daveSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
+  const daveBucksPayment = bucksKit.mint.mintPayment(bucks(1n));
+  const daveMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const daveSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const daveBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Alice creates a coveredCall instance of moola for simoleans
   const issuerKeywordRecord = harden({
-    UnderlyingAsset: moolaR.issuer,
-    StrikePrice: simoleanR.issuer,
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     coveredCallInstallation,
@@ -422,21 +450,27 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
+  const { customDetails } = optionDesc;
+  assert(typeof customDetails === 'object');
+
   t.is(optionDesc.installation, coveredCallInstallation);
   t.is(optionDesc.description, 'exerciseOption');
-  t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionDesc.expirationDate, 100n);
-  t.deepEqual(optionDesc.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
   const swapIssuerKeywordRecord = harden({
     Asset: invitationIssuer,
-    Price: bucksR.issuer,
+    Price: bucksKit.issuer,
   });
   const { creatorInvitation: bobSwapInvitation } = await E(zoe).startInstance(
     swapInstallationId,
@@ -480,11 +514,11 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Is this swap for the correct issuers and has no other terms? Yes
   t.truthy(
-    sameStructure(
+    keyEQ(
       daveSwapIssuers,
       harden({
         Asset: invitationIssuer,
-        Price: bucksR.issuer,
+        Price: bucksKit.issuer,
       }),
     ),
   );
@@ -548,15 +582,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const bobInvitationPayout = await bobSwapSeat.getPayout('Asset');
   const bobBucksPayout = await bobSwapSeat.getPayout('Price');
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(daveMoolaPayout), moola(3n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(daveMoolaPayout), moola(3n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(daveSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(daveSimoleanPayout),
     simoleans(0n),
   );
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(7n),
   );
 
@@ -564,7 +598,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
     AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
-  t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1n));
+  t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 
   // Alice deposits her payouts
   await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -597,38 +631,50 @@ test('zoe - coveredCall with swap for invitation', async t => {
 test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.plan(31);
   // Setup the environment
-  const timer = buildManualTimer(console.log);
-  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
+  const timer = buildManualTimer(t.log);
+  const {
+    moolaKit,
+    simoleanKit,
+    bucksKit,
+    moola,
+    simoleans,
+    bucks,
+    zoe,
+    vatAdminState,
+  } = setup();
 
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
 
-  const coveredCallInstallation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
 
   // Setup Alice
   // Alice starts with 3 moola
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
   // Bob starts with nothing
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const bobBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck and 7 simoleans
-  const daveSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
-  const daveBucksPayment = bucksR.mint.mintPayment(bucks(1n));
-  const daveMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const daveSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const daveBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const daveSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
+  const daveBucksPayment = bucksKit.mint.mintPayment(bucks(1n));
+  const daveMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const daveSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const daveBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Alice creates a coveredCall instance of moola for simoleans
   const issuerKeywordRecord = harden({
-    UnderlyingAsset: moolaR.issuer,
-    StrikePrice: simoleanR.issuer,
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceCoveredCallInvitation } = await E(
     zoe,
@@ -671,20 +717,26 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const { customDetails } = optionValue;
+  assert(typeof customDetails === 'object');
+
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionValue.expirationDate, 100n);
-  t.deepEqual(optionValue.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create another coveredCall, but
   // this time to trade this invitation for bucks.
   const issuerKeywordRecord2 = harden({
     UnderlyingAsset: invitationIssuer,
-    StrikePrice: bucksR.issuer,
+    StrikePrice: bucksKit.issuer,
   });
   const { creatorInvitation: bobInvitationForSecondCoveredCall } = await E(
     zoe,
@@ -722,37 +774,45 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Dave is looking to buy the option to trade his 7 simoleans for
   // 3 moola, and is willing to pay 1 buck for the option. He
   // checks that this invitation matches what he wants
-  const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
+  const daveExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    invitationForDaveP,
+  );
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
+  const { customDetails: daveCustomDetails } = daveOptionValue;
+  assert(typeof daveCustomDetails === 'object');
+
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
-  assertAmountsEqual(t, daveOptionValue.strikePrice.StrikePrice, bucks(1n));
-  t.is(daveOptionValue.expirationDate, 100n);
-  t.deepEqual(daveOptionValue.timeAuthority, timer);
+  assertAmountsEqual(t, daveCustomDetails.strikePrice.StrikePrice, bucks(1n));
+  t.is(daveCustomDetails.expirationDate, 100n);
+  t.deepEqual(daveCustomDetails.timeAuthority, timer);
 
   // What about the underlying asset (the other option)?
   t.is(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].description,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].description,
     'exerciseOption',
   );
   t.is(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].expirationDate,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
+      .expirationDate,
     100n,
   );
   assertAmountsEqual(
     t,
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].strikePrice
-      .StrikePrice,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
+      .strikePrice.StrikePrice,
     simoleans(7n),
   );
   t.deepEqual(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timeAuthority,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
+      .timeAuthority,
     timer,
   );
 
   // Dave's planned proposal
   const daveProposalCoveredCall = harden({
-    want: daveOptionValue.underlyingAssets,
+    want: daveCustomDetails.underlyingAssets,
     give: { StrikePrice: bucks(1n) },
   });
 
@@ -815,15 +875,15 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const bobInvitationPayout = await bobSeat.getPayout('UnderlyingAsset');
   const bobBucksPayout = await bobSeat.getPayout('StrikePrice');
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(daveMoolaPayout), moola(3n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(daveMoolaPayout), moola(3n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(daveSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(daveSimoleanPayout),
     simoleans(0n),
   );
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(7n),
   );
 
@@ -832,7 +892,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
     AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
-  t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1n));
+  t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 
   // Alice deposits her payouts
   await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -871,12 +931,17 @@ test('zoe - coveredCall non-fungible', async t => {
     rpgItems,
     createRpgItem,
     zoe,
+    vatAdminState,
   } = setupNonFungible();
 
   // install the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  const coveredCallInstallation = await E(zoe).install(bundle);
-  const timer = buildManualTimer(console.log);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
+  const timer = buildManualTimer(t.log);
 
   // Setup Alice
   const growlTiger = harden(['GrowlTiger']);
@@ -888,7 +953,7 @@ test('zoe - coveredCall non-fungible', async t => {
   // Setup Bob
   const aGloriousShield = createRpgItem(
     'Glorious Shield',
-    25,
+    'blinding',
     'a Glorious Shield, burnished to a blinding brightness',
   );
   const aGloriousShieldAmount = rpgItems(aGloriousShield);
@@ -930,28 +995,35 @@ test('zoe - coveredCall non-fungible', async t => {
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  /** @type {Payment<any>} */
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const { customDetails } = optionValue;
+  assert(typeof customDetails === 'object');
+
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
   assertAmountsEqual(
     t,
-    optionValue.underlyingAssets.UnderlyingAsset,
+    customDetails.underlyingAssets.UnderlyingAsset,
     growlTigerAmount,
   );
   assertAmountsEqual(
     t,
-    optionValue.strikePrice.StrikePrice,
+    customDetails.strikePrice.StrikePrice,
     aGloriousShieldAmount,
   );
-  t.is(optionValue.expirationDate, 1n);
-  t.deepEqual(optionValue.timeAuthority, timer);
+  t.is(customDetails.expirationDate, 1n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };
 
   const bobProposal = harden({
-    want: optionValue.underlyingAssets,
-    give: optionValue.strikePrice,
+    want: customDetails.underlyingAssets,
+    give: customDetails.strikePrice,
     exit: { onDemand: null },
   });
 
@@ -964,9 +1036,13 @@ test('zoe - coveredCall non-fungible', async t => {
     `The option was exercised. Please collect the assets in your payout.`,
   );
 
+  /** @type {Payment<any>} */
   const bobCcPayout = await E(bobSeat).getPayout('UnderlyingAsset');
+  /** @type {Payment<any>} */
   const bobRpgPayout = await E(bobSeat).getPayout('StrikePrice');
+  /** @type {Payment<any>} */
   const aliceCcPayout = await E(aliceSeat).getPayout('UnderlyingAsset');
+  /** @type {Payment<any>} */
   const aliceRpgPayout = await E(aliceSeat).getPayout('StrikePrice');
 
   // Alice gets what Alice wanted

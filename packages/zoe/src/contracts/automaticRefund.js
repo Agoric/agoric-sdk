@@ -1,8 +1,4 @@
-// @ts-check
-
-import { Far } from '@agoric/marshal';
-
-import '../../exported.js';
+import { Far } from '@endo/marshal';
 
 /**
  * This is a very trivial contract to explain and test Zoe.
@@ -16,8 +12,7 @@ import '../../exported.js';
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
  *
- * @type {ContractStartFn}
- * @param {ContractFacet} zcf
+ * @param {ZCF<{}>} zcf
  */
 const start = zcf => {
   let offersCount = 0n;
@@ -30,7 +25,6 @@ const start = zcf => {
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
-  /** @type {AutomaticRefundPublicFacet} */
   const publicFacet = Far('publicFacet', {
     getOffersCount: () => offersCount,
     makeInvitation: makeRefundInvitation,

@@ -26,10 +26,11 @@ function safeUnlink(filePath) {
 }
 
 /**
- * Create a new instance of a RAM-based implementation of the Storage API.
+ * Create a new instance of a RAM-based StorageAPI implementation.
  *
- * The "Storage API" is a set of functions { has, getKeys, get, set, delete }
- * that work on string keys and accept string values.
+ * StorageAPI is a set of functions { has, getKeys, get, set, delete }
+ * that work on string keys and accept string values
+ * (cf. packages/SwingSet/docs/state.md#transactions).
  *
  * returns an object: {
  *   storage,  // the storage API object itself
@@ -158,8 +159,8 @@ function makeStorageInMemory() {
  *
  * @returns {{
  *   storage: JSONStore, // a storage API object to load and store data
- *   commit: () => void,  // commit changes made since the last commit
- *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
+ *   commit: () => Promise<void>,  // commit changes made since the last commit
+ *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  * }}
  */
 function makeJSONStore(dirPath, forceReset = false) {
@@ -185,7 +186,7 @@ function makeJSONStore(dirPath, forceReset = false) {
       if (lines) {
         let line = lines.next();
         while (line) {
-          // @ts-ignore JSON.parse can take a Buffer
+          // @ts-expect-error JSON.parse can take a Buffer
           const [key, value] = JSON.parse(line);
           storage.set(key, value);
           line = lines.next();
@@ -197,7 +198,7 @@ function makeJSONStore(dirPath, forceReset = false) {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  async function commit() {
     if (dirPath) {
       const tempFile = `${storeFile}-${process.pid}.tmp`;
       const fd = fs.openSync(tempFile, 'w');
@@ -216,7 +217,7 @@ function makeJSONStore(dirPath, forceReset = false) {
    * Close the "database", abandoning any changes made since the last commit
    * (if you want to save them, call commit() first).
    */
-  function close() {
+  async function close() {
     // Nothing to do here.
   }
 
@@ -228,7 +229,7 @@ function makeJSONStore(dirPath, forceReset = false) {
  * serialized to a text file.  If there is an existing store at the given
  * `dirPath`, it will be reinitialized to an empty state.
  *
- * @param {string=} dirPath  Path to a directory in which database files may be kept.
+ * @param {string} [dirPath]  Path to a directory in which database files may be kept.
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   JSON store instance.  If this is nullish, the JSON store created will
@@ -289,7 +290,7 @@ export function getAllState(storage) {
   /** @type { Record<string, string> } */
   const stuff = {};
   for (const key of Array.from(storage.getKeys('', ''))) {
-    // @ts-ignore get(key) of key from getKeys() is not undefined
+    // @ts-expect-error get(key) of key from getKeys() is not undefined
     stuff[key] = storage.get(key);
   }
   return stuff;
@@ -320,7 +321,6 @@ export function setAllState(storage, stuff) {
  * @returns {boolean}
  *   If the directory is present and contains the files created by initJSONStore
  *   or openJSONStore, returns true. Else returns false.
- *
  */
 export function isJSONStore(dirPath) {
   if (`${dirPath}` !== dirPath) {

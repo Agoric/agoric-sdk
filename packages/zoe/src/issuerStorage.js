@@ -1,25 +1,35 @@
-// @ts-check
-
-import { makeWeakStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
 
 import { arrayToObj } from './objArrayConversion.js';
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
 
-/**
- *  Make the Issuer Storage.
- */
-export const makeIssuerStorage = () => {
-  /** @type {WeakStore<Brand,IssuerRecord>} */
-  const brandToIssuerRecord = makeWeakStore('brand');
-  /** @type {WeakStore<Issuer,IssuerRecord>} */
-  const issuerToIssuerRecord = makeWeakStore('issuer');
+const { Fail } = assert;
 
-  let instantiated = false;
-  const assertInstantiated = () =>
-    assert(instantiated, X`issuerStorage has not been instantiated`);
+const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
+
+/**
+ * Make the Issuer Storage.
+ *
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ */
+export const provideIssuerStorage = zcfBaggage => {
+  /** @type {WeakMapStore<Brand,IssuerRecord>} */
+  const brandToIssuerRecord = provideDurableWeakMapStore(
+    zcfBaggage,
+    'brandToIssuerRecord',
+  );
+  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
+  const issuerToIssuerRecord = provideDurableWeakMapStore(
+    zcfBaggage,
+    'issuerToIssuerRecord',
+  );
+
+  let instantiated = zcfBaggage.has(STORAGE_INSTANTIATED_KEY);
+  const assertInstantiated = () => {
+    instantiated || Fail`issuerStorage has not been instantiated`;
+  };
 
   /**
    * If we already know the entire issuer record, such as for a
@@ -42,7 +52,7 @@ export const makeIssuerStorage = () => {
    *
    * The reason why we need the `has` check below is for the 4th case
    * above, in which we store an issuer record in ZCF that we obtained
-   * from Zoe. `WeakStore.init` errors if the key is already present,
+   * from Zoe. `WeakMapStore.init` errors if the key is already present,
    * and because an issuer can be used more than once in the same
    * contract, we need to make sure we aren't trying to `init` twice.
    * If the issuer and its record are already present, we do not need
@@ -108,7 +118,7 @@ export const makeIssuerStorage = () => {
     // intend to prevent issuer misbehavior in general, so the user
     // *must* rely on the good behavior of the issuers used in the
     // smart contracts they use.
-    assert(brandIssuerMatch, `issuer was using a brand which was not its own`);
+    brandIssuerMatch || Fail`issuer was using a brand which was not its own`;
     const issuerRecord = makeIssuerRecord(brand, issuer, displayInfo);
     storeIssuerRecord(issuerRecord);
     return getByBrand(brand);
@@ -158,20 +168,24 @@ export const makeIssuerStorage = () => {
   };
 
   /**
-   * @param {Issuer} issuer
-   * @returns {Brand}
+   * @template {AssetKind} K
+   * @param {Issuer<K>} issuer
+   * @returns {Brand<K>}
    */
   const getBrandForIssuer = issuer => {
     assertInstantiated();
+    // @ts-expect-error cast
     return issuerToIssuerRecord.get(issuer).brand;
   };
 
   /**
-   * @param {Brand} brand
-   * @returns {Issuer}
+   * @template {AssetKind} K
+   * @param {Brand<K>} brand
+   * @returns {Issuer<K>}
    */
   const getIssuerForBrand = brand => {
     assertInstantiated();
+    // @ts-expect-error cast
     return brandToIssuerRecord.get(brand).issuer;
   };
 
@@ -182,12 +196,11 @@ export const makeIssuerStorage = () => {
   };
 
   const instantiate = (issuerRecords = []) => {
-    assert(
-      instantiated === false,
-      X`issuerStorage can only be instantiated once`,
-    );
-    instantiated = true;
-    issuerRecords.forEach(storeIssuerRecord);
+    if (!zcfBaggage.has(STORAGE_INSTANTIATED_KEY)) {
+      zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
+      instantiated = true;
+      issuerRecords.forEach(storeIssuerRecord);
+    }
   };
 
   return {

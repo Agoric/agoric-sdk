@@ -1,18 +1,16 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -20,11 +18,11 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/registerFeeMintContract.js`;
 
 test(`feeMintAccess`, async t => {
-  const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = await E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin);
   const bundle = await bundleSource(contractRoot);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-registerfee', bundle);
+  const installation = await E(zoe).installBundleID('b1-registerfee');
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     undefined,

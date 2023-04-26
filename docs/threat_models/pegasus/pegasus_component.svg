@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="716px" preserveAspectRatio="none" style="width:429px;height:716px;background:#FFFFFF;" version="1.1" viewBox="0 0 429 716" width="429px" zoomAndPan="magnify"><defs><filter height="300%" id="fwgaol33yo3iq" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="176" x="240" y="9.668">Agoric Systems Operating Company.</text><text fill="#000000" font-family="sans-serif" font-size="18" lengthAdjust="spacing" textLength="256" x="80" y="29.1797">Pegasus Component Diagram</text><!--MD5=[69c0fa388eca8efd5d4b12b213ecba7b]
+cluster Agoric Chain--><path d="M6,48.9766 C6,38.9766 143.5,38.9766 143.5,38.9766 C143.5,38.9766 281,38.9766 281,48.9766 L281,387.9766 C281,397.9766 143.5,397.9766 143.5,397.9766 C143.5,397.9766 6,397.9766 6,387.9766 L6,48.9766 " fill="#FFFFFF" filter="url(#fwgaol33yo3iq)" style="stroke:#000000;stroke-width:1.5;"/><path d="M6,48.9766 C6,58.9766 143.5,58.9766 143.5,58.9766 C143.5,58.9766 281,58.9766 281,48.9766 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="92" x="97.5" y="74.5117">Agoric Chain</text><!--MD5=[848fe5f6fbd91a4c9b16b03a02a0ed93]
+cluster Cosmos Chain--><path d="M268,431.9766 C268,421.9766 345,421.9766 345,421.9766 C345,421.9766 422,421.9766 422,431.9766 L422,682.4766 C422,692.4766 345,692.4766 345,692.4766 C345,692.4766 268,692.4766 268,682.4766 L268,431.9766 " fill="#FFFFFF" filter="url(#fwgaol33yo3iq)" style="stroke:#000000;stroke-width:1.5;"/><path d="M268,431.9766 C268,441.9766 345,441.9766 345,441.9766 C345,441.9766 422,441.9766 422,431.9766 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="104" x="293" y="457.5117">Cosmos Chain</text><path d="M170.6136,446.6459 C173.6601,440.1451 179.0045,439.9546 182.7815,445.9336 C185.5166,440.8179 189.6687,440.0749 193.0167,445.3286 C195.4673,438.2432 199.0144,437.432 204.3717,442.6448 C207.9176,438.7731 212.5267,439.7362 214.5592,444.4422 C218.3412,438.7191 222.5599,439.6303 225.7247,445.0602 C229.8346,441.1213 234.7967,440.8988 236.9881,447.1754 C243.5626,448.9473 244.5898,454.7436 239.2986,458.8614 C245.7321,461.5639 245.903,466.907 240.8213,471.0483 C249.2688,472.8732 250.628,478.553 244.666,484.4973 C251.6246,487.5935 252.2267,492.4893 245.8796,496.8886 C249.758,501.6259 248.0534,505.2577 242.8273,507.3347 C248.1835,512.585 247.5011,517.2354 240.3702,520.0781 C246.3464,524.462 245.5919,528.3966 239.9281,532.3616 C244.7482,537.1309 242.5416,542.5473 236.2502,543.7181 C233.1615,549.2361 229.0392,548.8795 225.1249,544.6615 C222.3317,551.1973 218.3919,551.3871 214.0089,546.1645 C211.4961,552.014 207.045,551.9109 203.691,546.9688 C200.3068,550.5923 195.1775,549.8739 193.4372,544.9879 C190.3022,549.5971 185.4141,549.8028 182.2518,545.0203 C178.0531,549.9032 174.8006,549.8229 171.6001,544.0249 C166.2338,541.9323 164.706,536.6433 169.4355,532.6326 C161.6055,529.5136 162.2735,524.7352 167.1534,519.4208 C160.9195,516.7389 161.5111,513.3892 165.4353,509.0281 C158.6219,505.6531 158.0704,500.7144 163.378,495.4965 C157.7745,490.0577 159.0052,485.7946 166.0883,483.138 C161.5167,479.8974 160.9948,474.4485 167.2104,472.3276 C162.1701,468.2051 162.7547,462.0083 168.8519,459.2878 C163.9755,454.3075 163.2638,449.9223 170.6136,446.6459 " fill="#FFFFFF" filter="url(#fwgaol33yo3iq)" style="stroke:#000000;stroke-width:1.5;"/><!--MD5=[f152b445e5bcee5e5394952cb1476aeb]
+entity alice--><ellipse cx="217" cy="98.4766" fill="#FEFECE" filter="url(#fwgaol33yo3iq)" rx="8" ry="8" style="stroke:#A80036;stroke-width:1.5;"/><path d="M217,106.4766 L217,133.4766 M204,114.4766 L230,114.4766 M217,133.4766 L204,148.4766 M217,133.4766 L230,148.4766 " fill="none" filter="url(#fwgaol33yo3iq)" style="stroke:#A80036;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="33" x="200.5" y="167.5117">Alice</text><!--MD5=[3235cd65714494329a4245cfcda5edcc]
+entity gov--><path d="M32.4617,239.0968 C36.1914,232.6361 40.0998,233.2208 44.3696,238.5513 C47.6039,233.5961 52.1039,233.0174 55.6801,238.1686 C59.2421,232.9399 63.1081,231.1202 67.6999,237.0603 C71.675,231.146 75.3681,230.6608 80.0217,236.339 C84.3572,231.39 88.6548,231.0931 91.678,237.6665 C95.8246,232.9911 99.3147,232.815 103.2542,237.9117 C106.7577,232.415 111.0107,231.7659 114.5214,237.9047 C118.8315,232.8559 124.8111,232.3353 127.6172,239.5154 C136.5571,241.4689 137.3451,248.8347 131.1146,254.362 C137.538,260.5971 135.6164,267.6342 127.3008,270.3544 C124.3721,276.8697 119.3511,277.0312 115.2192,271.568 C112.6067,276.6467 107.6697,277.6485 103.718,273.1816 C100.4539,280.0032 96.1286,282.1111 89.9877,276.311 C86.9021,282.6978 83.4,282.2032 79.0457,277.5708 C74.4707,282.6391 70.5941,283.2871 66.8665,276.6863 C62.0695,280.5261 58.6578,280.0965 55.6526,274.5465 C50.6539,281.0342 45.7739,280.2962 42.7778,272.7141 C37.891,277.8687 33.0682,274.801 31.4878,269.2328 C22.9156,266.0663 21.6954,260.6037 27.6888,253.8419 C22.2357,247.5234 23.4285,240.7261 32.4617,239.0968 " fill="#FEFECE" filter="url(#fwgaol33yo3iq)" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="81" x="37.5" y="258.5117">Governance</text><!--MD5=[aa37ca53a3c44654e931b1b3ddbb8177]
+entity dIBC--><polygon fill="#FEFECE" filter="url(#fwgaol33yo3iq)" points="141,345.9766,151,335.9766,265,335.9766,265,372.4648,255,382.4648,141,382.4648,141,345.9766" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.5;" x1="255" x2="265" y1="345.9766" y2="335.9766"/><line style="stroke:#000000;stroke-width:1.5;" x1="141" x2="255" y1="345.9766" y2="345.9766"/><line style="stroke:#000000;stroke-width:1.5;" x1="255" x2="255" y1="345.9766" y2="382.4648"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="84" x="156" y="369.5117">Dynamic IBC</text><!--MD5=[d68d0fac89d60c88841cf419a8314745]
+entity pegasus--><polygon fill="#FEFECE" filter="url(#fwgaol33yo3iq)" points="169,239.9766,179,229.9766,265,229.9766,265,266.4648,255,276.4648,169,276.4648,169,239.9766" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.5;" x1="255" x2="265" y1="239.9766" y2="229.9766"/><line style="stroke:#000000;stroke-width:1.5;" x1="169" x2="255" y1="239.9766" y2="239.9766"/><line style="stroke:#000000;stroke-width:1.5;" x1="255" x2="255" y1="239.9766" y2="276.4648"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="56" x="184" y="263.5117">Pegasus</text><!--MD5=[8b891d8b4d3fdd5357dfe39859cbec59]
+entity cIBC--><polygon fill="#FEFECE" filter="url(#fwgaol33yo3iq)" points="284.5,481.9766,294.5,471.9766,405.5,471.9766,405.5,508.4648,395.5,518.4648,284.5,518.4648,284.5,481.9766" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.5;" x1="395.5" x2="405.5" y1="481.9766" y2="471.9766"/><line style="stroke:#000000;stroke-width:1.5;" x1="284.5" x2="395.5" y1="481.9766" y2="481.9766"/><line style="stroke:#000000;stroke-width:1.5;" x1="395.5" x2="395.5" y1="481.9766" y2="518.4648"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="81" x="299.5" y="505.5117">Cosmos IBC</text><!--MD5=[8e36e8bcb951c7385246966ef326582c]
+entity bob--><ellipse cx="345" cy="604.9766" fill="#FEFECE" filter="url(#fwgaol33yo3iq)" rx="8" ry="8" style="stroke:#A80036;stroke-width:1.5;"/><path d="M345,612.9766 L345,639.9766 M332,620.9766 L358,620.9766 M345,639.9766 L332,654.9766 M345,639.9766 L358,654.9766 " fill="none" filter="url(#fwgaol33yo3iq)" style="stroke:#A80036;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="26" x="332" y="674.0117">Bob</text><!--MD5=[c6acd2f839322c9af5656b63d7f2008c]
+entity relayer--><ellipse cx="203" cy="463.9766" fill="#FEFECE" filter="url(#fwgaol33yo3iq)" rx="8" ry="8" style="stroke:#A80036;stroke-width:1.5;"/><path d="M203,471.9766 L203,498.9766 M190,479.9766 L216,479.9766 M203,498.9766 L190,513.9766 M203,498.9766 L216,513.9766 " fill="none" filter="url(#fwgaol33yo3iq)" style="stroke:#A80036;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="50" x="178" y="533.0117">Relayer</text><!--MD5=[3736b50a4809b86e9d945eb8c8dc3d9e]
+link pegasus to dIBC--><path d="M213.34,281.1666 C211.28,296.5066 208.7,315.5966 206.64,330.9166 " fill="none" id="pegasus-dIBC" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="205.96,335.9566,211.108,327.5603,206.6171,330.9999,203.1774,326.509,205.96,335.9566" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="214.03,276.0366,208.882,284.4328,213.3729,280.9932,216.8126,285.4842,214.03,276.0366" style="stroke:#A80036;stroke-width:1.0;"/><!--MD5=[830b7ec3de3d3e1ae923b4ac5483e974]
+link dIBC to relayer--><path d="M203,387.3666 C203,405.1866 203,428.8366 203,449.3366 " fill="none" id="dIBC-relayer" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="203,454.4766,207,445.4766,203,449.4766,199,445.4766,203,454.4766" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="203,382.1066,199,391.1066,203,387.1066,207,391.1066,203,382.1066" style="stroke:#A80036;stroke-width:1.0;"/><!--MD5=[7d1744d0465a0db81d1e3079e70f2e07]
+link relayer to cIBC--><path d="M233.5,494.9766 C248.72,494.9766 263.95,494.9766 279.18,494.9766 " fill="none" id="relayer-cIBC" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="284.34,494.9766,275.34,490.9766,279.34,494.9766,275.34,498.9766,284.34,494.9766" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="228.24,494.9766,237.24,498.9766,233.24,494.9766,237.24,490.9766,228.24,494.9766" style="stroke:#A80036;stroke-width:1.0;"/><!--MD5=[e00b95a3201aa283571e68777c9f0db2]
+link alice to pegasus--><path d="M217,170.2566 C217,188.0466 217,208.5566 217,224.5866 " fill="none" id="alice-to-pegasus" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="217,229.8366,221,220.8366,217,224.8366,213,220.8366,217,229.8366" style="stroke:#A80036;stroke-width:1.0;"/><!--MD5=[bd82bcd0707918e226cae5555b21ac1d]
+link cIBC to bob--><path d="M345,517.9966 C345,537.3666 345,566.1566 345,590.3266 " fill="none" id="cIBC-to-bob" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="345,595.4166,349,586.4166,345,590.4166,341,586.4166,345,595.4166" style="stroke:#A80036;stroke-width:1.0;"/><!--MD5=[b82d80e55fe9ba4b1a93f1eba50de98b]
+link gov to pegasus--><path d="M138.87,252.9766 C147.14,252.9766 155.4,252.9766 163.67,252.9766 " fill="none" id="gov-pegasus" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="168.82,252.9766,159.82,248.9766,163.82,252.9766,159.82,256.9766,168.82,252.9766" style="stroke:#A80036;stroke-width:1.0;"/><polygon fill="#A80036" points="133.65,252.9766,142.65,256.9766,138.65,252.9766,142.65,248.9766,133.65,252.9766" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="29" x="193.5" y="708.1445">v0.0.1</text><!--MD5=[7cbcaf89d14f26a8a2477ed0466145ea]
+@startuml
+'https://plantuml.com/component-diagram
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Pegasus Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+database "Agoric Chain" {
+    actor "Alice" as alice
+    cloud "Governance" as gov
+
+    node "Dynamic IBC" as dIBC
+    node "Pegasus" as pegasus
+    pegasus <- -> dIBC
+}
+
+database "Cosmos Chain" {
+    node "Cosmos IBC" as cIBC
+    actor "Bob" as bob
+}
+cloud {
+    actor "Relayer" as relayer
+
+    relayer <-u-> dIBC
+    relayer <-r-> cIBC
+}
+alice -d-> pegasus
+cIBC -d-> bob
+
+gov <-> pegasus
+@enduml
+
+@startuml
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Pegasus Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+database "Agoric Chain" {
+    actor "Alice" as alice
+    cloud "Governance" as gov
+
+    node "Dynamic IBC" as dIBC
+    node "Pegasus" as pegasus
+    pegasus <- -> dIBC
+}
+
+database "Cosmos Chain" {
+    node "Cosmos IBC" as cIBC
+    actor "Bob" as bob
+}
+cloud {
+    actor "Relayer" as relayer
+
+    relayer <-u-> dIBC
+    relayer <-r-> cIBC
+}
+alice -d-> pegasus
+cIBC -d-> bob
+
+gov <-> pegasus
+@enduml
+
+PlantUML version 1.2021.10(Mon Aug 30 06:43:48 PDT 2021)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

@@ -1,36 +1,25 @@
-import '@agoric/install-ses';
+import '@endo/init/debug.js';
 
-import fs from 'fs';
-import path from 'path';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
-import tmp from 'tmp';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import sqlite3 from 'better-sqlite3';
 import test from 'ava';
+import { makeMeasureSeconds } from '@agoric/internal';
 import { xsnap } from '@agoric/xsnap';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-const { freeze } = Object;
+const makeMockSnapStoreIO = () => ({
+  ...makeSnapStoreIO(),
+  measureSeconds: makeMeasureSeconds(() => 0),
+});
 
-const ld = (() => {
-  /** @param { string } ref */
-  // WARNING: ambient
-  const resolve = async ref => {
-    const url = await importMetaResolve(ref, import.meta.url);
-    return new URL(url).pathname;
-  };
-  const readFile = fs.promises.readFile;
-  return freeze({
-    resolve,
-    /**  @param { string } ref */
-    asset: async ref => readFile(await resolve(ref), 'utf-8'),
-  });
-})();
+const getBootScript = () =>
+  getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
 
-/** @type {(fn: string, fullSize: number) => number} */
-const relativeSize = (fn, fullSize) =>
-  Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
+/** @type {(compressedSize: number, fullSize: number) => number} */
+const relativeSize = (compressedSize, fullSize) =>
+  Math.round((compressedSize / 1024 / fullSize) * 10) / 10;
 
 const snapSize = {
   raw: 417,
@@ -62,9 +51,7 @@ async function bootWorker(name, handleCommand, script) {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
-  const bootScript = await ld.asset(
-    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
-  );
+  const bootScript = await getBootScript();
   return bootWorker(name, handleCommand, bootScript);
 }
 
@@ -72,19 +59,19 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  await fs.promises.mkdir(pool.name, { recursive: true });
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const { compressedSize } = await store.saveSnapshot(
+    'vat0',
+    1,
+    async snapFile => {
+      await vat.snapshot(snapFile);
+    },
+  );
 
-  const h = await store.save(async snapFile => {
-    await vat.snapshot(snapFile);
-  });
-
-  const zfile = path.resolve(pool.name, `${h}.gz`);
   t.true(
-    relativeSize(zfile, snapSize.raw) < 0.5,
+    relativeSize(compressedSize, snapSize.raw) < 0.5,
     'compressed snapshots are smaller',
   );
 });
@@ -93,36 +80,35 @@ test('SES bootstrap, save, compress', async t => {
   const vat = await bootSESWorker('ses-boot1', async m => m);
   t.teardown(() => vat.close());
 
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
-  const h = await store.save(async snapFile => {
-    await vat.snapshot(snapFile);
-  });
+  const { compressedSize } = await store.saveSnapshot(
+    'vat0',
+    1,
+    async snapFile => {
+      await vat.snapshot(snapFile);
+    },
+  );
 
-  const zfile = path.resolve(pool.name, `${h}.gz`);
   t.true(
-    relativeSize(zfile, snapSize.SESboot) < 0.5,
+    relativeSize(compressedSize, snapSize.SESboot) < 0.5,
     'compressed snapshots are smaller',
   );
 });
 
 test('create SES worker, save, restore, resume', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
   await vat0.evaluate('globalThis.x = harden({a: 1})');
-  const h = await store.save(vat0.snapshot);
+  await store.saveSnapshot('vat0', 1, vat0.snapshot);
 
-  const worker = await store.load(h, async snapshot => {
+  const worker = await store.loadSnapshot('vat0', async snapshot => {
     const xs = xsnap({ name: 'ses-resume', snapshot, os: osType(), spawn });
     await xs.isReady();
     return xs;
@@ -140,63 +126,65 @@ test('create SES worker, save, restore, resume', async t => {
  * They are also sensitive to the XS code itself.
  */
 test('XS + SES snapshots are long-term deterministic', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const h1 = await store.save(vat.snapshot);
+  const {
+    filePath: _path1,
+    compressedSize: _csize1,
+    ...info1
+  } = await store.saveSnapshot('vat0', 1, vat.snapshot);
+  t.snapshot(info1, 'initial snapshot');
 
-  t.is(
-    h1,
-    '55d61ad40214961f16eabf0a224215e53feda6c0191482f657226b4e221d82c3',
-    'initial snapshot',
-  );
-
-  const bootScript = await ld.asset(
-    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
-  );
+  const bootScript = await getBootScript();
   await vat.evaluate(bootScript);
 
-  const h2 = await store.save(vat.snapshot);
-  t.is(
-    h2,
-    '5ee30291cad7830309bcd3fda0d252e8dfb3a7a6a503c846cbf90461873082e9',
+  const {
+    filePath: _path2,
+    compressedSize: _csize2,
+    ...info2
+  } = await store.saveSnapshot('vat0', 2, vat.snapshot);
+  t.snapshot(
+    info2,
     'after SES boot - sensitive to SES-shim, XS, and supervisor',
   );
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
-  const h3 = await store.save(vat.snapshot);
-  t.is(
-    h3,
-    '400dbfad83f15e2555280d83e3c0f753740a5c9d182449432ed7f3a7b0ebd7b0',
+  const {
+    filePath: _path3,
+    compressedSize: _csize3,
+    ...info3
+  } = await store.saveSnapshot('vat0', 3, vat.snapshot);
+  t.snapshot(
+    info3,
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
   );
+
+  t.log(`\
+This test fails under maintenance of xsnap dependencies.
+If these changes are expected, run:
+  yarn test --update-snapshots test/test-xsnap-store.js
+Then commit the changes in .../snapshots/ path.
+`);
 });
 
-async function makeTestSnapshot(t) {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  // t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+async function makeTestSnapshot() {
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
-  const bootScript = await ld.asset(
-    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
-  );
+  const bootScript = await getBootScript();
   await vat.evaluate(bootScript);
   await vat.evaluate('globalThis.x = harden({a: 1})');
-  const hash = await store.save(vat.snapshot);
+  const info = await store.saveSnapshot('vat0', 1, vat.snapshot);
   await vat.close();
-  return hash;
+  return info;
 }
 
 test('XS + SES snapshots are short-term deterministic', async t => {
-  const h1 = await makeTestSnapshot(t);
-  const h2 = await makeTestSnapshot(t);
-  t.is(h1, h2);
+  const info1 = await makeTestSnapshot(t);
+  const info2 = await makeTestSnapshot(t);
+  t.deepEqual(info1, info2);
 });

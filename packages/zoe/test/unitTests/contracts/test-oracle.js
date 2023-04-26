@@ -1,24 +1,22 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
-import '../../../exported.js';
 import '../../../src/contracts/exported.js';
 
 /**
- * @typedef {Object} TestContext
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {(t: ExecutionContext) => Promise<OracleKit>} makePingOracle
  * @property {Amount} feeAmount
@@ -37,12 +35,12 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
-    const feePurse = E(zoeService).makeFeePurse();
-    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { zoeService: zoe } = makeZoeKit(admin);
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
+    vatAdminState.installBundle('b1-oracle', contractBundle);
 
     const link = makeIssuerKit('$LINK', AssetKind.NAT);
 
@@ -51,7 +49,8 @@ test.before(
     // of tests, we can also send the installation to someone
     // else, and they can use it to create a new contract instance
     // using the same code.
-    const installation = await E(zoe).install(contractBundle);
+    /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
+    const installation = await E(zoe).installBundleID('b1-oracle');
 
     const feeAmount = AmountMath.make(link.brand, 1000n);
     /**
@@ -65,10 +64,8 @@ test.before(
           let requiredFee;
           if (query.kind === 'Paid') {
             requiredFee = feeAmount;
-            assert(
-              AmountMath.isGTE(fee, requiredFee),
-              X`Minimum fee of ${feeAmount} not met; have ${fee}`,
-            );
+            AmountMath.isGTE(fee, requiredFee) ||
+              assert.fail(X`Minimum fee of ${feeAmount} not met; have ${fee}`);
           }
           const reply = { pong: query };
           return harden({ reply, requiredFee });
@@ -81,7 +78,6 @@ test.before(
         },
       });
 
-      /** @type {OracleStartFnResult} */
       const startResult = await E(zoe).startInstance(
         installation,
         { Fee: link.issuer },
@@ -130,19 +126,23 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   t.truthy(await E(invitationIssuer).isLive(invitation4));
 
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation1)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation1)).value[0].customDetails
+      .query,
     query1,
   );
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation2)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation2)).value[0].customDetails
+      .query,
     query2,
   );
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation3)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation3)).value[0].customDetails
+      .query,
     query3,
   );
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation4)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation4)).value[0].customDetails
+      .query,
     query4,
   );
 

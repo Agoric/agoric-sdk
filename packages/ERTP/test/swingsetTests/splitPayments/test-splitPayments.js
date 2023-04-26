@@ -1,4 +1,3 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
@@ -11,7 +10,9 @@ async function main(basedir, argv) {
   config.defaultManagerType = 'xs-worker';
   const controller = await buildVatController(config, argv);
   await controller.run();
-  return controller.dump();
+  const res = controller.dump();
+  await controller.shutdown();
+  return res;
 }
 
 const expectedTapFaucetLog = [

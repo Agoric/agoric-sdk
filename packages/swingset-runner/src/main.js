@@ -11,10 +11,11 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
-import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox.js';
-import engineGC from '@agoric/swingset-vat/src/engine-gc.js';
+import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.js';
+import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 
 import { initSwingStore, openSwingStore } from '@agoric/swing-store';
+import { makeSlogSender } from '@agoric/telemetry';
 
 import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
@@ -44,11 +45,10 @@ Command line:
 FLAGS may be:
   --init           - discard any existing saved state at startup
   --initonly       - initialize the swingset but exit without running it
-  --lmdb           - runs using LMDB as the data store (default)
+  --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --usexs          - run vats using the the XS engine
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
-  --dbsize SIZE    - set the LMDB size limit to SIZE megabytes (default 2GB)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
   --logtimes       - log block execution time stats while running
@@ -57,10 +57,12 @@ FLAGS may be:
   --logstats       - log kernel stats after each block
   --logall         - log kernel stats, block times, memory use, and disk space
   --logtag STR     - tag for stats log file (default "runner")
-  --slog FILE      - write swingset log to FILE
+  --slog FILE      - write swingset slog to FILE
+  --teleslog       - transmit a slog feed to the local otel collector
   --forcegc        - run garbage collector after each block
   --batchsize N    - set BATCHSIZE to N cranks (default 200)
   --verbose        - output verbose debugging messages as it runs
+  --activityhash   - print out the current activity hash after each crank
   --audit          - audit kernel promise reference counts after each crank
   --dump           - dump a kernel state store snapshot after each crank
   --dumpdir DIR    - place kernel state dumps in directory DIR (default ".")
@@ -151,7 +153,7 @@ export async function main() {
   const argv = process.argv.slice(2);
 
   let forceReset = false;
-  let dbMode = '--lmdb';
+  let dbMode = '--sqlite';
   let blockSize = 200;
   let batchSize = 200;
   let blockMode = false;
@@ -161,6 +163,7 @@ export async function main() {
   let logStats = false;
   let logTag = 'runner';
   let slogFile = null;
+  let teleslog = false;
   let forceGC = false;
   let verbose = false;
   let doDumps = false;
@@ -174,13 +177,16 @@ export async function main() {
   let configPath = null;
   let statsFile = null;
   let dbDir = null;
-  let dbSize = 0;
   let initOnly = false;
   let useXS = false;
+  let activityHash = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
+      case '--activityhash':
+        activityHash = true;
+        break;
       case '--init':
         forceReset = true;
         break;
@@ -215,6 +221,9 @@ export async function main() {
       case '--slog':
         slogFile = argv.shift();
         break;
+      case '--teleslog':
+        teleslog = true;
+        break;
       case '--config':
         configPath = argv.shift();
         break;
@@ -247,9 +256,6 @@ export async function main() {
       case '--dbdir':
         dbDir = argv.shift();
         break;
-      case '--dbsize':
-        dbSize = Number(argv.shift());
-        break;
       case '--raw':
         rawMode = true;
         doDumps = true;
@@ -267,7 +273,7 @@ export async function main() {
         doAudits = true;
         break;
       case '--memdb':
-      case '--lmdb':
+      case '--sqlite':
         dbMode = flag;
         break;
       case '--usexs':
@@ -305,12 +311,13 @@ export async function main() {
   }
 
   // Prettier demands that the conditional not be parenthesized.  Prettier is wrong.
-  // eslint-disable-next-line prettier/prettier
+  // prettier-ignore
   let basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   let config;
   if (configPath) {
+    // eslint-disable-next-line @jessie.js/no-nested-await
     config = await loadSwingsetConfigFile(configPath);
     if (config === null) {
       fail(`config file ${configPath} not found`);
@@ -333,8 +340,12 @@ export async function main() {
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
-  if (useXS) {
-    config.defaultManagerType = 'xs-worker';
+  if (!config.defaultManagerType) {
+    if (useXS) {
+      config.defaultManagerType = 'xs-worker';
+    } else {
+      config.defaultManagerType = 'local';
+    }
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
@@ -344,22 +355,16 @@ export async function main() {
   switch (dbMode) {
     case '--memdb':
       if (dbDir) {
-        fail('--dbdir only valid with --lmdb');
-      }
-      if (dbSize) {
-        fail('--dbsize only valid with --lmdb');
+        fail('--dbdir only valid with --sqlite');
       }
       swingStore = initSwingStore(null);
       break;
-    case '--lmdb': {
+    case '--sqlite': {
       if (!dbDir) {
         dbDir = basedir;
       }
       const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
       const dbOptions = {};
-      if (dbSize) {
-        dbOptions.mapSize = dbSize * 1024 * 1024;
-      }
       if (forceReset) {
         swingStore = initSwingStore(kernelStateDBDir, dbOptions);
       } else {
@@ -370,6 +375,7 @@ export async function main() {
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
+  const { kernelStorage, hostStorage } = swingStore;
   const runtimeOptions = {};
   if (verbose) {
     runtimeOptions.verbose = true;
@@ -386,27 +392,57 @@ export async function main() {
       }
     }
   }
+  let slogSender;
+  if (teleslog || slogFile) {
+    const slogEnv = {
+      ...process.env,
+      SLOGFILE: slogFile,
+    };
+    const slogOpts = {
+      stateDir: dbDir,
+      env: slogEnv,
+    };
+    if (slogFile) {
+      slogEnv.SLOGSENDER = '';
+    }
+    if (teleslog) {
+      const {
+        SLOGSENDER: envSlogSender,
+        TELEMETRY_SERVICE_NAME = 'agd-cosmos',
+        OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:4318',
+      } = process.env;
+      const SLOGSENDER = [
+        ...(envSlogSender ? envSlogSender.split(',') : []),
+        '@agoric/telemetry/src/otel-trace.js',
+      ].join(',');
+      slogEnv.SLOGSENDER = SLOGSENDER;
+      slogEnv.OTEL_EXPORTER_OTLP_ENDPOINT = OTEL_EXPORTER_OTLP_ENDPOINT;
+      slogOpts.serviceName = TELEMETRY_SERVICE_NAME;
+    }
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    slogSender = await makeSlogSender(slogOpts);
+    runtimeOptions.slogSender = slogSender;
+  }
   let bootstrapResult;
-  const hostStorage = {
-    kvStore: swingStore.kvStore,
-    streamStore: swingStore.streamStore,
-  };
   if (forceReset) {
+    // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       bootstrapArgv,
-      hostStorage,
+      kernelStorage,
       { verbose },
       runtimeOptions,
     );
-    swingStore.commit();
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await hostStorage.commit();
     if (initOnly) {
-      swingStore.close();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await hostStorage.close();
       return;
     }
   }
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     deviceEndowments,
     runtimeOptions,
   );
@@ -442,18 +478,26 @@ export async function main() {
   let crankNumber = 0;
   switch (command) {
     case 'run': {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await commandRun(0, blockMode);
       break;
     }
     case 'batch': {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await commandRun(batchSize, blockMode);
       break;
     }
     case 'step': {
       try {
+        // eslint-disable-next-line @jessie.js/no-nested-await
         const steps = await controller.step();
-        swingStore.commit();
-        swingStore.close();
+        if (activityHash) {
+          log(`activityHash: ${controller.getActivityhash()}`);
+        }
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await hostStorage.commit();
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await hostStorage.close();
         log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
       } catch (err) {
         kernelFailure(err);
@@ -466,13 +510,13 @@ export async function main() {
         replMode: repl.REPL_MODE_STRICT,
       });
       cli.on('exit', () => {
-        swingStore.close();
+        hostStorage.close();
       });
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
-        action: () => {
-          swingStore.commit();
+        action: async () => {
+          await hostStorage.commit();
           log('committed');
           cli.displayPrompt();
         },
@@ -518,6 +562,7 @@ export async function main() {
         help: 'Step the swingset one crank, without commit',
         action: async () => {
           try {
+            // eslint-disable-next-line @jessie.js/no-nested-await
             const steps = await controller.step();
             log(steps ? 'stepped one crank' : "didn't step, queue is empty");
             cli.displayPrompt();
@@ -534,31 +579,34 @@ export async function main() {
   if (statLogger) {
     statLogger.close();
   }
+  if (slogSender) {
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await slogSender.forceFlush();
+  }
   controller.shutdown();
 
   function getCrankNumber() {
-    return Number(swingStore.kvStore.get('crankNumber'));
+    return Number(kernelStorage.kvStore.get('crankNumber'));
   }
 
   function kernelStateDump() {
     const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
-    dumpStore(swingStore, dumpPath, rawMode);
+    dumpStore(kernelStorage, dumpPath, rawMode);
   }
 
   async function runBenchmark(rounds) {
     const cranksPre = getCrankNumber();
     const rawStatsPre = controller.getStats();
-    const args = { body: '[]', slots: [] };
     let totalSteps = 0;
     let totalDeltaT = 0n;
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
         launchIndirectly ? 'launcher' : 'bootstrap',
         'runBenchmarkRound',
-        args,
+        [],
         'ignore',
       );
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       const [steps, deltaT] = await runBatch(0, true);
       const status = controller.kpStatus(roundResult);
       if (status === 'unresolved') {
@@ -588,10 +636,15 @@ export async function main() {
     if (verbose) {
       log('==> running block');
     }
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-run-start',
+      blockHeight: blockNumber,
+      blockTime: blockStartTime,
+    });
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       try {
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         const stepped = await controller.step();
         if (stepped < 1) {
           break;
@@ -605,7 +658,10 @@ export async function main() {
         kernelStateDump();
       }
       if (doAudits) {
-        auditRefCounts(swingStore.kvStore);
+        auditRefCounts(kernelStorage.kvStore);
+      }
+      if (activityHash) {
+        log(`activityHash: ${controller.getActivityhash()}`);
       }
       if (verbose) {
         log(`===> end of crank ${crankNumber}`);
@@ -613,9 +669,19 @@ export async function main() {
     }
     const commitStartTime = readClock();
     if (doCommit) {
-      swingStore.commit();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await hostStorage.commit();
     }
     const blockEndTime = readClock();
+    controller.writeSlogObject({
+      type: 'kernel-stats',
+      stats: controller.getStats(),
+    });
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-run-finish',
+      blockHeight: blockNumber,
+      blockTime: blockEndTime,
+    });
     if (forceGC) {
       engineGC();
     }
@@ -636,13 +702,16 @@ export async function main() {
         ]);
       }
       if (logDisk) {
-        const diskUsage = dbMode === '--lmdb' ? swingStore.diskUsage() : 0;
+        const diskUsage = dbMode === '--sqlite' ? hostStorage.diskUsage() : 0;
         data.push(diskUsage);
       }
       if (logStats) {
         data = data.concat(Object.values(controller.getStats()));
       }
       statLogger.log(data);
+    }
+    if (activityHash) {
+      log(`activityHash: ${controller.getActivityhash()}`);
     }
     return actualSteps;
   }
@@ -653,7 +722,7 @@ export async function main() {
     let steps;
     const runAll = stepLimit === 0;
     do {
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       steps = await runBlock(blockSize, doCommit);
       totalSteps += steps;
       stepLimit -= steps;
@@ -671,12 +740,13 @@ export async function main() {
       kernelStateDump();
     }
     if (doAudits) {
-      auditRefCounts(swingStore.kvStore);
+      auditRefCounts(kernelStorage.kvStore);
     }
 
     let [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
-      swingStore.commit();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await hostStorage.commit();
     }
     const cranks = getCrankNumber();
     const rawStats = controller.getStats();
@@ -685,6 +755,7 @@ export async function main() {
       printMainStats(mainStats);
     }
     if (benchmarkRounds > 0) {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const [moreSteps, moreDeltaT] = await runBenchmark(benchmarkRounds);
       totalSteps += moreSteps;
       deltaT += moreDeltaT;
@@ -704,7 +775,7 @@ export async function main() {
         bootstrapResult = null;
       }
     }
-    swingStore.close();
+    await hostStorage.close();
     if (statsFile) {
       outputStats(statsFile, mainStats, benchmarkStats);
     }

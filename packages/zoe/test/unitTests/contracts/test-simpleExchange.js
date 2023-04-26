@@ -1,15 +1,14 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
-// noinspection ES6PreferShortImport
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -21,7 +20,7 @@ const dirname = path.dirname(filename);
 const simpleExchange = `${dirname}/../../../src/contracts/simpleExchange.js`;
 
 test('simpleExchange with valid offers', async t => {
-  t.plan(17);
+  t.plan(16);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -30,9 +29,14 @@ test('simpleExchange with valid offers', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, simpleExchange);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    simpleExchange,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
@@ -50,6 +54,7 @@ test('simpleExchange with valid offers', async t => {
   const aliceInvitation = E(publicFacet).makeInvitation();
 
   const aliceNotifier = publicFacet.getNotifier();
+  let aliceNotifierInitialCount;
   E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: beforeAliceOrders, updateCount: beforeAliceCount }) => {
@@ -61,12 +66,12 @@ test('simpleExchange with valid offers', async t => {
         },
         `Order book is empty`,
       );
-      t.is(beforeAliceCount, 3);
+      aliceNotifierInitialCount = beforeAliceCount;
     });
 
-  const {
-    value: initialOrders,
-  } = await publicFacet.getNotifier().getUpdateSince();
+  const { value: initialOrders } = await publicFacet
+    .getNotifier()
+    .getUpdateSince();
   t.deepEqual(
     initialOrders,
     { buys: [], sells: [] },
@@ -105,11 +110,14 @@ test('simpleExchange with valid offers', async t => {
         },
         `order notifier is updated with Alice's sell order`,
       );
-      t.is(afterAliceCount, 4);
+      t.is(BigInt(afterAliceCount), BigInt(aliceNotifierInitialCount) + 1n);
 
       return aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
         t.falsy(update.value.sells[0], 'accepted offer from Bob');
-        t.is(update.updateCount, 5);
+        t.is(
+          BigInt(update.updateCount),
+          BigInt(aliceNotifierInitialCount) + 2n,
+        );
       });
     });
 
@@ -117,7 +125,10 @@ test('simpleExchange with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 5: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   const bobIssuers = await E(zoe).getIssuers(instance);
 
@@ -125,11 +136,11 @@ test('simpleExchange with valid offers', async t => {
 
   assert(
     bobIssuers.Asset === moolaIssuer,
-    X`The Asset issuer should be the moola issuer`,
+    'The Asset issuer should be the moola issuer',
   );
   assert(
     bobIssuers.Price === simoleanIssuer,
-    X`The Price issuer should be the simolean issuer`,
+    'The Price issuer should be the simolean issuer',
   );
 
   // Bob creates a buy order, saying that he wants exactly 3 moola,
@@ -161,15 +172,11 @@ test('simpleExchange with valid offers', async t => {
   assertOfferResult(t, bobSeat, 'Order Added');
   assertOfferResult(t, aliceSeat, 'Order Added');
 
-  const {
-    Asset: bobMoolaPayout,
-    Price: bobSimoleanPayout,
-  } = await bobSeat.getPayouts();
+  const { Asset: bobMoolaPayout, Price: bobSimoleanPayout } =
+    await bobSeat.getPayouts();
 
-  const {
-    Asset: aliceMoolaPayout,
-    Price: aliceSimoleanPayout,
-  } = await aliceSeat.getPayouts();
+  const { Asset: aliceMoolaPayout, Price: aliceSimoleanPayout } =
+    await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
   t.truthy(
@@ -216,9 +223,14 @@ test('simpleExchange with multiple sell offers', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, simpleExchange);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    simpleExchange,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(30n));
@@ -255,7 +267,8 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds another sell order to the exchange
-  const aliceInvitation2 = await E(invitationIssuer).claim(
+  const aliceInvitation2 = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     await E(publicFacet).makeInvitation(),
   );
   const aliceSale2OrderProposal = harden({
@@ -273,7 +286,8 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds a buy order to the exchange
-  const aliceInvitation3 = await E(invitationIssuer).claim(
+  const aliceInvitation3 = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     await E(publicFacet).makeInvitation(),
   );
   const aliceBuyOrderProposal = harden({
@@ -319,9 +333,14 @@ test('simpleExchange with non-fungible assets', async t => {
     createRpgItem,
     zoe,
     brands,
+    vatAdminState,
   } = setupNonFungible();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, simpleExchange);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    simpleExchange,
+  );
 
   // Setup Alice
   const spell = createRpgItem('Spell of Binding', 'binding');
@@ -358,18 +377,21 @@ test('simpleExchange with non-fungible assets', async t => {
   // 5: Bob decides to join.
   const bobInstance = await E(zoe).getInstance(bobInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   t.is(bobInstallation, installation);
 
   const bobIssuers = await E(zoe).getIssuers(bobInstance);
   assert(
     bobIssuers.Asset === rpgIssuer,
-    X`The Asset issuer should be the RPG issuer`,
+    'The Asset issuer should be the RPG issuer',
   );
   assert(
     bobIssuers.Price === ccIssuer,
-    X`The Price issuer should be the CryptoCat issuer`,
+    'The Price issuer should be the CryptoCat issuer',
   );
 
   // Bob creates a buy order, saying that he wants the Spell of Binding,
@@ -392,15 +414,11 @@ test('simpleExchange with non-fungible assets', async t => {
   assertOfferResult(t, bobSeat, 'Order Added');
   assertOfferResult(t, aliceSeat, 'Order Added');
 
-  const {
-    Asset: bobRpgPayout,
-    Price: bobCcPayout,
-  } = await bobSeat.getPayouts();
+  const { Asset: bobRpgPayout, Price: bobCcPayout } =
+    await bobSeat.getPayouts();
 
-  const {
-    Asset: aliceRpgPayout,
-    Price: aliceCcPayout,
-  } = await aliceSeat.getPayouts();
+  const { Asset: aliceRpgPayout, Price: aliceCcPayout } =
+    await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
   t.truthy(
@@ -419,7 +437,9 @@ test('simpleExchange with non-fungible assets', async t => {
   // Assert that the correct payout were received.
   // Alice has an empty RPG purse, and the Cheshire Cat.
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
+  // @ts-expect-error get may fail
   const noCats = AmountMath.makeEmpty(brands.get('cc'), AssetKind.SET);
+  // @ts-expect-error get may fail
   const noRpgItems = AmountMath.makeEmpty(brands.get('rpg'), AssetKind.SET);
   await assertPayoutAmount(t, rpgIssuer, aliceRpgPayout, noRpgItems);
   const cheshireCatAmount = cryptoCats(harden(['Cheshire Cat']));

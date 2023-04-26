@@ -1,21 +1,30 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { makeStoredPublishKit } from '@agoric/notifier';
+import { makeScalarMapStore, makeExo, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/eventual-send';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import {
+  getOpenQuestions,
+  getPoserInvitation,
+  getQuestion,
+  startCounter,
+} from './electorateTools.js';
 import { QuorumRule } from './question.js';
 import {
-  startCounter,
-  getOpenQuestions,
-  getQuestion,
-  getPoserInvitation,
-} from './electorateTools.js';
+  QuestionHandleShape,
+  PositionShape,
+  ElectorateCreatorI,
+  ElectoratePublicI,
+} from './typeGuards.js';
 
 const { ceilDivide } = natSafeMath;
+
+/**
+ * @typedef { ElectorateCreatorFacet & {
+ *   getVoterInvitations: () => Promise<Invitation<{ voter: { castBallotFor(handle: any, choice?: any, ): void}}>>[]
+ * }} CommitteeElectorateCreatorFacet
+ */
 
 /**
  * Each Committee (an Electorate) represents a particular set of voters. The
@@ -26,29 +35,69 @@ const { ceilDivide } = natSafeMath;
  * for elections where the set of voters needs to be known, unless the contract
  * is used in a way that makes the distribution of voter facets visible.
  *
- *  @type {ContractStartFn}
+ * @param {ZCF<{
+ *   committeeName: string,
+ *   committeeSize: number,
+ * }>} zcf
+ * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
+ * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
-const start = zcf => {
-  /** @type {Store<Handle<'Question'>, QuestionRecord>} */
-  const allQuestions = makeStore('Question');
-  const { subscription, publication } = makeSubscriptionKit();
+const start = (zcf, privateArgs) => {
+  /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
+  const allQuestions = makeScalarMapStore('Question');
+  assert(privateArgs?.storageNode, 'Missing storageNode');
+  assert(privateArgs?.marshaller, 'Missing marshaller');
+  const questionNode = E(privateArgs.storageNode).makeChildNode(
+    'latestQuestion',
+  );
+  /** @type {StoredPublishKit<QuestionDetails>} */
+  const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
+    makeStoredPublishKit(questionNode, privateArgs.marshaller);
 
   const makeCommitteeVoterInvitation = index => {
     /** @type {OfferHandler} */
-    const offerHandler = Far('voter offerHandler', () => {
+    const offerHandler = seat => {
       const voterHandle = makeHandle('Voter');
-      return Far(`voter${index}`, {
-        // CRUCIAL: voteCap carries the ability to cast votes for any voter at
-        // any weight. It's wrapped here and given to the voter.
-        //
-        // Ensure that the voter can't get access to the unwrapped voteCap, and
-        // has no control over the voteHandle or weight
-        castBallotFor: (questionHandle, positions) => {
-          const { voteCap } = allQuestions.get(questionHandle);
-          return E(voteCap).submitVote(voterHandle, positions, 1n);
-        },
+      seat.exit();
+
+      const VoterI = M.interface('voter', {
+        castBallotFor: M.call(
+          QuestionHandleShape,
+          M.arrayOf(PositionShape),
+        ).returns(M.promise()),
       });
-    });
+      const InvitationMakerI = M.interface('invitationMaker', {
+        makeVoteInvitation: M.call(
+          M.arrayOf(PositionShape),
+          QuestionHandleShape,
+        ).returns(M.promise()),
+      });
+
+      // CRUCIAL: voteCap carries the ability to cast votes for any voter at
+      // any weight. It's wrapped here and given to the voter.
+      //
+      // Ensure that the voter can't get access to the unwrapped voteCap, and
+      // has no control over the voteHandle or weight
+      return harden({
+        voter: makeExo(`voter${index}`, VoterI, {
+          castBallotFor(questionHandle, positions) {
+            const { voteCap } = allQuestions.get(questionHandle);
+            return E(voteCap).submitVote(voterHandle, positions, 1n);
+          },
+        }),
+        invitationMakers: makeExo('invitation makers', InvitationMakerI, {
+          makeVoteInvitation(positions, questionHandle) {
+            const continuingVoteHandler = cSeat => {
+              cSeat.exit();
+              const { voteCap } = allQuestions.get(questionHandle);
+              return E(voteCap).submitVote(voterHandle, positions, 1n);
+            };
+
+            return zcf.makeInvitation(continuingVoteHandler, 'vote');
+          },
+        }),
+      });
+    };
 
     // https://github.com/Agoric/agoric-sdk/pull/3448/files#r704003612
     // This will produce unique descriptions because
@@ -63,47 +112,75 @@ const start = zcf => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  /** @type {AddQuestion} */
-  const addQuestion = async (voteCounter, questionSpec) => {
-    const quorumThreshold = quorumRule => {
-      switch (quorumRule) {
-        case QuorumRule.MAJORITY:
-          return ceilDivide(committeeSize, 2);
-        case QuorumRule.ALL:
-          return committeeSize;
-        case QuorumRule.NO_QUORUM:
-          return 0;
-        default:
-          throw Error(`${quorumRule} is not a recognized quorum rule`);
-      }
-    };
-
-    return startCounter(
-      zcf,
-      questionSpec,
-      quorumThreshold(questionSpec.quorumRule),
-      voteCounter,
-      allQuestions,
-      publication,
-    );
-  };
-
-  /** @type {CommitteeElectoratePublic} */
-  const publicFacet = Far('publicFacet', {
-    getQuestionSubscription: () => subscription,
-    getOpenQuestions: () => getOpenQuestions(allQuestions),
-    getName: () => committeeName,
-    getInstance: zcf.getInstance,
-    getQuestion: handleP => getQuestion(handleP, allQuestions),
+  const publicFacet = makeExo('Committee publicFacet', ElectoratePublicI, {
+    getQuestionSubscriber() {
+      return questionsSubscriber;
+    },
+    getOpenQuestions() {
+      return getOpenQuestions(allQuestions);
+    },
+    getName() {
+      return committeeName;
+    },
+    getInstance() {
+      return zcf.getInstance();
+    },
+    getQuestion(handleP) {
+      return getQuestion(handleP, allQuestions);
+    },
   });
 
-  /** @type {CommitteeElectorateCreatorFacet} */
-  const creatorFacet = Far('adminFacet', {
-    getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
-    addQuestion,
-    getVoterInvitations: () => invitations,
-    getQuestionSubscription: () => subscription,
-    getPublicFacet: () => publicFacet,
+  const creatorFacet = makeExo('Committee creatorFacet', ElectorateCreatorI, {
+    getPoserInvitation() {
+      return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
+        creatorFacet.addQuestion(voteCounter, questionSpec),
+      );
+    },
+    /** @type {AddQuestion} */
+    async addQuestion(voteCounter, questionSpec) {
+      const quorumThreshold = quorumRule => {
+        switch (quorumRule) {
+          case QuorumRule.MAJORITY:
+            return ceilDivide(committeeSize, 2);
+          case QuorumRule.ALL:
+            return committeeSize;
+          case QuorumRule.NO_QUORUM:
+            return 0;
+          default:
+            throw Error(`${quorumRule} is not a recognized quorum rule`);
+        }
+      };
+
+      const outcomeNode = E(privateArgs.storageNode).makeChildNode(
+        'latestOutcome',
+      );
+
+      /** @type {StoredPublishKit<OutcomeRecord>} */
+      const { publisher: outcomePublisher } = makeStoredPublishKit(
+        outcomeNode,
+        privateArgs.marshaller,
+      );
+
+      return startCounter(
+        zcf,
+        questionSpec,
+        quorumThreshold(questionSpec.quorumRule),
+        voteCounter,
+        allQuestions,
+        questionsPublisher,
+        outcomePublisher,
+      );
+    },
+    getVoterInvitations() {
+      return invitations;
+    },
+    getQuestionSubscriber() {
+      return questionsSubscriber;
+    },
+
+    getPublicFacet() {
+      return publicFacet;
+    },
   });
 
   return { publicFacet, creatorFacet };

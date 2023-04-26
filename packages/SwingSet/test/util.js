@@ -1,5 +1,14 @@
-import { assert } from '@agoric/assert';
-import { QCLASS } from '@agoric/marshal';
+/* global WeakRef, FinalizationRegistry */
+import anylogger from 'anylogger';
+
+import bundleSource from '@endo/bundle-source';
+
+import { initSwingStore } from '@agoric/swing-store';
+import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { extractMessage, ignore, vstr } from './vat-util.js';
+import { kser } from '../src/lib/kmarshal.js';
+
+export { extractMessage, ignore, vstr };
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');
@@ -27,28 +36,32 @@ export function checkKT(t, kernel, expected) {
 }
 
 export function dumpKT(kernel) {
-  const got = Array.from(
-    kernel.dump().kernelTable,
-  ).map(([kid, vatdev, vid]) => [vatdev, vid, kid]);
+  const got = Array.from(kernel.dump().kernelTable).map(
+    ([kid, vatdev, vid]) => [vatdev, vid, kid],
+  );
   got.sort(compareArraysOfStrings);
   for (const [vatdev, vid, kid] of got) {
     console.log(`${vatdev}:${vid} <-> ${kid}`);
   }
 }
 
-export function buildDispatch(onDispatchCallback = undefined) {
+/**
+ * @param {(d: unknown) => void} [onDispatchCallback ]
+ */
+export function buildDispatch(onDispatchCallback) {
   const log = [];
+
+  const GC = ['dropExports', 'retireExports', 'retireImports'];
 
   function dispatch(vatDeliverObject) {
     const [type, ...vdoargs] = vatDeliverObject;
     if (type === 'message') {
       const [target, msg] = vdoargs;
-      const { method, args, result } = msg;
+      const { methargs, result } = msg;
       const d = {
         type: 'deliver',
         targetSlot: target,
-        method,
-        args,
+        methargs,
         resultSlot: result,
       };
       log.push(d);
@@ -62,6 +75,11 @@ export function buildDispatch(onDispatchCallback = undefined) {
       if (onDispatchCallback) {
         onDispatchCallback(d);
       }
+    } else if (type === 'startVat') {
+      // ignore
+    } else if (GC.includes(type)) {
+      const [vrefs] = vdoargs;
+      log.push({ type, vrefs });
     } else {
       throw Error(`unknown vatDeliverObject type ${type}`);
     }
@@ -70,55 +88,16 @@ export function buildDispatch(onDispatchCallback = undefined) {
   return { log, dispatch };
 }
 
-export function ignore(p) {
-  p.then(
-    () => 0,
-    () => 0,
-  );
-}
-
-export function extractMessage(vatDeliverObject) {
-  const [type, ...vdoargs] = vatDeliverObject;
-  assert.equal(type, 'message', `util.js .extractMessage`);
-  const [facetID, msg] = vdoargs;
-  const { method, args, result } = msg;
-  return { facetID, method, args, result };
-}
-
-export function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function marshalBigIntReplacer(_, arg) {
-  if (typeof arg === 'bigint') {
-    return { [QCLASS]: 'bigint', digits: String(arg) };
-  }
-  return arg;
-}
-
-export function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args, marshalBigIntReplacer), slots);
-}
-
-export function capSlot(index) {
-  return { '@qclass': 'slot', iface: 'Alleged: export', index };
-}
-
-export function capdataOneSlot(slot) {
-  return capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [
-    slot,
-  ]);
-}
-
-export function capargsOneSlot(slot) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }],
-    [slot],
-  );
-}
-
-export function makeMessage(target, method, args, result = null) {
-  const msg = { method, args, result };
+/**
+ *
+ * @param {unknown} target
+ * @param {string} method
+ * @param {any[]} args
+ * @param {unknown} result
+ */
+export function makeMessage(target, method, args = [], result = null) {
+  const methargs = kser([method, args]);
+  const msg = { methargs, result };
   const vatDeliverObject = harden(['message', target, msg]);
   return vatDeliverObject;
 }
@@ -156,4 +135,40 @@ export function makeRetireExports(...vrefs) {
 export function makeRetireImports(...vrefs) {
   const vatDeliverObject = harden(['retireImports', vrefs]);
   return vatDeliverObject;
+}
+
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
+}
+
+export function makeKernelEndowments() {
+  return {
+    waitUntilQuiescent,
+    kernelStorage: initSwingStore().kernelStorage,
+    runEndOfCrank: () => {},
+    makeConsole,
+    WeakRef,
+    FinalizationRegistry,
+  };
+}
+
+export function bundleOpts(data, extraRuntimeOpts) {
+  const { kernel: kernelBundle, ...kernelBundles } = data.kernelBundles;
+  const initOpts = { kernelBundles };
+  const runtimeOpts = { kernelBundle, ...extraRuntimeOpts };
+  return { initOpts, runtimeOpts };
+}
+
+export async function restartVatAdminVat(controller) {
+  const vaBundle = await bundleSource(
+    new URL('../src/vats/vat-admin/vat-vat-admin.js', import.meta.url).pathname,
+  );
+  const bundleID = await controller.validateAndInstallBundle(vaBundle);
+  controller.upgradeStaticVat('vatAdmin', true, bundleID, {});
+  await controller.run();
 }

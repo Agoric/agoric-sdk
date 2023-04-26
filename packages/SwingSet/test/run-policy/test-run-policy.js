@@ -1,16 +1,17 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargsOneSlot, capSlot, capargs } from '../util.js';
 import {
   crankCounter,
   computronCounter,
   wallClockWaiter,
-} from '../../src/runPolicies.js';
+} from '../../src/lib/runPolicies.js';
+import { kslot, kser } from '../../src/lib/kmarshal.js';
 
 async function testCranks(t, mode) {
+  /** @type {SwingSetConfig} */
   const config = {
     defaultReapInterval: 'never',
     vats: {
@@ -19,45 +20,45 @@ async function testCranks(t, mode) {
       },
       right: {
         sourceSpec: new URL('vat-policy-right.js', import.meta.url).pathname,
-        creationOptions: {
-          enableVatstore: true,
-        },
       },
     },
     defaultManagerType: 'xs-worker',
   };
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('left');
   const rightKref = c.pinVatRoot('right');
   const rightID = c.vatNameToID('right');
-  t.teardown(c.shutdown);
+  await c.run();
 
   if (mode === 'messages' || mode === 'wallclock') {
     // The 'message' mode sends doMessage() to left, which makes left send
     // doMessage() to right, which makes right send doMessage() to left, etc.
     // This uses four cranks per cycle, since each doMessage() also has a
     // return promise that must be resolved.
-    const args = capargs([capSlot(0), 'disabled'], [rightKref]);
-    c.queueToVatRoot('left', 'doMessage', args);
+    c.queueToVatRoot(
+      'left',
+      'doMessage',
+      [kslot(rightKref), 'disabled'],
+      'ignore',
+    );
   } else if (mode === 'resolutions') {
     // This triggers a back-and-forth cycle of promise resolution, which uses
     // two cranks per cycle. The setup takes three cranks.
-    const args = capargsOneSlot(rightKref);
-    c.queueToVatRoot('left', 'startPromise', args);
+    c.queueToVatRoot('left', 'startPromise', [kslot(rightKref)], 'ignore');
   } else if (mode === 'computrons') {
     // Use doMessage() like above, but once every 10 cycles, do enough extra
     // CPU to trigger a computron-limiting policy.
-    const args = capargs([capSlot(0), 0], [rightKref]);
-    c.queueToVatRoot('left', 'doMessage', args);
+    c.queueToVatRoot('left', 'doMessage', [kslot(rightKref), 0], 'ignore');
   } else {
     throw Error(`unknown mode ${mode}`);
   }
 
-  let oldCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
+  let oldCrankNum = parseInt(kernelStorage.kvStore.get('crankNumber'), 10);
   function elapsedCranks() {
-    const newCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
+    const newCrankNum = parseInt(kernelStorage.kvStore.get('crankNumber'), 10);
     const elapsed = newCrankNum - oldCrankNum;
     oldCrankNum = newCrankNum;
     return elapsed;
@@ -66,17 +67,17 @@ async function testCranks(t, mode) {
   let more;
 
   if (mode === 'messages' || mode === 'resolutions') {
-    more = await c.run(crankCounter(7, 0));
+    more = await c.run(crankCounter(15, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
-    t.is(elapsedCranks(), 7);
+    t.is(elapsedCranks(), 15);
 
-    more = await c.run(crankCounter(1, 0));
+    more = await c.run(crankCounter(2, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
-    t.is(elapsedCranks(), 1);
+    t.is(elapsedCranks(), 2);
 
-    more = await c.run(crankCounter(8, 0));
+    more = await c.run(crankCounter(16, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
-    t.is(elapsedCranks(), 8);
+    t.is(elapsedCranks(), 16);
   } else if (mode === 'computrons') {
     // the doMessage cycle has four steps:
     // 1: normal delivery (122k-134k computrons)
@@ -90,10 +91,10 @@ async function testCranks(t, mode) {
     // setting a threshold of 4M, we should finish c.run() just after that
     // extra-compute step.
     await c.run(computronCounter(4_000_000n));
-    t.is(elapsedCranks(), 17);
-    const ckey = `${rightID}.vs.vvs.seqnum`;
-    const seqnum = parseInt(hostStorage.kvStore.get(ckey), 10);
-    t.is(seqnum, 5);
+    t.is(elapsedCranks(), 35);
+    const ckey = `${rightID}.vs.vc.1.sseqnum`;
+    const seqnum = JSON.parse(kernelStorage.kvStore.get(ckey));
+    t.deepEqual(seqnum, kser(5));
   } else if (mode === 'wallclock') {
     const startMS = Date.now();
     // On an idle system, this does about 120 cranks per second when run

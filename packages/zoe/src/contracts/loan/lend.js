@@ -1,7 +1,3 @@
-// @ts-check
-
-import '../../../exported.js';
-
 import { assertProposalShape } from '../../contractSupport/index.js';
 import { makeBorrowInvitation } from './borrow.js';
 

@@ -1,8 +1,8 @@
-// @ts-check
+// @ts-nocheck
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
@@ -24,8 +24,6 @@ test('burnInvitation', async t => {
   t.deepEqual(await burnInvitation(mockInvitationKit.issuer, invitation), {
     instanceHandle,
     invitationHandle,
-    fee: undefined,
-    expiry: undefined,
   });
 });
 
@@ -33,7 +31,7 @@ test('burnInvitation - not an invitation', async t => {
   const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
 
   await t.throwsAsync(
-    // @ts-ignore invalid payment for the purposes of testing
+    // @ts-expect-error invalid payment for the purposes of testing
     () => burnInvitation(mockInvitationKit.issuer, undefined),
     { message: 'A Zoe invitation is required, not "[undefined]"' },
   );
@@ -55,8 +53,6 @@ test('burnInvitation - invitation already used', async t => {
   t.deepEqual(await burnInvitation(mockInvitationKit.issuer, invitation), {
     instanceHandle,
     invitationHandle,
-    fee: undefined,
-    expiry: undefined,
   });
 
   await t.throwsAsync(

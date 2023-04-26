@@ -2,16 +2,15 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
-import { createSHA256 } from '../src/hasher.js';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSwingStore(null);
-  const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  const kk = makeKernelKeeper(kernelStorage, slog);
   const s = kk.kvStore;
-  kk.createStartingKernelState('local');
+  kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
   const vk = kk.provideVatKeeper(vatID);
 
@@ -93,10 +92,10 @@ test(`clist reachability`, async t => {
 
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSwingStore(null);
-  const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  const kk = makeKernelKeeper(kernelStorage, slog);
 
-  kk.createStartingKernelState('local');
+  kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();
   kk.addDynamicVatID(vatID1);
   const vk1 = kk.provideVatKeeper(vatID1);

@@ -1,10 +1,13 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+
+import '@endo/init/debug.js';
 
 import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
+
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 
 import { xsnap } from '../src/xsnap.js';
 
@@ -13,10 +16,13 @@ import { options, loader } from './message-tools.js';
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
 const ld = loader(import.meta.url, fs.promises.readFile);
 
+const getBootScript = () =>
+  getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
+
 /**
  * @param {string} name
  * @param {string} script to execute
- * @param {boolean=} savePrinted
+ * @param {boolean} [savePrinted]
  */
 async function bootWorker(name, script, savePrinted = false) {
   const opts = options(io);
@@ -44,16 +50,18 @@ async function bootWorker(name, script, savePrinted = false) {
 }
 
 /**
- * @param {string} name
- * @param {boolean=} savePrinted
+ * @param {*} t
+ * @param {boolean} [savePrinted]
  */
-async function bootSESWorker(name, savePrinted = false) {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
-  return bootWorker(name, bootScript, savePrinted);
+async function bootSESWorker(t, savePrinted = false) {
+  const bootScript = await getBootScript();
+  const ret = await bootWorker(t.title, bootScript, savePrinted);
+  t.teardown(ret.worker.close);
+  return ret;
 }
 
 test('bootstrap to SES lockdown', async t => {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const bootScript = await getBootScript();
   const opts = options(io);
   const name = 'SES lockdown worker';
   const vat = xsnap({ ...opts, name });
@@ -72,11 +80,10 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
 
   const script = await ld.asset('escapeCompartment.js');
   await vat.evaluate(script);
-  await vat.close();
 
   // Temporarily tolerate Endo behavior before and after
   // https://github.com/endojs/endo/pull/822
@@ -92,24 +99,24 @@ test('child compartment cannot access start powers', async t => {
 });
 
 test('SES deep stacks work on xsnap', async t => {
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
   await vat.evaluate(`
     const encoder = new TextEncoder();
     const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
 
     const err = Error('msg');
-    send('stack' in err);
+    send(err.stack);
     const msg = getStackString(err);
     send(msg);
   `);
-  const [stackInErr, msg] = opts.messages.map(s => JSON.parse(s));
-  t.assert(!stackInErr);
+  const [stack, msg] = opts.messages.map(s => JSON.parse(s));
+  t.is(stack, 'Error: msg'); // No frames
   t.is(typeof msg, 'string');
   t.assert(msg.length >= 1);
 });
 
 test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
   await vat.evaluate(`
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -129,7 +136,7 @@ test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
 
 test('console - symbols', async t => {
   // our console-shim.js handles Symbol specially
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
   t.deepEqual([], opts.messages);
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -139,7 +146,6 @@ test('console - symbols', async t => {
     console.log('console:', Symbol.for('registered'));
     send('ok');
   `);
-  await vat.close();
   t.deepEqual(['"ok"'], opts.messages);
 });
 
@@ -168,10 +174,11 @@ test('console - objects should include detail', async t => {
       new Promise(_r => null),
       new Error('oops!'),
     ];
-    const { details: X } = assert;
+
+    const { Fail } = assert;
 
     try {
-      assert.fail(X`assertion text ${richStructure}`);
+      Fail`assertion text ${richStructure}`;
     } catch (e) {
       console.error(e);
     }
@@ -180,7 +187,7 @@ test('console - objects should include detail', async t => {
   }
 
   // start a worker with the SES shim plus a global that captures args to print()
-  const { worker, opts } = await bootSESWorker(t.title, true);
+  const { worker, opts } = await bootSESWorker(t, true);
 
   await worker.evaluate(`(${runInWorker})()`);
 
@@ -202,24 +209,24 @@ test('console - objects should include detail', async t => {
         [
           'Error#1:',
           'assertion text',
-          '{"prop1":["elem1a","elem1b"],"prop2":["elem2a","elem2b"]}',
+          `{ prop1: [ 'elem1a', 'elem1b' ], prop2: [ 'elem2a', 'elem2b' ] }`,
         ],
         [
           'primitive:',
-          '"[undefined]"',
+          'undefined',
           'null',
           'true',
           'false',
           '123',
           'abc',
-          '"[123n]"',
-          '"[Symbol(x)]"',
+          '123n',
+          'Symbol(x)',
         ],
         [
           'compound:',
-          '{"prop1":["elem1a","elem1b"],"prop2":["elem2a","elem2b"]}',
-          '"[ArrayBuffer]"',
-          '"[Promise]"',
+          `{ prop1: [ 'elem1a', 'elem1b' ], prop2: [ 'elem2a', 'elem2b' ] }`,
+          `ArrayBuffer [ArrayBuffer] {}`,
+          'Promise [Promise] {}',
           '(Error#2)',
         ],
         ['Error#2:', 'oops!'],

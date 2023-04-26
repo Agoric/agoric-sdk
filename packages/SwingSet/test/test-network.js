@@ -1,8 +1,8 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far } from '@endo/far';
 
 import {
   parse,
@@ -48,7 +48,7 @@ const makeProtocolHandler = t => {
           .onAccept(lp, localAddr, remoteAddr, l)
           .then(ch => [localAddr, ch]);
       }
-      return [remoteAddr, makeEchoConnectionHandler()];
+      return { handler: makeEchoConnectionHandler() };
     },
     async onListen(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
@@ -88,7 +88,7 @@ test('handled protocol', async t => {
         const ack = await connection.send('ping');
         // log(ack);
         t.is(`${ack}`, 'ping', 'received pong');
-        connection.close();
+        void connection.close();
       },
       async onClose(_connection, reason) {
         t.is(reason, undefined, 'no close reason');
@@ -179,7 +179,7 @@ test('protocol connection listen', async t => {
         if (connectionHandler.onOpen) {
           await connectionHandler.onOpen(connection, localAddr, remoteAddr, c);
         }
-        connection.send('ping');
+        void connection.send('ping');
       },
     }),
   );

@@ -2,13 +2,16 @@
  * Kernel's keeper of persistent state for a device.
  */
 
-import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@endo/nat';
+import { assert, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
-import { insistDeviceID } from '../id.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { insistDeviceID } from '../../lib/id.js';
+import { enumeratePrefixedKeys } from './storageHelper.js';
 
-const FIRST_DEVICE_STATE_ID = 10n;
+const FIRST_DEVICE_IMPORTED_OBJECT_ID = 10n;
+const FIRST_DEVICE_IMPORTED_DEVICE_ID = 20n;
+const FIRST_DEVICE_IMPORTED_PROMISE_ID = 30n;
 
 /**
  * Establish a device's state.
@@ -19,7 +22,9 @@ const FIRST_DEVICE_STATE_ID = 10n;
  * TODO move into makeDeviceKeeper?
  */
 export function initializeDeviceState(kvStore, deviceID) {
-  kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_STATE_ID}`);
+  kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_IMPORTED_OBJECT_ID}`);
+  kvStore.set(`${deviceID}.d.nextID`, `${FIRST_DEVICE_IMPORTED_DEVICE_ID}`);
+  kvStore.set(`${deviceID}.p.nextID`, `${FIRST_DEVICE_IMPORTED_PROMISE_ID}`);
 }
 
 /**
@@ -27,15 +32,15 @@ export function initializeDeviceState(kvStore, deviceID) {
  *
  * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {string} deviceID  The device ID string of the device in question
- * @param { addKernelDeviceNode: (deviceID: string) => string,
+ * @param {{ addKernelDeviceNode: (deviceID: string) => string,
  *          incrementRefCount: (kernelSlot: string,
  *                              tag: string?,
  *                              options: {
- *                                isExport: boolean?,
- *                                onlyRecognizable: boolean?,
+ *                                isExport?: boolean,
+ *                                onlyRecognizable?: boolean,
  *                              },
- *                             ) => undefined),
- *         } tools
+ *                             ) => void,
+ *         }} tools
  * @returns {*} an object to hold and access the kernel's state for the given device
  */
 export function makeDeviceKeeper(kvStore, deviceID, tools) {
@@ -44,7 +49,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
 
   function setSourceAndOptions(source, options) {
     assert.typeof(source, 'object');
-    assert(source.bundle || source.bundleName);
+    assert(source && source.bundleID);
     assert.typeof(options, 'object');
     kvStore.set(`${deviceID}.source`, JSON.stringify(source));
     kvStore.set(`${deviceID}.options`, JSON.stringify(options));
@@ -68,7 +73,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
-    assert.typeof(devSlot, 'string', X`non-string devSlot: ${devSlot}`);
+    typeof devSlot === 'string' || Fail`non-string devSlot: ${devSlot}`;
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
     if (!kvStore.has(devKey)) {
@@ -77,13 +82,13 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
-          assert.fail(X`devices cannot export Objects`);
+          Fail`devices cannot export Objects`;
         } else if (type === 'promise') {
-          assert.fail(X`devices cannot export Promises`);
+          Fail`devices cannot export Promises`;
         } else if (type === 'device') {
           kernelSlot = addKernelDeviceNode(deviceID);
         } else {
-          assert.fail(X`unknown type ${type}`);
+          Fail`unknown type ${type}`;
         }
         // device nodes don't have refcounts: they're immortal
         const kernelKey = `${deviceID}.c.${kernelSlot}`;
@@ -92,7 +97,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
-        assert.fail(X`unknown devSlot ${devSlot}`);
+        Fail`unknown devSlot ${devSlot}`;
       }
     }
 
@@ -111,7 +116,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
-    assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
+    typeof kernelSlot === 'string' || Fail`non-string kernelSlot`;
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
     if (!kvStore.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
@@ -121,11 +126,13 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
         id = Nat(BigInt(kvStore.get(`${deviceID}.o.nextID`)));
         kvStore.set(`${deviceID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
-        throw new Error('devices cannot import other device nodes');
+        id = Nat(BigInt(kvStore.get(`${deviceID}.d.nextID`)));
+        kvStore.set(`${deviceID}.d.nextID`, `${id + 1n}`);
       } else if (type === 'promise') {
-        throw new Error('devices cannot import Promises');
+        id = Nat(BigInt(kvStore.get(`${deviceID}.p.nextID`)));
+        kvStore.set(`${deviceID}.p.nextID`, `${id + 1n}`);
       } else {
-        assert.fail(X`unknown type ${type}`);
+        throw Fail`unknown type ${type}`;
       }
       // Use isExport=false, since this is an import. Unlike
       // mapKernelSlotToVatSlot, we use onlyRecognizable=false, to increment
@@ -179,18 +186,15 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    * @returns {Array<[string, string, string]>} an array of this device's state information
    */
   function dumpState() {
+    /** @type {Array<[string, string, string]>} */
     const res = [];
     const prefix = `${deviceID}.c.`;
-    for (const k of kvStore.getKeys(prefix, `${deviceID}.c/`)) {
-      // The bounds passed to getKeys() here work because '/' is the next
-      // character in ASCII after '.'
-      if (k.startsWith(prefix)) {
-        const slot = k.slice(prefix.length);
-        if (!slot.startsWith('k')) {
-          const devSlot = slot;
-          const kernelSlot = kvStore.get(k);
-          res.push([kernelSlot, deviceID, devSlot]);
-        }
+    for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
+      const slot = k.slice(prefix.length);
+      if (!slot.startsWith('k')) {
+        const devSlot = slot;
+        const kernelSlot = kvStore.get(k);
+        res.push([kernelSlot, deviceID, devSlot]);
       }
     }
     return harden(res);

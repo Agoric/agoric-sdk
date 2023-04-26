@@ -1,21 +1,26 @@
 name: Test Golang
 
-# run CI on pushes to default, and on all PRs (even the ones that target other
-# branches)
-
 on:
-  push:
-    branches: [ master ] # $default-branch
   pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   gotest:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-golang
-      with:
-        go-version: 1.15
-    - name: go test
-      run: cd golang && go test ./...
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: 1.18
+      - name: go test
+        run: cd golang && go test -coverprofile=coverage.txt -covermode=atomic ./...
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,7 +1,8 @@
-import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { assert, Fail } from '@agoric/assert';
+import { keyEQ } from '@agoric/store';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
@@ -15,33 +16,34 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
   let secondPriceAuctionSeatP;
 
-  return Far('carolstuff', {
+  return Far('build', {
     doSecondPriceAuctionBid: async invitationP => {
-      const invitation = await E(invitationIssuer).claim(invitationP);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitationP,
+      );
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         invitation,
       );
-
+      installation === installations.secondPriceAuction ||
+        Fail`wrong installation`;
+      keyEQ(
+        harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
+        issuerKeywordRecord,
+      ) || Fail`issuerKeywordRecord were not as expected`;
       assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
+        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
       );
       assert(
-        sameStructure(
-          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
-        want: { Asset: moola(1) },
-        give: { Bid: simoleans(7) },
+        want: { Asset: moola(1n) },
+        give: { Bid: simoleans(7n) },
         exit: { onDemand: null },
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
@@ -66,7 +68,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
   });
 };
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     build: (...args) => build(makePrintLog(), ...args),
   });

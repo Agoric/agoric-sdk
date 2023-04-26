@@ -38,6 +38,7 @@ export function parse(ma) {
     if (m[2]) {
       acc.push([m[1], m[3]]);
     } else {
+      // @ts-expect-error '[string]' is not assignable to parameter of type '[string, string]'
       acc.push([m[1]]);
     }
   }

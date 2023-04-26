@@ -9,12 +9,12 @@ import (
 // AccountWrapper wraps/unwraps accounts.
 // The Wrap and Unwrap functions map accounts to accounts.
 type AccountWrapper struct {
-	Wrap   func(authtypes.AccountI) authtypes.AccountI
-	Unwrap func(authtypes.AccountI) authtypes.AccountI
+	Wrap   func(sdk.Context, authtypes.AccountI) authtypes.AccountI
+	Unwrap func(sdk.Context, authtypes.AccountI) authtypes.AccountI
 }
 
 // identWrap is an identity mapping of accounts.
-func identWrap(a authtypes.AccountI) authtypes.AccountI {
+func identWrap(_ sdk.Context, a authtypes.AccountI) authtypes.AccountI {
 	return a
 }
 
@@ -54,21 +54,21 @@ func (wak *WrappedAccountKeeper) GetAccount(ctx sdk.Context, address sdk.AccAddr
 	if acc == nil {
 		return nil
 	}
-	return wak.Wrap(acc)
+	return wak.Wrap(ctx, acc)
 }
 
 // IterateAccounts implements AccountKeeper.IterateAccounts().
 // It calls the embedded AccountKeeper but Wraps the retrieved accounts.
 func (wak *WrappedAccountKeeper) IterateAccounts(ctx sdk.Context, cb func(account authtypes.AccountI) (stop bool)) {
 	wak.AccountKeeper.IterateAccounts(ctx, func(acc authtypes.AccountI) (stop bool) {
-		return cb(wak.Wrap(acc))
+		return cb(wak.Wrap(ctx, acc))
 	})
 }
 
 // SetAccount implements AccountKeeper.SetAccount().
 // It Unwraps the account then calls the embedded AccountKeeper.
 func (wak *WrappedAccountKeeper) SetAccount(ctx sdk.Context, acc authtypes.AccountI) {
-	unwrappedAcc := wak.Unwrap(acc)
+	unwrappedAcc := wak.Unwrap(ctx, acc)
 	wak.AccountKeeper.SetAccount(ctx, unwrappedAcc)
 }
 

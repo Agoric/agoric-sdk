@@ -1,6 +1,8 @@
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
+/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+
+// XXX can be tighter than 'any'
 /**
  * @typedef {any} Completion
  * Any passable non-thenable. Often an explanatory string.
@@ -8,12 +10,13 @@
 
 /**
  * @callback ZCFMakeEmptySeatKit
- * @param {ExitRule=} exit
+ * @param {ExitRule} [exit]
  * @returns {ZcfSeatKit}
  */
 
 /**
- * @typedef {Object} ContractFacet
+ * @template {object} [CT=Record<string, unknown>] Contract's custom terms
+ * @typedef {object} ZCF Zoe Contract Facet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
  * Facet is an API object used by running contract instances to access
@@ -21,7 +24,8 @@
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  *
- * @property {Reallocate} reallocate - reallocate amounts among seats
+ * @property {Reallocate} reallocate - reallocate amounts among seats.
+ * Deprecated: Use atomicRearrange instead.
  * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
  * whether a keyword is valid and unique and could be added in
  * `saveIssuer`
@@ -31,18 +35,24 @@
  * @property {MakeInvitation} makeInvitation
  * @property {(completion: Completion) => void} shutdown
  * @property {ShutdownWithFailure} shutdownWithFailure
- * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
- * @property {() => Issuer} getInvitationIssuer
- * @property {() => Terms} getTerms
- * @property {(issuer: Issuer) => Brand} getBrandForIssuer
- * @property {(brand: Brand) => Issuer} getIssuerForBrand
+ * @property {() => Issuer<'set'>} getInvitationIssuer
+ * @property {() => StandardTerms & CT} getTerms
+ * @property {<K extends AssetKind>(issuer: Issuer<K>) => Brand<K>} getBrandForIssuer
+ * @property {<K extends AssetKind>(brand: Brand<K>) => Issuer<K>} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
- * @property {MakeZCFMint} makeZCFMint
+ * @property {<K extends AssetKind = 'nat'>(
+ *   keyword: Keyword,
+ *   assetKind?: K,
+ *   displayInfo?: AdditionalDisplayInfo,
+ *   options?: IssuerOptionsRecord
+ * ) => Promise<ZCFMint<K>>} makeZCFMint
  * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
- * @property {() => void} stopAcceptingOffers
+ * @property {() => Promise<void>} stopAcceptingOffers
+ * @property {(strings: Array<string>) => Promise<void>} setOfferFilter
+ * @property {() => Promise<Array<string>>} getOfferFilter
  * @property {() => Instance} getInstance
  */
 
@@ -79,11 +89,17 @@
  *
  * @param {ERef<Issuer>} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord>} Issuer is added and ready
+ * @returns {Promise<IssuerRecord<*>>} Issuer is added and ready
  */
 
 /**
- * @callback MakeInvitation
+ * @typedef {<Result>(
+ *   offerHandler: OfferHandler<Result>,
+ *   description: string,
+ *   customDetails?: object,
+ *   proposalShape?: Pattern,
+ * ) => Promise<Invitation<Awaited<Result>>>
+ * } MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
  * indicated by the `instance` in the details of the invitation. Zoe
@@ -91,29 +107,8 @@
  * of the invitation. The contract must provide a `description` for
  * the invitation and should include whatever information is necessary
  * for a potential buyer of the invitation to know what they are
- * getting in the `customProperties`. `customProperties` will be
+ * getting in the `customDetails`. `customDetails` will be
  * placed in the details of the invitation.
- *
- * @param {OfferHandler=} offerHandler - a contract specific function
- * that handles the offer, such as saving it or performing a trade
- * @param {string} description
- * @param {Object=} customProperties
- * @param {FeeChoice=} relativeFee - If present, Zoe will transform this into
- * an amount of RUN in the invitation details. This is the exact
- * amount Zoe will charge when this invitation is used to make an
- * offer.
- * @param {ExpiryChoice=} relativeExpiry - If present, Zoe will
- * transform this into a timestamp in the invitation details. After
- * that timestamp, the invitation is no longer accepted by Zoe.
- * @returns {Promise<Invitation>}
- */
-
-/**
- * @callback MakeZCFMint
- * @param {Keyword} keyword
- * @param {AssetKind=} assetKind
- * @param {AdditionalDisplayInfo=} displayInfo
- * @returns {Promise<ZCFMint>}
  */
 
 /**
@@ -121,7 +116,7 @@
  * @param {Keyword} keyword
  * @param {FeeMintAccess} allegedFeeMintAccess - an object that
  * purports to be the object that grants access to the fee mint
- * @returns {Promise<ZCFMint>
+ * @returns {Promise<ZCFMint<'nat'>>}
  */
 
 /**
@@ -133,26 +128,27 @@
  * never in production; i.e., it is only called if `testJigSetter`
  * was supplied.
  *
- * If no, \testFn\ is supplied, then an empty jig will be used.
+ * If no, `testFn` is supplied, then an empty jig will be used.
  * An additional `zcf` property set to the current ContractFacet
  * will be appended to the returned jig object (overriding any
  * provided by the `testFn`).
  *
  * @callback SetTestJig
- * @param {() => any} testFn
+ * @param {() => Record<string, unknown>} testFn
  * @returns {void}
  */
 
 /**
  * @callback ZCFMintMintGains
  * @param {AmountKeywordRecord} gains
- * @param {ZCFSeat=} zcfSeat
+ * @param {ZCFSeat} [zcfSeat]
  * @returns {ZCFSeat}
  */
 
 /**
- * @typedef {Object} ZCFMint
- * @property {() => IssuerRecord} getIssuerRecord
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} ZCFMint
+ * @property {() => IssuerRecord<K>} getIssuerRecord
  * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
@@ -182,7 +178,7 @@
  *
  * fail called with the reason for this failure, where reason is
  * normally an instanceof Error.
- * @param {Error} reason
+ * @param {unknown} reason
  * @returns {Error}
  */
 
@@ -191,25 +187,30 @@
  * The brand is used for filling in an empty amount if the `keyword`
  * is not present in the allocation
  * @param {Keyword} keyword
- * @param {Brand=} brand
- * @returns {Amount}
+ * @param {Brand} [brand]
+ * @returns {Amount<any>}
  */
 
 /**
- * @typedef {Object} ZCFSeat
- * @property {() => void} exit
+ * @typedef {object} ZCFSeat
+ * @property {(completion?: Completion) => void} exit
  * @property {ZCFSeatFail} fail
- * @property {() => Notifier<Allocation>} getNotifier
+ * @property {() => Promise<Subscriber<Allocation>>} getSubscriber
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
  * @property {() => Allocation} getStagedAllocation
+ * Deprecated: Use atomicRearrange instead
  * @property {() => boolean} hasStagedAllocation
+ * Deprecated: Use atomicRearrange instead
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
  * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
+ * Deprecated: Use atomicRearrange instead
  * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
+ * Deprecated: Use atomicRearrange instead
  * @property {() => void} clear
+ * Deprecated: Use atomicRearrange instead
  */
 
 /**
@@ -217,37 +218,46 @@
  */
 
 /**
- * @callback OfferHandler
- * @param {ZCFSeat} seat
- * @param {Object=} offerArgs
- * @returns {any}
+ * @template {object} OR Offer results
+ * @typedef {(seat: ZCFSeat, offerArgs?: object) => OR} HandleOffer
  */
 
 /**
+ * @template {object} [OR=unknown] Offer results
+ * @typedef {HandleOffer<OR> | { handle: HandleOffer<OR> }} OfferHandler
+ */
+
+/**
+ * API for a contract start function.
+ *
+ * CAVEAT: assumes synchronous
+ *
+ * @deprecated define function signature directly
+ *
+ * @template {object} [PF=any] Public facet
+ * @template {object} [CF=any] Creator facet
+ * @template {object} [CT=any] Custom terms
+ * @template {object} [PA=any] Private args
  * @callback ContractStartFn
- * @param {ContractFacet} zcf
- * @param {Object=} privateArgs
- * @returns {ContractStartFnResult}
+ * @param {ZCF<CT>} zcf
+ * @param {PA} privateArgs
+ * @returns {ContractStartFnResult<PF, CF>}
  */
 
 /**
- * @typedef {Object} ContractStartFnResult
- * @property {Object=} creatorFacet
- * @property {Promise<Invitation>=} creatorInvitation
- * @property {Object=} publicFacet
+ * @template PF Public facet
+ * @template CF Creator facet
+ * @typedef {object} ContractStartFnResult
+ * @property {PF} publicFacet
+ * @property {CF} creatorFacet
+ * @property {Promise<Invitation>} [creatorInvitation]
  */
 
 /**
- * @typedef {'low'} LOW_FEE
- * @typedef {'high'} HIGH_FEE
- * @typedef {'short'} SHORT_EXP
- * @typedef {'long'} LONG_EXP
+ * @template S
+ * @typedef {import('../zoeService/utils').ContractOf<S>} ContractOf
  */
 
 /**
- * @typedef {LONG_EXP | SHORT_EXP} ExpiryChoice
- */
-
-/**
- * @typedef {LOW_FEE | HIGH_FEE} FeeChoice
+ * @typedef {import('../zoeService/utils').AdminFacet} AdminFacet
  */

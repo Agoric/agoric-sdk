@@ -1,9 +1,8 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
+import { atomicRearrange } from '../../contractSupport/index.js';
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {ZCFSeat} sellSeat
  * @param {Array<ZCFSeat>} bidSeats
  */
@@ -13,6 +12,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
     want: { Ask: minBid },
   } = sellSeat.getProposal();
 
+  /** @type {Brand<'nat'>} */
   const bidBrand = minBid.brand;
   const emptyBid = AmountMath.makeEmpty(bidBrand);
 
@@ -24,6 +24,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   bidSeats.forEach(bidSeat => {
     if (!bidSeat.hasExited()) {
       activeBidsCount += 1n;
+      /** @type {Amount<'nat'>} */
       const bid = bidSeat.getAmountAllocated('Bid', bidBrand);
       // If the bid is greater than the highestBid, it's the new highestBid
       if (AmountMath.isGTE(bid, highestBid, bidBrand)) {
@@ -49,13 +50,19 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   }
 
   // Everyone else gets a refund so their values remain the same.
-  highestBidSeat.decrementBy(harden({ Bid: secondHighestBid }));
-  sellSeat.incrementBy(harden({ Ask: secondHighestBid }));
+  atomicRearrange(
+    zcf,
+    harden([
+      [
+        highestBidSeat,
+        sellSeat,
+        { Bid: secondHighestBid },
+        { Ask: secondHighestBid },
+      ],
+      [sellSeat, highestBidSeat, { Asset: assetAmount }],
+    ]),
+  );
 
-  sellSeat.decrementBy(harden({ Asset: assetAmount }));
-  highestBidSeat.incrementBy(harden({ Asset: assetAmount }));
-
-  zcf.reallocate(sellSeat, highestBidSeat);
   sellSeat.exit();
   bidSeats.forEach(bidSeat => {
     if (!bidSeat.hasExited()) {

@@ -1,13 +1,13 @@
-- name: "Create exported-genesis.json"
+- name: 'Create exported-genesis.json'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   register: exported
-  shell: "{{ service }} export > /home/{{ service }}/exported-genesis.json 2>&1"
+  shell: '{{ service }} export > /home/{{ service }}/exported-genesis.json 2>&1'
   failed_when: False
 
 - name: "Fetch {{ exported | default('exported') }}/*/exported-genesis.json"
   fetch:
     dest: "{{ exported | default('exported') }}/{{ inventory_hostname }}/"
     flat: yes
-    src: "/home/{{ service }}/exported-genesis.json"
+    src: '/home/{{ service }}/exported-genesis.json'
   when: exported.rc == 0

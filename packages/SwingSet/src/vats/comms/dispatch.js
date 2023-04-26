@@ -1,9 +1,10 @@
-import { assert, details as X } from '@agoric/assert';
-import { makeVatSlot } from '../../parseVatSlots.js';
-import { insistMessage } from '../../message.js';
+import { assert, Fail } from '@agoric/assert';
+import { makeVatSlot } from '../../lib/parseVatSlots.js';
+import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';
 import { deliverToController } from './controller.js';
-import { insistCapData } from '../../capdata.js';
+import { insistCapData } from '../../lib/capdata.js';
+import { kser, kunser } from '../../lib/kmarshal.js';
 
 import { makeCListKit } from './clist.js';
 import { makeDeliveryKit } from './delivery.js';
@@ -11,29 +12,20 @@ import { makeGCKit } from './gc-comms.js';
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(
-  syscall,
-  _state,
-  _helpers,
-  _vatPowers,
-  vatParameters = {},
-) {
-  const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
-  const state = makeState(syscall, identifierBase);
+export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
+  const state = makeState(syscall);
   const clistKit = makeCListKit(state, syscall);
 
   function transmit(remoteID, msg) {
     const remote = state.getRemote(remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
     // encoded as JSON
+    const sendExplicitSeqNums = state.getSendExplicitSeqNums();
     const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum() : '';
     remote.advanceSendSeqNum();
     const ackSeqNum = remote.lastReceivedSeqNum();
-    const args = harden({
-      body: JSON.stringify([`${seqNum}:${ackSeqNum}:${msg}`]),
-      slots: [],
-    });
-    syscall.send(remote.transmitterID(), 'transmit', args); // sendOnly
+    const methargs = kser(['transmit', [`${seqNum}:${ackSeqNum}:${msg}`]]);
+    syscall.send(remote.transmitterID(), methargs); // sendOnly
   }
 
   const gcKit = makeGCKit(state, syscall, transmit);
@@ -51,24 +43,23 @@ export function buildCommsDispatch(
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function maybeInitializeState() {
-    state.maybeInitialize(controller);
+  function doStartVat(vatParametersCapData) {
+    insistCapData(vatParametersCapData);
+    assert(vatParametersCapData.slots.length === 0, 'comms got slots');
+    const vatParameters = kunser(vatParametersCapData) || {};
+    const { identifierBase = 0, sendExplicitSeqNums } = vatParameters;
+    state.initialize(controller, identifierBase);
+    if (sendExplicitSeqNums !== undefined) {
+      state.setSendExplicitSeqNums(sendExplicitSeqNums);
+    }
   }
 
-  function doDeliver(target, method, args, result) {
-    maybeInitializeState();
+  function doDeliver(target, methargs, result) {
     // console.debug(`comms.deliver ${target} r=${result}`);
-    insistCapData(args);
+    insistCapData(methargs);
 
     if (target === controller) {
-      return deliverToController(
-        state,
-        clistKit,
-        method,
-        args,
-        result,
-        syscall,
-      );
+      return deliverToController(state, clistKit, methargs, result, syscall);
     }
 
     const remoteID = state.getRemoteReceiver(target);
@@ -95,14 +86,14 @@ export function buildCommsDispatch(
       // when it's not.  All of this should be fixed soon as practicable.
       // DANGER WILL ROBINSON CASE NIGHTMARE GREEN ELDRITCH HORRORS OH THE HUMANITY
       try {
-        assert(method === 'receive', X`unexpected method ${method}`);
+        const [method, [message]] = kunser(methargs);
+        method === 'receive' || Fail`unexpected method ${method}`;
         // the vat-tp integrity layer is a regular vat, so when they send the
         // received message to us, it will be embedded in a JSON array
-        const message = JSON.parse(args.body)[0];
         return messageFromRemote(remoteID, message, result);
       } catch (err) {
         console.log('WARNING: delivery from remote triggered error:', err);
-        console.log(`Error happened while processing "${args.body}"`);
+        console.log(`Error happened while processing "${methargs.body}"`);
         return undefined;
       }
     }
@@ -129,13 +120,12 @@ export function buildCommsDispatch(
     // crank).  The resulting abrupt comms vat termination should serve as a
     // diagnostic signal that we have a bug that must be corrected.
 
-    args.slots.forEach(s =>
-      assert(
-        !state.hasMetaObject(s),
-        X`comms meta-object ${s} not allowed in message args`,
-      ),
+    methargs.slots.forEach(
+      s =>
+        !state.hasMetaObject(s) ||
+        Fail`comms meta-object ${s} not allowed in message args`,
     );
-    return sendFromKernel(target, method, args, result);
+    return sendFromKernel(target, methargs, result);
   }
 
   function filterMetaObjects(vrefs) {
@@ -155,10 +145,15 @@ export function buildCommsDispatch(
   function doDispatch(vatDeliveryObject) {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
+      case 'startVat': {
+        const [vatParameters] = args;
+        doStartVat(vatParameters);
+        break;
+      }
       case 'message': {
         const [targetSlot, msg] = args;
         insistMessage(msg);
-        doDeliver(targetSlot, msg.method, msg.args, msg.result);
+        doDeliver(targetSlot, msg.methargs, msg.result);
         break;
       }
       case 'notify': {
@@ -184,8 +179,16 @@ export function buildCommsDispatch(
         gcFromKernel({ retireImports: filterMetaObjects(vrefs) });
         break;
       }
+      case 'bringOutYourDead': {
+        // nothing to see here, move along
+        break;
+      }
+      case 'stopVat': {
+        // should never be called, but no-op implemented for completeness
+        break;
+      }
       default:
-        assert.fail(X`unknown delivery type ${type}`);
+        Fail`unknown delivery type ${type}`;
     }
     processGC();
   }

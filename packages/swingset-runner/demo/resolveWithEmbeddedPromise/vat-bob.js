@@ -1,4 +1,4 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const log = console.log;
 
@@ -10,7 +10,7 @@ function makePR() {
   return [p, r];
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let r1;
   let r2;
   return Far('root', {

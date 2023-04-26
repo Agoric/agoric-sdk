@@ -1,11 +1,11 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   const target1 = Far('target1', {
     one(_p) {
       log(`target1 in one`);

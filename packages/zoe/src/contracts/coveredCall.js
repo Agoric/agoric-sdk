@@ -1,11 +1,9 @@
-// @ts-check
-
-import { assert } from '@agoric/assert';
-import '../../exported.js';
-
+import { M, mustMatch } from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { assertProposalShape, swapExact } from '../contractSupport/index.js';
+import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
+
+const { Fail, quote: q } = assert;
 
 /**
  * A call option is the right (but not the obligation) to buy digital
@@ -27,8 +25,10 @@ import { isAfterDeadlineExitRule } from '../typeGuards.js';
  * different brands can be escrowed under different keywords. The
  * proposal must have an exit record with the key "afterDeadline":
  * {
- *    give: { ... }, want: { ... }, exit: {afterDeadline: { deadline:
- *    time, timer: myTimer }
+ *    give: { ... },
+ *    want: { ... },
+ *    exit: {
+ *      afterDeadline: { deadline: time, timer: myTimer }
  *    },
  * }
  *
@@ -63,19 +63,24 @@ import { isAfterDeadlineExitRule } from '../typeGuards.js';
  * specified in the invitation value, and want the underlying assets
  * exactly.
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   const sellSeatExpiredMsg = `The covered call option is expired.`;
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    assertProposalShape(sellSeat, { exit: { afterDeadline: null } });
-    const sellSeatExitRule = sellSeat.getProposal().exit;
-    assert(
-      isAfterDeadlineExitRule(sellSeatExitRule),
-      `the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
+    mustMatch(
+      sellSeat.getProposal(),
+      M.splitRecord({ exit: { afterDeadline: M.any() } }),
+      'exit afterDeadline',
     );
+    const sellSeatExitRule = sellSeat.getProposal().exit;
+    if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
+      throw Fail`the seller must have an afterDeadline exitRule, but instead had ${q(
+        sellSeatExitRule,
+      )}`;
+    }
 
     const exerciseOption = buySeat => {
       assert(!sellSeat.hasExited(), sellSeatExpiredMsg);
@@ -91,13 +96,13 @@ const start = zcf => {
       return `The option was exercised. Please collect the assets in your payout.`;
     };
 
-    const customProps = harden({
+    const customDetails = harden({
       expirationDate: sellSeatExitRule.afterDeadline.deadline,
       timeAuthority: sellSeatExitRule.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });
-    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
+    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customDetails);
   };
 
   const creatorInvitation = zcf.makeInvitation(makeOption, 'makeCallOption');

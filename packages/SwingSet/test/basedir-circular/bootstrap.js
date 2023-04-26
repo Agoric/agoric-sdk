@@ -1,7 +1,6 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, E } from '@endo/far';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     bootstrap(vats) {
       const pa = E(vats.bob).genPromise1();

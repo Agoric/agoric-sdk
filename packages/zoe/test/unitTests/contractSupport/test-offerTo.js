@@ -1,20 +1,15 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import { E } from '@endo/eventual-send';
+import bundleSource from '@endo/bundle-source';
 
 import { setup } from '../setupBasicMints.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import {
-  offerTo,
-  assertProposalShape,
-  swapExact,
-} from '../../../src/contractSupport/zoeHelpers.js';
+import { offerTo, swapExact } from '../../../src/contractSupport/zoeHelpers.js';
 import { makeOffer } from '../makeOffer.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -27,14 +22,14 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   const setJig = jig => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
-  const { zoeService } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const fakeVatAdmin = makeFakeVatAdmin(setJig);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin.admin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
+  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  const installation = await E(zoe).installBundleID('b1-contract');
 
   // Create TWO instances of the zcfTesterContract which have
   // different keywords
@@ -66,14 +61,8 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
 };
 
 test(`offerTo - basic usage`, async t => {
-  const {
-    moola,
-    moolaIssuer,
-    moolaMint,
-    bucksMint,
-    bucks,
-    bucksIssuer,
-  } = setup();
+  const { moola, moolaIssuer, moolaMint, bucksMint, bucks, bucksIssuer } =
+    setup();
   const { zoe, instanceToZCF, instanceA, instanceB } = await setupContract(
     moolaIssuer,
     bucksIssuer,
@@ -109,25 +98,28 @@ test(`offerTo - basic usage`, async t => {
 
   const successMsg = 'offer to contractB successful';
 
-  const offerHandler = seat => {
-    assertProposalShape(seat, {
-      give: {
-        TokenM: null,
-      },
-      want: {
-        TokenL: null,
-      },
-      exit: {
-        onDemand: null,
-      },
-    });
+  const proposalBShape = harden({
+    give: {
+      TokenM: bucksIssuer.getBrand().getAmountShape(),
+    },
+    want: {
+      TokenL: moolaIssuer.getBrand().getAmountShape(),
+    },
+    // multiples: 1n,
+    exit: {
+      onDemand: null,
+    },
+  });
 
+  const offerHandler = seat => {
     swapExact(zcfB, contractBCollateralSeat, seat);
     return successMsg;
   };
   const contractBInvitation = zcfB.makeInvitation(
     offerHandler,
     'contractB invitation',
+    undefined,
+    proposalBShape,
   );
 
   // Map the keywords in contract A to the keywords in contract B
@@ -229,7 +221,7 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
       ),
     {
       message:
-        'Offer safety was violated by the proposed allocation: {"TokenK":{"brand":"[Alleged: bucks brand]","value":"[0n]"},"TokenJ":{"brand":"[Alleged: moola brand]","value":"[0n]"}}. Proposal was {"want":{"TokenJ":{"brand":"[Alleged: moola brand]","value":"[3n]"}},"give":{"TokenK":{"brand":"[Alleged: bucks brand]","value":"[5n]"}},"exit":{"onDemand":null}}',
+        /Offer safety was violated by the proposed allocation: {"Token[JK]":{"brand":"\[Alleged: .* brand]","value":"\[0n]"},"Token[KJ]":{"brand":"\[Alleged: .* brand]","value":"\[0n]"}}. Proposal was/,
     },
   );
 
@@ -238,4 +230,71 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
     TokenK: bucks(5n),
   });
   t.falsy(fromSeatContractA.hasExited());
+});
+
+test(`throws handler errors during getOfferResult`, async t => {
+  const { moola, moolaIssuer, bucksMint, bucks, bucksIssuer } = setup();
+  const { zoe, instanceToZCF, instanceA, instanceB } = await setupContract(
+    moolaIssuer,
+    bucksIssuer,
+  );
+
+  const zcfA = instanceToZCF.get(instanceA);
+  const zcfB = instanceToZCF.get(instanceB);
+
+  // Make an offer from contract A to contract B from a seat in
+  // contract A, and deposit the winnings in a different seat on contract A.
+
+  // Create a fromSeat on contract instance A that starts with 5 bucks
+  // under keyword TokenK
+
+  const { zcfSeat: fromSeatContractA } = await makeOffer(
+    zoe,
+    zcfA,
+    harden({ want: harden({}), give: { TokenK: bucks(5n) } }),
+    harden({ TokenK: bucksMint.mintPayment(bucks(5n)) }),
+  );
+
+  const contractBInvitation = zcfB.makeInvitation(
+    () => assert.fail('🚨'),
+    'contractB invitation',
+  );
+
+  // Map the keywords in contract A to the keywords in contract B
+  const keywordMapping = harden({
+    TokenJ: 'TokenL',
+    TokenK: 'TokenM',
+  });
+
+  const proposal = harden({
+    give: {
+      TokenM: bucks(5n),
+    },
+    want: {
+      TokenL: moola(10n),
+    },
+  });
+
+  const { zcfSeat: toSeatContractA } = zcfA.makeEmptySeatKit();
+
+  // doesn't call the broken handler yet
+  const { userSeatPromise: contractBUserSeat, deposited } = await offerTo(
+    zcfA,
+    contractBInvitation,
+    keywordMapping,
+    proposal,
+    fromSeatContractA,
+    toSeatContractA,
+  );
+
+  // doesn't call the broken handler yet
+  await deposited;
+  await contractBUserSeat;
+
+  // only getOfferResult calls the broken handler
+  try {
+    await E(contractBUserSeat).getOfferResult();
+  } catch (e) {
+    t.is(e.message, '🚨');
+  }
 });

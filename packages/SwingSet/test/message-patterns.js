@@ -3,11 +3,10 @@
 // I turned off dot-notation so eslint won't rewrite the grep-preserving
 // test.stuff patterns.
 
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { quote as q } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
-import { ignore } from './util.js';
+import { Far, E } from '@endo/far';
+import { ignore } from './vat-util.js';
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.
@@ -44,8 +43,8 @@ import { ignore } from './util.js';
 function NonError(message) {
   // marshal emits a warning (with stack trace) to the console each time it
   // serializes an Error, which makes it look like tests are failing. We have
-  // tests which test 'raise' and Promise rejection to make sure they are
-  // signalled correctly. We previously used 'raise Error()' for this, but
+  // tests which test 'throw' and Promise rejection to make sure they are
+  // signalled correctly. We previously used 'throw Error()' for this, but
   // that provokes the scary-looking warning. Since we aren't trying to
   // exercise *Error* serialization here, merely Promise rejection, we can
   // use a non-Error instead, which avoids the warning.
@@ -308,7 +307,6 @@ export function buildPatterns(log) {
       return b.bert;
     };
   }
-  // TODO https://github.com/Agoric/agoric-sdk/issues/1631
   out.a51 = ['a51 done, got [object Alleged: bert], match true true'];
   test('a51');
 
@@ -488,6 +486,50 @@ export function buildPatterns(log) {
   out.a65 = ['a65 rejected with {"message":"nope"}'];
   test('a65');
 
+  // p=bob!x(p) // early reference to result promise, issue #5189
+  {
+    objA.a66 = async () => {
+      // E() hardens the arguments before returning the promise, so it
+      // prevents the following direct way to build a message that
+      // references its own result:
+      //
+      // const args = { a: 1 };
+      // const p = E(b.bob).b66_1(args);
+      // args.p = p;
+      //
+      // We can't provoke that from userspace, so we exercise a subset
+      // of the concerns: a result promise is first seen in arguments
+      // (of a different message).
+
+      const p1 = E(b.bob).b66_wait(); // doesn't resolve for a while
+      const p2 = E(p1).msg2(); // so msg2 is stalled waiting for p1
+      const p3 = E(b.bob).b66_msg1(p2); // and msg1 arrives first
+      await E(b.bob).b66_flush();
+      E(b.bob).b66_resolve();
+      await p1;
+      await p2;
+      await p3;
+    };
+    const pk = makePromiseKit();
+    objB.b66_wait = () => pk.promise;
+    objB.b66_msg1 = p2 => {
+      log('one');
+      p2.then(() => log('p2 resolved'));
+    };
+    objB.b66_flush = () => 0;
+    const target = Far('target', {
+      msg2: () => {
+        log('two');
+        return 'res';
+      },
+    });
+    objB.b66_resolve = () => {
+      pk.resolve(target);
+    };
+  }
+  out.a66 = ['one', 'two', 'p2 resolved'];
+  test('a66');
+
   // bob!pipe1()!pipe2()!pipe3() // pipelining
   {
     objA.a70 = async () => {
@@ -514,7 +556,7 @@ export function buildPatterns(log) {
       return pipe2;
     };
   }
-  out.a70 = ['pipe1', 'pipe2', 'pipe3', 'p1.then', 'p2.then', 'p3.then'];
+  out.a70 = ['pipe1', 'p1.then', 'pipe2', 'p2.then', 'pipe3', 'p3.then'];
   outPipelined.a70 = [
     'pipe1',
     'pipe2',
@@ -750,7 +792,7 @@ export function buildPatterns(log) {
       // now send two messages in quick succession, so commsA will send the
       // second before hearing about the resolution of billP. The
       // cross-machine queue will ensure that commsB processes the first
-      // (resolving billP) before processing the second (targetting billP).
+      // (resolving billP) before processing the second (targeting billP).
       E(b.bob).b82_two(); // tell bob to resolve it
       E(billP).log_bill('three'); // 1: promise second appears as target
     };

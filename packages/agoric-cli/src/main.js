@@ -1,22 +1,31 @@
+/* eslint-disable @jessie.js/no-nested-await */
 /* global process */
 import { Command } from 'commander';
 import path from 'path';
+import url from 'url';
 import { assert, details as X } from '@agoric/assert';
+import {
+  DEFAULT_KEEP_POLLING_SECONDS,
+  DEFAULT_JITTER_SECONDS,
+} from '@agoric/casting';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
+import publishMain from './main-publish.js';
 import initMain from './init.js';
 import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
+import followMain from './follow.js';
 import walletMain from './open.js';
+import { makeWalletCommand } from './commands/wallet.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
-const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
+const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
 const DEFAULT_DAPP_BRANCH = undefined;
 
 const STAMP = '_agstate';
 
-const filename = new URL(import.meta.url).pathname;
+const filename = url.fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
 const main = async (progname, rawArgs, powers) => {
@@ -43,20 +52,14 @@ const main = async (progname, rawArgs, powers) => {
     );
   }
 
-  program.storeOptionsAsProperties(false);
-
-  const pj = await fs.readFile(`${dirname}/../package.json`);
+  const pj = await fs.readFile(path.join(dirname, '..', 'package.json'));
   const pkg = JSON.parse(pj);
   program.name(pkg.name).version(pkg.version);
 
   program
     .option('--sdk', 'use the Agoric SDK containing this program')
     .option('--no-sdk', 'do not use the Agoric SDK containing this program')
-    .option(
-      '--docker-tag <tag>',
-      'image tag to use for Docker containers',
-      'latest',
-    )
+    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
     .option(
       '-v, --verbose',
       'verbosity that can be increased',
@@ -68,10 +71,23 @@ const main = async (progname, rawArgs, powers) => {
   program
     .command('cosmos <command...>')
     .description('client for an Agoric Cosmos chain')
-    .action(async (command, cmd) => {
+    .action(async (command, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
+
+  const ibcSetup = path.join(
+    dirname,
+    '..',
+    'node_modules',
+    '.bin',
+    'ibc-setup',
+  );
+  program.command(
+    'ibc-setup <command...>',
+    'set up Inter Blockchain Communication',
+    { executableFile: ibcSetup },
+  );
 
   program
     .command('open')
@@ -94,7 +110,7 @@ const main = async (progname, rawArgs, powers) => {
         return value;
       },
     )
-    .action(async cmd => {
+    .action(async (_options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(walletMain, ['wallet'], opts);
     });
@@ -117,7 +133,7 @@ const main = async (progname, rawArgs, powers) => {
       'use this branch instead of the repository HEAD',
       DEFAULT_DAPP_BRANCH,
     )
-    .action(async (project, cmd) => {
+    .action(async (project, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(initMain, ['init', project], opts);
     });
@@ -150,57 +166,199 @@ const main = async (progname, rawArgs, powers) => {
       'set the config.toml p2p.unconditional_peer_ids value',
       '',
     )
-    .action(async (prog, configDir, cmd) => {
+    .action(async (prog, configDir, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
 
+  const ibcRelayer = path.join(
+    dirname,
+    '..',
+    'node_modules',
+    '.bin',
+    'ibc-relayer',
+  );
+  program.command(
+    'ibc-relayer',
+    'run an Inter Blockchain Communications relayer',
+    {
+      executableFile: ibcRelayer,
+    },
+  );
+
   program
     .command('install [force-sdk-version]')
     .description('install Dapp dependencies')
-    .action(async (forceSdkVersion, cmd) => {
+    .action(async (forceSdkVersion, _options, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(installMain, ['install', forceSdkVersion], opts);
     });
 
   program
-    .command('deploy [script...]')
-    .description(
-      'run a deployment script with all your user privileges against the local Agoric VM',
+    .command('follow <path-spec...>')
+    .description('follow an Agoric Casting leader')
+    .option(
+      '--proof <strict | optimistic | none>',
+      'set proof mode',
+      value => {
+        assert(
+          ['strict', 'optimistic', 'none'].includes(value),
+          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
+          TypeError,
+        );
+        return value;
+      },
+      'optimistic',
     )
     .option(
-      '--allow-unsafe-plugins',
-      `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
-      false,
+      '--sleep <seconds>',
+      'sleep <seconds> between polling (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--sleep must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_KEEP_POLLING_SECONDS,
     )
     .option(
-      '--hostport <host:port>',
-      'host and port to connect to VM',
-      '127.0.0.1:8000',
+      '--jitter <max-seconds>',
+      'jitter up to <max-seconds> (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--jitter must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_JITTER_SECONDS,
     )
     .option(
-      '--need <subsystems>',
-      'comma-separated names of subsystems to wait for',
-      'local,agoric,wallet',
+      '-o, --output <format>',
+      'value output format',
+      value => {
+        assert(
+          [
+            'hex',
+            'justin',
+            'justinlines',
+            'json',
+            'jsonlines',
+            'text',
+          ].includes(value),
+          X`--output must be one of 'hex', 'justin', 'justinlines', 'json', 'jsonlines', or 'text'`,
+          TypeError,
+        );
+        return value;
+      },
+      'justin',
     )
     .option(
-      '--provide <subsystems>',
-      'comma-separated names of subsystems this script initializes',
-      '',
+      '-l, --lossy',
+      'show only the most recent value for each sample interval',
     )
-    .action(async (scripts, cmd) => {
+    .option(
+      '-b, --block-height',
+      'show first block height when each value was stored',
+    )
+    .option(
+      '-c, --current-block-height',
+      'show current block height when each value is reported',
+    )
+    .option('-B, --bootstrap <config>', 'network bootstrap configuration')
+    .action(async (pathSpecs, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(deployMain, ['deploy', ...scripts], opts);
+      return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
+
+  const addRunOptions = cmd =>
+    cmd
+      .option(
+        '--allow-unsafe-plugins',
+        `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
+        false,
+      )
+      .option(
+        '--hostport <host:port>',
+        'host and port to connect to VM',
+        '127.0.0.1:8000',
+      )
+      .option(
+        '--need <subsystems>',
+        'comma-separated names of subsystems to wait for',
+        'local,agoric,wallet',
+      )
+      .option(
+        '--provide <subsystems>',
+        'comma-separated names of subsystems this script initializes',
+        '',
+      );
+
+  addRunOptions(
+    program
+      .command('run <script> [script-args...]')
+      .description(
+        'run a script with all your user privileges against the local Agoric VM',
+      ),
+  ).action(async (script, scriptArgs, _options, cmd) => {
+    const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
+    return subMain(deployMain, ['run', script], opts);
+  });
+
+  addRunOptions(
+    program
+      .command('deploy [script...]')
+      .option(
+        '--target <target>',
+        'One of agoric, local, cosmos, or sim',
+        'agoric',
+      )
+      .description(
+        'run multiple scripts with all your user privileges against the local Agoric VM',
+      ),
+  ).action(async (scripts, _options, cmd) => {
+    const opts = { ...program.opts(), ...cmd.opts() };
+    return subMain(deployMain, ['deploy', ...scripts], opts);
+  });
+
+  addRunOptions(
+    program
+      .command('publish [bundle...]')
+      .option(
+        '-n, --node <rpcAddress>',
+        '[required] A bare IPv4 address or fully qualified URL of an RPC node',
+      )
+      .option(
+        '-h, --home <directory>',
+        "[required] Path to the directory containing ag-solo-mnemonic, for the publisher's wallet mnemonic",
+      )
+      .option(
+        '-c, --chain-id <chainID>',
+        'The ID of the destination chain, if not simply "agoric"',
+      )
+      .description('publish a bundle to a Cosmos chain'),
+  ).action(async (bundles, _options, cmd) => {
+    const opts = { ...program.opts(), ...cmd.opts() };
+    return subMain(publishMain, ['publish', ...bundles], opts);
+  });
+
+  program.addCommand(await makeWalletCommand());
 
   program
     .command('start [profile] [args...]')
-    .description('run an Agoric VM')
+    .description(
+      `\
+start an Agoric VM
+
+agoric start - runs the default profile (dev)
+agoric start dev -- [initArgs] - simulated chain and solo VM
+agoric start local-chain [portNum] -- [initArgs] - local chain
+agoric start local-solo [portNum] [provisionPowers] - local solo VM
+`,
+    )
     .option('-d, --debug', 'run in JS debugger mode')
     .option('--reset', 'clear all VM state before starting')
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
+    .option('--rebuild', 'rebuild VM dependencies before running')
     .option(
       '--delay [seconds]',
       'delay for simulated chain to process messages',
@@ -218,7 +376,7 @@ const main = async (progname, rawArgs, powers) => {
       'install the wallet from NPM package <package>',
       '@agoric/wallet-frontend',
     )
-    .action(async (profile, args, cmd) => {
+    .action(async (profile, args, _options, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(startMain, ['start', profile, ...args], opts);

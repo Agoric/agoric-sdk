@@ -1,29 +1,37 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 import {
   assertContractElectorate,
   assertContractGovernance,
   validateQuestionFromCounter,
   validateQuestionDetails,
-  assertBallotConcernsQuestion,
+  assertBallotConcernsParam,
 } from '../../../src/index.js';
+import { MALLEABLE_NUMBER } from './governedContract.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q } = assert;
 
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation) => {
       const seat = E(zoe).offer(invitation);
-      const voteFacet = E(seat).getOfferResult();
+      const { voter } = E.get(E(seat).getOfferResult());
 
       return Far(`Voter ${name}`, {
         castBallotFor: async (questionHandle, choice) => {
           log(`Voter ${name} voted for ${q(choice)}`);
-          return E(voteFacet).castBallotFor(questionHandle, [choice]);
+          return E(voter).castBallotFor(questionHandle, [choice]);
         },
+        /**
+         *
+         * @param {Instance} counterInstance
+         * @param {Instance} governedInstance
+         * @param {Instance} electorateInstance
+         * @param {Instance} governorInstance
+         * @param {Record<string, Installation>} installations
+         * @returns {Promise<void>}
+         */
         validate: async (
           counterInstance,
           governedInstance,
@@ -45,7 +53,6 @@ const build = async (log, zoe) => {
           );
 
           const [
-            governedParam,
             questionDetails,
             electorateInstallation,
             voteCounterInstallation,
@@ -54,7 +61,6 @@ const build = async (log, zoe) => {
             validatedQuestion,
             contractGovernance,
           ] = await Promise.all([
-            E.get(E(zoe).getTerms(governedInstance)).main,
             E(E(zoe).getPublicFacet(counterInstance)).getDetails(),
             E(zoe).getInstallationForInstance(electorateInstance),
             E(zoe).getInstallationForInstance(counterInstance),
@@ -64,7 +70,13 @@ const build = async (log, zoe) => {
             contractGovernanceP,
           ]);
 
-          assertBallotConcernsQuestion(governedParam[0].name, questionDetails);
+          assertBallotConcernsParam(
+            harden({
+              paramPath: { key: 'governedParams' },
+              parameterName: MALLEABLE_NUMBER,
+            }),
+            questionDetails,
+          );
           assert(installations.binaryVoteCounter === voteCounterInstallation);
           assert(installations.governedContract === governedInstallation);
           assert(installations.contractGovernor === governorInstallation);
@@ -80,10 +92,10 @@ const build = async (log, zoe) => {
             electorateInstance,
             questionDetails,
           );
-          assert(validatedQuestion, X`governor failed to validate electorate`);
+          assert(validatedQuestion, 'governor failed to validate electorate');
           assert(
             contractGovernance,
-            X`governor and governed aren't tightly linked`,
+            "governor and governed aren't tightly linked",
           );
 
           log(`Voter ${name} validated all the things`);
@@ -93,6 +105,11 @@ const build = async (log, zoe) => {
   });
 };
 
+/**
+ * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
+ */
+
+/** @type {BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
   Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),

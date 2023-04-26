@@ -1,6 +1,6 @@
-import '@agoric/install-ses/pre-bundle-source.js';
-import '@agoric/install-ses';
-import bundleSource from '@agoric/bundle-source';
+import '@endo/init/pre-bundle-source.js';
+import '@endo/init';
+import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import fs from 'fs';
@@ -10,7 +10,7 @@ const CONTRACT_FILES = [
   'autoswap',
   'coveredCall',
   {
-    contractPath: 'auction/secondPriceAuction',
+    contractPath: 'auction/index',
     bundleName: 'secondPriceAuction',
   },
   'atomicSwap',
@@ -31,7 +31,7 @@ const generateBundlesP = Promise.all(
       ({ bundleName, contractPath } = settings);
     }
     const sourceUrl = await importMetaResolve(
-      `@agoric/zoe/src/contracts/${contractPath}`,
+      `@agoric/zoe/src/contracts/${contractPath}.js`,
       import.meta.url,
     );
     const sourcePath = new URL(sourceUrl).pathname;

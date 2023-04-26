@@ -1,6 +1,6 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makePrintLog } from './printLog.js';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
@@ -74,13 +74,13 @@ export function buildRootObject(_vatPowers, vatParameters) {
       };
 
       const startingValues = [
-        [3, 0], // Alice: 3 moola, no simoleans
-        [0, 3], // Bob:   no moola, 3 simoleans
+        [3n, 0n], // Alice: 3 moola, no simoleans
+        [0n, 3n], // Bob:   no moola, 3 simoleans
       ];
 
       ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
       // Zoe appears to do some one-time setup the first time it's used, so this
-      // is a sacrifical benchmark round to prime the pump.
+      // is a sacrificial benchmark round to prime the pump.
       if (vatParameters.argv[0] === '--prime') {
         await E(alice).initiateSwap(bob);
         await E(bob).initiateSwap(alice);

@@ -1,11 +1,7 @@
-// @ts-check
-
-import '../../../exported.js';
-
-import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { assert, Fail } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 
 import {
@@ -13,6 +9,7 @@ import {
   getAmountOut,
   ceilMultiplyBy,
   getTimestamp,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
@@ -55,10 +52,8 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert the required collateral was escrowed.
     const requiredMargin = ceilMultiplyBy(loanWanted, mmr);
-    assert(
-      AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
-      X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
-    );
+    AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin) ||
+      Fail`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`;
 
     const timestamp = getTimestamp(quote);
 
@@ -72,23 +67,20 @@ export const makeBorrowInvitation = (zcf, config) => {
     );
 
     // Assert that loanWanted <= maxLoan
-    assert(
-      AmountMath.isGTE(maxLoan, loanWanted),
-      X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
-    );
+    AmountMath.isGTE(maxLoan, loanWanted) ||
+      Fail`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`;
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-    // Transfer the wanted Loan amount to the borrower
-    borrowerSeat.incrementBy(
-      lenderSeat.decrementBy(harden({ Loan: loanWanted })),
+    atomicRearrange(
+      zcf,
+      harden([
+        // Transfer the wanted Loan amount to the borrower
+        [lenderSeat, borrowerSeat, { Loan: loanWanted }],
+        // Transfer *all* collateral to the collateral seat.
+        [borrowerSeat, collateralSeat, { Collateral: collateralGiven }],
+      ]),
     );
-
-    // Transfer *all* collateral to the collateral seat.
-    collateralSeat.incrementBy(
-      borrowerSeat.decrementBy(harden({ Collateral: collateralGiven })),
-    );
-    zcf.reallocate(lenderSeat, borrowerSeat, collateralSeat);
 
     // We now exit the borrower seat so that the borrower gets their
     // loan. However, the borrower gets an object as their offerResult
@@ -112,11 +104,8 @@ export const makeBorrowInvitation = (zcf, config) => {
         liquidationPromiseKit,
       },
     };
-    const {
-      getDebt,
-      getDebtNotifier,
-      getLastCalculationTimestamp,
-    } = makeDebtCalculator(harden(debtCalculatorConfig));
+    const { getDebt, getDebtNotifier, getLastCalculationTimestamp } =
+      makeDebtCalculator(harden(debtCalculatorConfig));
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {

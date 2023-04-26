@@ -1,0 +1,13 @@
+diff --git a/node_modules/@agoric/wallet-ui/build/static/js/477.36027d30.chunk.js b/node_modules/@agoric/wallet-ui/build/static/js/477.36027d30.chunk.js
+index f6c325f..bc4f3d6 100644
+--- a/node_modules/@agoric/wallet-ui/build/static/js/477.36027d30.chunk.js
++++ b/node_modules/@agoric/wallet-ui/build/static/js/477.36027d30.chunk.js
+@@ -5,7 +5,7 @@
+           @message=${n}
+           @error=${e.onError}
+         ></agoric-iframe-messenger>
+-      `},hostConnected(){},hostDisconnected(){}}},P="https://local.agoric.com/?append=/wallet-bridge.html",S=(e,t)=>new Promise((n=>setTimeout(n,e,t))),L=function(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:v.Ol;return class extends s.oi{static get styles(){return s.iv`
++      `},hostConnected(){},hostDisconnected(){}}},P="https://wallet.agoric.app/locator/?append=/wallet-bridge.html",S=(e,t)=>new Promise((n=>setTimeout(n,e,t))),L=function(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:v.Ol;return class extends s.oi{static get styles(){return s.iv`
+         :host {
+           display: block;
+           padding: 25px;

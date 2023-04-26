@@ -1,5 +1,5 @@
-import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@endo/nat';
+import { assert, Fail } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import {
   makeRemoteSlot,
@@ -8,7 +8,7 @@ import {
 } from './parseRemoteSlot.js';
 
 export function insistRemoteID(remoteID) {
-  assert(/^r\d+$/.test(remoteID), X`not a remoteID: ${remoteID}`);
+  /^r\d+$/.test(remoteID) || Fail`not a remoteID: ${remoteID}`;
 }
 
 export function initializeRemoteState(
@@ -18,10 +18,8 @@ export function initializeRemoteState(
   name,
   transmitterID,
 ) {
-  assert(
-    !store.get(`${remoteID}.initialized`),
-    X`remote ${remoteID} already exists`,
-  );
+  !store.get(`${remoteID}.initialized`) ||
+    Fail`remote ${remoteID} already exists`;
   store.set(`${remoteID}.sendSeq`, '1');
   store.set(`${remoteID}.recvSeq`, '0');
   store.set(`${remoteID}.o.nextID`, `${identifierBase + 20}`);
@@ -34,7 +32,6 @@ export function initializeRemoteState(
 
 export function makeRemote(state, store, remoteID) {
   insistRemoteID(remoteID);
-  assert(store.get(`${remoteID}.initialized`), X`missing ${remoteID}`);
 
   function name() {
     return store.get(`${remoteID}.name`);
@@ -111,8 +108,8 @@ export function makeRemote(state, store, remoteID) {
     const isImportFromComms = allocatedByRecipient;
     const fromKey = `${remoteID}.c.${rref}`;
     const toKey = `${remoteID}.c.${lref}`;
-    assert(!store.get(fromKey), X`already have ${rref}`);
-    assert(!store.get(toKey), X`already have ${lref}`);
+    !store.get(fromKey) || Fail`already have ${rref}`;
+    !store.get(toKey) || Fail`already have ${lref}`;
     store.set(fromKey, lref);
     store.set(toKey, flipRemoteSlot(rref));
     const mode = isImportFromComms ? 'clist-import' : 'clist-export';

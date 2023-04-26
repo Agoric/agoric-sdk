@@ -10,7 +10,7 @@ prefix to the title and Zoe tag to Zoe-related issues.
 
 ## Installing, Testing
 
-You'll need Node.js version 11 or higher. 
+You'll need Node.js version 11 or higher.
 
 * `git clone https://github.com/Agoric/agoric-sdk/`
 * `cd agoric-sdk`

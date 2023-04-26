@@ -2,46 +2,46 @@
   fetch:
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/"
     flat: yes
-    src: "/home/{{ service }}/.{{ service }}/config/genesis.json"
+    src: '/home/{{ service }}/.{{ service }}/config/genesis.json'
 
 - name: "Fetch {{ data | default(service + '/data') }}/*/app.toml"
   fetch:
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/"
     flat: yes
-    src: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    src: '/home/{{ service }}/.{{ service }}/config/app.toml'
 
 - name: "Fetch {{ data | default(service + '/data') }}/*/config.toml"
   fetch:
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/"
     flat: yes
-    src: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    src: '/home/{{ service }}/.{{ service }}/config/config.toml'
 
 - name: "Fetch {{ data | default(service + '/data') }}/*/priv_validator_key.json"
   fetch:
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/"
     flat: yes
-    src: "/home/{{ service }}/.{{ service }}/config/priv_validator_key.json"
+    src: '/home/{{ service }}/.{{ service }}/config/priv_validator_key.json'
 
-- name: "Get tendermint show-node-id output"
+- name: 'Get tendermint show-node-id output'
   become: yes
-  become_user: "{{ service }}"
-  shell: "{{ service }} tendermint show-node-id"
+  become_user: '{{ service }}'
+  shell: '{{ service }} tendermint show-node-id'
   register: chain_node_id
 
 - name: "Create {{ data | default(service + '/data') }}/*/node-id"
   delegate_to: localhost
   copy:
-    content: "{{ chain_node_id.stdout }}"
+    content: '{{ chain_node_id.stdout }}'
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/node-id"
 
-- name: "Get tendermint show-validator output"
+- name: 'Get tendermint show-validator output'
   become: yes
-  become_user: "{{ service }}"
-  shell: "{{ service }} tendermint show-validator"
+  become_user: '{{ service }}'
+  shell: '{{ service }} tendermint show-validator'
   register: chain_validator
 
 - name: "Create {{ data | default(service + '/data') }}/*/pubkey"
   delegate_to: localhost
   copy:
-    content: "{{ chain_validator.stdout }}"
+    content: '{{ chain_validator.stdout }}'
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/pubkey"

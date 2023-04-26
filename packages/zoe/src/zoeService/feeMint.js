@@ -1,53 +1,86 @@
-// @ts-check
+import {
+  makeDurableIssuerKit,
+  AssetKind,
+  prepareIssuerKit,
+  IssuerShape,
+  BrandShape,
+} from '@agoric/ertp';
+import { initEmpty, M } from '@agoric/store';
+import {
+  provideDurableMapStore,
+  provide,
+  prepareExoClassKit,
+} from '@agoric/vat-data';
 
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+const { Fail } = assert;
 
-import { makeHandle } from '../makeHandle.js';
+const FEE_MINT_KIT = 'FeeMintKit';
 
-const { details: X } = assert;
+export const defaultFeeIssuerConfig = harden(
+  /** @type {const} */ ({
+    name: 'ZDEFAULT',
+    assetKind: AssetKind.NAT,
+    displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+  }),
+);
+
 /**
+ * @param {import('@agoric/vat-data').Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
- * @returns {{
- *    feeMintAccess: FeeMintAccess,
- *    getFeeIssuerKit: GetFeeIssuerKit,
- *    feeIssuer: Issuer,
- *    feeBrand: Brand,
- *    initialFeeFunds: Payment,
- * }}
  */
-const createFeeMint = (feeIssuerConfig, shutdownZoeVat) => {
-  /** @type {IssuerKit} */
-  const feeIssuerKit = makeIssuerKit(
-    feeIssuerConfig.name,
-    feeIssuerConfig.assetKind,
-    feeIssuerConfig.displayInfo,
-    shutdownZoeVat,
-  );
-
-  /** @type {FeeMintAccess} */
-  const feeMintAccess = makeHandle('feeMintAccess');
-
-  /** @type {GetFeeIssuerKit} */
-  const getFeeIssuerKit = allegedFeeMintAccess => {
-    assert(
-      feeMintAccess === allegedFeeMintAccess,
-      X`The object representing access to the fee brand mint was not provided`,
+const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+  const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
+  if (!mintBaggage.has(FEE_MINT_KIT)) {
+    /** @type {IssuerKit} */
+    const feeIssuerKit = makeDurableIssuerKit(
+      mintBaggage,
+      feeIssuerConfig.name,
+      feeIssuerConfig.assetKind,
+      feeIssuerConfig.displayInfo,
+      shutdownZoeVat,
     );
-    return feeIssuerKit;
-  };
+    mintBaggage.init(FEE_MINT_KIT, feeIssuerKit);
+  } else {
+    prepareIssuerKit(mintBaggage, shutdownZoeVat);
+  }
 
-  const initialFeeFunds = feeIssuerKit.mint.mintPayment(
-    AmountMath.make(feeIssuerKit.brand, feeIssuerConfig.initialFunds),
+  const FeeMintIKit = harden({
+    feeMint: M.interface('FeeMint', {
+      getFeeIssuerKit: M.call(M.remotable('FeeMintAccess')).returns(M.record()),
+      getFeeIssuer: M.call().returns(IssuerShape),
+      getFeeBrand: M.call().returns(BrandShape),
+    }),
+    feeMintAccess: M.interface('FeeMintAccess', {}),
+  });
+
+  const makeFeeMintKit = prepareExoClassKit(
+    mintBaggage,
+    'FeeMint',
+    FeeMintIKit,
+    initEmpty,
+    {
+      feeMint: {
+        getFeeIssuerKit(allegedFeeMintAccess) {
+          const { facets } = this;
+          facets.feeMintAccess === allegedFeeMintAccess ||
+            Fail`The object representing access to the fee brand mint was not provided`;
+          return mintBaggage.get(FEE_MINT_KIT);
+        },
+        getFeeIssuer() {
+          return mintBaggage.get(FEE_MINT_KIT).issuer;
+        },
+        getFeeBrand() {
+          return mintBaggage.get(FEE_MINT_KIT).brand;
+        },
+      },
+      // feeMintAccess is an opaque durable object representing the right to get
+      // the fee mint.
+      feeMintAccess: {},
+    },
   );
 
-  return harden({
-    feeMintAccess,
-    getFeeIssuerKit,
-    feeIssuer: feeIssuerKit.issuer,
-    feeBrand: feeIssuerKit.brand,
-    initialFeeFunds,
-  });
+  return provide(zoeBaggage, 'theFeeMint', () => makeFeeMintKit());
 };
 
-export { createFeeMint };
+export { prepareFeeMint };

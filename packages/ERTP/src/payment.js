@@ -1,14 +1,30 @@
-// @ts-check
+// @jessie-check
 
-import { Far } from '@agoric/marshal';
+import { initEmpty } from '@agoric/store';
+import { prepareExoClass } from '@agoric/vat-data';
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * @param {string} allegedName
- * @param {Brand} brand
- * @returns {Payment}
+ * @template {AssetKind} K
+ * @param {Baggage} issuerBaggage
+ * @param {string} name
+ * @param {Brand<K>} brand
+ * @param {InterfaceGuard} PaymentI
+ * @returns {() => Payment<K>}
  */
-export const makePayment = (allegedName, brand) => {
-  return Far(`${allegedName} payment`, {
-    getAllegedBrand: () => brand,
-  });
+export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
+  const makePayment = prepareExoClass(
+    issuerBaggage,
+    `${name} payment`,
+    PaymentI,
+    initEmpty,
+    {
+      getAllegedBrand() {
+        return brand;
+      },
+    },
+  );
+  return makePayment;
 };
+harden(preparePaymentKind);

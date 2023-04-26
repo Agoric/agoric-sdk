@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="1425px" preserveAspectRatio="none" style="width:1515px;height:1425px;background:#FFFFFF;" version="1.1" viewBox="0 0 1515 1425" width="1515px" zoomAndPan="magnify"><defs><filter height="300%" id="f13sl5rpqc4wly" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><text fill="#000000" font-family="sans-serif" font-size="18" lengthAdjust="spacing" textLength="382" x="563.25" y="44.1797">AMM Sequence Diagram Removing Liquidity</text><rect fill="#DDDDDD" height="1347.1563" style="stroke:#A80036;stroke-width:1.0;" width="309.5" x="757" y="55.9766"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="24" x="899.75" y="68.5449">Zoe</text><rect fill="#FFFFFF" filter="url(#f13sl5rpqc4wly)" height="75.9316" style="stroke:#000000;stroke-width:2.0;" width="983.5" x="207" y="200.7754"/><rect fill="#FFFFFF" filter="url(#f13sl5rpqc4wly)" height="75.9316" style="stroke:#000000;stroke-width:2.0;" width="554" x="207" y="290.707"/><rect fill="#FFFFFF" filter="url(#f13sl5rpqc4wly)" height="74.9316" style="stroke:#000000;stroke-width:2.0;" width="497.5" x="207" y="380.6387"/><rect fill="#FFFFFF" filter="url(#f13sl5rpqc4wly)" height="495.9688" style="stroke:#000000;stroke-width:2.0;" width="1159.5" x="207" y="469.5703"/><rect fill="#FFFFFF" filter="url(#f13sl5rpqc4wly)" height="320.1055" style="stroke:#000000;stroke-width:2.0;" width="865.5" x="207" y="979.5391"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="53" x2="53" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="159" x2="159" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="252" x2="252" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="699" x2="699" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="777" x2="777" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="1029.5" x2="1029.5" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="1126.5" x2="1126.5" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="1287.5" x2="1287.5" y1="138.4648" y2="1316.6445"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="1427.5" x2="1427.5" y1="138.4648" y2="1316.6445"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="90" x="5" y="135.5117">AMM Creator</text><ellipse cx="53" cy="64.9766" fill="#00FF00" filter="url(#f13sl5rpqc4wly)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M53,72.9766 L53,99.9766 M40,80.9766 L66,80.9766 M53,99.9766 L40,114.9766 M53,99.9766 L66,114.9766 " fill="none" filter="url(#f13sl5rpqc4wly)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="90" x="5" y="1329.1797">AMM Creator</text><ellipse cx="53" cy="1342.1328" fill="#00FF00" filter="url(#f13sl5rpqc4wly)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M53,1350.1328 L53,1377.1328 M40,1358.1328 L66,1358.1328 M53,1377.1328 L40,1392.1328 M53,1377.1328 L66,1392.1328 " fill="none" filter="url(#f13sl5rpqc4wly)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="90" x="111" y="135.5117">Pool Adder N</text><ellipse cx="159" cy="64.9766" fill="#FFFF00" filter="url(#f13sl5rpqc4wly)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M159,72.9766 L159,99.9766 M146,80.9766 L172,80.9766 M159,99.9766 L146,114.9766 M159,99.9766 L172,114.9766 " fill="none" filter="url(#f13sl5rpqc4wly)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="90" x="111" y="1329.1797">Pool Adder N</text><ellipse cx="159" cy="1342.1328" fill="#FFFF00" filter="url(#f13sl5rpqc4wly)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M159,1350.1328 L159,1377.1328 M146,1358.1328 L172,1358.1328 M159,1377.1328 L146,1392.1328 M159,1377.1328 L172,1392.1328 " fill="none" filter="url(#f13sl5rpqc4wly)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="217" y="135.5117">Pool User</text><ellipse cx="252.5" cy="64.9766" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M252.5,72.9766 L252.5,99.9766 M239.5,80.9766 L265.5,80.9766 M252.5,99.9766 L239.5,114.9766 M252.5,99.9766 L265.5,114.9766 " fill="none" filter="url(#f13sl5rpqc4wly)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="217" y="1329.1797">Pool User</text><ellipse cx="252.5" cy="1342.1328" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="8" ry="8" style="stroke:#A80036;stroke-width:2.0;"/><path d="M252.5,1350.1328 L252.5,1377.1328 M239.5,1358.1328 L265.5,1358.1328 M252.5,1377.1328 L239.5,1392.1328 M252.5,1377.1328 L265.5,1392.1328 " fill="none" filter="url(#f13sl5rpqc4wly)" style="stroke:#A80036;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="97" x="648" y="135.5117">AMM Contract</text><path d="M681.5,85.9766 C681.5,75.9766 699.5,75.9766 699.5,75.9766 C699.5,75.9766 717.5,75.9766 717.5,85.9766 L717.5,111.9766 C717.5,121.9766 699.5,121.9766 699.5,121.9766 C699.5,121.9766 681.5,121.9766 681.5,111.9766 L681.5,85.9766 " fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" style="stroke:#000000;stroke-width:1.5;"/><path d="M681.5,85.9766 C681.5,95.9766 699.5,95.9766 699.5,95.9766 C699.5,95.9766 717.5,95.9766 717.5,85.9766 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="97" x="648" y="1329.1797">AMM Contract</text><path d="M681.5,1342.1328 C681.5,1332.1328 699.5,1332.1328 699.5,1332.1328 C699.5,1332.1328 717.5,1332.1328 717.5,1342.1328 L717.5,1368.1328 C717.5,1378.1328 699.5,1378.1328 699.5,1378.1328 C699.5,1378.1328 681.5,1378.1328 681.5,1368.1328 L681.5,1342.1328 " fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" style="stroke:#000000;stroke-width:1.5;"/><path d="M681.5,1342.1328 C681.5,1352.1328 699.5,1352.1328 699.5,1352.1328 C699.5,1352.1328 717.5,1352.1328 717.5,1342.1328 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="25" x="761.5" y="135.5117">Zoe</text><ellipse cx="777" cy="105.9766" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="12" ry="12" style="stroke:#A80036;stroke-width:2.0;"/><line style="stroke:#A80036;stroke-width:2.0;" x1="765" x2="789" y1="119.9766" y2="119.9766"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="25" x="761.5" y="1329.1797">Zoe</text><ellipse cx="777" cy="1348.1328" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="12" ry="12" style="stroke:#A80036;stroke-width:2.0;"/><line style="stroke:#A80036;stroke-width:2.0;" x1="765" x2="789" y1="1362.1328" y2="1362.1328"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="59" x="997.5" y="135.5117">userSeat</text><ellipse cx="1030" cy="105.9766" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="12" ry="12" style="stroke:#A80036;stroke-width:2.0;"/><line style="stroke:#A80036;stroke-width:2.0;" x1="1018" x2="1042" y1="119.9766" y2="119.9766"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="59" x="997.5" y="1329.1797">userSeat</text><ellipse cx="1030" cy="1348.1328" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="12" ry="12" style="stroke:#A80036;stroke-width:2.0;"/><line style="stroke:#A80036;stroke-width:2.0;" x1="1018" x2="1042" y1="1362.1328" y2="1362.1328"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="102" x="1072.5" y="135.5117">Pool SML:BUCK</text><path d="M1108.5,85.9766 C1108.5,75.9766 1126.5,75.9766 1126.5,75.9766 C1126.5,75.9766 1144.5,75.9766 1144.5,85.9766 L1144.5,111.9766 C1144.5,121.9766 1126.5,121.9766 1126.5,121.9766 C1126.5,121.9766 1108.5,121.9766 1108.5,111.9766 L1108.5,85.9766 " fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" style="stroke:#000000;stroke-width:1.5;"/><path d="M1108.5,85.9766 C1108.5,95.9766 1126.5,95.9766 1126.5,95.9766 C1126.5,95.9766 1144.5,95.9766 1144.5,85.9766 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="102" x="1072.5" y="1329.1797">Pool SML:BUCK</text><path d="M1108.5,1342.1328 C1108.5,1332.1328 1126.5,1332.1328 1126.5,1332.1328 C1126.5,1332.1328 1144.5,1332.1328 1144.5,1342.1328 L1144.5,1368.1328 C1144.5,1378.1328 1126.5,1378.1328 1126.5,1378.1328 C1126.5,1378.1328 1108.5,1378.1328 1108.5,1368.1328 L1108.5,1342.1328 " fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" style="stroke:#000000;stroke-width:1.5;"/><path d="M1108.5,1342.1328 C1108.5,1352.1328 1126.5,1352.1328 1126.5,1352.1328 C1126.5,1352.1328 1144.5,1352.1328 1144.5,1342.1328 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="132" x="1218.5" y="135.5117">poolSeat SML:BUCK</text><ellipse cx="1287.5" cy="105.9766" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="12" ry="12" style="stroke:#A80036;stroke-width:2.0;"/><line style="stroke:#A80036;stroke-width:2.0;" x1="1275.5" x2="1299.5" y1="119.9766" y2="119.9766"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="132" x="1218.5" y="1329.1797">poolSeat SML:BUCK</text><ellipse cx="1287.5" cy="1348.1328" fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" rx="12" ry="12" style="stroke:#A80036;stroke-width:2.0;"/><line style="stroke:#A80036;stroke-width:2.0;" x1="1275.5" x2="1299.5" y1="1362.1328" y2="1362.1328"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="116" x="1366.5" y="135.5117">Pool MOOL:BUCK</text><path d="M1409.5,85.9766 C1409.5,75.9766 1427.5,75.9766 1427.5,75.9766 C1427.5,75.9766 1445.5,75.9766 1445.5,85.9766 L1445.5,111.9766 C1445.5,121.9766 1427.5,121.9766 1427.5,121.9766 C1427.5,121.9766 1409.5,121.9766 1409.5,111.9766 L1409.5,85.9766 " fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" style="stroke:#000000;stroke-width:1.5;"/><path d="M1409.5,85.9766 C1409.5,95.9766 1427.5,95.9766 1427.5,95.9766 C1427.5,95.9766 1445.5,95.9766 1445.5,85.9766 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="116" x="1366.5" y="1329.1797">Pool MOOL:BUCK</text><path d="M1409.5,1342.1328 C1409.5,1332.1328 1427.5,1332.1328 1427.5,1332.1328 C1427.5,1332.1328 1445.5,1332.1328 1445.5,1342.1328 L1445.5,1368.1328 C1445.5,1378.1328 1427.5,1378.1328 1427.5,1378.1328 C1427.5,1378.1328 1409.5,1378.1328 1409.5,1368.1328 L1409.5,1342.1328 " fill="#FEFECE" filter="url(#f13sl5rpqc4wly)" style="stroke:#000000;stroke-width:1.5;"/><path d="M1409.5,1342.1328 C1409.5,1352.1328 1427.5,1352.1328 1427.5,1352.1328 C1427.5,1352.1328 1445.5,1352.1328 1445.5,1342.1328 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="0" x2="1508.5" y1="149.4648" y2="149.4648"/><rect fill="#EEEEEE" filter="url(#f13sl5rpqc4wly)" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="1508.5" x="0" y="171.1201"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1508.5" y1="171.1201" y2="171.1201"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1508.5" y1="174.1201" y2="174.1201"/><rect fill="#EEEEEE" filter="url(#f13sl5rpqc4wly)" height="23.3105" style="stroke:#000000;stroke-width:2.0;" width="150" x="679.25" y="160.4648"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="132" x="685.25" y="177.0332">Removing Liquidity</text><path d="M207,200.7754 L524,200.7754 L524,207.7754 L514,217.7754 L207,217.7754 L207,200.7754 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="75.9316" style="stroke:#000000;stroke-width:2.0;" width="983.5" x="207" y="200.7754"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="272" x="222" y="214.3438">discover existing proportion of balances</text><polygon fill="#A80036" points="1114.5,235.3965,1124.5,239.3965,1114.5,243.3965,1118.5,239.3965" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="1120.5" y1="239.3965" y2="239.3965"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="234.6543">200</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="176" x="290.5" y="234.2417">getPoolAllocation(SML)</text><polygon fill="#A80036" points="263.5,264.707,253.5,268.707,263.5,272.707,259.5,268.707" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="1125.5" y1="268.707" y2="268.707"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="263.9648">201</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="112" x="300.5" y="263.5522">poolAllocation</text><path d="M207,290.707 L336,290.707 L336,297.707 L326,307.707 L207,307.707 L207,290.707 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="75.9316" style="stroke:#000000;stroke-width:2.0;" width="554" x="207" y="290.707"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="84" x="222" y="304.2754">create invite</text><polygon fill="#A80036" points="687.5,325.3281,697.5,329.3281,687.5,333.3281,691.5,329.3281" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="693.5" y1="329.3281" y2="329.3281"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="324.5859">202</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="208" x="290.5" y="324.1733">makeAddLiquidityInvitation</text><polygon fill="#A80036" points="263.5,354.6387,253.5,358.6387,263.5,362.6387,259.5,358.6387" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="698.5" y1="358.6387" y2="358.6387"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="353.8965">203</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="80" x="300.5" y="353.4839">invitation</text><path d="M207,380.6387 L357,380.6387 L357,387.6387 L347,397.6387 L207,397.6387 L207,380.6387 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="74.9316" style="stroke:#000000;stroke-width:2.0;" width="497.5" x="207" y="380.6387"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="105" x="222" y="394.207">create proposal</text><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="294.5" y1="434.5703" y2="434.5703"/><line style="stroke:#A80036;stroke-width:1.0;" x1="294.5" x2="294.5" y1="434.5703" y2="447.5703"/><line style="stroke:#A80036;stroke-width:1.0;" x1="253.5" x2="294.5" y1="447.5703" y2="447.5703"/><polygon fill="#A80036" points="263.5,443.5703,253.5,447.5703,263.5,451.5703,259.5,447.5703" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="422.1729">204</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="40" x="290.5" y="414.5176">Create</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="334.5" y="414.1938">proposal</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="75" x="402.5" y="414.5176">to remove 1</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="72" x="481.5" y="414.1938">liquidity</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="135" x="557.5" y="414.5176">for 1 BUCK and 1 SML</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="62" x="290.5" y="429.8281">at ratio of</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="112" x="356.5" y="429.5044">poolAllocation</text><path d="M207,469.5703 L358,469.5703 L358,476.5703 L348,486.5703 L207,486.5703 L207,469.5703 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="495.9688" style="stroke:#000000;stroke-width:2.0;" width="1159.5" x="207" y="469.5703"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="106" x="222" y="483.1387">withdraw funds</text><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="294.5" y1="508.1914" y2="508.1914"/><line style="stroke:#A80036;stroke-width:1.0;" x1="294.5" x2="294.5" y1="508.1914" y2="521.1914"/><line style="stroke:#A80036;stroke-width:1.0;" x1="253.5" x2="294.5" y1="521.1914" y2="521.1914"/><polygon fill="#A80036" points="263.5,517.1914,253.5,521.1914,263.5,525.1914,259.5,521.1914" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="503.4492">205</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="119" x="290.5" y="503.4492">withdraw funds for</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="72" x="413.5" y="503.1255">liquidity</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="25" x="489.5" y="503.4492">into</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="518.5" y="503.1255">payments</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="40" x="586.5" y="503.4492">record</text><polygon fill="#A80036" points="765,546.502,775,550.502,765,554.502,769,550.502" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="771" y1="550.502" y2="550.502"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="545.7598">206</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="296" x="290.5" y="545.3472">offer(invitation, proposal, payments)</text><line style="stroke:#A80036;stroke-width:1.0;" x1="777" x2="819" y1="579.8125" y2="579.8125"/><line style="stroke:#A80036;stroke-width:1.0;" x1="819" x2="819" y1="579.8125" y2="592.8125"/><line style="stroke:#A80036;stroke-width:1.0;" x1="778" x2="819" y1="592.8125" y2="592.8125"/><polygon fill="#A80036" points="788,588.8125,778,592.8125,788,596.8125,784,592.8125" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="784" y="575.0703">207</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="83" x="815" y="575.0703">validate offer</text><polygon fill="#A80036" points="1018,618.123,1028,622.123,1018,626.123,1022,622.123" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="777" x2="1024" y1="622.123" y2="622.123"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="784" y="617.3809">208</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="38" x="815" y="617.3809">create</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="857" y="617.0571">userSeat</text><polygon fill="#A80036" points="788,647.4336,778,651.4336,788,655.4336,784,651.4336" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="782" x2="1029" y1="651.4336" y2="651.4336"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="794" y="646.6914">209</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="825" y="646.2788">userSeat</text><polygon fill="#A80036" points="1114.5,676.7441,1124.5,680.7441,1114.5,684.7441,1118.5,680.7441" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="777" x2="1120.5" y1="680.7441" y2="680.7441"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="784" y="676.002">210</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="104" x="815" y="675.5894">getPoolSeat()</text><polygon fill="#A80036" points="1275.5,706.0547,1285.5,710.0547,1275.5,714.0547,1279.5,710.0547" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="1126.5" x2="1281.5" y1="710.0547" y2="710.0547"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="1133.5" y="705.3125">211</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="38" x="1164.5" y="705.3125">create</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="1206.5" y="704.9888">poolSeat</text><polygon fill="#A80036" points="788,735.3652,778,739.3652,788,743.3652,784,739.3652" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="782" x2="1286.5" y1="739.3652" y2="739.3652"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="794" y="734.623">212</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="825" y="734.2104">poolSeat</text><polygon fill="#A80036" points="1275.5,764.6758,1285.5,768.6758,1275.5,772.6758,1279.5,768.6758" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="777" x2="1281.5" y1="768.6758" y2="768.6758"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="784" y="763.9336">213</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="96" x="815" y="763.521">addLiquidity</text><polygon fill="#A80036" points="1275.5,793.9863,1285.5,797.9863,1275.5,801.9863,1279.5,797.9863" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="699.5" x2="1281.5" y1="797.9863" y2="797.9863"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="706.5" y="793.2441">214</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="78" x="737.5" y="793.2441">stage assets</text><polygon fill="#A80036" points="1018,823.2969,1028,827.2969,1018,831.2969,1022,827.2969" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="699.5" x2="1024" y1="827.2969" y2="827.2969"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="706.5" y="822.5547">215</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="78" x="737.5" y="822.5547">stage assets</text><line style="stroke:#A80036;stroke-width:1.0;" x1="777" x2="819" y1="856.6074" y2="856.6074"/><line style="stroke:#A80036;stroke-width:1.0;" x1="819" x2="819" y1="856.6074" y2="869.6074"/><line style="stroke:#A80036;stroke-width:1.0;" x1="778" x2="819" y1="869.6074" y2="869.6074"/><polygon fill="#A80036" points="788,865.6074,778,869.6074,788,873.6074,784,869.6074" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="784" y="851.8652">216</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="208" x="815" y="851.4526">reallocate(seat, poolSeat)</text><polygon fill="#A80036" points="263.5,894.918,253.5,898.918,263.5,902.918,259.5,898.918" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="1029" y1="898.918" y2="898.918"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="894.1758">217</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="64" x="300.5" y="893.7632">userSeat</text><polygon fill="#A80036" points="765,924.2285,775,928.2285,765,932.2285,769,928.2285" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="771" y1="928.2285" y2="928.2285"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="923.4863">218</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="128" x="290.5" y="923.0737">getOfferResult()</text><polygon fill="#A80036" points="263.5,953.5391,253.5,957.5391,263.5,961.5391,259.5,957.5391" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="776" y1="957.5391" y2="957.5391"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="952.7969">219</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="168" x="300.5" y="952.7969">result of failure or success</text><path d="M207,979.5391 L368,979.5391 L368,986.5391 L358,996.5391 L207,996.5391 L207,979.5391 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.0;"/><rect fill="none" height="320.1055" style="stroke:#000000;stroke-width:2.0;" width="865.5" x="207" y="979.5391"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="116" x="222" y="993.1074">recovering funds</text><polygon fill="#A80036" points="1018,1014.1602,1028,1018.1602,1018,1022.1602,1022,1018.1602" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="1024" y1="1018.1602" y2="1018.1602"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="1013.418">220</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="176" x="290.5" y="1013.0942">getPayout("Liquidity")</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="34" x="470.5" y="1013.418">(give)</text><polygon fill="#A80036" points="263.5,1043.4707,253.5,1047.4707,263.5,1051.4707,259.5,1047.4707" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="1029" y1="1047.4707" y2="1047.4707"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="1042.7285">221</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="120" x="300.5" y="1042.3159">payoutLiquidity</text><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="294.5" y1="1076.7813" y2="1076.7813"/><line style="stroke:#A80036;stroke-width:1.0;" x1="294.5" x2="294.5" y1="1076.7813" y2="1089.7813"/><line style="stroke:#A80036;stroke-width:1.0;" x1="253.5" x2="294.5" y1="1089.7813" y2="1089.7813"/><polygon fill="#A80036" points="263.5,1085.7813,253.5,1089.7813,263.5,1093.7813,259.5,1089.7813" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="1072.0391">222</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="47" x="290.5" y="1072.0391">deposit</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="120" x="341.5" y="1071.7153">payoutLiquidity</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="64" x="465.5" y="1072.0391">into purse</text><polygon fill="#A80036" points="1018,1115.0918,1028,1119.0918,1018,1123.0918,1022,1119.0918" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="1024" y1="1119.0918" y2="1119.0918"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="1114.3496">223</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="160" x="290.5" y="1114.0259">getPayout("Central")</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="38" x="454.5" y="1114.3496">(want)</text><polygon fill="#A80036" points="263.5,1144.4023,253.5,1148.4023,263.5,1152.4023,259.5,1148.4023" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="1029" y1="1148.4023" y2="1148.4023"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="1143.6602">224</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="104" x="300.5" y="1143.2476">payoutCentral</text><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="294.5" y1="1177.7129" y2="1177.7129"/><line style="stroke:#A80036;stroke-width:1.0;" x1="294.5" x2="294.5" y1="1177.7129" y2="1190.7129"/><line style="stroke:#A80036;stroke-width:1.0;" x1="253.5" x2="294.5" y1="1190.7129" y2="1190.7129"/><polygon fill="#A80036" points="263.5,1186.7129,253.5,1190.7129,263.5,1194.7129,259.5,1190.7129" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="1172.9707">225</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="47" x="290.5" y="1172.9707">deposit</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="104" x="341.5" y="1172.647">payoutCentral</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="64" x="449.5" y="1172.9707">into purse</text><polygon fill="#A80036" points="1018,1216.0234,1028,1220.0234,1018,1224.0234,1022,1220.0234" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="1024" y1="1220.0234" y2="1220.0234"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="1215.2813">226</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="176" x="290.5" y="1214.9575">getPayout("Secondary")</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="38" x="470.5" y="1215.2813">(want)</text><polygon fill="#A80036" points="263.5,1245.334,253.5,1249.334,263.5,1253.334,259.5,1249.334" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="257.5" x2="1029" y1="1249.334" y2="1249.334"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="269.5" y="1244.5918">227</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="120" x="300.5" y="1244.1792">payoutSecondary</text><line style="stroke:#A80036;stroke-width:1.0;" x1="252.5" x2="294.5" y1="1278.6445" y2="1278.6445"/><line style="stroke:#A80036;stroke-width:1.0;" x1="294.5" x2="294.5" y1="1278.6445" y2="1291.6445"/><line style="stroke:#A80036;stroke-width:1.0;" x1="253.5" x2="294.5" y1="1291.6445" y2="1291.6445"/><polygon fill="#A80036" points="263.5,1287.6445,253.5,1291.6445,263.5,1295.6445,259.5,1291.6445" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="27" x="259.5" y="1273.9023">228</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="47" x="290.5" y="1273.9023">deposit</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="120" x="341.5" y="1273.5786">payoutSecondary</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="64" x="465.5" y="1273.9023">into purse</text><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="176" x="1332.5" y="14.668">Agoric Systems Operating Company.</text><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="55" x="726.75" y="1416.8008">Page 4 of 4</text><!--MD5=[e35874f8cdeb1234391d1f079449f5df]
+@startuml
+'https://plantuml.com/sequence-diagram
+header Agoric Systems Operating Company.
+footer Page %page% of %lastpage%
+title AMM Sequence Diagram Creation
+
+autonumber
+actor "AMM Creator" as masc #lime
+actor "Pool Adder N" as pa #yellow
+actor "Pool User" as pu
+database "AMM Contract" as AMM
+box "Zoe"
+entity "Zoe" as zoe
+entity "userSeat" as usA
+end box
+
+== AMM Creation ==
+masc -> AMM: Create instance
+return ""creatorFacet""
+== Pool Addition SML:BCK==
+autonumber 10
+pa -> AMM: ""addPool()""
+database "Pool SML:BUCK" as pool
+entity "poolSeat SML:BUCK" as psA
+
+AMM -> pool: Create pool for SML -> BUCK
+AMM - -> pa: ""Issuer""
+== Pool Addition MOOL:BCK==
+autonumber 10
+pa -> AMM: ""addPool()""
+database "Pool MOOL:BUCK" as pool2
+AMM -> pool2: Create pool for MOOL -> BUCK
+AMM - -> pa: ""Issuer""
+
+
+== Duplicate Pool Addition MOOL:BCK==
+autonumber 30
+pa -> AMM: ""addPool()""
+AMM - ->x pa: pool for MOOL:BCK already exists
+newpage AMM Sequence Diagram Swap Request
+
+autonumber 50
+== Swap Request ==
+group asking for the current price UNK:BUCK
+pu -> AMM: ""getOutputPrice(UNK:BUCK)""
+AMM - ->x pu: ""brands were not recognized""
+end
+group asking for the current price MOOL:BUCK
+
+
+pu -> AMM: ""getOutputPrice(MOOL:BUCK)""
+AMM -> pool2: ""getPriceForOutput(MOOL:BUCK)""
+pool2 - -> AMM: ""quote""
+AMM - -> pu: ""quote""
+end
+
+group making a proposal
+pu -> pu: create proposal for SML:BUCK as ""proposal""
+
+end
+
+group requesting an invitation for a SwapOut
+pu -> AMM: ""makeSwapOutInvitation()""
+return ""invitation""
+
+end
+
+group making an offer
+pu -> pu: withdraw funds from purse of SML into ""payment""
+pu -> zoe: ""offer(invitation, proposal, payment))""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+newpage AMM Sequence Diagram Adding Liquidity
+
+autonumber 100
+== Adding Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> AMM: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to add 1 BUCK, and 1 SML\nat ratio of ""poolAllocation"" for X ""liquidity""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""BUCK"" into ""payments"" record
+pu -> pu: withdraw funds for ""SML"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (give)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (want)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+end
+
+
+newpage AMM Sequence Diagram Removing Liquidity
+
+autonumber 200
+== Removing Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> AMM: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to remove 1 ""liquidity"" for 1 BUCK and 1 SML\nat ratio of ""poolAllocation""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""liquidity"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Liquidity")"" (give)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+pu -> usA: ""getPayout("Central")"" (want)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+@enduml
+
+@startuml
+header Agoric Systems Operating Company.
+footer Page %page% of %lastpage%
+title AMM Sequence Diagram Creation
+
+autonumber
+actor "AMM Creator" as masc #lime
+actor "Pool Adder N" as pa #yellow
+actor "Pool User" as pu
+database "AMM Contract" as AMM
+box "Zoe"
+entity "Zoe" as zoe
+entity "userSeat" as usA
+end box
+
+== AMM Creation ==
+masc -> AMM: Create instance
+return ""creatorFacet""
+== Pool Addition SML:BCK==
+autonumber 10
+pa -> AMM: ""addPool()""
+database "Pool SML:BUCK" as pool
+entity "poolSeat SML:BUCK" as psA
+
+AMM -> pool: Create pool for SML -> BUCK
+AMM - -> pa: ""Issuer""
+== Pool Addition MOOL:BCK==
+autonumber 10
+pa -> AMM: ""addPool()""
+database "Pool MOOL:BUCK" as pool2
+AMM -> pool2: Create pool for MOOL -> BUCK
+AMM - -> pa: ""Issuer""
+
+
+== Duplicate Pool Addition MOOL:BCK==
+autonumber 30
+pa -> AMM: ""addPool()""
+AMM - ->x pa: pool for MOOL:BCK already exists
+newpage AMM Sequence Diagram Swap Request
+
+autonumber 50
+== Swap Request ==
+group asking for the current price UNK:BUCK
+pu -> AMM: ""getOutputPrice(UNK:BUCK)""
+AMM - ->x pu: ""brands were not recognized""
+end
+group asking for the current price MOOL:BUCK
+
+
+pu -> AMM: ""getOutputPrice(MOOL:BUCK)""
+AMM -> pool2: ""getPriceForOutput(MOOL:BUCK)""
+pool2 - -> AMM: ""quote""
+AMM - -> pu: ""quote""
+end
+
+group making a proposal
+pu -> pu: create proposal for SML:BUCK as ""proposal""
+
+end
+
+group requesting an invitation for a SwapOut
+pu -> AMM: ""makeSwapOutInvitation()""
+return ""invitation""
+
+end
+
+group making an offer
+pu -> pu: withdraw funds from purse of SML into ""payment""
+pu -> zoe: ""offer(invitation, proposal, payment))""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+newpage AMM Sequence Diagram Adding Liquidity
+
+autonumber 100
+== Adding Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> AMM: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to add 1 BUCK, and 1 SML\nat ratio of ""poolAllocation"" for X ""liquidity""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""BUCK"" into ""payments"" record
+pu -> pu: withdraw funds for ""SML"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (give)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (want)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+end
+
+
+newpage AMM Sequence Diagram Removing Liquidity
+
+autonumber 200
+== Removing Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> AMM: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to remove 1 ""liquidity"" for 1 BUCK and 1 SML\nat ratio of ""poolAllocation""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""liquidity"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Liquidity")"" (give)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+pu -> usA: ""getPayout("Central")"" (want)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+@enduml
+
+PlantUML version 1.2021.10(Mon Aug 30 06:43:48 PDT 2021)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

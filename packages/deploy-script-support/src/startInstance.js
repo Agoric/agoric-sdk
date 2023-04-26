@@ -1,10 +1,30 @@
 // @ts-check
-
 import { assert } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
-import { passStyleOf } from '@agoric/marshal';
+import { E, passStyleOf } from '@endo/far';
 
-/** @type {MakeStartInstanceAndSave} */
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+
+/**
+ * @template T
+ * @typedef {object} PetnameManager
+ * @property {(petname: Petname, object: T) => Promise<void>} rename
+ * @property {(petname: Petname) => T} get
+ * @property { () => Array<[Petname, T]>} getAll
+ * @property {(petname: Petname, object: T) => Promise<void>} add
+ */
+
+/**
+ * @typedef {PetnameManager<Installation>} InstallationManager
+ * @typedef {PetnameManager<Instance>} InstanceManager
+ * @typedef {PetnameManager<Issuer>} IssuerManager
+ */
+
+/**
+ * @param {ERef<IssuerManager>} issuerManager
+ * @param {ERef<InstanceManager>} instanceManager
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<Purse>} zoeInvitationPurse
+ */
 export const makeStartInstance = (
   issuerManager,
   instanceManager,
@@ -32,7 +52,16 @@ export const makeStartInstance = (
     return makeIssuerKeywordRecord(issuerPetnameKeywordRecord);
   };
 
-  /** @type {StartInstanceAndSave} */
+  /**
+   * @template {Installation} I
+   * @param {{
+   * instancePetname: Petname,
+   * installation: I | PromiseLike<I>,
+   * issuerKeywordRecord?: IssuerKeywordRecord,
+   * issuerPetnameKeywordRecord?: Record<Keyword,Petname>,
+   * terms?: object,
+   * }} config
+   */
   const startInstance = async config => {
     const {
       instancePetname,

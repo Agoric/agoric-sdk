@@ -1,13 +1,12 @@
 /* global globalThis */
-/* eslint-disable no-await-in-loop */
-// @ts-check
-
+/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 /** global print */
 
 const { assign, freeze, keys } = Object;
 
 /**
  * deep equal value comparison
+ * XXX broken https://github.com/Agoric/agoric-sdk/pull/5398
  *
  * originally based on code from Paul Roub Aug 2014
  * https://stackoverflow.com/a/25456134/7963
@@ -39,7 +38,7 @@ function deepDifference(x, y) {
     }
 
     const { hasOwnProperty } = Object.prototype;
-    /** @type {(obj: Object, prop: string | symbol | number) => boolean} */
+    /** @type {(obj: object, prop: string | symbol | number) => boolean} */
     const hasOwnPropertyOf = (obj, prop) =>
       Reflect.apply(hasOwnProperty, obj, [prop]);
     for (const prop of Reflect.ownKeys(x)) {
@@ -105,7 +104,7 @@ let theHarness = null; // ISSUE: ambient
  */
 function createHarness(send) {
   let testNum = 0;
-  /** @type {((ot: { context: Object }) => Promise<void>)[]} */
+  /** @type {((ot: { context: object }) => Promise<void>)[]} */
   const beforeHooks = [];
   /** @type {Record<string, () => Promise<void>>} */
   const suitesToRun = {};
@@ -137,7 +136,7 @@ function createHarness(send) {
     },
     /**
      * @param {string} name
-     * @returns { Promise<void> }
+     * @returns {Promise<void>}
      */
     async run(name) {
       for await (const hook of beforeHooks) {
@@ -159,7 +158,7 @@ function createHarness(send) {
  * @param {*} exc
  * @param {Expectation} expectation
  * @returns {null | { expected: unknown, actual: unknown }}
- * @typedef {{ instanceOf: Function } | { message: string | RegExp }=} Expectation
+ * @typedef {{ instanceOf: Function } | { message: string | RegExp } | undefined} Expectation
  */
 function checkExpectation(exc, expectation) {
   if (!expectation) return null;
@@ -188,7 +187,7 @@ function checkExpectation(exc, expectation) {
 /**
  * Emulate ava assertion API
  *
- * ref https://github.com/avajs/ava/blob/main/docs/03-assertions.md
+ * ref https://github.com/avajs/ava/blob/HEAD/docs/03-assertions.md
  *
  * @param {Harness} htest
  * @param {TapFormat} out
@@ -208,7 +207,7 @@ function makeTester(htest, out) {
 
   /**
    * @param {unknown} value
-   * @param {string=} msg
+   * @param {string} msg
    */
   function truthy(value, msg = 'should be truthy') {
     assert(!!value, msg);
@@ -234,21 +233,21 @@ function makeTester(htest, out) {
     truthy,
     /**
      * @param {unknown} value
-     * @param {string=} message
+     * @param {string} message
      */
     falsy(value, message = 'should be falsy') {
       assert(!value, message);
     },
     /**
      * @param {unknown} value
-     * @param {string=} message
+     * @param {string} message
      */
     true(value, message = 'should be true') {
       assert(value === true, message);
     },
     /**
      * @param {unknown} value
-     * @param {string=} message
+     * @param {string} message
      */
     false(value, message = 'should be false') {
       assert(value === false, message);

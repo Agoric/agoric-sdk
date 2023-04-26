@@ -1,8 +1,7 @@
 package swingset
 
 import (
-	// "fmt"
-	"encoding/json"
+	// "os"
 	"fmt"
 	stdlog "log"
 
@@ -13,9 +12,7 @@ import (
 )
 
 func NewGenesisState() *types.GenesisState {
-	return &types.GenesisState{
-		Storage: []*types.StorageEntry{},
-	}
+	return &types.GenesisState{}
 }
 
 func ValidateGenesis(data *types.GenesisState) error {
@@ -30,8 +27,7 @@ func ValidateGenesis(data *types.GenesisState) error {
 
 func DefaultGenesisState() *types.GenesisState {
 	return &types.GenesisState{
-		Params:  types.DefaultParams(),
-		Storage: []*types.StorageEntry{},
+		Params: types.DefaultParams(),
 	}
 }
 
@@ -43,10 +39,7 @@ type bootstrapBlockAction struct {
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
 	keeper.SetParams(ctx, data.GetParams())
-
-	for _, entry := range data.Storage {
-		keeper.SetStorage(ctx, entry.Key, entry.Value)
-	}
+	keeper.SetState(ctx, data.GetState())
 
 	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
 	// business.
@@ -54,15 +47,12 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 	action := &bootstrapBlockAction{
 		Type:        "BOOTSTRAP_BLOCK",
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: vm.GetPort("storage"),
-	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		panic(err)
+		StoragePort: vm.GetPort("vstorage"),
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	_, err := keeper.BlockingSend(ctx, action)
 
+	// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
@@ -75,6 +65,6 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
 	gs := NewGenesisState()
 	gs.Params = k.GetParams(ctx)
-	gs.Storage = k.ExportStorage(ctx)
+	gs.State = k.GetState(ctx)
 	return gs
 }

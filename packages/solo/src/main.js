@@ -20,7 +20,6 @@ const log = anylogger('ag-solo');
 // As we add more egress types, put the default types in a comma-separated
 // string below.
 const DEFAULT_EGRESSES = 'cosmos';
-process.on('SIGINT', () => process.exit(99));
 
 const AG_SOLO_BASEDIR =
   process.env.AG_SOLO_BASEDIR && path.resolve(process.env.AG_SOLO_BASEDIR);

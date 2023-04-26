@@ -3,6 +3,152 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.15.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.15.2...@agoric/ertp@0.15.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
+### [0.15.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.15.1...@agoric/ertp@0.15.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
+### [0.15.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.15.0...@agoric/ertp@0.15.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
+## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.14.2...@agoric/ertp@0.15.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move from Schema to Shape terminology (#6072)
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **store:** move some util where they are more reusable (#5990)
+
+### Features
+
+* make PSM bootstrap support multiple brands ([#6146](https://github.com/Agoric/agoric-sdk/issues/6146)) ([d9583f8](https://github.com/Agoric/agoric-sdk/commit/d9583f88fe98eaa16b5d5147f33a99f0722453e1)), closes [#6142](https://github.com/Agoric/agoric-sdk/issues/6142) [#6139](https://github.com/Agoric/agoric-sdk/issues/6139)
+
+
+### Bug Fixes
+
+* align issuer declaration order ([#6012](https://github.com/Agoric/agoric-sdk/issues/6012)) ([84f0198](https://github.com/Agoric/agoric-sdk/commit/84f0198aa596591d574a7b218b84b73889574cc7))
+* better mismatch errors ([#5947](https://github.com/Agoric/agoric-sdk/issues/5947)) ([46e34f6](https://github.com/Agoric/agoric-sdk/commit/46e34f6deb7e5d8210a227bdea32fe3e2296e9ef))
+* Better pattern mismatch diagnostics ([#5906](https://github.com/Agoric/agoric-sdk/issues/5906)) ([cf97ba3](https://github.com/Agoric/agoric-sdk/commit/cf97ba310fb5eb5f1ff5946d7104fdf27bcccfd4))
+* bug in M.setOf and M.bagOf ([#5952](https://github.com/Agoric/agoric-sdk/issues/5952)) ([c940736](https://github.com/Agoric/agoric-sdk/commit/c940736dae49a1d3095194839dae355d4db2a67f))
+* correct input validation of displayInfo ([#5876](https://github.com/Agoric/agoric-sdk/issues/5876)) ([7488530](https://github.com/Agoric/agoric-sdk/commit/74885306b09df45783dee8e63e97daa817cb0d9b)), closes [#5898](https://github.com/Agoric/agoric-sdk/issues/5898)
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* Make pattern matching faster ([#6158](https://github.com/Agoric/agoric-sdk/issues/6158)) ([9a2b427](https://github.com/Agoric/agoric-sdk/commit/9a2b427416e5e17a63cfa7c90dfa674741365d24))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* prepare for inherited method representation ([#5989](https://github.com/Agoric/agoric-sdk/issues/5989)) ([348b860](https://github.com/Agoric/agoric-sdk/commit/348b860c62d9479962df268cfb1795b6c369c2b8))
+* schema limit minting and offers ([#5461](https://github.com/Agoric/agoric-sdk/issues/5461)) ([dc7baa1](https://github.com/Agoric/agoric-sdk/commit/dc7baa195281f6442cfc28d0984adf0cf0d2341b))
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+* **ERTP:** limit decimal places to shift by (-100,100) ([8a154b8](https://github.com/Agoric/agoric-sdk/commit/8a154b8ebbc4c1abb2ca867daf139464765f80d3))
+
+
+### Code Refactoring
+
+* **store:** move from Schema to Shape terminology ([#6072](https://github.com/Agoric/agoric-sdk/issues/6072)) ([757b887](https://github.com/Agoric/agoric-sdk/commit/757b887edd2d41960fadc86d4900ebde55729867))
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
+### [0.14.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.14.1...@agoric/ertp@0.14.2) (2022-05-28)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
+### [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.14.0...@agoric/ertp@0.14.1) (2022-05-09)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
+## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.3...@agoric/ertp@0.14.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+* split single- and multi-faceted VO definitions into their own functions ([fcf293a](https://github.com/Agoric/agoric-sdk/commit/fcf293a4fcdf64bf30b377c7b3fb8b728efbb4af)), closes [#5093](https://github.com/Agoric/agoric-sdk/issues/5093)
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **ertp:** support min/max for AmountMath ([#4474](https://github.com/Agoric/agoric-sdk/issues/4474)) ([05c3060](https://github.com/Agoric/agoric-sdk/commit/05c3060c6f589dc6d7ba209e27d3300e9ad4b05c))
+
+
+### Bug Fixes
+
+* document invariants ([9a7ac04](https://github.com/Agoric/agoric-sdk/commit/9a7ac04093a79df4092907c245c2242599c98bc7))
+* recover stuck payments ([2e366cb](https://github.com/Agoric/agoric-sdk/commit/2e366cbbd447c0117f66bb740b05d2a1b4e82f33))
+* remove purse.claim per review comment ([e68ce40](https://github.com/Agoric/agoric-sdk/commit/e68ce40cb019f82b21ec623761a1df3cd68c27f2))
+* revert moveAssets changes ([58a61bb](https://github.com/Agoric/agoric-sdk/commit/58a61bb6f842357bd4cbc9628204fc8a1e8c7b53))
+* review comments ([f35ec10](https://github.com/Agoric/agoric-sdk/commit/f35ec103e7a8efe16baa42ffad32055142fde1c1))
+* typo ([#4871](https://github.com/Agoric/agoric-sdk/issues/4871)) ([3d36314](https://github.com/Agoric/agoric-sdk/commit/3d36314559b65a01287b89c74c4ad96dfd632027))
+* virtualize payments, purses, ledger ([#4618](https://github.com/Agoric/agoric-sdk/issues/4618)) ([dfeda1b](https://github.com/Agoric/agoric-sdk/commit/dfeda1bd7d8ca954b139d8dedda0624b924b8d81))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.2...@agoric/ertp@0.13.3) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+
+
+
+### [0.13.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.1...@agoric/ertp@0.13.2) (2022-02-21)
+
+
+### Features
+
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric-sdk/issues/4190)) ([fea822e](https://github.com/Agoric/agoric-sdk/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+* fullOrder leak. Semi-fungibles via CopyBags ([#4305](https://github.com/Agoric/agoric-sdk/issues/4305)) ([79c4276](https://github.com/Agoric/agoric-sdk/commit/79c4276da8c856674bd425c54715adec92648c48))
+* ordered set operations ([#4196](https://github.com/Agoric/agoric-sdk/issues/4196)) ([bda9206](https://github.com/Agoric/agoric-sdk/commit/bda920694c7ab573822415653335e258b9c21281))
+* remove pureCopy deleted from endo 1061 ([#4458](https://github.com/Agoric/agoric-sdk/issues/4458)) ([50e8523](https://github.com/Agoric/agoric-sdk/commit/50e852346d0b4005c613e30d10b469d89a4e5564))
+* towards patterns and stores ([c241e39](https://github.com/Agoric/agoric-sdk/commit/c241e3978a36778197b1bf3874b07f1ed4df9ceb))
+
+
+
+### [0.13.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.0...@agoric/ertp@0.13.1) (2021-12-22)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
 ## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.12.2...@agoric/ertp@0.13.0) (2021-12-02)
 
 

@@ -2,13 +2,10 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type msgServer struct {
@@ -31,7 +28,6 @@ type deliverInboundAction struct {
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
-	Params      types.Params    `json:"params"`
 }
 
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
@@ -49,23 +45,71 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		Peer:        msg.Submitter.String(),
 		Messages:    messages,
 		Ack:         msg.Ack,
-		StoragePort: vm.GetPort("storage"),
+		StoragePort: vm.GetPort("vstorage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		Params:      keeper.GetParams(ctx),
-	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err := keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
 	return &types.MsgDeliverInboundResponse{}, nil
+}
+
+type walletAction struct {
+	Type        string `json:"type"` // WALLET_ACTION
+	Owner       string `json:"owner"`
+	Action      string `json:"action"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+
+func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	action := &walletAction{
+		Type:        "WALLET_ACTION",
+		Owner:       msg.Owner.String(),
+		Action:      msg.Action,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
+	}
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+
+	err := keeper.PushAction(ctx, action)
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgWalletActionResponse{}, nil
+}
+
+type walletSpendAction struct {
+	Type        string `json:"type"` // WALLET_SPEND_ACTION
+	Owner       string `json:"owner"`
+	SpendAction string `json:"spendAction"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+
+func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgWalletSpendAction) (*types.MsgWalletSpendActionResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	action := &walletSpendAction{
+		Type:        "WALLET_SPEND_ACTION",
+		Owner:       msg.Owner.String(),
+		SpendAction: msg.SpendAction,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
+	}
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+	err := keeper.PushAction(ctx, action)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgWalletSpendActionResponse{}, nil
 }
 
 type provisionAction struct {
@@ -78,13 +122,9 @@ type provisionAction struct {
 func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision) (*types.MsgProvisionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	onePass := sdk.NewInt64Coin("provisionpass", 1)
-	balance := keeper.GetBalance(ctx, msg.Submitter, onePass.Denom)
-	if balance.IsLT(onePass) {
-		return nil, sdkerrors.Wrap(
-			sdkerrors.ErrInsufficientFee,
-			fmt.Sprintf("submitter %s needs at least %s", msg.Submitter, onePass.String()),
-		)
+	err := keeper.ChargeForProvisioning(ctx, msg.Submitter, msg.Address, msg.PowerFlags)
+	if err != nil {
+		return nil, err
 	}
 
 	action := &provisionAction{
@@ -92,11 +132,6 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		Type:         "PLEASE_PROVISION",
 		BlockHeight:  ctx.BlockHeight(),
 		BlockTime:    ctx.BlockTime().Unix(),
-	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
 	// Create the account, if it doesn't already exist.
@@ -106,11 +141,37 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		return nil, err
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err = keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.MsgProvisionResponse{}, nil
+}
+
+type installBundleAction struct {
+	*types.MsgInstallBundle
+	Type        string `json:"type"` // INSTALL_BUNDLE
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+
+func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	action := &installBundleAction{
+		MsgInstallBundle: msg,
+		Type:             "INSTALL_BUNDLE",
+		BlockHeight:      ctx.BlockHeight(),
+		BlockTime:        ctx.BlockTime().Unix(),
+	}
+
+	err := keeper.PushAction(ctx, action)
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgInstallBundleResponse{}, nil
 }

@@ -1,15 +1,17 @@
-// @ts-check
+// Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/ertp/exported.js';
+import '@agoric/zoe/exported.js';
 
-import './types.js';
+import './types-ambient.js';
 
 export {
   ChoiceMethod,
   ElectionType,
   QuorumRule,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   positionIncluded,
-  looksLikeIssueForType,
-  buildUnrankedQuestion,
+  buildQuestion,
 } from './question.js';
 
 export {
@@ -17,17 +19,28 @@ export {
   validateQuestionFromCounter,
 } from './contractGovernor.js';
 
-export { handleParamGovernance } from './contractHelper.js';
+export { handleParamGovernance, publicMixinAPI } from './contractHelper.js';
 
 export {
+  assertBallotConcernsParam,
   makeParamChangePositions,
-  validateParamChangeQuestion,
-  assertBallotConcernsQuestion,
-} from './governParam.js';
+  setupParamGovernance,
+  CONTRACT_ELECTORATE,
+} from './contractGovernance/governParam.js';
 
-export { ParamType, buildParamManager, assertType } from './paramManager.js';
+export {
+  assertElectorateMatches,
+  makeParamManagerBuilder,
+} from './contractGovernance/paramManager.js';
+
+export {
+  makeParamManager,
+  makeParamManagerSync,
+} from './contractGovernance/typedParamManager.js';
 
 export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
+
+export { ParamTypes } from './constants.js';

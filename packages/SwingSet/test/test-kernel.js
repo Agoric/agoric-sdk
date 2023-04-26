@@ -1,27 +1,13 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import anylogger from 'anylogger';
-import { assert, details as X } from '@agoric/assert';
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/hasher.js';
-
+// eslint-disable-next-line import/order
+import { Fail } from '@agoric/assert';
 import buildKernel from '../src/kernel/index.js';
-import { initializeKernel } from '../src/kernel/initializeKernel.js';
-import { makeVatSlot } from '../src/parseVatSlots.js';
-import { provideHostStorage } from '../src/hostStorage.js';
-import { checkKT, extractMessage } from './util.js';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
-
-const slot0arg = { '@qclass': 'slot', index: 0 };
+import { initializeKernel } from '../src/controller/initializeKernel.js';
+import { makeVatSlot } from '../src/lib/parseVatSlots.js';
+import { checkKT, extractMessage, makeKernelEndowments } from './util.js';
+import { kser, kslot } from '../src/lib/kmarshal.js';
 
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, rejected, data]];
@@ -46,35 +32,16 @@ function emptySetup(_syscall) {
   return dispatch;
 }
 
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
-
-function makeEndowments() {
-  return {
-    waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
-    runEndOfCrank: () => {},
-    makeConsole,
-    WeakRef,
-    FinalizationRegistry,
-    createSHA256,
-  };
-}
-
-function makeKernel() {
-  const endowments = makeEndowments();
-  initializeKernel({}, endowments.hostStorage);
+async function makeKernel() {
+  const endowments = makeKernelEndowments();
+  await initializeKernel({}, endowments.kernelStorage);
   return buildKernel(endowments, {}, {});
 }
 
+const tsv = [{ d: ['startVat', kser({})], sc: [], r: { status: 'ok' } }];
+
 test('build kernel', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
@@ -82,12 +49,15 @@ test('build kernel', async t => {
 });
 
 test('simple call', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup1(syscall, state, _helpers, vatPowers) {
     function dispatch(vatDeliverObject) {
       // TODO: just push the vatDeliverObject
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push([facetID, method, args]);
       vatPowers.testLog(JSON.stringify({ facetID, method, args }));
@@ -97,43 +67,45 @@ test('simple call', async t => {
   await kernel.createTestVat('vat1', setup1);
   const vat1 = kernel.vatNameToID('vat1');
   let data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: [] } }]);
+  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: tsv } }]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(data.log, []);
   t.deepEqual(log, []);
 
   const o1 = kernel.addExport(vat1, 'o+1');
-  kernel.queueToKref(o1, 'foo', capdata('args'));
-  t.deepEqual(kernel.dump().runQueue, [
+  kernel.queueToKref(o1, 'foo', ['args']);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: 'ko20',
       msg: {
-        method: 'foo',
-        args: capdata('args'),
+        methargs: kser(['foo', ['args']]),
         result: 'kp40',
       },
     },
   ]);
   t.deepEqual(log, []);
   await kernel.run();
-  t.deepEqual(log, [['o+1', 'foo', capdata('args')]]);
+  t.deepEqual(log, [['o+1', 'foo', kser(['args'])]]);
 
   data = kernel.dump();
   t.is(data.log.length, 1);
   t.deepEqual(JSON.parse(data.log[0]), {
     facetID: 'o+1',
     method: 'foo',
-    args: capdata('args'),
+    args: kser(['args']),
   });
 });
 
 test('vat store', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup(syscall, _state, _helpers, _vatPowers) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { method, args } = extractMessage(vatDeliverObject);
       switch (method) {
         case 'get': {
@@ -152,7 +124,7 @@ test('vat store', async t => {
           syscall.vatstoreDelete('zot');
           break;
         default:
-          assert.fail(X`this can't happen`);
+          Fail`this can't happen`;
       }
     }
     return dispatch;
@@ -161,32 +133,35 @@ test('vat store', async t => {
   const vat = kernel.vatNameToID('vat');
 
   const o1 = kernel.addExport(vat, 'o+1');
-  kernel.queueToKref(o1, 'get', capdata('[]'));
-  kernel.queueToKref(o1, 'store', capdata('first value'));
-  kernel.queueToKref(o1, 'get', capdata('[]'));
-  kernel.queueToKref(o1, 'store', capdata('second value'));
-  kernel.queueToKref(o1, 'get', capdata('[]'));
-  kernel.queueToKref(o1, 'delete', capdata('[]'));
-  kernel.queueToKref(o1, 'get', capdata('[]'));
+  kernel.queueToKref(o1, 'get', ['[]']);
+  kernel.queueToKref(o1, 'store', ['first value']);
+  kernel.queueToKref(o1, 'get', ['[]']);
+  kernel.queueToKref(o1, 'store', ['second value']);
+  kernel.queueToKref(o1, 'get', ['[]']);
+  kernel.queueToKref(o1, 'delete', ['[]']);
+  kernel.queueToKref(o1, 'get', ['[]']);
   t.deepEqual(log, []);
   await kernel.run();
   t.deepEqual(log, [
     'undefined',
-    '"first value"',
-    '"second value"',
+    '"#["first value"]"',
+    '"#["second value"]"',
     'undefined',
   ]);
   const data = kernel.dump();
   // check that we're not sticking an undefined into the transcript
-  t.is(data.vatTables[0].state.transcript[1].syscalls[0].response, null);
+  t.deepEqual(data.vatTables[0].state.transcript[1].sc[0].r, ['ok', null]);
 });
 
 test('map inbound', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup1(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push([facetID, method, args]);
     }
@@ -198,8 +173,8 @@ test('map inbound', async t => {
   const vat2 = kernel.vatNameToID('vat2');
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: vat1, state: { transcript: [] } },
-    { vatID: vat2, state: { transcript: [] } },
+    { vatID: vat1, state: { transcript: tsv } },
+    { vatID: vat2, state: { transcript: tsv } },
   ]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(log, []);
@@ -207,21 +182,20 @@ test('map inbound', async t => {
   const o1 = kernel.addExport(vat1, 'o+1');
   const koFor5 = kernel.addExport(vat1, 'o+5');
   const koFor6 = kernel.addExport(vat2, 'o+6');
-  kernel.queueToKref(o1, 'foo', capdata('args', [koFor5, koFor6]));
-  t.deepEqual(kernel.dump().runQueue, [
+  kernel.queueToKref(o1, 'foo', [kslot(koFor5), kslot(koFor6)]);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: o1,
       msg: {
-        method: 'foo',
-        args: capdata('args', [koFor5, koFor6]),
+        methargs: kser(['foo', [kslot(koFor5), kslot(koFor6)]]),
         result: 'kp40',
       },
     },
   ]);
   t.deepEqual(log, []);
   await kernel.run();
-  t.deepEqual(log, [['o+1', 'foo', capdata('args', ['o+5', 'o-50'])]]);
+  t.deepEqual(log, [['o+1', 'foo', kser([kslot('o+5'), kslot('o-50')])]]);
   t.deepEqual(kernel.dump().kernelTable, [
     [o1, vat1, 'o+1'],
     [koFor5, vat1, 'o+5'],
@@ -232,7 +206,7 @@ test('map inbound', async t => {
 });
 
 test('addImport', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   function setup(_syscall) {
     function dispatch() {}
@@ -252,7 +226,7 @@ test('addImport', async t => {
 });
 
 test('outbound call', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   let v1tovat25;
@@ -266,14 +240,16 @@ test('outbound call', async t => {
       return makeVatSlot('promise', true, index);
     }
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, args]);
       const pid = allocatePromise();
       syscall.send(
         v1tovat25,
-        'bar',
-        capdata('bargs', [v1tovat25, 'o+7', p7]),
+        kser(['bar', [kslot(v1tovat25), kslot('o+7'), kslot(p7)]]),
         pid,
       );
     }
@@ -283,6 +259,9 @@ test('outbound call', async t => {
 
   function setup2(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`d2/${facetID} called`);
       log.push(['d2', facetID, method, args]);
@@ -301,8 +280,8 @@ test('outbound call', async t => {
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: vat1, state: { transcript: [] } },
-    { vatID: vat2, state: { transcript: [] } },
+    { vatID: vat1, state: { transcript: tsv } },
+    { vatID: vat2, state: { transcript: tsv } },
   ]);
 
   const kt = [
@@ -315,33 +294,52 @@ test('outbound call', async t => {
 
   // o1!foo(args)
   const o1 = kernel.addExport(vat1, 'o+1');
-  kernel.queueToKref(o1, 'foo', capdata('args'));
+  kernel.queueToKref(o1, 'foo', ['args']);
+  t.deepEqual(log, []);
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
+    {
+      type: 'send',
+      target: t1,
+      msg: {
+        methargs: kser(['foo', ['args']]),
+        result: 'kp40',
+      },
+    },
+  ]);
+
+  // Move the send to the run-queue
+  await kernel.step();
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
       type: 'send',
       target: t1,
       msg: {
-        method: 'foo',
-        args: capdata('args'),
+        methargs: kser(['foo', ['args']]),
         result: 'kp40',
       },
     },
   ]);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
 
+  // Deliver the send
   await kernel.step();
   // that queues pid=o2!bar(o2, o7, p7)
 
-  t.deepEqual(log.shift(), ['d1', 'o+1', 'foo', capdata('args')]);
+  t.deepEqual(log.shift(), ['d1', 'o+1', 'foo', kser(['args'])]);
   t.deepEqual(log, []);
 
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: vat2Obj5,
       msg: {
-        method: 'bar',
-        args: capdata('bargs', [vat2Obj5, 'ko22', 'kp41']),
+        methargs: kser([
+          'bar',
+          [kslot(vat2Obj5), kslot('ko22'), kslot('kp41')],
+        ]),
         result: 'kp42',
       },
     },
@@ -383,9 +381,10 @@ test('outbound call', async t => {
   checkKT(t, kernel, kt);
 
   await kernel.step();
+  await kernel.step();
   t.deepEqual(log, [
     // todo: check result
-    ['d2', 'o+5', 'bar', capdata('bargs', ['o+5', 'o-50', 'p-60'])],
+    ['d2', 'o+5', 'bar', kser([kslot('o+5'), kslot('o-50'), kslot('p-60')])],
     [
       'd2 promises',
       [
@@ -461,7 +460,7 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   let bobForA;
@@ -475,11 +474,14 @@ test('three-party', async t => {
       return makeVatSlot('promise', true, index);
     }
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, args]);
       const pid = allocatePromise();
-      syscall.send(bobForA, 'intro', capdata('bargs', [carolForA]), pid);
+      syscall.send(bobForA, kser(['intro', [kslot(carolForA)]]), pid);
       log.push(['vatA', 'promiseID', pid]);
     }
     return dispatch;
@@ -488,6 +490,9 @@ test('three-party', async t => {
 
   function setupB(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`vatB/${facetID} called`);
       log.push(['vatB', facetID, method, args]);
@@ -498,6 +503,9 @@ test('three-party', async t => {
 
   function setupC(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push(['vatC', facetID, method, args]);
     }
@@ -522,9 +530,9 @@ test('three-party', async t => {
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: vatA, state: { transcript: [] } },
-    { vatID: vatB, state: { transcript: [] } },
-    { vatID: vatC, state: { transcript: [] } },
+    { vatID: vatA, state: { transcript: tsv } },
+    { vatID: vatB, state: { transcript: tsv } },
+    { vatID: vatC, state: { transcript: tsv } },
   ]);
   const kt = [
     [alice, vatA, 'o+4'],
@@ -538,20 +546,23 @@ test('three-party', async t => {
   t.deepEqual(log, []);
 
   const o4 = kernel.addExport(vatA, 'o+4');
-  kernel.queueToKref(o4, 'foo', capdata('args'));
+  kernel.queueToKref(o4, 'foo', ['args']);
+  // Move the send to the run-queue
+  await kernel.step();
+  // Deliver the send
   await kernel.step();
 
-  t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', capdata('args')]);
+  t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', kser(['args'])]);
   t.deepEqual(log.shift(), ['vatA', 'promiseID', 'p+5']);
   t.deepEqual(log, []);
 
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: bob,
       msg: {
-        method: 'intro',
-        args: capdata('bargs', [carol]),
+        methargs: kser(['intro', [kslot(carol)]]),
         result: 'kp42',
       },
     },
@@ -590,20 +601,24 @@ test('three-party', async t => {
   checkKT(t, kernel, kt);
 
   await kernel.step();
-  t.deepEqual(log, [['vatB', 'o+5', 'intro', capdata('bargs', ['o-50'])]]);
+  await kernel.step();
+  t.deepEqual(log, [['vatB', 'o+5', 'intro', kser([kslot('o-50')])]]);
   kt.push([carol, vatB, 'o-50']);
   kt.push(['kp42', vatB, 'p-60']);
   checkKT(t, kernel, kt);
 });
 
 test('transfer promise', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   let syscallA;
   const logA = [];
   function setupA(syscall) {
     syscallA = syscall;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       logA.push([facetID, method, args]);
     }
@@ -616,6 +631,9 @@ test('transfer promise', async t => {
   function setupB(syscall) {
     syscallB = syscall;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       logB.push([facetID, method, args]);
     }
@@ -646,14 +664,13 @@ test('transfer promise', async t => {
   checkPromises(t, kernel, kp);
 
   // sending a promise should arrive as a promise
-  syscallA.send(B, 'foo1', capdata('args', [pr1]));
-  t.deepEqual(kernel.dump().runQueue, [
+  syscallA.send(B, kser(['foo1', [kslot(pr1)]]));
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: bob,
       msg: {
-        method: 'foo1',
-        args: capdata('args', ['kp40']),
+        methargs: kser(['foo1', [kslot('kp40')]]),
         result: null,
       },
     },
@@ -671,44 +688,47 @@ test('transfer promise', async t => {
   });
   checkPromises(t, kernel, kp);
   await kernel.run();
-  t.deepEqual(logB.shift(), ['o+5', 'foo1', capdata('args', ['p-60'])]);
+  t.deepEqual(logB.shift(), ['o+5', 'foo1', kser([kslot('p-60')])]);
   t.deepEqual(logB, []);
   kt.push(['kp40', vatB, 'p-60']); // pr1 for B
   checkKT(t, kernel, kt);
 
   // sending it a second time should arrive as the same thing
-  syscallA.send(B, 'foo2', capdata('args', [pr1]));
+  syscallA.send(B, kser(['foo2', [kslot(pr1)]]));
   await kernel.run();
-  t.deepEqual(logB.shift(), ['o+5', 'foo2', capdata('args', ['p-60'])]);
+  t.deepEqual(logB.shift(), ['o+5', 'foo2', kser([kslot('p-60')])]);
   t.deepEqual(logB, []);
   checkKT(t, kernel, kt);
   checkPromises(t, kernel, kp);
 
   // sending it back should arrive with the sender's index
-  syscallB.send(A, 'foo3', capdata('args', ['p-60']));
+  syscallB.send(A, kser(['foo3', [kslot('p-60')]]));
   await kernel.run();
-  t.deepEqual(logA.shift(), ['o+6', 'foo3', capdata('args', [pr1])]);
+  t.deepEqual(logA.shift(), ['o+6', 'foo3', kser([kslot(pr1)])]);
   t.deepEqual(logA, []);
   checkKT(t, kernel, kt);
   checkPromises(t, kernel, kp);
 
   // sending it back a second time should arrive as the same thing
-  syscallB.send(A, 'foo4', capdata('args', ['p-60']));
+  syscallB.send(A, kser(['foo4', [kslot('p-60')]]));
   await kernel.run();
-  t.deepEqual(logA.shift(), ['o+6', 'foo4', capdata('args', [pr1])]);
+  t.deepEqual(logA.shift(), ['o+6', 'foo4', kser([kslot(pr1)])]);
   t.deepEqual(logA, []);
   checkPromises(t, kernel, kp);
   checkKT(t, kernel, kt);
 });
 
 test('subscribe to promise', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   let syscall;
   const log = [];
   function setup(s) {
     syscall = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push(['deliver', facetID, method, args]);
     }
@@ -745,7 +765,7 @@ test('subscribe to promise', async t => {
 });
 
 test('promise resolveToData', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -753,6 +773,9 @@ test('promise resolveToData', async t => {
   function setupA(s) {
     syscallA = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -792,10 +815,10 @@ test('promise resolveToData', async t => {
     },
   ]);
 
-  syscallB.resolve([[pForB, false, capdata('"args"', [aliceForA])]]);
+  syscallB.resolve([[pForB, false, kser(kslot(aliceForA))]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'notify',
       vatID: vatA,
@@ -803,18 +826,22 @@ test('promise resolveToData', async t => {
     },
   ]);
 
+  // Move the notify to the run-queue
   await kernel.step();
+  // Deliver the notify
+  await kernel.step();
+
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
     'notify',
-    oneResolution(pForA, false, capdata('"args"', ['o-50'])),
+    oneResolution(pForA, false, kser(kslot('o-50'))),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, []);
 });
 
 test('promise resolveToPresence', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -822,6 +849,9 @@ test('promise resolveToPresence', async t => {
   function setupA(s) {
     syscallA = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -867,9 +897,9 @@ test('promise resolveToPresence', async t => {
     },
   ]);
 
-  syscallB.resolve([[pForB, false, capargs(slot0arg, [bobForB])]]);
+  syscallB.resolve([[pForB, false, kser(kslot(bobForB))]]);
   t.deepEqual(log, []); // no other dispatch calls
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'notify',
       vatID: vatA,
@@ -877,20 +907,21 @@ test('promise resolveToPresence', async t => {
     },
   ]);
 
+  // Move the notify to the run-queue
+  await kernel.step();
+  // Deliver the notify
   await kernel.step();
   t.deepEqual(log.shift(), [
     'notify',
-    oneResolution(pForA, false, {
-      body: '{"@qclass":"slot","index":0}',
-      slots: [bobForA],
-    }),
+    oneResolution(pForA, false, kser(kslot(bobForA))),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
 });
 
-test('promise reject', async t => {
-  const kernel = makeKernel();
+test('promise fails when resolve to promise', async t => {
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -898,6 +929,9 @@ test('promise reject', async t => {
   function setupA(s) {
     syscallA = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -915,7 +949,64 @@ test('promise reject', async t => {
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
 
-  const aliceForA = 'o+6';
+  const p1ForB = 'p+5';
+  const p1ForKernel = kernel.addExport(vatB, p1ForB);
+  const p1ForA = kernel.addImport(vatA, p1ForKernel);
+
+  const p2ForB = 'p+6';
+
+  syscallA.subscribe(p1ForA);
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: p1ForKernel,
+      state: 'unresolved',
+      policy: 'ignore',
+      refCount: 3,
+      decider: vatB,
+      subscribers: [vatA],
+      queue: [],
+    },
+  ]);
+
+  t.throws(
+    () => syscallB.resolve([[p1ForB, false, kser(kslot(p2ForB))]]),
+    undefined,
+    `Should throw when resolving to promise`,
+  );
+  t.deepEqual(log, []);
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
+});
+
+test('promise reject', async t => {
+  const kernel = await makeKernel();
+  await kernel.start();
+  const log = [];
+
+  let syscallA;
+  function setupA(s) {
+    syscallA = s;
+    function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      log.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatA', setupA);
+
+  let syscallB;
+  function setupB(s) {
+    syscallB = s;
+    function dispatch() {}
+    return dispatch;
+  }
+  await kernel.createTestVat('vatB', setupB);
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
   const pForB = 'p+5';
   const pForKernel = kernel.addExport(vatB, pForB);
   const pForA = kernel.addImport(vatA, pForKernel);
@@ -937,10 +1028,11 @@ test('promise reject', async t => {
     },
   ]);
 
-  syscallB.resolve([[pForB, true, capdata('"args"', [aliceForA])]]);
+  // Reject the promise with itself
+  syscallB.resolve([[pForB, true, kser(kslot(pForB))]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'notify',
       vatID: vatA,
@@ -948,26 +1040,113 @@ test('promise reject', async t => {
     },
   ]);
 
+  // Move the notify to the run-queue
+  await kernel.step();
+  // Deliver the notify
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
     'notify',
-    oneResolution(pForA, true, capdata('"args"', ['o-50'])),
+    oneResolution(pForA, true, kser(kslot(pForA))),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
 });
+
+async function doResultInArgs(t, enablePipelining) {
+  // https://github.com/Agoric/agoric-sdk/issues/5189
+  const kernel = await makeKernel();
+  await kernel.start();
+
+  // Alice sends a message to Bob which references its own result
+  // promise, Bob receives it. We allow this from pipelining vats like
+  // comms (since remote systems might do that, and we don't want to
+  // let that kill the comms vat), but not from local vats.
+
+  const logA = [];
+  let syscallA;
+  function setupA(s) {
+    syscallA = s;
+    function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      logA.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatA', setupA, {}, { enablePipelining });
+
+  const logB = [];
+  function setupB() {
+    function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      logB.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatB', setupB);
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  const bobForB = 'o+5';
+  const bobKref = kernel.addExport(vatB, bobForB);
+  const bobForA = kernel.addImport(vatA, bobKref);
+
+  const resP = 'p+1';
+  if (!enablePipelining) {
+    console.log(`intentional error, should get 'p+1 is already allocated'`);
+    t.throws(() => syscallA.send(bobForA, kser(['one', [kslot(resP)]]), resP), {
+      message: /syscall translation error: prepare to die/,
+    });
+    return;
+  }
+  syscallA.send(bobForA, kser(['one', [kslot(resP)]]), resP);
+
+  const q1 = kernel.dump().acceptanceQueue[0];
+  const m1 = q1.msg;
+  const kpid = m1.result; // probably kp40
+  t.is(kernel.dump().promises.length, 1);
+  const p1 = kernel.dump().promises[0];
+  t.is(p1.id, kpid);
+  // if vatTranslator translated args before result, then 1: resP
+  // might look like an exported promise, leaving decider as vatA, and
+  // 2: the translator would balk at translating a non-new resP
+  t.is(p1.decider, undefined);
+
+  await kernel.run();
+  const b1 = logB.shift();
+  t.is(b1[0], 'message');
+  t.is(b1[2].result, b1[2].methargs.slots[0]);
+
+  t.is(kernel.dump().promises.length, 1);
+  // vatB should now hold decision-making authority
+  const p2 = kernel.dump().promises[0];
+  t.is(p2.id, kpid);
+  t.is(p2.decider, vatB);
+}
+
+test('result promise in args (pipelining)', doResultInArgs, true);
+
+test('result promise in args (non-pipelining)', doResultInArgs, false);
 
 test('transcript', async t => {
   const aliceForAlice = 'o+1';
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
 
   function setup(syscall, _state) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, args } = extractMessage(vatDeliverObject);
       if (facetID === aliceForAlice) {
-        syscall.send(args.slots[1], 'foo', capdata('fooarg'), 'p+5');
+        syscall.send(args.slots[1], kser(['foo', ['fooarg']]), 'p+5');
       }
     }
     return dispatch;
@@ -981,42 +1160,46 @@ test('transcript', async t => {
   const bob = kernel.addExport(vatB, 'o+2');
   const bobForAlice = kernel.addImport(vatA, bob);
 
-  kernel.queueToKref(alice, 'store', capdata('args string', [alice, bob]));
+  kernel.queueToKref(alice, 'store', [kslot(alice), kslot(bob)]);
+  // Move the send to the run-queue
+  await kernel.step();
+  // Deliver the send
   await kernel.step();
 
   // the transcript records vat-specific import/export slots
 
   const tr = kernel.dump().vatTables[0].state.transcript;
-  t.is(tr.length, 1);
-  t.deepEqual(tr[0], {
+  t.is(tr.length, 2);
+  t.deepEqual(tr[0], tsv[0]);
+  t.deepEqual(tr[1], {
     d: [
       'message',
       aliceForAlice,
       {
-        method: 'store',
-        args: capdata('args string', [aliceForAlice, bobForAlice]),
+        methargs: kser(['store', [kslot(aliceForAlice), kslot(bobForAlice)]]),
         result: 'p-60',
       },
     ],
-    syscalls: [
+    sc: [
       {
-        d: [
+        s: [
           'send',
           bobForAlice,
-          { method: 'foo', args: capdata('fooarg'), result: 'p+5' },
+          { methargs: kser(['foo', ['fooarg']]), result: 'p+5' },
         ],
-        response: null,
+        r: ['ok', null],
       },
     ],
+    r: { status: 'ok' },
   });
 });
 
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a
-// decider but p2 gets queued in p1 (not pipelined to vat-with-x) so p2 won't
-// have a decider. Make sure p3 gets queued in p2 rather than exploding.
+// decider but bar gets queued in p1 (not pipelined to vat-with-x) so p2 won't
+// have a decider. Make sure urgh gets queued in p2 rather than exploding.
 
 test('non-pipelined promise queueing', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -1030,9 +1213,11 @@ test('non-pipelined promise queueing', async t => {
 
   function setupB(_s) {
     function dispatch(vatDeliverObject) {
-      const { facetID, method, args, result } = extractMessage(
-        vatDeliverObject,
-      );
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      const { facetID, method, args, result } =
+        extractMessage(vatDeliverObject);
       log.push([facetID, method, args, result]);
     }
     return dispatch;
@@ -1047,15 +1232,15 @@ test('non-pipelined promise queueing', async t => {
   const bobForA = kernel.addImport(vatA, bobForKernel);
 
   const p1ForA = 'p+1';
-  syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
+  syscall.send(bobForA, kser(['foo', ['fooargs']]), p1ForA);
   const p1ForKernel = kernel.addExport(vatA, p1ForA);
 
   const p2ForA = 'p+2';
-  syscall.send(p1ForA, 'bar', capdata('barargs'), p2ForA);
+  syscall.send(p1ForA, kser(['bar', ['barargs']]), p2ForA);
   const p2ForKernel = kernel.addExport(vatA, p2ForA);
 
   const p3ForA = 'p+3';
-  syscall.send(p2ForA, 'urgh', capdata('urghargs'), p3ForA);
+  syscall.send(p2ForA, kser(['urgh', ['urghargs']]), p3ForA);
   const p3ForKernel = kernel.addExport(vatA, p3ForA);
 
   t.deepEqual(kernel.dump().promises, [
@@ -1091,7 +1276,7 @@ test('non-pipelined promise queueing', async t => {
   await kernel.run();
 
   const p1ForB = kernel.addImport(vatB, p1ForKernel);
-  t.deepEqual(log.shift(), [bobForB, 'foo', capdata('fooargs'), p1ForB]);
+  t.deepEqual(log.shift(), [bobForB, 'foo', kser(['fooargs']), p1ForB]);
   t.deepEqual(log, []);
 
   t.deepEqual(kernel.dump().promises, [
@@ -1104,8 +1289,7 @@ test('non-pipelined promise queueing', async t => {
       subscribers: [],
       queue: [
         {
-          method: 'bar',
-          args: capdata('barargs'),
+          methargs: kser(['bar', ['barargs']]),
           result: p2ForKernel,
         },
       ],
@@ -1119,8 +1303,7 @@ test('non-pipelined promise queueing', async t => {
       subscribers: [],
       queue: [
         {
-          method: 'urgh',
-          args: capdata('urghargs'),
+          methargs: kser(['urgh', ['urghargs']]),
           result: p3ForKernel,
         },
       ],
@@ -1140,8 +1323,8 @@ test('non-pipelined promise queueing', async t => {
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); with pipelining. All three should
 // get delivered to vat-with-x.
 
-test('pipelined promise queueing', async t => {
-  const kernel = makeKernel();
+const pipelinedSendTest = async (t, delayed) => {
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -1155,9 +1338,11 @@ test('pipelined promise queueing', async t => {
 
   function setupB(_s) {
     function dispatch(vatDeliverObject) {
-      const { facetID, method, args, result } = extractMessage(
-        vatDeliverObject,
-      );
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      const { facetID, method, args, result } =
+        extractMessage(vatDeliverObject);
       log.push([facetID, method, args, result]);
     }
     return dispatch;
@@ -1171,20 +1356,34 @@ test('pipelined promise queueing', async t => {
   const bobForKernel = kernel.addExport(vatB, bobForB);
   const bobForA = kernel.addImport(vatA, bobForKernel);
 
+  const p0ForA = 'p+0';
+  const p0ForKernel = kernel.addExport(vatA, p0ForA);
+
+  const initialTarget = delayed ? p0ForA : bobForA;
+
   const p1ForA = 'p+1';
-  syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
+  syscall.send(initialTarget, kser(['foo', ['fooargs']]), p1ForA);
   const p1ForKernel = kernel.addExport(vatA, p1ForA);
 
   const p2ForA = 'p+2';
-  syscall.send(p1ForA, 'bar', capdata('barargs'), p2ForA);
+  syscall.send(p1ForA, kser(['bar', ['barargs']]), p2ForA);
   const p2ForKernel = kernel.addExport(vatA, p2ForA);
 
   const p3ForA = 'p+3';
-  syscall.send(p2ForA, 'urgh', capdata('urghargs'), p3ForA);
+  syscall.send(p2ForA, kser(['urgh', ['urghargs']]), p3ForA);
   const p3ForKernel = kernel.addExport(vatA, p3ForA);
 
   t.deepEqual(kernel.dump().promises, [
     {
+      id: p0ForKernel,
+      state: 'unresolved',
+      policy: 'ignore',
+      refCount: delayed ? 3 : 2,
+      decider: vatA,
+      subscribers: [],
+      queue: [],
+    },
+    {
       id: p1ForKernel,
       state: 'unresolved',
       policy: 'ignore',
@@ -1213,17 +1412,112 @@ test('pipelined promise queueing', async t => {
     },
   ]);
 
-  await kernel.run();
+  // move foo send from acceptance to run-queue/p0-queue
+  await kernel.step();
+  // move bar send from acceptance to p1-queue
+  await kernel.step();
+  // move urgh send from acceptance to p2-queue
+  await kernel.step();
+
+  if (delayed) {
+    t.deepEqual(log, []);
+    t.deepEqual(kernel.dump().promises, [
+      {
+        id: p0ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 3,
+        decider: vatA,
+        subscribers: [],
+        queue: [
+          {
+            methargs: kser(['foo', ['fooargs']]),
+            result: p1ForKernel,
+          },
+        ],
+      },
+      {
+        id: p1ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 4,
+        decider: undefined,
+        subscribers: [],
+        queue: [
+          {
+            methargs: kser(['bar', ['barargs']]),
+            result: p2ForKernel,
+          },
+        ],
+      },
+      {
+        id: p2ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 4,
+        decider: undefined,
+        subscribers: [],
+        queue: [
+          {
+            methargs: kser(['urgh', ['urghargs']]),
+            result: p3ForKernel,
+          },
+        ],
+      },
+      {
+        id: p3ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 3,
+        decider: undefined,
+        subscribers: [],
+        queue: [],
+      },
+    ]);
+
+    syscall.resolve([[p0ForA, false, kser(kslot(bobForA))]]);
+
+    // move foo send from acceptance to run-queue
+    await kernel.step();
+  }
+  // deliver foo send from run-queue to vatB
+  // move bar send from p1-queue to acceptance queue
+  await kernel.step();
+  // move bar send from acceptance to run-queue
+  await kernel.step();
+  // deliver bar send from run-queue to vatB
+  // move urgh send from p2-queue to acceptance queue
+  await kernel.step();
+  // move urgh send from acceptance to run-queue
+  await kernel.step();
+  // deliver urgh send from run-queue to vatB
+  await kernel.step();
 
   const p1ForB = kernel.addImport(vatB, p1ForKernel);
   const p2ForB = kernel.addImport(vatB, p2ForKernel);
   const p3ForB = kernel.addImport(vatB, p3ForKernel);
-  t.deepEqual(log.shift(), [bobForB, 'foo', capdata('fooargs'), p1ForB]);
-  t.deepEqual(log.shift(), [p1ForB, 'bar', capdata('barargs'), p2ForB]);
-  t.deepEqual(log.shift(), [p2ForB, 'urgh', capdata('urghargs'), p3ForB]);
+  t.deepEqual(log.shift(), [bobForB, 'foo', kser(['fooargs']), p1ForB]);
+  t.deepEqual(log.shift(), [p1ForB, 'bar', kser(['barargs']), p2ForB]);
+  t.deepEqual(log.shift(), [p2ForB, 'urgh', kser(['urghargs']), p3ForB]);
   t.deepEqual(log, []);
 
   t.deepEqual(kernel.dump().promises, [
+    delayed
+      ? {
+          id: p0ForKernel,
+          state: 'fulfilled',
+          refCount: 1,
+          data: kser(kslot(bobForKernel)),
+        }
+      : {
+          id: p0ForKernel,
+          state: 'unresolved',
+          policy: 'ignore',
+          refCount: 2,
+          decider: vatA,
+          subscribers: [],
+          queue: [],
+        },
     {
       id: p1ForKernel,
       state: 'unresolved',
@@ -1252,24 +1546,33 @@ test('pipelined promise queueing', async t => {
       queue: [],
     },
   ]);
-});
+};
+
+test('pipelined promise queueing', pipelinedSendTest, false);
+test('pipelined promise queueing with delay', pipelinedSendTest, true);
 
 test('xs-worker default manager type', async t => {
-  const endowments = makeEndowments();
-  initializeKernel({ defaultManagerType: 'xs-worker' }, endowments.hostStorage);
+  const endowments = makeKernelEndowments();
+  await initializeKernel(
+    { defaultManagerType: 'xs-worker' },
+    endowments.kernelStorage,
+  );
   buildKernel(endowments, {}, {});
   t.deepEqual(
-    endowments.hostStorage.kvStore.get('kernel.defaultManagerType'),
+    endowments.kernelStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
   );
 });
 
 async function reapTest(t, freq) {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup() {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -1280,18 +1583,14 @@ async function reapTest(t, freq) {
 
   const vatRoot = kernel.addExport(vat1, 'o+1');
   function deliverMessage(ordinal) {
-    kernel.queueToKref(vatRoot, `msg_${ordinal}`, capdata('[]'));
+    kernel.queueToKref(vatRoot, `msg_${ordinal}`, []);
   }
   function matchMsg(ordinal) {
     return [
       'message',
       'o+1',
       {
-        args: {
-          body: '[]',
-          slots: [],
-        },
-        method: `msg_${ordinal}`,
+        methargs: kser([`msg_${ordinal}`, []]),
         result: `p-${60 + ordinal}`,
       },
     ];

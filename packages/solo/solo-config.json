@@ -1,6 +1,7 @@
 {
   "bootstrap": "bootstrap",
   "defaultManagerType": "xs-worker",
+  "defaultReapInterval": 1000,
   "vats": {
     "spawner": {
       "sourceSpec": "./src/vat-spawner.js"
@@ -15,7 +16,7 @@
       "sourceSpec": "./src/vat-uploads.js"
     },
     "bootstrap": {
-      "sourceSpec": "@agoric/vats/src/bootstrap.js"
+      "sourceSpec": "@agoric/vats/src/core/boot-solo.js"
     }
   }
 }

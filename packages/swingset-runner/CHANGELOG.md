@@ -3,6 +3,112 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.1...@agoric/swingset-runner@0.21.2) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.0...@agoric/swingset-runner@0.21.1) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.20.0...@agoric/swingset-runner@0.21.0) (2022-10-05)
+
+
+### Features
+
+* add otel telemetry feed option to swingset-runner ([b732457](https://github.com/Agoric/agoric-sdk/commit/b73245772e5e9a5eae6b9410355d1264d257c850)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+
+
+### Bug Fixes
+
+* add kernel stats as a slog entry at completion of each block ([8a38c52](https://github.com/Agoric/agoric-sdk/commit/8a38c52a0a4eb665e03fdba7c96e944221ab8bc9)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+
+
+
+## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.19.2...@agoric/swingset-runner@0.20.0) (2022-09-20)
+
+
+### Features
+
+* **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
+* allow vats to be marked critical and panic the kernel if a critical vat fails ([9ef4941](https://github.com/Agoric/agoric-sdk/commit/9ef49412b27fc73e3d63bba7bda7a0ee2a387f41)), closes [#4279](https://github.com/Agoric/agoric-sdk/issues/4279)
+
+
+### Bug Fixes
+
+* lint warning cleanup ([2184da3](https://github.com/Agoric/agoric-sdk/commit/2184da353b0ee213ec3cb435271397c3d63d682a)), closes [#5734](https://github.com/Agoric/agoric-sdk/issues/5734)
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+
+
+
+### [0.19.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.19.1...@agoric/swingset-runner@0.19.2) (2022-05-28)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.19.0...@agoric/swingset-runner@0.19.1) (2022-05-09)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+## [0.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.3...@agoric/swingset-runner@0.19.0) (2022-04-18)
+
+
+### Features
+
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **swingset-runner:** add option to dump out the activityhash after each crank ([5a248ab](https://github.com/Agoric/agoric-sdk/commit/5a248ab152dddb09989e1dd9f54f3bb16177616b))
+* **swingset-runner:** folloup to also include step mode in activityhash output ([ce7387f](https://github.com/Agoric/agoric-sdk/commit/ce7387f8de8d3a5d6d4c0854c050dfc40c1648e3))
+
+
+### Bug Fixes
+
+* **swingset-runner:** update swingset deep-import paths ([1a251f3](https://github.com/Agoric/agoric-sdk/commit/1a251f3fe3592e88bc38eac1e153133bf8d5e17d))
+* **swingset-runner:** update tests copied from zoe ([5a20a2a](https://github.com/Agoric/agoric-sdk/commit/5a20a2a1656af2f90adfa010f6f8c508fddd3dab))
+
+
+
+### [0.18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.2...@agoric/swingset-runner@0.18.3) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+
+
+
+### [0.18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.1...@agoric/swingset-runner@0.18.2) (2022-02-21)
+
+
+### Features
+
+* add --wide option to kerneldump utility ([749c801](https://github.com/Agoric/agoric-sdk/commit/749c801e8d0bcb5f1d14741328a2d25a71cc33fa))
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+
+### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.0...@agoric/swingset-runner@0.18.1) (2021-12-22)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
 ## [0.18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.17.2...@agoric/swingset-runner@0.18.0) (2021-12-02)
 
 

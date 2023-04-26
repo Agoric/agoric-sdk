@@ -1,8 +1,9 @@
-import { isPromise } from '@agoric/promise-kit';
-import { Far } from '@agoric/far';
-import * as farExports from '@agoric/far';
+// @ts-check
+import { isPromise } from '@endo/promise-kit';
+import { E, Far } from '@endo/far';
+import * as farExports from '@endo/far';
 
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 
 const UNJSONABLES = new Map([
   [NaN, 'NaN'],
@@ -13,7 +14,7 @@ const UNJSONABLES = new Map([
 
 // A REPL-specific data dump-to-string.  This specifically is *not* JSON, but its
 // output is unambiguous (even though it cannot be round-tripped).
-export const dump = (value, spaces = '') =>
+export const dump = (value, spaces = 0) =>
   // eslint-disable-next-line no-use-before-define
   dump0(value, spaces, new WeakSet(), 0);
 
@@ -65,8 +66,7 @@ function dump0(value, spaces, inProgress, depth) {
 
     const singleSep = spaces ? ' ' : '';
 
-    const proto = Object.getPrototypeOf(value);
-    const stringTag = proto ? proto[Symbol.toStringTag] : undefined;
+    const stringTag = value[Symbol.toStringTag];
     if (stringTag !== undefined) {
       // Use stringification to get the string tag out.
       ret += `[Object ${stringTag}]${singleSep}`;
@@ -74,6 +74,7 @@ function dump0(value, spaces, inProgress, depth) {
 
     let sep = '';
     let closer;
+    /** @type {Array<string | symbol>} */
     const names = Object.getOwnPropertyNames(value);
     const nonNumber = new Set(names);
     if (Array.isArray(value)) {
@@ -133,6 +134,7 @@ export function getReplHandler(replObjects, send) {
   };
   const replHandles = new Set();
   let consoleOffset = highestHistory * 2 + 1;
+  /** @type {Record<string, string[]>} */
   const consoleRegions = {
     [consoleOffset - 1]: [],
     [consoleOffset]: [],
@@ -189,6 +191,7 @@ export function getReplHandler(replObjects, send) {
 
   const endowments = {
     ...farExports,
+    assert,
     console: replConsole,
     commands,
     history,
@@ -249,7 +252,8 @@ export function getReplHandler(replObjects, send) {
 
       if (isPromise(r)) {
         display[histnum] = `unresolved Promise`;
-        r.then(
+        void E.when(
+          r,
           res => {
             history[histnum] = res;
             display[histnum] = dump(res);

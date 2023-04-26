@@ -1,9 +1,6 @@
-// @ts-check
-
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
-import '../../exported.js';
 import {
   swap,
   satisfies,
@@ -30,7 +27,7 @@ import {
  *
  * The publicFacet is returned from the contract.
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   let sellSeats = [];
@@ -134,7 +131,6 @@ const start = zcf => {
   const makeExchangeInvitation = () =>
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
-  /** @type {SimpleExchangePublicFacet} */
   const publicFacet = Far('SimpleExchangePublicFacet', {
     makeInvitation: makeExchangeInvitation,
     getNotifier: () => notifier,

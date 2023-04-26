@@ -1,15 +1,13 @@
 // run as `node tools/measure-metering/measure.js`
 
 // eslint-disable-next-line import/order
-import '../prepare-test-env.js';
+import '../../tools/prepare-test-env.js';
 
-// eslint-disable-next-line import/order
-import bundleSource from '@agoric/bundle-source';
 import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';
 import * as os from 'os';
 import { buildVatController } from '../../src/index.js';
-import { capargs } from '../../test/util.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 function countingPolicy() {
   let computrons = 0n;
@@ -27,6 +25,9 @@ function countingPolicy() {
       return true;
     },
     crankFailed() {
+      return true;
+    },
+    emptyCrank() {
       return true;
     },
 
@@ -47,12 +48,7 @@ async function run() {
   const bootFn = new URL('measurement-bootstrap.js', import.meta.url).pathname;
   const targetFn = new URL('measurement-target.js', import.meta.url).pathname;
   const zoeFn = new URL('measurement-zoe.js', import.meta.url).pathname;
-  // const treasuryFn = new URL('measurement-zoe.js', import.meta.url).pathname;
-  const autoswapFn = new URL(
-    '../../../zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js',
-    import.meta.url,
-  ).pathname;
-  const autoswapBundle = await bundleSource(autoswapFn);
+  /** @type {SwingSetConfig} */
   const config = {
     defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
@@ -77,10 +73,10 @@ async function run() {
   await c.run();
 
   async function runOneMode(mode) {
-    const kp = c.queueToVatRoot('bootstrap', 'measure', capargs([mode]));
+    const kp = c.queueToVatRoot('bootstrap', 'measure', [mode]);
     await c.run();
     const cd = c.kpResolution(kp);
-    const used = JSON.parse(cd.body);
+    const used = kunser(cd);
     assert.typeof(used, 'number');
     return used;
   }
@@ -127,18 +123,16 @@ async function run() {
   // of the target vat.
 
   async function doCounted(method, args = []) {
-    const kp = c.queueToVatRoot('bootstrap', method, capargs(args));
+    const kp = c.queueToVatRoot('bootstrap', method, args);
     const p = countingPolicy();
     await c.run(p);
     c.kpResolution(kp);
     const counted = p.counted();
     return Number(counted);
   }
-  const zoeInstallTreasury = await doCounted('zoeInstallTreasury');
-  console.log(`zoe install (treasury): ${zoeInstallTreasury}`);
+  const zoeInstallVaultFactory = await doCounted('zoeInstallVaultFactory');
+  console.log(`zoe install (vaultFactory): ${zoeInstallVaultFactory}`);
 
-  const zoeInstallAMM = await doCounted('zoeInstallBundle', [autoswapBundle]);
-  console.log(`zoe install (AMM): ${zoeInstallAMM}`);
   const zoeInstantiate = await doCounted('zoeInstantiate');
   console.log(`zoe instantiate (AMM): ${zoeInstantiate}`);
 

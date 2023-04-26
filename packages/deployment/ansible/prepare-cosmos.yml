@@ -1,6 +1,5 @@
 ---
-
-- hosts: "{{ service }}"
+- hosts: '{{ service }}'
   user: root
   #any_errors_fatal: true
   gather_facts: yes

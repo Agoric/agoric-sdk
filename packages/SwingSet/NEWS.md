@@ -4,7 +4,7 @@ User-visible changes in SwingSet:
 
 * change Command Device (`buildCommand()`) to take `broadcastCallback` as an
   argument, rather than set in a subsequent call (#185)
-* outsource vat/kernel source bundling with @agoric/bundle-source
+* outsource vat/kernel source bundling with @endo/bundle-source
 
 
 ## Release 0.2.0 (27-Oct-2019)
@@ -43,7 +43,7 @@ User-visible changes in SwingSet:
 ## Release 0.0.25 (02-Oct-2019)
 
 * update to SES-0.6.3 to fix a sandbox breach
-* Vat code can now `import { E } from '@agoric/eventual-send'`, in addition
+* Vat code can now `import { E } from '@endo/eventual-send'`, in addition
   to receiving the `E` wrapper function from the liveSlots `createRootObject`
   call. This allows downstream Vat code (like ERTP) to run unit tests without
   SwingSet, by importing E like any other dependency. Note that `D` (used to
@@ -113,7 +113,7 @@ User-visible changes in SwingSet:
   architecture.
 * Extensive rewrite of the vat/kernel interface and run-queue, to represent
   objects and promises more concisely, and enable pipelining.
-* Upgrade to `@agoric/default-evaluate-options` and `@agoric/eventual-send`
+* Upgrade to `@agoric/default-evaluate-options` and `@endo/eventual-send`
   to get a "HandledPromise" that supports pipelining.
 * Rewrote the comms layer to encode remote messages more concisely, and
   support pipelining.
@@ -154,8 +154,8 @@ evaluateExpr('a+1') === 5; // true
 
 ## Release 0.0.18 (31-Jul-2019)
 
-* Downgrade to @agoric/eventual-send-0.1.11 via @agoric/default-evaluate-options.
-  The @agoric/eventual-send-0.2.0 release had some serious problems with
+* Downgrade to @endo/eventual-send-0.1.11 via @agoric/default-evaluate-options.
+  The @endo/eventual-send-0.2.0 release had some serious problems with
   memory exhaustion.
 
 
@@ -165,7 +165,7 @@ evaluateExpr('a+1') === 5; // true
   inconsistent. The Promise returned by `x!foo()` is *not* hardened. The
   arguments of eventual-send calls are eventually hardened as a side-effect
   of the send, but probably not until some future turn. #95
-* Upgrade to @agoric/eventual-send-0.2.0, to support that hardening.
+* Upgrade to @endo/eventual-send-0.2.0, to support that hardening.
 * "Presences" (the `x` in `E(x).foo()`) now have a useful `.toString()`
   method, and the previous `_importID_NN` method was removed. (#98)
 * Require Node.js v12 or higher. (#99)
@@ -208,7 +208,7 @@ evaluateExpr('a+1') === 5; // true
 ## Release 0.0.12 (07-Jun-2019)
 
 * move ERTP libraries and examples to `@agoric/ertp` (#73)
-* move marshalling code into `@agoric/marshal`
+* move marshalling code into `@endo/marshal`
 
 
 ## Release 0.0.11 (02-Jun-2019)

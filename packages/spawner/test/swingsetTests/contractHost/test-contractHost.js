@@ -2,7 +2,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import path from 'path';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import {
   buildKernelBundles,
   buildVatController,
@@ -25,6 +25,7 @@ async function main(t, mode) {
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];
   const controller = await buildVatController(config, argv, { kernelBundles });
+  t.teardown(controller.shutdown);
   await controller.run();
   return controller.dump();
 }
@@ -50,4 +51,16 @@ const contractExhaustedGolden = [
 test('exhaustion', async t => {
   const dump = await main(t, 'exhaust');
   t.deepEqual(dump.log, contractExhaustedGolden);
+});
+
+const farFailureGolden = [
+  'starting farFailureContractTest',
+  'send non-Far: Error: Remotables must be explicitly declared: {"failureArg":"[Function failureArg]"}',
+  'far failure: Error: Remotables must be explicitly declared: {"failureReturn":"[Function failureReturn]"}',
+  '++ DONE',
+];
+
+test('farFailure', async t => {
+  const dump = await main(t, 'farFailure');
+  t.deepEqual(dump.log, farFailureGolden);
 });

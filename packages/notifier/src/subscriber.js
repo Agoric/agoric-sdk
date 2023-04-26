@@ -1,58 +1,52 @@
-/* eslint-disable no-underscore-dangle */
-// @ts-check
-// eslint-disable-next-line spaced-comment
+// @jessie-check
+
 /// <reference types="ses"/>
 
-import { HandledPromise, E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { E, Far } from '@endo/far';
+import { subscribeEach } from './subscribe.js';
+import { makePublishKit } from './publish-kit.js';
 
-import './types.js';
+import { makePinnedHistoryTopic } from './topic.js';
+
+import './types-ambient.js';
 
 /**
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} sharableInternalsP
+ * @param {ERef<EachTopic<T>>} topic
  * @returns {Subscription<T>}
  */
-const makeSubscription = sharableInternalsP => {
-  return Far('Subscription', {
-    // eslint-disable-next-line no-use-before-define
-    [Symbol.asyncIterator]: () => makeSubscriptionIterator(sharableInternalsP),
+const makeSubscription = topic => {
+  const subscription = Far('Subscription', {
+    ...subscribeEach(topic),
+    subscribeAfter: async publishCount => E(topic).subscribeAfter(publishCount),
 
     /**
      * Use this to distribute a Subscription efficiently over the network,
      * by obtaining this from the Subscription to be replicated, and applying
      * `makeSubscription` to it at the new site to get an equivalent local
      * Subscription at that site.
-     *
-     * @returns {ERef<SubscriptionInternals<T>>}
      */
-    getSharableSubscriptionInternals: () => sharableInternalsP,
+    getSharableSubscriptionInternals: async () => topic,
+
+    getStoreKey: () => harden({ subscription }),
   });
+  return subscription;
 };
 harden(makeSubscription);
 export { makeSubscription };
 
 /**
- * @template T
- * @param {ERef<SubscriptionInternals<T>>} tailP
- * @returns {SubscriptionIterator<T>}
- */
-const makeSubscriptionIterator = tailP => {
-  // To understand the implementation, start with
-  // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  return Far('SubscriptionIterator', {
-    subscribe: () => makeSubscription(tailP),
-    [Symbol.asyncIterator]: () => makeSubscriptionIterator(tailP),
-    next: () => {
-      const resultP = E.get(tailP).head;
-      tailP = E.get(tailP).tail;
-      return resultP;
-    },
-  });
-};
-
-/**
+ * @deprecated Producers should use
+ * ```js
+ * const { publisher, subscriber } = makePublishKit();
+ * const topic = makePinnedHistoryTopic(subscriber);
+ * ```
+ * instead, which makes it clearer that all the subscriber's history is
+ * retained, preventing GC.  Potentially remote consumers use
+ * ```js
+ * for await (const value of subscribeEach(topic)) { ... }
+ * ```
+ *
  * Makes a `{ publication, subscription }` for doing lossless efficient
  * distributed pub/sub.
  *
@@ -60,42 +54,21 @@ const makeSubscriptionIterator = tailP => {
  * @returns {SubscriptionRecord<T>}
  */
 const makeSubscriptionKit = () => {
-  /** @type {((internals: ERef<SubscriptionInternals<T>>) => void) | undefined} */
-  let rear;
-  const hp = new HandledPromise(r => (rear = r));
-  const subscription = makeSubscription(hp);
+  const { publisher, subscriber } = makePublishKit();
+
+  // The publish kit subscriber is prefix-lossy, so making *this* subscriber completely
+  // lossless from initialisation requires pinning the former's history.
+
+  const pinnedHistoryTopic = makePinnedHistoryTopic(subscriber);
+  const subscription = makeSubscription(pinnedHistoryTopic);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
-    updateState: value => {
-      if (rear === undefined) {
-        throw new Error('Cannot update state after termination.');
-      }
-      const { promise: nextTailE, resolve: nextRear } = makePromiseKit();
-      rear(harden({ head: { value, done: false }, tail: nextTailE }));
-      rear = nextRear;
-    },
-    finish: finalValue => {
-      if (rear === undefined) {
-        throw new Error('Cannot finish after termination.');
-      }
-      const readComplaint = HandledPromise.reject(
-        new Error('cannot read past end of iteration'),
-      );
-      readComplaint.catch(_ => {}); // suppress unhandled rejection error
-      rear({ head: { value: finalValue, done: true }, tail: readComplaint });
-      rear = undefined;
-    },
-    fail: reason => {
-      if (rear === undefined) {
-        throw new Error('Cannot fail after termination.');
-      }
-      /** @type {Promise<SubscriptionInternals<T>>} */
-      const rejection = HandledPromise.reject(reason);
-      rear(rejection);
-      rear = undefined;
-    },
+    updateState: nonFinalValue => publisher.publish(nonFinalValue),
+    finish: completion => publisher.finish(completion),
+    fail: reason => publisher.fail(reason),
   });
+
   return harden({ publication, subscription });
 };
 harden(makeSubscriptionKit);

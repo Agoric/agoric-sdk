@@ -1,5 +1,4 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { testLog } = vatPowers;
@@ -34,7 +33,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         () => testLog('p2 resolve (bad!)'),
         e => testLog(`p2 reject ${e}`),
       );
-      const p3 = E(badvat).begood(ourThing);
+      const p3 = E(badvat).begoodagain(ourThing);
       p3.then(
         () => testLog('p3 resolve (bad!)'),
         e => testLog(`p3 reject ${e}`),

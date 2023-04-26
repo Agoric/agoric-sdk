@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env.js';
 
@@ -6,11 +6,10 @@ import path from 'path';
 
 import '../../../../exported.js';
 
-import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
-import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
+import bundleSource from '@endo/bundle-source';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { setup } from '../../setupBasicMints.js';
 import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
@@ -61,7 +60,7 @@ export const checkDescription = async (t, zoe, invitation, expected) => {
 export const checkDetails = async (t, zoe, invitation, expectedNullHandle) => {
   const details = await E(zoe).getInvitationDetails(invitation);
   const detailsNullHandle = { ...details, handle: null };
-  t.deepEqual(detailsNullHandle, expectedNullHandle);
+  t.like(detailsNullHandle, expectedNullHandle);
 };
 
 /**
@@ -79,21 +78,24 @@ export const checkPayouts = async (
   message = '',
 ) => {
   const payouts = await E(seat).getPayouts();
-  Object.entries(payouts).forEach(async ([keyword, paymentP]) => {
-    const kit = kitKeywordRecord[keyword];
-    const amount = await kit.issuer.getAmountOf(paymentP);
-    const expected = expectedKeywordRecord[keyword];
-    assertAmountsEqual(t, amount, expected);
-    t.truthy(
-      AmountMath.isEqual(amount, expected),
-      `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
-    );
-  });
+  await Promise.all(
+    Object.entries(payouts).map(async ([keyword, paymentP]) => {
+      const kit = kitKeywordRecord[keyword];
+      const amount = await kit.issuer.getAmountOf(paymentP);
+      const expected = expectedKeywordRecord[keyword];
+      assertAmountsEqual(t, amount, expected);
+      t.truthy(
+        AmountMath.isEqual(amount, expected),
+        `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
+      );
+    }),
+  );
   t.truthy(seat.hasExited());
 };
 
 export const setupLoanUnitTest = async terms => {
-  const { moolaKit: collateralKit, simoleanKit: loanKit } = setup();
+  const collateralKit = makeIssuerKit('moola');
+  const loanKit = makeIssuerKit('simoleans');
 
   if (!terms) {
     terms = harden({
@@ -106,10 +108,8 @@ export const setupLoanUnitTest = async terms => {
     Loan: loanKit.issuer,
   });
 
-  const { zcf, zoe, installation, instance } = await setupZCFTest(
-    issuerKeywordRecord,
-    terms,
-  );
+  const { zcf, zoe, installation, instance, vatAdminState } =
+    await setupZCFTest(issuerKeywordRecord, terms);
 
   return {
     zcf,
@@ -118,6 +118,7 @@ export const setupLoanUnitTest = async terms => {
     loanKit,
     installation,
     instance,
+    vatAdminState,
   };
 };
 
@@ -195,12 +196,14 @@ export const makeAutoswapInstance = async (
   collateralKit,
   loanKit,
   initialLiquidityKeywordRecord,
+  vatAdminState,
 ) => {
   const autoswapRoot = `${dirname}/../../../../src/contracts/autoswap`;
 
   // Create autoswap installation and instance
   const autoswapBundle = await bundleSource(autoswapRoot);
-  const autoswapInstallation = await E(zoe).install(autoswapBundle);
+  vatAdminState.installBundle('b1-autoswap', autoswapBundle);
+  const autoswapInstallation = await E(zoe).installBundleID('b1-autoswap');
 
   const { instance: autoswapInstance, publicFacet } = await E(
     zoe,

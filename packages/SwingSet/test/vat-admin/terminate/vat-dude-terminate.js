@@ -1,6 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject(vatPowers) {
   // we use testLog to attempt to deliver messages even after we're supposed

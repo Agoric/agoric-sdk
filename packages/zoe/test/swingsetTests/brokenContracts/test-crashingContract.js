@@ -1,31 +1,24 @@
-// @ts-check
+// @ts-nocheck
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
-
-import fs from 'fs';
+import bundleSource from '@endo/bundle-source';
+import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const CONTRACT_FILES = ['crashingAutoRefund'];
+const contractBundles = {};
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const bundle = await bundleSource(`${dirname}/${contract}`);
-    const obj = { bundle, contract };
-    fs.writeFileSync(
-      `${dirname}/bundle-${contract}.js`,
-      `export default ${JSON.stringify(obj)};`,
-    );
+    contractBundles[contract] = { bundle };
   }),
 );
 
@@ -33,47 +26,14 @@ async function main(argv) {
   const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
+  config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
+  config.relaxDurabilityRules = true;
   const controller = await buildVatController(config, argv);
   await controller.run();
-  return controller.dump();
+  const res = controller.dump();
+  await controller.shutdown();
+  return res;
 }
-
-const meterExceededInOfferLog = [
-  '=> alice is set up',
-  '=> alice.doMeterExceptionInHook called',
-  'outcome correctly resolves to broken: RangeError: Allocate meter exceeded',
-  'aliceMoolaPurse: balance {"brand":{},"value":3}',
-  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
-  'contract no longer responds: RangeError: Allocate meter exceeded',
-  'counter: 2',
-];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('ZCF metering crash on invitation exercise', async t => {
-  const dump = await main(['meterInOfferHook', [3, 0, 0]]);
-  t.deepEqual(dump.log, meterExceededInOfferLog);
-});
-
-const meterExceededInSecondOfferLog = [
-  '=> alice is set up',
-  '=> alice.doMeterExceptionInHook called',
-  'Swap outcome resolves to an invitation: [object Alleged: presence o-73]',
-  'aliceMoolaPurse: balance {"brand":{},"value":0}',
-  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
-  'aliceMoolaPurse: balance {"brand":{},"value":5}',
-  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
-  'swap value, 5',
-  'outcome correctly resolves to broken: RangeError: Allocate meter exceeded',
-  'contract no longer responds: RangeError: Allocate meter exceeded',
-  'aliceMoolaPurse: balance {"brand":{},"value":8}',
-  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
-  'refund value, 8',
-  'counter: 2',
-];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('ZCF metering crash on second invitation', async t => {
-  const dump = await main(['meterInSecondInvitation', [8, 0, 0]]);
-  t.deepEqual(dump.log, meterExceededInSecondOfferLog);
-});
 
 const throwInOfferLog = [
   '=> alice is set up',
@@ -116,37 +76,6 @@ const throwInAPILog = [
 test('ZCF throwing in API call', async t => {
   const dump = await main(['throwInApiCall', [5, 12, 0]]);
   t.deepEqual(dump.log, throwInAPILog);
-});
-
-const meteringExceededInAPILog = [
-  '=> alice is set up',
-  '=> alice.doMeterInApiCall called',
-  'counter: 2',
-  'counter: 3',
-  'counter: 5',
-  'Vat correctly died for RangeError: Allocate meter exceeded',
-  'outcome correctly resolves to "The offer was accepted"',
-  'aliceMoolaPurse: balance {"brand":{},"value":3}',
-  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
-  'contract no longer responds: RangeError: Allocate meter exceeded',
-  'newCounter: 2',
-];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('ZCF metering crash in API call', async t => {
-  const dump = await main(['meterInApiCall', [3, 0, 0]]);
-  t.deepEqual(dump.log, meteringExceededInAPILog);
-});
-
-const meteringExceptionInStartILog = [
-  '=> alice is set up',
-  '=> alice.doMeterExceptionInStart called',
-  'contract creation failed: RangeError: Allocate meter exceeded',
-  'newCounter: 2',
-];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('ZCF metering crash in `start` call', async t => {
-  const dump = await main(['meterInStart', [3, 0, 0]]);
-  t.deepEqual(dump.log, meteringExceptionInStartILog);
 });
 
 const thrownExceptionInStartILog = [

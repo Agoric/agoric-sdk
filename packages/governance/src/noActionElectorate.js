@@ -1,49 +1,57 @@
-// @ts-check
+import { makePublishKit } from '@agoric/notifier';
+import { makePromiseKit } from '@endo/promise-kit';
+import { makeExo } from '@agoric/store';
 
-import { Far } from '@agoric/marshal';
-import { makeSubscriptionKit } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
 /**
  * This Electorate visibly has no members, takes no votes, and approves no
  * changes.
  *
- *  @type {ContractStartFn}
+ *  @type {ContractStartFn<ElectoratePublic, ElectorateCreatorFacet>}
  */
 const start = zcf => {
-  const { subscription } = makeSubscriptionKit();
+  const { subscriber } = makePublishKit();
 
-  /** @type {ElectoratePublic} */
-  const publicFacet = Far('publicFacet', {
-    getQuestionSubscription: () => subscription,
-    getOpenQuestions: () => {
+  const publicFacet = makeExo('publicFacet', ElectoratePublicI, {
+    getQuestionSubscriber() {
+      return subscriber;
+    },
+    getOpenQuestions() {
       /** @type {Handle<'Question'>[]} */
       const noQuestions = [];
       const questionsPromise = makePromiseKit();
       questionsPromise.resolve(noQuestions);
       return questionsPromise.promise;
     },
-    getName: () => 'no Action electorate',
-    getInstance: zcf.getInstance,
-    getQuestion: () => {
+    getName() {
+      return 'no Action electorate';
+    },
+    getInstance() {
+      return zcf.getInstance();
+    },
+    getQuestion(_instance, _question) {
       throw Error(`noActionElectorate doesn't have questions.`);
     },
   });
 
-  /** @type {ElectorateCreatorFacet} */
-  const creatorFacet = Far('creatorFacet', {
-    getPoserInvitation: () => {
+  const creatorFacet = makeExo('creatorFacet', ElectorateCreatorI, {
+    getPoserInvitation() {
       return zcf.makeInvitation(() => {},
       `noActionElectorate doesn't allow posing questions`);
     },
-    addQuestion() {
+    addQuestion(_instance, _question) {
       throw Error(`noActionElectorate doesn't add questions.`);
     },
-    getVoterInvitations: () => {
+    getVoterInvitations() {
       throw Error(`No Action Electorate doesn't have invitations.`);
     },
-    getQuestionSubscription: () => subscription,
-    getPublicFacet: () => publicFacet,
+    getQuestionSubscriber() {
+      return subscriber;
+    },
+    getPublicFacet() {
+      return publicFacet;
+    },
   });
 
   return { publicFacet, creatorFacet };

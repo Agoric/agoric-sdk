@@ -8,6 +8,15 @@
   "vats": {
     "bootstrap": {
       "sourceSpec": "bootstrap-terminate.js"
+    },
+    "staticNonCritical": {
+      "bundleName": "dude"
+    },
+    "staticCritical": {
+      "bundleName": "dude",
+      "creationOptions": {
+        "critical": true
+      }
     }
   }
 }

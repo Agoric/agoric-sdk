@@ -1,29 +1,34 @@
-// @ts-check
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
-import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/time';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 
-import './types.js';
-import '../exported.js';
+import './types-ambient.js';
+
+const { Fail } = assert;
+
+// 'if (a >= b)' becomes 'if (timestampGTE(a,b))'
+const timestampGTE = (a, b) => TimeMath.compareAbs(a, b) >= 0;
+// 'if (a <= b)' becomes 'if (timestampLTE(a,b))'
+const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
 
 /**
- * @typedef {Object} FakePriceAuthorityOptions
- * @property {Brand} actualBrandIn
- * @property {Brand} actualBrandOut
+ * @typedef {object} FakePriceAuthorityOptions
+ * @property {Brand<'nat'>} actualBrandIn
+ * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
- * @property {ERef<TimerService>} timer
- * @property {RelativeTime} [quoteInterval]
- * @property {ERef<Mint>} [quoteMint]
- * @property {Amount} [unitAmountIn]
+ * @property {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @property {import('@agoric/time/src/types').RelativeTime} [quoteInterval]
+ * @property {ERef<Mint<'set'>>} [quoteMint]
+ * @property {Amount<'nat'>} [unitAmountIn]
  */
 
 /**
@@ -45,10 +50,9 @@ export async function makeFakePriceAuthority(options) {
     quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
   } = options;
 
-  assert(
-    tradeList || priceList,
-    X`One of priceList or tradeList must be specified`,
-  );
+  tradeList ||
+    priceList ||
+    Fail`One of priceList or tradeList must be specified`;
 
   const unitValueIn = AmountMath.getValue(actualBrandIn, unitAmountIn);
 
@@ -69,23 +73,18 @@ export async function makeFakePriceAuthority(options) {
    * @param {Brand} allegedBrandOut
    */
   const assertBrands = (allegedBrandIn, allegedBrandOut) => {
-    assert.equal(
-      allegedBrandIn,
-      actualBrandIn,
-      X`${allegedBrandIn} is not an expected input brand`,
-    );
-    assert.equal(
-      allegedBrandOut,
-      actualBrandOut,
-      X`${allegedBrandOut} is not an expected output brand`,
-    );
+    allegedBrandIn === actualBrandIn ||
+      Fail`${allegedBrandIn} is not an expected input brand`;
+    allegedBrandOut === actualBrandOut ||
+      Fail`${allegedBrandOut} is not an expected output brand`;
   };
 
   const quoteIssuer = E(quoteMint).getIssuer();
   const quoteBrand = await E(quoteIssuer).getBrand();
 
   /**
-   * @type {NotifierRecord<Timestamp>} We need to have a notifier driven by the
+   * @type {NotifierRecord<import('@agoric/time/src/types').Timestamp>}
+   * We need to have a notifier driven by the
    * TimerService because if the timer pushes updates to individual
    * QuoteNotifiers, we have a dependency inversion and the timer can never know
    * when the QuoteNotifier goes away.  (Don't even mention WeakRefs... they're
@@ -102,9 +101,9 @@ export async function makeFakePriceAuthority(options) {
 
   /**
    *
-   * @param {Amount} amountIn
+   * @param {Amount<'nat'>} amountIn
    * @param {Brand} brandOut
-   * @param {Timestamp} quoteTime
+   * @param {import('@agoric/time/src/types').Timestamp} quoteTime
    * @returns {PriceQuote}
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
@@ -134,9 +133,9 @@ export async function makeFakePriceAuthority(options) {
   }
 
   /**
-   * @param {Brand} brandIn
-   * @param {Amount} amountOut
-   * @param {Timestamp} quoteTime
+   * @param {Brand<'nat'>} brandIn
+   * @param {Amount<'nat'>} amountOut
+   * @param {import('@agoric/time/src/types').Timestamp} quoteTime
    * @returns {PriceQuote}
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
@@ -156,6 +155,10 @@ export async function makeFakePriceAuthority(options) {
 
   // Keep track of the time of the latest price change.
   let latestTick;
+
+  // clients who are waiting for a specific timestamp
+  /** @type { [when: import('@agoric/time/src/types').Timestamp, resolve: (quote: PriceQuote) => void][] } */
+  let timeClients = [];
 
   // Check if a comparison request has been satisfied.
   // Returns true if it has, false otherwise.
@@ -181,6 +184,11 @@ export async function makeFakePriceAuthority(options) {
     let firstTime = true;
     const handler = Far('wake handler', {
       wake: async t => {
+        if (t === 0n) {
+          // just in case makeRepeater() was called with delay=0,
+          // which schedules an immediate wakeup
+          return;
+        }
         if (firstTime) {
           firstTime = false;
         } else {
@@ -188,12 +196,22 @@ export async function makeFakePriceAuthority(options) {
         }
         latestTick = t;
         tickUpdater.updateState(t);
+        const remainingTimeClients = [];
+        for (const entry of timeClients) {
+          const [when, resolve] = entry;
+          if (timestampGTE(latestTick, when)) {
+            resolve(latestTick);
+          } else {
+            remainingTimeClients.push(entry);
+          }
+        }
+        timeClients = remainingTimeClients;
         for (const req of comparisonQueue) {
           checkComparisonRequest(req);
         }
       },
     });
-    const repeater = E(timer).makeRepeater(0n, quoteInterval);
+    const repeater = E(timer).makeRepeater(1n, quoteInterval);
     return E(repeater).schedule(handler);
   }
 
@@ -231,7 +249,7 @@ export async function makeFakePriceAuthority(options) {
 
   async function* generateQuotes(amountIn, brandOut) {
     let record = await ticker.getUpdateSince();
-    while (record.updateCount) {
+    while (record.updateCount !== undefined) {
       // eslint-disable-next-line no-await-in-loop
       const { value: timestamp } = record; // = await E(timer).getCurrentTimestamp();
       yield priceInQuote(amountIn, brandOut, timestamp);
@@ -257,16 +275,16 @@ export async function makeFakePriceAuthority(options) {
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
       assert.typeof(timeStamp, 'bigint');
       assertBrands(amountIn.brand, brandOut);
-      const { promise, resolve } = makePromiseKit();
-      E(timer).setWakeup(
-        timeStamp,
-        Far('wake handler', {
-          wake: time => {
-            return resolve(priceInQuote(amountIn, brandOut, time));
-          },
-        }),
-      );
-      return promise;
+      if (latestTick && timestampLTE(timeStamp, latestTick)) {
+        return Promise.resolve(priceInQuote(amountIn, brandOut, timeStamp));
+      } else {
+        // follow ticker until it fires with >= timeStamp
+        const { promise, resolve } = makePromiseKit();
+        timeClients.push([timeStamp, resolve]);
+        return promise.then(ts => {
+          return priceInQuote(amountIn, brandOut, ts);
+        });
+      }
     },
     quoteGiven: async (amountIn, brandOut) => {
       assertBrands(amountIn.brand, brandOut);

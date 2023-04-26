@@ -6,20 +6,15 @@ Usage:
 
 */
 
-// @ts-check
-
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
-/* eslint-disable no-await-in-loop */
-import '@agoric/install-ses';
-import { assert, details as X, q } from '@agoric/assert';
+/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
+import '@endo/init';
+import { assert, q, Fail } from '@agoric/assert';
+import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
-const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;
 const avaAssert = `./avaAssertXS.js`;
-const avaHandler = `./avaHandler.js`;
+const avaHandler = `./avaHandler.cjs`;
 
 /** @type { (ref: string, readFile: typeof import('fs').promises.readFile ) => Promise<string> } */
 const asset = (ref, readFile) =>
@@ -27,7 +22,7 @@ const asset = (ref, readFile) =>
 
 /**
  * When we bundle test scripts, we leave these externals
- * as `require(...)` style graph exits and (in avaHandler.js)
+ * as `require(...)` style graph exits and (in avaHandler.cjs)
  * supply them via a `require` endowment
  * on the Compartment used to run the script.
  */
@@ -35,11 +30,10 @@ const externals = [
   'ava',
   'ses',
   '@endo/ses-ava',
-  // TODO Remove babel-standalone preinitialization
-  // https://github.com/endojs/endo/issues/768
-  '@agoric/babel-standalone',
-  '@agoric/bundle-source',
-  '@agoric/install-ses',
+  '@endo/bundle-source',
+  '@endo/init',
+  '@endo/init/debug.js',
+  '@endo/init/pre.js',
   '@agoric/install-metering-and-ses',
 ];
 
@@ -81,8 +75,8 @@ function isMatch(specimen, pattern) {
  *   total: number,
  * }} Summary
  *
- * @param { string } filename
- * @param { string[] } preamble scripts to run in XS start compartment
+ * @param {string} filename
+ * @param {string[]} preamble scripts to run in XS start compartment
  * @param {{ verbose?: boolean, titleMatch?: string }} options
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
@@ -120,7 +114,7 @@ async function runTestScript(
    */
   async function handleCommand(message) {
     /**
-     * See also send() in avaHandler.js
+     * See also send() in avaHandler.cjs
      *
      * @type { TapMessage | { testNames: string[] } | { bundleSource: [string, ...unknown[]] } | Summary }
      */
@@ -179,7 +173,6 @@ async function runTestScript(
 
     for (const name of testNames) {
       if (titleMatch && !isMatch(name, titleMatch)) {
-        // eslint-disable-next-line no-continue
         continue;
       }
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
@@ -215,8 +208,8 @@ async function runTestScript(
 /**
  * Get ava / ava-xs config from package.json
  *
- * @param { string[] } args
- * @param {Object} options
+ * @param {string[]} args
+ * @param {object} options
  * @param {string} [options.packageFilename]
  * @param {{
  *   readFile: typeof import('fs').promises.readFile,
@@ -224,18 +217,18 @@ async function runTestScript(
  * }} io
  * @returns {Promise<AvaXSConfig>}
  *
- * @typedef {Object} AvaXSConfig
+ * @typedef {object} AvaXSConfig
  * @property {string[]} files - files from args or else ava.files
  * @property {string[]} require - specifiers of modules to run before each test script
- * @property {string[]=} exclude - files containing any of these should be skipped
+ * @property {string[]} [exclude] - files containing any of these should be skipped
  * @property {boolean} debug
  * @property {boolean} verbose
- * @property {string=} titleMatch
+ * @property {string} [titleMatch]
  */
 async function avaConfig(args, options, { glob, readFile }) {
   /**
-   * @param { string } pattern
-   * @returns { Promise<string[]> }
+   * @param {string} pattern
+   * @returns {Promise<string[]>}
    */
   const globFiles = pattern =>
     new Promise((res, rej) =>
@@ -280,30 +273,23 @@ async function avaConfig(args, options, { glob, readFile }) {
   const expected = ['files', 'require'];
   const unsupported = keys(pkgMeta.ava).filter(k => !expected.includes(k));
   if (unsupported.length > 0) {
-    console.warn(X`ava-xs does not support ava options: ${q(unsupported)}`);
+    console.warn(`ava-xs does not support ava options: ${q(unsupported)}`);
   }
   const { files: filePatterns, require = [] } = pkgMeta.ava;
   let { exclude } = pkgMeta['ava-xs'] || {};
   if (typeof exclude === 'string') {
     exclude = [exclude];
   }
-  assert(
-    !exclude || Array.isArray(exclude),
-    X`ava-xs.exclude: expected array or string: ${q(exclude)}`,
-  );
+  !exclude ||
+    Array.isArray(exclude) ||
+    Fail`ava-xs.exclude: expected array or string: ${q(exclude)}`;
 
   if (!files.length) {
-    assert(
-      Array.isArray(filePatterns),
-      X`ava.files: expected Array: ${q(filePatterns)}`,
-    );
+    Array.isArray(filePatterns) ||
+      Fail`ava.files: expected Array: ${q(filePatterns)}`;
     files = (await Promise.all(filePatterns.map(globFiles))).flat();
   }
-
-  assert(
-    Array.isArray(require),
-    X`ava.requires: expected Array: ${q(require)}`,
-  );
+  Array.isArray(require) || Fail`ava.requires: expected Array: ${q(require)}`;
   const config = { files, require, exclude, debug, verbose, titleMatch };
   return config;
 }
@@ -311,7 +297,7 @@ async function avaConfig(args, options, { glob, readFile }) {
 /**
  * @param {string[]} args - CLI args (excluding node interpreter, script name)
  * @param {{
- *   bundleSource: typeof import('@agoric/bundle-source').default,
+ *   bundleSource: typeof import('@endo/bundle-source').default,
  *   spawn: typeof import('child_process')['spawn'],
  *   osType: typeof import('os')['type'],
  *   readFile: typeof import('fs')['promises']['readFile'],
@@ -325,14 +311,8 @@ export async function main(
   args,
   { bundleSource, spawn, osType, readFile, resolve, dirname, basename, glob },
 ) {
-  const {
-    files,
-    require,
-    exclude,
-    debug,
-    verbose,
-    titleMatch,
-  } = await avaConfig(args, {}, { readFile, glob });
+  const { files, require, exclude, debug, verbose, titleMatch } =
+    await avaConfig(args, {}, { readFile, glob });
 
   /** @param {Record<string, unknown>} opts */
   const spawnXSnap = opts =>
@@ -350,9 +330,12 @@ export async function main(
    * SES objects to `import(...)`
    * avaAssert and avaHandler only use import() in type comments
    *
-   * @param { string } src
+   * @param {string} src
    */
   const hideImport = src => src.replace(/import\(/g, '');
+
+  const sesBoot = await getDebugLockdownBundle();
+  const sesBootScript = `(${sesBoot.source}\n)()`;
 
   const requiredBundles = await Promise.all(
     require
@@ -364,7 +347,7 @@ export async function main(
   );
 
   const preamble = [
-    await asset(SESboot, readFile),
+    sesBootScript,
     ...requiredScripts,
     hideImport(await asset(avaAssert, readFile)),
     hideImport(await asset(avaHandler, readFile)),
@@ -376,7 +359,7 @@ export async function main(
   for (const filename of files) {
     if (exclude && exclude.filter(s => filename.match(s)).length > 0) {
       console.warn('# SKIP test excluded on XS', filename);
-      // eslint-disable-next-line no-continue
+
       continue;
     } else if (verbose) {
       console.log('# test script:', filename);

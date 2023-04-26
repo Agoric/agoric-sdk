@@ -1,16 +1,18 @@
 #! /usr/bin/env node
 // crunch.mjs - crunch a kvstore trace file's writes into TSV
 
-/* eslint-disable no-continue */
 /* global process,Buffer */
 
 import fs from 'fs';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import ReadlineTransform from 'readline-transform';
 
-const [TRACE_FILE, LAST_BLOCK_HEIGHT = 0] = process.argv.slice(2);
+const [TRACE_FILE, FIRST_BLOCK_HEIGHT = 0, LAST_BLOCK_HEIGHT = Infinity] =
+  process.argv.slice(2);
 if (!TRACE_FILE) {
-  console.error('usage: crunch trace-file [last-block-height]');
+  console.error(
+    'usage: crunch trace-file [first-block-height [last-block-height]]',
+  );
   process.exit(1);
 }
 
@@ -18,7 +20,7 @@ const escapeCharCode = c => {
   switch (c) {
     // backslash-escape the following characters
     case 92:
-      return '\\';
+      return '\\\\';
     case 10:
       return '\\n';
     case 13:
@@ -38,9 +40,7 @@ const escapeCharCode = c => {
 
 const decode = b64 => {
   const b = Buffer.from(b64, 'base64');
-  return Array.from(b)
-    .map(escapeCharCode)
-    .join('');
+  return Array.from(b).map(escapeCharCode).join('');
 };
 
 const main = async () => {
@@ -50,6 +50,9 @@ const main = async () => {
   for await (const line of rl) {
     const { operation, key, value, metadata } = JSON.parse(line);
     if (operation !== 'write') {
+      continue;
+    }
+    if (!metadata || metadata.blockHeight < FIRST_BLOCK_HEIGHT) {
       continue;
     }
     if (metadata && metadata.blockHeight > LAST_BLOCK_HEIGHT) {

@@ -3,6 +3,159 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.2...@agoric/solo@0.9.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/solo
+
+
+
+
+
+### [0.9.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.1...@agoric/solo@0.9.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/solo
+
+
+
+
+
+### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.0...@agoric/solo@0.9.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/solo
+
+
+
+
+
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.8.0...@agoric/solo@0.9.0) (2022-09-20)
+
+
+### Features
+
+* **ses-ava:** support full API of Ava ([3b5fd6c](https://github.com/Agoric/agoric-sdk/commit/3b5fd6c103a4a9207eaf2e761b3a096ce78c3d16))
+* **wallet-connection:** Connect dapp directly to wallet UI ([#5750](https://github.com/Agoric/agoric-sdk/issues/5750)) ([1dd584b](https://github.com/Agoric/agoric-sdk/commit/1dd584b195212705b1f74a8c89b7f3f121640e41))
+* add env to keep old snapshots on disk ([96e1077](https://github.com/Agoric/agoric-sdk/commit/96e1077683c64ff0c66fdfaa3993043006c8f368))
+* **solo:** add `cache` function to REPL ([c5e66d6](https://github.com/Agoric/agoric-sdk/commit/c5e66d6e13d7e2b82b719d3346da04a9bca88fea))
+* **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
+
+
+### Bug Fixes
+
+* add a defaultReapInterval setting to active swingset configurations ([4f4ab5b](https://github.com/Agoric/agoric-sdk/commit/4f4ab5b436dd763a73c6a47250ed6a7831471e33)), closes [#4160](https://github.com/Agoric/agoric-sdk/issues/4160)
+* makePublishKit ([#5435](https://github.com/Agoric/agoric-sdk/issues/5435)) ([d8228d2](https://github.com/Agoric/agoric-sdk/commit/d8228d272cfe18aa2fba713fb5acc4e84eaa1e39))
+* rewrite zoe/tools/manualTimer.js, update tests ([0b5df16](https://github.com/Agoric/agoric-sdk/commit/0b5df16f83629efb7cb48d54250139e082ed109c))
+* time as branded value ([#5821](https://github.com/Agoric/agoric-sdk/issues/5821)) ([34078ff](https://github.com/Agoric/agoric-sdk/commit/34078ff4b34a498f96f3cb83df3a0b930b98bbec))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **wallet-connection:** retry on websocket not bridge ([#5485](https://github.com/Agoric/agoric-sdk/issues/5485)) ([9a805a0](https://github.com/Agoric/agoric-sdk/commit/9a805a0cc52737004420bc1774270e7fc0e35224))
+
+
+
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.7.0...@agoric/solo@0.8.0) (2022-05-28)
+
+
+### Features
+
+* **solo:** Add /connections and /install-bundle HTTP routes ([01cdbc9](https://github.com/Agoric/agoric-sdk/commit/01cdbc9ff3dfee1fc9dad5c4b19a0c41ff697787))
+* **solo:** report WebSocket closure ([3e700ca](https://github.com/Agoric/agoric-sdk/commit/3e700ca6b3978af63055cf614b3ded1eeb9d5a85))
+* **solo:** use `$SOLO_MNEMONIC` on init ([c151398](https://github.com/Agoric/agoric-sdk/commit/c1513989928df1afa2c133984a67dcb984d908ec))
+
+
+### Bug Fixes
+
+* **solo:** Add missing extension to test-env import ([ea3a1bf](https://github.com/Agoric/agoric-sdk/commit/ea3a1bfd2702b54127d6db963860982835af0369))
+* **solo:** introduce runStake attMaker to wallet admin facet ([#5371](https://github.com/Agoric/agoric-sdk/issues/5371)) ([b06d6eb](https://github.com/Agoric/agoric-sdk/commit/b06d6ebbafd4d401d6de49ed8e6be1b3b90e5f86)), closes [#4263](https://github.com/Agoric/agoric-sdk/issues/4263)
+* **solo:** Portable file path to URL in chain-cosmos-sdk ([08368d4](https://github.com/Agoric/agoric-sdk/commit/08368d4db59654491146e8b55d2fcf8f26187421))
+* **solo:** Portable file path to URL in start ([f5d53ec](https://github.com/Agoric/agoric-sdk/commit/f5d53ecf97b26b214ad6321d8d5da50e4a5f9517))
+* **solo:** Relax extraneous xsnap dependency ([616f26e](https://github.com/Agoric/agoric-sdk/commit/616f26e4f886845ad6b33a80fd58aee8665e972f))
+* **solo-ui:** more robust history updates ([76edbc9](https://github.com/Agoric/agoric-sdk/commit/76edbc9305f37cd646c33d5651415aa3caf9b7d1))
+
+
+
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.6.0...@agoric/solo@0.7.0) (2022-05-09)
+
+
+### Features
+
+* **deployment:** integration: record xsnap and swingStore traces ([fa669e0](https://github.com/Agoric/agoric-sdk/commit/fa669e05c98a42ca647e1603c9ba1e95bec42769))
+* Accept path for swingStore trace ([63a209c](https://github.com/Agoric/agoric-sdk/commit/63a209c8c7906f8be07f87aedf1313e607df7b42))
+* Plumb env into makeSwingsetController ([53c2c93](https://github.com/Agoric/agoric-sdk/commit/53c2c93e6bf4fa569e1194c8a6126d187ecbdb84))
+
+
+
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.6...@agoric/solo@0.6.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **repl:** add `lookup(...path)` for recursive names ([b942638](https://github.com/Agoric/agoric-sdk/commit/b9426387ae2ce9428082157f205ac79489616dbd))
+* **scratch:** add `lookup` method ([4757afa](https://github.com/Agoric/agoric-sdk/commit/4757afa10aac797a7ea72eaaaa0b584a7e9fad8d))
+* **SOLO_OTEL_EXPORTER_PROMETHEUS_PORT:** new env var ([46f0a31](https://github.com/Agoric/agoric-sdk/commit/46f0a3188149b32dccec14a5c5d02b8b35ca2494))
+* **telemetry:** `echo 2022-02-18T12:00:00Z | ./ingest.sh f.slog` ([bede363](https://github.com/Agoric/agoric-sdk/commit/bede363018656bad32b6764a5216acaaf2ca19bc))
+
+
+### Bug Fixes
+
+* **solo:** remove `SOLO_*` environment variables after extraction ([19444dc](https://github.com/Agoric/agoric-sdk/commit/19444dc7b7195c8273fe930c21a3b6dcd7f927af))
+* **telemetry:** rework Prometheus metrics ([38a1922](https://github.com/Agoric/agoric-sdk/commit/38a1922ce2c21e4f31b4a1bedd634bbe627990f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.5...@agoric/solo@0.5.6) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+
+
+### Bug Fixes
+
+* **solo:** prevent Object.freeze from borking the REPL ([9e50a54](https://github.com/Agoric/agoric-sdk/commit/9e50a54a598247de5fcf1f2317c3d8b2203b2b66))
+
+
+
+### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.4...@agoric/solo@0.5.5) (2022-02-21)
+
+
+### Features
+
+* **solo:** create `ag-solo-mnemonic` in preparation for CosmJS ([1091a9b](https://github.com/Agoric/agoric-sdk/commit/1091a9be12dd29a3072a8f156eb86c2584b29bdd))
+* **solo:** run sim-chain in a separate process ([a9bc83d](https://github.com/Agoric/agoric-sdk/commit/a9bc83dc8f74a77a39feef4f1de45a0eee9439ae))
+* **solo:** skip `agoric deploy ...` if 0 wallet deploys ([d68b472](https://github.com/Agoric/agoric-sdk/commit/d68b472f9dd8ac5b05b91de24ba3a9f51bfd58de))
+* **swing-store:** enable `LMDB_MAP_SIZE` and `SOLO_LMDB_MAP_SIZE` ([77f67a8](https://github.com/Agoric/agoric-sdk/commit/77f67a8010d84b4f595e1fbd524b344050ae47d6))
+* **telemetry:** use `makeSlogSenderFromModule` ([2892da9](https://github.com/Agoric/agoric-sdk/commit/2892da96eff902c5f616424d6fb9946aaaef1b0f))
+
+
+### Bug Fixes
+
+* **solo:** kill off sim-chain child with `SIGTERM` ([e85dccd](https://github.com/Agoric/agoric-sdk/commit/e85dccdb445d213f3d85d2cd8a65bf65d61f84f0))
+* **solo:** minor pipe reordering and refactoring ([8fafe57](https://github.com/Agoric/agoric-sdk/commit/8fafe57af019aae8ee6d57531cbafd4426d72b86))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **solo:** explicitly use `agoric/src/entrypoint.js` for deployment ([24f1f05](https://github.com/Agoric/agoric-sdk/commit/24f1f051dd9a77e268a2adad14d5f53c8cd2534c))
+* **solo:** Reject with error, not number ([e5f622f](https://github.com/Agoric/agoric-sdk/commit/e5f622fe3708994388b98a7d9d944b3c694d0ad5))
+* **solo:** remove a symlink dependency in exchange for web config ([42fc52b](https://github.com/Agoric/agoric-sdk/commit/42fc52b9d7bd8217038164f92f0448c4540c6e64))
+
+
+
+### [0.5.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.3...@agoric/solo@0.5.4) (2021-12-22)
+
+
+### Bug Fixes
+
+* **solo:** take a dependency on `esm` to reenable plugins ([16e9f9b](https://github.com/Agoric/agoric-sdk/commit/16e9f9b08edeb412fb722adab593f22fde1e29a8))
+* **wallet:** allow wallet app deep linking ([96d372e](https://github.com/Agoric/agoric-sdk/commit/96d372e781d3ce405fc82edea78a0633b0d61b9f))
+
+
+
 ### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.2...@agoric/solo@0.5.3) (2021-12-02)
 
 
@@ -61,7 +214,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* **deploy:** use `@agoric/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
+* **deploy:** use `@endo/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
 * **solo:** make solo-to-chain more robust ([b266666](https://github.com/Agoric/agoric-sdk/commit/b2666665b1881d5f98fa853ba05627d945783c7c))
 * **solo:** only subscribe to one copy of mailbox events ([9d58314](https://github.com/Agoric/agoric-sdk/commit/9d583148727ed90e9ac555fef75fef40ad90a0cf))
 * **solo:** preserve ports in the `rpcAddr`; `--node` needs them ([7d83576](https://github.com/Agoric/agoric-sdk/commit/7d83576ca3aa4fd81077284bb544a56dcdd75f8c))

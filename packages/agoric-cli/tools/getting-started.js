@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { request } from 'http';
 
 import { spawn } from 'child_process';
@@ -27,7 +27,12 @@ const dirname = new URL('./', import.meta.url).pathname;
 // cd ui && yarn start
 
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
-  const { init: initOptions = [], testUnsafePlugins = false } = options;
+  const {
+    init: initOptions = [],
+    install: installOptions = [],
+    start: startOptions = [],
+    testUnsafePlugins = false,
+  } = options;
   // FIXME: Do a search for an unused port or allow specification.
   const PORT = '7999';
   process.env.PORT = PORT;
@@ -46,14 +51,19 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     return ps;
   }
 
-  // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
-  const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
-    ? ['--sdk']
-    : [];
-  const agoricCli = path.join(dirname, '..', 'bin', 'agoric');
+  const defaultAgoricCmd = () => {
+    // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
+    const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
+      ? ['--sdk']
+      : [];
+    const localCli = path.join(dirname, '..', 'bin', 'agoric');
+    return [localCli, ...extraArgs];
+  };
+  const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
+  const agoricCmd = JSON.parse(AGORIC_CMD);
   function myMain(args, opts = {}) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(agoricCli, [...extraArgs, ...args], {
+    return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,
@@ -62,7 +72,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   }
 
   const olddir = process.cwd();
-  const { name, removeCallback } = tmp.dirSync({
+  const { name } = tmp.dirSync({
     unsafeCleanup: true,
     prefix: 'agoric-cli-test-',
   });
@@ -103,14 +113,23 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // agoric install
-    t.is(await myMain(['install']), 0, 'install works');
+    if (process.env.AGORIC_INSTALL_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_INSTALL_OPTIONS);
+      installOptions.push(...opts);
+    }
+    t.is(await myMain(['install', ...installOptions]), 0, 'install works');
 
     // ==============
     // agoric start --reset
     const startResult = makePromiseKit();
 
+    if (process.env.AGORIC_START_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_START_OPTIONS);
+      startOptions.push(...opts);
+    }
+
     // TODO: Allow this to work even if the port is already used.
-    const startP = myMain(['start', '--reset']);
+    const startP = myMain(['start', '--reset', ...startOptions]);
     finalizers.push(() => pkill(startP.childProcess, 'SIGINT'));
 
     let stdoutStr = '';
@@ -123,6 +142,9 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         }
       });
     }
+    startP.childProcess.on('close', code =>
+      startResult.reject(Error(`early termination: ${code}`)),
+    );
 
     const timeout = setTimeout(
       startResult.reject,
@@ -165,8 +187,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     for (const [suffix, code] of [
       ['/notthere', 404],
       ['', 200],
-      ['/wallet', 301],
-      ['/wallet/', 200],
     ]) {
       let urlResolve;
       const url = `http://127.0.0.1:${PORT}${suffix}`;
@@ -239,6 +259,5 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     runFinalizers();
     process.off('SIGINT', runFinalizers);
     process.chdir(olddir);
-    removeCallback();
   }
 };

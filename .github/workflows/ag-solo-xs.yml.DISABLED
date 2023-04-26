@@ -5,9 +5,10 @@ name: ag-solo on xs
 
 on:
   push:
-    branches: [ master ] # $default-branch
-  pull_request:
-    branches: [ master ] # $default-branch
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
 
 jobs:
   xs-build:
@@ -15,19 +16,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
-        node-version: '14.x'
+        node-version: '18.x'
     - name: cache node modules
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ~/.cache/yarn
         key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
-    - name: yarn install
-      run: yarn install
+    - name: yarn install --frozen-lockfile
+      run: yarn install --frozen-lockfile
     - name: yarn build
       run: yarn build
     - name: install moddable linux CLI SDK ag08
@@ -72,12 +73,3 @@ jobs:
         node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
         noflake mcconfig -m -p x-cli-lin test-xs-manifest.json
         $MODDABLE/build/bin/lin/release/eventual-send
-    - name: test marshal on xs
-      run: |
-        export MODDABLE=$HOME/moddable
-        export PATH=$MODDABLE/build/bin/lin/release:$PATH
-        export TAPE=$HOME/tape-xs
-        cd packages/marshal
-        node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
-        noflake mcconfig -m -p x-cli-lin test-xs-manifest.json
-        $MODDABLE/build/bin/lin/release/marshal

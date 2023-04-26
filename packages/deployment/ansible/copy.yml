@@ -1,6 +1,5 @@
 ---
-
-- hosts: "{{ service }}"
+- hosts: '{{ service }}'
   user: root
   #any_errors_fatal: true
   gather_facts: yes
@@ -11,4 +10,3 @@
     - HELPER_BINARY: "{{lookup('env', 'GOBIN') or ((lookup('env', 'GOPATH') or '/usr/local') + '/bin')}}/agd"
   roles:
     - copy
-

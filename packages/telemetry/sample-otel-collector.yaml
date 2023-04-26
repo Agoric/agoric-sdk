@@ -1,0 +1,94 @@
+# Start with https://opentelemetry.io/docs/collector/
+# Then, run ./scripts/otelcol.sh to start the collector and look in the ./data directory.
+receivers:
+  # Data sources: metrics
+  hostmetrics:
+    scrapers:
+      cpu:
+      disk:
+      filesystem:
+      load:
+      memory:
+      network:
+      #process:
+      #  mute_process_name_error: true
+      processes:
+      #swap:
+
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+
+  # Data sources: traces, metrics, logs
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'agd-containers'
+          docker_sd_configs:
+            - host: unix:///var/run/docker.sock
+              refresh_interval: 5s
+          relabel_configs:
+            - source_labels: [__meta_docker_port_private]
+              regex: (26660|9464|9465)
+              action: keep
+            - source_labels: [__meta_docker_port_private]
+              regex: (26660|9464)
+              target_label: service_name
+              replacement: agd-cosmos
+            - source_labels: [__meta_docker_port_private]
+              regex: 9465
+              target_label: service_name
+              replacement: solo
+            - source_labels: [__meta_docker_container_name]
+              # Extract the SDK revision.
+              regex: .*-(.*)
+              target_label: service_version
+          scrape_interval: 5s
+        - job_name: 'otelcol'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:8888']
+
+processors:
+  batch:
+    timeout: 10s
+  resourcedetection:
+    detectors: [system]
+
+extensions:
+  zpages:
+    endpoint: :55679
+  health_check:
+
+exporters:
+  file/data:
+    path: /data/otel-export.json
+
+  prometheus:
+    endpoint: '0.0.0.0:9411'
+    # namespace: "default"
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  logging:
+    loglevel: debug
+
+service:
+  # telemetry:
+  #   logs:
+  #     level: "debug"
+  extensions: [zpages, health_check]
+  pipelines:
+    # metrics:
+    #   receivers: [hostmetrics, otlp, prometheus]
+    #   processors: [batch, resourcedetection]
+    #   exporters: [prometheus, otlp/uptrace, datadog/api]
+    traces:
+      receivers: [otlp]
+      processors: [batch, resourcedetection]
+      #exporters: [otlp/honeycomb, otlp/uptrace, datadog/api]
+      exporters: [file/data]

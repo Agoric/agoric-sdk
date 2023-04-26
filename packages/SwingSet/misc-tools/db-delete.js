@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-
-import '@agoric/install-ses';
+import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';
 
@@ -26,7 +25,7 @@ function fail(message, printUsage) {
   process.exit(1);
 }
 
-function run() {
+async function run() {
   const argv = process.argv.slice(2);
 
   let range = false;
@@ -47,7 +46,9 @@ function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kernelStorage, hostStorage } = openSwingStore(stateDBDir);
+  const { kvStore } = kernelStorage;
+  const { commit } = hostStorage;
 
   if (range) {
     for (const k of kvStore.getKeys(`${key}.`, `${key}/`)) {
@@ -56,7 +57,10 @@ function run() {
   } else {
     kvStore.delete(key);
   }
-  commit();
+  await commit();
 }
 
-run();
+run().then(
+  () => 0,
+  e => console.error(`${e}`, e),
+);

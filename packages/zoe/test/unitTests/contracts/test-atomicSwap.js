@@ -1,12 +1,12 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
@@ -19,7 +19,8 @@ const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 
 test('zoe - atomicSwap', async t => {
   t.plan(8);
-  const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   const makeAlice = async moolaPayment => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
@@ -29,7 +30,8 @@ test('zoe - atomicSwap', async t => {
         // pack the contract
         const bundle = await bundleSource(atomicSwapRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-atomicswap', bundle);
+        const installationP = E(zoe).installBundleID('b1-atomicswap');
         return installationP;
       },
       startInstance: async installation => {
@@ -58,7 +60,7 @@ test('zoe - atomicSwap', async t => {
       collectPayouts: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -69,7 +71,7 @@ test('zoe - atomicSwap', async t => {
 
         await E(seat)
           .getPayout('Price')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -91,7 +93,10 @@ test('zoe - atomicSwap', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
         t.is(
           invitationValue.installation,
@@ -99,12 +104,12 @@ test('zoe - atomicSwap', async t => {
           'installation is atomicSwap',
         );
         t.deepEqual(
-          invitationValue.asset,
+          invitationValue.customDetails?.asset,
           moola(3n),
           `asset to be traded is 3 moola`,
         );
         t.deepEqual(
-          invitationValue.price,
+          invitationValue.customDetails?.price,
           simoleans(7n),
           `price is 7 simoleans, so bob must give that`,
         );
@@ -125,7 +130,7 @@ test('zoe - atomicSwap', async t => {
 
         const r1 = E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -136,7 +141,7 @@ test('zoe - atomicSwap', async t => {
 
         const r2 = E(seat)
           .getPayout('Price')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -181,6 +186,7 @@ test('zoe - non-fungible atomicSwap', async t => {
     rpgItems,
     createRpgItem,
     zoe,
+    vatAdminState,
   } = setupNonFungible();
 
   const makeAlice = async aliceCcPayment => {
@@ -191,7 +197,8 @@ test('zoe - non-fungible atomicSwap', async t => {
         // pack the contract
         const bundle = await bundleSource(atomicSwapRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-atomicswap', bundle);
+        const installationP = E(zoe).installBundleID('b1-atomicswap');
         return installationP;
       },
       startInstance: async installation => {
@@ -214,7 +221,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         seat
           .getPayout('Asset')
-          .then(ccPurse.deposit)
+          .then(payment => ccPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -225,7 +232,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         seat
           .getPayout('Price')
-          .then(rpgPurse.deposit)
+          .then(payment => rpgPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -253,7 +260,10 @@ test('zoe - non-fungible atomicSwap', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
         t.is(
@@ -262,12 +272,12 @@ test('zoe - non-fungible atomicSwap', async t => {
           'installation is atomicSwap',
         );
         t.deepEqual(
-          invitationValue.asset,
+          invitationValue.customDetails?.asset,
           calico37Amount,
           `asset to be traded is a particular crypto cat`,
         );
         t.deepEqual(
-          invitationValue.price,
+          invitationValue.customDetails?.price,
           vorpalAmount,
           `price is vorpalAmount, so bob must give that`,
         );
@@ -288,7 +298,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         await seat
           .getPayout('Asset')
-          .then(ccPurse.deposit)
+          .then(payment => ccPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -299,7 +309,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         await seat
           .getPayout('Price')
-          .then(rpgPurse.deposit)
+          .then(payment => rpgPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -318,7 +328,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   // Alice makes an instance and makes her offer.
   const installation = await alice.installCode();
 
-  const vorpalSword = createRpgItem('Vorpal Sword', 38);
+  const vorpalSword = createRpgItem('Vorpal Sword', 'vorping');
   const vorpalAmount = rpgItems(vorpalSword);
   const bobRpgPayment = await E(rpgMint).mintPayment(vorpalAmount);
   const bob = await makeBob(installation, bobRpgPayment);
@@ -339,13 +349,14 @@ test('zoe - non-fungible atomicSwap', async t => {
 // Checking handling of duplicate issuers. I'd have preferred a raffle contract
 test('zoe - atomicSwap like-for-like', async t => {
   t.plan(13);
-  const { moolaIssuer, moolaMint, moola, zoe } = setup();
+  const { moolaIssuer, moolaMint, moola, zoe, vatAdminState } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-atomicswap', bundle);
+  const installation = await E(zoe).installBundleID('b1-atomicswap');
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
@@ -385,7 +396,8 @@ test('zoe - atomicSwap like-for-like', async t => {
   // counter-party.
 
   const bobInvitationP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     bobInvitationP,
   );
   const bobInvitationValue = await E(zoe).getInvitationDetails(
@@ -396,8 +408,8 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEqual(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
-  t.deepEqual(bobInvitationValue.asset, moola(3n));
-  t.deepEqual(bobInvitationValue.price, moola(7n));
+  t.deepEqual(bobInvitationValue.customDetails?.asset, moola(3n));
+  t.deepEqual(bobInvitationValue.customDetails?.price, moola(7n));
 
   const bobProposal = harden({
     give: { Price: moola(7n) },

@@ -1,17 +1,15 @@
 ---
-
-- hosts: "{{ service }}"
+- hosts: '{{ service }}'
   user: root
   #any_errors_fatal: true
   gather_facts: yes
   strategy: free
   vars:
     - service: ag-chain-cosmos
-    - data: "{{ SETUP_HOME }}/{{ service }}/data"
-    - execline: "/usr/local/bin/ag-chain-cosmos start"
+    - data: '{{ SETUP_HOME }}/{{ service }}/data'
+    - execline: '/usr/local/bin/ag-chain-cosmos start'
     - PERSISTENT_PEERS: "{{ lookup('file', SETUP_HOME + '/' + service + '/data/peers.txt') }}"
     - NUM_FILE_DESCRIPTORS: 2048
     - BLOCK_CADENCE: 2s
   roles:
     - install-cosmos
-

@@ -33,3 +33,28 @@ test('stringifyNat wei to ether', t => {
 
   t.is(stringifyNat(100000000000000n * wei, 18, 2), '100000000000000.00');
 });
+
+test('stringifyNat limit decimal places to 100', t => {
+  const tinyCoin = 123456789n;
+
+  t.is(stringifyNat(tinyCoin, 105, 120), `0.${'1234'.padStart(100, '0')}`);
+});
+
+test('stringifyNat shows correct number of decimal places by default', t => {
+  // If number has no decimal places, don't show any.
+  t.is(stringifyNat(123n), '123');
+
+  // Show two decimal places by default.
+  t.is(stringifyNat(1230000n, 4), '123.00');
+
+  // Show all significant decimal places if greater than 2 by default.
+  t.is(stringifyNat(123456700n, 6), '123.4567');
+});
+
+test('stringifyNat empty value', t => {
+  t.is(stringifyNat(undefined), '');
+  t.is(stringifyNat(null), '');
+  t.is(stringifyNat(0n), '0');
+  t.is(stringifyNat(0n, 1), '0.0');
+  t.is(stringifyNat(0n, 4), '0.00');
+});

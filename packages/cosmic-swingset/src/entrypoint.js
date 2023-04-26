@@ -1,13 +1,11 @@
 #! /usr/bin/env node
+// @jessie-check
 
-import '@agoric/install-ses/pre-bundle-source.js';
-
-// import node-lmdb early to work around SES incompatibility
-import 'node-lmdb';
+import '@endo/init/pre.js';
 
 import agcc from '@agoric/cosmos';
 
-import '@agoric/install-ses';
+import '@endo/init/unsafe-fast.js';
 
 import os from 'os';
 import path from 'path';

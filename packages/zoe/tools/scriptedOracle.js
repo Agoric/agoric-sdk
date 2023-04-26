@@ -1,6 +1,5 @@
-// @ts-check
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 /**
  * Start an instance of an Oracle that follows a script. The Oracle has access
@@ -13,12 +12,11 @@ import { Far } from '@agoric/marshal';
  * time, the event is 'nothing to report'.
  *
  * @param {Record<string, any>} script
- * @param {Installation} oracleInstallation
- * @param {TimerService} timer
+ * @param {Installation<import('../src/contracts/oracle.js').OracleStart>} oracleInstallation
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {ZoeService} zoe
  * @param {Issuer} feeIssuer
  */
-
 export async function makeScriptedOracle(
   script,
   oracleInstallation,
@@ -42,7 +40,6 @@ export async function makeScriptedOracle(
     },
   });
 
-  /** @type {OracleStartFnResult} */
   const startResult = await E(zoe).startInstance(oracleInstallation, {
     Fee: feeIssuer,
   });

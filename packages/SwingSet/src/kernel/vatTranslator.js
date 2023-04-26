@@ -1,58 +1,85 @@
-import { assert, details as X } from '@agoric/assert';
-import { insistMessage } from '../message.js';
+import { assert, Fail } from '@agoric/assert';
+import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
-import { insistCapData } from '../capdata.js';
-import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug.js';
+import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
+import {
+  kdebug,
+  legibilizeMessageArgs,
+  legibilizeValue,
+} from '../lib/kdebug.js';
 
-const reapMessageVatDelivery = harden(['bringOutYourDead']);
+export function assertValidVatstoreKey(key) {
+  assert.typeof(key, 'string');
+}
 
-/*
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryMessage} VatDeliveryMessage
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryNotify} VatDeliveryNotify
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryDropExports} VatDeliveryDropExports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireExports} VatDeliveryRetireExports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireImports} VatDeliveryRetireImports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryChangeVatOptions} VatDeliveryChangeVatOptions
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStartVat} VatDeliveryStartVat
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStopVat} VatDeliveryStopVat
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryBringOutYourDead} VatDeliveryBringOutYourDead
+ *
+ * @typedef {import('@agoric/swingset-liveslots').VatOneResolution} VatOneResolution
+ *
+ */
+
+/**
  * Return a function that converts KernelDelivery objects into VatDelivery
  * objects
+ *
+ * @param {string} vatID
+ * @param {KernelKeeper} kernelKeeper
+ * @returns {(kd: KernelDeliveryObject) => VatDeliveryObject}
  */
 function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
-  // msg is { method, args, result }, all slots are kernel-centric
+  // msg is { methargs, result }, all slots are kernel-centric
   function translateMessage(target, msg) {
     insistMessage(msg);
     const targetSlot = mapKernelSlotToVatSlot(target);
     const { type } = parseVatSlot(targetSlot);
     if (type === 'object') {
-      assert(parseVatSlot(targetSlot).allocatedByVat, 'deliver() to wrong vat');
+      parseVatSlot(targetSlot).allocatedByVat || Fail`deliver() to wrong vat`;
     } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
-      assert(p.decider === vatID, 'wrong decider');
+      p.decider === vatID || Fail`wrong decider`;
     }
-    const inputSlots = msg.args.slots.map(slot => mapKernelSlotToVatSlot(slot));
+    const inputSlots = msg.methargs.slots.map(slot =>
+      mapKernelSlotToVatSlot(slot),
+    );
     let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      assert(
-        p.state === 'unresolved',
-        X`result ${msg.result} already resolved`,
-      );
-      assert(
-        !p.decider,
-        X`result ${msg.result} already has decider ${p.decider}`,
-      );
+      p.state === 'unresolved' || Fail`result ${msg.result} already resolved`;
+      !p.decider || Fail`result ${msg.result} already has decider ${p.decider}`;
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
       kernelKeeper.setDecider(msg.result, vatID);
     }
 
     const vatMessage = harden({
-      method: msg.method,
-      args: { ...msg.args, slots: inputSlots },
+      methargs: { ...msg.methargs, slots: inputSlots },
       result: resultSlot,
     });
+    /** @type { VatDeliveryMessage } */
     const vatDelivery = harden(['message', targetSlot, vatMessage]);
     return vatDelivery;
   }
 
+  /**
+   *
+   * @param {{ state: string, data: SwingSetCapData }} kp
+   * @returns { [ isReject: boolean, resolution: SwingSetCapData ]}
+   */
   function translatePromiseDescriptor(kp) {
     if (kp.state === 'fulfilled' || kp.state === 'rejected') {
       return [
@@ -64,24 +91,33 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       ];
     } else if (kp.state === 'redirected') {
       // TODO unimplemented
+      // NOTE: When adding redirection / forwarding, we must handle any
+      // pipelined messages pending in the inbound queue
       throw new Error('not implemented yet');
     } else {
-      assert.fail(X`unknown kernelPromise state '${kp.state}'`);
+      throw Fail`unknown kernelPromise state '${kp.state}'`;
     }
   }
 
+  /**
+   *
+   * @param {KernelDeliveryOneNotify[]} kResolutions
+   * @returns {VatDeliveryNotify}
+   */
   function translateNotify(kResolutions) {
     const vResolutions = [];
     let idx = 0;
     for (const resolution of kResolutions) {
       const [kpid, p] = resolution;
-      assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
+      p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
       const vpid = mapKernelSlotToVatSlot(kpid);
+      /** @type { VatOneResolution } */
       const vres = [vpid, ...translatePromiseDescriptor(p)];
       vResolutions.push(vres);
       kdebug(`notify ${idx} ${kpid} ${JSON.stringify(vres)}`);
       idx += 1;
     }
+    /** @type { VatDeliveryNotify } */
     const vatDelivery = harden(['notify', vResolutions]);
     return vatDelivery;
   }
@@ -91,7 +127,8 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const vrefs = krefs.map(kref =>
       mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts),
     );
-    krefs.map(kref => vatKeeper.clearReachableFlag(kref, 'dropE'));
+    krefs.forEach(kref => vatKeeper.clearReachableFlag(kref, 'dropE'));
+    /** @type { VatDeliveryDropExports } */
     const vatDelivery = harden(['dropExports', vrefs]);
     return vatDelivery;
   }
@@ -103,6 +140,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       vrefs.push(vref);
     }
+    /** @type { VatDeliveryRetireExports } */
     const vatDelivery = harden(['retireExports', vrefs]);
     return vatDelivery;
   }
@@ -114,31 +152,99 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       vrefs.push(vref);
     }
+    /** @type { VatDeliveryRetireImports } */
     const vatDelivery = harden(['retireImports', vrefs]);
     return vatDelivery;
   }
+
+  /**
+   *
+   * @param {Record<string, unknown>} options
+   * @returns {VatDeliveryChangeVatOptions}
+   */
+  function translateChangeVatOptions(options) {
+    /** @type { VatDeliveryChangeVatOptions } */
+    const changeVatOptionsMessageVatDelivery = harden([
+      'changeVatOptions',
+      options,
+    ]);
+    return changeVatOptionsMessageVatDelivery;
+  }
+
+  /**
+   *
+   * @param {SwingSetCapData} kernelVP
+   * @returns {VatDeliveryStartVat}
+   */
+  function translateStartVat(kernelVP) {
+    const slots = kernelVP.slots.map(slot => mapKernelSlotToVatSlot(slot));
+    const vatVP = { ...kernelVP, slots };
+    /** @type { VatDeliveryStartVat } */
+    const startVatMessageVatDelivery = harden(['startVat', vatVP]);
+    return startVatMessageVatDelivery;
+  }
+
+  /**
+   * @param { SwingSetCapData } disconnectObjectCapData
+   * @returns { VatDeliveryStopVat }
+   */
+  function translateStopVat(disconnectObjectCapData) {
+    return harden(['stopVat', disconnectObjectCapData]);
+  }
+
+  /** @type { VatDeliveryBringOutYourDead } */
+  const reapMessageVatDelivery = harden(['bringOutYourDead']);
 
   function translateBringOutYourDead() {
     return reapMessageVatDelivery;
   }
 
+  /**
+   *
+   * @param {KernelDeliveryObject} kd
+   * @returns {VatDeliveryObject}
+   */
   function kernelDeliveryToVatDelivery(kd) {
-    const [type, ...args] = kd;
-    switch (type) {
-      case 'message':
+    switch (kd[0]) {
+      case 'message': {
+        const [_, ...args] = kd;
         return translateMessage(...args);
-      case 'notify':
+      }
+      case 'notify': {
+        const [_, ...args] = kd;
         return translateNotify(...args);
-      case 'dropExports':
+      }
+      case 'dropExports': {
+        const [_, ...args] = kd;
         return translateDropExports(...args);
-      case 'retireExports':
+      }
+      case 'retireExports': {
+        const [_, ...args] = kd;
         return translateRetireExports(...args);
-      case 'retireImports':
+      }
+      case 'retireImports': {
+        const [_, ...args] = kd;
         return translateRetireImports(...args);
-      case 'bringOutYourDead':
+      }
+      case 'changeVatOptions': {
+        const [_, ...args] = kd;
+        return translateChangeVatOptions(...args);
+      }
+      case 'startVat': {
+        const [_, ...args] = kd;
+        return translateStartVat(...args);
+      }
+      case 'stopVat': {
+        const [_, ...args] = kd;
+        return translateStopVat(...args);
+      }
+      case 'bringOutYourDead': {
+        const [_, ...args] = kd;
         return translateBringOutYourDead(...args);
-      default:
-        assert.fail(X`unknown kernelDelivery.type ${type}`);
+      }
+      default: {
+        throw Fail`unknown kernelDelivery.type ${kd[0]}`;
+      }
     }
     // returns one of:
     //  ['message', target, msg]
@@ -146,69 +252,94 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['dropExports', vrefs]
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
+    //  ['startVat', vatParameters]
+    //  ['stopVat', disconnectObject]
     //  ['bringOutYourDead']
   }
 
   return kernelDeliveryToVatDelivery;
 }
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResultOk} VatSyscallResultOk
+ */
 
-export function insistValidVatstoreKey(key) {
-  assert.typeof(key, 'string');
-  assert(key.match(/^[-\w.+/]+$/), 'invalid vatstore key');
-}
-
-/*
+/**
  * return a function that converts VatSyscall objects into KernelSyscall
  * objects
+ *
+ * @param {string} vatID
+ * @param {KernelKeeper} kernelKeeper
+ * @returns {(vsc: VatSyscallObject) => KernelSyscallObject}
  */
 function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   const { mapVatSlotToKernelSlot, clearReachableFlag } = vatKeeper;
+  const { enablePipelining = false } = vatKeeper.getOptions();
 
   function translateSend(targetSlot, msg) {
-    assert.typeof(targetSlot, 'string', 'non-string targetSlot');
+    typeof targetSlot === 'string' || Fail`non-string targetSlot`;
     insistMessage(msg);
-    const { method, args, result: resultSlot } = msg;
-    insistCapData(args);
+    const { methargs, result: resultSlot } = msg;
+    insistCapData(methargs);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
-    const argList = legibilizeMessageArgs(args).join(', ');
+    const [method, argList] = legibilizeMessageArgs(methargs);
     // prettier-ignore
     kdebug(`syscall[${vatID}].send(${targetSlot}/${target}).${method}(${argList})`);
-    const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
-    const kernelArgs = harden({ ...args, slots: kernelSlots });
+    const kernelSlots = methargs.slots.map(slot =>
+      mapVatSlotToKernelSlot(slot),
+    );
+    const kernelArgs = harden({ ...methargs, slots: kernelSlots });
     let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
-      result = mapVatSlotToKernelSlot(resultSlot);
+      // Require that the promise used by the vat to receive the result of this
+      // send is newly allocated by the vat if it does not support pipelining.
+      // When a promise previously received as the result of a delivery is used
+      // as the result of a send call, it's in effect doing a redirect, which
+      // is currently only supported for pipelining vats.
+      // While we could only require that the promise be allocated by the vat,
+      // aka exported not imported, there is currently no path for liveslots
+      // vats to ever use a promise before it is seen as result, which would be
+      // indicative of something unexpected going on.
+      result = mapVatSlotToKernelSlot(resultSlot, {
+        requireNew: !enablePipelining,
+      });
       insistKernelType('promise', result);
       // The promise must be unresolved, and this Vat must be the decider.
       // The most common case is that 'resultSlot' is a new exported promise
       // (p+NN). But it might be a previously-imported promise (p-NN) that
-      // they got in a deliver() call, which gave them resolution authority.
+      // they got in a deliver() call, which gave them resolution authority,
+      // however only in the case of pipelining vats.
+      // In the case of non-pipelining vats these checks are redundant since
+      // we're guaranteed to have a promise newly allocated by the vat.
       const p = kernelKeeper.getKernelPromise(result);
-      assert(
-        p.state === 'unresolved',
-        X`send() result ${result} is already resolved`,
-      );
-      assert(
-        p.decider === vatID,
-        X`send() result ${result} is decided by ${p.decider} not ${vatID}`,
-      );
+      p.state === 'unresolved' ||
+        Fail`send() result ${result} is already resolved`;
+      p.decider === vatID ||
+        Fail`send() result ${result} is decided by ${p.decider} not ${vatID}`;
       kernelKeeper.clearDecider(result);
       // resolution authority now held by run-queue
     }
 
     const kmsg = harden({
-      method,
-      args: kernelArgs,
+      methargs: kernelArgs,
       result,
     });
     insistMessage(kmsg);
+    /** @type { KernelSyscallSend } */
     const ks = harden(['send', target, kmsg]);
     return ks;
   }
 
+  /**
+   *
+   * @param {boolean} isFailure
+   * @param {SwingSetCapData} info
+   * @returns {KernelSyscallExit}
+   */
   function translateExit(isFailure, info) {
     insistCapData(info);
     kdebug(`syscall[${vatID}].exit(${isFailure},${legibilizeValue(info)})`);
@@ -217,49 +348,61 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['exit', vatID, !!isFailure, kernelInfo]);
   }
 
+  /**
+   *
+   * @param {string} key
+   * @returns {KernelSyscallVatstoreGet}
+   */
   function translateVatstoreGet(key) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     kdebug(`syscall[${vatID}].vatstoreGet(${key})`);
     return harden(['vatstoreGet', vatID, key]);
   }
 
+  /**
+   *
+   * @param {string} key
+   * @param {string} value
+   * @returns {KernelSyscallVatstoreSet}
+   */
   function translateVatstoreSet(key, value) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     assert.typeof(value, 'string');
     kdebug(`syscall[${vatID}].vatstoreSet(${key},${value})`);
     return harden(['vatstoreSet', vatID, key, value]);
   }
 
-  function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
-    if (priorKey !== '') {
-      insistValidVatstoreKey(priorKey);
-    }
-    insistValidVatstoreKey(lowerBound);
-    if (upperBound) {
-      insistValidVatstoreKey(upperBound);
-    }
-    kdebug(
-      `syscall[${vatID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
-    );
-    return harden([
-      'vatstoreGetAfter',
-      vatID,
-      priorKey,
-      lowerBound,
-      upperBound,
-    ]);
+  /**
+   *
+   * @param {string} priorKey
+   * @returns {KernelSyscallVatstoreGetNextKey}
+   */
+  function translateVatstoreGetNextKey(priorKey) {
+    assertValidVatstoreKey(priorKey);
+    kdebug(`syscall[${vatID}].vatstoreGetNextKey(${priorKey})`);
+    return harden(['vatstoreGetNextKey', vatID, priorKey]);
   }
 
+  /**
+   *
+   * @param {string} key
+   * @returns {KernelSyscallVatstoreDelete}
+   */
   function translateVatstoreDelete(key) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     kdebug(`syscall[${vatID}].vatstoreDelete(${key})`);
     return harden(['vatstoreDelete', vatID, key]);
   }
 
   const gcSyscallMapOpts = { required: true, setReachable: false };
 
+  /**
+   *
+   * @param {string[]} vrefs
+   * @returns {KernelSyscallDropImports}
+   */
   function translateDropImports(vrefs) {
-    assert(Array.isArray(vrefs), X`dropImports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`dropImports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -276,8 +419,13 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['dropImports', krefs]);
   }
 
+  /**
+   *
+   * @param {string[]} vrefs
+   * @returns {KernelSyscallRetireImports}
+   */
   function translateRetireImports(vrefs) {
-    assert(Array.isArray(vrefs), X`retireImports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`retireImports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -296,8 +444,13 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['retireImports', krefs]);
   }
 
+  /**
+   *
+   * @param {string[]} vrefs
+   * @returns {KernelSyscallRetireExports}
+   */
   function translateRetireExports(vrefs) {
-    assert(Array.isArray(vrefs), X`retireExports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`retireExports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -313,16 +466,44 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['retireExports', krefs]);
   }
 
+  /**
+   *
+   * @param {string[]} vrefs
+   * @returns {import('../types-external.js').KernelSyscallAbandonExports}
+   */
+  function translateAbandonExports(vrefs) {
+    Array.isArray(vrefs) || Fail`abandonExports() given non-Array ${vrefs}`;
+    const krefs = vrefs.map(vref => {
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      assert.equal(allocatedByVat, true); // abandon *exports*, not imports
+      // kref must already be in the clist
+      const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
+      // note that this is effectful and also performed outside of a syscall
+      // by processUpgradeVat in {@link ./kernel.js}
+      vatKeeper.deleteCListEntry(kref, vref);
+      return kref;
+    });
+    kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);
+    // abandonExports still has work to do
+    return harden(['abandonExports', vatID, krefs]);
+  }
+
+  /**
+   *
+   * @param {string} target
+   * @param {string} method
+   * @param {SwingSetCapData} args
+   * @returns {KernelSyscallInvoke}
+   */
   function translateCallNow(target, method, args) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
     const { type } = parseKernelSlot(dev);
-    assert(type === 'device', X`doCallNow must target a device, not ${dev}`);
+    type === 'device' || Fail`doCallNow must target a device, not ${dev}`;
     for (const slot of args.slots) {
-      assert(
-        parseVatSlot(slot).type !== 'promise',
-        `syscall.callNow() args cannot include promises like ${slot}`,
-      );
+      parseVatSlot(slot).type !== 'promise' ||
+        Fail`syscall.callNow() args cannot include promises like ${slot}`;
     }
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...args, slots: kernelSlots });
@@ -334,15 +515,20 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   function translateSubscribe(vpid) {
     const kpid = mapVatSlotToKernelSlot(vpid);
     kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
-    assert(
-      kernelKeeper.hasKernelPromise(kpid),
-      X`unknown kernelPromise id '${kpid}'`,
-    );
+    kernelKeeper.hasKernelPromise(kpid) ||
+      Fail`unknown kernelPromise id '${kpid}'`;
+    /** @type { KernelSyscallSubscribe } */
     const ks = harden(['subscribe', vatID, kpid]);
     return ks;
   }
 
+  /**
+   *
+   * @param {VatOneResolution[]} vresolutions
+   * @returns {KernelSyscallResolve}
+   */
   function translateResolve(vresolutions) {
+    /** @type { KernelOneResolution[] } */
     const kresolutions = [];
     const kpidsResolved = [];
     let idx = 0;
@@ -350,6 +536,20 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       const [vpid, rejected, data] = resolution;
       insistVatType('promise', vpid);
       insistCapData(data);
+      if (!rejected) {
+        const resolutionSlot = extractSingleSlot(data);
+        if (resolutionSlot) {
+          // Resolving to a promise is not a fulfillment.
+          // It would be a redirect, but that's not currently supported by the kernel.
+          // Furthermore messages sent to such a promise resolved this way would not
+          // be forwarded but would splat instead.
+          assert(
+            parseVatSlot(resolutionSlot).type !== 'promise',
+            'cannot resolve to a promise',
+          );
+        }
+      }
+
       const kpid = mapVatSlotToKernelSlot(vpid);
       const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
       const kernelData = harden({ ...data, slots: kernelSlots });
@@ -369,35 +569,68 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   // vsc is [type, ...args]
   // ksc is:
   //  ['send', ktarget, kmsg]
+  /**
+   *
+   * @param {VatSyscallObject} vsc
+   * @returns {KernelSyscallObject}
+   */
   function vatSyscallToKernelSyscall(vsc) {
-    const [type, ...args] = vsc;
-    switch (type) {
-      case 'send':
-        return translateSend(...args);
-      case 'callNow':
-        return translateCallNow(...args); // becomes invoke()
-      case 'subscribe':
-        return translateSubscribe(...args);
-      case 'resolve':
-        return translateResolve(...args);
-      case 'exit':
-        return translateExit(...args);
-      case 'vatstoreGet':
-        return translateVatstoreGet(...args);
-      case 'vatstoreSet':
-        return translateVatstoreSet(...args);
-      case 'vatstoreGetAfter':
-        return translateVatstoreGetAfter(...args);
-      case 'vatstoreDelete':
-        return translateVatstoreDelete(...args);
-      case 'dropImports':
-        return translateDropImports(...args);
-      case 'retireImports':
-        return translateRetireImports(...args);
-      case 'retireExports':
-        return translateRetireExports(...args);
-      default:
-        assert.fail(X`unknown vatSyscall type ${type}`);
+    switch (vsc[0]) {
+      case 'send': {
+        const [_, target, msg] = vsc;
+        return translateSend(target, msg);
+      }
+      case 'callNow': {
+        const [_, target, method, args] = vsc;
+        return translateCallNow(target, method, args); // becomes invoke()
+      }
+      case 'subscribe': {
+        const [_, vpid] = vsc;
+        return translateSubscribe(vpid);
+      }
+      case 'resolve': {
+        const [_, resolutions] = vsc;
+        return translateResolve(resolutions);
+      }
+      case 'exit': {
+        const [_, isFailure, info] = vsc;
+        return translateExit(isFailure, info);
+      }
+      case 'vatstoreGet': {
+        const [_, key] = vsc;
+        return translateVatstoreGet(key);
+      }
+      case 'vatstoreSet': {
+        const [_, key, data] = vsc;
+        return translateVatstoreSet(key, data);
+      }
+      case 'vatstoreGetNextKey': {
+        const [_, priorKey] = vsc;
+        return translateVatstoreGetNextKey(priorKey);
+      }
+      case 'vatstoreDelete': {
+        const [_, key] = vsc;
+        return translateVatstoreDelete(key);
+      }
+      case 'dropImports': {
+        const [_, slots] = vsc;
+        return translateDropImports(slots);
+      }
+      case 'retireImports': {
+        const [_, slots] = vsc;
+        return translateRetireImports(slots);
+      }
+      case 'retireExports': {
+        const [_, slots] = vsc;
+        return translateRetireExports(slots);
+      }
+      case 'abandonExports': {
+        const [_, slots] = vsc;
+        return translateAbandonExports(slots);
+      }
+      default: {
+        throw Fail`unknown vatSyscall type ${vsc[0]}`;
+      }
     }
   }
 
@@ -416,38 +649,54 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
 
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
-  // Most syscalls return ['ok', null], but callNow() returns ['ok', capdata]
-  // and vatstoreGet() returns ['ok', string] or ['ok',
-  // undefined]. KernelSyscallResult is never ['error', reason] because errors
-  // (which are kernel-fatal) are signalled with exceptions.
+  // Most syscalls return ['ok', null], but callNow() returns ['ok',
+  // capdata] and vatstoreGet() returns ['ok', string] or ['ok',
+  // undefined], and invoke() can return ['error', problem]. We
+  // translate all 'undefined' into 'null' because the syscall
+  // responses will be recorded in the transcript, which uses JSON
+  // (actually djson.js), which cannot round-trip 'undefined'.
+
+  /**
+   *
+   * @param {string} type
+   * @param {KernelSyscallResult} kres
+   * @returns {VatSyscallResult}
+   */
   function kernelSyscallResultToVatSyscallResult(type, kres) {
     const [successFlag, resultData] = kres;
-    assert(successFlag === 'ok', 'unexpected KSR error');
     switch (type) {
       case 'invoke': {
-        insistCapData(resultData);
-        // prettier-ignore
-        const slots =
-          resultData.slots.map(slot => mapKernelSlotToVatSlot(slot));
-        const vdata = { ...resultData, slots };
-        const vres = harden(['ok', vdata]);
-        return vres;
+        if (kres[0] === 'ok') {
+          insistCapData(resultData);
+          // prettier-ignore
+          const slots =
+                resultData.slots.map(slot => mapKernelSlotToVatSlot(slot));
+          const vdata = { ...resultData, slots };
+          /** @type { VatSyscallResultOk } */
+          const vres = harden(['ok', vdata]);
+          return vres;
+        } else {
+          return harden([kres[0], kres[1]]);
+        }
       }
       case 'vatstoreGet':
+        assert(successFlag === 'ok', 'unexpected KSR error');
         if (resultData) {
           assert.typeof(resultData, 'string');
           return harden(['ok', resultData]);
         } else {
-          return harden(['ok', undefined]);
+          return harden(['ok', null]);
         }
-      case 'vatstoreGetAfter':
+      case 'vatstoreGetNextKey':
+        assert(successFlag === 'ok', 'unexpected KSR error');
         if (resultData) {
-          assert(Array.isArray(resultData));
+          assert.typeof(resultData, 'string');
           return harden(['ok', resultData]);
         } else {
-          return harden(['ok', undefined]);
+          return harden(['ok', null]);
         }
       default:
+        assert(successFlag === 'ok', 'unexpected KSR error');
         assert(resultData === null);
         return harden(['ok', null]);
     }

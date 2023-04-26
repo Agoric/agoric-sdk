@@ -1,41 +1,65 @@
 // @ts-check
 
+export {};
+
 /**
  * @template T
- * @typedef {import('@agoric/far').EOnly<T>} EOnly
+ * @typedef {import('@endo/far').EOnly<T>} EOnly
  */
 
 /**
- * @typedef {Object} Board
- * @property {(id: string) => any} getValue
- * @property {(value: any) => string} getId
- * @property {(value: any) => boolean} has
- * @property {() => string[]} ids
+ * @typedef {ReturnType<typeof import('./lib-board.js').makeBoard>} Board
  */
 
 /**
- * @typedef {Object} NameHub
+ * @typedef {object} NameHub read-only access to a node in a name hierarchy
+ *
+ * NOTE: We need to return arrays, not iterables, because even if marshal could
+ * allow passing a remote iterable, there would be an inordinate number of round
+ * trips for the contents of even the simplest nameHub.
+ *
  * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
- * @property {() => Array<[string, unknown]>} entries get all the entries
+ * @property {() => [string, unknown][]} entries get all the entries
  * available in the current NameHub
- * @property {() => Array<string>} keys get all names available in the current
- * NameHub
- * @property {() => Array<unknown>} values get all values available in the
+ * @property {() => string[]} keys get all names available in the
+ * current NameHub
+ * @property {() => unknown[]} values get all values available in the
  * current NameHub
  */
 
 /**
- * @typedef {Object} NameAdmin
+ * @typedef {object} NameAdmin write access to a node in a name hierarchy
+ *
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
- * @property {(key: string, newValue: unknown) => void} update Fulfill an
- * outstanding reserved promise (if any) to the newValue and set the key to the
- * newValue.
+ * @property {<T>( key: string, newValue: T, newAdmin?: unknown) =>
+ *   T } default Update if not already updated.  Return
+ *   existing value, or newValue if not existing.
+ * @property {(
+ *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ * } set Update only if already initialized. Reject if not.
+ * @property {(
+ *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ * } update Fulfill an outstanding reserved promise (if any) to the newValue and
+ * set the key to the newValue.  If newAdmin is provided, set that to return via
+ * lookupAdmin.
+ * @property {(...path: Array<string>) => Promise<any>} lookupAdmin Look up the
+ * `newAdmin` from the path of keys starting from the current NameAdmin.  Wait
+ * on any reserved promises.
  * @property {(key: string) => void} delete Delete a value and reject an
  * outstanding reserved promise (if any).
+ * @property {() => NameHub} readonly get the NameHub corresponding to the
+ * current NameAdmin
+ * @property {(fn: undefined | ((entries: [string, unknown][]) => void)) => void} onUpdate
+ */
+
+/**
+ * @typedef {object} NameHubKit a node in a name hierarchy
+ * @property {NameHub} nameHub read access
+ * @property {NameAdmin} nameAdmin write access
  */
 
 /**
@@ -43,34 +67,18 @@
  */
 
 /**
- * @typedef {Object} NameHubKit A kit of a NameHub and its corresponding
- * NameAdmin.
- * @property {NameHub} nameHub
- * @property {NameAdmin} nameAdmin
+ * @typedef {object} BridgeHandler An object that can receive messages from the bridge device
+ * @property {(obj: any) => Promise<void>} fromBridge Handle an inbound message
  */
 
 /**
- * @typedef {Object} FeeCollector
- *
- * @property {() => ERef<Payment>} collectFees
+ * @typedef {object} ScopedBridgeManager An object which handles messages for a specific bridge
+ * @property {(obj: any) => Promise<any>} toBridge
+ * @property {(obj: any) => Promise<void>} fromBridge
+ * @property {(handler: ERef<BridgeHandler>) => void} setHandler
  */
 
 /**
- * @typedef {Object} DistributorParams
- *
- * @property {bigint} [epochInterval=1n] - parameter to the epochTimer
- *  controlling the interval at which rewards should be sent to the bank.
- */
-
-/**
- * @callback BuildFeeDistributor
- *
- * @param {ERef<FeeCollector>[]} collectors - an array of objects with
- *   collectFees() methods, each of which will return a payment. Can
- *   be populated with the results of makeFeeCollector(zoe, creatorFacet)
- * @param {EOnly<DepositFacet>} feeDepositFacet - object with receive()
- * @param {ERef<TimerService>} epochTimer - timer that notifies at the end of
- *  each Epoch. The epochInterval parameter controls the interval.
- * @param {DistributorParams} params
- * @returns {Promise<void>}
+ * @typedef {object} BridgeManager The object to manage this bridge
+ * @property {(bridgeId: string, handler?: ERef<BridgeHandler | undefined>) => ScopedBridgeManager} register
  */

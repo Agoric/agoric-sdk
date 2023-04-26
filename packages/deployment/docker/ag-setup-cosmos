@@ -2,7 +2,7 @@
 PORT=26657
 NETWORK_NAME=${NETWORK_NAME-agoric}
 SETUP_HOME=${SETUP_HOME-$NETWORK_NAME}
-IMAGE=agoric/cosmic-swingset-setup:${TAG-latest}
+IMAGE=ghcr.io/agoric/cosmic-swingset-setup:${TAG-latest}
 TTY=-i
 test -t 0 && test -t 1 && TTY=-it
 FLAGS=

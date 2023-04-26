@@ -1,5 +1,6 @@
 /* global setTimeout, WeakRef, setImmediate, process */
-// @ts-check
+import '@endo/init/debug.js';
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
@@ -21,7 +22,9 @@ const ld = loader(import.meta.url);
 test('evaluate and issueCommand', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
-  await vat.evaluate(`issueCommand(ArrayBuffer.fromString("Hello, World!"));`);
+  await vat.evaluate(
+    `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,
+  );
   await vat.close();
   t.deepEqual(['Hello, World!'], opts.messages);
 });
@@ -31,7 +34,7 @@ test('evaluate until idle', async t => {
   const vat = xsnap(opts);
   await vat.evaluate(`
     (async () => {
-      issueCommand(ArrayBuffer.fromString("Hello, World!"));
+      issueCommand(new TextEncoder().encode("Hello, World!").buffer);
     })();
   `);
   await vat.close();
@@ -49,7 +52,7 @@ test('evaluate infinite loop', async t => {
   t.deepEqual([], opts.messages);
 });
 
-// TODO: Reenable when this doesn't take 3.6 seconds.
+// TODO: Re-enable when this doesn't take 3.6 seconds.
 test('evaluate promise loop', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
@@ -75,7 +78,7 @@ test('evaluate and report', async t => {
   const result = await vat.evaluate(`(() => {
     const report = {};
     Promise.resolve('hi').then(v => {
-      report.result = ArrayBuffer.fromString(v);
+      report.result = new TextEncoder().encode(v).buffer;
     });
     return report;
   })()`);
@@ -114,7 +117,7 @@ test('idle includes setImmediate too', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     setImmediate(() => send("end of crank"));
     Promise.resolve("turn 2").then(send);
     send("turn 1");
@@ -127,16 +130,20 @@ test('print - start compartment only', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     print('print:', 123);
     try {
-      (new Compartment()).evalate('print("456")');
-    } catch (_err) {
-      send('no print in Compartment');
+      (new Compartment()).evaluate('print("456")');
+    } catch (err) {
+      send('err:' + err);
     }
   `);
   await vat.close();
-  t.deepEqual(['no print in Compartment'], opts.messages);
+  t.is(opts.messages.length, 1);
+  t.regex(
+    opts.messages[0],
+    /^err:ReferenceError: [^:]+: get print: undefined variable$/,
+  );
 });
 
 test('gc - start compartment only', async t => {
@@ -144,16 +151,20 @@ test('gc - start compartment only', async t => {
   const vat = xsnap(opts);
   await vat.evaluate(`
     gc();
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     gc();
     try {
-      (new Compartment()).evalate('gc()');
-    } catch (_err) {
-      send('no gc in Compartment');
+      (new Compartment()).evaluate('gc()');
+    } catch (err) {
+      send('err:' + err);
     }
   `);
   await vat.close();
-  t.deepEqual(['no gc in Compartment'], opts.messages);
+  t.is(opts.messages.length, 1);
+  t.regex(
+    opts.messages[0],
+    /^err:ReferenceError: [^:]+: get gc: undefined variable$/,
+  );
 });
 
 test('run script until idle', async t => {
@@ -175,9 +186,9 @@ test('issueCommand is synchronous inside, async outside', async t => {
   }
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
-    const response = issueCommand(ArrayBuffer.fromString('0'));
-    const number = +String.fromArrayBuffer(response);
-    issueCommand(ArrayBuffer.fromString(String(number + 1)));
+    const response = issueCommand(new TextEncoder().encode('0').buffer);
+    const number = +new TextDecoder().decode(response);
+    issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
   `);
   await vat.close();
   t.deepEqual([0, 2], messages);
@@ -192,8 +203,8 @@ test('deliver a message', async t => {
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     function handleCommand(message) {
-      const number = +String.fromArrayBuffer(message);
-      issueCommand(ArrayBuffer.fromString(String(number + 1)));
+      const number = +new TextDecoder().decode(message);
+      issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
     };
   `);
   await vat.issueStringCommand('0');
@@ -212,8 +223,8 @@ test('receive a response', async t => {
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     function handleCommand(message) {
-      const number = +String.fromArrayBuffer(message);
-      return ArrayBuffer.fromString(String(number + 1));
+      const number = +new TextDecoder().decode(message);
+      return new TextEncoder().encode(String(number + 1)).buffer;
     };
   `);
   t.is('1', (await vat.issueStringCommand('0')).reply);
@@ -237,8 +248,8 @@ test('serialize concurrent messages', async t => {
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     globalThis.handleCommand = message => {
-      const number = +String.fromArrayBuffer(message);
-      issueCommand(ArrayBuffer.fromString(String(number + 1)));
+      const number = +new TextDecoder().decode(message);
+      issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
     };
   `);
   await Promise.all([...count(100)].map(n => vat.issueStringCommand(`${n}`)));
@@ -268,7 +279,7 @@ test('write and read snapshot', async t => {
 
   const vat1 = xsnap({ ...options(io), handleCommand, snapshot });
   await vat1.evaluate(`
-    issueCommand(ArrayBuffer.fromString(hello));
+    issueCommand(new TextEncoder().encode(hello).buffer);
   `);
   await vat1.close();
 
@@ -299,7 +310,7 @@ test('fail to send command to terminated xsnap worker', async t => {
   const vat = xsnap({ ...options(io), meteringLimit: 0 });
   const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
     instanceOf: Error,
-    message: /^(Cannot write messages to xsnap test worker: write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
+    message: /^(write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
   });
 
   await vat.terminate();
@@ -339,6 +350,7 @@ test('normal close of pathological script', async t => {
 async function runToGC() {
   const trashCan = [{}];
   const wr = new WeakRef(trashCan[0]);
+  // @ts-expect-error
   trashCan[0] = undefined;
 
   let qty;
@@ -376,7 +388,7 @@ test('GC after snapshot vs restore', async t => {
   t.teardown(worker.terminate);
 
   await worker.evaluate(`
-  globalThis.send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  globalThis.send = it => issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
   globalThis.runToGC = (${runToGC});
   runToGC();
   // bloat the heap
@@ -414,4 +426,9 @@ test('GC after snapshot vs restore', async t => {
   }
   t.log({ beforeClone, workerGC, cloneGC, iters });
   t.is(workerGC, cloneGC);
+});
+
+test('bad option.name', async t => {
+  const opts = Object.freeze({ ...options(io), name: '--sneaky' });
+  t.throws(() => xsnap(opts), { message: /cannot start with hyphen/ });
 });

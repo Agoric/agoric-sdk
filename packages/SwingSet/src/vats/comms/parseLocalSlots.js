@@ -1,5 +1,5 @@
-import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@endo/nat';
+import { assert, Fail } from '@agoric/assert';
 
 // Local object/promise references (in the comms vat) contain a two-tuple of
 // (type, index).  All object references point to entries in the Local Object
@@ -15,12 +15,13 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @param {unknown} s  The string to be parsed, as described above.
  *
- * @returns {{type: 'object' | 'promise', id: number}} a local slot object corresponding to the parameter.
+ * @returns {{type: 'object' | 'promise', id: bigint}} a local slot object corresponding to the parameter.
  *
  * @throws {Error} if the given string is syntactically incorrect.
  */
 export function parseLocalSlot(s) {
   assert.typeof(s, 'string');
+  /** @type {'object' | 'promise' | undefined} */
   let type;
   let idSuffix;
   if (s.startsWith('lo')) {
@@ -30,7 +31,7 @@ export function parseLocalSlot(s) {
     type = 'promise';
     idSuffix = s.slice(2);
   } else {
-    assert.fail(X`invalid localSlot ${s}`);
+    throw Fail`invalid localSlot ${s}`;
   }
   const id = Nat(BigInt(idSuffix));
   return { type, id };
@@ -40,7 +41,7 @@ export function parseLocalSlot(s) {
  * Generate a local slot reference string given a type and id.
  *
  * @param {'object' | 'promise'} type  The type
- * @param {number} id    The id, a Nat.
+ * @param {bigint} id    The id, a Nat.
  *
  * @returns {string} the corresponding local slot reference string.
  *
@@ -53,7 +54,7 @@ export function makeLocalSlot(type, id) {
   if (type === 'promise') {
     return `lp${Nat(id)}`;
   }
-  assert.fail(X`unknown type ${type}`);
+  throw Fail`unknown type ${type}`;
 }
 
 /**
@@ -68,8 +69,6 @@ export function makeLocalSlot(type, id) {
  * @returns {void}
  */
 export function insistLocalType(type, localSlot) {
-  assert(
-    type === parseLocalSlot(localSlot).type,
-    X`localSlot ${localSlot} is not of type ${type}`,
-  );
+  type === parseLocalSlot(localSlot).type ||
+    Fail`localSlot ${localSlot} is not of type ${type}`;
 }

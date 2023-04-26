@@ -1,32 +1,19 @@
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
-import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
+const { Fail, quote: q } = assert;
 
-/**
- * Attenuate the power of vatAdminSvc by restricting it such that only
- * ZCF Vats can be created.
- *
- * @param {VatAdminSvc} vatAdminSvc
- * @param {Computrons} initial
- * @param {Computrons} threshold
- * @param {string=} zcfBundleName
- * @returns {CreateZCFVat}
- */
-export const setupCreateZCFVat = (
-  vatAdminSvc,
-  initial,
-  threshold,
-  zcfBundleName = undefined,
-) => {
-  /** @type {CreateZCFVat} */
-  const createZCFVat = async () => {
-    const meter = await E(vatAdminSvc).createMeter(initial, threshold);
-    const rootAndAdminNodeP =
-      typeof zcfBundleName === 'string'
-        ? E(vatAdminSvc).createVatByName(zcfBundleName, { meter })
-        : E(vatAdminSvc).createVat(zcfContractBundle, { meter });
-    const rootAndAdminNode = await rootAndAdminNodeP;
-    return harden({ meter, ...rootAndAdminNode });
-  };
-  return createZCFVat;
+export const getZcfBundleCap = (zcfSpec, vatAdminSvc) => {
+  let zcfBundleCapP;
+  if (zcfSpec.bundleCap) {
+    zcfBundleCapP = zcfSpec.bundleCap;
+  } else if (zcfSpec.name) {
+    zcfBundleCapP = E(vatAdminSvc).getNamedBundleCap(zcfSpec.name);
+  } else if (zcfSpec.id) {
+    zcfBundleCapP = E(vatAdminSvc).getBundleCap(zcfSpec.id);
+  } else {
+    const keys = Object.keys(zcfSpec).join(',');
+    Fail`setupCreateZCFVat: bad zcfSpec, has keys '${q(keys)}'`;
+  }
+
+  return zcfBundleCapP;
 };

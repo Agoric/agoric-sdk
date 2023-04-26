@@ -1,4 +1,3 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '../../../../exported.js';
@@ -13,6 +12,7 @@ import {
   checkNoNewOffers,
   checkPayouts,
 } from './helpers.js';
+import { atomicRearrange } from '../../../../src/contractSupport/atomicTransfer.js';
 
 test('test doLiquidation with mocked autoswap', async t => {
   const { zcf, collateralKit, loanKit } = await setupLoanUnitTest();
@@ -24,14 +24,12 @@ test('test doLiquidation with mocked autoswap', async t => {
   );
 
   const collateral = AmountMath.make(collateralKit.brand, 10n);
-  const {
-    zcfSeat: collateralSeat,
-    userSeat: collateralUserSeat,
-  } = await makeSeatKit(
-    zcf,
-    { give: { Collateral: collateral } },
-    { Collateral: collateralKit.mint.mintPayment(collateral) },
-  );
+  const { zcfSeat: collateralSeat, userSeat: collateralUserSeat } =
+    await makeSeatKit(
+      zcf,
+      { give: { Collateral: collateral } },
+      { Collateral: collateralKit.mint.mintPayment(collateral) },
+    );
 
   const loan1000 = AmountMath.make(loanKit.brand, 1000n);
 
@@ -46,14 +44,13 @@ test('test doLiquidation with mocked autoswap', async t => {
 
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
-
-    swapSeat.decrementBy(harden({ In: collateral }));
-    fakePoolSeat.incrementBy(harden({ Secondary: collateral }));
-
-    fakePoolSeat.decrementBy(harden({ Central: price }));
-    swapSeat.incrementBy(harden({ Out: price }));
-
-    zcf.reallocate(swapSeat, fakePoolSeat);
+    atomicRearrange(
+      zcf,
+      harden([
+        [swapSeat, fakePoolSeat, { In: collateral }, { Secondary: collateral }],
+        [fakePoolSeat, swapSeat, { Central: price }, { Out: price }],
+      ]),
+    );
 
     swapSeat.exit();
     return `Swap successfully completed.`;
@@ -109,14 +106,12 @@ test('test with malfunctioning autoswap', async t => {
   );
 
   const collateral = AmountMath.make(collateralKit.brand, 10n);
-  const {
-    zcfSeat: collateralSeat,
-    userSeat: collateralUserSeat,
-  } = await makeSeatKit(
-    zcf,
-    { give: { Collateral: collateral } },
-    { Collateral: collateralKit.mint.mintPayment(collateral) },
-  );
+  const { zcfSeat: collateralSeat, userSeat: collateralUserSeat } =
+    await makeSeatKit(
+      zcf,
+      { give: { Collateral: collateral } },
+      { Collateral: collateralKit.mint.mintPayment(collateral) },
+    );
 
   // Create non-functioning autoswap.
 

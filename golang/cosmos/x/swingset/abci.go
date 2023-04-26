@@ -1,12 +1,12 @@
 package swingset
 
 import (
-	"encoding/json"
+	// "os"
+	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -23,11 +23,9 @@ type beginBlockAction struct {
 }
 
 type endBlockAction struct {
-	Type        string       `json:"type"`
-	StoragePort int          `json:"storagePort"`
-	BlockHeight int64        `json:"blockHeight"`
-	BlockTime   int64        `json:"blockTime"`
-	Params      types.Params `json:"params"`
+	Type        string `json:"type"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 type commitBlockAction struct {
@@ -41,20 +39,20 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: vm.GetPort("storage"),
+		StoragePort: vm.GetPort("vstorage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),
 		Params:      keeper.GetParams(ctx),
 	}
-	b, err := json.Marshal(action)
+	_, err := keeper.BlockingSend(ctx, action)
+	// fmt.Fprintf(os.Stderr, "BEGIN_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+		panic(err)
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err = keeper.UpdateQueueAllowed(ctx)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	return err
 }
 
@@ -63,21 +61,15 @@ var endBlockTime int64
 
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
+
 	action := &endBlockAction{
 		Type:        "END_BLOCK",
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: vm.GetPort("storage"),
-		Params:      keeper.GetParams(ctx),
 	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
+	_, err := keeper.BlockingSend(ctx, action)
 
-	_, err = keeper.CallToController(ctx, string(b))
-
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "END_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed END_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
@@ -99,20 +91,31 @@ func CommitBlock(keeper Keeper) error {
 		BlockHeight: endBlockHeight,
 		BlockTime:   endBlockTime,
 	}
-	vm.SetCommittedHeight(endBlockHeight)
+	_, err := keeper.BlockingSend(sdk.Context{}, action)
 
-	b, err := json.Marshal(action)
-	if err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
-	_, err = keeper.CallToController(sdk.Context{}, string(b))
-
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed COMMIT_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
 		panic(err)
+	}
+	return err
+}
+
+func AfterCommitBlock(keeper Keeper) error {
+	// defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
+
+	action := &commitBlockAction{
+		Type:        "AFTER_COMMIT_BLOCK",
+		BlockHeight: endBlockHeight,
+		BlockTime:   endBlockTime,
+	}
+	_, err := keeper.BlockingSend(sdk.Context{}, action)
+
+	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
+	if err != nil {
+		// Panic here, in the hopes that a replay from scratch will fix the problem.
+		panic(fmt.Errorf("AFTER_COMMIT_BLOCK failed: %w. Swingset is in an irrecoverable inconsistent state", err))
 	}
 	return err
 }

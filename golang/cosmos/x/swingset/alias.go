@@ -16,17 +16,15 @@ var (
 	NewQuerier           = keeper.NewQuerier
 	NewMsgDeliverInbound = types.NewMsgDeliverInbound
 	NewMsgProvision      = types.NewMsgProvision
-	NewStorage           = types.NewStorage
 	NewMailbox           = types.NewMailbox
-	NewKeys              = types.NewKeys
-	ModuleCdc            = types.ModuleCdc
 	RegisterCodec        = types.RegisterCodec
 )
 
 type (
 	Keeper            = keeper.Keeper
+	Snapshotter       = keeper.SwingsetSnapshotter
 	Egress            = types.Egress
 	MsgDeliverInbound = types.MsgDeliverInbound
 	MsgProvision      = types.MsgProvision
-	Storage           = types.Storage
+	Params            = types.Params
 )

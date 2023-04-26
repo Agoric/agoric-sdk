@@ -1,4 +1,4 @@
 /* global issueCommand */
 (async () => {
-  issueCommand(ArrayBuffer.fromString('Hello, World!'));
+  issueCommand(new TextEncoder().encode('Hello, World!').buffer);
 })();

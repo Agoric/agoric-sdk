@@ -1,49 +1,49 @@
 - name: Download nodesource PPA
   get_url:
-    url: "https://deb.nodesource.com/setup_{{ NODEJS_VERSION }}.x"
-    dest: "/root/setup_nodejs{{ NODEJS_VERSION }}.sh"
-    mode: "0755"
+    url: 'https://deb.nodesource.com/setup_{{ NODEJS_VERSION }}.x'
+    dest: '/root/setup_nodejs{{ NODEJS_VERSION }}.sh'
+    mode: '0755'
 
 - name: Install nodesource PPA
-  shell: "/root/setup_nodejs{{ NODEJS_VERSION }}.sh"
+  shell: '/root/setup_nodejs{{ NODEJS_VERSION }}.sh'
 
 - name: Update repositories cache and install prerequisites
   apt:
-    name: "{{ packages }}"
+    name: '{{ packages }}'
     update_cache: yes
     state: present
   vars:
     packages:
-    - rsync
-    - sudo
-    - curl
-    - xfsprogs
-    - "nodejs={{ NODEJS_VERSION }}.*"
+      - rsync
+      - sudo
+      - curl
+      - xfsprogs
+      - 'nodejs={{ NODEJS_VERSION }}.*'
 
 - name: Default home_dev for DigitalOcean
   set_fact:
     home_dev: /dev/sda
   when: "home_dev is not defined and provider is defined and provider.startswith('digitalocean')"
 
-- name: "Stat {{ home_dev }}"
+- name: 'Stat {{ home_dev }}'
   stat:
     path: "{{ home_dev | default('/nonexistent') }}"
   register: hdev
 
-- name: "Format {{ home_dev }} with XFS"
+- name: 'Format {{ home_dev }} with XFS'
   filesystem:
     fstype: xfs
-    dev: "{{ home_dev }}"
+    dev: '{{ home_dev }}'
   when: hdev.stat.exists
 
-- name: "Mount {{ home_dev }}"
+- name: 'Mount {{ home_dev }}'
   mount:
     path: /home
-    src: "{{ home_dev }}"
+    src: '{{ home_dev }}'
     fstype: auto
     state: mounted
   when: hdev.stat.exists
 
 - name: Resize /home with XFS
-  shell: "xfs_growfs -n /home"
+  shell: 'xfs_growfs -n /home'
   when: hdev.stat.exists

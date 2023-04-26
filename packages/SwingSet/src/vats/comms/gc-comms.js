@@ -1,5 +1,5 @@
-import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../../parseVatSlots.js';
+import { assert, Fail } from '@agoric/assert';
+import { parseVatSlot } from '../../lib/parseVatSlots.js';
 import { parseRemoteSlot } from './parseRemoteSlot.js';
 
 // A note on verb polarity:
@@ -147,7 +147,7 @@ function makeGCKit(state, syscall, transmit) {
     for (const submsg of subMessages) {
       const [name, type, rref] = submsg.split(':');
       assert(name === 'gc');
-      assert(types.includes(type), `unknown GC message type ${type}`);
+      types.includes(type) || Fail`unknown GC message type ${type}`;
       assert.equal(parseRemoteSlot(rref).type, 'object');
       gc[`${type}s`].push(rref);
     }

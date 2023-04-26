@@ -1,18 +1,20 @@
-// @ts-check
-
-import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
-import { Nat } from '@agoric/nat';
+import { Far } from '@endo/marshal';
+import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  observeIteration,
+  subscribeLatest,
+} from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
+  atomicRearrange,
 } from '../contractSupport/index.js';
 
-import '../../exported.js';
+const { Fail } = assert;
 
 /**
  * Sell items in exchange for money. Items may be fungible or
@@ -34,7 +36,7 @@ import '../../exported.js';
  * exit early to collect their winnings. The remaining items will still be
  * available for sale, but the creator won't be able to collect later earnings.
  *
- * @type {ContractStartFn}
+ * @param {ZCF<{pricePerItem: Amount<'nat'>}>} zcf
  */
 const start = zcf => {
   const { pricePerItem, issuers, brands } = zcf.getTerms();
@@ -44,16 +46,14 @@ const start = zcf => {
 
   let sellerSeat;
 
-  const {
-    notifier: availableItemsNotifier,
-    updater: availableItemsUpdater,
-  } = makeNotifierKit();
+  const { notifier: availableItemsNotifier, updater: availableItemsUpdater } =
+    makeNotifierKit();
 
   const sell = seat => {
     sellerSeat = seat;
 
-    observeNotifier(
-      sellerSeat.getNotifier(),
+    observeIteration(
+      subscribeLatest(sellerSeat.getSubscriber()),
       harden({
         updateState: sellerSeatAllocation =>
           availableItemsUpdater.updateState(
@@ -67,11 +67,12 @@ const start = zcf => {
         fail: reason => availableItemsUpdater.fail(reason),
       }),
     );
+    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
     return defaultAcceptanceMsg;
   };
 
   const getAvailableItems = () => {
-    assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
+    assert(sellerSeat && !sellerSeat.hasExited(), 'no items are for sale');
     return sellerSeat.getAmountAllocated('Items');
   };
 
@@ -102,26 +103,29 @@ const start = zcf => {
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
-    assert(
-      AmountMath.isGTE(providedMoney, totalCost),
-      X`More money (${totalCost}) is required to buy these items`,
-    );
+    AmountMath.isGTE(providedMoney, totalCost) ||
+      Fail`More money (${totalCost}) is required to buy these items`;
 
     // Reallocate.
-    sellerSeat.incrementBy(
-      buyerSeat.decrementBy(harden({ Money: providedMoney })),
+    atomicRearrange(
+      zcf,
+      harden([
+        [buyerSeat, sellerSeat, { Money: providedMoney }],
+        [sellerSeat, buyerSeat, { Items: wantedItems }],
+      ]),
     );
-    buyerSeat.incrementBy(
-      sellerSeat.decrementBy(harden({ Items: wantedItems })),
-    );
-    zcf.reallocate(buyerSeat, sellerSeat);
 
     // The buyer's offer has been processed.
     buyerSeat.exit();
 
     if (AmountMath.isEmpty(getAvailableItems())) {
       zcf.shutdown('All items sold.');
+    } else {
+      availableItemsUpdater.updateState(
+        sellerSeat.getCurrentAllocation().Items,
+      );
     }
+
     return defaultAcceptanceMsg;
   };
 
@@ -129,7 +133,7 @@ const start = zcf => {
     const itemsAmount = sellerSeat.getAmountAllocated('Items');
     assert(
       sellerSeat && !AmountMath.isEmpty(itemsAmount),
-      X`no items are for sale`,
+      'no items are for sale',
     );
     return zcf.makeInvitation(buy, 'buyer');
   };

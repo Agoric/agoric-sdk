@@ -3,6 +3,226 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.25.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.2...@agoric/zoe@0.25.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
+### [0.25.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.1...@agoric/zoe@0.25.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
+### [0.25.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.0...@agoric/zoe@0.25.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* protect zoe from keyword collision ([#6370](https://github.com/Agoric/agoric-sdk/issues/6370)) ([02af4a0](https://github.com/Agoric/agoric-sdk/commit/02af4a07ad1f99b545d0bf525bd1ea97d74639d1))
+
+
+
+## [0.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.24.0...@agoric/zoe@0.25.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move from Schema to Shape terminology (#6072)
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **SwingSet:** Representatives inherit bound methods (#5970)
+* **store:** move some util where they are more reusable (#5990)
+* **chainStorage:** assertPathSegment (replacing sanitizePathSegment)
+
+### Features
+
+* **zoe:** expose keywords in error messages ([3c9c497](https://github.com/Agoric/agoric-sdk/commit/3c9c497b0c22bf9729cc65af26a0d6a32450a4fd))
+* **zoe:** zcfSeat.clear() handles no-allocations case ([0982aa8](https://github.com/Agoric/agoric-sdk/commit/0982aa86a6b99f197760edbdde028375661b6ae0))
+* save PSM adminFacet in bootstrap ([#6101](https://github.com/Agoric/agoric-sdk/issues/6101)) ([14b20e6](https://github.com/Agoric/agoric-sdk/commit/14b20e6054703240754695ba3ba385d0e954d41c))
+* **chainStorage:** assertPathSegment (replacing sanitizePathSegment) ([cc4ca9a](https://github.com/Agoric/agoric-sdk/commit/cc4ca9a51665e2d4980ade3f3803655c43ac7001))
+* **priceAggregator:** publish quotes ([d4054d9](https://github.com/Agoric/agoric-sdk/commit/d4054d98bd5a094b45ed2e3e70bb1ff997f4b2c5))
+* **zoe:** add E(userSeat).wasWantSatisfied() ([#5905](https://github.com/Agoric/agoric-sdk/issues/5905)) ([764c3cd](https://github.com/Agoric/agoric-sdk/commit/764c3cd02f7ee6c9f8a50814f58de7ccef17a5e0))
+* **zoe:** unitAmount helper ([9007f4c](https://github.com/Agoric/agoric-sdk/commit/9007f4c5710f65566842559680f7a0557f57398d))
+* distinctive rejection values for promises severed by vat upgrade ([2be42ca](https://github.com/Agoric/agoric-sdk/commit/2be42ca166d8281f5de2a07c8d7a1327f94ee74d)), closes [#5649](https://github.com/Agoric/agoric-sdk/issues/5649)
+* give contracts the ability to pause invitations ([#5749](https://github.com/Agoric/agoric-sdk/issues/5749)) ([732e229](https://github.com/Agoric/agoric-sdk/commit/732e229ca5d3f3bb196b8bcaa442be3f03f99a62)), closes [#5770](https://github.com/Agoric/agoric-sdk/issues/5770) [#5036](https://github.com/Agoric/agoric-sdk/issues/5036)
+* **ses-ava:** support full API of Ava ([3b5fd6c](https://github.com/Agoric/agoric-sdk/commit/3b5fd6c103a4a9207eaf2e761b3a096ce78c3d16))
+* **zoe:** tag spawned vats with `zcf` ([6f82d82](https://github.com/Agoric/agoric-sdk/commit/6f82d82317407d142ed666c00f2bdbdbfa88575d))
+* **zoe:** tickN for ManualTimer ([7750c86](https://github.com/Agoric/agoric-sdk/commit/7750c86b9d81e441b204eff6129dcb047df75769))
+
+
+### Bug Fixes
+
+* avoid relying on bound `E` proxy methods ([#5998](https://github.com/Agoric/agoric-sdk/issues/5998)) ([497d157](https://github.com/Agoric/agoric-sdk/commit/497d157d29cc8dda58eca9e07c24b57731647074))
+* better mismatch errors ([#5947](https://github.com/Agoric/agoric-sdk/issues/5947)) ([46e34f6](https://github.com/Agoric/agoric-sdk/commit/46e34f6deb7e5d8210a227bdea32fe3e2296e9ef))
+* Better pattern mismatch diagnostics ([#5906](https://github.com/Agoric/agoric-sdk/issues/5906)) ([cf97ba3](https://github.com/Agoric/agoric-sdk/commit/cf97ba310fb5eb5f1ff5946d7104fdf27bcccfd4))
+* convert upgradable covered call to far classes ([#6120](https://github.com/Agoric/agoric-sdk/issues/6120)) ([f7d5999](https://github.com/Agoric/agoric-sdk/commit/f7d5999a6eacde59acb558a49ceea28d686d1559))
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* if zcfMint.burnLosses violates offerSafety, don't stage changes ([94415cf](https://github.com/Agoric/agoric-sdk/commit/94415cf67a8fedf5f7046989c07b2c1d9d0483fa))
+* makePublishKit ([#5435](https://github.com/Agoric/agoric-sdk/issues/5435)) ([d8228d2](https://github.com/Agoric/agoric-sdk/commit/d8228d272cfe18aa2fba713fb5acc4e84eaa1e39))
+* patterns impose resource limits ([#6057](https://github.com/Agoric/agoric-sdk/issues/6057)) ([548c053](https://github.com/Agoric/agoric-sdk/commit/548c053dbe779fe8cede2ca5651c146c9fee2a8e))
+* prepare for inherited method representation ([#5989](https://github.com/Agoric/agoric-sdk/issues/5989)) ([348b860](https://github.com/Agoric/agoric-sdk/commit/348b860c62d9479962df268cfb1795b6c369c2b8))
+* rewrite zoe/tools/manualTimer.js, update tests ([0b5df16](https://github.com/Agoric/agoric-sdk/commit/0b5df16f83629efb7cb48d54250139e082ed109c))
+* schema limit minting and offers ([#5461](https://github.com/Agoric/agoric-sdk/issues/5461)) ([dc7baa1](https://github.com/Agoric/agoric-sdk/commit/dc7baa195281f6442cfc28d0984adf0cf0d2341b))
+* tests offer with invitation promise ([#5608](https://github.com/Agoric/agoric-sdk/issues/5608)) ([1aa4565](https://github.com/Agoric/agoric-sdk/commit/1aa4565483dcd989c699348e8300c565e179598b))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+* throw error on attempt to reuse a kind handle ([5ac8cb1](https://github.com/Agoric/agoric-sdk/commit/5ac8cb1641fe64590d04b3a27668e2001168cd9f)), closes [#5628](https://github.com/Agoric/agoric-sdk/issues/5628)
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **amm:** Prevent calls to remove Liquidity when the pool is empty ([8aad77b](https://github.com/Agoric/agoric-sdk/commit/8aad77b8907d938ad66aed61cd160a7f79159ce2)), closes [#5131](https://github.com/Agoric/agoric-sdk/issues/5131)
+* **priceAuthorityTransform:** ask for the sourceQuoteIssuer on demand ([9c2a868](https://github.com/Agoric/agoric-sdk/commit/9c2a8689cd02d028d00f286d67da2b5de9f85083))
+* **priceAuthorityTransform:** mutable case missed scaleQuote ([e01cce6](https://github.com/Agoric/agoric-sdk/commit/e01cce615d3dec42bdbdcd6016ab78f8f1f98500))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* **SwingSet:** Representatives inherit bound methods ([#5970](https://github.com/Agoric/agoric-sdk/issues/5970)) ([ba1ed62](https://github.com/Agoric/agoric-sdk/commit/ba1ed62062a63862e2eecb598b0bd1d2ac828e1f))
+* **zoe:** fix fakePriceAuthority event ordering ([15c3590](https://github.com/Agoric/agoric-sdk/commit/15c35906ad37498a8888ea61f71251aa50cf0b21))
+* **zoe:** limit keywords to 100 characters ([37432c8](https://github.com/Agoric/agoric-sdk/commit/37432c8392b6248c0013c96d74b4b92b67c85083))
+* **zoe:** Sink unhandled borrow test rejections ([d45f76e](https://github.com/Agoric/agoric-sdk/commit/d45f76e9cb0dfd67fec9fd0263b8ddd01dfb838d))
+* **zoe:** zcf.clear() - don't ignoreContext ([dde1dfe](https://github.com/Agoric/agoric-sdk/commit/dde1dfe7afc4b92d4390881dcb5cd6ef53d64196))
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+* time as branded value ([#5821](https://github.com/Agoric/agoric-sdk/issues/5821)) ([34078ff](https://github.com/Agoric/agoric-sdk/commit/34078ff4b34a498f96f3cb83df3a0b930b98bbec))
+* userSeat allocation only for testing ([#5826](https://github.com/Agoric/agoric-sdk/issues/5826)) ([9cb561b](https://github.com/Agoric/agoric-sdk/commit/9cb561b39d56cc54e87258980d333d912e837f38))
+
+
+### Code Refactoring
+
+* **store:** move from Schema to Shape terminology ([#6072](https://github.com/Agoric/agoric-sdk/issues/6072)) ([757b887](https://github.com/Agoric/agoric-sdk/commit/757b887edd2d41960fadc86d4900ebde55729867))
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
+## [0.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.23.0...@agoric/zoe@0.24.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **amm:** push reserved assets to reserve contract (#5429)
+* **AMM:** make amm.addPool() require minimum collateral (#5377)
+
+### Features
+
+* **amm:** push reserved assets to reserve contract ([#5429](https://github.com/Agoric/agoric-sdk/issues/5429)) ([20472a1](https://github.com/Agoric/agoric-sdk/commit/20472a1924352df1611ed408c420ac0c56457fc7))
+* **AMM:** make amm.addPool() require minimum collateral ([#5377](https://github.com/Agoric/agoric-sdk/issues/5377)) ([2fedea6](https://github.com/Agoric/agoric-sdk/commit/2fedea666d6730c852aee49c045449aa5d8bebb5)), closes [#4643](https://github.com/Agoric/agoric-sdk/issues/4643) [#5397](https://github.com/Agoric/agoric-sdk/issues/5397)
+* **vault:** econ metrics notifiers ([#5260](https://github.com/Agoric/agoric-sdk/issues/5260)) ([6c3cdf3](https://github.com/Agoric/agoric-sdk/commit/6c3cdf37234c3053f7dfcd745e21ae78d828ad0b))
+* **vault:** liquidation penalty handled by liquidation contracts ([#5343](https://github.com/Agoric/agoric-sdk/issues/5343)) ([ce1cfaf](https://github.com/Agoric/agoric-sdk/commit/ce1cfafb6d375453865062e1bd66ade66fb80686))
+* **zoe:** Support installation of hash bundles ([8f9ad75](https://github.com/Agoric/agoric-sdk/commit/8f9ad759b17d81b47c9176c61fc81600e32c82a1))
+
+
+### Bug Fixes
+
+* **zoe:** Note [#4974](https://github.com/Agoric/agoric-sdk/issues/4974) subsume installBundleID in install ([815c035](https://github.com/Agoric/agoric-sdk/commit/815c035bbfc897d4d490f934b9e28ff79c8e958f))
+* de-legacy-ize ManualTimer ([#5369](https://github.com/Agoric/agoric-sdk/issues/5369)) ([2daf2a4](https://github.com/Agoric/agoric-sdk/commit/2daf2a4c358d2cc6bf68c722d82ae980bad806ba))
+
+
+
+## [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.22.0...@agoric/zoe@0.23.0) (2022-05-09)
+
+
+### Features
+
+* **contractSupport:** looser ratio op brands, `parse`, `subtract` ([b1978b8](https://github.com/Agoric/agoric-sdk/commit/b1978b885d8f441d2f10177b3084837ef6fa3683))
+* **vault:** Liquidate incrementally ([#5129](https://github.com/Agoric/agoric-sdk/issues/5129)) ([b641269](https://github.com/Agoric/agoric-sdk/commit/b64126996d4844c07016deadc87269dc387c4aae))
+* **zoe:** `priceAuthorityTransform.js` and `scaledPriceAuthority.js` ([d897c66](https://github.com/Agoric/agoric-sdk/commit/d897c662b19dbd14a7894d86b7de8f5f19dada3d))
+* **zoe:** half-to-even (bankers) rounding for ratio math ([b5770e8](https://github.com/Agoric/agoric-sdk/commit/b5770e8b1bbe26a3dc430b14e5c8714156f4f842))
+* **zoe:** use bankers rounding in quantize ([f726786](https://github.com/Agoric/agoric-sdk/commit/f72678688fcfec1c3952080e61339688913f38dd))
+
+
+### Bug Fixes
+
+* **contractSupport:** median divide is by a scalar ([78e426e](https://github.com/Agoric/agoric-sdk/commit/78e426e014fd7cdbc95396bb3cdb552269a6a641))
+* **priceAggregator:** internally use ratios to preserve price precision ([f48c63d](https://github.com/Agoric/agoric-sdk/commit/f48c63d1c9edccf3c3ef50697211469db35a587c))
+* fix types of stopAcceptingOffers ([#5225](https://github.com/Agoric/agoric-sdk/issues/5225)) ([3996280](https://github.com/Agoric/agoric-sdk/commit/39962808ce77432e6ce74a1bdac207f10545a626))
+* **priceAggregator:** use `privateArgs`, not `initializeQuoteMint` ([f2c4f8e](https://github.com/Agoric/agoric-sdk/commit/f2c4f8e37f6c4d35569f683b84f619a0fb4fc968))
+
+
+
+## [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.3...@agoric/zoe@0.22.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* add the ability to invoke an API to contract governance (#4869)
+* **run-protocol:** vaults hold liquidation proceeds until closed
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* split single- and multi-faceted VO definitions into their own functions ([fcf293a](https://github.com/Agoric/agoric-sdk/commit/fcf293a4fcdf64bf30b377c7b3fb8b728efbb4af)), closes [#5093](https://github.com/Agoric/agoric-sdk/issues/5093)
+* **oracle:** add `getRoundStartNotifier` to aggregators ([e97a2d9](https://github.com/Agoric/agoric-sdk/commit/e97a2d9946ff426c0efa474979fdd4e917cb7f0a))
+* **priceAggregator:** `deleteOracle` and `getRoundCompleteNotifier` ([881b7d6](https://github.com/Agoric/agoric-sdk/commit/881b7d6c8cfdfc3a840d8f3e2e6e3550394fa52b))
+* add the ability to invoke an API to contract governance ([#4869](https://github.com/Agoric/agoric-sdk/issues/4869)) ([3123665](https://github.com/Agoric/agoric-sdk/commit/312366518471238430c79313f79e57aee1c551cd)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **priceAggregator:** implement `makeOracleInvitation` ([35354bb](https://github.com/Agoric/agoric-sdk/commit/35354bbb6d5de1441919fc07281625d51f21f198))
+* **run-protocol:** charge penalty for liquidation ([#4996](https://github.com/Agoric/agoric-sdk/issues/4996)) ([5467be4](https://github.com/Agoric/agoric-sdk/commit/5467be4fb5c4cc47f34736eb669e207b26eb711d))
+* **run-protocol:** RUNstake contract only, without payoff from rewards ([#4741](https://github.com/Agoric/agoric-sdk/issues/4741)) ([52f60eb](https://github.com/Agoric/agoric-sdk/commit/52f60eb192217ff3e4cf84a5a2ff8ada19fb5dcc))
+
+
+### Bug Fixes
+
+* **chainlinkAggregator:** implement oracleKeys for mapping ([76605ce](https://github.com/Agoric/agoric-sdk/commit/76605ce18801e0a7b834d1de469136206494b348))
+* **oracle:** wake up to update priceAggregator push-only oracles ([c9a59fe](https://github.com/Agoric/agoric-sdk/commit/c9a59fed9f247332f93f56432c97c2bd756eff6e))
+* **zoe:** add zoe.installBundleID ([0fad95f](https://github.com/Agoric/agoric-sdk/commit/0fad95fa1f7541bc2b790cde70a20273d11a12c4)), closes [#4563](https://github.com/Agoric/agoric-sdk/issues/4563)
+* **zoe:** pass brands (not issuers) to priceAggregator ([5800711](https://github.com/Agoric/agoric-sdk/commit/580071189bb60d83ceaa806bf85035173ae9563c))
+* correct bugs due to weird & mistaken buildRootObject usage ([990e7d8](https://github.com/Agoric/agoric-sdk/commit/990e7d88a5c24bb077f349517139c8aa2d5f536a))
+* **zoe:** get ZCF bundlecap from vatAdminService ([872a11a](https://github.com/Agoric/agoric-sdk/commit/872a11a63db1062a9097ac9271f0bba6a727391b)), closes [#4487](https://github.com/Agoric/agoric-sdk/issues/4487)
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+### Code Refactoring
+
+* **run-protocol:** vaults hold liquidation proceeds until closed ([de32be9](https://github.com/Agoric/agoric-sdk/commit/de32be9b27780e75b70f06780872994fce7da02a))
+
+
+
+### [0.21.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.2...@agoric/zoe@0.21.3) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+
+
+
+### [0.21.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.1...@agoric/zoe@0.21.2) (2022-02-21)
+
+
+### Features
+
+* **run-protocol:** interest charging O(1) for all vaults in a manager ([#4527](https://github.com/Agoric/agoric-sdk/issues/4527)) ([58103ac](https://github.com/Agoric/agoric-sdk/commit/58103ac216f4ce28cbbe73494af2ea11b5a110c0))
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+### Bug Fixes
+
+* **zoe:** fix InstanceRecord type ([9324cfe](https://github.com/Agoric/agoric-sdk/commit/9324cfed2cff9cf96523859010537ffdea69e721))
+* **zoe:** teach fakeVatAdmin to createVatByName(zcf) ([6f88e2b](https://github.com/Agoric/agoric-sdk/commit/6f88e2b73193aeb417f506f142dff98312f3500c)), closes [#4372](https://github.com/Agoric/agoric-sdk/issues/4372) [#4487](https://github.com/Agoric/agoric-sdk/issues/4487)
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric-sdk/issues/4190)) ([fea822e](https://github.com/Agoric/agoric-sdk/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+* fullOrder leak. Semi-fungibles via CopyBags ([#4305](https://github.com/Agoric/agoric-sdk/issues/4305)) ([79c4276](https://github.com/Agoric/agoric-sdk/commit/79c4276da8c856674bd425c54715adec92648c48))
+* getPublicFacet accepts promise for instance ([#4328](https://github.com/Agoric/agoric-sdk/issues/4328)) ([f716199](https://github.com/Agoric/agoric-sdk/commit/f71619978948027cd2dfe0ec9cd175236853588c))
+* minor adjustments from purple day1 ([#4271](https://github.com/Agoric/agoric-sdk/issues/4271)) ([72cc8d6](https://github.com/Agoric/agoric-sdk/commit/72cc8d6bcf428596653593708959446fb0a29596))
+* minor, from purple ([#4304](https://github.com/Agoric/agoric-sdk/issues/4304)) ([2984a74](https://github.com/Agoric/agoric-sdk/commit/2984a7487bcc6064c6cb899b7540e11159eedefd))
+* ordered set operations ([#4196](https://github.com/Agoric/agoric-sdk/issues/4196)) ([bda9206](https://github.com/Agoric/agoric-sdk/commit/bda920694c7ab573822415653335e258b9c21281))
+* towards patterns and stores ([c241e39](https://github.com/Agoric/agoric-sdk/commit/c241e3978a36778197b1bf3874b07f1ed4df9ceb))
+
+
+
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.0...@agoric/zoe@0.21.1) (2021-12-22)
+
+
+### Features
+
+* refactor parameter governance support to allow for Invitations ([#4121](https://github.com/Agoric/agoric-sdk/issues/4121)) ([159596b](https://github.com/Agoric/agoric-sdk/commit/159596b8d44b8cbdaf6e19513cb3e716febfae7b))
+
+
+
 ## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.20.0...@agoric/zoe@0.21.0) (2021-12-02)
 
 

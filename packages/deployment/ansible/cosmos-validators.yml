@@ -1,5 +1,4 @@
 ---
-
 - hosts: validator
   user: root
   #any_errors_fatal: true
@@ -7,7 +6,7 @@
   serial: 1
   vars:
     - service: ag-chain-cosmos
-    - data: "{{ SETUP_HOME }}/{{ service }}/data"
+    - data: '{{ SETUP_HOME }}/{{ service }}/data'
     - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
     - STAKER: ag-staker
     - STAKER_NODE: validator0

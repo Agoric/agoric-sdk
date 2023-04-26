@@ -1,4 +1,4 @@
-// @ts-check
+// @jessie-check
 
 export * from './amountMath.js';
 export * from './issuerKit.js';

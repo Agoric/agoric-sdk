@@ -1,18 +1,44 @@
-// @ts-check
-
 import { assert } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { initEmpty, makeExo } from '@agoric/store';
+import { prepareExoClass } from '@agoric/vat-data';
+
+import { HandleI } from './typeGuards.js';
+
+const { Fail } = assert;
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+/**
+ * @template {string} H
+ * @param {Baggage} baggage
+ * @param {H} handleType
+ * @returns {H extends 'Instance' ? () => Instance : () => Handle<H>}
+ */
+export const defineDurableHandle = (baggage, handleType) => {
+  typeof handleType === 'string' || Fail`handleType must be a string`;
+  const makeHandle = prepareExoClass(
+    baggage,
+    `${handleType}Handle`,
+    HandleI,
+    initEmpty,
+    {},
+  );
+  // @ts-expect-error Bit by our own opaque types.
+  return /** @type {() => Handle<H>} */ (makeHandle);
+};
+harden(defineDurableHandle);
 
 /**
  * Create an opaque handle object.
  *
  * @template {string} H
  * @param {H} handleType the string literal type of the handle
- * @returns {Handle<H>}
+ * @returns {H extends 'Instance' ? Instance : Handle<H>}
  */
 export const makeHandle = handleType => {
-  // This assert ensures that handleType is referenced.
-  assert.typeof(handleType, 'string', 'handleType must be a string');
+  typeof handleType === 'string' || Fail`handleType must be a string`;
   // Return the intersection type (really just an empty object).
-  return /** @type {Handle<H>} */ (Far(`${handleType}Handle`));
+  // @ts-expect-error Bit by our own opaque types.
+  return /** @type {Handle<H>} */ (makeExo(`${handleType}Handle`, HandleI, {}));
 };
+harden(makeHandle);

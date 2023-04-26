@@ -1,8 +1,6 @@
-// @ts-check
-
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,
@@ -65,7 +63,7 @@ export function makeScriptedPriceAuthority(options) {
       );
   }
 
-  /** @type {ERef<Notifier<Timestamp>>} */
+  /** @type {ERef<Notifier<import('@agoric/time/src/types').Timestamp>>} */
   const notifier = E(timer).makeNotifier(0n, quoteInterval);
   const priceAuthorityOptions = harden({
     timer,

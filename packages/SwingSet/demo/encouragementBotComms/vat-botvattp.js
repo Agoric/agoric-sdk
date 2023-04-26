@@ -1,1 +1,1 @@
-export { buildRootObject } from '../../src/vats/vat-tp.js';
+export { buildRootObject } from '../../src/vats/vattp/vat-vattp.js';

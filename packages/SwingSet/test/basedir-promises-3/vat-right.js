@@ -1,5 +1,5 @@
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject() {
   const pk3 = makePromiseKit();
@@ -9,7 +9,7 @@ export function buildRootObject() {
       // arg should be a Promise that promptly resolves to 4
       const argP = Promise.resolve(arg);
       const wasP = argP === arg;
-      argP.then(newArg => pk4.resolve([wasP, newArg]));
+      return argP.then(newArg => pk4.resolve([wasP, newArg]));
     },
   });
 

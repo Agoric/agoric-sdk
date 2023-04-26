@@ -1,23 +1,24 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
-import { makeWeakStore } from '@agoric/store';
-import { assert, details as X, q } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
+import { q, Fail } from '@agoric/assert';
+import { objectMap } from '@agoric/internal';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
 import './types.js';
 import './internal-types.js';
 
 import { cleanKeywords } from '../cleanProposal.js';
-import { arrayToObj, objectMap } from '../objArrayConversion.js';
+import { arrayToObj } from '../objArrayConversion.js';
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one
  * purse per brand.
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const makeEscrowStorage = () => {
-  /** @type {WeakStore<Brand, ERef<Purse>>} */
-  const brandToPurse = makeWeakStore('brand');
+export const provideEscrowStorage = baggage => {
+  /** @type {WeakMapStore<Brand, ERef<Purse>>} */
+  const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
   /** @type {CreatePurse} */
   const createPurse = (issuer, brand) => {
@@ -33,16 +34,14 @@ export const makeEscrowStorage = () => {
         }
       },
       err =>
-        assert.fail(
-          X`A purse could not be created for brand ${brand} because: ${err}`,
-        ),
+        Fail`A purse could not be created for brand ${brand} because: ${err}`,
     );
   };
 
   /**
-   * @type {MakeLocalPurse}
+   * @type {ProvideLocalPurse}
    */
-  const makeLocalPurse = (issuer, brand) => {
+  const provideLocalPurse = (issuer, brand) => {
     if (brandToPurse.has(brand)) {
       return /** @type {Purse} */ (brandToPurse.get(brand));
     } else {
@@ -53,14 +52,10 @@ export const makeEscrowStorage = () => {
   };
 
   /** @type {WithdrawPayments} */
-  const withdrawPayments = allocation => {
-    return harden(
-      objectMap(allocation, ([keyword, amount]) => {
-        const purse = brandToPurse.get(amount.brand);
-        return [keyword, E(purse).withdraw(amount)];
-      }),
+  const withdrawPayments = allocation =>
+    objectMap(allocation, amount =>
+      E(brandToPurse.get(amount.brand)).withdraw(amount),
     );
-  };
 
   /**
    *
@@ -70,7 +65,7 @@ export const makeEscrowStorage = () => {
    * @param {Amount} amount
    * @returns {Promise<Amount>}
    */
-  const doDepositPayments = (paymentP, amount) => {
+  const doDepositPayment = (paymentP, amount) => {
     const purse = brandToPurse.get(amount.brand);
     return E.when(paymentP, payment => E(purse).deposit(payment, amount));
   };
@@ -88,15 +83,12 @@ export const makeEscrowStorage = () => {
     // keywords. Proposal.give keywords that do not have matching payments will
     // be caught in the deposit step.
     paymentKeywords.forEach(keyword => {
-      assert.typeof(keyword, 'string');
-      assert(
-        giveKeywords.includes(keyword),
-        X`The ${q(
+      giveKeywords.includes(keyword) ||
+        Fail`The ${q(
           keyword,
         )} keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ${q(
           giveKeywords,
-        )}`,
-      );
+        )}`;
     });
 
     const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
@@ -110,15 +102,13 @@ export const makeEscrowStorage = () => {
     // https://github.com/Agoric/agoric-sdk/issues/1271
     const amountsDeposited = await Promise.all(
       giveKeywords.map(keyword => {
-        assert(
-          payments[keyword] !== undefined,
-          X`The ${q(
+        payments[keyword] !== undefined ||
+          Fail`The ${q(
             keyword,
           )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
             paymentKeywords,
-          )}`,
-        );
-        return doDepositPayments(payments[keyword], give[keyword]);
+          )}`;
+        return doDepositPayment(payments[keyword], give[keyword]);
       }),
     );
 
@@ -136,7 +126,7 @@ export const makeEscrowStorage = () => {
 
   return {
     createPurse, // createPurse does not return a purse
-    makeLocalPurse,
+    provideLocalPurse,
     withdrawPayments,
     depositPayments,
   };

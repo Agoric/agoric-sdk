@@ -1,4 +1,4 @@
-// import { kdebug } from './kdebug.js';
+// import { kdebug } from '../lib/kdebug.js';
 import { parseKernelSlot } from './parseKernelSlots.js';
 
 export function getKpidsToRetire(kernelKeeper, rootKPID, rootKernelData) {

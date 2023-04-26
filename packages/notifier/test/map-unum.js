@@ -7,8 +7,7 @@
 // If this experiment works out, it or something like it may eventually move
 // from test/ to src/
 
-// @ts-check
-import { assert, details as X, q } from '@agoric/assert';
+import { q, Fail } from '@agoric/assert';
 import {
   makeNotifierKit,
   makeSubscriptionKit,
@@ -52,6 +51,7 @@ export const makeMapLeader = initialEntries => {
       updater.finish(completion);
       deltaPublication = undefined;
       deltaSubscription = undefined;
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
     fail: reason => {
@@ -60,6 +60,7 @@ export const makeMapLeader = initialEntries => {
       updater.fail(reason);
       deltaPublication = undefined;
       deltaSubscription = undefined;
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
   });
@@ -109,7 +110,7 @@ export const makeMapFollower = snapshotNotifierP => {
           break;
         }
         default: {
-          assert.fail(X`unexpected deltaKind ${q(deltaKind)}`);
+          Fail`unexpected deltaKind ${q(deltaKind)}`;
         }
       }
     },
@@ -118,16 +119,18 @@ export const makeMapFollower = snapshotNotifierP => {
   const snapshotObserver = harden({
     updateState: ({ entries, deltaSubscription }) => {
       m = new Map(entries);
-      observeIteration(deltaSubscription, deltaObserver);
+      void observeIteration(deltaSubscription, deltaObserver);
     },
     finish: _completion => {
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
     fail: _reason => {
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
   });
-  observeIteration(snapshotNotifierP, snapshotObserver);
+  void observeIteration(snapshotNotifierP, snapshotObserver);
 
   return mapFollower;
 };

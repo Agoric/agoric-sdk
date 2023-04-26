@@ -1,16 +1,14 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
-// noinspection ES6PreferShortImport
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -20,14 +18,14 @@ const contractRoot = `${dirname}/useObjExample.js`;
 test('zoe - useObj', async t => {
   t.plan(3);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-use-obj', bundle);
+  const installation = await E(zoe).installBundleID('b1-use-obj');
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
@@ -64,6 +62,7 @@ test('zoe - useObj', async t => {
     `use of use object works`,
   );
 
+  assert(aliceSeat.tryExit);
   aliceSeat.tryExit();
 
   const aliceMoolaPayoutPayment = await E(aliceSeat).getPayout('Pixels');

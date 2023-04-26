@@ -1,6 +1,6 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { Fail } from '@agoric/assert';
 import { makeXorShift128 } from './xorshift128.js';
 
 const p = console.log;
@@ -11,7 +11,7 @@ function roll(limit) {
   return randomness.randomUint32() % limit;
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let nextZotNumber = 1;
   const companions = [];
   const otherVats = [];
@@ -72,7 +72,7 @@ export function buildRootObject(_vatPowers) {
             break;
           }
           default:
-            assert.fail(X`this can't happen`);
+            Fail`this can't happen`;
         }
       }
       return 'done';

@@ -1,0 +1,46 @@
+/* global setImmediate */
+
+// eslint-disable-next-line import/order
+import { Far, makeMarshal } from '@endo/marshal';
+
+import '../src/types-ambient.js';
+
+export const eventLoopIteration = async () =>
+  new Promise(resolve => setImmediate(resolve));
+
+/**
+ *
+ * @param {string} path
+ * @param {IterationObserver<unknown>} [publication]
+ */
+export const makeFakeStorage = (path, publication) => {
+  let setValueCalls = 0;
+  const fullPath = `publish.${path}`;
+  const storeKey = harden({
+    storeName: 'swingset',
+    storeSubkey: `swingset/data:${fullPath}`,
+    dataPrefixBytes: '',
+  });
+  /** @type {StorageNode & { countSetValueCalls: () => number}} */
+  const storage = Far('StorageNode', {
+    getPath: () => path,
+    getStoreKey: async () => storeKey,
+    setValue: async value => {
+      setValueCalls += 1;
+      assert.typeof(value, 'string');
+      if (publication) {
+        publication.updateState(value);
+      }
+    },
+    makeChildNode: () => storage,
+    countSetValueCalls: () => setValueCalls,
+  });
+  return storage;
+};
+harden(makeFakeStorage);
+
+export const makeFakeMarshaller = () =>
+  makeMarshal(undefined, undefined, {
+    marshalSaveError: () => {},
+  });
+harden(makeFakeMarshaller);

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	stdlog "log"
-	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -20,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -29,35 +29,8 @@ var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-// minCoins returns the minimum of each denomination.
-// The input coins should be sorted.
-func minCoins(a, b sdk.Coins) sdk.Coins {
-	min := make([]sdk.Coin, 0)
-	for indexA, indexB := 0, 0; indexA < len(a) && indexB < len(b); {
-		coinA, coinB := a[indexA], b[indexB]
-		switch strings.Compare(coinA.Denom, coinB.Denom) {
-		case -1: // A < B
-			indexA++
-		case 0: // A == B
-			minCoin := coinA
-			if coinB.IsLT(minCoin) {
-				minCoin = coinB
-			}
-			if !minCoin.IsZero() {
-				min = append(min, minCoin)
-			}
-			indexA++
-			indexB++
-		case 1: // A > B
-			indexB++
-		}
-	}
-	return sdk.NewCoins(min...)
-}
-
 // app module Basics object
 type AppModuleBasic struct {
-	cdc codec.Codec
 }
 
 func (AppModuleBasic) Name() string {
@@ -92,7 +65,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 }
 
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	_ = types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd implements AppModuleBasic interface
@@ -132,79 +105,80 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	events := ctx.EventManager().GetABCIEventHistory()
-	addressToBalance := make(map[string]sdk.Coins, len(events)*2)
+	addressToUpdate := make(map[string]sdk.Coins, len(events)*2)
 
-	ensureBalanceIsPresent := func(address string) error {
-		if _, ok := addressToBalance[address]; ok {
-			return nil
+	// records that we want to emit an balance update for the address
+	// for the given denoms. We use the Coins only to track the set of
+	// denoms, not for the amounts.
+	ensureAddressUpdate := func(address string, denoms sdk.Coins) {
+		if denoms.IsZero() {
+			return
 		}
-		account, err := sdk.AccAddressFromBech32(address)
-		if err != nil {
-			return err
+		currentDenoms := sdk.NewCoins()
+		if coins, ok := addressToUpdate[address]; ok {
+			currentDenoms = coins
 		}
-		coins := am.keeper.GetAllBalances(ctx, account)
-		addressToBalance[address] = coins
-		return nil
+		addressToUpdate[address] = currentDenoms.Add(denoms...)
 	}
 
 	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
 
-	### MsgSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | send               |
-	| message  | sender        | {senderAddress}    |
-
-	### MsgMultiSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | multisend          |
-	| message  | sender        | {senderAddress}    |
+	type: "coin_received"
+	  "receiver": {recipient address}
+	  "amount": {Coins string}
+	type: "coin_spent"
+	  "spender": {spender address}
+	  "amount": {Coins string}
 	*/
+NextEvent:
 	for _, event := range events {
 		switch event.Type {
-		case "transfer":
+		case banktypes.EventTypeCoinReceived, banktypes.EventTypeCoinSpent:
+			var addr string
+			denoms := sdk.NewCoins()
 			for _, attr := range event.GetAttributes() {
 				switch string(attr.GetKey()) {
-				case "recipient", "sender":
-					address := string(attr.GetValue())
-					if err := ensureBalanceIsPresent(address); err != nil {
-						stdlog.Println("Cannot ensure vbank balance for", address, err)
+				case banktypes.AttributeKeyReceiver, banktypes.AttributeKeySpender:
+					addr = string(attr.GetValue())
+				case sdk.AttributeKeyAmount:
+					coins, err := sdk.ParseCoinsNormalized(string(attr.GetValue()))
+					if err != nil {
+						stdlog.Println("Cannot ensure vbank balance for", addr, err)
+						break NextEvent
 					}
+					denoms = coins
 				}
+			}
+			if addr != "" && !denoms.IsZero() {
+				ensureAddressUpdate(addr, denoms)
 			}
 		}
 	}
 
-	// Dump all the addressToBalances entries to SwingSet.
-	bz, err := marshalBalanceUpdate(ctx, am.keeper, addressToBalance)
-	if err != nil {
-		panic(err)
+	// Prune the addressToUpdate map to only include module accounts.  We prune
+	// only after recording and consolidating all account updates to minimize the
+	// number of account keeper queries.
+	unfilteredAddresses := addressToUpdate
+	addressToUpdate = make(map[string]sdk.Coins, len(addressToUpdate))
+	for addr, denoms := range unfilteredAddresses {
+		accAddr, err := sdk.AccAddressFromBech32(addr)
+		if err == nil && am.keeper.IsModuleAccount(ctx, accAddr) {
+			// Pass through the module account.
+			addressToUpdate[addr] = denoms
+		}
 	}
-	if bz != nil {
-		_, err := am.CallToController(ctx, string(bz))
+
+	// Dump all the addressToBalances entries to SwingSet.
+	action := getBalanceUpdate(ctx, am.keeper, addressToUpdate)
+	if action != nil {
+		err := am.PushAction(ctx, action)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	// Distribute rewards.
-	state := am.keeper.GetState(ctx)
-	xfer := minCoins(state.RewardRate, state.RewardPool)
-	if !xfer.IsZero() {
-		am.keeper.SendCoinsToFeeCollector(ctx, xfer)
-		state.RewardPool = state.RewardPool.Sub(xfer)
-		am.keeper.SetState(ctx, state)
+	if err := am.keeper.DistributeRewards(ctx); err != nil {
+		stdlog.Println("Cannot distribute rewards", err.Error())
 	}
 
 	return []abci.ValidatorUpdate{}

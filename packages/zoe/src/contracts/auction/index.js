@@ -1,8 +1,6 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/time';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -13,6 +11,8 @@ import {
 import * as secondPriceLogic from './secondPriceLogic.js';
 import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
+
+const { Fail } = assert;
 
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';
@@ -34,7 +34,11 @@ const SECOND_PRICE = 'second-price';
  * seller's offer. Each bidder can submit an offer: { give: { Bid:
  * null } want: { Asset: null } }.
  *
- * @type {ContractStartFn}
+ * @param {ZCF<{
+ * timeAuthority: import('@agoric/time/src/types').TimerService,
+ * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
+ * bidDuration: bigint,
+ * }>} zcf
  */
 const start = zcf => {
   const {
@@ -44,10 +48,9 @@ const start = zcf => {
   } = zcf.getTerms();
 
   assert.typeof(bidDuration, 'bigint');
-  assert(
-    winnerPriceOption === FIRST_PRICE || winnerPriceOption === SECOND_PRICE,
-    X`Only first and second price auctions are supported`,
-  );
+  winnerPriceOption === FIRST_PRICE ||
+    winnerPriceOption === SECOND_PRICE ||
+    Fail`Only first and second price auctions are supported`;
 
   let sellSeat;
   let isTimerStarted = false;
@@ -69,7 +72,7 @@ const start = zcf => {
     // XXX toggle flag before `await` to avoid race-condition of 2 consecutive bids
     isTimerStarted = true;
     const currentTs = await E(timeAuthority).getCurrentTimestamp();
-    closesAfter = currentTs + bidDuration;
+    closesAfter = TimeMath.addAbsRel(currentTs, bidDuration);
 
     E(timeAuthority)
       .setWakeup(
@@ -114,7 +117,7 @@ const start = zcf => {
   const makeBidInvitation = () => {
     /** @type {OfferHandler} */
     const performBid = seat => {
-      assert(!isClosed, X`Auction session is closed, no more bidding`);
+      assert(!isClosed, 'Auction session is closed, no more bidding');
 
       assertProposalShape(seat, {
         give: { Bid: null },
@@ -129,8 +132,8 @@ const start = zcf => {
       return defaultAcceptanceMsg;
     };
 
-    const customProperties = getSessionDetails();
-    return zcf.makeInvitation(performBid, 'bid', customProperties);
+    const customDetails = getSessionDetails();
+    return zcf.makeInvitation(performBid, 'bid', customDetails);
   };
 
   const sell = seat => {
@@ -149,7 +152,7 @@ const start = zcf => {
     return Far('offerResult', { makeBidInvitation, getSessionDetails });
   };
 
-  const publicFacet = Far('AuctionPublicFacet', {
+  const publicFacet = Far('auctioneerPublicFacet', {
     getCurrentBids,
     getSessionDetails,
   });

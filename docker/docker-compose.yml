@@ -1,26 +1,22 @@
 version: "2.2"
 services:
   ag-solo:
-    # NOTE: Use an environment variable like:
-    #   SDK_TAG=agoricdev-5.2
     # This tag needs to be the SDK used by the $NETCONFIG_URL
-    # Usually it's the same as the chain name
-    image: agoric/cosmic-swingset-solo:${SDK_TAG}
+    #  SDK_TAG=agoricdev-10
+    image: agoric/agoric-sdk:${SDK_TAG}
     # ISSUE: 127.0.0.1? not a docker network?
     ports:
       - "${HOST_PORT:-8000}:${PORT:-8000}"
     volumes:
-      - "ag-solo-state:/usr/src/app/solo"
-      - "ag-solo-state:/data/solo"
+      - "ag-solo-state:/state"
       - "$HOME/.agoric:/root/.agoric"
     environment:
-      - "AG_SOLO_BASEDIR=${SOLO_HOME:-agoric}"
+      - "AG_SOLO_BASEDIR=/state/${SOLO_HOME:-agoriclocal}"
+    entrypoint: ag-solo
     command:
       - setup
       - --webhost=0.0.0.0
       - --webport=${PORT:-8000}
-      # NOTE: Use an environment variable like:
-      #   NETCONFIG_URL=https://devnet.agoric.net/network-config
-      - --netconfig=${NETCONFIG_URL}
+      - --netconfig=${NETCONFIG_URL:-https://stage.agoric.net/network-config}
 volumes:
   ag-solo-state:

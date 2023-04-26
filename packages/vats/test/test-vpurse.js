@@ -2,8 +2,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeVirtualPurse } from '../src/virtual-purse.js';
 
@@ -12,10 +14,8 @@ const setup = (t, escrowValue = 0n) => {
   const { brand } = kit;
 
   /** @type {NotifierRecord<Amount>} */
-  const {
-    notifier: balanceNotifier,
-    updater: balanceUpdater,
-  } = makeNotifierKit();
+  const { notifier: balanceNotifier, updater: balanceUpdater } =
+    makeNotifierKit();
 
   /** @type {string} */
   let expectedType = 'none';
@@ -134,7 +134,7 @@ test('makeVirtualPurse', async t => {
   };
 
   const checkWithdrawal = async newPayment => {
-    issuer.getAmountOf(newPayment).then(amount => {
+    await issuer.getAmountOf(newPayment).then(amount => {
       t.assert(
         AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,
@@ -199,7 +199,7 @@ test('makeVirtualPurse withdraw from escrowPurse', async t => {
   };
 
   const checkWithdrawal = async newPayment => {
-    issuer.getAmountOf(newPayment).then(amount => {
+    await issuer.getAmountOf(newPayment).then(amount => {
       t.assert(
         AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,
@@ -241,24 +241,22 @@ test('vpurse.deposit', async t => {
     nextUpdate = E(notifier).getUpdateSince(updateCount);
   };
 
-  const checkDeposit = (
-    expectedOldBalance,
-    expectedNewBalance,
-  ) => async depositResult => {
-    const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
-    t.assert(
-      AmountMath.isEqual(depositResult, delta),
-      `the balance changes by the deposited amount: ${delta.value}`,
-    );
-    await checkNotifier();
-    t.assert(
-      AmountMath.isEqual(
-        await E(vpurse).getCurrentAmount(),
-        expectedNewBalance,
-      ),
-      `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
-    );
-  };
+  const checkDeposit =
+    (expectedOldBalance, expectedNewBalance) => async depositResult => {
+      const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
+      t.assert(
+        AmountMath.isEqual(depositResult, delta),
+        `the balance changes by the deposited amount: ${delta.value}`,
+      );
+      await checkNotifier();
+      t.assert(
+        AmountMath.isEqual(
+          await E(vpurse).getCurrentAmount(),
+          expectedNewBalance,
+        ),
+        `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
+      );
+    };
 
   balanceUpdater.updateState(AmountMath.makeEmpty(brand));
   await checkNotifier();
@@ -278,10 +276,10 @@ test('vpurse.deposit promise', async t => {
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  const exclusivePaymentP = claim(E(issuer).makeEmptyPurse(), payment);
 
   await t.throwsAsync(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => E(vpurse).deposit(exclusivePaymentP, fungible25),
     { message: /deposit does not accept promises/ },
     'failed to reject a promise for a payment',

@@ -1,11 +1,14 @@
 package vbank
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	stdlog "log"
 	"sort"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -15,12 +18,13 @@ type portHandler struct {
 }
 
 type portMessage struct { // comes from swingset's vat-bank
-	Type      string `json:"type"` // VBANK_*
-	Address   string `json:"address"`
-	Recipient string `json:"recipient"`
-	Sender    string `json:"sender"`
-	Denom     string `json:"denom"`
-	Amount    string `json:"amount"`
+	Type       string `json:"type"` // VBANK_*
+	Address    string `json:"address"`
+	Recipient  string `json:"recipient"`
+	Sender     string `json:"sender"`
+	ModuleName string `json:"moduleName"`
+	Denom      string `json:"denom"`
+	Amount     string `json:"amount"`
 }
 
 func NewPortHandler(am AppModule, keeper Keeper) portHandler {
@@ -69,10 +73,13 @@ type vbankBalanceUpdate struct {
 	Updated vbankManyBalanceUpdates `json:"updated"`
 }
 
-func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) ([]byte, error) {
-	nentries := len(addressToBalance)
+// getBalanceUpdate returns a bridge message containing the current bank balance
+// for the given addresses each for the specified denominations. Coins are used
+// only to track the set of denoms, not for the particular nonzero amounts.
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Jsonable {
+	nentries := len(addressToUpdate)
 	if nentries == 0 {
-		return nil, nil
+		return nil
 	}
 
 	nonce := keeper.GetNextSequence(ctx)
@@ -84,12 +91,19 @@ func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[s
 
 	// Note that Golang randomises the order of iteration, so we have to sort
 	// below to be deterministic.
-	for address, coins := range addressToBalance {
+	for address, coins := range addressToUpdate {
+		account, err := sdk.AccAddressFromBech32(address)
+		if err != nil {
+			stdlog.Println("Cannot parse address for vbank update", address)
+			continue
+		}
 		for _, coin := range coins {
+			// generate an update even when the current balance is zero
+			balance := keeper.GetBalance(ctx, account, coin.Denom)
 			update := vbankSingleBalanceUpdate{
 				Address: address,
 				Denom:   coin.Denom,
-				Amount:  coin.Amount.String(),
+				Amount:  balance.Amount.String(),
 			}
 			event.Updated = append(event.Updated, update)
 		}
@@ -97,27 +111,14 @@ func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[s
 
 	// Ensure we have a deterministic order of updates.
 	sort.Sort(event.Updated)
-	return json.Marshal(&event)
+	return event
 }
 
-// rewardRate calculates the rate for dispensing the pool of coins over
-// the specified number of blocks. Fractions are rounded up. In other
-// words, it returns the smallest Coins such that pool is exhausted
-// after #blocks withdrawals.
-func rewardRate(pool sdk.Coins, blocks int64) sdk.Coins {
-	coins := make([]sdk.Coin, 0)
-	if blocks > 0 {
-		for _, coin := range pool {
-			if coin.IsZero() {
-				continue
-			}
-			// divide by blocks, rounding fractions up
-			// (coin.Amount - 1)/blocks + 1
-			rate := coin.Amount.SubRaw(1).QuoRaw(blocks).AddRaw(1)
-			coins = append(coins, sdk.NewCoin(coin.GetDenom(), rate))
-		}
+func marshal(event vm.Jsonable) ([]byte, error) {
+	if event == nil {
+		return nil, nil
 	}
-	return sdk.NewCoins(coins...)
+	return json.Marshal(event)
 }
 
 func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
@@ -136,6 +137,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
 		}
+		if err = sdk.ValidateDenom(msg.Denom); err != nil {
+			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+		}
 		coin := keeper.GetBalance(ctx.Context, addr, msg.Denom)
 		packet := coin.Amount.String()
 		if err == nil {
@@ -150,6 +154,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Sender, err)
 		}
+		if err = sdk.ValidateDenom(msg.Denom); err != nil {
+			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+		}
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
@@ -159,8 +166,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("cannot grab %s coins: %w", coins.Sort().String(), err)
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
-		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
+		addressToBalances[msg.Sender] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
+		bz, err := marshal(getBalanceUpdate(ctx.Context, keeper, addressToBalances))
 		if err != nil {
 			return "", err
 		}
@@ -175,6 +182,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Recipient, err)
 		}
+		if err = sdk.ValidateDenom(msg.Denom); err != nil {
+			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+		}
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
@@ -184,8 +194,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("cannot give %s coins: %w", coins.Sort().String(), err)
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
-		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
+		addressToBalances[msg.Recipient] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
+		bz, err := marshal(getBalanceUpdate(ctx.Context, keeper, addressToBalances))
 		if err != nil {
 			return "", err
 		}
@@ -195,29 +205,34 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			ret = string(bz)
 		}
 
-	case "VBANK_GIVE_TO_FEE_COLLECTOR":
+	case "VBANK_GIVE_TO_REWARD_DISTRIBUTOR":
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
 		}
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
-		if err := keeper.StoreFeeCoins(ctx.Context, coins); err != nil {
-			return "", fmt.Errorf("cannot store fee %s coins: %w", coins.Sort().String(), err)
+		if err := keeper.StoreRewardCoins(ctx.Context, coins); err != nil {
+			return "", fmt.Errorf("cannot store reward %s coins: %w", coins.Sort().String(), err)
 		}
 		if err != nil {
 			return "", err
 		}
-		params := keeper.GetParams(ctx.Context)
-		blocks := params.FeeEpochDurationBlocks
-		if blocks < 1 {
-			blocks = 1
-		}
 		state := keeper.GetState(ctx.Context)
 		state.RewardPool = state.RewardPool.Add(coins...)
-		state.RewardRate = rewardRate(state.RewardPool, blocks)
 		keeper.SetState(ctx.Context, state)
 		// We don't supply the module balance, since the controller shouldn't know.
 		ret = "true"
+
+	case "VBANK_GET_MODULE_ACCOUNT_ADDRESS":
+		addr := keeper.GetModuleAccountAddress(ctx.Context, msg.ModuleName).String()
+		if len(addr) == 0 {
+			return "", fmt.Errorf("module account %s not found", msg.ModuleName)
+		}
+		bz, err := marshal(addr)
+		if err != nil {
+			return "", err
+		}
+		ret = string(bz)
 
 	default:
 		err = fmt.Errorf("unrecognized type %s", msg.Type)
@@ -227,9 +242,12 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
-	// fmt.Println("vbank.go upcall", send)
-	reply, err := am.keeper.CallToController(ctx, send)
-	// fmt.Println("vbank.go upcall reply", reply, err)
-	return reply, err
+func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+	// vbank actions are not triggered by a swingset message in a transaction, so we need to
+	// synthesize unique context information.
+	// We use a fixed placeholder value for the txHash context, and can simply use `0` for the
+	// message index as there is only one such action per block.
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxHashContextKey, "x/vbank"))
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxMsgIdxContextKey, 0))
+	return am.keeper.PushAction(ctx, action)
 }

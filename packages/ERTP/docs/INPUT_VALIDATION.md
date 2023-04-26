@@ -2,7 +2,7 @@
 
 ## Requirements
 
-We want ERTP to be robust against malicious code in the same vat, so the ERTP must be robust without the kind of checks that we get for free in intervat communication going through `@agoric/marshal` and `@agoric/swingset-vat`. In other words, the only tools at our disposal are being in a Hardened JS environment, and helpers that we import and call directly, such as `passStyleOf` from `@agoric/marshal`. 
+We want ERTP to be robust against malicious code in the same vat, so the ERTP must be robust without the kind of checks that we get for free in intervat communication going through `@endo/marshal` and `@agoric/swingset-vat`. In other words, the only tools at our disposal are being in a Hardened JS environment, and helpers that we import and call directly, such as `passStyleOf` from `@endo/marshal`.
 
 ## Malicious Behavior
 
@@ -34,7 +34,7 @@ to the `brand` would currently require an asynchronous call on the
 brand.)
 
 For `coerce` to work according to spec, if the user passes in an
-invalid brand or an invalid amount, the function should throw. 
+invalid brand or an invalid amount, the function should throw.
 
 ## Valid amounts
 
@@ -45,7 +45,7 @@ Remotable and do not call any of these methods (we would have to call
 them asynchronously in order to check them, since the `brand` might be
 a remote object, so we do not check them.)
 
-The value is either a bigint Nat in the case of AssetKind.NAT (we formerly allowed numbers for backwards compatibility, but now only bigints are allowed) or an array of Structures in the case of AssetKind.SET. The array of Structures might include any combination of other Structures, “undefined”, “null”, booleans, symbols, strings, pass-by-copy records, pass-by-copy arrays, numbers, bigints,  Remotables, and errors. Importantly, a Structure cannot contain promises. 
+The value is either a bigint Nat in the case of AssetKind.NAT (we formerly allowed numbers for backwards compatibility, but now only bigints are allowed) or an array of Structures in the case of AssetKind.SET. The array of Structures might include any combination of other Structures, “undefined”, “null”, booleans, symbols, strings, pass-by-copy records, pass-by-copy arrays, numbers, bigints,  Remotables, and errors. Importantly, a Structure cannot contain promises.
 
 ## Invalid Amounts
 
@@ -82,7 +82,7 @@ Object.defineProperty(object1, 'value', {
 > object1.value
 1000000n
 ```
- 
+
 `Object.freeze(object1)` is not helpful here, as the `getter` is not changing, the value that is being returned is. `harden` also does not prevent `value` from changing. ​​When harden does encounter an accessor property during its traversal, it does not "read" the property, and thereby does not call the getter. Rather, it proceeds to recursively harden the getter and setter themselves. That's because, for an accessor property, its current value isn't, for this purpose, considered part of its API surface, but rather part of the behavior of that API. Thus, we need an additional way to ensure that the value of `checked` cannot change.
 
 `passStyleOf` throws on objects with accessor properties like the
@@ -92,22 +92,16 @@ change happens, `passStyleOf` would not throw in that case.)
 
 ### Is a CopyRecord and is a proxy
 
-* **The dangers**: 
+* **The dangers**:
   1) A proxy can throw on any property access. Any time it does *not* throw, it *must* return the same
-     value as before. 
+     value as before.
   2) A proxy can mount a reentrancy attack. When the property is
      accessed, the proxy handler is called, and the handler can
      reenter the code while the original is still waiting for that
-     property access to return. 
+     property access to return.
 
-To mitigate the effects of proxies: 
-1. Create a new object with a spread operator so that the proxy isn't
-   used further. 
-2. Destructure and then never use the original object again. 
-3. Use `pureCopy`. `pureCopy` ensures the object is not a proxy, but `pureCopy` only works for copyRecords that are pure data, meaning no remotables and no promises.
-
-We aim to address proxy-based reentrancy by other, lower-level means.
-Specifically, `passStyleOf(x) === 'copyRecord'` or 
+We *assume* we will address proxy-based reentrancy by other, lower-level means.
+Specifically, `passStyleOf(x) === 'copyRecord'` or
 `passStyleOf(x) === 'copyArray'` would guarantee that `x` is not a proxy, protecting
 against dangers #1 and #2. We should note that proxy-based reentrancy
 is not a threat across a vat boundary because it requires synchronous
@@ -135,7 +129,7 @@ In `AmountMath.coerce(brand, allegedAmount)`, we do the following:
 2. assert that the `allegedAmount` is a `copyRecord`
 3. destructure the `allegedAmount` into `allegedBrand` and
    `allegedValue`
-4. Assert that the `brand` is identical to the `allegedBrand` 
+4. Assert that the `brand` is identical to the `allegedBrand`
 5. Call `AmountMath.make(brand, allegedValue)`, which:
     * Asserts that the `brand` is a remotable, again.
     * Asserts that the `allegedValue` is a `copyArray` or a `bigint`
@@ -154,7 +148,3 @@ destructuring), or we successfully get both the `allegedBrand` and
 `allegedValue` and never touch the proxy again. Currently, we do not
 attempt to prevent proxy-based reentrancy, so defending against danger
 #1 is the full extent of our defense.
-
-
-
-

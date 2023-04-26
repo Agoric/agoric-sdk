@@ -1,47 +1,48 @@
 /* global process */
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-// `test.after.always` does not yet seem compatible with ses-ava
-// See https://github.com/endojs/endo/issues/647
-// TODO restore
-// import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
-
-import bundleSource from '@agoric/bundle-source';
+import bundleSourceAmbient from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Stable } from '@agoric/vats/src/tokens.js';
+import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers.js';
 
 import { makeFixture, E } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
 
-// This runs before all the tests.
-let home;
-let teardown;
+//#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
+  const loadBundle = async specifier => {
+    const contractUrl = await importMetaResolve(specifier, import.meta.url);
+    const contractRoot = new URL(contractUrl).pathname;
+    t.log({ contractRoot });
+    const bundle = await bundleSourceAmbient(contractRoot);
+    return bundle;
+  };
   const { homeP, kill } = await makeFixture(SOLO_PORT, process.env.NOISY);
-  teardown = kill;
-  home = await homeP;
+  const home = await homeP;
+
+  t.context = { home, teardown: kill, loadBundle };
+
   t.truthy('ready');
 });
+//#endregion
 
 // Now come the tests that use `home`...
 // =========================================
 
 test.serial('home.board', async t => {
+  const { home } = t.context;
   const { board } = E.get(home);
   await t.throwsAsync(
-    () => E(board).getValue('148'),
+    () => E(board).getValue('board0120'),
     { message: /board does not have id/ },
     `getting a value for a fake id throws`,
   );
   await t.throwsAsync(
-    () => E(board).getValue('0000000000'),
+    () => E(board).getValue('board0000000000'),
     { message: /id is probably a typo/ },
     `using a non-verified id throws`,
   );
@@ -58,28 +59,26 @@ test.serial('home.board', async t => {
 });
 
 test.serial('home.wallet - transfer funds to the feePurse', async t => {
+  const { home } = t.context;
   const { wallet, faucet } = E.get(home);
   const feePurse = E(faucet).getFeePurse();
   const feeBrand = await E(feePurse).getAllegedBrand();
   const feeAmount = AmountMath.make(feeBrand, 10_000_000n);
-  const feePayment = await E(
-    E(wallet).getPurse('Agoric RUN currency'),
-  ).withdraw(feeAmount);
+  const feePayment = await E(E(wallet).getPurse(Stable.proposedName)).withdraw(
+    feeAmount,
+  );
   const deposited = await E(feePurse).deposit(feePayment);
   t.deepEqual(deposited, feeAmount, `all fees deposited to feePurse`);
 });
 
 test.serial('home.wallet - receive zoe invite', async t => {
+  const { home, loadBundle } = t.context;
   const { wallet, zoe, board } = E.get(home);
 
   // Setup contract in order to get an invite to use in tests
-  const contractUrl = await importMetaResolve(
+  const bundle = await loadBundle(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
-  const contractRoot = new URL(contractUrl).pathname;
-  t.log({ contractRoot });
-  const bundle = await bundleSource(contractRoot);
   const installationHandle = await E(zoe).install(bundle);
   const { creatorInvitation: invite } = await E(zoe).startInstance(
     installationHandle,
@@ -121,27 +120,29 @@ test.serial('home.wallet - receive zoe invite', async t => {
 });
 
 test.serial('home.wallet - central issuer setup', async t => {
+  const { home } = t.context;
   const { wallet } = E.get(home);
 
   // Check that the wallet knows about the central issuer.
   const issuers = await E(wallet).getIssuers();
   const issuersMap = new Map(issuers);
-  const centralIssuer = issuersMap.get(CENTRAL_ISSUER_NAME);
+  const centralIssuer = issuersMap.get(Stable.symbol);
 
-  const centralPurse = await E(wallet).getPurse('Agoric RUN currency');
+  const centralPurse = await E(wallet).getPurse(Stable.proposedName);
   const brandFromIssuer = await E(centralIssuer).getBrand();
   const brandFromPurse = await E(centralPurse).getAllegedBrand();
   t.is(brandFromPurse, brandFromIssuer);
 });
 
 test.serial('home.localTimerService makeNotifier', async t => {
+  const { home } = t.context;
   const { localTimerService } = E.get(home);
-  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const notifier = E(localTimerService).makeNotifier(1n, 1n);
   const update1 = await E(notifier).getUpdateSince();
   const firstUpdate = update1.updateCount;
   t.truthy(firstUpdate > 0);
   const update2 = await E(notifier).getUpdateSince(update1.updateCount);
-  t.is(update2.updateCount, firstUpdate + 1);
+  t.truthy(BigInt(update2.updateCount) > BigInt(firstUpdate));
 
   // Tests gets an actual localTimerService, which returns actual times. We
   // can't verify the actual time, so we compare to make sure it's increasing.
@@ -166,12 +167,13 @@ function makeHandler() {
 }
 
 test.serial('home.localTimerService makeRepeater', async t => {
+  const { home } = t.context;
   const { localTimerService } = E.get(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
-  const repeater = E(localTimerService).makeRepeater(1, 1);
+  const repeater = E(localTimerService).makeRepeater(1n, 1n);
   const handler = makeHandler();
   await E(repeater).schedule(handler);
-  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const notifier = E(localTimerService).makeNotifier(1n, 1n);
   await E(notifier).getUpdateSince();
 
   t.truthy(handler.getCalls() >= 1);
@@ -181,6 +183,7 @@ test.serial('home.localTimerService makeRepeater', async t => {
 // =========================================
 // This runs after all the tests.
 test.after.always('teardown', async t => {
+  const { teardown } = t.context;
   await teardown();
   t.truthy('shutdown');
 });

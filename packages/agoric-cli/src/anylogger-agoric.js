@@ -3,11 +3,11 @@ import anylogger from 'anylogger';
 import chalk from 'chalk';
 
 // Turn on debugging output with DEBUG=agoric
-
+const { DEBUG } = process.env;
 let selectedLevel = 'info';
-if (process.env.DEBUG === undefined) {
+if (DEBUG === undefined) {
   selectedLevel = 'log';
-} else if (process.env.DEBUG.includes('agoric')) {
+} else if (DEBUG.includes('agoric')) {
   selectedLevel = 'debug';
 }
 const defaultLevel = anylogger.levels[selectedLevel];

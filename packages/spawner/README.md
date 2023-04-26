@@ -1,7 +1,7 @@
 # Spawner
 
 The "spawner" was the original method for instantiating contract code within
-the chain's swingset. This on-chain usage has been entirely superceded by
+the chain's swingset. This on-chain usage has been entirely superseded by
 Zoe, and the chain swingset no longer includes a spawner.
 
 However, it was also pressed into service in the ag-solo swingset for
@@ -31,7 +31,7 @@ To support a spawner, your swingset must provide it with the `vatAdmin` facet
 in the new vat). Your `vat-spawner.js` should look like:
 
 ```js
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeSpawner } from '@agoric/spawner';
 function buildRootObject() {
   return Far('root', {

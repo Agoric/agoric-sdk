@@ -1,38 +1,75 @@
-// import LMDB before SES lockdown, as workaround for
-// https://github.com/Agoric/SES-shim/issues/308
-import 'node-lmdb';
-import '@agoric/install-ses';
+// @ts-check
 
-import fs from 'fs';
+import '@endo/init/debug.js';
 
+import tmp from 'tmp';
 import test from 'ava';
+
+import bundleSource from '@endo/bundle-source';
 
 import {
   initSwingStore,
   openSwingStore,
-  getAllState,
   isSwingStore,
 } from '../src/swingStore.js';
 
-function rimraf(dirPath) {
-  try {
-    // Node.js 16.8.0 warns:
-    // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
-    // be removed. Use fs.rm(path, { recursive: true }) instead
-    if (fs.rmSync) {
-      fs.rmSync(dirPath, { recursive: true });
-    } else {
-      fs.rmdirSync(dirPath, { recursive: true });
+/**
+ * @param {string} [prefix]
+ * @returns {Promise<[string, () => void]>}
+ */
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
+
+async function embundle(filename) {
+  const bundleFile = new URL(filename, import.meta.url).pathname;
+  const bundle = await bundleSource(bundleFile);
+  const bundleID = `b1-${bundle.endoZipBase64Sha512}`;
+  return [bundleID, bundle];
+}
+
+function* iterate(kvStore, start, end) {
+  if (kvStore.has(start)) {
+    yield start;
+  }
+  let prev = start;
+  while (true) {
+    const next = kvStore.getNextKey(prev);
+    if (!next || next >= end) {
+      break;
     }
-  } catch (e) {
-    if (e.code !== 'ENOENT') {
-      throw e;
-    }
+    yield next;
+    prev = next;
   }
 }
 
-function testKVStore(t, store) {
-  const kvStore = store.kvStore;
+function makeExportLog() {
+  const exportLog = [];
+  return {
+    callback(updates) {
+      exportLog.push(updates);
+    },
+    getLog() {
+      return exportLog;
+    },
+  };
+}
+
+function checkKVState(t, swingstore) {
+  const kv = swingstore.debug.dump().kvEntries;
+  t.deepEqual(kv, { foo: 'f', foo1: 'f1', foo3: 'f3' });
+}
+
+function testKVStore(t, storage, exportLog) {
+  const { kvStore, startCrank, endCrank } = storage.kernelStorage;
+  startCrank();
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -43,137 +80,239 @@ function testKVStore(t, store) {
   kvStore.set('foo2', 'f2');
   kvStore.set('foo1', 'f1');
   kvStore.set('foo3', 'f3');
-  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo4')), [
+  t.is(kvStore.getNextKey('foo'), 'foo1');
+  t.is(kvStore.getNextKey('foo1'), 'foo2');
+  t.is(kvStore.getNextKey('foo2'), 'foo3');
+  t.is(kvStore.getNextKey('foo3'), undefined);
+  t.is(kvStore.getNextKey('goo'), undefined);
+  t.deepEqual(Array.from(iterate(kvStore, 'foo1', 'foo3')), ['foo1', 'foo2']);
+  t.deepEqual(Array.from(iterate(kvStore, 'foo1', 'foo4')), [
     'foo1',
     'foo2',
     'foo3',
   ]);
+  endCrank();
+  startCrank();
 
   kvStore.delete('foo2');
   t.falsy(kvStore.has('foo2'));
   t.is(kvStore.get('foo2'), undefined);
-  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
-
-  const reference = {
-    kvStuff: {
-      foo: 'f',
-      foo1: 'f1',
-      foo3: 'f3',
-    },
-    streamStuff: new Map(),
-  };
-  t.deepEqual(getAllState(store), reference, 'check state after changes');
+  t.is(kvStore.getNextKey('foo1'), 'foo3');
+  t.is(kvStore.getNextKey('foo2'), 'foo3');
+  endCrank();
+  checkKVState(t, storage);
+  t.deepEqual(exportLog.getLog(), [
+    [
+      ['kv.foo', 'f'],
+      ['kv.foo1', 'f1'],
+      ['kv.foo2', 'f2'],
+      ['kv.foo3', 'f3'],
+    ],
+    [['kv.foo2', null]],
+  ]);
 }
 
 test('in-memory kvStore read/write', t => {
-  testKVStore(t, initSwingStore(null));
+  const exportLog = makeExportLog();
+  const ss1 = initSwingStore(null, { exportCallback: exportLog.callback });
+  testKVStore(t, ss1, exportLog);
+  const serialized = ss1.debug.serialize();
+  const ss2 = initSwingStore(null, { serialized });
+  checkKVState(t, ss2);
 });
 
-test('persistent kvStore read/write/re-open', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('persistent kvStore read/write/re-open', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  const exportLog = makeExportLog();
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  const store = initSwingStore(dbDir);
-  const { commit, close } = store;
-  testKVStore(t, store);
-  commit();
-  const before = getAllState(store);
-  close();
+  const ss1 = initSwingStore(dbDir, { exportCallback: exportLog.callback });
+  testKVStore(t, ss1, exportLog);
+  await ss1.hostStorage.commit();
+  await ss1.hostStorage.close();
   t.is(isSwingStore(dbDir), true);
 
-  const store2 = openSwingStore(dbDir);
-  const { close: close2 } = store2;
-  t.deepEqual(getAllState(store2), before, 'check state after reread');
+  const ss2 = openSwingStore(dbDir);
+  checkKVState(t, ss2);
+  await ss2.hostStorage.close();
   t.is(isSwingStore(dbDir), true);
-  close2();
 });
 
-function testStreamStore(t, dbDir) {
-  const { streamStore, commit, close } = initSwingStore(dbDir);
+test('persistent kvStore maxKeySize write', async t => {
+  // Vat collections assume they have 220 characters for their key space.
+  // This is based on previous math where LMDB's key size was 511 bytes max
+  // and the native UTF-16 encoding of JS strings, minus some overhead
+  // for vat store prefixes.
+  // However some unicode codepoints may end up serialized as 3 bytes with UTF-8
+  // This tests that no matter what, we can write 254 unicode characters in the
+  // 0x0800 - 0xFFFF range (single UTF-16 codepoint, but 3 byte UTF-8).
 
-  const start = streamStore.STREAM_START;
-  let s1pos = start;
-  s1pos = streamStore.writeStreamItem('st1', 'first', s1pos);
-  s1pos = streamStore.writeStreamItem('st1', 'second', s1pos);
-  const s1posAlt = { ...s1pos };
-  s1pos = streamStore.writeStreamItem('st1', 'third', s1pos);
-  let s2pos = streamStore.STREAM_START;
-  s2pos = streamStore.writeStreamItem('st2', 'oneth', s2pos);
-  s1pos = streamStore.writeStreamItem('st1', 'fourth', s1pos);
-  s2pos = streamStore.writeStreamItem('st2', 'twoth', s2pos);
-  const s2posAlt = { ...s2pos };
-  s2pos = streamStore.writeStreamItem('st2', 'threeth', s2pos);
-  s2pos = streamStore.writeStreamItem('st2', 'fourst', s2pos);
-  streamStore.closeStream('st1');
-  streamStore.closeStream('st2');
-  const reader1 = streamStore.readStream('st1', start, s1pos);
-  t.deepEqual(Array.from(reader1), ['first', 'second', 'third', 'fourth']);
-  s2pos = streamStore.writeStreamItem('st2', 're3', s2posAlt);
-  streamStore.closeStream('st2');
-  const reader2 = streamStore.readStream('st2', start, s2pos);
-  t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 're3']);
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  t.is(isSwingStore(dbDir), false);
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  kernelStorage.kvStore.set('€'.repeat(254), 'Money!');
+  await hostStorage.commit();
+  await hostStorage.close();
+});
 
-  const reader1alt = streamStore.readStream('st1', s1posAlt, s1pos);
+async function testTranscriptStore(t, dbDir) {
+  const exportLog = makeExportLog();
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
+    exportCallback: exportLog.callback,
+    keepTranscripts: true, // XXX need to vary
+  });
+  const { transcriptStore } = kernelStorage;
+  const { commit, close } = hostStorage;
+
+  transcriptStore.initTranscript('st1');
+  transcriptStore.initTranscript('st2');
+  transcriptStore.addItem('st1', 'first');
+  transcriptStore.addItem('st1', 'second');
+  transcriptStore.rolloverSpan('st1');
+  transcriptStore.addItem('st1', 'third');
+  transcriptStore.addItem('st2', 'oneth');
+  transcriptStore.addItem('st1', 'fourth');
+  transcriptStore.addItem('st2', 'twoth');
+  transcriptStore.addItem('st2', 'threeth');
+  transcriptStore.addItem('st2', 'fourst');
+  const reader1 = transcriptStore.readSpan('st1', 0);
+  t.deepEqual(Array.from(reader1), ['first', 'second']);
+  const reader2 = transcriptStore.readSpan('st2', 0);
+  t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 'threeth', 'fourst']);
+
+  t.throws(() => transcriptStore.readSpan('st2', 3), {
+    message: 'no transcript span for "st2" at 3',
+  });
+
+  const reader1alt = transcriptStore.readSpan('st1');
   t.deepEqual(Array.from(reader1alt), ['third', 'fourth']);
+  const reader1alt2 = transcriptStore.readSpan('st1', 2);
+  t.deepEqual(Array.from(reader1alt2), ['third', 'fourth']);
 
-  const emptyPos = streamStore.writeStreamItem('empty', 'filler', start);
-  streamStore.closeStream('empty');
-  const readerEmpty = streamStore.readStream('empty', emptyPos, emptyPos);
+  transcriptStore.initTranscript('empty');
+  const readerEmpty = transcriptStore.readSpan('empty');
   t.deepEqual(Array.from(readerEmpty), []);
-  const readerEmpty2 = streamStore.readStream('empty', start, start);
-  t.deepEqual(Array.from(readerEmpty2), []);
 
-  commit();
-  close();
+  t.throws(() => transcriptStore.readSpan('nonexistent'), {
+    message: 'no current transcript for "nonexistent"',
+  });
+
+  await commit();
+  t.deepEqual(exportLog.getLog(), [
+    [
+      [
+        'transcript.empty.current',
+        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1,"incarnation":0}',
+      ],
+      [
+        'transcript.st1.0',
+        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0,"incarnation":0}',
+      ],
+      [
+        'transcript.st1.current',
+        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"789342fab468506c624c713c46953992f53a7eaae390d634790d791636b96cab","isCurrent":1,"incarnation":0}',
+      ],
+      [
+        'transcript.st2.current',
+        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"45de7ae9d2be34148f9cf3000052e5d1374932d663442fe9f39a342d221cebf1","isCurrent":1,"incarnation":0}',
+      ],
+    ],
+  ]);
+  await close();
 }
 
-test('in-memory streamStore read/write', t => {
-  testStreamStore(t, null);
+test('in-memory transcriptStore read/write', async t => {
+  await testTranscriptStore(t, null);
 });
 
-test('persistent streamStore read/write', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('persistent transcriptStore read/write', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  testStreamStore(t, dbDir);
+  await testTranscriptStore(t, dbDir);
 });
 
-function testStreamStoreModeInterlock(t, dbDir) {
-  const { streamStore, commit, close } = initSwingStore(dbDir);
-  const start = streamStore.STREAM_START;
+test('transcriptStore abort', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  const { transcriptStore } = kernelStorage;
+  const { commit, close } = hostStorage;
 
-  const s1pos = streamStore.writeStreamItem('st1', 'first', start);
-  streamStore.closeStream('st1');
+  transcriptStore.initTranscript('st1');
+  transcriptStore.addItem('st1', 'first');
+  await commit(); // really write 'first'
 
-  const reader = streamStore.readStream('st1', start, s1pos);
-  t.throws(() => streamStore.readStream('st1', start, s1pos), {
-    message: `can't read stream "st1" because it's already in use`,
+  transcriptStore.initTranscript('st2');
+  transcriptStore.addItem('st2', 'second');
+  // abort is close without commit
+  await close();
+
+  const { transcriptStore: ss2 } = openSwingStore(dbDir).kernelStorage;
+  const reader = ss2.readSpan('st1', 0);
+  t.deepEqual(Array.from(reader), ['first']); // and not 'second'
+});
+
+async function testBundleStore(t, dbDir) {
+  const exportLog = makeExportLog();
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
+    exportCallback: exportLog.callback,
   });
-  t.throws(() => streamStore.writeStreamItem('st1', start, s1pos), {
-    message: `can't write stream "st1" because it's already in use`,
-  });
-  streamStore.closeStream('st1');
-  t.throws(() => reader.next(), {
-    message: `can't read stream "st1", it's been closed`,
-  });
+  const { bundleStore } = kernelStorage;
+  const { commit, close } = hostStorage;
 
-  streamStore.closeStream('nonexistent');
+  const [bundleID1, bundle1] = await embundle('./faux-module.js');
+  const [bundleID2, bundle2] = await embundle('./bohr-module.js');
 
-  commit();
-  close();
+  t.falsy(bundleStore.hasBundle(bundleID1));
+  t.falsy(bundleStore.hasBundle(bundleID2));
+  t.falsy(bundleStore.hasBundle('b1-obviouslyfake'));
+
+  bundleStore.addBundle(bundleID1, bundle1);
+  bundleStore.addBundle(bundleID2, bundle2);
+
+  t.truthy(bundleStore.hasBundle(bundleID1));
+  t.truthy(bundleStore.hasBundle(bundleID2));
+  t.falsy(bundleStore.hasBundle('b1-obviouslyfake'));
+
+  bundleStore.deleteBundle(bundleID1);
+
+  t.falsy(bundleStore.hasBundle(bundleID1));
+  t.truthy(bundleStore.hasBundle(bundleID2));
+  t.falsy(bundleStore.hasBundle('b1-obviouslyfake'));
+
+  const rebundle2 = bundleStore.getBundle(bundleID2);
+  t.deepEqual(bundle2, rebundle2);
+  await commit();
+  await close();
 }
 
-test('in-memory streamStore mode interlock', t => {
-  testStreamStoreModeInterlock(t, null);
+test('in-memory bundleStore read/write', async t => {
+  await testBundleStore(t, null);
 });
 
-test('persistent streamStore mode interlock', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('persistent bundleStore read/write', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  testStreamStoreModeInterlock(t, dbDir);
+  await testBundleStore(t, dbDir);
+});
+
+test('close will abort transaction', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const ss1 = initSwingStore(dbDir);
+  ss1.kernelStorage.kvStore.set('key1', 'value');
+  await ss1.hostStorage.commit();
+  ss1.kernelStorage.kvStore.set('key2', 'value');
+  // no commit, so ought to abort the 'key2' addition
+  await ss1.hostStorage.close();
+
+  const ss2 = openSwingStore(dbDir);
+  const { kvStore } = ss2.kernelStorage;
+  t.is(kvStore.get('key1'), 'value');
+  t.truthy(kvStore.has('key1'));
+  t.is(kvStore.get('key2'), undefined);
+  t.falsy(kvStore.has('key2'));
 });

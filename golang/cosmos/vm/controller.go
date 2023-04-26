@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,8 +14,18 @@ type ControllerContext struct {
 
 type ControllerAdmissionMsg interface {
 	sdk.Msg
-	CheckAdmissibility(sdk.Context, func(sdk.Context, string) (string, error)) error
+	CheckAdmissibility(sdk.Context, interface{}) error
+
+	// GetInboundMsgCount returns the number of Swingset messages which will
+	// be added to the inboundQueue.
+	GetInboundMsgCount() int32
 }
+
+// Jsonable is a value, j, that can be passed through json.Marshal(j).
+type Jsonable interface{}
+
+// ActionPusher enqueues data for later consumption by the controller.
+type ActionPusher func(ctx sdk.Context, action Jsonable) error
 
 var controllerContext ControllerContext
 
@@ -60,7 +69,7 @@ func UnregisterPortHandler(portNum int) error {
 func ReceiveFromController(portNum int, msg string) (string, error) {
 	handler := portToHandler[portNum]
 	if handler == nil {
-		return "", errors.New(fmt.Sprintf("Unregistered port %d", portNum))
+		return "", fmt.Errorf("Unregistered port %d", portNum)
 	}
 	return handler.Receive(&controllerContext, msg)
 }

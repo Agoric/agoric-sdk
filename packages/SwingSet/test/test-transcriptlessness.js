@@ -1,9 +1,9 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { provideHostStorage } from '../src/hostStorage.js';
+// eslint-disable-next-line import/order
+import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
-import { capargs } from './util.js';
 
 async function testTranscriptlessness(t, useTranscript) {
   const config = {
@@ -19,17 +19,19 @@ async function testTranscriptlessness(t, useTranscript) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c1 = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
+  t.teardown(c1.shutdown);
   await c1.run();
   t.deepEqual(c1.dump().log, ['ephemeralCounter=1 sturdyCounter=1']);
 
   const c2 = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
-  c2.queueToVatRoot('bootstrap', 'go', capargs([]), 'panic');
+  t.teardown(c2.shutdown);
+  c2.queueToVatRoot('bootstrap', 'go', [], 'panic');
   await c2.run();
   if (useTranscript) {
     t.deepEqual(c2.dump().log, [

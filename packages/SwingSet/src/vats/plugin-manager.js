@@ -1,10 +1,9 @@
-// @ts-check
-
-import { makeStore } from '@agoric/store';
-import { makeCapTP } from '@agoric/captp';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { E, HandledPromise } from '@agoric/eventual-send';
-import { Remotable, Far } from '@agoric/marshal';
+import { makeScalarMapStore } from '@agoric/store';
+import { makeCapTP } from '@endo/captp';
+import { makePromiseKit } from '@endo/promise-kit';
+import { HandledPromise } from '@endo/eventual-send';
+import { Remotable } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 import '@agoric/store/exported.js';
 
@@ -21,8 +20,10 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
 
 /**
  * @template T
- * @typedef {T} Device
+ * @typedef {'Device' & { __deviceType__: T }} Device
  */
+
+/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
  * @callback LoadPlugin
@@ -38,42 +39,39 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  */
 
 /**
- * @typedef {Object} PluginManager
+ * @typedef {object} PluginManager
  * @property {LoadPlugin} load
  */
 
 /**
- * @typedef {Object} Receiver
+ * @typedef {object} Receiver
  * @property {(index: number, obj: Record<string, any>) => void} dispatch
  * @property {(index: number, epoch: number) => void} reset
  */
 
 /**
- * @typedef {Object} PluginDevice
- * @property {(mod: string) => number} connect
- * @property {(receiver: Receiver) => void} registerReceiver
- * @property {(index: number, obj: Record<string, any>) => void} send
- * @property {() => string} getPluginDir
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode>> } PluginDevice
  */
 
 /**
  * Create a handler that manages a promise interface to external modules.
  *
- * @param {Device<PluginDevice>} pluginDevice The bridge to manage
- * @param {{ [prop: string]: any, D: <T>(target: Device<T>) => T}} param1
+ * @param {PluginDevice} pluginDevice The bridge to manage
+ * @param {{ [prop: string]: any, D: DProxy }} param1
  * @returns {PluginManager} admin facet for this handler
  */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
-   * @typedef {Object} AbortDispatch
+   * @typedef {object} AbortDispatch
    * @property {(epoch: number) => void} reset
    * @property {(obj: Record<string,any>) => void} dispatch
    */
 
   /**
-   * @type {Store<number, AbortDispatch>}
+   * @type {MapStore<number, AbortDispatch>}
    */
-  const modConnection = makeStore('moduleIndex');
+  const modConnection = makeScalarMapStore('moduleIndex');
 
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(
@@ -154,7 +152,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
           pluginRootPK = makePromiseKit();
 
           // Tell our clients we are resetting.
-          E(resetter).onReset(pluginRootPK.promise.then(_ => true));
+          void E(resetter).onReset(pluginRootPK.promise.then(_ => true));
 
           // Attempt to restart the protocol using the same device connection.
           connect();
@@ -181,7 +179,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         makeStableForwarder(walker = DEFAULT_WALKER) {
           let pr;
           // eslint-disable-next-line no-new
-          new HandledPromise((_resolve, _reject, resolveWithPresence) => {
+          void new HandledPromise((_resolve, _reject, resolveWithPresence) => {
             // Use Remotable rather than Far to make a remote from a presence
             pr = Remotable(
               'Alleged: stableForwarder',
@@ -205,7 +203,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       });
 
       // Declare the first reset.
-      E(resetter).onReset(Promise.resolve(false));
+      void E(resetter).onReset(Promise.resolve(false));
 
       // Start the first connection.
       connect();

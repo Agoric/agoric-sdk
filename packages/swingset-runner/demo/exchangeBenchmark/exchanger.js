@@ -1,7 +1,9 @@
 // @ts-check
 
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { showPurseBalance, setupPurses } from './helpers.js';
 import { makePrintLog } from './printLog.js';
 
@@ -53,12 +55,12 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     const buyOrderInvitation = await E(publicFacet).makeInvitation();
 
     const mySellOrderProposal = harden({
-      give: { Asset: moola(1) },
-      want: { Price: simoleans(1) },
+      give: { Asset: moola(1n) },
+      want: { Price: simoleans(1n) },
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = {
-      Asset: await E(moolaPurseP).withdraw(moola(1)),
+      Asset: await E(moolaPurseP).withdraw(moola(1n)),
     };
     const seat = await E(zoe).offer(
       buyOrderInvitation,
@@ -78,15 +80,18 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await preReport(quiet);
 
     const invitation = await invitationP;
-    const exclInvitation = await E(invitationIssuer).claim(invitation);
+    const exclInvitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      invitation,
+    );
 
     const myBuyOrderProposal = harden({
-      want: { Asset: moola(1) },
-      give: { Price: simoleans(1) },
+      want: { Asset: moola(1n) },
+      give: { Price: simoleans(1n) },
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = {
-      Price: await E(simoleanPurseP).withdraw(simoleans(1)),
+      Price: await E(simoleanPurseP).withdraw(simoleans(1n)),
     };
 
     const seatP = await E(zoe).offer(
@@ -100,7 +105,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await postReport(quiet);
   }
 
-  return harden({
+  return Far('exchanger', {
     initiateTrade,
     respondToTrade,
   });

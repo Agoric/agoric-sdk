@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Create a purse for a new issuer
  *
@@ -16,7 +14,7 @@
  * before with `feeMintAccess`. In that case, we do not create a new
  * purse, but reuse the existing purse.
  *
- * @callback MakeLocalPurse
+ * @callback ProvideLocalPurse
  * @param {Issuer} issuer
  * @param {Brand} brand
  * @returns {Purse}
@@ -56,15 +54,18 @@
 /**
  * @callback UnwrapInstallation
  *
- * Assert the installation is known, and return the bundle and
+ * Assert the installation is known, and return the bundle/bundlecap and
  * installation
  *
  * @param {ERef<Installation>} installationP
- * @returns {Promise<{
- *   bundle: SourceBundle,
+ * @returns {ERef<{
+ *   bundle?: SourceBundle,
+ *   bundleCap?: BundleCap,
+ *   bundleID?: BundleID,
  *   installation:Installation
- * }>}
+ * }>} XXX not really an ERef; the implemention is sync and the API is a promise because of callWhen
  */
+// TODO remove or automate ERef https://github.com/Agoric/agoric-sdk/issues/7110
 
 /**
  * @callback GetIssuerRecords
@@ -72,9 +73,8 @@
  */
 
 /**
- * @typedef {Object} ZoeInstanceStorageManager
- * @property {InstanceRecordManagerGetTerms} getTerms
- * @property {InstanceRecordManagerGetInstallationForInstance} getInstallationForInstance
+ * @typedef {object} ZoeInstanceStorageManager
+ * @property {InstanceStateGetTerms} getTerms
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
  * @property {SaveIssuer} saveIssuer
@@ -82,13 +82,12 @@
  * @property {RegisterFeeMint} registerFeeMint
  * @property {GetInstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
- * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
- * @property {Issuer} invitationIssuer
- * @property {Object} root of a RootAndAdminNode
- * @property {AdminNode} adminNode of a RootAndAdminNode
+ * @property {() => Issuer} getInvitationIssuer
+ * @property {() => object} getRoot of CreateVatResults
+ * @property {() => import('@agoric/swingset-vat').VatAdminFacet} getAdminNode of CreateVatResults
  */
 
 /**
@@ -98,12 +97,26 @@
  * instance-specific terms
  *
  * @callback MakeZoeInstanceStorageManager
+ * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  * @param {Installation} installation
- * @param {Object} customTerms
+ * @param {object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
- * @param {ERef<FeePurse>} feePurse
- * @returns {ZoeInstanceStorageManager}
+ * @param {BundleCap} contractBundleCap
+ * @param {string} instanceLabel
+ * @returns {Promise<ZoeInstanceStorageManager>}
+ */
+
+/**
+ * @callback GetBundleCapForID
+ * @param {BundleID} id
+ * @returns {Promise<BundleCap>}
+ */
+
+/**
+ * @callback GetProposalShapeForInvitation
+ * @param {InvitationHandle} invitationHandle
+ * @returns {Pattern | undefined}
  */
 
 /**
@@ -111,15 +124,20 @@
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
- * @property {Issuer} invitationIssuer
- * @property {Install} install
- * @property {GetPublicFacet} getPublicFacet
+ * @property {Issuer<'set'>} invitationIssuer
+ * @property {InstallBundle} installBundle
+ * @property {InstallBundleID} installBundleID
+ * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
+ * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
- * @property {GetTerms} getTerms
+ * @property {import('./utils').GetTerms} getTerms
+ * @property {GetOfferFilter} getOfferFilter
+ * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
+ * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
  */
 
 /**
@@ -127,60 +145,13 @@
  * ZCF bundle
  *
  * @callback CreateZCFVat
- * @returns {Promise<RootAndAdminNodeAndMeter>}
- */
-
-/**
- * @typedef {Handle<'feeMintAccess'>} FeeMintAccess
+ * @param {BundleCap} contractBundleCap
+ * @param {string} contractLabel
+ * @returns {Promise<import('@agoric/swingset-vat').CreateVatResults>}
  */
 
 /**
  * @callback GetFeeIssuerKit
  * @param {FeeMintAccess} feeMintAccess
- * @returns {IssuerKit}
- */
-
-/**
- * @callback ChargeZoeFee
- * @param {ERef<Purse>} feePurse
- * @param {Amount} feeAmount
- * @returns {Promise<void>}
- */
-
-/**
- * @typedef {bigint} Computrons
- */
-
-/**
- * @typedef {Object} Meter
- *
- * All `bigint` units here are in computrons.
- *
- * @property {(delta: Computrons) => void} addRemaining
- * @property {(newThreshold: Computrons) => void} setThreshold
- * @property {() => Computrons} get
- * @property {() => Notifier<Computrons>} getNotifier
- */
-
-/**
- * @callback ChargeForComputrons
- *
- * Charges the feePurse argument for a set number of computrons (This
- * number is returned by the function and can now be added to the
- * meter).
- *
- * @param {ERef<FeePurse>} feePurse
- * @returns {Promise<bigint>}
- */
-
-/**
- * @callback TranslateFee
- * @param {FeeChoice | undefined} relativeFee
- * @returns {Amount | undefined}
- */
-
-/**
- * @callback TranslateExpiry
- * @param {ExpiryChoice | undefined} relativeExpiry
- * @returns {Timestamp | undefined}
+ * @returns {IssuerKit<'nat'>}
  */

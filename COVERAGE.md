@@ -7,7 +7,7 @@ implementation (`nesm`), the coverage line numbers will be out-of-sync with
 reality.
 
 In addition, we will have to implement source maps in all of our
-source-to-source transforms (such as `@agoric/bundle-source`,
+source-to-source transforms (such as `@endo/bundle-source`,
 `@agoric/transform-metering`, and `@agoric/static-module-record`).
 
 ## Reports

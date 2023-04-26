@@ -1,20 +1,25 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
+import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
 test('makeIssuerKit bad allegedName', async t => {
-  // @ts-ignore Intentional wrong type for testing
-  t.throws(() => makeIssuerKit({}), { message: `{} must be a string` });
+  // @ts-expect-error Intentional wrong type for testing
+  t.throws(() => makeIssuerKit(harden({})), { message: `{} must be a string` });
+  // @ts-expect-error Intentional wrong type for testing
+  t.throws(() => makeIssuerKit({}), {
+    message: `{} must be a string`,
+  });
 });
 
 test('makeIssuerKit bad assetKind', async t => {
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message: `The assetKind "somethingWrong" must be either AssetKind.NAT or AssetKind.SET`,
+    message:
+      'The assetKind "somethingWrong" must be one of ["copyBag","copySet","nat","set"]',
   });
 });
 
@@ -24,11 +29,47 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         harden({ decimalPlaces: 'hello' }),
       ),
     {
-      message: `"hello" must be a number`,
+      message: 'displayInfo: decimalPlaces?: "hello" - Must be >= -100',
+    },
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 9.2 })),
+    { message: 'decimalPlaces 9.2 is not a safe integer' },
+  );
+
+  t.assert(
+    makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 9 })),
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -0.1 })),
+    { message: 'decimalPlaces -0.1 is not a safe integer' },
+  );
+
+  t.assert(
+    makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -1 })),
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 101 })),
+    {
+      message: 'displayInfo: decimalPlaces?: 101 - Must be <= 100',
+    },
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -101 })),
+    {
+      message: 'displayInfo: decimalPlaces?: -101 - Must be >= -100',
     },
   );
 });
@@ -39,14 +80,14 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         harden({
           assetKind: 'something',
         }),
       ),
     {
       message:
-        'displayInfo.assetKind was present ("something") and did not match the assetKind argument ("nat")',
+        'displayInfo: assetKind?: "something" - Must match one of ["nat","set","copySet","copyBag"]',
     },
   );
 });
@@ -57,14 +98,13 @@ test('makeIssuerKit bad displayInfo.whatever', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         harden({
           whatever: 'something',
         }),
       ),
     {
-      message:
-        'key "whatever" was not one of the expected keys ["decimalPlaces","assetKind"]',
+      message: 'displayInfo: ...rest: {"whatever":"something"} - Must be: {}',
     },
   );
 });
@@ -75,12 +115,11 @@ test('makeIssuerKit malicious displayInfo', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
-        Far('malicious', { doesSomething: () => {} }),
+        // @ts-expect-error Intentional wrong type for testing
+        'badness',
       ),
     {
-      message:
-        '"displayInfo" "[Alleged: malicious]" must be a pass-by-copy record, not "remotable"',
+      message: 'displayInfo: string "badness" - Must be a copyRecord',
     },
   );
 });
@@ -89,7 +128,7 @@ test('makeIssuerKit malicious displayInfo', async t => {
 // reached, we can't easily test that pathway.
 test('makeIssuerKit bad optShutdownWithFailure', async t => {
   t.throws(
-    // @ts-ignore Intentional wrong type for testing
+    // @ts-expect-error Intentional wrong type for testing
     () => makeIssuerKit('myTokens', AssetKind.NAT, undefined, 'not a function'),
     {
       message: '"not a function" must be a function',
@@ -99,12 +138,20 @@ test('makeIssuerKit bad optShutdownWithFailure', async t => {
 
 test('brand.isMyIssuer bad issuer', async t => {
   const { brand } = makeIssuerKit('myTokens');
-  // @ts-ignore Intentional wrong type for testing
-  const result = await brand.isMyIssuer('not an issuer');
+  // @ts-expect-error Intentional wrong type for testing
+  t.throwsAsync(() => brand.isMyIssuer('not an issuer'), {
+    message:
+      'In "isMyIssuer" method of (myTokens brand): arg 0: string "not an issuer" - Must be a remotable (Issuer)',
+  });
+  const fakeIssuer = /** @type {Issuer} */ (
+    /** @type {unknown} */ (Far('myTokens issuer', {}))
+  );
+  const result = await brand.isMyIssuer(fakeIssuer);
   t.false(result);
 });
 
-// Tested in the context of an issuer.claim call, as assertLivePayment is not exported
+// Tested in the context of an issuer.claim call, as assertLivePayment is not
+// exported
 test('assertLivePayment', async t => {
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const { mint: mintB, brand: brandB } = makeIssuerKit('fungibleB');
@@ -112,7 +159,7 @@ test('assertLivePayment', async t => {
   const paymentB = E(mintB).mintPayment(AmountMath.make(brandB, 837n));
 
   // payment is of the wrong brand
-  await t.throwsAsync(() => E(issuer).claim(paymentB), {
+  await t.throwsAsync(() => claim(E(issuer).makeEmptyPurse(), paymentB), {
     message:
       '"[Alleged: fungibleB payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
@@ -120,9 +167,9 @@ test('assertLivePayment', async t => {
   // payment is used up
   const payment = E(mint).mintPayment(AmountMath.make(brand, 10n));
   // use up payment
-  await E(issuer).claim(payment);
+  await claim(E(issuer).makeEmptyPurse(), payment);
 
-  await t.throwsAsync(() => E(issuer).claim(payment), {
+  await t.throwsAsync(() => claim(E(issuer).makeEmptyPurse(), payment), {
     message:
       '"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
@@ -134,20 +181,19 @@ test('issuer.combine bad payments array', async t => {
     length: 2,
     split: () => {},
   };
-  // @ts-ignore Intentional wrong type for testing
-  await t.throwsAsync(() => E(issuer).combine(notAnArray), {
-    message:
-      'Cannot pass non-frozen objects like {"length":2,"split":"[Function split]"}. Use harden()',
+  // @ts-expect-error Intentional wrong type for testing
+  // eslint-disable-next-line no-undef
+  await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), notAnArray), {
+    message: 'srcPaymentsPs is not iterable',
   });
 
   const notAnArray2 = Far('notAnArray2', {
     length: () => 2,
     split: () => {},
   });
-  // @ts-ignore Intentional wrong type for testing
-  await t.throwsAsync(() => E(issuer).combine(notAnArray2), {
-    message:
-      '"fromPaymentsArray" "[Alleged: notAnArray2]" must be a pass-by-copy array, not "remotable"',
+  // @ts-expect-error Intentional wrong type for testing
+  await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), notAnArray2), {
+    message: 'srcPaymentsPs is not iterable',
   });
 });
 

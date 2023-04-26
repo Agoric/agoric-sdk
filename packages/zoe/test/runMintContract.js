@@ -1,10 +1,11 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ZCF} zcf
+ * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ */
 const start = async (zcf, privateArgs) => {
   const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);
 

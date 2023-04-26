@@ -3,14 +3,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { E } from '@agoric/eventual-send';
-
-import '../../exported.js';
+import { E } from '@endo/far';
 
 import { makeStartInstance } from '../../src/startInstance.js';
+
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
 
 test('startInstance', async t => {
   const MOOLA_BRAND_PETNAME = 'moola';
@@ -19,9 +19,7 @@ test('startInstance', async t => {
   const moolaKit = makeIssuerKit('moola');
   const usdKit = makeIssuerKit('usd');
 
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const bundleUrl = new URL(
     await importMetaResolve(
@@ -37,6 +35,8 @@ test('startInstance', async t => {
   const zoeInvitationIssuer = E(zoe).getInvitationIssuer();
   const zoeInvitationPurse = E(zoeInvitationIssuer).makeEmptyPurse();
 
+  /** @type {import('../../src/startInstance.js').IssuerManager} */
+  // @ts-expect-error cast mock
   const issuerManager = {
     get: petname => {
       if (petname === MOOLA_BRAND_PETNAME) {
@@ -49,10 +49,15 @@ test('startInstance', async t => {
     },
   };
 
+  /** @type {Petname | undefined} */
   let addedPetname;
 
+  /** @type {import('../../src/startInstance.js').InstanceManager} */
+  // @ts-expect-error cast mock
   const instanceManager = {
-    add: (petname, _instance) => (addedPetname = petname),
+    add: async (petname, _instance) => {
+      addedPetname = petname;
+    },
   };
 
   const startInstance = makeStartInstance(
@@ -71,12 +76,8 @@ test('startInstance', async t => {
     },
   };
 
-  const {
-    creatorFacet,
-    publicFacet,
-    instance,
-    creatorInvitationDetails,
-  } = await startInstance(startInstanceConfig);
+  const { creatorFacet, publicFacet, instance, creatorInvitationDetails } =
+    await startInstance(startInstanceConfig);
 
   t.is(addedPetname, 'automaticRefund');
   t.truthy(creatorFacet);

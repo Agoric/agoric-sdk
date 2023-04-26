@@ -1,8 +1,8 @@
 // @ts-check
 
-import { makeMarshal } from '@agoric/marshal';
-import { makeLegacyMap, makeScalarMap } from '@agoric/store';
-import { assert, details as X, q } from '@agoric/assert';
+import { makeMarshal, mapIterable } from '@endo/marshal';
+import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
+import { assert, Fail, q } from '@agoric/assert';
 
 /**
  * @typedef {string[]} Path
@@ -14,7 +14,7 @@ export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
   }
-  assert(x.length > 0, X`Path ${q(x)} must not be empty`);
+  x.length > 0 || Fail`Path ${q(x)} must not be empty`;
   for (const name of x) {
     if (typeof name !== 'string') {
       return false;
@@ -26,8 +26,8 @@ export const isPath = x => {
 const IMPLODE_PREFIX = 'IE:';
 
 // Marshalling for the UI should only use the user's petnames. We will
-// call marshalling for the UI "dehydration" and "hydration" to distinguish it from
-// other marshalling.
+// call marshalling for the UI "dehydration" and "hydration" to distinguish it
+// from other marshalling.
 export const makeDehydrator = (initialUnnamedCount = 0) => {
   let unnamedCount = initialUnnamedCount;
 
@@ -38,18 +38,18 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const searchOrder = [];
 
   // Paths are kept across all kinds.
-  /** @type {Store<any, Path[]>} */
-  const valToPaths = makeScalarMap('value');
+  // TODO What about when useLegacyMap is true because contact have
+  // identity?
+  /** @type {MapStore<any, Path[]>} */
+  const valToPaths = makeScalarMapStore('value');
 
   /**
    * @param {string} data
    * @returns {string | Path}
    */
   const explode = data => {
-    assert(
-      data.startsWith(IMPLODE_PREFIX),
-      X`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
-    );
+    data.startsWith(IMPLODE_PREFIX) ||
+      Fail`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`;
     const strongname = JSON.parse(data.slice(IMPLODE_PREFIX.length));
     if (!isPath(strongname)) {
       return strongname;
@@ -77,7 +77,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const { petnameToVal: petnameToRoot } = edgeMapping;
     if (!petnameToRoot.has(path[0])) {
       // Avoid asserting, which fills up the logs.
-      assert.fail(X`Edgename for ${q(path[0])} petname not found`);
+      Fail`Edgename for ${q(path[0])} petname not found`;
     }
     const root = petnameToRoot.get(path[0]);
     path[0] = root;
@@ -88,15 +88,18 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   /**
    * @template T
    * @param {string} kind
-   * @param {{useLegacyMap?: boolean}=} legacyOptions
+   * @param {{ useLegacyMap?: boolean }} [legacyOptions]
    * @returns {Mapping<T>}
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
-    assert.typeof(kind, 'string', X`kind ${kind} must be a string`);
-    const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMap;
-    /** @type {Store<T, string>} */
+    typeof kind === 'string' || `kind ${kind} must be a string`;
+    const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMapStore;
+    // These are actually either a LegacyMap or a MapStore depending on
+    // useLegacyMap. Fortunately, the LegacyMap type is approximately the
+    // intersection of these, so we can just use it.
+    /** @type {LegacyMap<T, string>} */
     const rawValToPetname = makeMap('value');
-    /** @type {Store<T, string | Path>} */
+    /** @type {LegacyMap<T, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -109,17 +112,18 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return explode(rawValToPetname.get(key));
       },
       entries() {
-        return rawValToPetname
-          .entries()
-          .map(([key, val]) => [key, explode(val)]);
+        return mapIterable(rawValToPetname.entries(), ([key, val]) => [
+          key,
+          explode(val),
+        ]);
       },
       values() {
-        return rawValToPetname.values().map(val => explode(val));
+        return mapIterable(rawValToPetname.values(), val => explode(val));
       },
     };
-    /** @type {Store<string, T>} */
-    const rawPetnameToVal = makeScalarMap('petname');
-    /** @type {Store<Path | string, T>} */
+    /** @type {MapStore<string, T>} */
+    const rawPetnameToVal = makeScalarMapStore('petname');
+    /** @type {MapStore<Path | string, T>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {
@@ -143,12 +147,13 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return rawPetnameToVal.delete(implode(key));
       },
       keys() {
-        return rawPetnameToVal.keys().map(key => explode(key));
+        return mapIterable(rawPetnameToVal.keys(), key => explode(key));
       },
       entries() {
-        return rawPetnameToVal
-          .entries()
-          .map(([key, val]) => [explode(key), val]);
+        return mapIterable(rawPetnameToVal.entries(), ([key, val]) => [
+          explode(key),
+          val,
+        ]);
       },
     };
 
@@ -157,14 +162,15 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
      * @param {any} val
      */
     const addPath = (path, val) => {
-      assert(isPath(path), X`path ${q(path)} must be an array of strings`);
+      isPath(path) || Fail`path ${q(path)} must be an array of strings`;
 
       if (
         !valToPetname.has(val) &&
         // eslint-disable-next-line no-use-before-define
         edgeMapping.valToPetname.has(path[0])
       ) {
-        // We have a petname for the root of the path, so use it as our strongname.
+        // We have a petname for the root of the path, so use it as our
+        // strongname.
         valToPetname.init(val, path);
       }
 
@@ -198,11 +204,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       if (petnameToVal.has(petname) && petnameToVal.get(petname) === val) {
         return;
       }
-      assert(
-        !petnameToVal.has(petname),
-        X`petname ${petname} is already in use`,
-      );
-      assert(!valToPetname.has(val), X`val ${val} already has a petname`);
+      !petnameToVal.has(petname) || Fail`petname ${petname} is already in use`;
+      !valToPetname.has(val) || Fail`val ${val} already has a petname`;
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
 
@@ -212,14 +215,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     };
 
     const renamePetname = (petname, val) => {
-      assert(
-        valToPetname.has(val),
-        X`val ${val} has not been previously named, would you like to add it instead?`,
-      );
-      assert(
-        !petnameToVal.has(petname),
-        X`petname ${petname} is already in use`,
-      );
+      valToPetname.has(val) ||
+        Fail`val ${val} has not been previously named, would you like to add it instead?`;
+      !petnameToVal.has(petname) || Fail`petname ${petname} is already in use`;
       // Delete the old mappings.
       const oldPetname = valToPetname.get(val);
       petnameToVal.delete(oldPetname);
@@ -262,12 +260,10 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     };
 
     const deletePetname = petname => {
-      assert(
-        petnameToVal.has(petname),
-        X`petname ${q(
+      petnameToVal.has(petname) ||
+        Fail`petname ${q(
           petname,
-        )} has not been previously named, would you like to add it instead?`,
-      );
+        )} has not been previously named, would you like to add it instead?`;
 
       // Delete the mappings.
       const val = petnameToVal.get(petname);
@@ -354,7 +350,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     /**
      * @template T
      * @param {string} kind
-     * @param {{useLegacyMap?: boolean}=} legacyOptions
+     * @param {{ useLegacyMap?: boolean }} [legacyOptions]
      * @returns {Mapping<T>}
      */
     makeMapping: (kind, legacyOptions = undefined) => {

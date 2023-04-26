@@ -1,8 +1,8 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let resolver;
   return Far('root', {
     first() {

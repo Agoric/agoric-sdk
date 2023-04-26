@@ -2,8 +2,8 @@ import fs from 'fs';
 import process from 'process';
 
 /* eslint-disable no-use-before-define */
-export function dumpStore(swingStore, outfile, rawMode) {
-  const streamStore = swingStore.streamStore;
+export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
+  const transcriptStore = kernelStorage.transcriptStore;
   let out;
   if (outfile) {
     out = fs.createWriteStream(outfile);
@@ -12,8 +12,8 @@ export function dumpStore(swingStore, outfile, rawMode) {
   }
 
   const state = new Map();
-  for (const key of swingStore.kvStore.getKeys('', '~')) {
-    const value = swingStore.kvStore.get(key);
+  for (const key of kernelStorage.kvStore.getKeys('', '~')) {
+    const value = kernelStorage.kvStore.get(key);
     if (rawMode) {
       pkv(key, value);
     } else {
@@ -45,10 +45,15 @@ export function dumpStore(swingStore, outfile, rawMode) {
 
   popt('crankNumber');
   popt('kernel.defaultManagerType');
+  popt('kernel.defaultReapInterval');
   popt('pinnedObjects');
   popt('vatAdminRootKref');
   popt('gcActions');
+  popt('reapQueue');
+  popt('meter.nextID');
+  popt('activityhash');
   popt('kernelStats');
+  popt('local.kernelStats');
   gap();
 
   p('// bundles');
@@ -147,6 +152,8 @@ export function dumpStore(swingStore, outfile, rawMode) {
     popt(`${v}.o.nextID`);
     popt(`${v}.p.nextID`);
     popt(`${v}.nextDeliveryNum`);
+    popt(`${v}.reapInterval`);
+    popt(`${v}.reapCountdown`);
     const endPos = JSON.parse(popt(`${v}.t.endPosition`));
     vatInfo.push([v, vn, endPos]);
     for (const key of groupKeys(`${v}.c.kd`)) {
@@ -171,11 +178,7 @@ export function dumpStore(swingStore, outfile, rawMode) {
     p(`// transcript of vat ${v} (${vn})`);
     if (endPos) {
       let idx = 1;
-      for (const item of streamStore.readStream(
-        `transcript-${v}`,
-        streamStore.STREAM_START,
-        endPos,
-      )) {
+      for (const item of transcriptStore.readTranscript(v, 0, endPos)) {
         pkvBig('transcript', `${v}.${idx}`, item, 500);
         idx += 1;
       }
@@ -283,7 +286,7 @@ export function dumpStore(swingStore, outfile, rawMode) {
   }
 
   function pkvBig(tag, key, value, maxWidth = 50) {
-    if (value.length > maxWidth) {
+    if (value.length > maxWidth && truncate) {
       pkv(key, `<<${tag} ${value.length}>>`);
     } else {
       pkv(key, value);

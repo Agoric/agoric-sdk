@@ -1,5 +1,3 @@
-// @ts-check
-
 // This is the Zoe contract facet. Each time we make a new instance of a
 // contract we will start by creating a new vat and running this code in it. In
 // order to install this code in a vat, Zoe needs to import a bundle containing
@@ -7,55 +5,81 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
+import { E } from '@endo/far';
 
-import '../../exported.js';
 import '../internal-types.js';
 
 import { makeZCFZygote } from './zcfZygote.js';
 
+const { Fail } = assert;
+
 /**
- * @param {VatPowers} powers
- * @param {undefined} _params
- * @param {Function | undefined} testJigSetter
- * @returns {{ executeContract: ExecuteContract}}
+ * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
+ * @param {{contractBundleCap: BundleCap, zoeService: ZoeService, invitationIssuer: Issuer<'set'>, privateArgs?: any}} vatParameters
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export function buildRootObject(powers, _params, testJigSetter = undefined) {
+export async function buildRootObject(powers, vatParameters, baggage) {
   // Currently, there is only one function, `executeContract` called
   // by the Zoe Service. However, when there is kernel support for
   // zygote vats (essentially freezing and then creating copies of
   // vats), `makeZCFZygote`, `zcfZygote.evaluateContract` and
   // `zcfZygote.startContract` should exposed separately.
+  const { testJigSetter } = powers;
+  const { contractBundleCap } = vatParameters;
+  contractBundleCap ||
+    Fail`expected vatParameters.contractBundleCap ${vatParameters}`;
+  let { zoeService, invitationIssuer } = vatParameters;
+  const firstTime = !baggage.has('DidStart');
+  if (firstTime) {
+    baggage.init('DidStart', 'DidStart');
+    baggage.init('zoeService', zoeService);
+    baggage.init('invitationIssuer', invitationIssuer);
+  } else {
+    !zoeService || Fail`On restart zoeService must not be in vatParameters`;
+    zoeService = baggage.get('zoeService');
 
-  /** @type {ExecuteContract} */
-  const executeContract = (
-    bundle,
+    !invitationIssuer ||
+      Fail`On restart invitationIssuer must not be in vatParameters`;
+    invitationIssuer = baggage.get('invitationIssuer');
+  }
+
+  // make zcfZygote with contract-general state and kinds initialized
+  const zcfZygote = await makeZCFZygote(
+    powers,
     zoeService,
     invitationIssuer,
-    zoeInstanceAdmin,
-    instanceRecordFromZoe,
-    issuerStorageFromZoe,
-    privateArgs = undefined,
-    feePurse,
-  ) => {
-    /** @type {ZCFZygote} */
-    const zcfZygote = makeZCFZygote(
-      powers,
-      zoeService,
-      invitationIssuer,
-      testJigSetter,
-      feePurse,
+    testJigSetter,
+    contractBundleCap,
+    baggage,
+  );
+
+  // snapshot zygote here //////////////////
+
+  if (!firstTime) {
+    return E.when(E(zcfZygote).restartContract(vatParameters.privateArgs), () =>
+      Far('upgraded contractRunner', {}),
     );
-    zcfZygote.evaluateContract(bundle);
-    return zcfZygote.startContract(
+  }
+
+  return Far('contractRunner', {
+    // initialize instance-specific state of the contract
+    /** @type {StartZcf} */
+    startZcf: (
       zoeInstanceAdmin,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
-      privateArgs,
-    );
-  };
-
-  return Far('executeContract', { executeContract });
+      privateArgs = undefined,
+    ) => {
+      /** @type {ZCFZygote} */
+      return E(zcfZygote).startContract(
+        zoeInstanceAdmin,
+        instanceRecordFromZoe,
+        issuerStorageFromZoe,
+        privateArgs,
+      );
+    },
+  });
 }
 
 harden(buildRootObject);

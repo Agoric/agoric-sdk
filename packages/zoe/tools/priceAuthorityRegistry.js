@@ -1,25 +1,24 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { makeScalarMapStore } from '@agoric/store';
+import { Fail } from '@agoric/assert';
+import { Far } from '@endo/marshal';
 
 /**
- * @typedef {Object} Deleter
+ * @typedef {object} Deleter
  * @property {() => void} delete
  */
 
 /**
- * @typedef {Object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand, force:
- * boolean | undefined)
- * => Deleter} registerPriceAuthority Add a unique price authority for a given
+ * @typedef {object} PriceAuthorityRegistryAdmin
+ * @property {(pa: ERef<PriceAuthority>,
+ *             brandIn: Brand,
+ *             brandOut: Brand,
+ *             force?: boolean) => Deleter} registerPriceAuthority Add a unique price authority for a given
  * pair
  */
 
 /**
- * @typedef {Object} PriceAuthorityRegistry A price authority that is a facade
+ * @typedef {object} PriceAuthorityRegistry A price authority that is a facade
  * for other backing price authorities registered for a given asset and price
  * brand
  * @property {PriceAuthority} priceAuthority
@@ -31,15 +30,15 @@ import { Far } from '@agoric/marshal';
  */
 export const makePriceAuthorityRegistry = () => {
   /**
-   * @typedef {Object} PriceAuthorityRecord A record indicating a registered
+   * @typedef {object} PriceAuthorityRecord A record indicating a registered
    * price authority.  We put a box around the priceAuthority to ensure the
    * deleter doesn't delete the wrong thing.
    * @property {ERef<PriceAuthority>} priceAuthority the sub-authority for a
    * given input and output brand pair
    */
 
-  /** @type {Store<Brand, Store<Brand, PriceAuthorityRecord>>} */
-  const assetToPriceStore = makeStore('brandIn');
+  /** @type {MapStore<Brand, MapStore<Brand, PriceAuthorityRecord>>} */
+  const assetToPriceStore = makeScalarMapStore('brandIn');
 
   /**
    * Get the registered price authority for a given input and output pair.
@@ -62,8 +61,8 @@ export const makePriceAuthorityRegistry = () => {
     /**
      * Return a quote when relation is true of the arguments.
      *
-     * @param {Amount} amountIn monitor the amountOut corresponding to this amountIn
-     * @param {Amount} amountOutLimit the value to compare with the monitored amountOut
+     * @param {Amount<'nat'>} amountIn monitor the amountOut corresponding to this amountIn
+     * @param {Amount<'nat'>} amountOutLimit the value to compare with the monitored amountOut
      * @returns {Promise<PriceQuote>} resolve with a quote when `amountOut
      * relation amountOutLimit` is true
      */
@@ -136,12 +135,12 @@ export const makePriceAuthorityRegistry = () => {
   /** @type {PriceAuthorityRegistryAdmin} */
   const adminFacet = Far('price authority admin facet', {
     registerPriceAuthority(pa, brandIn, brandOut, force = false) {
-      /** @type {Store<Brand, PriceAuthorityRecord>} */
+      /** @type {MapStore<Brand, PriceAuthorityRecord>} */
       let priceStore;
       if (assetToPriceStore.has(brandIn)) {
         priceStore = assetToPriceStore.get(brandIn);
       } else {
-        priceStore = makeStore('brandOut');
+        priceStore = makeScalarMapStore('brandOut');
         assetToPriceStore.init(brandIn, priceStore);
       }
 
@@ -160,11 +159,8 @@ export const makePriceAuthorityRegistry = () => {
 
       return Far('deleter', {
         delete() {
-          assert.equal(
-            priceStore.has(brandOut) && priceStore.get(brandOut),
-            record,
-            X`Price authority already dropped`,
-          );
+          (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
+            Fail`Price authority already dropped`;
           priceStore.delete(brandOut);
         },
       });

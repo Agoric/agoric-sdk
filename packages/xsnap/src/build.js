@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /* global process */
-// @ts-check
+/* eslint-disable @jessie.js/no-nested-await -- test/build code */
 import * as childProcessTop from 'child_process';
 import fsTop from 'fs';
 import osTop from 'os';
 
 const { freeze } = Object;
 
-/** @param { string } path */
+/** @param {string} path */
 const asset = path => new URL(path, import.meta.url).pathname;
 
 const ModdableSDK = {
@@ -30,7 +30,7 @@ const ModdableSDK = {
  * }} io
  */
 function makeCLI(command, { spawn }) {
-  /** @param { import('child_process').ChildProcess } child */
+  /** @param {import('child_process').ChildProcess} child */
   const wait = child =>
     new Promise((resolve, reject) => {
       child.on('close', () => {
@@ -49,7 +49,7 @@ function makeCLI(command, { spawn }) {
   return freeze({
     /**
      * @param {string[]} args
-     * @param {{ cwd?: string }=} opts
+     * @param {{ cwd?: string }} [opts]
      */
     run: (args, opts) => {
       const { cwd = '.' } = opts || {};
@@ -61,7 +61,7 @@ function makeCLI(command, { spawn }) {
     },
     /**
      * @param {string[]} args
-     * @param {{ cwd?: string }=} opts
+     * @param {{ cwd?: string }} [opts]
      */
     pipe: (args, opts) => {
       const { cwd = '.' } = opts || {};
@@ -85,7 +85,7 @@ function makeCLI(command, { spawn }) {
  * @param {{ git: ReturnType<typeof makeCLI> }} io
  */
 const makeSubmodule = (path, repoUrl, { git }) => {
-  /** @param { string } text */
+  /** @param {string} text */
   const parseStatus = text =>
     text
       .split('\n')
@@ -110,13 +110,13 @@ const makeSubmodule = (path, repoUrl, { git }) => {
   return freeze({
     path,
     clone: async () => git.run(['clone', repoUrl, path]),
-    /** @param { string } commitHash */
+    /** @param {string} commitHash */
     checkout: async commitHash =>
       git.run(['checkout', commitHash], { cwd: path }),
     init: async () => git.run(['submodule', 'update', '--init', '--checkout']),
     status: async () =>
       git.pipe(['submodule', 'status', path]).then(parseStatus),
-    /** @param { string } leaf */
+    /** @param {string} leaf */
     config: async leaf => {
       // git rev-parse --show-toplevel
       const top = await git
@@ -140,13 +140,14 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 };
 
 /**
- * @param { string[] } args
+ * @param {string[]} args
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
  *   spawn: typeof import('child_process').spawn,
  *   fs: {
  *     existsSync: typeof import('fs').existsSync,
+ *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
  *   },
  *   os: {
@@ -176,15 +177,21 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   ];
 
   if (args.includes('--show-env')) {
-    for (const { path, envPrefix } of submodules) {
-      const submodule = makeSubmodule(path, '?', { git });
-      // eslint-disable-next-line no-await-in-loop
-      const [[{ hash }], url] = await Promise.all([
-        submodule.status(),
-        submodule.config('url'),
-      ]);
-      stdout.write(`${envPrefix}URL=${url}\n`);
-      stdout.write(`${envPrefix}COMMIT_HASH=${hash}\n`);
+    for (const submodule of submodules) {
+      const { path, envPrefix, commitHash } = submodule;
+      if (!commitHash) {
+        // We need to glean the commitHash and url from Git.
+        const sm = makeSubmodule(path, '?', { git });
+        // eslint-disable-next-line no-await-in-loop
+        const [[{ hash }], url] = await Promise.all([
+          sm.status(),
+          sm.config('url'),
+        ]);
+        submodule.commitHash = hash;
+        submodule.url = url;
+      }
+      stdout.write(`${envPrefix}URL=${submodule.url}\n`);
+      stdout.write(`${envPrefix}COMMIT_HASH=${submodule.commitHash}\n`);
     }
     return;
   }
@@ -195,6 +202,11 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     // Allow overriding of the checked-out version of the submodule.
     if (commitHash) {
       // Do the moral equivalent of submodule update when explicitly overriding.
+      try {
+        fs.rmdirSync(submodule.path);
+      } catch (_e) {
+        // ignore
+      }
       if (!fs.existsSync(submodule.path)) {
         // eslint-disable-next-line no-await-in-loop
         await submodule.clone();
@@ -240,6 +252,7 @@ main(process.argv.slice(2), {
   fs: {
     readFile: fsTop.promises.readFile,
     existsSync: fsTop.existsSync,
+    rmdirSync: fsTop.rmdirSync,
   },
   os: {
     type: osTop.type,

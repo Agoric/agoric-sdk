@@ -6,7 +6,7 @@ To support a variety of vat execution engines, each vat is isolated into a "Vat 
 
 The kernel moves from one "Crank" to the next by pulling an action off the run-queue and executing it. There are two kinds of actions: a message delivery, and a promise resolution notification. Each action will cause a single "Delivery" object to be constructed and delivered to a specific vat, however which vat will receive it is not known until the action is examined.
 
-When the run-queue action is `send`, the action will contain a "target" and a messge to be sent. This `target` will either be an object reference or a promise reference. For object references, the kernel object table is consulted to determine which vat owns that object. For promise references, the promise table says what state that promise is in:
+When the run-queue action is `send`, the action will contain a "target" and a message to be sent. This `target` will either be an object reference or a promise reference. For object references, the kernel object table is consulted to determine which vat owns that object. For promise references, the promise table says what state that promise is in:
 
 * if the promise is resolved to an object, the object table is used, just as if the message were sent to the object directly
 * if the promise is resolved to data or rejected, an error result is generated and a new notification action is pushed onto the end of the run-queue (to reject the message's result promise)
@@ -42,7 +42,7 @@ In the `notify` form, `resolutions` is an array of one or more resolution descri
 
 This Delivery object begins life in the kernel as a `KernelDelivery` object, in which all of the object/promise references ("slots") are kernel-centric. Object references will look like `ko123`, and promise references will look like `kp456`.
 
-The kernel uses a vat-specific "translator" to convery this `KernelDelivery` into a `VatDelivery` object, in which the slots are vat-centric (`o+NN`, `p-NN`, etc). This conversion goes through the vat's "c-list", and may mutate the c-list as necessary (when the vat is introduced to an object that it did not already have access to). One form of mutation is the deletion of entries for promises that have been resolved: vats and the kernel follow a shared policy so they can forget these references simultaneously.
+The kernel uses a vat-specific "translator" to convert this `KernelDelivery` into a `VatDelivery` object, in which the slots are vat-centric (`o+NN`, `p-NN`, etc). This conversion goes through the vat's "c-list", and may mutate the c-list as necessary (when the vat is introduced to an object that it did not already have access to). One form of mutation is the deletion of entries for promises that have been resolved: vats and the kernel follow a shared policy so they can forget these references simultaneously.
 
 The kernel then invokes the target vat's `VatManager`'s `.deliver()` method with the `VatDelivery` as its one argument. `deliver()` is expected to return a Promise that fires with a `KernelDeliveryResult` object when the vat is idle once more. The result indicates whether the Vat finished execution of the delivery without fault, or if e.g. the vat suffered a metering underflow or attempted to use a missing c-list entry. At this point, the kernel will commit state changes and/or react to the vat being terminated.
 
@@ -86,7 +86,7 @@ The entire sequence looks like:
 "Devices" were originally intended to be just like vats, except with access to external endowments, allowing them to influence (and be influenced by) the outside world, unmediated by the kernel. Devices are the only way for a swingset to do any IO. Consequences of this model became quickly apparent:
 
 * deterministic operation cannot be guaranteed in the face of endowments
-* therefore orthgonal persistence was removed, along with the transcript
+* therefore orthogonal persistence was removed, along with the transcript
 * Promises are harder to reason about without orthogonal persistence, so they were removed
 * we have use cases that require synchronous invocation of device code
 * that requires a new vat syscall, and a new device delivery

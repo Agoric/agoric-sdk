@@ -1,18 +1,21 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
-import { E } from '@agoric/eventual-send';
+import { E, Far } from '@endo/far';
 import {
   makeNetworkProtocol,
   makeLoopbackProtocolHandler,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { Far } from '@agoric/marshal';
+import { makeSubscription } from '@agoric/notifier';
+
+import '@agoric/ertp/exported.js';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -20,15 +23,26 @@ const dirname = path.dirname(filename);
 const contractPath = `${dirname}/../src/pegasus.js`;
 
 /**
- * @param {import('tape-promise/tape').Test} t
+ * @template T
+ * @param {ERef<Subscription<T>>} sub
+ * @returns {AsyncIterator<T, T>}
+ */
+const makeAsyncIteratorFromSubscription = sub =>
+  makeSubscription(E(sub).getSharableSubscriptionInternals())[
+    Symbol.asyncIterator
+  ]();
+
+/**
+ * @param {import('ava').Assertions} t
  */
 async function testRemotePeg(t) {
-  t.plan(13);
+  t.plan(20);
 
   /**
-   * @type {import('@agoric/ertp').DepositFacet?}
+   * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
    */
-  let localDepositFacet;
+  const { promise: localDepositFacet, resolve: resolveLocalDepositFacet } =
+    makePromiseKit();
   const fakeBoard = Far('fakeBoard', {
     getValue(id) {
       if (id === '0x1234') {
@@ -47,9 +61,7 @@ async function testRemotePeg(t) {
     },
   });
 
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // Pack the contract.
   const contractBundle = await bundleSource(contractPath);
@@ -79,7 +91,7 @@ async function testRemotePeg(t) {
   E(portP).addListener(
     Far('acceptor', {
       async onAccept(_p, _localAddr, _remoteAddr) {
-        return harden({
+        return Far('handler', {
           async onOpen(c) {
             gaiaConnection = c;
           },
@@ -89,12 +101,13 @@ async function testRemotePeg(t) {
               packet,
               {
                 amount: '100000000000000000001',
-                denom: 'uatom',
+                denom: 'portdef/chanabc/uatom',
                 receiver: 'markaccount',
+                sender: 'pegasus',
               },
               'expected transfer packet',
             );
-            return JSON.stringify({ success: true });
+            return JSON.stringify({ result: 'AQ==' });
           },
         });
       },
@@ -102,15 +115,10 @@ async function testRemotePeg(t) {
   );
 
   // Pretend we're Agoric.
-  const chandler = E(pegasus).makePegConnectionHandler();
+  const { handler: chandler, subscription: connectionSubscription } = await E(
+    pegasus,
+  ).makePegasusConnectionKit();
   const connP = E(portP).connect(portName, chandler);
-
-  const pegP = await E(pegasus).pegRemote('Gaia', connP, 'uatom');
-  const localBrand = await E(pegP).getLocalBrand();
-  const localIssuer = await E(pegasus).getLocalIssuer(localBrand);
-
-  const localPurseP = E(localIssuer).makeEmptyPurse();
-  localDepositFacet = await E(localPurseP).getDepositFacet();
 
   // Get some local Atoms.
   const sendPacket = {
@@ -119,11 +127,47 @@ async function testRemotePeg(t) {
     receiver: '0x1234',
     sender: 'FIXME:sender',
   };
+  t.assert(await connP);
+  const sendAckDataP = E(gaiaConnection).send(JSON.stringify(sendPacket));
 
-  const sendAckData = await E(gaiaConnection).send(JSON.stringify(sendPacket));
+  // Note that we can create the peg after the fact.
+  const connectionAit = makeAsyncIteratorFromSubscription(
+    connectionSubscription,
+  );
+  const {
+    value: {
+      actions: pegConnActions,
+      localAddr,
+      remoteAddr,
+      remoteDenomSubscription,
+    },
+  } = await connectionAit.next();
+
+  // Check the connection metadata.
+  t.is(localAddr, '/ibc-channel/chanabc/ibc-port/portdef/nonce/1', 'localAddr');
+  t.is(
+    remoteAddr,
+    '/ibc-channel/chanabc/ibc-port/portdef/nonce/2',
+    'remoteAddr',
+  );
+
+  // Find the first remoteDenom.
+  const remoteDenomAit = makeAsyncIteratorFromSubscription(
+    remoteDenomSubscription,
+  );
+  t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'uatom' });
+
+  const pegP = E(pegConnActions).pegRemote('Gaia', 'uatom');
+  const localBrand = await E(pegP).getLocalBrand();
+  const localIssuerP = E(pegasus).getLocalIssuer(localBrand);
+
+  const localPurseP = E(localIssuerP).makeEmptyPurse();
+  resolveLocalDepositFacet(E(localPurseP).getDepositFacet());
+
+  const sendAckData = await sendAckDataP;
   const sendAck = JSON.parse(sendAckData);
-  t.deepEqual(sendAck, { success: true }, 'Gaia sent the atoms');
-  if (!sendAck.success) {
+  t.deepEqual(sendAck, { result: 'AQ==' }, 'Gaia sent the atoms');
+  if (!sendAck.result) {
     console.log(sendAckData, sendAck.error);
   }
 
@@ -145,8 +189,8 @@ async function testRemotePeg(t) {
     JSON.stringify(sendPacket2),
   );
   const sendAck2 = JSON.parse(sendAckData2);
-  t.deepEqual(sendAck2, { success: true }, 'Gaia sent more atoms');
-  if (!sendAck2.success) {
+  t.deepEqual(sendAck2, { result: 'AQ==' }, 'Gaia sent more atoms');
+  if (!sendAck2.result) {
     console.log(sendAckData2, sendAck2.error);
   }
 
@@ -155,6 +199,26 @@ async function testRemotePeg(t) {
     localAtomsAmount2,
     { brand: localBrand, value: 100000000000000000171n },
     'we received more shadow atoms',
+  );
+
+  const sendPacket3 = {
+    amount: '13',
+    denom: 'umuon',
+    receiver: 'agoric1234567',
+    sender: 'FIXME:sender4',
+  };
+  const sendAckData3P = E(gaiaConnection).send(JSON.stringify(sendPacket3));
+
+  // Wait for the packet to go through.
+  t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
+  E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
+
+  const sendAckData3 = await sendAckData3P;
+  const sendAck3 = JSON.parse(sendAckData3);
+  t.deepEqual(
+    sendAck3,
+    { error: 'Error: "umuon" is temporarily unavailable' },
+    'rejecting transfers works',
   );
 
   const localAtoms = await E(localPurseP).withdraw(localAtomsAmount);
@@ -167,23 +231,27 @@ async function testRemotePeg(t) {
   );
   const seat = await E(zoe).offer(
     transferInvitation,
-    harden({
+    {
       give: { Transfer: localAtomsAmount },
-    }),
-    harden({ Transfer: localAtoms }),
+    },
+    { Transfer: localAtoms },
   );
   const outcome = await seat.getOfferResult();
   t.is(outcome, undefined, 'transfer is successful');
 
   const paymentPs = await seat.getPayouts();
-  const refundAmount = await E(localIssuer).getAmountOf(paymentPs.Transfer);
+  const refundAmount = await E(localIssuerP).getAmountOf(paymentPs.Transfer);
 
   const isEmptyRefund = AmountMath.isEmpty(refundAmount, localBrand);
   t.assert(isEmptyRefund, 'no refund from success');
 
-  const stillIsLive = await E(localIssuer).isLive(localAtoms);
+  const stillIsLive = await E(localIssuerP).isLive(localAtoms);
   t.assert(!stillIsLive, 'payment is consumed');
+
+  await E(connP).close();
+  await t.throwsAsync(() => remoteDenomAit.next(), {
+    message: 'pegasusConnectionHandler closed',
+  });
 }
 
-test('remote peg', t =>
-  testRemotePeg(t).catch(err => t.not(err, err, 'unexpected exception')));
+test('remote peg', t => testRemotePeg(t));

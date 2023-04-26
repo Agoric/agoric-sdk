@@ -1,49 +1,71 @@
 {
   "name": "agoric",
-  "version": "0.13.20",
+  "version": "0.18.2",
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
-  "bin": "bin/agoric",
+  "bin": {
+    "agoric": "src/entrypoint.js",
+    "agops": "src/bin-agops.js"
+  },
   "files": [
-    "lib",
+    "src",
     "exported.js"
   ],
   "scripts": {
-    "build": "exit 0",
+    "build": "node ./scripts/get-sdk-package-names.js > src/sdk-package-names.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.24.0",
-    "ava": "^3.12.1",
-    "c8": "^7.7.2",
-    "tmp": "^0.1.0"
+    "ava": "^5.2.0",
+    "c8": "^7.13.0"
   },
   "dependencies": {
-    "@agoric/access-token": "^0.4.16",
-    "@agoric/assert": "^0.3.15",
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/captp": "^1.10.7",
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/nat": "^4.1.0",
-    "@agoric/promise-kit": "^0.2.29",
-    "@endo/compartment-mapper": "^0.5.3",
+    "@agoric/access-token": "^0.4.20",
+    "@agoric/assert": "^0.5.1",
+    "@agoric/cache": "^0.2.3",
+    "@agoric/casting": "^0.3.2",
+    "@agoric/cosmic-proto": "^0.2.1",
+    "@agoric/ertp": "^0.15.3",
+    "@agoric/inter-protocol": "^0.13.1",
+    "@agoric/internal": "^0.2.1",
+    "@agoric/smart-wallet": "^0.4.2",
+    "@agoric/store": "^0.8.3",
+    "@agoric/swingset-vat": "^0.30.2",
+    "@agoric/vats": "^0.13.0",
+    "@agoric/zoe": "^0.25.3",
+    "@confio/relayer": "^0.7.0",
+    "@cosmjs/crypto": "^0.29.5",
+    "@cosmjs/encoding": "^0.29.5",
+    "@cosmjs/math": "^0.29.5",
+    "@cosmjs/proto-signing": "^0.29.5",
+    "@cosmjs/stargate": "^0.29.5",
+    "@cosmjs/tendermint-rpc": "^0.29.5",
+    "@endo/bundle-source": "^2.5.1",
+    "@endo/captp": "^3.1.1",
+    "@endo/compartment-mapper": "^0.8.4",
+    "@endo/far": "^0.2.18",
+    "@endo/init": "^0.5.56",
+    "@endo/marshal": "^0.8.5",
+    "@endo/nat": "^4.1.27",
+    "@endo/promise-kit": "^0.2.56",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
-    "chalk": "^2.4.2",
-    "commander": "^5.0.0",
+    "chalk": "^5.2.0",
+    "commander": "^10.0.0",
+    "dd-trace": "^3.3.0",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
-    "inquirer": "^6.3.1",
+    "inquirer": "^8.2.2",
     "opener": "^1.5.2",
+    "tmp": "^0.2.1",
     "ws": "^7.2.0"
   },
   "keywords": [],
@@ -57,19 +79,11 @@
     "url": "https://github.com/Agoric/agoric/agoric-sdk"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "ava": {
     "files": [
       "test/**/test-*.js"
     ],
-    "timeout": "2m"
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
+    "timeout": "2m",
+    "workerThreads": false
   }
 }

@@ -1,8 +1,9 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
+import { enumeratePrefixedKeys } from '../src/kernel/state/storageHelper.js';
 
 async function vatSyscallFailure(t, beDynamic) {
   const config = {
@@ -27,22 +28,23 @@ async function vatSyscallFailure(t, beDynamic) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
-  const kvStore = hostStorage.kvStore;
+  t.teardown(controller.shutdown);
+  const kvStore = kernelStorage.kvStore;
   const badVatID = kvStore.get('vat.name.badvatStatic');
   const badVatRootObject = kvStore.get(`${badVatID}.c.o+0`);
   if (!beDynamic) {
     // sanity check that the state of the bad static vat is what we think it is
     t.is(
       kvStore.get('vat.names'),
-      '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
+      '["bootstrap","vatAdmin","comms","vattp","timer","badvatStatic"]',
     );
     t.is(kvStore.get(`${badVatRootObject}.owner`), badVatID);
     t.true(
-      Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length > 0,
+      Array.from(enumeratePrefixedKeys(kvStore, `${badVatID}.`)).length > 0,
     );
     t.is(kvStore.get('vat.name.badvatStatic'), badVatID);
   }
@@ -55,7 +57,7 @@ async function vatSyscallFailure(t, beDynamic) {
       '["bootstrap","vatAdmin","comms","vattp","timer"]',
     );
     t.is(kvStore.get(`${badVatID}.owner`), undefined);
-    t.is(Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);
+    t.is(Array.from(enumeratePrefixedKeys(kvStore, `${badVatID}.`)).length, 0);
     t.is(kvStore.get('vat.name.badvatStatic'), undefined);
   }
   const log = controller.dump().log;

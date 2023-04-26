@@ -15,14 +15,14 @@ test('roundToDecimalPlaces', t => {
 });
 
 test('roundToDecimalPlaces non-string throws', t => {
-  // @ts-ignore deliberate error for testing
+  // @ts-expect-error deliberate error for testing
   t.throws(() => round({}, 0), {
     message: /.* must be a string/,
   });
 });
 
 test('roundToDecimalPlaces non-num decimalPlaces throws', t => {
-  // @ts-ignore deliberate error for testing
+  // @ts-expect-error deliberate error for testing
   t.throws(() => round('020', '0'), {
     message: /.* must be a number/,
   });

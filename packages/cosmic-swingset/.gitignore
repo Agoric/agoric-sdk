@@ -25,8 +25,9 @@ chains
 solo
 solo/
 
-# emacs
+# emacs and vim
 *~
+[._]*.sw[a-p]
 
 # Logs
 logs

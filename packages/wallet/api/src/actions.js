@@ -1,8 +1,8 @@
 // @ts-check
 
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far } from '@endo/marshal';
+import { E } from '@endo/eventual-send';
 
 export const makePaymentActions = ({
   getBrandRecord,

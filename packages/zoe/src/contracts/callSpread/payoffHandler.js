@@ -1,11 +1,12 @@
-// @ts-check
-
-import '../../../exported.js';
 import './types.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { getAmountOut, ceilMultiplyBy } from '../../contractSupport/index.js';
+import {
+  getAmountOut,
+  ceilMultiplyBy,
+  atomicTransfer,
+} from '../../contractSupport/index.js';
 import { Position } from './position.js';
 import { calculateShares } from './calculateShares.js';
 
@@ -13,7 +14,10 @@ import { calculateShares } from './calculateShares.js';
  * makePayoffHandler returns an object with methods that are useful for
  * callSpread contracts.
  *
- * @type {MakePayoffHandler}
+ * @param {ZCF<Record<string, any>>} zcf
+ * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
+ * @param {ZCFSeat} collateralSeat
+ * @returns {PayoffHandler}
  */
 function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   const terms = zcf.getTerms();
@@ -35,11 +39,8 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   }
 
   function reallocateToSeat(seatPromise, seatPortion) {
-    seatPromise.then(seat => {
-      seat.incrementBy(
-        collateralSeat.decrementBy(harden({ Collateral: seatPortion })),
-      );
-      zcf.reallocate(seat, collateralSeat);
+    E.when(seatPromise, seat => {
+      atomicTransfer(zcf, collateralSeat, seat, { Collateral: seatPortion });
       seat.exit();
       seatsExited += 1;
       const remainder = collateralSeat.getAmountAllocated('Collateral');

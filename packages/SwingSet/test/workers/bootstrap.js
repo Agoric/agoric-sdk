@@ -1,6 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   const callbackObj = Far('callback', {
@@ -47,12 +46,14 @@ export function buildRootObject() {
     return three === 3 ? 'three good' : `not three, got ${three}`;
   }
 
-  function checkA([pB, pC, pF, three]) {
+  function checkA([pB, pC, pF, three, evt, evwft]) {
     return Promise.all([
       pB.then(checkResB),
       pC.then(checkResC, checkErrC),
       pF.then(checkResF),
-      Promise.resolve(three).then(checkThree),
+      checkThree(three),
+      evt === 'function' ? 'exit good' : 'exit bad',
+      evwft === 'function' ? 'exitWF good' : 'exitWF bad',
     ]);
   }
 
@@ -69,7 +70,8 @@ export function buildRootObject() {
       precD.resolve(callbackObj); // two
       precE.reject(Error('four')); // three
       const done = Promise.all([pA.then(checkA), rp3]);
-      return done; // expect: [['B good', 'C good', 'F good', 'three good'], 'rp3 good']
+      // expect: [['B good', 'C good', 'F good', 'three good', 'exit good', 'exitWF good'], 'rp3 good']
+      return done;
     },
   });
 }

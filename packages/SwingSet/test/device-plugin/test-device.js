@@ -1,18 +1,18 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   swingsetIsInitialized,
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
-import { buildBridge } from '../../src/devices/bridge.js';
-import { buildPlugin } from '../../src/devices/plugin.js';
+import { buildBridge } from '../../src/devices/bridge/bridge.js';
+import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 
 test.before('initialize storage', t => {
-  t.context.hostStorage = provideHostStorage();
+  t.context.kernelStorage = initSwingStore().kernelStorage;
 });
 
 async function setupVatController(t) {
@@ -36,7 +36,7 @@ async function setupVatController(t) {
     bridge: { ...bridge.endowments },
   };
 
-  if (!swingsetIsInitialized(t.context.hostStorage)) {
+  if (!swingsetIsInitialized(t.context.kernelStorage)) {
     const config = {
       bootstrap: 'bootstrap',
       vats: {
@@ -56,12 +56,13 @@ async function setupVatController(t) {
         },
       },
     };
-    await initializeSwingset(config, ['plugin'], t.context.hostStorage);
+    await initializeSwingset(config, ['plugin'], t.context.kernelStorage);
   }
   const c = await makeSwingsetController(
-    t.context.hostStorage,
+    t.context.kernelStorage,
     deviceEndowments,
   );
+  t.teardown(c.shutdown);
   const cycle = async () => {
     await c.run();
     while (inputQueue.length) {
@@ -78,7 +79,7 @@ test.serial('plugin first time', async t => {
     t,
   );
 
-  queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
+  void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();
 
   t.deepEqual(dump().log, [
@@ -89,17 +90,18 @@ test.serial('plugin first time', async t => {
   ]);
 });
 
+// NOTE: the following test CANNOT be run standalone. It requires execution of
+// the prior test to establish its necessary starting state.  This is a bad
+// practice and should be fixed.  It's not bad enough to warrant fixing right
+// now, but worth flagging with this comment as a help to anyone else who gets
+// tripped up by it.
+
 test.serial('plugin after restart', async t => {
-  const {
-    bridge,
-    cycle,
-    dump,
-    plugin,
-    queueThunkForKernel,
-  } = await setupVatController(t);
+  const { bridge, cycle, dump, plugin, queueThunkForKernel } =
+    await setupVatController(t);
 
   plugin.reset();
-  queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
+  void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();
 
   t.deepEqual(dump().log, [

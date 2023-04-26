@@ -1,7 +1,7 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let bob;
   let me;
   let exportedThing;

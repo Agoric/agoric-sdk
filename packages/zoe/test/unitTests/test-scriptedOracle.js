@@ -1,20 +1,20 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 
-import '../../exported.js';
 import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../tools/eventLoopIteration.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
@@ -28,13 +28,13 @@ const oracleContractPath = `${dirname}/../../src/contracts/oracle.js`;
 const bountyContractPath = `${dirname}/bounty.js`;
 
 /**
- * @typedef {Object} TestContext
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {Installation} oracleInstallation
  * @property {Installation} bountyInstallation
  * @property {Mint} moolaMint
  * @property {Issuer} moolaIssuer
- * @property {(value: Value) => Amount} moola
+ * @property {(value: AmountValue) => Amount} moola
  *
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
@@ -44,17 +44,18 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
-    const feePurse = E(zoeService).makeFeePurse();
-    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { zoeService: zoe } = makeZoeKit(admin);
 
     const oracleContractBundle = await bundleSource(oracleContractPath);
     const bountyContractBundle = await bundleSource(bountyContractPath);
 
     // Install the contracts on Zoe, getting installations. We use these
     // installations to instantiate the contracts.
-    const oracleInstallation = await E(zoe).install(oracleContractBundle);
-    const bountyInstallation = await E(zoe).install(bountyContractBundle);
+    vatAdminState.installBundle('b1-oracle', oracleContractBundle);
+    const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
+    vatAdminState.installBundle('b1-bounty', bountyContractBundle);
+    const bountyInstallation = await E(zoe).installBundleID('b1-bounty');
     const { moolaIssuer, moolaMint, moola } = setup();
 
     ot.context.zoe = zoe;
@@ -66,10 +67,10 @@ test.before(
   },
 );
 
-test('pay bounty', async t => {
+test.serial('pay bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
   // The timer is not build in test.before(), because each test needs its own.
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const { moolaIssuer, moolaMint, moola } = t.context;
   const script = { 0: 'Nothing', 1: 'Nothing', 2: 'Nothing', 3: 'Succeeded' };
 
@@ -151,10 +152,10 @@ test('pay bounty', async t => {
   await Promise.all([promise1, promise2, promise3, promise4]);
 });
 
-test('pay no bounty', async t => {
+test.serial('pay no bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
   // The timer is not build in test.before(), because each test needs its own.
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const { moolaIssuer, moolaMint, moola } = t.context;
   const script = { 0: 'Nothing', 1: 'Nothing', 2: 'Nothing', 3: 'Nothing' };
 

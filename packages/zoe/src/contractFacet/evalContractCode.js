@@ -1,8 +1,7 @@
-// @ts-check
+// NB: cannot import, breaks bundle building
+/* global globalThis */
 
-/* global makeKind makeVirtualScalarWeakMap */
-
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { assert } from '@agoric/assert';
 import { handlePWarning } from '../handleWarning.js';
 
@@ -16,8 +15,7 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const defaultEndowments = {
     console: louderConsole,
     assert,
-    makeKind,
-    makeVirtualScalarWeakMap,
+    VatData: globalThis.VatData,
   };
 
   const fullEndowments = Object.create(null, {

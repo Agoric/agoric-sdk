@@ -1,16 +1,13 @@
-import { E, makeCapTP } from '@agoric/captp';
-import { Far } from '@agoric/marshal';
+// @ts-check
+import { E, makeCapTP } from '@endo/captp';
+import { Far } from '@endo/marshal';
 
-export const getCapTPHandler = (
-  send,
-  getLocalBootstrap,
-  fallback = undefined,
-) => {
-  let lastEpoch;
+export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
+  let lastEpoch = 0;
   const chans = new Map();
   const doFallback = async (method, ...args) => {
     if (!fallback) {
-      return harden({});
+      return false;
     }
     return E(fallback)[method](...args);
   };
@@ -23,7 +20,11 @@ export const getCapTPHandler = (
       const sendObj = o => {
         send(o, [channelHandle]);
       };
-      const { dispatch, abort, getBootstrap: getRemoteBootstrap } = makeCapTP(
+      const {
+        dispatch,
+        abort,
+        getBootstrap: getRemoteBootstrap,
+      } = makeCapTP(
         origin,
         sendObj,
         async o => getLocalBootstrap(getRemoteBootstrap(), meta, o),
@@ -73,7 +74,7 @@ export const getCapTPHandler = (
       }
       const done = await doFallback('onMessage', obj, meta);
       if (!done) {
-        console.error(`Could not find handler ${obj.type}`, meta);
+        console.error(`Could not find handler ${obj.type}`, obj, meta);
       }
       return done;
     },

@@ -2,9 +2,7 @@ syntax = "proto3";
 package agoric.swingset;
 
 import "gogoproto/gogo.proto";
-import "agoric/swingset/storage.proto";
 import "agoric/swingset/swingset.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
@@ -24,17 +22,6 @@ service Query {
   // Return the contents of a peer's outbound mailbox.
   rpc Mailbox(QueryMailboxRequest) returns (QueryMailboxResponse) {
     option (google.api.http).get = "/agoric/swingset/mailbox/{peer}";
-  }
-
-  // Return an arbitrary storage datum.
-  rpc Storage(QueryStorageRequest) returns (QueryStorageResponse) {
-    option (google.api.http).get = "/agoric/swingset/storage/data/{path}";
-  }
-
-  // Return the subkeys of a given storage path.
-  rpc Keys(QueryKeysRequest)
-    returns (QueryKeysResponse) {
-      option (google.api.http).get = "/agoric/swingset/storage/keys/{path}";
   }
 }
 
@@ -76,40 +63,4 @@ message QueryMailboxResponse {
     (gogoproto.jsontag)    = "value",
     (gogoproto.moretags)   = "yaml:\"value\""
   ];
-}
-
-// QueryStorageRequest is the storage query.
-message QueryStorageRequest {
-  repeated string path = 1 [
-    (gogoproto.jsontag)    = "path",
-    (gogoproto.moretags)   = "yaml:\"path\""
-  ];
-}
-
-// QueryStorageResponse is the storage response.
-message QueryStorageResponse {
-  string value = 1 [
-    (gogoproto.jsontag)    = "value",
-    (gogoproto.moretags)   = "yaml:\"value\""
-  ];
-}
-
-// QueryKeysRequest is the keys query.
-message QueryKeysRequest {
-  repeated string path = 1 [
-    (gogoproto.jsontag)    = "path",
-    (gogoproto.moretags)   = "yaml:\"path\""
-  ];
-
-  cosmos.base.query.v1beta1.PageRequest pagination = 2;
-}
-
-// QueryKeysResponse is the keys response.
-message QueryKeysResponse {
-  repeated string keys = 1 [
-    (gogoproto.jsontag)    = "keys",
-    (gogoproto.moretags)   = "yaml:\"keys\""
-  ];
-
-  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

@@ -20,7 +20,7 @@ Store adds some additional functionality on top of Map.
    Map, because the Map methods are not tied to a particular
    Map instance.
 
-See `makeWeakStore` for the wrapper around JavaScript's WeakMap abstraction.
+See `makeScalarWeakMapStore` for the wrapper around JavaScript's WeakMap abstraction.
 
 # External Store
 

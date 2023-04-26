@@ -1,10 +1,9 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 import { AmountMath, isSetValue } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 
@@ -21,24 +20,20 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doAutomaticRefund: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
 
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       // Bob ensures it's the contract he expects
-      assert(
-        installations.automaticRefund === installation,
-        X`should be the expected automaticRefund`,
-      );
-
-      assert(
-        issuerKeywordRecord.Contribution1 === moolaIssuer,
-        X`The first issuer should be the moola issuer`,
-      );
-      assert(
-        issuerKeywordRecord.Contribution2 === simoleanIssuer,
-        X`The second issuer should be the simolean issuer`,
-      );
+      installations.automaticRefund === installation ||
+        assert.fail(X`should be the expected automaticRefund`);
+      issuerKeywordRecord.Contribution1 === moolaIssuer ||
+        assert.fail(X`The first issuer should be the moola issuer`);
+      issuerKeywordRecord.Contribution2 === simoleanIssuer ||
+        assert.fail(X`The second issuer should be the simolean issuer`);
 
       // 1. Bob escrows his offer
       const bobProposal = harden({
@@ -72,7 +67,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Bob claims all with the Zoe invitationIssuer
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       const bobIntendedProposal = harden({
@@ -84,35 +82,31 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: optionValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
+      const { customDetails } = optionValue[0];
+      assert(typeof customDetails === 'object');
+
       assert(installation === installations.coveredCall, X`wrong installation`);
-      assert(
-        optionValue[0].description === 'exerciseOption',
-        X`wrong invitation`,
-      );
+      optionValue[0].description === 'exerciseOption' ||
+        assert.fail(X`wrong invitation`);
       assert(
         AmountMath.isEqual(
-          optionValue[0].underlyingAssets.UnderlyingAsset,
+          customDetails.underlyingAssets.UnderlyingAsset,
           moola(3n),
         ),
       );
       assert(
         AmountMath.isEqual(
-          optionValue[0].strikePrice.StrikePrice,
+          customDetails.strikePrice.StrikePrice,
           simoleans(7n),
         ),
       );
-      assert(optionValue[0].expirationDate === 1n, X`wrong expirationDate`);
-      assert(optionValue[0].timeAuthority === timer, 'wrong timer');
+      assert(customDetails.expirationDate === 1n, X`wrong expirationDate`);
+      assert(customDetails.timeAuthority === timer, 'wrong timer');
       const { UnderlyingAsset, StrikePrice } = issuerKeywordRecord;
-
-      assert(
-        UnderlyingAsset === moolaIssuer,
-        X`The underlying asset issuer should be the moola issuer`,
-      );
-      assert(
-        StrikePrice === simoleanIssuer,
-        X`The strike price issuer should be the simolean issuer`,
-      );
+      UnderlyingAsset === moolaIssuer ||
+        assert.fail(X`The underlying asset issuer should be the moola issuer`);
+      StrikePrice === simoleanIssuer ||
+        assert.fail(X`The strike price issuer should be the simolean issuer`);
 
       const bobPayments = { StrikePrice: simoleanPayment };
       // Bob escrows
@@ -138,7 +132,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Bob claims all with the Zoe invitationIssuer
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
 
       const { UnderlyingAsset, StrikePrice } = await E(zoe).getIssuers(
         instance,
@@ -149,36 +146,32 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
       const optionValue = optionAmounts.value;
+      const { customDetails } = optionValue[0];
+      assert(typeof customDetails === 'object');
 
       assert(installation === installations.coveredCall, X`wrong installation`);
-      assert(
-        optionValue[0].description === 'exerciseOption',
-        X`wrong invitation`,
-      );
+      optionValue[0].description === 'exerciseOption' ||
+        assert.fail(X`wrong invitation`);
       assert(
         AmountMath.isEqual(
-          optionValue[0].underlyingAssets.UnderlyingAsset,
+          customDetails.underlyingAssets.UnderlyingAsset,
           moola(3n),
         ),
         X`wrong underlying asset`,
       );
       assert(
         AmountMath.isEqual(
-          optionValue[0].strikePrice.StrikePrice,
+          customDetails.strikePrice.StrikePrice,
           simoleans(7n),
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
-      assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
-      assert(
-        UnderlyingAsset === moolaIssuer,
-        X`The underlyingAsset issuer should be the moola issuer`,
-      );
-      assert(
-        StrikePrice === simoleanIssuer,
-        X`The strikePrice issuer should be the simolean issuer`,
-      );
+      assert(customDetails.expirationDate === 100n, X`wrong expiration date`);
+      assert(customDetails.timeAuthority === timer, X`wrong timer`);
+      UnderlyingAsset === moolaIssuer ||
+        assert.fail(X`The underlyingAsset issuer should be the moola issuer`);
+      StrikePrice === simoleanIssuer ||
+        assert.fail(X`The strikePrice issuer should be the simolean issuer`);
 
       // Let's imagine that Bob wants to create a swap to trade this
       // invitation for bucks. He wants to invitation Dave as the
@@ -224,24 +217,28 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
-
+      installation === installations.secondPriceAuction ||
+        assert.fail(X`wrong installation`);
       assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
-      );
-      assert(
-        sameStructure(
+        keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         X`issuerKeywordRecord was not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3n)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1n)));
+      assert(
+        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
+      );
+      assert(
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
+      );
 
       const proposal = harden({
         want: { Asset: moola(1n) },
@@ -270,28 +267,26 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
 
       assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
-        sameStructure(
+        keyEQ(
           harden({ Asset: moolaIssuer, Price: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         X`issuers were not as expected`,
       );
-
-      assert(
-        sameStructure(invitationValue[0].asset, moola(3n)),
-        X`Alice made a different offer than expected`,
-      );
-      assert(
-        sameStructure(invitationValue[0].price, simoleans(7n)),
-        X`Alice made a different offer than expected`,
-      );
+      keyEQ(invitationValue[0].customDetails?.asset, moola(3n)) ||
+        assert.fail(X`Alice made a different offer than expected`);
+      keyEQ(invitationValue[0].customDetails?.price, simoleans(7n)) ||
+        assert.fail(X`Alice made a different offer than expected`);
 
       const proposal = harden({
         want: { Asset: moola(3n) },
@@ -320,21 +315,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doSimpleExchange: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-
-      assert(
-        installation === installations.simpleExchange,
-        X`wrong installation`,
-      );
-      assert(
-        issuerKeywordRecord.Asset === moolaIssuer,
-        X`The first issuer should be the moola issuer`,
-      );
-      assert(
-        issuerKeywordRecord.Price === simoleanIssuer,
-        X`The second issuer should be the simolean issuer`,
-      );
+      installation === installations.simpleExchange ||
+        assert.fail(X`wrong installation`);
+      issuerKeywordRecord.Asset === moolaIssuer ||
+        assert.fail(X`The first issuer should be the moola issuer`);
+      issuerKeywordRecord.Price === simoleanIssuer ||
+        assert.fail(X`The second issuer should be the simolean issuer`);
 
       const bobBuyOrderProposal = harden({
         want: { Asset: moola(3n) },
@@ -361,23 +352,19 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doSimpleExchangeUpdates: async (invitationP, m, s) => {
-      const invitation = await E(invitationIssuer).claim(invitationP);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitationP,
+      );
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-
-      assert(
-        installation === installations.simpleExchange,
-        X`wrong installation`,
-      );
-      assert(
-        issuerKeywordRecord.Asset === moolaIssuer,
-        X`The first issuer should be the moola issuer`,
-      );
-      assert(
-        issuerKeywordRecord.Price === simoleanIssuer,
-        X`The second issuer should be the simolean issuer`,
-      );
+      installation === installations.simpleExchange ||
+        assert.fail(X`wrong installation`);
+      issuerKeywordRecord.Asset === moolaIssuer ||
+        assert.fail(X`The first issuer should be the moola issuer`);
+      issuerKeywordRecord.Price === simoleanIssuer ||
+        assert.fail(X`The second issuer should be the simolean issuer`);
       const bobBuyOrderProposal = harden({
         want: { Asset: moola(m) },
         give: { Price: simoleans(s) },
@@ -418,7 +405,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(installation === installations.autoswap, X`wrong installation`);
       const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
       assert(
-        sameStructure(
+        keyEQ(
           harden({
             Central: moolaIssuer,
             Secondary: simoleanIssuer,
@@ -535,7 +522,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
 
     doOTCDesk: async untrustedInvitation => {
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       assert(invitationValue.installation === installations.coveredCall);
 

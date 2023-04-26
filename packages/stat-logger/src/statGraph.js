@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 function scanMax(filePath, fields) {
   const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');
@@ -18,7 +18,7 @@ function scanMax(filePath, fields) {
       }
     }
     if (hit < 0) {
-      assert.fail(X`field ${field} not found in ${filePath}`);
+      Fail`field ${field} not found in ${filePath}`;
     } else {
       headerMap[hit] = field;
     }
@@ -158,10 +158,9 @@ export async function renderGraph(spec, outputPath, type = 'png') {
   } else if (spec.marks.length === 0) {
     throw new Error('graph spec has no graphs defined');
   }
-  assert(
-    type === 'png' || type === 'pdf',
-    X`invalid output type ${type}, valid types are png or pdf`,
-  );
+  type === 'png' ||
+    type === 'pdf' ||
+    Fail`invalid output type ${type}, valid types are png or pdf`;
 
   let loadDir = '.';
   let out = process.stdout;
