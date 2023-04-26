@@ -141,17 +141,10 @@
  */
 
 /**
- * @callback ZCFMintMintGains
- * @param {AmountKeywordRecord} gains
- * @param {ZCFSeat} [zcfSeat]
- * @returns {ZCFSeat}
- */
-
-/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} ZCFMint
  * @property {() => IssuerRecord<K>} getIssuerRecord
- * @property {ZCFMintMintGains} mintGains
+ * @property {(gains: AmountKeywordRecord, zcfSeat?: ZCFSeat) => ZCFSeat} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
  * Add the gains to that seat's allocation.
@@ -161,8 +154,6 @@
  * Mint that amount of assets into the pooled purse.
  * If a seat is provided, it is returned. Otherwise a new seat is
  * returned.
- * TODO unimplemented
- * This creation-on-demand is not yet implemented.
  *
  * @property {(losses: AmountKeywordRecord,
  *             zcfSeat: ZCFSeat,

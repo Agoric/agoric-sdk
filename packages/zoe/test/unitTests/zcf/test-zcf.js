@@ -432,7 +432,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message:
-      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      'In "mintGains" method of (zcfMint): Expected at least 1 arguments: []',
   });
 });
 
@@ -458,7 +458,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
     message:
-      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      'In "mintGains" method of (zcfMint): arg 0: undefined "[undefined]" - Must be a copyRecord',
   });
 });
 
@@ -468,7 +468,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message:
-      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      'In "burnLosses" method of (zcfMint): Expected at least 2 arguments: []',
   });
 });
 
@@ -479,7 +479,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
     message:
-      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      'In "burnLosses" method of (zcfMint): arg 0: undefined "[undefined]" - Must be a copyRecord',
   });
 });
 
