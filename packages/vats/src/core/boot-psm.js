@@ -221,7 +221,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         }),
       ),
       ...anchorAssets.map(anchorOptions =>
-        startPSM(powersFor('startPSM'), {
+        startPSM(powersFor(startPSM.name), {
           options: { anchorOptions },
         }),
       ),
