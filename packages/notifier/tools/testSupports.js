@@ -1,12 +1,9 @@
-/* global setImmediate */
-
 // eslint-disable-next-line import/order
 import { Far, makeMarshal } from '@endo/marshal';
 
 import '../src/types-ambient.js';
 
-export const eventLoopIteration = async () =>
-  new Promise(resolve => setImmediate(resolve));
+export { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 /**
  *

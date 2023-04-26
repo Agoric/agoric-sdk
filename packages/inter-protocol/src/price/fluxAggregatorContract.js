@@ -29,9 +29,11 @@ const trace = makeTracer('FluxAgg');
  * timer: TimerService,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
+ * description: string,
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
  * @param {{
+ * highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager,
  * initialPoserInvitation: Invitation,
  * marshaller: Marshaller,
  * namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
@@ -49,6 +51,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     : makeDurableIssuerKit(baggage, 'quote', 'set');
 
   const {
+    highPrioritySendersManager,
     initialPoserInvitation,
     marshaller,
     namesByAddressAdmin,
@@ -56,7 +59,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   } = privateArgs;
   assertAllDefined({ initialPoserInvitation, marshaller, storageNode });
 
-  const { timer } = zcf.getTerms();
+  const { description, timer } = zcf.getTerms();
 
   trace('awaited args');
 
@@ -111,39 +114,41 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       addr,
       [invitation],
     );
+    await highPrioritySendersManager.add(description, addr);
     return `added ${addr}`;
   };
 
   /**
    * Remove an oracle from aggregation and disable its facet.
    *
-   * @param {string} oracleId
+   * @param {string} addr
    */
-  const removeOracle = async oracleId => {
-    trace('removeOracle', oracleId);
-    await E(faKit.creator).removeOracle(oracleId);
-    return `removed ${oracleId}`;
+  const removeOracle = async addr => {
+    trace('removeOracle', addr);
+    await E(faKit.creator).removeOracle(addr);
+    highPrioritySendersManager.remove(description, addr);
+    return `removed ${addr}`;
   };
 
   const governedApis = {
     /**
      * Add the specified oracles. May partially fail, such that some oracles are added and others aren't.
      *
-     * @param {string[]} oracleIds
+     * @param {string[]} addrs
      * @returns {Promise<Array<PromiseSettledResult<string>>>}
      */
-    addOracles: oracleIds => {
-      return Promise.allSettled(oracleIds.map(addOracle));
+    addOracles: addrs => {
+      return Promise.allSettled(addrs.map(addOracle));
     },
     /**
      * Remove the specified oracles. May partially fail, such that some oracles are removed and others aren't.
      * If the oracle was never part of the set that's a PromiseRejectedResult
      *
-     * @param {string[]} oracleIds
+     * @param {string[]} addrs
      * @returns {Promise<Array<PromiseSettledResult<string>>>}
      */
-    removeOracles: oracleIds => {
-      return Promise.allSettled(oracleIds.map(removeOracle));
+    removeOracles: addrs => {
+      return Promise.allSettled(addrs.map(removeOracle));
     },
   };
 
