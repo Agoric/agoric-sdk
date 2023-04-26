@@ -10,7 +10,7 @@ export const makeStakeFactoryTerms = (
     debtLimit,
     mintingRatio,
     interestRate,
-    loanFee,
+    mintFee,
   },
 ) => ({
   timerService,
@@ -20,7 +20,7 @@ export const makeStakeFactoryTerms = (
     [PKey.DebtLimit]: { type: ParamTypes.AMOUNT, value: debtLimit },
     [PKey.MintingRatio]: { type: ParamTypes.RATIO, value: mintingRatio },
     [PKey.InterestRate]: { type: ParamTypes.RATIO, value: interestRate },
-    [PKey.LoanFee]: { type: ParamTypes.RATIO, value: loanFee },
+    [PKey.MintFee]: { type: ParamTypes.RATIO, value: mintFee },
     [CONTRACT_ELECTORATE]: {
       type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,

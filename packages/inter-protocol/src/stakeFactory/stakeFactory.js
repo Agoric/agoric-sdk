@@ -11,12 +11,12 @@ import { makeStakeFactoryKit } from './stakeFactoryKit.js';
 import { makeStakeFactoryManager } from './stakeFactoryManager.js';
 
 /**
- * Provide loans on the basis of staked assets that earn rewards.
+ * Lend on the basis of staked assets that earn rewards.
  *
  * In addition to brands and issuers for `Staked`, `Minted`, and attestation,
  * terms of the contract include a periodic `InterestRate`
- * plus a `LoanFee` proportional to the amount borrowed, as well as
- * a `MintingRatio` of funds to (mint and) loan per unit of staked asset.
+ * plus a `MintFee` proportional to the amount borrowed, as well as
+ * a `MintingRatio` of funds to (mint and) lend per unit of staked asset.
  * These terms are subject to change by the `Electorate`
  * and `electionManager` terms.
  *
@@ -24,7 +24,7 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  *   DebtLimit: 'amount',
  *   MintingRatio: 'ratio',
  *   InterestRate: 'ratio',
- *   LoanFee: 'ratio',
+ *   MintFee: 'ratio',
  * }} StakeFactoryParams
  *
  * As in vaultFactory, `timerService` provides the periodic signal to
@@ -37,15 +37,15 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  *   lienAttestationName?: string,
  * }} StakeFactoryTerms
  *
- * The public facet provides access to invitations to get a loan
+ * The public facet provides access to invitations to borrow
  * or to return an attestation in order to release a lien on staked assets.
  *
  * @typedef {{
- *   makeLoanInvitation: () => Promise<Invitation>,
+ *   createDebtInvitation: () => Promise<Invitation>,
  *   makeReturnAttInvitation: () => Promise<Invitation>,
  * }} StakeFactoryPublic
  *
- * To take out a loan, get an `AttestationMaker` for your address from
+ * To create a debt position, get an `AttestationMaker` for your address from
  * the creator of this contract, and use
  * `E(attMaker).makeAttestation(stakedAmount)` to take out a lien
  * and get a payment that attests to the lien. Provide the payment
@@ -53,9 +53,9 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  * using `{ want: { Debt: amountWanted }}`.
  *
  * Then, using the invitationMakers pattern, use `AdjustBalances` to
- * pay down the loan or otherwise adjust the `Debt` and `Attestation`.
+ * pay down or otherwise adjust the `Debt` and `Attestation`.
  *
- * Finally, `Close` the loan, providing `{ give: Debt: debtAmount }}`
+ * Finally, `Close` the debt position, providing `{ give: Debt: debtAmount }}`
  *
  * To start the contract, authorize minting assets by providing `feeMintAccess`
  * and provide access to the underlying staking infrastructure in `lienBridge`.
@@ -116,7 +116,7 @@ export const start = async (
       {
         DebtLimit: ParamTypes.AMOUNT,
         InterestRate: ParamTypes.RATIO,
-        LoanFee: ParamTypes.RATIO,
+        MintFee: ParamTypes.RATIO,
         MintingRatio: ParamTypes.RATIO,
       },
       storageNode,
@@ -202,7 +202,7 @@ export const start = async (
 
   const publicFacet = augmentPublicFacet(
     harden({
-      makeLoanInvitation: () =>
+      createDebtInvitation: () =>
         zcf.makeInvitation(offerHandler, 'make stakeFactory'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),

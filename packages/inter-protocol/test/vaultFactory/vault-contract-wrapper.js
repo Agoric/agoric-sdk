@@ -133,7 +133,7 @@ export async function start(zcf, privateArgs, baggage) {
         getLiquidationPenalty() {
           throw Error('not implemented');
         },
-        getLoanFee() {
+        getMintFee() {
           return makeRatio(500n, runBrand, BASIS_POINTS);
         },
         getInterestRate() {

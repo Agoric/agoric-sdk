@@ -89,14 +89,15 @@ const initState = (zcf, startSeat, manager) => {
       Fail`wanted ${runWanted}, more than max debt (${maxDebt}) for ${attestationGiven}`;
 
     const { newDebt, fee, toMint } = calculateFee(
-      manager.getLoanFee(),
+      manager.getMintFee(),
       emptyDebt,
       emptyDebt,
       runWanted,
     );
     !AmountMath.isEmpty(fee) ||
-      Fail`loan requested (${runWanted}) is too small; cannot accrue interest`;
-    AmountMath.isEqual(newDebt, toMint) || Fail`loan fee mismatch`;
+      Fail`debt position requested (${runWanted}) is too small; cannot accrue interest`;
+    AmountMath.isEqual(newDebt, toMint) ||
+      Fail`mismatch between debt and amount to mint`;
     trace('init', { runWanted, fee, attestationGiven });
 
     manager.mintAndReallocate(
@@ -282,7 +283,7 @@ const helperBehavior = {
     // verify that the target debt doesn't violate the collateralization ratio,
     // then mint, reallocate, and burn.
     const { newDebt, fee, toMint } = calculateFee(
-      manager.getLoanFee(),
+      manager.getMintFee(),
       debt,
       give,
       want,
