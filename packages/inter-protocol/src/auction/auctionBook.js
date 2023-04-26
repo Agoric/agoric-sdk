@@ -444,14 +444,10 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { state } = this;
 
           const allocation = state.collateralSeat.getCurrentAllocation();
-          const curCollateral =
+          const collateralAvailable =
             'Collateral' in allocation
               ? allocation.Collateral
               : makeEmpty(state.collateralBrand);
-
-          const collateralAvailable = state.startCollateral
-            ? AmountMath.subtract(state.startCollateral, curCollateral)
-            : null;
 
           const bookData = harden({
             startPrice: state.lockedPriceForRound,
@@ -531,15 +527,15 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             state.startProceedsGoal = nextProceedsGoal;
           }
 
-          state.startCollateral = state.startCollateral
-            ? AmountMath.add(state.startCollateral, assetAmount)
-            : assetAmount;
-          facets.helper.publishBookData();
-
           atomicRearrange(
             zcf,
             harden([[sourceSeat, collateralSeat, { Collateral: assetAmount }]]),
           );
+
+          state.startCollateral = state.startCollateral
+            ? AmountMath.add(state.startCollateral, assetAmount)
+            : assetAmount;
+          facets.helper.publishBookData();
         },
         /** @type {(reduction: Ratio) => void} */
         settleAtNewRate(reduction) {
