@@ -1,7 +1,9 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
-import { makeNameHubKit } from '../src/nameHub.js';
+import { makeScalarBigMapStore, provide } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E, Far } from '@endo/far';
+import { makeNameHubKit, prepareNameHubKit } from '../src/nameHub.js';
 
 test('makeNameHubKit - lookup paths', async t => {
   const { nameAdmin: na1, nameHub: nh1 } = makeNameHubKit();
@@ -105,7 +107,7 @@ test('makeNameHubKit - reserve and delete', async t => {
   nameAdmin.reserve('goodbye');
   let lookedUpGoodbye = false;
   const lookupGoodbyeP = nameHub
-    .lookup('bar')
+    .lookup('goodbye')
     .finally(() => (lookedUpGoodbye = true));
 
   t.falsy(lookedUpGoodbye);
@@ -119,7 +121,7 @@ test('makeNameHubKit - reserve and delete', async t => {
   t.deepEqual(nameHub.values(), []);
   t.deepEqual(nameHub.entries(), []);
   await t.throwsAsync(lookupGoodbyeP, {
-    message: /"nameKey" not found: .*/,
+    message: /Value has been deleted/,
   });
   t.truthy(lookedUpGoodbye);
 
@@ -147,20 +149,22 @@ test('makeNameHubKit - default and set', async t => {
   });
 });
 
-test('makeNameHubKit - listen for updates', t => {
+test('makeNameHubKit - listen for updates', async t => {
   const { nameAdmin } = makeNameHubKit();
 
   const brandBLD = harden({ name: 'BLD' });
   nameAdmin.update('BLD', brandBLD);
 
   const capture = [];
-  nameAdmin.onUpdate(entries => capture.push(entries));
+  nameAdmin.onUpdate(
+    Far('onUpdate', { entries: entries => capture.push(entries) }),
+  );
 
   const brandIST = harden({ name: 'IST' });
-  nameAdmin.update('IST', brandIST);
-  nameAdmin.reserve('AUSD');
+  await E(nameAdmin).update('IST', brandIST);
+  await E(nameAdmin).reserve('AUSD');
 
-  nameAdmin.delete('BLD');
+  await E(nameAdmin).delete('BLD');
 
   t.deepEqual(capture, [
     [
@@ -169,4 +173,24 @@ test('makeNameHubKit - listen for updates', t => {
     ],
     [['IST', brandIST]],
   ]);
+});
+
+test('durable NameHubKit', async t => {
+  const baggage = makeScalarBigMapStore('test baggage', { durable: true });
+  const zone = makeDurableZone(baggage);
+  const z1 = zone.subZone('z1');
+  const makeKit = prepareNameHubKit(z1);
+
+  // 1st incarnation
+  {
+    const { nameAdmin } = provide(baggage, 'it', makeKit);
+    nameAdmin.update('hello', 'world');
+  }
+
+  // 2nd incarnation
+  {
+    const { nameHub } = provide(baggage, 'it', makeKit);
+    const actual = await nameHub.lookup('hello');
+    t.is(actual, 'world');
+  }
 });
