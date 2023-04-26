@@ -292,7 +292,6 @@ export const makeAnchorAsset = async (
     installation: {
       consume: { mintHolder },
     },
-    // XXX: prune testFirstAnchorKit in favor of anchorMints
     produce: {
       testFirstAnchorKit,
       anchorBalancePayments: produceAnchorBalancePayments,
