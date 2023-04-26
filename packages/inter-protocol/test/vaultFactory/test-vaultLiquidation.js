@@ -1837,6 +1837,8 @@ test('reinstate vault', async t => {
 
   await aethVaultMetrics.assertChange({
     numActiveVaults: 1,
+    liquidatingDebt: { value: 0n },
+    liquidatingCollateral: { value: 0n },
     totalDebt: { value: 158n },
     totalCollateral: { value: 44n },
     totalProceedsReceived: { value: 34n },

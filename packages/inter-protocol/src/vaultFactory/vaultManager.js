@@ -809,6 +809,7 @@ export const prepareVaultManagerKit = (
               AmountMath.subtract(totalDebt, debtRemaining),
             );
             facets.helper.sendToReserve(collatRemaining, liqSeat);
+            facets.helper.markDoneLiquidating(totalDebt, totalCollateral);
           }
           facets.helper.recordShortfallAndProceeds(accounting);
           return facets.helper.updateMetrics();
