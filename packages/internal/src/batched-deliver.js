@@ -1,3 +1,5 @@
+// @jessie-check
+
 export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
 /**

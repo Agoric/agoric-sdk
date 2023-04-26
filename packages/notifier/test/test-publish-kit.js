@@ -63,13 +63,23 @@ const assertCells = (t, label, cells, publishCount, expected, options = {}) => {
   t.is(firstCell.publishCount, publishCount, `${label} cell publishCount`);
 
   if (strict) {
-    t.deepEqual(
-      new Set(cells),
-      new Set([firstCell]),
-      `all ${label} cells must referentially match`,
-    );
+    const { head, ...otherProps } = firstCell;
+    for (const [headKey, headValue] of Object.entries(head)) {
+      t.deepEqual(
+        new Set(cells.map(cell => cell.head[headKey])),
+        new Set([headValue]),
+        `the head ${q(headKey)} of each ${label} cell must referentially match`,
+      );
+    }
+    for (const [key, value] of Object.entries(otherProps)) {
+      t.deepEqual(
+        new Set(cells.map(cell => cell[key])),
+        new Set([value]),
+        `the ${q(key)} of each ${label} cell must referentially match`,
+      );
+    }
   } else {
-    const { tail: _tail, ...props } = cells[0];
+    const { tail: _tail, ...props } = firstCell;
     cells.slice(1).forEach((cell, i) => {
       t.like(cell, props, `${label} cell ${i + 1} must match cell 0`);
     });
