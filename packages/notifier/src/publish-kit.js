@@ -242,7 +242,7 @@ const durablePublishKitEphemeralData = new WeakMap();
 const provideCurrentP = (state, facets, tail) => {
   const ephemeralKey = getEphemeralKey(facets);
   const foundData = durablePublishKitEphemeralData.get(ephemeralKey);
-  const currentP = foundData?.currentP;
+  const currentP = foundData && foundData.currentP;
   if (currentP) {
     return currentP;
   }
