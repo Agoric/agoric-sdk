@@ -517,6 +517,31 @@ export function makeVatKeeper(
   }
 
   /**
+   * @param {string} snapshotID
+   * @returns {TranscriptEntry}
+   */
+  function makeSaveSnapshotItem(snapshotID) {
+    return {
+      d: /** @type {TDSaveSnapshot} */ ['save-snapshot'],
+      sc: [],
+      r: { status: 'ok', snapshotID },
+    };
+  }
+
+  /**
+   * @param {string} snapshotID
+   * @returns {TranscriptEntry}
+   */
+  function makeLoadSnapshotItem(snapshotID) {
+    const loadConfig = { snapshotID };
+    return {
+      d: /** @type {TDLoadSnapshot} */ ['load-snapshot', loadConfig],
+      sc: [],
+      r: { status: 'ok' },
+    };
+  }
+
+  /**
    * Store a snapshot, if given a snapStore.
    *
    * @param {VatManager} manager
@@ -540,11 +565,7 @@ export function makeVatKeeper(
     } = info;
 
     // push a save-snapshot transcript entry
-    addToTranscript({
-      d: /** @type {TDSaveSnapshot} */ ['save-snapshot'],
-      sc: [],
-      r: { status: 'ok', snapshotID },
-    });
+    addToTranscript(makeSaveSnapshotItem(snapshotID));
 
     // then start a new transcript span
     transcriptStore.rolloverSpan(vatID);
@@ -552,12 +573,7 @@ export function makeVatKeeper(
     // then push a load-snapshot entry, so that the current span
     // always starts with an initialize-worker or load-snapshot
     // pseudo-delivery
-    const loadConfig = { snapshotID };
-    addToTranscript({
-      d: /** @type {TDLoadSnapshot} */ ['load-snapshot', loadConfig],
-      sc: [],
-      r: { status: 'ok' },
-    });
+    addToTranscript(makeLoadSnapshotItem(snapshotID));
 
     kernelSlog.write({
       type: 'heap-snapshot-save',
