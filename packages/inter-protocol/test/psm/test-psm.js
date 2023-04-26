@@ -108,7 +108,7 @@ const makeTestContext = async () => {
   const installs = {
     contractGovernor: await E(zoe).install(contractGovernorBundle),
     committeeInstall: await E(zoe).install(committeeBundle),
-    psmInstall: await E(zoe).install(psmBundle),
+    psm: await E(zoe).install(psmBundle),
     centralSupply: await E(zoe).install(centralSupplyBundle),
     mintHolder: await E(zoe).install(mintHolderBundle),
   };
@@ -184,7 +184,7 @@ async function makePsmDriver(t, customTerms) {
     feeMintAccess,
     initialPoserInvitation,
     terms,
-    installs: { psmInstall },
+    installs: { psm: psmInstall },
     anchor,
   } = t.context;
 
@@ -782,10 +782,7 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
       produce[name].resolve(value);
     }
 
-    for (const [name, installation] of Object.entries({
-      ...installs,
-      psm: installs.psmInstall,
-    })) {
+    for (const [name, installation] of Object.entries(installs)) {
       spaces.installation.produce[name].resolve(installation);
     }
 
