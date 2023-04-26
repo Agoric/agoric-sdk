@@ -411,12 +411,16 @@ export const produceHighPrioritySendersManager = async ({
     { sequence: false },
   );
 
-  // NB: this is a non-durable Far object. If the bootstrap vat (where this object is made)
-  // were to be terminated, the object references to this would be severed.
-  // When bootstrap vat is restarted by bootstrap config containing the state
-  // extracted from IAVL but the contracts holding this manager will need to be
-  // updated with the new object. That can be done without a contract upgrade by
-  // restarting the contracts with the new object in privateArgs.
+  /**
+   * NB: this is a non-durable Far object. If the bootstrap vat (where this object is made)
+   * were to be terminated, the object references to this would be severed.
+   *
+   * See {@link ./README.md bootstrap documentation} for implications.
+   * If the bootstrap vat is replaced, the new bootstrap config must be made
+   * using state extracted from IAVL. Contracts holding this manager will need
+   * to be updated with the new object, which can be done with an upgrade
+   * (regular or null) with the new object in privateArgs.
+   */
   const manager = makePrioritySendersManager(sendersNode);
 
   managerP.resolve(manager);
