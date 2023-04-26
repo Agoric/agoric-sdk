@@ -158,7 +158,10 @@ export const startPSM = async (
           value: makeRatio(GiveMintedFeeBP, minted, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
+        // Override numeric config values from restored state.
         ...oldState.governance?.current,
+        // Don't override the invitation amount;
+        // the electorate is re-constituted rather than restored.
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
           value: electorateInvitationAmount,
