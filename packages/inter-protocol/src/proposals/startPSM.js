@@ -164,10 +164,6 @@ export const startPSM = async (
           value: electorateInvitationAmount,
         },
       },
-      [CONTRACT_ELECTORATE]: {
-        type: ParamTypes.INVITATION,
-        value: electorateInvitationAmount,
-      },
     }),
   );
 
