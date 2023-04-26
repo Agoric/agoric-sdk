@@ -1,4 +1,5 @@
 // @jessie-check
+import { Fail } from '@agoric/assert';
 
 /**
  * Put together information about the issuer in a standard format that
@@ -17,3 +18,14 @@ export const makeIssuerRecord = (brand, issuer, displayInfo) =>
     assetKind: displayInfo.assetKind,
     displayInfo,
   });
+
+/**
+ *
+ * @param {IssuerRecord} issuerRecord
+ * @returns {asserts issuerRecord is Required<IssuerRecord>}
+ */
+export const assertFullIssuerRecord = issuerRecord => {
+  if (!issuerRecord.displayInfo) {
+    throw Fail`full IssuerRecord requires displayInfo`;
+  }
+};
