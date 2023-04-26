@@ -70,7 +70,7 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
  */
 export const startPSM = async (
   {
-    vatParameters: { chainStorageEntries },
+    vatParameters: { chainStorageEntries = [] },
     consume: {
       agoricNamesAdmin,
       board,
@@ -134,7 +134,7 @@ export const startPSM = async (
   const anchorDecimalPlaces = anchorInfo.decimalPlaces || 1n;
   const mintedDecimalPlaces = mintedInfo.decimalPlaces || 1n;
 
-  const oldState = findOldPSMState(chainStorageEntries || [], keyword, {
+  const oldState = findOldPSMState(chainStorageEntries, keyword, {
     minted,
     anchor: anchorBrand,
   });
@@ -287,7 +287,7 @@ harden(startPSM);
  */
 export const makeAnchorAsset = async (
   {
-    vatParameters: { chainStorageEntries },
+    vatParameters: { chainStorageEntries = [] },
     consume: { agoricNamesAdmin, bankManager, zoe, anchorBalancePayments },
     installation: {
       consume: { mintHolder },
@@ -336,7 +336,7 @@ export const makeAnchorAsset = async (
 
   testFirstAnchorKit.resolve(kit);
 
-  const toSlotReviver = makeHistoryReviver(chainStorageEntries || []);
+  const toSlotReviver = makeHistoryReviver(chainStorageEntries);
   const metricsKey = `${stablePsmKey}.${keyword}.metrics`;
   if (toSlotReviver.has(metricsKey)) {
     const metrics = toSlotReviver.getItem(metricsKey);
