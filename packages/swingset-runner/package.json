@@ -35,7 +35,7 @@
     "@endo/marshal": "^0.8.5",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
-    "yargs": "^16.1.0"
+    "yargs": "^17.7.1"
   },
   "devDependencies": {
     "ava": "^5.2.0",
