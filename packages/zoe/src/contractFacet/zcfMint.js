@@ -14,6 +14,24 @@ import './types.js';
 const { Fail } = assert;
 
 /**
+ * @template {AssetKind} K
+ * @param {AmountKeywordRecord} amr
+ * @param {IssuerRecord<K>} issuerRecord
+ * @returns {Amount<K>}
+ */
+export const sumAmountKeywordRecord = (amr, issuerRecord) => {
+  const empty = AmountMath.makeEmpty(
+    issuerRecord.brand,
+    issuerRecord.assetKind,
+  );
+  return Object.values(amr).reduce(
+    (total, amountToAdd) =>
+      AmountMath.add(total, amountToAdd, issuerRecord.brand),
+    empty,
+  );
+};
+
+/**
  *
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  * @param {{ (keyword: string, issuerRecord: IssuerRecord): void }} recordIssuer
@@ -44,6 +62,7 @@ export const prepareZcMint = (
         issuer: mintyIssuer,
         displayInfo: mintyDisplayInfo,
       } = issuerRecord;
+
       const mintyIssuerRecord = makeIssuerRecord(
         mintyBrand,
         mintyIssuer,
@@ -51,12 +70,7 @@ export const prepareZcMint = (
       );
       recordIssuer(keyword, mintyIssuerRecord);
 
-      const empty = AmountMath.makeEmpty(
-        mintyBrand,
-        mintyDisplayInfo.assetKind,
-      );
-
-      return { empty, keyword, mintyBrand, zoeMint, mintyIssuerRecord };
+      return { keyword, zoeMint, mintyIssuerRecord };
     },
     {
       getIssuerRecord() {
@@ -64,12 +78,11 @@ export const prepareZcMint = (
       },
       /** @type {(gains: Record<string, Amount>, zcfSeat?: ZCFSeat) => ZCFSeat} */
       mintGains(gains, zcfSeat = makeEmptySeatKit().zcfSeat) {
-        const { empty, mintyBrand, zoeMint } = this.state;
+        const { mintyIssuerRecord, zoeMint } = this.state;
         gains = coerceAmountKeywordRecord(gains, getAssetKindByBrand);
-        /** @type {(total: Amount, amountToAdd: Amount) => Amount}  */
-        const add = (total, amountToAdd) =>
-          AmountMath.add(total, amountToAdd, mintyBrand);
-        const totalToMint = Object.values(gains).reduce(add, empty);
+
+        const totalToMint = sumAmountKeywordRecord(gains, mintyIssuerRecord);
+
         !zcfSeat.hasExited() ||
           Fail`zcfSeat must be active to mint gains for the zcfSeat`;
         const allocationPlusGains = addToAllocation(
@@ -103,12 +116,11 @@ export const prepareZcMint = (
        * @param {ZCFSeat} zcfSeat
        */
       burnLosses(losses, zcfSeat) {
-        const { empty, mintyBrand, zoeMint } = this.state;
+        const { mintyIssuerRecord, zoeMint } = this.state;
         losses = coerceAmountKeywordRecord(losses, getAssetKindByBrand);
-        /** @type {(total: Amount, amountToAdd: Amount) => Amount}  */
-        const add = (total, amountToAdd) =>
-          AmountMath.add(total, amountToAdd, mintyBrand);
-        const totalToBurn = Object.values(losses).reduce(add, empty);
+
+        const totalToBurn = sumAmountKeywordRecord(losses, mintyIssuerRecord);
+
         !zcfSeat.hasExited() ||
           Fail`zcfSeat must be active to burn losses from the zcfSeat`;
         const allocationMinusLosses = subtractFromAllocation(
