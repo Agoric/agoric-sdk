@@ -4,7 +4,7 @@ import { assertPassable } from '@endo/marshal';
 import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
-import { makePromiseSpace } from './promise-space.js';
+import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 const { entries, fromEntries, keys } = Object;
 const { Fail, quote: q } = assert;
@@ -201,6 +201,64 @@ export const runModuleBehaviors = ({
 };
 harden(runModuleBehaviors);
 
+const noop = harden(() => {});
+
+/**
+ *
+ * @param {ERef<import('../types').NameAdmin>} nameAdmin
+ * @param {typeof console.log} [log]
+ */
+export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
+  const logHooks = makeLogHooks(log);
+
+  /** @type {PromiseSpace<unknown>} */
+  const space = makePromiseSpace({
+    hooks: harden({
+      ...logHooks,
+      onAddKey: name => {
+        void E(nameAdmin).reserve(name);
+        logHooks.onAddKey(name);
+      },
+      onResolve: (name, valueP) => {
+        void E(nameAdmin).update(name, valueP);
+      },
+      onReset: name => {
+        void E(nameAdmin).delete(name);
+      },
+    }),
+    log,
+  });
+
+  return space;
+};
+
+/**
+ * @param {ERef<AgoricNamesVat>} provider
+ * @param {typeof console.log} [log]
+ * @param {string[]} [kinds]
+ * @typedef {ReturnType<import('../vat-agoricNames').buildRootObject>} AgoricNamesVat
+ */
+export const makeWellKnownSpaces = async (
+  provider,
+  log = noop,
+  kinds = Object.keys(agoricNamesReserved),
+) => {
+  const { agoricNamesAdmin } = E.get(E(provider).getNameHubKit());
+  const spaceEntries = await Promise.all(
+    kinds.map(async kind => {
+      const { nameHub, nameAdmin } = await E(provider).provideNameHubKit(kind);
+      await E(agoricNamesAdmin).update(kind, nameHub, nameAdmin);
+      const subSpaceLog = (...args) => log(kind, ...args);
+      return [kind, makePromiseSpaceForNameHub(nameAdmin, subSpaceLog)];
+    }),
+  );
+  const spaces = Object.fromEntries(spaceEntries);
+  const typedSpaces = /** @type { WellKnownSpaces } */ (
+    /** @type {any} */ (spaces)
+  );
+  return typedSpaces;
+};
+
 /**
  * Make the well-known agoricNames namespace so that we can
  * E(home.agoricNames).lookup('issuer', 'IST') and likewise
@@ -213,6 +271,8 @@ harden(runModuleBehaviors);
  *
  * For static typing and integrating with the bootstrap permit system,
  * return { produce, consume } spaces rather than NameAdmins.
+ *
+ * @deprecated in favor of makeWellKnownSpaces
  *
  * @returns {{
  *   agoricNames: import('../types.js').NameHub,

@@ -278,6 +278,8 @@
  * @typedef {ERef<ReturnType<import('../vat-network.js').buildRootObject>>} NetworkVat
  * @typedef {ERef<ReturnType<import('../vat-ibc.js').buildRootObject>>} IBCVat
  * @typedef { import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin } PriceAuthorityRegistryAdmin
+ *
+ * @typedef {{ namedVat: PromiseSpaceOf<{ agoricNames: Awaited<AgoricNamesVat> }> }} NamedVatPowers
  */
 
 /**
