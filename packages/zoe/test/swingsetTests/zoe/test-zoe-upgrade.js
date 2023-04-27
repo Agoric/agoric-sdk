@@ -204,7 +204,7 @@ test('zoe vat upgrade trauma', async t => {
 
   // Null-upgrade Zoe.
   const { incarnationNumber } = await run('upgradeVat', [zoeVatConfig]);
-  t.is(incarnationNumber, 2, 'Zoe vat must be upgraded');
+  t.is(incarnationNumber, 1, 'Zoe vat must be upgraded');
 
   // Verify a complete run in the new Zoe.
   await doSteps('post-upgrade', flow);

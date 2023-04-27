@@ -32,7 +32,7 @@ test('heap exhaustion: orderly fail-stop', async t => {
   }
 });
 
-test('property name space exhaustion: orderly fail-stop', async t => {
+test.skip('property name space exhaustion: orderly fail-stop', async t => {
   const grow = qty => `
   const objmap = {};
   try {

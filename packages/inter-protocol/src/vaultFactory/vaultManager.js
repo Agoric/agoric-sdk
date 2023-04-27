@@ -103,7 +103,7 @@ const trace = makeTracer('VM', false);
  *  getLiquidationPadding: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
- *  getLoanFee: () => Ratio,
+ *  getMintFee: () => Ratio,
  *  getMinInitialDebt: () => Amount<'nat'>,
  * }} GovernedParamGetters
  */
@@ -809,6 +809,7 @@ export const prepareVaultManagerKit = (
               AmountMath.subtract(totalDebt, debtRemaining),
             );
             facets.helper.sendToReserve(collatRemaining, liqSeat);
+            facets.helper.markDoneLiquidating(totalDebt, totalCollateral);
           }
           facets.helper.recordShortfallAndProceeds(accounting);
           return facets.helper.updateMetrics();
@@ -1177,7 +1178,7 @@ export const prepareVaultManagerKit = (
  * @typedef {ReturnType<ReturnType<typeof prepareVaultManagerKit>>['self']} VaultManager
  * Each VaultManager manages a single collateral type.
  *
- * It manages some number of outstanding loans, each called a Vault, for which
- * the collateral is provided in exchange for borrowed Minted.
+ * It manages some number of outstanding debt positions, each called a Vault,
+ * for which the collateral is provided in exchange for borrowed Minted.
  */
 /** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */

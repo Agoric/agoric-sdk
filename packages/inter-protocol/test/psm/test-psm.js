@@ -22,7 +22,7 @@ import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import { E, Far } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 import path from 'path';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeTracer } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';

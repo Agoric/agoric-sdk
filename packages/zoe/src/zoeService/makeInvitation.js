@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { provideDurableMapStore } from '@agoric/vat-data';
 import {
   AssetKind,

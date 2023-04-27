@@ -11,7 +11,7 @@ const { Fail, quote: q } = assert;
  * and exposes both the map and the sequence of received messages.
  *
  * @param {string} rootPath
- * @param {object} [rootOptions]
+ * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
  */
 export const makeFakeStorageKit = (rootPath, rootOptions) => {
   /** @type {Map<string, any[]>} */

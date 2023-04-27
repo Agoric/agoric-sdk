@@ -448,7 +448,7 @@ async function unlimitedMeterTest(t, doVatAdminRestarts) {
     // if we restarted the vatAdmin vat, that will have broken the done promise
     // for the vat that's going to outrun the compute meter
     kpidRejected(t, c, doneKPID, {
-      incarnationNumber: 2,
+      incarnationNumber: 1,
       name: 'vatUpgraded',
       upgradeMessage: 'vat vatAdmin upgraded',
     });

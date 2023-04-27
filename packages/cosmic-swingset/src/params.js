@@ -1,4 +1,6 @@
 // @ts-check
+// @jessie-check
+
 import { Fail } from '@agoric/assert';
 import { Nat, isNat } from '@endo/nat';
 

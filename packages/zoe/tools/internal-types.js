@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @typedef {object} ManualTimerAdmin
  * @property {(msg?: string) => void | Promise<void>} tick Advance the timer by one tick.

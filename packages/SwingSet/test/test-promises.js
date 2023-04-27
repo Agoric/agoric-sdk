@@ -276,7 +276,7 @@ test('local promises are rejected by vat upgrade', async t => {
       reason: {
         name: 'vatUpgraded',
         upgradeMessage: 'vat upgraded',
-        incarnationNumber: 1,
+        incarnationNumber: 0,
       },
     },
   });

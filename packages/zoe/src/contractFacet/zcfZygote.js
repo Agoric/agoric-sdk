@@ -90,7 +90,10 @@ export const makeZCFZygote = async (
   // Make the instanceRecord
   const makeInstanceRecord = makeInstanceRecordStorage(zcfBaggage);
 
-  const recordIssuer = (keyword, issuerRecord) => {
+  const recordIssuer = (
+    /** @type {string} */ keyword,
+    /** @type {IssuerRecord} */ issuerRecord,
+  ) => {
     getInstanceRecHolder().addIssuer(keyword, issuerRecord);
     storeIssuerRecord(issuerRecord);
   };
@@ -332,7 +335,7 @@ export const makeZCFZygote = async (
       zcfBaggage,
     ));
 
-    zcfMintFactory = await makeZCFMintFactory(
+    zcfMintFactory = makeZCFMintFactory(
       zcfBaggage,
       recordIssuer,
       getAssetKindByBrand,

@@ -773,8 +773,7 @@ func NewAgoricApp(
 
 func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		// TODO: In next upgrade handler (bulldozer), run:
-		// app.VstorageKeeper.MigrateNoDataPlaceholders(ctx)
+		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
 		return fromVm, nil
 	}
 }

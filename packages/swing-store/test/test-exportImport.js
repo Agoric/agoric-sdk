@@ -164,8 +164,7 @@ test('crank abort leaves no debris in export log', async t => {
     ['kv.vatA.vval', 'stuff in 16'],
     [
       'transcript.vatA.current',
-      // '{"vatID":"vatA","startPos":0,"endPos":16,"hash":"83e7ed8d3ee339a8b0989512973396d3e9db4b4c3d76570862d99e3cdebaf8c6","isCurrent":1}',
-      '{"vatID":"vatA","startPos":0,"endPos":11,"hash":"ff988824e0fb02bfd0a5ecf466513fd4ef2ac6e488ab9070e640683faa8ddb11","isCurrent":1}',
+      '{"vatID":"vatA","startPos":0,"endPos":11,"hash":"ff988824e0fb02bfd0a5ecf466513fd4ef2ac6e488ab9070e640683faa8ddb11","isCurrent":1,"incarnation":0}',
     ],
   ]);
 });
@@ -279,23 +278,23 @@ async function testExportImport(
     ['snapshot.vatB.current', 'snapshot.vatB.4'],
     [
       'transcript.vatA.0',
-      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"ea8ac1a751712ad66e4a9182adc65afe9bb0f4cd0ee0b828c895c63fbd2e3157","isCurrent":0}',
+      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"ea8ac1a751712ad66e4a9182adc65afe9bb0f4cd0ee0b828c895c63fbd2e3157","isCurrent":0,"incarnation":0}',
     ],
     [
       'transcript.vatA.2',
-      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"88f299ca67b8acdf6023a83bb8e899af5adcf3271c7a1a2a495dcd6f1fbaac9f","isCurrent":0}',
+      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"88f299ca67b8acdf6023a83bb8e899af5adcf3271c7a1a2a495dcd6f1fbaac9f","isCurrent":0,"incarnation":0}',
     ],
     [
       'transcript.vatA.current',
-      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"fe5d692b24a32d53bf617ba9ed3391b60c36a402c70a07a6aa984fc316e4efcc","isCurrent":1}',
+      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"fe5d692b24a32d53bf617ba9ed3391b60c36a402c70a07a6aa984fc316e4efcc","isCurrent":1,"incarnation":0}',
     ],
     [
       'transcript.vatB.0',
-      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"41dbf60cdec066106c7030517cb9f9f34a50fe2259705cf5fdbdd0b39ae12e46","isCurrent":0}',
+      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"41dbf60cdec066106c7030517cb9f9f34a50fe2259705cf5fdbdd0b39ae12e46","isCurrent":0,"incarnation":0}',
     ],
     [
       'transcript.vatB.current',
-      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"34fa09207bfb7af5fc3e65acb07f13b60834d0fbd2c6b9708f794c4397bd865d","isCurrent":1}',
+      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"34fa09207bfb7af5fc3e65acb07f13b60834d0fbd2c6b9708f794c4397bd865d","isCurrent":1,"incarnation":0}',
     ],
   ]);
 

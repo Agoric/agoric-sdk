@@ -1,3 +1,5 @@
+// @jessie-check
+
 import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';

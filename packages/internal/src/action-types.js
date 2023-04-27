@@ -1,3 +1,5 @@
+// @jessie-check
+
 export const BOOTSTRAP_BLOCK = 'BOOTSTRAP_BLOCK';
 export const COSMOS_SNAPSHOT = 'COSMOS_SNAPSHOT';
 export const BEGIN_BLOCK = 'BEGIN_BLOCK';

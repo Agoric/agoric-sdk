@@ -213,11 +213,11 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
         storageNode,
 
-        // vaultSeat will hold the collateral until the loan is retired. The
+        // vaultSeat will hold the collateral until the position is retired. The
         // payout from it will be handed to the user: if the vault dies early
         // (because the vaultFactory vat died), they'll get all their
         // collateral back. If that happens, the issuer for the Minted will be dead,
-        // so their loan will be worthless.
+        // so their position will be worthless.
         vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
 
         // Two values from the same moment
@@ -482,7 +482,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             facets.self,
           );
 
-          return 'your loan is closed, thank you for your business';
+          return 'your vault is closed, thank you for your business';
         },
 
         /**
@@ -503,7 +503,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             currentDebt,
             giveAmount,
             wantAmount,
-            state.manager.getGovernedParams().getLoanFee(),
+            state.manager.getGovernedParams().getMintFee(),
           );
         },
 

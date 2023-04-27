@@ -8,6 +8,7 @@
     "feeMintAccess": "zoe",
     "economicCommitteeCreatorFacet": "economicCommittee",
     "econCharterKit": true,
+    "highPrioritySendersManager": true,
     "provisionPoolStartResult": true,
     "psmKit": true,
     "chainTimerService": "timer"

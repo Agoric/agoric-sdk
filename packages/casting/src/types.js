@@ -1,3 +1,5 @@
+// @jessie-check
+
 // Make this a module.
 import '@agoric/notifier';
 

@@ -1,3 +1,5 @@
+// @jessie-check
+
 /**
  * @typedef {object} State
  * @property {bigint} generation

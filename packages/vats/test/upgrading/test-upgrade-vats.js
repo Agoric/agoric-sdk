@@ -38,7 +38,6 @@ const makeScenario = async (
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'local', // Overridden in CI with SWINGSET_WORKER_TYPE=xs-worker
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
@@ -88,7 +87,7 @@ test('upgrade vat-board', async t => {
   const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
     boardVatConfig,
   );
-  t.is(incarnationNumber, 2, 'Board vat must be upgraded');
+  t.is(incarnationNumber, 1, 'Board vat must be upgraded');
   const board2 = await EV.vat('board').getBoard();
   t.is(board2, board, 'must get the same board reference');
   const actualThing = await EV(board2).getValue(thingId);
@@ -117,7 +116,7 @@ test.skip('upgrade bootstrap vat', async t => {
   const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
     chainVatConfig,
   );
-  t.is(incarnationNumber, 2, 'vat must be upgraded');
+  t.is(incarnationNumber, 1, 'vat must be upgraded');
 });
 
 test('upgrade vat-bridge', async t => {
@@ -206,7 +205,7 @@ test('upgrade vat-bridge', async t => {
     bridgeVatConfig,
   );
 
-  t.is(incarnationNumber, 2, 'Bridge vat must be upgraded');
+  t.is(incarnationNumber, 1, 'Bridge vat must be upgraded');
 
   const path1b = await EV(storageRoot).getPath();
   t.is(path1b, 'root1', 'must get the same path back');

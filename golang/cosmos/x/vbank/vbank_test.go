@@ -517,9 +517,9 @@ func Test_EndBlock_Events(t *testing.T) {
 	}}
 	acct := &mockAuthKeeper{
 		accounts: map[string]authtypes.AccountI{
-			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}},
-			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}},
-			addr3: &authtypes.BaseAccount{},
+			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{ Address: addr1 }},
+			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{ Address: addr2 }},
+			addr3: &authtypes.BaseAccount{ Address: addr3 },
 		},
 	}
 	keeper, ctx := makeTestKit(acct, bank)
@@ -748,10 +748,19 @@ func Test_EndBlock_Rewards(t *testing.T) {
 
 type mockAuthKeeper struct{
 	accounts map[string]authtypes.AccountI
+	modAddrs map[string]string
 }
 
-func (ma mockAuthKeeper) GetModuleAddress(name string) sdk.AccAddress {
-	return sdk.AccAddress(name)
+func (ma mockAuthKeeper) GetModuleAccount(ctx sdk.Context, name string) authtypes.ModuleAccountI {
+	addr, ok := ma.modAddrs[name]
+	if !ok {
+			return nil
+	}
+	acct, ok := ma.accounts[addr]
+	if !ok {
+			panic("missing module account")
+	}
+	return acct.(authtypes.ModuleAccountI)
 }
 
 func (ma mockAuthKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
@@ -760,7 +769,7 @@ func (ma mockAuthKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authty
 }
 
 func Test_Module_Account(t *testing.T) {
-	moduleBech32 := "cosmos1we3xzmnt9aex2um9wfmx2em0pd0"
+	moduleBech32 := "cosmos1ae0lmtzlgrcnla9xjkpaarq5d5dfez639v3rgf"
 	moduleJson, err := json.Marshal(moduleBech32)
 	if err != nil {
 		t.Fatalf("got error = %v", err)
@@ -768,11 +777,11 @@ func Test_Module_Account(t *testing.T) {
 
 	acct := &mockAuthKeeper{
 		accounts: map[string]authtypes.AccountI{
-			moduleBech32: &authtypes.ModuleAccount{
-				BaseAccount: &authtypes.BaseAccount{},
-				Name:        "vbank/reserve",
-			},
-			addr1: &authtypes.BaseAccount{},
+			moduleBech32: authtypes.NewEmptyModuleAccount("vbank/reserve"),
+			addr1: authtypes.NewBaseAccountWithAddress(sdk.MustAccAddressFromBech32(addr1)),
+		},
+		modAddrs: map[string]string{
+			"vbank/reserve": moduleBech32,
 		},
 	}
 	keeper, ctx := makeTestKit(acct, nil)

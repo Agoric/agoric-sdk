@@ -42,7 +42,7 @@ test.before(async t => {
   };
   const config = { bootstrap: 'bootstrap', vats };
   config.bundles = { zcf: { bundle: zcfBundle } };
-  config.defaultManagerType = 'xs-worker';
+  config.defaultManagerType = 'xs-worker'; // originally wanted for metering
 
   const step4 = Date.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;

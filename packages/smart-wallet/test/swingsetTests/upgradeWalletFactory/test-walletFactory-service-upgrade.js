@@ -16,7 +16,6 @@ const bfile = name => new URL(name, import.meta.url).pathname;
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */
   const config = {
-    defaultManagerType: 'local',
     bundleCachePath: 'bundles/',
     bootstrap: 'bootstrap',
     vats: {

@@ -1,3 +1,5 @@
+// @jessie-check
+
 export {};
 /**
  * @template T
@@ -60,7 +62,8 @@ export {};
  * outside the current package should consider it opaque, not depending on its
  * internal structure.
  * @property {IteratorResult<T>} head
- * @property {bigint} publishCount
+ * @property {bigint} publishCount starts at 1 for the first result
+ *   and advances by 1 for each subsequent result
  * @property {Promise<PublicationRecord<T>>} tail
  */
 
@@ -105,13 +108,14 @@ export {};
 /**
  * @template T
  * @typedef {object} Publisher
- * A valid sequence of calls to the methods of an `IterationObserver`
+ * A valid sequence of calls to the methods of a Publisher
  * represents an iteration. A valid sequence consists of any number of calls
- * to `publish` with the successive non-final values, followed by a
+ * to `publish` with the successive non-final values, optionally followed by a
  * final call to either `finish` with a successful `completion` value
  * or `fail` with the alleged `reason` for failure. After at most one
- * terminating calls, no further calls to these methods are valid and must be
- * rejected.
+ * terminating call, further calls to any of these methods are invalid and
+ * must be rejected.
+ *
  * @property {(nonFinalValue: T) => void} publish
  * @property {(completion: T) => void} finish
  * @property {(reason: any) => void} fail

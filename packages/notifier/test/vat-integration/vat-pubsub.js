@@ -1,6 +1,10 @@
 import { Far } from '@endo/marshal';
 import { provide } from '@agoric/vat-data';
-import { prepareDurablePublishKit } from '../../src/index.js';
+import {
+  prepareDurablePublishKit,
+  subscribeEach,
+  subscribeLatest,
+} from '../../src/index.js';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -19,6 +23,8 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     getVersion: () => version,
     getParameters: () => vatParameters,
     getSubscriber: () => subscriber,
+    subscribeEach: topic => subscribeEach(topic),
+    subscribeLatest: topic => subscribeLatest(topic),
     makeDurablePublishKit: (...args) => makeDurablePublishKit(...args),
     publish: value => publisher.publish(value),
     finish: finalValue => publisher.finish(finalValue),

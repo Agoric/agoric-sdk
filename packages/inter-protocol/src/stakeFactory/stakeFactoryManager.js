@@ -26,7 +26,7 @@ const trace = makeTracer('RSM', false);
  *   getDebtLimit: () => Amount<'nat'>,
  *   getInterestRate: () => Ratio,
  *   getMintingRatio: () => Ratio,
- *   getLoanFee: () => Ratio,
+ *   getMintFee: () => Ratio,
  * }} ParamManager
  * @typedef {{
  *   compoundedInterest: Ratio,
@@ -268,7 +268,7 @@ const manager = {
   getInterestRate: ({ state }) =>
     state.mintPowers.getGovernedParams().getInterestRate(),
   /** @param {MethodContext} context */
-  getLoanFee: ({ state }) => state.mintPowers.getGovernedParams().getLoanFee(),
+  getMintFee: ({ state }) => state.mintPowers.getGovernedParams().getMintFee(),
   /**
    * @param {MethodContext} context
    * @param {Amount} toBurn

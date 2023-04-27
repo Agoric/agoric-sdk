@@ -142,7 +142,7 @@ export const buildRootObject = () => {
         bundleId,
         privateArgs,
       );
-      assert.equal(upgradeResult.incarnationNumber, 2);
+      assert.equal(upgradeResult.incarnationNumber, 1);
 
       const [wallet2, isNew] = await E(creatorFacet).provideSmartWallet(
         walletAddr,
@@ -168,7 +168,7 @@ export const buildRootObject = () => {
         bundleId,
         privateArgs,
       );
-      assert.equal(upgradeResult.incarnationNumber, 3);
+      assert.equal(upgradeResult.incarnationNumber, 2);
       trace(`BOOT upgradeV2 startInstance`);
 
       const [wallet2, isNew] = await E(creatorFacet).provideSmartWallet(

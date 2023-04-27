@@ -65,7 +65,7 @@ export {};
  * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
- * @typedef {{ name: string, upgradeMessage: string, incarnationNumber: number }} DisconnectObject
+ * @typedef {import('@agoric/internal/src/upgrade-api.js').DisconnectionObject} DisconnectionObject
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
@@ -185,6 +185,10 @@ export {};
  * @typedef {object} SwingSetOptions
  * @property {string} [bootstrap]
  * @property {ConfigProposal[]} [coreProposals]
+ * @property {string[]} [exportStorageSubtrees] chain storage paths identifying roots of subtrees
+ *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
+ *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
+ *   `chainStorageEntries: [ ['c.o', null], ['c.o.i', null], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.

@@ -50,7 +50,7 @@ export const buildRootObject = () => {
       const upgradeResult = await E(facets.adminFacet).upgradeContract(
         bundleId,
       );
-      assert.equal(upgradeResult.incarnationNumber, 2);
+      assert.equal(upgradeResult.incarnationNumber, 1);
 
       const { publicFacet: issuer } = facets;
       const actualBrand = await E(issuer).getBrand();

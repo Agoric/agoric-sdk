@@ -6,7 +6,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { subscribeEach } from '@agoric/notifier';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
@@ -919,16 +919,14 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
 
-  await bookTracker.assertChange({
-    collateralAvailable: { value: 0n },
-  });
+  await bookTracker.assertChange({});
 
   await driver.advanceTo(170n, 'wait');
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 175n },
   });
   await bookTracker.assertChange({
-    collateralAvailable: { value: 100n },
+    collateralAvailable: { value: 0n },
     currentPriceLevel: makeRatioFromAmounts(
       bid.make(11_550_000_000_000n),
       collateral.make(10_000_000_000_000n),
@@ -988,7 +986,6 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
     nextStartTime: { absValue: 250n },
   });
   await bookTracker.assertChange({
-    collateralAvailable: { value: 0n },
     startCollateral: { value: 0n },
     currentPriceLevel: { numerator: { value: 11_550_000_000_000n } },
   });
@@ -1038,9 +1035,7 @@ test.serial('add assets to open auction', async t => {
 
   // price lock period before auction start
   await driver.advanceTo(167n);
-  await bookTracker.assertChange({
-    collateralAvailable: { value: 0n },
-  });
+  await bookTracker.assertChange({});
 
   await scheduleTracker.assertChange({
     activeStartTime: TimeMath.toAbs(170n, timerBrand),
@@ -1055,7 +1050,7 @@ test.serial('add assets to open auction', async t => {
   const resultL2 = await E(liqSeat2).getOfferResult();
   t.is(resultL2, 'deposited');
   await bookTracker.assertChange({
-    collateralAvailable: { value: 2000n },
+    collateralAvailable: { value: 3000n },
     startCollateral: { value: 3000n },
   });
 

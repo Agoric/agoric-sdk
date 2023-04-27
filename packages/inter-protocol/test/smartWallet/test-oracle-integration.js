@@ -1,10 +1,11 @@
+import '@agoric/vats/src/core/types.js';
+
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
-import '@agoric/vats/src/core/types.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/far';
 import { zip } from '@agoric/internal';

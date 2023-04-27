@@ -1,7 +1,8 @@
 // @ts-check
 import { E } from '@endo/far';
 import { assert } from '@agoric/assert';
-import { AmountMath } from '@agoric/ertp';
+// Avoid pulling in too many dependencies like notifiers
+import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
 /** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
 
