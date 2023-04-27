@@ -17,6 +17,7 @@ flowchart LR
 * [Gaia and Gaiad Manager](https://hermes.informal.systems/tutorials/pre-requisites/gaia.html)
   * If you're on an M1 Mac you also have to install Rosetta
 * [agoric-sdk](https://docs.agoric.com/guides/getting-started/)
+* [jq](https://stedolan.github.io/jq/download/)
 
 ## Components
 * **Relayer**: Hermes
@@ -130,7 +131,7 @@ export const addPegasusTransferPort = async (
 
 ## Running The Demo
 ### Prepare Cosmos Chain
-> Ignore error messages containing `ibc-0`
+> Ignore error messages containing `ibc-1`
 
 Start nodes
 
@@ -451,7 +452,7 @@ Now open your wallet UI and your dashboard should similar to this:
 ![](./images/dashboardBefore.png)
 
 Notice the IST balance is 12344.80 before you approve the offer. Now go on and approve the offer.
-Once the offer is accepted your dashboard should look similar to this:
+Once the offer is accepted your IST balance should decrease and the dashboard should look similar to this:
 
 ![](./images/dashboardAfter.png)
 
@@ -474,7 +475,7 @@ We have sent IST to CosmosHub using pegasus!
 
 ### Send Samoleans to Agoric
 
-To recieve and view assets from other chanin you must create your peg using `pegRemote`. In the previous section
+To recieve and view assets from other chains you must create your peg using `pegRemote`. In the previous section
 we created our peg using `pegLocal` because IST is a local asset to Agoric.
 
 Create your remote peg by running below command:
