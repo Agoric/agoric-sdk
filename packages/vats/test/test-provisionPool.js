@@ -10,18 +10,18 @@ import {
   withAmountUtils,
 } from '@agoric/inter-protocol/test/supports.js';
 import { WalletName } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import path from 'path';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { PowerFlags } from '../src/walletFlags.js';
 import { makeBoard } from '../src/lib-board.js';
 import { makeNameHubKit } from '../src/nameHub.js';
 import { makeBridgeProvisionTool } from '../src/provisionPool.js';
 import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
+import { PowerFlags } from '../src/walletFlags.js';
 import { makeFakeBankKit } from '../tools/bank-utils.js';
 
 const pathname = new URL(import.meta.url).pathname;
@@ -100,6 +100,7 @@ const makeTestContext = async () => {
     terms: {
       anchorBrand: anchor.brand,
       anchorPerMinted: makeRatio(100n, anchor.brand, 100n, mintedBrand),
+      electionManager: Far('mock election manager'),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,

@@ -37,8 +37,8 @@ const BASIS_POINTS = 10_000n;
  * @typedef {object} PSMKit
  * @property {Instance} psm
  * @property {Instance} psmGovernor
- * @property {Awaited<ReturnType<Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']['getLimitedCreatorFacet']>>} psmCreatorFacet
- * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['start']>} psmGovernorCreatorFacet
+ * @property {Awaited<ReturnType<Awaited<ReturnType<import('../psm/psm.js')['prepare']>>['creatorFacet']['getLimitedCreatorFacet']>>} psmCreatorFacet
+ * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['prepare']>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 

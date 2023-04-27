@@ -147,6 +147,8 @@ export const ZcfMintI = M.interface('ZcfMint', {
   ).returns(),
 });
 
+export const FeeMintAccessShape = M.remotable('FeeMintAccess');
+
 export const ExitObjectI = M.interface('Exit Object', {
   exit: M.call().returns(),
 });
@@ -177,7 +179,7 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
       M.splitRecord(harden({}), harden({ elementShape: M.pattern() })),
     )
     .returns(M.remotable('zoeMint')),
-  registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
+  registerFeeMint: M.call(KeywordShape, FeeMintAccessShape).returns(
     M.remotable('feeMint'),
   ),
   replaceAllocations: M.call(SeatHandleAllocationsShape).returns(),
@@ -204,7 +206,7 @@ export const InstanceStorageManagerIKit = harden({
         M.splitRecord(harden({}), harden({ elementShape: M.pattern() })),
       )
       .returns(M.eref(ZoeMintShape)),
-    registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
+    registerFeeMint: M.call(KeywordShape, FeeMintAccessShape).returns(
       M.remotable('feeMint'),
     ),
     getInstanceRecord: M.call().returns(InstanceRecordShape),

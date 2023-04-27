@@ -4,12 +4,14 @@ import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
+  CONTRACT_ELECTORATE,
   handleParamGovernance,
   ParamTypes,
   publicMixinAPI,
 } from '@agoric/governance';
+import { StorageNodeShape } from '@agoric/internal';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicRearrange,
@@ -17,16 +19,23 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
+  makeRecorderTopic,
+  prepareRecorderKitMakers,
+  provideAll,
+  provideEmptySeat,
+  TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  AmountKeywordRecordShape,
+  FeeMintAccessShape,
+  InstanceHandleShape,
+  InvitationShape,
+} from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import {
-  makeMetricsPublishKit,
-  makeNatAmountShape,
-} from '../contractSupport.js';
+import { makeNatAmountShape } from '../contractSupport.js';
 
 const { Fail } = assert;
 
@@ -58,6 +67,36 @@ const { Fail } = assert;
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
+export const customTermsShape = {
+  anchorBrand: BrandShape,
+  anchorPerMinted: RatioShape,
+  electionManager: InstanceHandleShape,
+  governedParams: {
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.INVITATION,
+      value: AmountShape,
+    },
+    WantMintedFee: {
+      type: ParamTypes.RATIO,
+      value: RatioShape,
+    },
+    GiveMintedFee: {
+      type: ParamTypes.RATIO,
+      value: RatioShape,
+    },
+    MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
+  },
+};
+harden(customTermsShape);
+
+export const privateArgsShape = {
+  feeMintAccess: FeeMintAccessShape,
+  initialPoserInvitation: InvitationShape,
+  storageNode: StorageNodeShape,
+  marshaller: M.remotable('marshaller'),
+};
+harden(privateArgsShape);
+
 /**
  * @param {ZCF<GovernanceTerms<{
  *    GiveMintedFee: 'ratio',
@@ -70,14 +109,18 @@ const { Fail } = assert;
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
  * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
-  const stableMint = await zcf.registerFeeMint(
-    'Minted',
-    privateArgs.feeMintAccess,
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    privateArgs.marshaller,
   );
+
+  const { stableMint } = await provideAll(baggage, {
+    stableMint: () => zcf.registerFeeMint('Minted', privateArgs.feeMintAccess),
+  });
   const { brand: stableBrand } = stableMint.getIssuerRecord();
   (anchorPerMinted.numerator.brand === anchorBrand &&
     anchorPerMinted.denominator.brand === stableBrand) ||
@@ -89,7 +132,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const { publicMixin, makeFarGovernorFacet, params } =
+  const { publicMixin, makeDurableGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -102,38 +145,45 @@ export const start = async (zcf, privateArgs, baggage) => {
       privateArgs.marshaller,
     );
 
-  const provideEmptyZcfSeat = name => {
-    return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
-  };
+  const anchorPool = provideEmptySeat(zcf, baggage, 'anchorPoolSeat');
+  const feePool = provideEmptySeat(zcf, baggage, 'feePoolSeat');
+  const stage = provideEmptySeat(zcf, baggage, 'stageSeat');
 
-  const anchorPool = provideEmptyZcfSeat('anchorPoolSeat');
-  const feePool = provideEmptyZcfSeat('feePoolSeat');
-  const stage = provideEmptyZcfSeat('stageSeat');
-
-  let mintedPoolBalance = provide(baggage, 'mintedPoolBalance', () =>
+  // XXX access these through baggage directly so changes are saved
+  // Normally these would be in Exo class state but that's too big a change atm
+  provide(baggage, 'mintedPoolBalance', () =>
     AmountMath.makeEmpty(stableBrand),
   );
-
-  let totalAnchorProvided = provide(baggage, 'totalAnchorProvided', () =>
+  provide(baggage, 'totalAnchorProvided', () =>
     AmountMath.makeEmpty(anchorBrand),
   );
-  let totalMintedProvided = provide(baggage, 'totalMintedProvided', () =>
+  provide(baggage, 'totalMintedProvided', () =>
     AmountMath.makeEmpty(stableBrand),
   );
 
-  /** @type {import('../contractSupport.js').MetricsPublishKit<MetricsNotification>} */
-  const { metricsPublisher, metricsSubscriber } = makeMetricsPublishKit(
-    privateArgs.storageNode,
-    privateArgs.marshaller,
-  );
+  const { metricsKit } = await provideAll(baggage, {
+    metricsKit: () =>
+      E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
+        makeRecorderKit(
+          node,
+          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+            M.any()
+          ),
+        ),
+      ),
+  });
+  const topics = harden({
+    metrics: makeRecorderTopic('PSM metrics', metricsKit),
+  });
+
   const updateMetrics = () => {
-    metricsPublisher.publish(
+    void E(metricsKit.recorder).write(
       harden({
         anchorPoolBalance: anchorPool.getAmountAllocated('Anchor', anchorBrand),
         feePoolBalance: feePool.getAmountAllocated('Minted', stableBrand),
-        mintedPoolBalance,
-        totalAnchorProvided,
-        totalMintedProvided,
+        mintedPoolBalance: baggage.get('mintedPoolBalance'),
+        totalAnchorProvided: baggage.get('totalAnchorProvided'),
+        totalMintedProvided: baggage.get('totalMintedProvided'),
       }),
     );
   };
@@ -169,7 +219,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     } = seat.getProposal();
     stableMint.mintGains({ Minted: target.feePoolBalance }, feePool);
     atomicTransfer(zcf, seat, anchorPool, { Anchor });
-    ({ mintedPoolBalance, totalAnchorProvided, totalMintedProvided } = target);
+    baggage.set('mintedPoolBalance', target.mintedPoolBalance);
+    baggage.set('totalAnchorProvided', target.totalAnchorProvided);
+    baggage.set('totalMintedProvided', target.totalMintedProvided);
     seat.exit();
     updateMetrics();
   };
@@ -178,19 +230,28 @@ export const start = async (zcf, privateArgs, baggage) => {
    * @param {Amount<'nat'>} toMint
    */
   const assertUnderLimit = toMint => {
-    const mintedAfter = AmountMath.add(mintedPoolBalance, toMint);
+    const mintedAfter = AmountMath.add(
+      baggage.get('mintedPoolBalance'),
+      toMint,
+    );
     AmountMath.isGTE(params.getMintLimit(), mintedAfter) ||
       Fail`Request would exceed mint limit`;
   };
 
   const burnMinted = toBurn => {
     stableMint.burnLosses({ Minted: toBurn }, stage);
-    mintedPoolBalance = AmountMath.subtract(mintedPoolBalance, toBurn);
+    baggage.set(
+      'mintedPoolBalance',
+      AmountMath.subtract(baggage.get('mintedPoolBalance'), toBurn),
+    );
   };
 
   const mintMinted = toMint => {
     stableMint.mintGains({ Minted: toMint }, stage);
-    mintedPoolBalance = AmountMath.add(mintedPoolBalance, toMint);
+    baggage.set(
+      'mintedPoolBalance',
+      AmountMath.add(baggage.get('mintedPoolBalance'), toMint),
+    );
   };
 
   /**
@@ -216,7 +277,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     // one immediately below. This `burnMinted`
     // happen only if the `atomicRearrange` does *not* throw.
     burnMinted(afterFee);
-    totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
+    baggage.set(
+      'totalAnchorProvided',
+      AmountMath.add(baggage.get('totalAnchorProvided'), maxAnchor),
+    );
   };
 
   /**
@@ -248,7 +312,10 @@ export const start = async (zcf, privateArgs, baggage) => {
       burnMinted(asStable);
       throw e;
     }
-    totalMintedProvided = AmountMath.add(totalMintedProvided, asStable);
+    baggage.set(
+      'totalMintedProvided',
+      AmountMath.add(baggage.get('totalMintedProvided'), asStable),
+    );
   };
 
   /** @param {ZCFSeat} seat */
@@ -273,86 +340,100 @@ export const start = async (zcf, privateArgs, baggage) => {
     updateMetrics();
   };
 
-  const [anchorAmountShape, stableAmountShape] = await Promise.all([
-    E(anchorBrand).getAmountShape(),
-    E(stableBrand).getAmountShape(),
-  ]);
-
-  const PSMI = M.interface('PSM', {
-    getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
-    getPoolBalance: M.call().returns(anchorAmountShape),
-    makeWantMintedInvitation: M.call().returns(M.promise()),
-    makeGiveMintedInvitation: M.call().returns(M.promise()),
-    ...publicMixinAPI,
+  const { anchorAmountShape, stableAmountShape } = await provideAll(baggage, {
+    anchorAmountShape: () => E(anchorBrand).getAmountShape(),
+    stableAmountShape: () => E(stableBrand).getAmountShape(),
   });
 
-  const methods = {
-    getMetrics() {
-      return metricsSubscriber;
-    },
-    getPoolBalance() {
-      return anchorPool.getAmountAllocated('Anchor', anchorBrand);
-    },
-    makeWantMintedInvitation() {
-      return zcf.makeInvitation(
-        wantMintedHook,
-        'wantMinted',
-        undefined,
-        M.splitRecord({
-          give: { In: anchorAmountShape },
-          want: M.or({ Out: stableAmountShape }, {}),
-        }),
-      );
-    },
-    makeGiveMintedInvitation() {
-      return zcf.makeInvitation(
-        giveMintedHook,
-        'giveMinted',
-        undefined,
-        M.splitRecord({
-          give: { In: stableAmountShape },
-          want: M.or({ Out: anchorAmountShape }, {}),
-        }),
-      );
-    },
-    ...publicMixin,
-  };
   const publicFacet = prepareExo(
     baggage,
     'Parity Stability Module',
-    PSMI,
-    methods,
+    M.interface('PSM', {
+      getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+      getPoolBalance: M.call().returns(anchorAmountShape),
+      getPublicTopics: M.call().returns(TopicsRecordShape),
+      makeWantMintedInvitation: M.call().returns(M.promise()),
+      makeGiveMintedInvitation: M.call().returns(M.promise()),
+      ...publicMixinAPI,
+    }),
+    {
+      getMetrics() {
+        return metricsKit.subscriber;
+      },
+      getPoolBalance() {
+        return anchorPool.getAmountAllocated('Anchor', anchorBrand);
+      },
+      getPublicTopics() {
+        return topics;
+      },
+      makeWantMintedInvitation() {
+        return zcf.makeInvitation(
+          wantMintedHook,
+          'wantMinted',
+          undefined,
+          M.splitRecord({
+            give: { In: anchorAmountShape },
+            want: M.or({ Out: stableAmountShape }, {}),
+          }),
+        );
+      },
+      makeGiveMintedInvitation() {
+        return zcf.makeInvitation(
+          giveMintedHook,
+          'giveMinted',
+          undefined,
+          M.splitRecord({
+            give: { In: stableAmountShape },
+            want: M.or({ Out: anchorAmountShape }, {}),
+          }),
+        );
+      },
+      ...publicMixin,
+    },
   );
 
-  // The creator facets are only accessibly to governance and bootstrap,
-  // and so do not need interface protection at this time. Additionally,
-  // all the operations take no arguments and so are largely defensive as is.
-  const limitedCreatorFacet = Far('Parity Stability Module', {
-    getRewardAllocation() {
-      return feePool.getCurrentAllocation();
+  const limitedCreatorFacet = prepareExo(
+    baggage,
+    'PSM machine',
+    M.interface('PSM machine', {
+      getRewardAllocation: M.call().returns(AmountKeywordRecordShape),
+      makeCollectFeesInvitation: M.call().returns(
+        M.promise(/* InvitationShape */),
+      ),
+      makeRestoreMetricsInvitation: M.call().returns(
+        M.promise(/* InvitationShape */),
+      ),
+    }),
+    {
+      getRewardAllocation() {
+        return feePool.getCurrentAllocation();
+      },
+      makeCollectFeesInvitation() {
+        return makeCollectFeesInvitation(zcf, feePool, stableBrand, 'Minted');
+      },
+      makeRestoreMetricsInvitation() {
+        return zcf.makeInvitation(
+          restoreMetricsHook,
+          'restoreMetrics',
+          undefined,
+          M.splitRecord({
+            give: {
+              Anchor: AnchorAmountShape,
+            },
+          }),
+        );
+      },
     },
-    makeCollectFeesInvitation() {
-      return makeCollectFeesInvitation(zcf, feePool, stableBrand, 'Minted');
-    },
-    makeRestoreMetricsInvitation() {
-      return zcf.makeInvitation(
-        restoreMetricsHook,
-        'restoreMetrics',
-        undefined,
-        M.splitRecord({
-          give: {
-            Anchor: AnchorAmountShape,
-          },
-        }),
-      );
-    },
-  });
+  );
 
-  const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);
+  const { governorFacet } = makeDurableGovernorFacet(
+    baggage,
+    limitedCreatorFacet,
+  );
   return harden({
     creatorFacet: governorFacet,
     publicFacet,
   });
 };
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */
+/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} PsmPublicFacet */

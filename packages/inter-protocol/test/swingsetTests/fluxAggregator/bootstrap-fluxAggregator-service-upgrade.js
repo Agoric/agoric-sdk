@@ -13,7 +13,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
-const trace = makeTracer('BootWFUpg');
+const trace = makeTracer('BootFAUpg');
 
 export const faV1BundleName = 'fluxAggregatorV1';
 
