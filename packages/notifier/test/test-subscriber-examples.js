@@ -1,9 +1,7 @@
-// @ts-check
-
 import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/far';
 import {
   observeIteration,
   makeSubscriptionKit,
@@ -11,7 +9,7 @@ import {
 } from '../src/index.js';
 import { paula, alice, bob, carol } from './iterable-testing-tools.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 test('subscription for-await-of success example', async t => {
   const { publication, subscription } = makeSubscriptionKit();
@@ -89,7 +87,7 @@ test('subscription for-await-of on generic representative', async t => {
   paula(publication);
   const subP = Promise.resolve(subscription);
   const { publication: p, subscription: localSub } = makeSubscriptionKit();
-  observeIteration(subP, p);
+  await observeIteration(subP, p);
   const log = await alice(localSub);
 
   t.deepEqual(log, [['non-final', 'a'], ['non-final', 'b'], ['finished']]);
@@ -100,7 +98,7 @@ test('subscription observeIteration on generic representative', async t => {
   paula(publication);
   const subP = Promise.resolve(subscription);
   const { publication: p, subscription: localSub } = makeSubscriptionKit();
-  observeIteration(subP, p);
+  await observeIteration(subP, p);
   const log = await bob(localSub);
 
   t.deepEqual(log, [
@@ -117,17 +115,15 @@ test('subscription observeIteration on generic representative', async t => {
 test('subscribe to subscriptionIterator success example', async t => {
   const { publication, subscription } = makeSubscriptionKit();
   paula(publication);
-  const log = await carol(subscription);
+  const [log1, log2] = await carol(subscription);
 
-  t.deepEqual(log, [
-    [
-      ['non-final', 'a'],
-      ['non-final', 'b'],
-      ['finished', 'done'],
-    ],
-    [
-      ['non-final', 'b'],
-      ['finished', 'done'],
-    ],
+  t.deepEqual(log1, [
+    ['non-final', 'a'],
+    ['non-final', 'b'],
+    ['finished', 'done'],
+  ]);
+  t.deepEqual(log2, [
+    ['non-final', 'b'],
+    ['finished', 'done'],
   ]);
 });

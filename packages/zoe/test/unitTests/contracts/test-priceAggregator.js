@@ -1,40 +1,67 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert } from '@agoric/assert';
+import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
+import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+// eslint-disable-next-line import/no-extraneous-dependencies -- XXX refactor
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
+import { start } from '../../../src/contracts/priceAggregator.js';
 
-import '../../../exported.js';
 import '../../../src/contracts/exported.js';
+import {
+  addRatios,
+  makeRatio,
+  multiplyBy,
+  multiplyRatios,
+  parseRatio,
+} from '../../../src/contractSupport/ratio.js';
 
 /**
  * @callback MakeFakePriceOracle
- * @param {ExecutionContext} t
  * @param {bigint} [valueOut]
  * @returns {Promise<OracleKit & { instance: Instance }>}
  */
 
 /**
- * @typedef {Object} TestContext
+ * Type to refine the `timer` term used in tests
+ *
+ * @param {ZCF<{
+ * timer: ManualTimer,
+ * POLL_INTERVAL: bigint,
+ * brandIn: Brand<'nat'>,
+ * brandOut: Brand<'nat'>,
+ * unitAmountIn: Amount<'nat'>,
+ * }>} zcf
+ * @param {{
+ * marshaller: Marshaller,
+ * quoteMint?: ERef<Mint<'set'>>,
+ * storageNode: StorageNode,
+ * }} privateArgs
+ */
+// eslint-disable-next-line no-unused-vars -- used for typedef
+const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
+
+/**
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
- *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
 
 const filename = new URL(import.meta.url).pathname;
@@ -43,109 +70,291 @@ const dirname = path.dirname(filename);
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
 const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;
 
-test.before(
-  'setup aggregator and oracles',
-  /** @param {ExecutionContext} ot */ async ot => {
-    // Outside of tests, we should use the long-lived Zoe on the
-    // testnet. In this test, we must create a new Zoe.
-    const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
-    const feePurse = E(zoeService).makeFeePurse();
-    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+const makePublicationChecker = async (t, aggregatorPublicFacet) => {
+  const publications = E(
+    subscribeEach(E(aggregatorPublicFacet).getSubscriber()),
+  )[Symbol.asyncIterator]();
 
-    // Pack the contracts.
-    const oracleBundle = await bundleSource(oraclePath);
-    const aggregatorBundle = await bundleSource(aggregatorPath);
+  return {
+    /** @param {{timestamp: bigint, amountOut: any}} spec */
+    async nextMatches({ timestamp, amountOut }) {
+      const { value } = await E(publications).next();
+      t.is(value.timestamp, timestamp, 'wrong timestamp');
+      t.is(value.amountOut.value, amountOut, 'wrong amountOut value');
+    },
+  };
+};
 
-    // Install the contract on Zoe, getting an installation. We can
-    // use this installation to look up the code we installed. Outside
-    // of tests, we can also send the installation to someone
-    // else, and they can use it to create a new contract instance
-    // using the same code.
-    const oracleInstallation = await E(zoe).install(oracleBundle);
-    const aggregatorInstallation = await E(zoe).install(aggregatorBundle);
+/** @type {import('ava').TestFn<TestContext>} */
+const test = unknownTest;
 
-    const link = makeIssuerKit('$LINK', AssetKind.NAT);
-    const usd = makeIssuerKit('$USD', AssetKind.NAT);
+test.before('setup aggregator and oracles', async t => {
+  // Outside of tests, we should use the long-lived Zoe on the
+  // testnet. In this test, we must create a new Zoe.
+  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(admin);
 
-    /** @type {MakeFakePriceOracle} */
-    const makeFakePriceOracle = async (t, valueOut = undefined) => {
-      /** @type {OracleHandler} */
-      const oracleHandler = Far('OracleHandler', {
-        async onQuery({ increment }, _fee) {
-          valueOut += increment;
-          return harden({
-            reply: `${valueOut}`,
-            requiredFee: AmountMath.makeEmpty(link.brand),
-          });
-        },
-        onError(query, reason) {
-          console.error('query', query, 'failed with', reason);
-        },
-        onReply(_query, _reply) {},
-      });
+  // Pack the contracts.
+  const oracleBundle = await bundleSource(oraclePath);
+  const aggregatorBundle = await bundleSource(aggregatorPath);
 
-      /** @type {OracleStartFnResult} */
-      const startResult = await E(zoe).startInstance(
-        oracleInstallation,
-        { Fee: link.issuer },
-        { oracleDescription: 'myOracle' },
-      );
-      const creatorFacet = await E(startResult.creatorFacet).initialize({
-        oracleHandler,
-      });
+  // Install the contract on Zoe, getting an installation. We can
+  // use this installation to look up the code we installed. Outside
+  // of tests, we can also send the installation to someone
+  // else, and they can use it to create a new contract instance
+  // using the same code.
+  vatAdminState.installBundle('b1-oracle', oracleBundle);
+  /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
+  const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
+  vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+  /** @type {Installation<import('../../../src/contracts/priceAggregator.js').start>} */
+  const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
-      return harden({
-        ...startResult,
-        creatorFacet,
-      });
-    };
+  const link = makeIssuerKit('$ATOM');
+  const { brand: atomBrand } = makeIssuerKit('$ATOM');
+  const { brand: usdBrand } = makeIssuerKit('$USD');
 
-    const quote = makeIssuerKit('quote', AssetKind.SET);
-    /**
-     * @param {RelativeTime} POLL_INTERVAL
-     */
-    const makeMedianAggregator = async POLL_INTERVAL => {
-      const timer = buildManualTimer(() => {});
-      const aggregator = await E(zoe).startInstance(
-        aggregatorInstallation,
-        { In: link.issuer, Out: usd.issuer },
-        { timer, POLL_INTERVAL },
-      );
-      await E(aggregator.creatorFacet).initializeQuoteMint(quote.mint);
-      return aggregator;
-    };
-    ot.context.zoe = zoe;
-    ot.context.makeFakePriceOracle = makeFakePriceOracle;
-    ot.context.makeMedianAggregator = makeMedianAggregator;
-  },
-);
+  /**
+   *  @type {MakeFakePriceOracle}
+   */
+  const makeFakePriceOracle = async (valueOut = 0n) => {
+    /** @type {OracleHandler} */
+    const oracleHandler = Far('OracleHandler', {
+      async onQuery({ increment }, _fee) {
+        assert(increment);
+        valueOut += increment;
+        return harden({
+          reply: `${valueOut}`,
+          requiredFee: AmountMath.makeEmpty(link.brand),
+        });
+      },
+      onError(query, reason) {
+        console.error('query', query, 'failed with', reason);
+      },
+      onReply(_query, _reply) {},
+    });
 
-test('median aggregator', /** @param {ExecutionContext} t */ async t => {
+    const startResult = await E(zoe).startInstance(
+      oracleInstallation,
+      { Fee: link.issuer },
+      { oracleDescription: 'myOracle' },
+    );
+    const creatorFacet = await E(startResult.creatorFacet).initialize({
+      oracleHandler,
+    });
+
+    return harden({
+      ...startResult,
+      creatorFacet,
+    });
+  };
+
+  /**
+   * @param {bigint} [unitValueIn] unit size of amountIn brand
+   */
+  const makeMedianAggregator = async (unitValueIn = 1n) => {
+    // ??? why do we need the Far here and not in VaultFactory tests?
+    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const storageRoot = makeMockChainStorageRoot();
+
+    const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
+    const POLL_INTERVAL = 1n;
+    const storageNode = E(storageRoot).makeChildNode('priceAggregator');
+    const aggregator = await E(zoe).startInstance(
+      aggregatorInstallation,
+      undefined,
+      {
+        timer,
+        POLL_INTERVAL,
+        brandIn: atomBrand,
+        brandOut: usdBrand,
+        unitAmountIn: AmountMath.make(atomBrand, unitValueIn),
+      },
+      {
+        marshaller,
+        storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
+      },
+    );
+    return { ...aggregator, mockStorageRoot: storageRoot };
+  };
+  t.context.zoe = zoe;
+  t.context.makeFakePriceOracle = makeFakePriceOracle;
+  t.context.makeMedianAggregator = makeMedianAggregator;
+});
+
+test('median aggregator', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
   const {
     timer: oracleTimer,
-    brands: { In: brandIn, Out: brandOut },
-    issuers: { Quote: quoteIssuer },
-    unitAmountIn = AmountMath.make(brandIn, 1n),
+    brandIn,
+    brandOut,
+    issuers: { Quote: rawQuoteIssuer },
+    unitAmountIn,
   } = await E(zoe).getTerms(aggregator.instance);
+  /** @type {Issuer<'set'>} */
+  const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
-  const pricePush = await makeFakePriceOracle(t);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
+  const pricePush = await makeFakePriceOracle();
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
-  // TODO: Port this to makeQuoteNotifier(amountIn, brandOut)
-  // @ts-ignore fix needed
-  const notifier = E(pa).makeQuoteNotifier(
-    AmountMath.make(brandIn, 1n),
-    brandOut,
-  );
+  const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
   });
+  const publications = await makePublicationChecker(t, aggregator.publicFacet);
+
+  /** @type {UpdateRecord<PriceQuote>} */
+  let lastRec;
+  const tickAndQuote = async () => {
+    await oracleTimer.tick();
+    lastRec = await E(notifier).getUpdateSince(lastRec && lastRec.updateCount);
+
+    const q = await E(quoteIssuer).getAmountOf(lastRec.value.quotePayment);
+    t.deepEqual(q, lastRec.value.quoteAmount);
+    const [{ timestamp, timer, amountIn, amountOut }] = q.value;
+    t.is(timer, oracleTimer);
+    const valueOut = AmountMath.getValue(brandOut, amountOut);
+
+    t.deepEqual(amountIn, unitAmountIn);
+
+    // Validate that we can get a recent amountOut explicitly as well.
+    const { quotePayment: recentG } = await E(pa).quoteGiven(
+      unitAmountIn,
+      brandOut,
+    );
+    const recentGQ = await E(quoteIssuer).getAmountOf(recentG);
+    const [
+      {
+        timestamp: rgTimestamp,
+        timer: rgTimer,
+        amountIn: rgIn,
+        amountOut: rgOut,
+      },
+    ] = recentGQ.value;
+    t.is(rgTimer, oracleTimer);
+    t.is(rgTimestamp, timestamp);
+    t.deepEqual(rgIn, amountIn);
+    t.deepEqual(rgOut, amountOut);
+
+    const { quotePayment: recentW } = await E(pa).quoteWanted(brandIn, rgOut);
+    const recentWQ = await E(quoteIssuer).getAmountOf(recentW);
+    const [
+      {
+        timestamp: rwTimestamp,
+        timer: rwTimer,
+        amountIn: rwIn,
+        amountOut: rwOut,
+      },
+    ] = recentWQ.value;
+    t.is(rwTimer, oracleTimer);
+    t.is(rwTimestamp, timestamp);
+    t.deepEqual(rwIn, amountIn);
+    t.deepEqual(rwOut, amountOut);
+
+    return { timestamp, amountOut: valueOut };
+  };
+
+  await publications.nextMatches({ amountOut: 1010n, timestamp: 0n });
+
+  const quote0 = await tickAndQuote();
+  t.deepEqual(quote0, { amountOut: 1020n, timestamp: 1n });
+  await publications.nextMatches(quote0);
+
+  const quote1 = await tickAndQuote();
+  t.deepEqual(quote1, { amountOut: 1030n, timestamp: 2n });
+  await publications.nextMatches(quote1);
+
+  const price1300Admin = await E(aggregator.creatorFacet).initOracle(
+    price1300.instance,
+    {
+      increment: 8n,
+    },
+  );
+  // Publications and tickAndQuote getUpdateSince ensures one record per update
+  await publications.nextMatches({
+    amountOut: 1169n,
+    timestamp: 2n,
+  });
+
+  const quote2 = await tickAndQuote();
+  t.deepEqual(quote2, { amountOut: 1178n, timestamp: 3n });
+  await publications.nextMatches(quote2);
+
+  const quote3 = await tickAndQuote();
+  t.deepEqual(quote3, { amountOut: 1187n, timestamp: 4n });
+  await publications.nextMatches(quote3);
+
+  await E(aggregator.creatorFacet).initOracle(price800.instance, {
+    increment: 17n,
+  });
+  await publications.nextMatches({
+    amountOut: 1050n,
+    timestamp: 4n,
+  });
+
+  const quote4 = await tickAndQuote();
+  t.deepEqual(quote4, { amountOut: 1060n, timestamp: 5n });
+  await publications.nextMatches(quote4);
+
+  const quote5 = await tickAndQuote();
+  t.deepEqual(quote5, { amountOut: 1070n, timestamp: 6n });
+  await publications.nextMatches(quote5);
+
+  // Push a price into the fray.
+  const pricePushAdmin = await E(aggregator.creatorFacet).initOracle(
+    pricePush.instance,
+  );
+  await E(pricePushAdmin).pushResult('1069');
+
+  const quote6 = await tickAndQuote();
+  t.deepEqual(quote6, { amountOut: 1074n, timestamp: 7n });
+  await publications.nextMatches(quote6);
+
+  await E(pricePushAdmin).delete();
+  await publications.nextMatches({
+    amountOut: 1080n,
+    timestamp: 7n,
+  });
+
+  const quote7 = await tickAndQuote();
+  t.deepEqual(quote7, { amountOut: 1090n, timestamp: 8n });
+  await publications.nextMatches(quote7);
+
+  await E(price1300Admin).delete();
+  await publications.nextMatches({
+    amountOut: 987n,
+    timestamp: 8n,
+  });
+
+  const quote8 = await tickAndQuote();
+  // 1001n b/c the 800 stream is incrementing within the timestamp, driving the amount up with 885 -> 902
+  t.deepEqual(quote8, { amountOut: 1001n, timestamp: 9n });
+  await publications.nextMatches(quote8);
+});
+
+test('median aggregator - push only', async t => {
+  const { makeFakePriceOracle, zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator();
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut,
+    issuers: { Quote: rawQuoteIssuer },
+    unitAmountIn,
+  } = await E(zoe).getTerms(aggregator.instance);
+  /** @type {Issuer<'set'>} */
+  const quoteIssuer = rawQuoteIssuer;
+
+  const pricePush = await makeFakePriceOracle();
+  const pa = E(aggregator.publicFacet).getPriceAuthority();
+
+  const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
 
   /** @type {UpdateRecord<PriceQuote>} */
   let lastRec;
@@ -202,67 +411,185 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
     pricePush.instance,
   );
 
-  const quote0 = await tickAndQuote();
-  t.deepEqual(quote0, { amountOut: 1020n, timestamp: 1n });
-
-  const quote1 = await tickAndQuote();
-  t.deepEqual(quote1, { amountOut: 1030n, timestamp: 2n });
-
-  const price1300Admin = await E(aggregator.creatorFacet).initOracle(
-    price1300.instance,
-    {
-      increment: 8n,
-    },
-  );
-
-  const quote2 = await tickAndQuote();
-  t.deepEqual(quote2, { amountOut: 1178n, timestamp: 3n });
-
-  const quote3 = await tickAndQuote();
-  t.deepEqual(quote3, { amountOut: 1187n, timestamp: 4n });
-
-  await E(aggregator.creatorFacet).initOracle(price800.instance, {
-    increment: 17n,
-  });
-
-  const quote4 = await tickAndQuote();
-  t.deepEqual(quote4, { amountOut: 1060n, timestamp: 5n });
-
-  const quote5 = await tickAndQuote();
-  t.deepEqual(quote5, { amountOut: 1070n, timestamp: 6n });
-
   // Push a price into the fray.
   await E(pricePushAdmin).pushResult('1069');
 
-  const quote6 = await tickAndQuote();
-  t.deepEqual(quote6, { amountOut: 1074n, timestamp: 7n });
+  const quote1 = await tickAndQuote();
+  t.deepEqual(quote1, { amountOut: 1069n, timestamp: 1n });
+
+  await E(pricePushAdmin).pushResult('1073');
+
+  const quote2 = await tickAndQuote();
+  t.deepEqual(quote2, { amountOut: 1073n, timestamp: 2n });
 
   await E(pricePushAdmin).delete();
-
-  const quote7 = await tickAndQuote();
-  t.deepEqual(quote7, { amountOut: 1090n, timestamp: 8n });
-
-  await E(price1300Admin).delete();
-
-  const quote8 = await tickAndQuote();
-  t.deepEqual(quote8, { amountOut: 1001n, timestamp: 9n });
 });
 
-test('quoteAtTime', /** @param {ExecutionContext} t */ async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+test('oracle invitation', async t => {
+  const { zoe } = t.context;
 
-  const userTimer = buildManualTimer(() => {});
-
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
   const {
     timer: oracleTimer,
-    brands: { Out: usdBrand, In: brandIn },
-    issuers: { Quote: quoteIssuer },
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
+  const inv1 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle1');
+  const { notifier: oracle1, updater: updater1 } = makeNotifierKit();
+  const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
+  const oracleAdmin1 = E(or1).getOfferResult();
+
+  /** @type {Amount<'nat'>} */
+  const amountIn = AmountMath.make(brandIn, 1000000n);
+  const makeQuoteValue = (timestamp, valueOut) => [
+    {
+      timer: oracleTimer,
+      timestamp,
+      amountIn,
+      amountOut: AmountMath.make(brandOut, valueOut),
+    },
+  ];
+
+  const notifier = E(
+    E(aggregator.publicFacet).getPriceAuthority(),
+  ).makeQuoteNotifier(amountIn, brandOut);
+
+  updater1.updateState('1234');
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value: value1, updateCount: uc1 } = await E(
+    notifier,
+  ).getUpdateSince();
+  t.deepEqual(value1.quoteAmount.value, makeQuoteValue(3n, 1_234_000_000n));
+
+  updater1.updateState('1234.567');
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value: value2, updateCount: uc2 } = await E(notifier).getUpdateSince(
+    uc1,
+  );
+  t.deepEqual(value2.quoteAmount.value, makeQuoteValue(5n, 1_234_567_000n));
+
+  const inv2 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle2');
+  const { notifier: oracle2, updater: updater2 } = makeNotifierKit();
+  const or2 = E(zoe).offer(inv2, undefined, undefined, {
+    notifier: oracle2,
+    scaleValueOut: 0.001,
+  });
+  const oracleAdmin2 = E(or2).getOfferResult();
+
+  updater2.updateState('1234');
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value: value3, updateCount: uc3 } = await E(notifier).getUpdateSince(
+    uc2,
+  );
+
+  // Check median calculation of two oracles.
+  const price1 = parseRatio('1234.567', brandOut, brandIn);
+  const price2 = parseRatio('1.234', brandOut, brandIn);
+  const medianPrice = multiplyRatios(
+    addRatios(price1, price2),
+    parseRatio('0.5', brandOut),
+  );
+  t.deepEqual(
+    value3.quoteAmount.value,
+    makeQuoteValue(8n, multiplyBy(amountIn, medianPrice).value),
+  );
+
+  await E(E.get(oracleAdmin1).admin).delete();
+
+  updater2.updateState('1234');
+  await E(oracleTimer).tick();
+  const { value: value4, updateCount: uc4 } = await E(notifier).getUpdateSince(
+    uc3,
+  );
+  t.deepEqual(value4.quoteAmount.value, makeQuoteValue(9n, 1_234_000n));
+
+  updater2.updateState('1234.567890');
+
+  await eventLoopIteration(); // pretend this is a new kernel delivery
+  await E(oracleTimer).tick();
+  const { value: value5, updateCount: uc5 } = await E(notifier).getUpdateSince(
+    uc4,
+  );
+  t.deepEqual(value5.quoteAmount.value, makeQuoteValue(10n, 1_234_567n));
+
+  updater2.updateState(makeRatio(987_654n, brandOut, 500_000n, brandIn));
+
+  await eventLoopIteration(); // pretend this is a new kernel delivery
+  await E(oracleTimer).tick();
+  const { value: value6, updateCount: _uc6 } = await E(notifier).getUpdateSince(
+    uc5,
+  );
+  t.deepEqual(value6.quoteAmount.value, makeQuoteValue(11n, 987_654n * 2n));
+
+  await E(E.get(oracleAdmin2).admin).delete();
+});
+
+test('oracle continuing invitation', async t => {
+  const { zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator();
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut,
+  } = await E(zoe).getTerms(aggregator.instance);
+
+  const inv1 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle1');
+  const { notifier: oracle1 } = makeNotifierKit();
+  const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
+  const oracleAdmin1 = E(or1).getOfferResult();
+  const invitationMakers = await E.get(oracleAdmin1).invitationMakers;
+  t.true('PushPrice' in invitationMakers);
+
+  const amountIn = AmountMath.make(brandIn, 1000000n);
+  const makeQuoteValue = (timestamp, valueOut) => [
+    {
+      timer: oracleTimer,
+      timestamp,
+      amountIn,
+      amountOut: AmountMath.make(brandOut, valueOut),
+    },
+  ];
+
+  const notifier = E(
+    E(aggregator.publicFacet).getPriceAuthority(),
+  ).makeQuoteNotifier(amountIn, brandOut);
+
+  const invPrice = await E(invitationMakers).PushPrice('1234');
+  const invPriceResult = await E(zoe).offer(invPrice);
+  t.deepEqual(await E(invPriceResult).numWantsSatisfied(), 1);
+
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value } = await E(notifier).getUpdateSince();
+  t.deepEqual(value.quoteAmount.value, makeQuoteValue(3n, 1_234_000_000n));
+});
+
+test('quoteAtTime', async t => {
+  const { makeFakePriceOracle, zoe } = t.context;
+
+  const userTimer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
+
+  const aggregator = await t.context.makeMedianAggregator();
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut: usdBrand,
+    issuers: { Quote: rawQuoteIssuer },
+  } = await E(zoe).getTerms(aggregator.instance);
+  /** @type {Issuer<'set'>} */
+  const quoteIssuer = rawQuoteIssuer;
+
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteAtTime = E(pa).quoteAtTime(
@@ -370,25 +697,28 @@ test('quoteAtTime', /** @param {ExecutionContext} t */ async t => {
   t.is(amountOut.value / 41n, 960n);
 });
 
-test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
+test('quoteWhen', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
-    issuers: { Quote: quoteIssuer },
-    brands,
+    issuers: { Quote: rawQuoteIssuer },
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
+  /** @type {Issuer<'set'>} */
+  const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteWhenGTE = E(pa).quoteWhenGTE(
-    AmountMath.make(brands.In, 37n),
-    AmountMath.make(brands.Out, 1183n * 37n),
+    AmountMath.make(brandIn, 37n),
+    AmountMath.make(brandOut, 1183n * 37n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -400,10 +730,9 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
         throw reason;
       }),
   );
-
   const quoteWhenLTE = E(pa).quoteWhenLTE(
-    AmountMath.make(brands.In, 29n),
-    AmountMath.make(brands.Out, 974n * 29n),
+    AmountMath.make(brandIn, 29n),
+    AmountMath.make(brandOut, 974n * 29n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -489,25 +818,28 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
   t.is(belowOut.value / 29n, 960n);
 });
 
-test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async t => {
+test('mutableQuoteWhen no replacement', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
-    issuers: { Quote: quoteIssuer },
-    brands,
+    issuers: { Quote: rawQuoteIssuer },
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
+  /** @type {Issuer<'set'>} */
+  const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
-    AmountMath.make(brands.In, 37n),
-    AmountMath.make(brands.Out, 1183n * 37n),
+    AmountMath.make(brandIn, 37n),
+    AmountMath.make(brandOut, 1183n * 37n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -523,8 +855,8 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
     );
 
   const mutableQuoteWhenLTE = E(pa).mutableQuoteWhenLTE(
-    AmountMath.make(brands.In, 29n),
-    AmountMath.make(brands.Out, 974n * 29n),
+    AmountMath.make(brandIn, 29n),
+    AmountMath.make(brandOut, 974n * 29n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -616,23 +948,26 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
   t.is(belowOut.value / 29n, 960n);
 });
 
-test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t => {
+test('mutableQuoteWhen with update', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
-    issuers: { Quote: quoteIssuer },
-    brands,
+    issuers: { Quote: rawQuoteIssuer },
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
+  /** @type {Issuer<'set'>} */
+  const quoteIssuer = rawQuoteIssuer;
 
-  const price1200 = await makeFakePriceOracle(t, 1200n);
+  const price1200 = await makeFakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
-    AmountMath.make(brands.In, 25n),
-    AmountMath.make(brands.Out, 1240n * 25n),
+    AmountMath.make(brandIn, 25n),
+    AmountMath.make(brandOut, 1240n * 25n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -654,8 +989,8 @@ test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t 
   await E(oracleTimer).tick();
 
   await E(mutableQuoteWhenGTE).updateLevel(
-    AmountMath.make(brands.In, 25n),
-    AmountMath.make(brands.Out, 1245n * 25n),
+    AmountMath.make(brandIn, 25n),
+    AmountMath.make(brandOut, 1245n * 25n),
   );
 
   await E(oracleTimer).tick();
@@ -687,21 +1022,23 @@ test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t 
   t.is(aboveOut.value / 25n, 1250n);
 });
 
-test('cancel mutableQuoteWhen', /** @param {ExecutionContext} t */ async t => {
+test('cancel mutableQuoteWhen', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
-  const { timer: oracleTimer, brands } = await E(zoe).getTerms(
-    aggregator.instance,
-  );
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut,
+  } = await E(zoe).getTerms(aggregator.instance);
 
-  const price1200 = await makeFakePriceOracle(t, 1200n);
+  const price1200 = await makeFakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
-    AmountMath.make(brands.In, 25n),
-    AmountMath.make(brands.Out, 1240n * 25n),
+    AmountMath.make(brandIn, 25n),
+    AmountMath.make(brandOut, 1240n * 25n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -718,4 +1055,39 @@ test('cancel mutableQuoteWhen', /** @param {ExecutionContext} t */ async t => {
 
   await E(oracleTimer).tick();
   await E(mutableQuoteWhenGTE).cancel('unneeded');
+});
+
+test('storage keys', async t => {
+  const { publicFacet } = await t.context.makeMedianAggregator();
+
+  t.is(
+    await E(E(publicFacet).getSubscriber()).getPath(),
+    'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+  );
+});
+
+test('storage', async t => {
+  const { zoe, makeFakePriceOracle, makeMedianAggregator } = t.context;
+  const aggregator = await makeMedianAggregator(1n);
+  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+
+  const price1000 = await makeFakePriceOracle(1000n);
+  await E(aggregator.creatorFacet).initOracle(price1000.instance, {
+    increment: 10n,
+  });
+  await E(oracleTimer).tick();
+  t.deepEqual(
+    aggregator.mockStorageRoot.getBody(
+      'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+    ),
+    {
+      amountIn: { brand: { iface: 'Alleged: $ATOM brand' }, value: 1n },
+      amountOut: {
+        brand: { iface: 'Alleged: $USD brand' },
+        value: 1020n,
+      },
+      timer: { iface: 'Alleged: ManualTimer' },
+      timestamp: 1n,
+    },
+  );
 });

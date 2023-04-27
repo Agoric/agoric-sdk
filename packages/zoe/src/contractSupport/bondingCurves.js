@@ -1,10 +1,8 @@
-// @ts-check
-
-import { assert, details as X } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
+const { Fail } = assert;
 
 const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
 
@@ -41,12 +39,9 @@ export const getInputPrice = (
   inputValue = Nat(inputValue);
   inputReserve = Nat(inputReserve);
   outputReserve = Nat(outputReserve);
-  assert(inputValue > 0n, X`inputValue ${inputValue} must be positive`);
-  assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
-  assert(
-    outputReserve > 0n,
-    X`outputReserve ${outputReserve} must be positive`,
-  );
+  inputValue > 0n || Fail`inputValue ${inputValue} must be positive`;
+  inputReserve > 0n || Fail`inputReserve ${inputReserve} must be positive`;
+  outputReserve > 0n || Fail`outputReserve ${outputReserve} must be positive`;
 
   const oneMinusFeeScaled = subtract(BASIS_POINTS, feeBasisPoints);
   const inputWithFee = multiply(inputValue, oneMinusFeeScaled);
@@ -84,15 +79,10 @@ export const getOutputPrice = (
   inputReserve = Nat(inputReserve);
   outputReserve = Nat(outputReserve);
 
-  assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
-  assert(
-    outputReserve > 0n,
-    X`outputReserve ${outputReserve} must be positive`,
-  );
-  assert(
-    outputReserve > outputValue,
-    X`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
-  );
+  inputReserve > 0n || Fail`inputReserve ${inputReserve} must be positive`;
+  outputReserve > 0n || Fail`outputReserve ${outputReserve} must be positive`;
+  outputReserve > outputValue ||
+    Fail`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`;
 
   const oneMinusFeeScaled = subtract(BASIS_POINTS, feeBasisPoints);
   const numerator = multiply(multiply(outputValue, inputReserve), BASIS_POINTS);
@@ -103,12 +93,12 @@ export const getOutputPrice = (
   return add(floorDivide(numerator, denominator), 1n);
 };
 
-// Calculate how many liquidity tokens we should be minting to send back to the
-// user when adding liquidity. We provide new liquidity equal to the existing
-// liquidity multiplied by the ratio of new central tokens to central tokens
-// already held. If the current supply is zero, return the inputValue as the
-// initial liquidity to mint is arbitrary.
 /**
+ * Calculate how many liquidity tokens we should be minting to send back to the
+ * user when adding liquidity. We provide new liquidity equal to the existing
+ * liquidity multiplied by the ratio of new central tokens to central tokens
+ * already held. If the current supply is zero, return the inputValue as the
+ * initial liquidity to mint is arbitrary.
  *
  * @param {bigint} liqTokenSupply
  * @param {bigint} inputValue

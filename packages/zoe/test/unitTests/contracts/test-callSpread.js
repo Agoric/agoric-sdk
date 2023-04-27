@@ -1,12 +1,11 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
-import '../../../exported.js';
+import { E } from '@endo/eventual-send';
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -32,7 +31,7 @@ const makeTestPriceAuthority = (brands, priceList, timer) =>
   });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola. The price oracle takes an amount in Underlying, and
+// AmountValue is in Moola. The price oracle takes an amount in Underlying, and
 // gives the value in Moola.
 test('fundedCallSpread below Strike1', async t => {
   const {
@@ -45,8 +44,13 @@ test('fundedCallSpread below Strike1', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -59,15 +63,15 @@ test('fundedCallSpread below Strike1', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
-  const priceAuthority = makeTestPriceAuthority(
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const priceAuthority = await makeTestPriceAuthority(
     brands,
     [54, 20, 35, 15, 28],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -92,9 +96,12 @@ test('fundedCallSpread below Strike1', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -106,10 +113,10 @@ test('fundedCallSpread below Strike1', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -136,7 +143,7 @@ test('fundedCallSpread below Strike1', async t => {
 });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola.
+// AmountValue is in Moola.
 test('fundedCallSpread above Strike2', async t => {
   const {
     moolaIssuer,
@@ -148,8 +155,13 @@ test('fundedCallSpread above Strike2', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -162,11 +174,15 @@ test('fundedCallSpread above Strike2', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 55], manualTimer);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 55],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -188,9 +204,12 @@ test('fundedCallSpread above Strike2', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -202,10 +221,10 @@ test('fundedCallSpread above Strike2', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -232,7 +251,7 @@ test('fundedCallSpread above Strike2', async t => {
 });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola.
+// AmountValue is in Moola.
 test('fundedCallSpread, mid-strike', async t => {
   const {
     moolaIssuer,
@@ -244,8 +263,13 @@ test('fundedCallSpread, mid-strike', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -258,11 +282,15 @@ test('fundedCallSpread, mid-strike', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 45],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -283,9 +311,12 @@ test('fundedCallSpread, mid-strike', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -297,10 +328,10 @@ test('fundedCallSpread, mid-strike', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -327,7 +358,7 @@ test('fundedCallSpread, mid-strike', async t => {
 });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola. Carol waits to collect until after settlement
+// AmountValue is in Moola. Carol waits to collect until after settlement
 test('fundedCallSpread, late exercise', async t => {
   const {
     moolaIssuer,
@@ -339,8 +370,13 @@ test('fundedCallSpread, late exercise', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -353,11 +389,15 @@ test('fundedCallSpread, late exercise', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 45],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -378,13 +418,14 @@ test('fundedCallSpread, late exercise', async t => {
     terms,
   );
 
-  const invitationDetails = await E(zoe).getInvitationDetails(
+  const { customDetails } = await E(zoe).getInvitationDetails(
     creatorInvitation,
   );
+  assert(typeof customDetails === 'object');
   const aliceProposal = harden({
     want: {
-      LongOption: invitationDetails.longAmount,
-      ShortOption: invitationDetails.shortAmount,
+      LongOption: customDetails.longAmount,
+      ShortOption: customDetails.shortAmount,
     },
     give: { Collateral: bucks(300n) },
   });
@@ -394,10 +435,10 @@ test('fundedCallSpread, late exercise', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -434,8 +475,13 @@ test('fundedCallSpread, sell options', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Alice will create and fund a call spread contract, and sell the invitations
@@ -452,11 +498,15 @@ test('fundedCallSpread, sell options', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(100n));
 
-  const manualTimer = buildManualTimer(console.log, 0n);
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 45],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -477,9 +527,12 @@ test('fundedCallSpread, sell options', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -491,13 +544,12 @@ test('fundedCallSpread, sell options', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: longOption,
-    ShortOption: shortOption,
-  } = await aliceSeat.getPayouts();
+  const { LongOption: longOption, ShortOption: shortOption } =
+    await aliceSeat.getPayouts();
 
   const exchangeInstallation = await installationPFromSource(
     zoe,
+    vatAdminState,
     simpleExchange,
   );
   const { publicFacet: exchangePublic } = await E(zoe).startInstance(
@@ -613,8 +665,13 @@ test('pricedCallSpread, mid-strike', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, pricedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    pricedCallSpread,
+  );
 
   // Alice will create a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will fund and exercise, then promptly
@@ -628,7 +685,7 @@ test('pricedCallSpread, mid-strike', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(75n));
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 45, 45, 45, 45, 45, 45],
@@ -636,7 +693,7 @@ test('pricedCallSpread, mid-strike', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -663,13 +720,13 @@ test('pricedCallSpread, mid-strike', async t => {
   const shortAmount = await E(invitationIssuer).getAmountOf(shortInvitation);
 
   const longOptionValue = longAmount.value[0];
-  t.is('long', longOptionValue.position);
-  const longOption = longOptionValue.option;
+  t.is('long', longOptionValue.customDetails?.position);
+  const longOption = longOptionValue.customDetails?.option;
 
   // Bob makes an offer for the long option
   const bobProposal = harden({
     want: { Option: longOption },
-    give: { Collateral: bucks(longOptionValue.collateral) },
+    give: { Collateral: bucks(longOptionValue.customDetails?.collateral) },
   });
   const bobFundingSeat = await E(zoe).offer(await longInvitation, bobProposal, {
     Collateral: bobBucksPayment,
@@ -687,13 +744,13 @@ test('pricedCallSpread, mid-strike', async t => {
   );
 
   const shortOptionValue = shortAmount.value[0];
-  t.is('short', shortOptionValue.position);
-  const shortOption = shortOptionValue.option;
+  t.is('short', shortOptionValue.customDetails?.position);
+  const shortOption = shortOptionValue.customDetails?.option;
 
   // carol makes an offer for the short option
   const carolProposal = harden({
     want: { Option: shortOption },
-    give: { Collateral: bucks(shortOptionValue.collateral) },
+    give: { Collateral: bucks(shortOptionValue.customDetails?.collateral) },
   });
   const carolFundingSeat = await E(zoe).offer(
     await shortInvitation,

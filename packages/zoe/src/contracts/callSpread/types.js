@@ -5,25 +5,17 @@
 /**
  * @callback MakeOptionInvitation
  * @param {PositionKind} positionKind
- * @returns {Promise<Payment>}
+ * @returns {Promise<Invitation>}
  */
 
 /**
- * @typedef {Object} PayoffHandler
+ * @typedef {object} PayoffHandler
  * @property {() => void} schedulePayoffs
  * @property  {MakeOptionInvitation} makeOptionInvitation
  */
 
 /**
- * @callback MakePayoffHandler
- * @param {ContractFacet} zcf
- * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
- * @param {ZCFSeat} collateralSeat
- * @returns {PayoffHandler}
- */
-
-/**
- * @typedef {Object} CalculateSharesReturn
+ * @typedef {object} CalculateSharesReturn
  * Return value from calculateShares, which represents the portions assigned to
  * the long and short side of a transaction. These will be two non-negative
  * integers that sum to 100.
@@ -43,9 +35,9 @@
  * 100% reflecting the position of the price in the range from strikePrice1 to
  * strikePrice2.
  * @param {Brand} collateralBrand
- * @param {Amount} price
- * @param {Amount} strikePrice1
- * @param {Amount} strikePrice2
+ * @param {Amount<'nat'>} price
+ * @param {Amount<'nat'>} strikePrice1
+ * @param {Amount<'nat'>} strikePrice2
  * @returns {CalculateSharesReturn}
  */
 

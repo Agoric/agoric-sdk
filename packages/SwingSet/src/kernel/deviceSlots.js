@@ -1,7 +1,12 @@
-import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
-import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
-import { insistCapData } from '../capdata.js';
+import { Remotable, makeMarshal } from '@endo/marshal';
+import { passStyleOf } from '@endo/far';
+import { assert, Fail } from '@agoric/assert';
+import {
+  insistVatType,
+  makeVatSlot,
+  parseVatSlot,
+} from '../lib/parseVatSlots.js';
+import { insistCapData } from '../lib/capdata.js';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
@@ -80,16 +85,16 @@ export function makeDeviceSlots(
     if (!slotToVal.has(slot)) {
       let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
-      assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
+      !allocatedByVat || Fail`I don't remember allocating ${slot}`;
       if (type === 'object') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);
         val = makePresence(slot, iface);
         // lsdebug(` for presence`, val);
       } else if (type === 'device') {
-        assert.fail(X`devices should not be given other devices '${slot}'`);
+        throw Fail`devices should not be given other devices '${slot}'`;
       } else {
-        assert.fail(X`unrecognized slot type '${type}'`);
+        throw Fail`unrecognized slot type '${type}'`;
       }
       slotToVal.set(slot, val);
       valToSlot.set(val, slot);
@@ -99,6 +104,7 @@ export function makeDeviceSlots(
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `device:${forDeviceName}`,
+    serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 50000,
@@ -106,14 +112,15 @@ export function makeDeviceSlots(
 
   function PresenceHandler(importSlot) {
     return {
-      get(target, prop) {
+      get(_target, prop) {
         lsdebug(`PreH proxy.get(${String(prop)})`);
         if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }
         const p = (...args) => {
-          const capdata = m.serialize(harden(args));
-          syscall.sendOnly(importSlot, prop, capdata);
+          const methargs = [prop, args];
+          const capdata = m.serialize(harden(methargs));
+          syscall.sendOnly(importSlot, capdata);
         };
         return p;
       },
@@ -130,13 +137,10 @@ export function makeDeviceSlots(
     // a sendOnly() rather than a send(), so it doesn't return a Promise. And
     // since devices don't accept Promises either, SO(x) must be given a
     // presence, not a promise that might resolve to a presence.
-
-    assert(!outstandingProxies.has(x), X`SO(SO(x)) is invalid`);
+    !outstandingProxies.has(x) || Fail`SO(SO(x)) is invalid`;
     const slot = valToSlot.get(x);
-    assert(
-      slot && parseVatSlot(slot).type === 'object',
-      X`SO(x) must be called on a Presence, not ${x}`,
-    );
+    (slot && parseVatSlot(slot).type === 'object') ||
+      Fail`SO(x) must be called on a Presence, not ${x}`;
     const handler = PresenceHandler(slot);
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);
@@ -181,6 +185,13 @@ export function makeDeviceSlots(
 
   // this function throws an exception if anything goes wrong, or if the
   // device node itself throws an exception during invocation
+  /**
+   *
+   * @param {string} deviceID
+   * @param {string} method
+   * @param {SwingSetCapData} args
+   * @returns {DeviceInvocationResult}
+   */
   function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);
     insistCapData(args);
@@ -206,9 +217,11 @@ export function makeDeviceSlots(
       );
     }
     const res = fn.apply(t, m.unserialize(args));
-    const vres = harden(['ok', m.serialize(res)]);
+    const vres = m.serialize(res);
+    /** @type { DeviceInvocationResultOk } */
+    const ires = harden(['ok', vres]);
     lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
-    return vres;
+    return ires;
   }
 
   return harden({ invoke });

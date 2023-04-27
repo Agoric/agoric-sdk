@@ -1,9 +1,8 @@
 // @ts-check
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 // Based on
-// https://github.com/Agoric/SES-shim/blob/master/packages/ses/src/error/types.js
+// https://github.com/endojs/endo/blob/HEAD/packages/ses/src/error/types.js
 // Coordinate edits until we refactor to avoid this duplication
 // At https://github.com/Agoric/agoric-sdk/issues/2774
 // is a record of a failed attempt to remove this duplication.
@@ -13,15 +12,15 @@
  * The `assert` function itself.
  *
  * @param {*} flag The truthy/falsy value
- * @param {Details=} optDetails The details to throw
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details to throw
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
  * @returns {asserts flag}
  */
 
 /**
- * @typedef {Object} AssertMakeErrorOptions
- * @property {string=} errorName
+ * @typedef {object} AssertMakeErrorOptions
+ * @property {string} [errorName]
  */
 
 /**
@@ -30,10 +29,10 @@
  * The `assert.error` method, recording details for the console.
  *
  * The optional `optDetails` can be a string.
- * @param {Details=} optDetails The details of what was asserted
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details of what was asserted
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
- * @param {AssertMakeErrorOptions=} options
+ * @param {AssertMakeErrorOptions} [options]
  * @returns {Error}
  */
 
@@ -42,13 +41,14 @@
  *
  * The `assert.fail` method.
  *
- * Fail an assertion, recording details to the console and
- * raising an exception with just type information.
+ * Fail an assertion, recording full details to the console and
+ * raising an exception with a message in which `details` substitution values
+ * have been masked.
  *
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
- * @param {Details=} optDetails The details of what was asserted
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details of what was asserted
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
  * @returns {never}
  */
@@ -60,8 +60,8 @@
  * Assert that two values must be `Object.is`.
  * @param {*} actual The value we received
  * @param {*} expected What we wanted
- * @param {Details=} optDetails The details to throw
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details to throw
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
  * @returns {void}
  */
@@ -73,49 +73,63 @@
  * @callback AssertTypeofBigint
  * @param {any} specimen
  * @param {'bigint'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is bigint}
- *
+ */
+
+/**
  * @callback AssertTypeofBoolean
  * @param {any} specimen
  * @param {'boolean'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is boolean}
- *
+ */
+
+/**
  * @callback AssertTypeofFunction
  * @param {any} specimen
  * @param {'function'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is Function}
- *
+ */
+
+/**
  * @callback AssertTypeofNumber
  * @param {any} specimen
  * @param {'number'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is number}
- *
+ */
+
+/**
  * @callback AssertTypeofObject
  * @param {any} specimen
  * @param {'object'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is Record<any, any> | null}
- *
+ */
+
+/**
  * @callback AssertTypeofString
  * @param {any} specimen
  * @param {'string'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is string}
- *
+ */
+
+/**
  * @callback AssertTypeofSymbol
  * @param {any} specimen
  * @param {'symbol'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is symbol}
- *
+ */
+
+/**
  * @callback AssertTypeofUndefined
  * @param {any} specimen
  * @param {'undefined'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is undefined}
  */
 
@@ -134,15 +148,16 @@
  *
  * Assert an expected typeof result.
  * @param {any} specimen The value to get the typeof
- * @param {Details=} optDetails The details to throw
+ * @param {Details} [optDetails] The details to throw
+ * @returns {asserts specimen is string}
  */
 
 /**
  * @callback AssertNote
  * The `assert.note` method.
  *
- * Annotate this error with these details, potentially to be used by an
- * augmented console, like the causal console of `console.js`, to
+ * Annotate an error with details, potentially to be used by an
+ * augmented console such as the causal console of `console.js`, to
  * provide extra information associated with logged errors.
  *
  * @param {Error} error
@@ -165,48 +180,34 @@
  */
 
 /**
- * @typedef {Object} StringablePayload
+ * @typedef {object} StringablePayload
  * Holds the payload passed to quote so that its printed form is visible.
  * @property {() => string} toString How to print the payload
  */
 
 /**
  * To "declassify" and quote a substitution value used in a
- * details`...` template literal, enclose that substitution expression
- * in a call to `quote`. This states that the argument should appear quoted
- * (as if with `JSON.stringify`), in the error message of the thrown error. The
+ * ``` details`...` ``` template literal, enclose that substitution expression
+ * in a call to `quote`. This makes the value appear quoted
+ * (as if with `JSON.stringify`) in the message of the thrown error. The
  * payload itself is still passed unquoted to the console as it would be
  * without `quote`.
  *
- * Starting from the example in the `details` comment, say instead that the
- * color the sky is supposed to be is also computed. Say that we still don't
- * want to reveal the sky's actual color, but we do want the thrown error's
- * message to reveal what color the sky was supposed to be:
+ * For example, the following will reveal the expected sky color, but not the
+ * actual incorrect sky color, in the thrown error's message:
  * ```js
- * assert.equal(
- *   sky.color,
- *   color,
- *   details`${sky.color} should be ${quote(color)}`,
- * );
+ * sky.color === expectedColor || Fail`${sky.color} should be ${quote(expectedColor)}`;
  * ```
  *
- * The normal convention is to locally rename `quote` to `q` and
- * `details` to `X`
+ * The normal convention is to locally rename `details` to `X` and `quote` to `q`
+ * like `const { details: X, quote: q } = assert;`, so the above example would then be
  * ```js
- * const { details: X, quote: q } = assert;
- * ```
- * so the above example would then be
- * ```js
- * assert.equal(
- *   sky.color,
- *   color,
- *   X`${sky.color} should be ${q(color)}`,
- * );
+ * sky.color === expectedColor || Fail`${sky.color} should be ${q(expectedColor)}`;
  * ```
  *
  * @callback AssertQuote
  * @param {*} payload What to declassify
- * @param {(string|number)=} spaces
+ * @param {(string|number)} [spaces]
  * @returns {StringablePayload} The declassified payload
  */
 
@@ -239,8 +240,8 @@
  * `optRaise` returns normally, which would be unusual, the throw following
  * `optRaise(reason)` would still happen.
  *
- * @param {Raise=} optRaise
- * @param {boolean=} unredacted
+ * @param {Raise} [optRaise]
+ * @param {boolean} [unredacted]
  * @returns {Assert}
  */
 
@@ -253,17 +254,66 @@
  * ```js
  * assert(sky.isBlue(), details`${sky.color} should be "blue"`);
  * ```
+ * or following the normal convention to locally rename `details` to `X`
+ * and `quote` to `q` like `const { details: X, quote: q } = assert;`:
+ * ```js
+ * assert(sky.isBlue(), X`${sky.color} should be "blue"`);
+ * ```
+ * However, note that in most cases it is preferable to instead use the `Fail`
+ * template literal tag (which has the same input signature as `details`
+ * but automatically creates and throws an error):
+ * ```js
+ * sky.isBlue() || Fail`${sky.color} should be "blue"`;
+ * ```
+ *
  * The details template tag returns a `DetailsToken` object that can print
  * itself with the formatted message in two ways.
- * It will report the real details to
- * the console but include only the typeof information in the thrown error
+ * It will report full details to the console, but
+ * mask embedded substitution values with their typeof information in the thrown error
  * to prevent revealing secrets up the exceptional path. In the example
  * above, the thrown error may reveal only that `sky.color` is a string,
  * whereas the same diagnostic printed to the console reveals that the
- * sky was green.
+ * sky was green. This masking can be disabled for an individual substitution value
+ * using `quote`.
  *
- * The `raw` member of a `template` is ignored, so a simple
- * `string[]` can also be used as a template.
+ * The `raw` property of an input template array is ignored, so a simple
+ * array of strings may be provided directly.
+ */
+
+/**
+ * @typedef {(template: TemplateStringsArray | string[], ...args: any) => never} FailTag
+ *
+ * Use the `Fail` function as a template literal tag to efficiently
+ * create and throw a `details`-style error only when a condition is not satisfied.
+ * ```js
+ * condition || Fail`...complaint...`;
+ * ```
+ * This avoids the overhead of creating usually-unnecessary errors like
+ * ```js
+ * assert(condition, details`...complaint...`);
+ * ```
+ * while improving readability over alternatives like
+ * ```js
+ * condition || assert.fail(details`...complaint...`);
+ * ```
+ *
+ * However, due to current weakness in TypeScript, static reasoning
+ * is less powerful with the `||` patterns than with an `assert` call.
+ * Until/unless https://github.com/microsoft/TypeScript/issues/51426 is fixed,
+ * for `||`-style assertions where this loss of static reasoning is a problem,
+ * instead express the assertion as
+ * ```js
+ *   if (!condition) {
+ *     Fail`...complaint...`;
+ *   }
+ * ```
+ * or, if needed,
+ * ```js
+ *   if (!condition) {
+ *     // `throw` is noop since `Fail` throws, but it improves static analysis
+ *     throw Fail`...complaint...`;
+ *   }
+ * ```
  */
 
 /**
@@ -292,6 +342,7 @@
  *   string: AssertString,
  *   note: AssertNote,
  *   details: DetailsTag,
+ *   Fail: FailTag,
  *   quote: AssertQuote,
  *   makeAssert: MakeAssert,
  * } } Assert

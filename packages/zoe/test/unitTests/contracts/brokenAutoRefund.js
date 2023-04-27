@@ -1,6 +1,4 @@
-// @ts-check
-
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /**
  * This is a a broken contact to test zoe's error handling
@@ -20,7 +18,7 @@ const start = zcf => {
   );
   // should be makeRefundInvitation(). Intentionally wrong to provoke
   // an error.
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   return { creatorInvitation: makeRefundInvitation };
 };
 

@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/tendermint/tendermint/libs/log"
+
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
@@ -75,18 +77,24 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
+		exitCode := 0
+		daemoncmd.OnStartHook = func(logger log.Logger) {
+			// We tried running start, which should never exit, so exit with non-zero
+			// code if we ever stop.
+			exitCode = 99
+		}
 		daemon.RunWithController(sendToNode)
 		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
-		os.Exit(0)
+		os.Exit(exitCode)
 	}()
 	// fmt.Fprintln(os.Stderr, "Done starting Cosmos")
 	return SwingSetPort
 }
 
 //export ReplyToGo
-func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
-	goStr := C.GoString(str)
-	// fmt.Fprintln(os.Stderr, "Reply to Go", goStr)
+func ReplyToGo(replyPort C.int, isError C.int, resp C.Body) C.int {
+	respStr := C.GoString(resp)
+	// fmt.Fprintln(os.Stderr, "Reply to Go", respStr)
 	returnCh := replies[int(replyPort)]
 	if returnCh == nil {
 		// Unexpected reply.
@@ -97,9 +105,9 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 	// Wake up the waiting goroutine
 	ret := goReturn{}
 	if int(isError) == 0 {
-		ret.str = goStr
+		ret.str = respStr
 	} else {
-		ret.err = errors.New(goStr)
+		ret.err = errors.New(respStr)
 	}
 	returnCh <- ret
 	return C.int(0)
@@ -110,23 +118,23 @@ type errorWrapper struct {
 }
 
 //export SendToGo
-func SendToGo(port C.int, str C.Body) C.Body {
-	goStr := C.GoString(str)
-	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
-	outstr, err := vm.ReceiveFromController(int(port), goStr)
+func SendToGo(port C.int, msg C.Body) C.Body {
+	msgStr := C.GoString(msg)
+	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
+	respStr, err := vm.ReceiveFromController(int(port), msgStr)
 	if err != nil {
 		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
-		ret := errorWrapper{
+		errResp := errorWrapper{
 			Error: err.Error(),
 		}
-		bytes, err := json.Marshal(&ret)
+		respBytes, err := json.Marshal(&errResp)
 		if err != nil {
 			panic(err)
 		}
-		// fmt.Fprintln(os.Stderr, "Marshaled", ret, bytes)
-		outstr = string(bytes)
+		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
+		respStr = string(respBytes)
 	}
-	return C.CString(outstr)
+	return C.CString(respStr)
 }
 
 // Do nothing in main.

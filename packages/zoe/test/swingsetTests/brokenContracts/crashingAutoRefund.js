@@ -1,6 +1,4 @@
-// @ts-check
-
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import {
   swap,
@@ -8,15 +6,13 @@ import {
   assertProposalShape,
 } from '../../../src/contractSupport/index.js';
 
-import '../../../exported.js';
-
 /**
  * This is an atomic swap contract to test Zoe handling contract failures.
  *
- * This contract exceeds metering limits or throws exceptions in various
+ * This contract throws exceptions in various
  * situations. We want to see that each is handled correctly.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<any>}
  */
 const start = zcf => {
   const terms = zcf.getTerms();
@@ -26,8 +22,6 @@ const start = zcf => {
 
   if (terms.throw) {
     throw new Error('blowup in makeContract');
-  } else if (terms.meter) {
-    return { publicFacet: new Array(1e9) };
   }
 
   const safeAutoRefund = seat => {
@@ -37,13 +31,6 @@ const start = zcf => {
   };
   const makeSafeInvitation = () =>
     zcf.makeInvitation(safeAutoRefund, 'getRefund');
-
-  const meterExceeded = () => {
-    offersCount += 1n;
-    return new Array(1e9);
-  };
-  const makeExcessiveInvitation = () =>
-    zcf.makeInvitation(meterExceeded, 'getRefund');
 
   const throwing = () => {
     offersCount += 1n;
@@ -85,14 +72,9 @@ const start = zcf => {
     },
     makeSafeInvitation,
     makeSwapInvitation,
-    makeExcessiveInvitation,
     makeThrowingInvitation,
     zcfShutdown,
     zcfShutdownWithFailure,
-    meterException: () => {
-      offersCount += 1n;
-      return new Array(1e9);
-    },
     throwSomething: () => {
       offersCount += 1n;
       throw new Error('someException');
@@ -101,6 +83,7 @@ const start = zcf => {
 
   const creatorInvitation = makeSafeInvitation();
 
+  // @ts-expect-error missing creatorFacet of ContractStartFn
   return harden({ creatorInvitation, publicFacet });
 };
 

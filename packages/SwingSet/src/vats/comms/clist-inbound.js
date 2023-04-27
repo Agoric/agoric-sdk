@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import {
   flipRemoteSlot,
   insistRemoteType,
@@ -21,14 +21,12 @@ export function makeInbound(state) {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(rpid);
-    assert(lpid, X`unknown remote ${remoteID} promise ${rpid}`);
+    lpid || Fail`unknown remote ${remoteID} promise ${rpid}`;
     const { subscribers } = state.getPromiseSubscribers(lpid);
-    assert(
-      subscribers.indexOf(remoteID) === -1,
-      X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
-    );
+    subscribers.indexOf(remoteID) === -1 ||
+      Fail`attempt to retire remote ${remoteID} subscribed promise ${rpid}`;
     remote.deleteRemoteMapping(lpid);
-    cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
+    cdebug(`comms delete mapping r<->k ${remoteID} ${rpid}<=>${lpid}`);
   }
 
   function beginRemotePromiseIDRetirement(remoteID, rpid) {
@@ -51,9 +49,9 @@ export function makeInbound(state) {
     const remote = state.getRemote(remoteID);
     const { mapFromRemote, isReachable } = remote;
     const lref = mapFromRemote(rref);
-    assert(lref, X`${rref} must already be in remote ${rname(remote)}`);
+    lref || Fail`${rref} must already be in remote ${rname(remote)}`;
     if (parseRemoteSlot(rref).type === 'object') {
-      assert(isReachable(lref), `remote sending to unreachable ${lref}`);
+      isReachable(lref) || Fail`remote sending to unreachable ${lref}`;
     }
     return lref;
   }
@@ -62,10 +60,8 @@ export function makeInbound(state) {
     // The index must be allocated by them. If we allocated it, it should
     // have been in our table already, and the fact that it isn't means
     // they're reaching for something we haven't given them.
-    assert(
-      !parseRemoteSlot(roid).allocatedByRecipient,
-      `I don't remember giving ${roid} to remote ${rname(remote)}`,
-    );
+    !parseRemoteSlot(roid).allocatedByRecipient ||
+      Fail`I don't remember giving ${roid} to remote ${rname(remote)}`;
 
     // So this must be a new import. Allocate a new vat object for it, which
     // will be the local machine's proxy for use by all other local vats, as
@@ -79,10 +75,8 @@ export function makeInbound(state) {
   }
 
   function addLocalPromiseForRemote(remote, rpid) {
-    assert(
-      !parseRemoteSlot(rpid).allocatedByRecipient,
-      `I don't remember giving ${rpid} to remote ${rname(remote)}`,
-    );
+    !parseRemoteSlot(rpid).allocatedByRecipient ||
+      Fail`I don't remember giving ${rpid} to remote ${rname(remote)}`;
     // allocate a new lpNN, remember them as the decider, add to clist
     const lpid = state.allocatePromise();
     state.changeDeciderToRemote(lpid, remote.remoteID());
@@ -106,7 +100,7 @@ export function makeInbound(state) {
       } else if (type === 'promise') {
         addLocalPromiseForRemote(remote, rref);
       } else {
-        assert.fail(X`cannot accept type ${type} from remote`);
+        Fail`cannot accept type ${type} from remote`;
       }
       lref = remote.mapFromRemote(rref);
     }
@@ -124,7 +118,7 @@ export function makeInbound(state) {
         const isImportFromComms = false;
         remote.setReachable(lref, isImportFromComms);
       }
-      assert(remote.isReachable(lref), `remote using unreachable ${lref}`);
+      remote.isReachable(lref) || Fail`remote using unreachable ${lref}`;
     }
 
     return lref;
@@ -132,6 +126,9 @@ export function makeInbound(state) {
 
   function provideLocalForRemoteResult(remoteID, result) {
     insistRemoteType('promise', result);
+    // Comms is a pipelining vat which means the result may be allocated by
+    // any side, at any time. Unlike the kernel checks, as long as the decider
+    // is correct, and the promise is unresolved, it's valid as a result.
     const lpid = provideLocalForRemote(remoteID, result);
     // this asserts they had control over lpid, and that it wasn't already
     // resolved. TODO: reject somehow rather than crash weirdly, we can't

@@ -22,17 +22,15 @@ Lifetime:
 
 -->
 
-## ALLOW_IMPLICIT_REMOTABLES
+## CHAIN_BOOTSTRAP_VAT_CONFIG
 
-Affects: marshal
+Affects: `ag-chain-cosmos`, `ag-solo`
 
-Purpose: to control whether the marshal system demands `Far`
+Purpose: to set the specifier for the chain/sim-chain's `vatconfig.json`
 
-Description: set to `true` if you need to debug problems with missing `Far`
-declarations.
+Description: defaults to `@agoric/vats/decentral-core-config.json`
 
-Lifetime: until all sources (including dapps) conform to using `Far`
-declarations for all remote objects
+Lifetime: until we don't want to allow user control of the chain's vat config
 
 ## CXXFLAGS
 
@@ -99,7 +97,20 @@ Description: When nonempty, create pretend prepopulated tokens like "moola" and
 
 Lifetime: until chain is mature enough not to need any pretend tokens
 
-## OTEL_EXPORTER_PROMETHEUS_HOST
+## LMDB_MAP_SIZE
+
+Affects: cosmic-swingset
+
+Purpose: set the minimum size limit for swing-store's LMDB key-value store
+
+Description: default is `2147483648` (2GB), and you need to set higher if you
+receive `Error: MDB_MAP_FULL: Environment mapsize limit reached`
+
+Can always be increased, and does not decrease once a transaction has been
+written with the new mapSize.
+
+Lifetime: until we no longer use LMDB in swing-store
+
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
 Affects: cosmic-swingset
@@ -111,9 +122,47 @@ for the Prometheus scrape endpoint to export telemetry.
 
 Lifetime: until we decide not to support Prometheus for metrics export
 
+## SOLO_BRIDGE_TARGET
+
+Affects: solo
+
+This enables a proxy so that the solo bridge interface (/wallet-bridge.html) is backed by the smart wallet (/wallet/bridge.html). Dapps designed for the solo bridge can enable this until they connect to the smart wallet directly.
+
+```
+BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
+```
+
+Lifetime: smart wallet transition period
+
+## SOLO_LMDB_MAP_SIZE
+
+Affects: solo
+
+Same as `LMDB_MAP_SIZE`, but for solo instead of chain.
+
+## SOLO_MNEMONIC
+
+Affects: solo init
+
+Seed phrase for HD key derivation.
+
+## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
+
+Affects: solo
+
+Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
+
+Lifetime: ?
+
 ## SOLO_SLOGFILE
 
-Same as SLOGFILE, but for solo instead of chain.
+Same as `SLOGFILE`, but for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_SLOGSENDER
+
+Same as `SLOGSENDER`, but for solo instead of chain.
 
 Lifetime: ?
 
@@ -138,6 +187,47 @@ Description: when nonempty, use the value as an absolute path to which SwingSet
 debug logs should be written.
 
 Lifetime: ?
+
+## SLOGSENDER
+
+Affects: cosmic-swingset
+
+Purpose: intercept the SwingSet LOG file in realtime
+
+Description: when nonempty, use the value as a list of module specifiers
+separated by commas `,`.  The modules will be loaded by
+`@agoric/telemetry/src/make-slog-sender.js`, via `import(moduleSpec)`, and
+their exported `makeSlogSender` function called to create an aggregate
+`slogSender`. Every time a SLOG object is written by SwingSet, each module's
+`slogSender(slogObject)` will be called.
+
+The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
+mmap'ed circular buffer.
+
+## SLOGSENDER_AGENT
+
+Affects: cosmic-swingset
+
+Purpose: selects the agent type used to handle the SwingSet LOG
+
+Description: if empty or `'self'` slog senders are loaded in the same process
+and thread as the SwingSet kernel. If `'process'`, slog senders are loaded in a
+sub-process which receives all SLOG events over an IPC connection.
+
+The default is `'self'`.
+
+## SLOGSENDER_FAIL_ON_ERROR
+
+Affects: cosmic-swingset
+
+Purpose: causes failures of the slogSender to be fatal
+
+Description: if set (to a non empty value), a failure of the slogSender flush
+operation will result in a rejection instead of mere logging. Can be used to
+validate during tests that complex slog senders like the otel converter do not
+have any unexpected errors.
+
+The default is `undefined`.
 
 ## SWINGSET_WORKER_TYPE
 

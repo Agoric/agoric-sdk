@@ -1,5 +1,6 @@
 ARG TAG=latest
-FROM agoric/agoric-sdk:$TAG
+ARG REGISTRY=ghcr.io
+FROM $REGISTRY/agoric/agoric-sdk:$TAG
 
 WORKDIR /data/solo
 

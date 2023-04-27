@@ -3,20 +3,28 @@
 
 /** @typedef {import('child_process').ChildProcess} ChildProcess */
 
-export const getSDKBinaries = () => {
+export const getSDKBinaries = ({
+  jsPfx = '../..',
+  goPfx = `${jsPfx}/../golang`,
+} = {}) => {
   const myUrl = import.meta.url;
+  const cosmosBuild = ['make', '-C', `${goPfx}/cosmos`, 'all'];
+  const xsnap = new URL(`${jsPfx}/xsnap`, myUrl).pathname;
   return {
-    agSolo: new URL('../../solo/src/entrypoint.js', myUrl).pathname,
-    cosmosChain: new URL('../../cosmic-swingset/bin/ag-chain-cosmos', myUrl)
+    agSolo: new URL(`${jsPfx}/solo/src/entrypoint.js`, myUrl).pathname,
+    agSoloBuild: ['yarn', '--cwd', xsnap, `build:from-env`],
+    cosmosChain: new URL(`${jsPfx}/cosmic-swingset/bin/ag-chain-cosmos`, myUrl)
       .pathname,
-    cosmosHelper: new URL('../../../golang/cosmos/build/agd', myUrl).pathname,
+    cosmosChainBuild: cosmosBuild,
+    cosmosClientBuild: cosmosBuild,
+    cosmosHelper: new URL(`${goPfx}/cosmos/build/agd`, myUrl).pathname,
   };
 };
 
 /**
  * Create a promisified spawn function with the following built-in parameters.
  *
- * @param {Object} param0
+ * @param {object} param0
  * @param {Record<string, string | undefined>} [param0.env] the default environment
  * @param {*} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
@@ -33,7 +41,7 @@ export const makePspawn = ({
    *
    * @param {string} cmd command name to run
    * @param {Array<string>} cargs arguments to the command
-   * @param {Object} param2
+   * @param {object} param2
    * @param {string | [string, string, string]} [param2.stdio] standard IO
    * specification
    * @param {Record<string, string | undefined>} [param2.env] environment
@@ -53,7 +61,7 @@ export const makePspawn = ({
       return args.join(' ');
     };
 
-    log.log(color('blueBright', cmd, ...cargs));
+    log.warn(color('blueBright', cmd, ...cargs));
     const cp = spawn(cmd, cargs, { stdio, env, ...rest });
     const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);

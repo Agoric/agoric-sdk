@@ -1,9 +1,14 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
+import {
+  claim,
+  combine,
+  split,
+  splitMany,
+} from '../../src/legacy-payment-helpers.js';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
   const { issuer, brand } = makeIssuerKit('fungible');
@@ -42,15 +47,9 @@ test('brand.getDisplayInfo()', t => {
 
 test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /key "somethingUnexpected" was not one of the expected keys \["decimalPlaces"\]/,
-      /key .* was not one of the expected keys .*/,
+    message: 'displayInfo: ...rest: {"somethingUnexpected":3} - Must be: {}',
   });
 });
 
@@ -169,21 +168,19 @@ test('purse.deposit', async t => {
     nextUpdate = notifier.getUpdateSince(updateCount);
   };
 
-  const checkDeposit = (
-    expectedOldBalance,
-    expectedNewBalance,
-  ) => async depositResult => {
-    const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
-    t.assert(
-      AmountMath.isEqual(depositResult, delta),
-      `the balance changes by the deposited amount: ${delta.value}`,
-    );
-    t.assert(
-      AmountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
-      `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
-    );
-    await checkNotifier();
-  };
+  const checkDeposit =
+    (expectedOldBalance, expectedNewBalance) => async depositResult => {
+      const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
+      t.assert(
+        AmountMath.isEqual(depositResult, delta),
+        `the balance changes by the deposited amount: ${delta.value}`,
+      );
+      t.assert(
+        AmountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
+        `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
+      );
+      await checkNotifier();
+    };
 
   await checkNotifier();
   await E(purse)
@@ -201,12 +198,15 @@ test('purse.deposit promise', async t => {
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  const exclusivePaymentP = claim(E(issuer).makeEmptyPurse(), payment);
 
   await t.throwsAsync(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => E(purse).deposit(exclusivePaymentP, fungible25),
-    { message: /deposit does not accept promises/ },
+    {
+      message:
+        'In "deposit" method of (fungible Purse purse): arg 0: promise "[Promise]" - Must be a remotable (Payment)',
+    },
     'failed to reject a promise for a payment',
   );
 });
@@ -245,7 +245,7 @@ test('purse.getDepositFacet', async t => {
   await checkNotifier();
   await E(purse)
     .getDepositFacet()
-    .then(({ receive }) => receive(payment))
+    .then(depositFacet => depositFacet.receive(payment))
     .then(checkDeposit);
 });
 
@@ -271,25 +271,23 @@ test('issuer.claim', async t => {
   t.plan(3);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const payment1 = mint.mintPayment(AmountMath.make(brand, 2n));
-  await E(issuer)
-    .claim(payment1, AmountMath.make(brand, 2n))
-    .then(async newPayment1 => {
-      await issuer.getAmountOf(newPayment1).then(amount => {
-        t.assert(
-          AmountMath.isEqual(amount, AmountMath.make(brand, 2n)),
-          `new payment has equal balance to old payment`,
-        );
-        t.not(
-          newPayment1,
-          payment1,
-          `old payment is different than new payment`,
-        );
-      });
-
-      return t.throwsAsync(() => issuer.getAmountOf(payment1), {
-        message: /was not a live payment for brand/,
-      });
+  await claim(
+    E(issuer).makeEmptyPurse(),
+    payment1,
+    AmountMath.make(brand, 2n),
+  ).then(async newPayment1 => {
+    await issuer.getAmountOf(newPayment1).then(amount => {
+      t.assert(
+        AmountMath.isEqual(amount, AmountMath.make(brand, 2n)),
+        `new payment has equal balance to old payment`,
+      );
+      t.not(newPayment1, payment1, `old payment is different than new payment`);
     });
+
+    return t.throwsAsync(() => issuer.getAmountOf(payment1), {
+      message: /was not a live payment for brand/,
+    });
+  });
 });
 
 test('issuer.splitMany bad amount', async t => {
@@ -297,7 +295,7 @@ test('issuer.splitMany bad amount', async t => {
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
   const badAmounts = harden(Array(2).fill(AmountMath.make(brand, 10n)));
   await t.throwsAsync(
-    _ => E(issuer).splitMany(payment, badAmounts),
+    _ => splitMany(E(issuer).makeEmptyPurse(), payment, badAmounts),
     { message: /rights were not conserved/ },
     'successfully throw if rights are not conserved in proposed new payments',
   );
@@ -327,9 +325,11 @@ test('issuer.splitMany good amount', async t => {
     );
   };
 
-  await E(issuer)
-    .splitMany(oldPayment, harden(goodAmounts))
-    .then(checkPayments);
+  await splitMany(
+    E(issuer).makeEmptyPurse(),
+    oldPayment,
+    harden(goodAmounts),
+  ).then(checkPayments);
 });
 
 test('issuer.split bad amount', async t => {
@@ -337,11 +337,16 @@ test('issuer.split bad amount', async t => {
   const { brand: otherBrand } = makeIssuerKit('other fungible');
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
   await t.throwsAsync(
-    _ => E(issuer).split(payment, AmountMath.make(otherBrand, 10n)),
+    _ =>
+      split(
+        E(issuer).makeEmptyPurse(),
+        payment,
+        AmountMath.make(otherBrand, 10n),
+      ),
     {
-      message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
+      message:
+        'Brands in left "[Alleged: fungible brand]" and right "[Alleged: other fungible brand]" should match but do not',
     },
-    'throws for bad amount',
   );
 });
 
@@ -370,9 +375,11 @@ test('issuer.split good amount', async t => {
     );
   };
 
-  await E(issuer)
-    .split(oldPayment, AmountMath.make(brand, 10n))
-    .then(checkPayments);
+  await split(
+    E(issuer).makeEmptyPurse(),
+    oldPayment,
+    AmountMath.make(brand, 10n),
+  ).then(checkPayments);
 });
 
 test('issuer.combine good payments', async t => {
@@ -402,9 +409,9 @@ test('issuer.combine good payments', async t => {
       ),
     );
   };
-  await E(issuer)
-    .combine(payments)
-    .then(checkCombinedPayment);
+  await combine(E(issuer).makeEmptyPurse(), payments).then(
+    checkCombinedPayment,
+  );
 });
 
 test('issuer.combine array of promises', async t => {
@@ -413,27 +420,25 @@ test('issuer.combine array of promises', async t => {
   const paymentsP = [];
   for (let i = 0; i < 100; i += 1) {
     const freshPayment = mint.mintPayment(AmountMath.make(brand, 1n));
-    const paymentP = issuer.claim(freshPayment);
+    const paymentP = claim(issuer.makeEmptyPurse(), freshPayment);
     paymentsP.push(paymentP);
   }
   harden(paymentsP);
 
-  const checkCombinedResult = paymentP => {
+  const checkCombinedResult = paymentP =>
     issuer.getAmountOf(paymentP).then(pAmount => {
       t.is(pAmount.value, 100n);
     });
-  };
 
-  await E(issuer)
-    .combine(paymentsP)
-    .then(checkCombinedResult);
+  await combine(E(issuer).makeEmptyPurse(), paymentsP).then(
+    checkCombinedResult,
+  );
 });
 
 test('issuer.combine bad payments', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
-  const { mint: otherMint, brand: otherBrand } = makeIssuerKit(
-    'other fungible',
-  );
+  const { mint: otherMint, brand: otherBrand } =
+    makeIssuerKit('other fungible');
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
     payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));
@@ -442,11 +447,8 @@ test('issuer.combine bad payments', async t => {
   payments.push(otherPayment);
   harden(payments);
 
-  await t.throwsAsync(
-    () => E(issuer).combine(payments),
-    {
-      message: '"payment" not found: "[Alleged: other fungible payment]"',
-    },
-    'payment from other mint is not found',
-  );
+  await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), payments), {
+    message:
+      /^"\[Alleged: other fungible payment\]" was not a live payment for brand "\[Alleged: fungible brand\]"./,
+  });
 });

@@ -1,25 +1,23 @@
-// @ts-check
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
+import { E, Far } from '@endo/far';
 
-import './types.js';
+import './types-ambient.js';
+import { makePublishKit } from './publish-kit.js';
+import { subscribeLatest } from './subscribe.js';
 
 /**
  * @template T
- * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
- * @returns {AsyncIterable<T> & SharableNotifier<T>}
+ * @param {ERef<LatestTopic<T>>} sharableInternalsP
+ * @returns {Notifier<T>}
  */
 export const makeNotifier = sharableInternalsP => {
-  const asyncIterable = makeAsyncIterableFromNotifier(sharableInternalsP);
-
-  return Far('notifier', {
-    ...asyncIterable,
+  /** @type {Notifier<T>} */
+  const notifier = Far('notifier', {
+    ...subscribeLatest(sharableInternalsP),
+    getUpdateSince: async updateCount =>
+      E(sharableInternalsP).getUpdateSince(updateCount),
 
     /**
      * Use this to distribute a Notifier efficiently over the network,
@@ -27,9 +25,39 @@ export const makeNotifier = sharableInternalsP => {
      * `makeNotifier` to it at the new site to get an equivalent local
      * Notifier at that site.
      */
-    getSharableNotifierInternals: () => sharableInternalsP,
+    getSharableNotifierInternals: async () => sharableInternalsP,
+    /**
+     * @deprecated
+     * Used only by `makeCastingSpecFromRef`.  Instead that function should use
+     * the `StoredFacet` API.
+     */
+    getStoreKey: () => harden({ notifier }),
   });
+  return notifier;
 };
+
+/**
+ * @template T
+ * @param {ERef<Subscriber<T>>} subscriber
+ * @returns {Notifier<T>}
+ */
+export const makeNotifierFromSubscriber = subscriber => {
+  /**
+   * @type {LatestTopic<T>}
+   */
+  const baseNotifier = harden({
+    getUpdateSince: (updateCount = undefined) =>
+      E(subscriber).getUpdateSince(updateCount),
+  });
+
+  /** @type {Notifier<T>} */
+  const notifier = Far('notifier', {
+    ...makeNotifier(baseNotifier),
+    ...baseNotifier,
+  });
+  return notifier;
+};
+harden(makeNotifierFromSubscriber);
 
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
@@ -38,109 +66,31 @@ export const makeNotifier = sharableInternalsP => {
  * The initial state argument has to be truly optional even though it can
  * be any first class value including `undefined`. We need to distinguish the
  * presence vs the absence of it, which we cannot do with the optional argument
- * syntax. Rather we use the arity of the `args` array.
+ * syntax. Rather we use the arity of the `initialStateArr` array.
  *
  * If no initial state is provided to `makeNotifierKit`, then it starts without
  * an initial state. Its initial state will instead be the state of the first
  * update.
  *
  * @template T
- * @param {[] | [T]} args the first state to be returned
+ * @param {[] | [T]} initialStateArr the first state to be returned (typed as rest array to permit `undefined`)
  * @returns {NotifierRecord<T>} the notifier and updater
  */
-export const makeNotifierKit = (...args) => {
-  /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
-  let optNextPromiseKit;
-  /** @type {UpdateCount} */
-  let currentUpdateCount = 1; // avoid falsy numbers
-  /** @type {UpdateRecord<T>|undefined} */
-  let currentResponse;
+export const makeNotifierKit = (...initialStateArr) => {
+  /** @type {PublishKit<T>} */
+  const { publisher, subscriber } = makePublishKit();
 
-  const hasState = () => currentResponse !== undefined;
+  const notifier = makeNotifierFromSubscriber(subscriber);
 
-  const final = () => currentUpdateCount === undefined;
-
-  const baseNotifier = Far('baseNotifier', {
-    // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
-      if (
-        hasState() &&
-        (final() ||
-          (currentResponse && currentResponse.updateCount !== updateCount))
-      ) {
-        // If hasState() and either it is final() or it is
-        // not the state of updateCount, return the current state.
-        assert(currentResponse !== undefined);
-        return Promise.resolve(currentResponse);
-      }
-      // otherwise return a promise for the next state.
-      if (!optNextPromiseKit) {
-        optNextPromiseKit = makePromiseKit();
-      }
-      return optNextPromiseKit.promise;
-    },
+  const updater = Far('updater', {
+    updateState: state => publisher.publish(state),
+    finish: completion => publisher.finish(completion),
+    fail: reason => publisher.fail(reason),
   });
 
-  const notifier = Far('notifier', {
-    ...makeNotifier(baseNotifier),
-    ...baseNotifier,
-  });
-
-  const updater = harden({
-    updateState(state) {
-      if (final()) {
-        throw new Error('Cannot update state after termination.');
-      }
-
-      // become hasState() && !final()
-      assert(currentUpdateCount);
-      currentUpdateCount += 1;
-      currentResponse = harden({
-        value: state,
-        updateCount: currentUpdateCount,
-      });
-      if (optNextPromiseKit) {
-        optNextPromiseKit.resolve(currentResponse);
-        optNextPromiseKit = undefined;
-      }
-    },
-
-    finish(finalState) {
-      if (final()) {
-        throw new Error('Cannot finish after termination.');
-      }
-
-      // become hasState() && final()
-      currentUpdateCount = undefined;
-      currentResponse = harden({
-        value: finalState,
-        updateCount: currentUpdateCount,
-      });
-      if (optNextPromiseKit) {
-        optNextPromiseKit.resolve(currentResponse);
-        optNextPromiseKit = undefined;
-      }
-    },
-
-    fail(reason) {
-      if (final()) {
-        throw new Error('Cannot fail after termination.');
-      }
-
-      // become !hasState() && final()
-      currentUpdateCount = undefined;
-      currentResponse = undefined;
-      if (!optNextPromiseKit) {
-        optNextPromiseKit = makePromiseKit();
-      }
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      optNextPromiseKit.promise.catch(_ => {});
-      optNextPromiseKit.reject(reason);
-    },
-  });
-
-  if (args.length >= 1) {
-    updater.updateState(args[0]);
+  assert(initialStateArr.length <= 1, 'too many arguments');
+  if (initialStateArr.length === 1) {
+    updater.updateState(initialStateArr[0]);
   }
 
   // notifier facet is separate so it can be handed out while updater
@@ -151,64 +101,69 @@ export const makeNotifierKit = (...args) => {
 /**
  * Adaptor from async iterable to notifier.
  *
+ * @deprecated The resulting notifier is lossless, which is not desirable.
+ * Prefer makeNotifierFromSubscriber, and refer to
+ * https://github.com/Agoric/agoric-sdk/issues/5413 and
+ * https://github.com/Agoric/agoric-sdk/pull/5695 for context.
+ *
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @returns {Notifier<T>}
  */
 export const makeNotifierFromAsyncIterable = asyncIterableP => {
-  /** @type {ERef<AsyncIterator<T>>} */
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
-  /** @type {UpdateCount} */
-  let currentUpdateCount = 1; // avoid falsy numbers
-  /** @type {UpdateRecord<T>|undefined} */
+  let currentUpdateCount = 0n;
+  /** @type {ERef<UpdateRecord<T>>|undefined} */
   let currentResponse;
-
-  const hasState = () => currentResponse !== undefined;
-
-  const final = () => currentUpdateCount === undefined;
+  let final = false;
 
   /**
-   * @template T
-   * @type {BaseNotifier<T>}
+   * @type {LatestTopic<T>}
    */
   const baseNotifier = Far('baseNotifier', {
-    // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
-      if (
-        hasState() &&
-        (final() ||
-          (currentResponse && currentResponse.updateCount !== updateCount))
-      ) {
-        // If hasState() and either it is final() or it is
-        // not the state of updateCount, return the current state.
+    getUpdateSince(updateCount = -1n) {
+      if (updateCount < currentUpdateCount) {
+        if (currentResponse) {
+          return Promise.resolve(currentResponse);
+        }
+      } else if (updateCount !== currentUpdateCount) {
+        throw new Error(
+          'getUpdateSince argument must be a previously-issued updateCount.',
+        );
+      }
+
+      // Return a final response if we have one, otherwise a promise for the next state.
+      if (final) {
         assert(currentResponse !== undefined);
         return Promise.resolve(currentResponse);
       }
-
-      // otherwise return a promise for the next state.
       if (!optNextPromise) {
         const nextIterResultP = E(iteratorP).next();
         optNextPromise = E.when(
           nextIterResultP,
           ({ done, value }) => {
-            assert(currentUpdateCount);
-            currentUpdateCount = done ? undefined : currentUpdateCount + 1;
+            assert(!final);
+            if (done) {
+              final = true;
+            }
+            currentUpdateCount += 1n;
             currentResponse = harden({
               value,
-              updateCount: currentUpdateCount,
+              updateCount: done ? undefined : currentUpdateCount,
             });
             optNextPromise = undefined;
             return currentResponse;
           },
           _reason => {
-            currentUpdateCount = undefined;
-            currentResponse = undefined;
-            // We know that nextIterResultP is rejected, and we just need any
-            // promise rejected by that reason.
-            return /** @type {Promise<UpdateRecord<T>>} */ (nextIterResultP);
+            final = true;
+            currentResponse =
+              /** @type {Promise<UpdateRecord<T>>} */
+              (nextIterResultP);
+            optNextPromise = undefined;
+            return currentResponse;
           },
         );
       }
@@ -216,19 +171,13 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
     },
   });
 
-  return Far('notifier', {
+  /** @type {Notifier<T>} */
+  const notifier = Far('notifier', {
     // Don't leak the original asyncIterableP since it may be remote and we also
     // want the same semantics for this exposed iterable and the baseNotifier.
-    ...makeAsyncIterableFromNotifier(baseNotifier),
+    ...makeNotifier(baseNotifier),
     ...baseNotifier,
-
-    /**
-     * Use this to distribute a Notifier efficiently over the network,
-     * by obtaining this from the Notifier to be replicated, and applying
-     * `makeNotifier` to it at the new site to get an equivalent local
-     * Notifier at that site.
-     */
-    getSharableNotifierInternals: () => baseNotifier,
   });
+  return notifier;
 };
 harden(makeNotifierFromAsyncIterable);

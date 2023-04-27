@@ -1,9 +1,8 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { setup } from '../setupBasicMints.js';
 
 import {
@@ -19,15 +18,17 @@ test('ZoeHelpers messages', t => {
 });
 
 function makeMockTradingZcfBuilder() {
-  const offers = makeStore('offerHandle');
-  const allocs = makeStore('offerHandle');
+  const offers = makeScalarMapStore('offerHandle');
+  const allocs = makeScalarMapStore('offerHandle');
   const reallocatedStagings = [];
 
   return Far('mockTradingZcfBuilder', {
     addOffer: (keyword, offer) => offers.init(keyword, offer),
     addAllocation: (keyword, alloc) => allocs.init(keyword, alloc),
+    /** @returns {ZCF} */
     build: () =>
       Far('mockZCF', {
+        // @ts-expect-error mock
         getZoeService: () => {},
         reallocate: (...seatStagings) => {
           reallocatedStagings.push(...seatStagings);
@@ -39,6 +40,8 @@ function makeMockTradingZcfBuilder() {
 
 test('ZoeHelpers satisfies blank proposal', t => {
   const { moola } = setup();
+  /** @type {ZCFSeat} */
+  // @ts-expect-error cast
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10n) }),
     getProposal: () => harden({}),
@@ -53,6 +56,8 @@ test('ZoeHelpers satisfies blank proposal', t => {
 
 test('ZoeHelpers satisfies simple proposal', t => {
   const { moola, simoleans } = setup();
+  /** @type {ZCFSeat} */
+  // @ts-expect-error cast
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10n) }),
     getProposal: () => harden({ want: { Desire: moola(30n) } }),
@@ -86,6 +91,8 @@ test('ZoeHelpers satisfies simple proposal', t => {
 
 test('ZoeHelpers satisfies() with give', t => {
   const { moola, bucks } = setup();
+  /** @type {ZCFSeat} */
+  // @ts-expect-error cast
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Charge: moola(30n) }),
     getProposal: () =>

@@ -1,13 +1,7 @@
-// @ts-check
-
-import { Far, passStyleOf } from '@agoric/marshal';
-import { sameStructure } from '@agoric/same-structure';
+import { makeExo, mustMatch, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { Nat } from '@agoric/nat';
 
-import { assertType, ParamType } from './paramManager.js';
-
-const { details: X, quote: q } = assert;
+import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 
 // Topics being voted on are 'Questions'. Before a Question is known to a
 // electorate, the parameters can be described with a QuestionSpec. Once the
@@ -18,189 +12,103 @@ const { details: X, quote: q } = assert;
 /**
  * "unranked" is more formally known as "approval" voting, but this is hard for
  * people to intuit when there are only two alternatives.
- *
- * @type {{
- *   UNRANKED: 'unranked',
- *   ORDER: 'order',
- * }}
  */
-const ChoiceMethod = {
+const ChoiceMethod = /** @type {const} */ ({
   UNRANKED: 'unranked',
   ORDER: 'order',
-};
+  PLURALITY: 'plurality',
+});
 
-/** @type {{
- *   PARAM_CHANGE: 'param_change',
- *   ELECTION: 'election',
- *   SURVEY: 'survey',
- * }}
- */
-const ElectionType = {
+const ElectionType = /** @type {const} */ ({
   // A parameter is named, and a new value proposed
   PARAM_CHANGE: 'param_change',
   // choose one or multiple winners, depending on ChoiceMethod
   ELECTION: 'election',
   SURVEY: 'survey',
-};
+  // whether or not to invoke an API method
+  API_INVOCATION: 'api_invocation',
+  OFFER_FILTER: 'offer_filter',
+});
 
-/** @type {{
- *   MAJORITY: 'majority',
- *   NO_QUORUM: 'no_quorum',
- *   ALL: 'all',
- * }}
- */
-const QuorumRule = {
+const QuorumRule = /** @type {const} */ ({
   MAJORITY: 'majority',
   NO_QUORUM: 'no_quorum',
   // The election isn't valid unless all voters vote
   ALL: 'all',
-};
-
-/** @type {LooksLikeSimpleIssue} */
-const looksLikeSimpleIssue = issue => {
-  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(
-    issue && typeof issue.text === 'string',
-    X`Issue ("${issue}") must be a record with text: aString`,
-  );
-  return undefined;
-};
-
-/** @type {LooksLikeParamChangeIssue} */
-const looksLikeParamChangeIssue = issue => {
-  assert(issue, X`argument to looksLikeParamChangeIssue cannot be null`);
-  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert.typeof(
-    issue && issue.paramSpec,
-    'object',
-    X`Issue ("${issue}") must be a record with paramSpec: anObject`,
-  );
-  assert(issue && issue.proposedValue);
-  assertType(ParamType.INSTANCE, issue.contract, 'contract');
-};
-
-/** @type {LooksLikeIssueForType} */
-const looksLikeIssueForType = (electionType, issue) => {
-  assert(
-    passStyleOf(issue) === 'copyRecord',
-    X`A question can only be a pass-by-copy record: ${issue}`,
-  );
-
-  switch (electionType) {
-    case ElectionType.SURVEY:
-    case ElectionType.ELECTION:
-      looksLikeSimpleIssue(/** @type {SimpleIssue} */ (issue));
-      break;
-    case ElectionType.PARAM_CHANGE:
-      looksLikeParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
-      break;
-    default:
-      throw Error(`Election type unrecognized`);
-  }
-};
+});
 
 /** @type {PositionIncluded} */
-const positionIncluded = (positions, p) =>
-  positions.some(e => sameStructure(e, p));
+const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
-// QuestionSpec contains the subset of QuestionDetails that can be specified before
-/** @type {LooksLikeClosingRule} */
-function looksLikeClosingRule(closingRule) {
-  assert(closingRule, X`argument to looksLikeClosingRule cannot be null`);
-  assert.typeof(
-    closingRule,
-    'object',
-    X`ClosingRule ("${closingRule}") must be a record`,
-  );
-  Nat(closingRule && closingRule.deadline);
-  const timer = closingRule && closingRule.timer;
-  assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
-}
-
-const assertEnumIncludes = (enumeration, value, name) => {
-  assert(
-    Object.getOwnPropertyNames(enumeration)
-      .map(k => enumeration[k])
-      .includes(value),
-    X`Illegal ${name}: ${value}`,
-  );
-};
-
-/** @type {LooksLikeQuestionSpec} */
-const looksLikeQuestionSpec = ({
+/**
+ * @param {QuestionSpec} allegedQuestionSpec
+ * @returns {QuestionSpec}
+ */
+const coerceQuestionSpec = ({
   method,
   issue,
   positions,
   electionType,
   maxChoices,
+  maxWinners,
   closingRule,
   quorumRule,
   tieOutcome,
 }) => {
-  looksLikeIssueForType(electionType, issue);
-
-  assert(
-    positions.every(
-      p => passStyleOf(p) === 'copyRecord',
-      X`positions must be records`,
-    ),
-  );
-  assert(
-    positionIncluded(positions, tieOutcome),
-    X`tieOutcome must be a legal position: ${q(tieOutcome)}`,
-  );
-  assertEnumIncludes(QuorumRule, quorumRule, 'QuorumRule');
-  assertEnumIncludes(ElectionType, electionType, 'ElectionType');
-  assertEnumIncludes(ChoiceMethod, method, 'ChoiceMethod');
-  assert(maxChoices > 0, X`maxChoices must be positive: ${maxChoices}`);
-  assert(maxChoices <= positions.length, X`Choices must not exceed length`);
-
-  looksLikeClosingRule(closingRule);
-
-  return harden({
+  const question = harden({
     method,
     issue,
     positions,
     maxChoices: Number(maxChoices),
+    maxWinners: Number(maxWinners),
     electionType,
     closingRule,
     quorumRule,
     tieOutcome,
   });
+
+  mustMatch(question, QuestionSpecShape);
+
+  // XXX It would be nice to enforce this using parameterized types, but that
+  // seems to only enforce type constraints, (i.e. the tieOutcome will be the
+  // same type as any of the positions) unless you can provide the concrete
+  // value at pattern creation time.
+  mustMatch(question.tieOutcome, M.or(...question.positions));
+
+  return question;
 };
 
-/** @type {BuildUnrankedQuestion} */
-const buildUnrankedQuestion = (questionSpec, counterInstance) => {
+/** @type {BuildQuestion} */
+const buildQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
-  const getDetails = () =>
-    harden({
-      ...questionSpec,
-      questionHandle,
-      counterInstance,
-    });
-
   /** @type {Question} */
-  return Far('question details', {
-    getVoteCounter: () => counterInstance,
-    getDetails,
+  return makeExo('question details', QuestionI, {
+    getVoteCounter() {
+      return counterInstance;
+    },
+    getDetails() {
+      return harden({
+        ...questionSpec,
+        questionHandle,
+        counterInstance,
+      });
+    },
   });
 };
 
-harden(buildUnrankedQuestion);
+harden(buildQuestion);
 harden(ChoiceMethod);
 harden(ElectionType);
-harden(looksLikeIssueForType);
-harden(looksLikeQuestionSpec);
+harden(coerceQuestionSpec);
 harden(positionIncluded);
 harden(QuorumRule);
 
 export {
-  buildUnrankedQuestion,
+  buildQuestion,
   ChoiceMethod,
   ElectionType,
-  looksLikeIssueForType,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   positionIncluded,
   QuorumRule,
 };

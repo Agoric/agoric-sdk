@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
 /**
@@ -11,24 +10,30 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { netstringReader, netstringWriter } from '@endo/netstring';
+import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
+import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
+import { racePromises } from '@endo/promise-kit';
+import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
-import * as node from './node-stream.js';
 
 // This will need adjustment, but seems to be fine for a start.
 export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
 
-const OK = '.'.charCodeAt(0);
-const ERROR = '!'.charCodeAt(0);
-const QUERY = '?'.charCodeAt(0);
-
-const OK_SEPARATOR = 1;
-
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+const COMMAND_BUF = encoder.encode('?');
+const QUERY = '?'.charCodeAt(0);
+const QUERY_RESPONSE_BUF = encoder.encode('/');
+const OK = '.'.charCodeAt(0);
+const ERROR = '!'.charCodeAt(0);
+
+const OK_SEPARATOR = 1;
+
 const { freeze } = Object;
+
+const noop = freeze(() => {});
 
 /**
  * @param {Uint8Array} arg
@@ -41,14 +46,15 @@ function echoCommand(arg) {
 /**
  * @param {XSnapOptions} options
  *
- * @typedef {Object} XSnapOptions
+ * @typedef {object} XSnapOptions
  * @property {string} os
  * @property {Spawn} spawn
  * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
- * @property {string=} [name]
- * @property {boolean=} [debug]
- * @property {number=} [parserBufferSize] in kB (must be an integer)
- * @property {string=} [snapshot]
+ * @property {string} [name]
+ * @property {boolean} [debug]
+ * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
+ * @property {number} [parserBufferSize] in kB (must be an integer)
+ * @property {string} [snapshot]
  * @property {'ignore' | 'inherit'} [stdout]
  * @property {'ignore' | 'inherit'} [stderr]
  * @property {number} [meteringLimit]
@@ -61,6 +67,7 @@ export function xsnap(options) {
     name = '<unnamed xsnap worker>',
     handleCommand = echoCommand,
     debug = false,
+    netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
     snapshot = undefined,
     stdout = 'ignore',
@@ -89,6 +96,8 @@ export function xsnap(options) {
   /** @type {Deferred<void>} */
   const vatExit = defer();
 
+  assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
+
   let args = [name];
   if (snapshot) {
     args.push('-r', snapshot);
@@ -109,7 +118,7 @@ export function xsnap(options) {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });
 
-  xsnapProcess.on('exit', (code, signal) => {
+  xsnapProcess.once('exit', (code, signal) => {
     if (code === 0) {
       vatExit.resolve();
     } else if (signal !== null) {
@@ -133,14 +142,15 @@ export function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
-  const messagesToXsnap = netstringWriter(
-    node.writer(
-      /** @type {NodeJS.WritableStream} */ (xsnapProcess.stdio[3]),
-      `messages to ${name}`,
-    ),
+  const writer = xsnapProcess.stdio[3];
+  const reader = xsnapProcess.stdio[4];
+
+  const messagesToXsnap = makeNetstringWriter(
+    makeNodeWriter(/** @type {import('stream').Writable} */ (writer)),
   );
-  const messagesFromXsnap = netstringReader(
-    /** @type {AsyncIterable<Uint8Array>} */ (xsnapProcess.stdio[4]),
+  const messagesFromXsnap = makeNetstringReader(
+    makeNodeReader(/** @type {import('stream').Readable} */ (reader)),
+    { maxMessageLength: netstringMaxChunkSize },
   );
 
   /** @type {Promise<void>} */
@@ -148,32 +158,33 @@ export function xsnap(options) {
 
   /**
    * @template T
-   * @typedef {Object} RunResult
+   * @typedef {object} RunResult
    * @property {T} reply
-   * @property {{ meterType: string, allocate: number|null, compute: number|null }} meterUsage
+   * @property {{ meterType: string, allocate: number|null, compute: number|null, timestamps: number[]|null }} meterUsage
    */
 
   /**
    * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
-    for (;;) {
-      const { done, value: message } = await messagesFromXsnap.next();
-      if (done) {
+    for await (const _ of forever) {
+      const iteration = await messagesFromXsnap.next(undefined);
+      if (iteration.done) {
         xsnapProcess.kill();
         return vatCancelled;
       }
+      const { value: message } = iteration;
       if (message.byteLength === 0) {
         // A protocol error kills the xsnap child process and breaks the baton
         // chain with a terminal error.
         xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
-        let meterInfo = { compute: null, allocate: null };
+        let meterInfo = { compute: null, allocate: null, timestamps: [] };
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
         if (meterSeparator >= 0) {
           // The message is `.meterdata\1reply`.
-          const meterData = message.slice(1, meterSeparator);
+          const meterData = message.subarray(1, meterSeparator);
           // We parse the meter data as JSON
           meterInfo = JSON.parse(decoder.decode(meterData));
           // assert(typeof meterInfo === 'object');
@@ -194,9 +205,20 @@ export function xsnap(options) {
           )}`,
         );
       } else if (message[0] === QUERY) {
-        await messagesToXsnap.next(await handleCommand(message.subarray(1)));
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        const commandResult = await handleCommand(message.subarray(1));
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await messagesToXsnap.next([QUERY_RESPONSE_BUF, commandResult]);
+      } else {
+        // unrecognized responses also kill the process
+        xsnapProcess.kill();
+        const m = decoder.decode(message);
+        throw new Error(
+          `xsnap protocol error: received unknown message <<${m}>>`,
+        );
       }
     }
+    throw Error(`unreachable, but tools don't know that`);
   }
 
   /**
@@ -208,8 +230,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
       return runToIdle();
     });
-    baton = result.then(() => {}).catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -221,8 +243,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`s${fileName}`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -234,8 +256,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`m${fileName}`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -246,8 +268,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`R`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -256,17 +278,11 @@ export function xsnap(options) {
    */
   async function issueCommand(message) {
     const result = baton.then(async () => {
-      const request = new Uint8Array(message.length + 1);
-      request[0] = QUERY;
-      request.set(message, 1);
-      await messagesToXsnap.next(request);
+      await messagesToXsnap.next([COMMAND_BUF, message]);
       return runToIdle();
     });
-    baton = result.then(
-      () => {},
-      () => {},
-    );
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -287,8 +303,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`w${file}`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatExit.promise, baton]);
+    baton = result.then(noop, noop);
+    return racePromises([vatExit.promise, baton]);
   }
 
   /**
@@ -296,10 +312,15 @@ export function xsnap(options) {
    */
   async function close() {
     baton = baton.then(async () => {
-      await messagesToXsnap.return();
+      const running = await racePromises([
+        vatExit.promise.then(() => false),
+        Promise.resolve(true),
+      ]);
+      await (running && messagesToXsnap.next(encoder.encode(`q`)));
+      await messagesToXsnap.return(undefined);
       throw new Error(`${name} closed`);
     });
-    baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
+    baton.catch(noop); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
   }
 
@@ -309,9 +330,9 @@ export function xsnap(options) {
   async function terminate() {
     xsnapProcess.kill();
     baton = Promise.reject(new Error(`${name} terminated`));
-    baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
+    baton.catch(noop); // Suppress Node.js unhandled exception warning.
     // Mute the vatExit exception: it is expected.
-    return vatExit.promise.catch(() => {});
+    return vatExit.promise.catch(noop);
   }
 
   return freeze({

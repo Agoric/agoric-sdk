@@ -2,11 +2,10 @@
 
 /* global process */
 
-import '@agoric/install-ses/pre-bundle-source.js';
-// TODO Remove esm preinitialization
-// https://github.com/endojs/endo/issues/768
+import '@endo/init/pre.js';
 import 'esm';
-import '@agoric/install-ses';
+import '@agoric/casting/node-fetch-shim.js';
+import '@endo/init';
 
 import path from 'path';
 import WebSocket from 'ws';
@@ -38,9 +37,15 @@ main(progname, rawArgs, {
   process,
   spawn,
 }).then(
-  res => res === undefined || process.exit(res),
+  res => {
+    if (Number.isSafeInteger(res)) {
+      process.exitCode = res;
+    }
+  },
   rej => {
     log.error(rej);
-    process.exit(2);
+    if (!process.exitCode) {
+      process.exitCode = 2;
+    }
   },
 );

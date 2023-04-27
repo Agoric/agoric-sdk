@@ -8,20 +8,18 @@
  *     replay steps 00001 to the first snapshot step.
  *  3. For the last folder, play steps 00001 to last.
  */
-// @ts-check
-
 import childProcessPowers from 'child_process';
 import osPowers from 'os';
 import fsPowers from 'fs';
+import { makeQueue } from '@endo/stream';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
-import { queue } from './stream.js';
 
 const { freeze } = Object;
 
 const encoder = new TextEncoder();
 
-/** @param { number } n */
-const pad5 = n => `00000${n}`.slice(-5);
+/** @param {number} n */
+const pad5 = n => `${n}`.padStart(5, '0');
 
 /**
  * @param {string} path
@@ -32,12 +30,13 @@ function makeSyncStorage(path, { writeFileSync }) {
   return freeze({
     /** @param {string} fn */
     file: fn => {
-      /** @param { Uint8Array } data */
-      const put = data => writeFileSync(new URL(fn, base).pathname, data);
+      /** @param {Uint8Array} data */
+      const put = data =>
+        writeFileSync(new URL(fn, base).pathname, data, { flag: 'wx' });
 
       return freeze({
         put,
-        /** @param { string } txt */
+        /** @param {string} txt */
         putText: txt => put(encoder.encode(txt)),
       });
     },
@@ -69,11 +68,11 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
  * Start an xsnap subprocess controller that records data
  * flowing to it for replay.
  *
- * @param { XSnapOptions } options used
+ * @param {XSnapOptions} options used
  *        to create the underlying xsnap subprocess. Note that
  *        options.handleCommand is wrapped in order to capture
  *        data sent to the process.
- * @param { string } folderPath where to store files of the form
+ * @param {string} folderPath where to store files of the form
  *        00000-options.json
  *        00001-evaluate.dat
  *        00002-issueCommand.dat
@@ -92,8 +91,8 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
   let ix = 0;
 
   /**
-   * @param { string } kind
-   * @param { string= } ext
+   * @param {string} kind
+   * @param {string} [ext]
    */
   const nextFile = (kind, ext = 'dat') => {
     const fn = `${pad5(ix)}-${kind}.${ext}`;
@@ -139,7 +138,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
       nextFile('isReady');
       return it.isReady();
     },
-    /** @param { Uint8Array } msg */
+    /** @param {Uint8Array} msg */
     issueCommand: async msg => {
       nextFile('issueCommand').put(msg);
       return it.issueCommand(msg);
@@ -171,7 +170,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
  * Replay an xsnap subprocess from one or more folders of steps.
  *
  * @param {XSnapOptions} opts
- * @param { string[] } folders
+ * @param {string[]} folders
  * @param {{
  *   readdirSync: typeof import('fs').readdirSync,
  *   readFileSync: typeof import('fs').readFileSync,
@@ -182,14 +181,14 @@ export async function replayXSnap(
   folders,
   { readdirSync, readFileSync },
 ) {
-  const replies = queue();
+  const replies = makeQueue();
   async function handleCommand(_msg) {
     const r = await replies.get();
     // console.log('handleCommand', { r: decode(r), msg: decode(msg) });
     return r;
   }
 
-  /** @param { string } folder */
+  /** @param {string} folder */
   function start(folder) {
     const rd = makeSyncAccess(folder, { readdirSync, readFileSync });
     const [optionsFn] = rd.readdir();
@@ -204,12 +203,12 @@ export async function replayXSnap(
   const it = start(folders[0]);
 
   /**
-   * @param { ReturnType<typeof makeSyncAccess> } rd
-   * @param { string[] } steps
+   * @param {ReturnType<typeof makeSyncAccess>} rd
+   * @param {string[]} steps
    */
   async function runSteps(rd, steps) {
     const folder = rd.path;
-    for (const step of steps) {
+    for await (const step of steps) {
       const parts = step.match(/(\d+)-([a-zA-Z]+)\.(dat|json)$/);
       if (!parts) {
         throw Error(`expected 0001-abc.dat; got: ${step}`);
@@ -218,14 +217,14 @@ export async function replayXSnap(
       const seq = parseInt(digits, 10);
       console.log(folder, seq, kind);
       if (running && !['command', 'reply'].includes(kind)) {
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await running;
         running = undefined;
       }
       const file = rd.file(step);
       switch (kind) {
         case 'isReady':
-          // eslint-disable-next-line no-await-in-loop
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await it.isReady();
           break;
         case 'evaluate':
@@ -246,7 +245,7 @@ export async function replayXSnap(
             return;
           } else {
             try {
-              // eslint-disable-next-line no-await-in-loop
+              // eslint-disable-next-line @jessie.js/no-nested-await
               await it.snapshot(file.getText());
             } catch (err) {
               console.warn(err, 'while taking snapshot:', err);

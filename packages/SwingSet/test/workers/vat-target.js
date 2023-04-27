@@ -1,6 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far, E } from '@endo/far';
 
 function ignore(p) {
   p.then(
@@ -36,7 +35,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   syscall.dropImports([dropMe])
   //   syscall.send(callbackObj, method="callback", result=rp2, args=[11, 12]);
   //   syscall.subscribe(rp2)
-  //   syscall.fulfillToData(pA, [pB, pC, 3]);
+  //   syscall.fulfillToData(pA, [pB, pC, 3, 'vsValue', undefined, 'function', 'function']);
   function zero(obj, pD, pE, adder, dropMe) {
     callbackObj = obj;
     const pF = E(callbackObj).callback(11, 12); // syscall.send
@@ -44,7 +43,11 @@ export function buildRootObject(vatPowers, vatParameters) {
     ignore(pE);
     const three = canCallNow ? vatPowers.D(adder).add(1, 2) : 3;
     vatPowers.disavow(dropMe);
-    return [precB.promise, precC.promise, pF, three]; // syscall.fulfillToData
+
+    const evt = typeof vatPowers.exitVat;
+    const evwft = typeof vatPowers.exitVatWithFailure;
+    // syscall.fulfillToData:
+    return [precB.promise, precC.promise, pF, three, evt, evwft];
   }
 
   // crank 2:
@@ -53,6 +56,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   syscall.reject(pC, Error('oops'))
   //   syscall.fulfillToData(rp3, 'rp3 good')
   function one() {
+    void Promise.reject(Error('one unhandled rejection'));
     precB.resolve(callbackObj); // syscall.fulfillToPresence
     precC.reject(Error('oops')); // syscall.reject
     return 'rp3 good';

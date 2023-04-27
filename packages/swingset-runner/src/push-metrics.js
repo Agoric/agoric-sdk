@@ -92,7 +92,6 @@ function gatherMetrics(kind, data, labels, specs) {
   const todo = new Set(Object.keys(data));
   for (const { key, name } of KERNEL_STATS_METRICS) {
     if (!(key in data)) {
-      // eslint-disable-next-line no-continue
       continue;
     }
     todo.delete(key);

@@ -1,7 +1,7 @@
 {
   "name": "@agoric/swing-store",
-  "version": "0.6.3",
-  "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
+  "version": "0.8.1",
+  "description": "Persistent storage for SwingSet",
   "type": "module",
   "main": "src/swingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -12,23 +12,26 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "better-sqlite3": "^7.4.1",
-    "node-lmdb": "^0.9.5",
+    "@agoric/assert": "^0.5.1",
+    "@agoric/internal": "^0.2.1",
+    "@endo/base64": "^0.2.31",
+    "@endo/bundle-source": "^2.5.1",
+    "@endo/check-bundle": "^0.2.18",
+    "@endo/nat": "^4.1.27",
+    "better-sqlite3": "^8.2.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/swing-store": "^0.6.3",
-    "ava": "^3.12.1",
-    "c8": "^7.7.2"
+    "@endo/init": "^0.5.56",
+    "@types/better-sqlite3": "^7.5.0",
+    "ava": "^5.2.0",
+    "c8": "^7.13.0"
   },
   "publishConfig": {
     "access": "public"
@@ -38,14 +41,5 @@
       "test/**/test-*.js"
     ],
     "timeout": "2m"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   }
 }

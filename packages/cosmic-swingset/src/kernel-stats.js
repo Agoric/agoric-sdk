@@ -1,5 +1,9 @@
-import { MeterProvider } from '@opentelemetry/metrics';
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
+// @ts-check
+import {
+  ExplicitBucketHistogramAggregation,
+  MeterProvider,
+  View,
+} from '@opentelemetry/sdk-metrics';
 
 import { makeLegacyMap } from '@agoric/store';
 
@@ -8,14 +12,21 @@ import {
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics.js';
 
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
+
+/** @typedef {import('@opentelemetry/api-metrics').MetricAttributes} Attributes */
+/** @typedef {import('@opentelemetry/api-metrics').Histogram} Histogram */
+
+import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
+
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too
  * high cardinality for us unless we can somehow limit the number of active
  * metrics (many more than 20 vats).
  */
 const VAT_ID_IS_TOO_HIGH_CARDINALITY = true;
-
-export const DEFAULT_METER_PROVIDER = new MeterProvider();
 
 export const HISTOGRAM_MS_LATENCY_BOUNDARIES = [
   5,
@@ -31,9 +42,31 @@ export const HISTOGRAM_MS_LATENCY_BOUNDARIES = [
   10000,
   Infinity,
 ];
-export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = HISTOGRAM_MS_LATENCY_BOUNDARIES.map(
-  ms => ms / 1000,
-);
+export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES =
+  HISTOGRAM_MS_LATENCY_BOUNDARIES.map(ms => ms / 1000);
+
+const baseMetricOptions = /** @type {const} */ ({
+  swingset_crank_processing_time: {
+    description: 'Processing time per crank (ms)',
+    boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
+  },
+  swingset_block_processing_seconds: {
+    description: 'Processing time per block',
+    boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
+  },
+  swingset_vat_startup: {
+    description: 'Vat startup time (ms)',
+    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  },
+  swingset_vat_delivery: {
+    description: 'Vat delivery time (ms)',
+    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  },
+  swingset_meter_usage: {
+    description: 'Vat meter usage',
+    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  },
+});
 
 const wrapDeltaMS = (finisher, useDeltaMS) => {
   const startMS = Date.now();
@@ -52,78 +85,102 @@ const recordToKey = record =>
     Object.entries(record).sort(([ka], [kb]) => (ka < kb ? -1 : 1)),
   );
 
-export function makeSlogCallbacks({ metricMeter, labels }) {
-  // Legacy because ValueRecorder thing Does not seem to be a passable
-  const nameToBaseMetric = makeLegacyMap('baseMetricName');
-  nameToBaseMetric.init(
-    'swingset_vat_startup',
-    metricMeter.createValueRecorder('swingset_vat_startup', {
-      description: 'Vat startup time (ms)',
-      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-    }),
+export function getMetricsProviderViews() {
+  return Object.entries(baseMetricOptions).map(
+    ([instrumentName, { boundaries }]) =>
+      new View({
+        aggregation: new ExplicitBucketHistogramAggregation([...boundaries]),
+        instrumentName,
+      }),
   );
-  nameToBaseMetric.init(
-    'swingset_vat_delivery',
-    metricMeter.createValueRecorder('swingset_vat_delivery', {
-      description: 'Vat delivery time (ms)',
-      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-    }),
-  );
-  nameToBaseMetric.init(
-    'swingset_meter_usage',
-    metricMeter.createValueRecorder('swingset_meter_usage', {
-      description: 'Vat meter usage',
-      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-    }),
-  );
+}
+
+export function makeDefaultMeterProvider() {
+  return new MeterProvider({ views: getMetricsProviderViews() });
+}
+
+/** @param {Omit<NonNullable<Parameters<typeof getTelemetryProvidersOriginal>[0]>, 'views'>} [powers] */
+export function getTelemetryProviders(powers = {}) {
+  return getTelemetryProvidersOriginal({
+    ...powers,
+    views: getMetricsProviderViews(),
+  });
+}
+
+/**
+ *
+ * @param {import('@opentelemetry/api-metrics').Meter} metricMeter
+ * @param {string} name
+ */
+function createHistogram(metricMeter, name) {
+  const { description } = baseMetricOptions[name] || {};
+  return metricMeter.createHistogram(name, { description });
+}
+
+/**
+ * @param {{
+ *   metricMeter: import('@opentelemetry/api-metrics').Meter,
+ *   attributes?: import('@opentelemetry/api-metrics').MetricAttributes,
+ * }} param0
+ */
+export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
   // Legacy because legacyMaps are not passable
-  const groupToMetrics = makeLegacyMap('metricGroup');
+  const groupToRecorder = makeLegacyMap('metricGroup');
 
   /**
    * This function reuses or creates per-group named metrics.
    *
    * @param {string} name name of the base metric
-   * @param {Record<string, string>} [group] the labels to associate with a
-   * group
-   * @param {Record<string, string>} [instance] the specific metric labels
-   * @returns {any} the labelled metric
+   * @param {Attributes} [group] the
+   * attributes to associate with a group
+   * @param {Attributes} [instance] the specific metric attributes
+   * @returns {Pick<Histogram, 'record'>} the attribute-aware recorder
    */
-  const getGroupedMetric = (name, group = undefined, instance = {}) => {
-    let nameToMetric;
+  const getGroupedRecorder = (name, group = undefined, instance = {}) => {
+    let nameToRecorder;
     const groupKey = group && recordToKey(group);
     const instanceKey = recordToKey(instance);
-    if (groupToMetrics.has(groupKey)) {
+    if (groupToRecorder.has(groupKey)) {
       let oldInstanceKey;
-      [nameToMetric, oldInstanceKey] = groupToMetrics.get(groupKey);
+      [nameToRecorder, oldInstanceKey] = groupToRecorder.get(groupKey);
       if (group) {
         if (instanceKey !== oldInstanceKey) {
-          for (const metric of nameToMetric.values()) {
+          for (const metric of nameToRecorder.values()) {
             // FIXME: Delete all the metrics of the old instance.
             metric;
           }
           // Refresh the metric group.
           // Legacy because Metric thing does not seem to be a passable
-          nameToMetric = makeLegacyMap('metricName');
-          groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
+          nameToRecorder = makeLegacyMap('metricName');
+          groupToRecorder.set(groupKey, [nameToRecorder, instanceKey]);
         }
       }
     } else {
       // Legacy because Metric thing does not seem to be a passable
-      nameToMetric = makeLegacyMap('metricName');
-      groupToMetrics.init(groupKey, [nameToMetric, instanceKey]);
+      nameToRecorder = makeLegacyMap('metricName');
+      groupToRecorder.init(groupKey, [nameToRecorder, instanceKey]);
     }
 
-    let metric;
-    if (nameToMetric.has(name)) {
-      metric = nameToMetric.get(name);
+    /** @type {Histogram} */
+    let recorder;
+    if (nameToRecorder.has(name)) {
+      recorder = nameToRecorder.get(name);
     } else {
-      // Bind the base metric to the group and instance labels.
-      metric = nameToBaseMetric
-        .get(name)
-        .bind({ ...labels, ...group, ...instance });
-      nameToMetric.init(name, metric);
+      // Bind the base metric to the group and instance attributes.
+      const metric = createHistogram(metricMeter, name);
+      // Create a value recorder with the specfic attributes.
+      recorder = harden({
+        record: (value, attrs) =>
+          metric.record(value, {
+            ...attributes,
+            ...group,
+            ...instance,
+            ...attrs,
+          }),
+      });
+      nameToRecorder.init(name, recorder);
     }
-    return metric;
+    return recorder;
   };
 
   /**
@@ -147,7 +204,7 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
     startup(_method, [vatID], finisher) {
       return wrapDeltaMS(finisher, deltaMS => {
         const group = getVatGroup(vatID);
-        getGroupedMetric('swingset_vat_startup', group).record(deltaMS);
+        getGroupedRecorder('swingset_vat_startup', group).record(deltaMS);
       });
     },
     delivery(_method, [vatID], finisher) {
@@ -155,17 +212,16 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
         finisher,
         (deltaMS, [[_status, _problem, meterUsage]]) => {
           const group = getVatGroup(vatID);
-          getGroupedMetric('swingset_vat_delivery', group).record(deltaMS);
+          getGroupedRecorder('swingset_vat_delivery', group).record(deltaMS);
           if (meterUsage) {
             // Add to aggregated metering stats.
             for (const [key, value] of Object.entries(meterUsage)) {
               if (key === 'meterType') {
-                // eslint-disable-next-line no-continue
                 continue;
               }
-              getGroupedMetric(`swingset_meter_usage`, group, {
-                // The meterType is an instance-specific label--a change in it
-                // will result in the old value being discarded.
+              getGroupedRecorder(`swingset_meter_usage`, group, {
+                // The meterType is an instance-specific attribute--a change in
+                // it will result in the old value being discarded.
                 ...(meterUsage.meterType && {
                   meterType: meterUsage.meterType,
                 }),
@@ -182,24 +238,94 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
 }
 
 /**
- * @param {Object} param0
+ * Create a metrics manager for the 'inboundQueue' structure, which
+ * can be scaped to report current length, and the number of
+ * increments and decrements. This must be created with the initial
+ * length as extracted from durable storage, but after that we assume
+ * that we're told about every up and down, so our RAM-backed shadow
+ * 'length' will remain accurate.
+ *
+ * Note that the add/remove counts will get reset at restart, but
+ * Prometheus/etc tools can tolerate that just fine.
+ *
+ * @param {number} initialLength
+ */
+export function makeInboundQueueMetrics(initialLength) {
+  let length = initialLength;
+  let add = 0;
+  let remove = 0;
+
+  return harden({
+    updateLength: newLength => {
+      const delta = newLength - length;
+      length = newLength;
+      if (delta > 0) {
+        add += delta;
+      } else {
+        remove -= delta;
+      }
+    },
+
+    decStat: (delta = 1) => {
+      length -= delta;
+      remove += delta;
+    },
+
+    getStats: () => ({
+      cosmic_swingset_inbound_queue_length: length,
+      cosmic_swingset_inbound_queue_add: add,
+      cosmic_swingset_inbound_queue_remove: remove,
+    }),
+  });
+}
+
+/**
+ * @param {object} param0
  * @param {any} param0.controller
- * @param {import('@opentelemetry/metrics').Meter} param0.metricMeter
+ * @param {import('@opentelemetry/api-metrics').Meter} param0.metricMeter
  * @param {Console} param0.log
- * @param {Record<string, any>} param0.labels
+ * @param {Attributes} [param0.attributes]
+ * @param {any} [param0.inboundQueueMetrics]
  */
 export function exportKernelStats({
   controller,
   metricMeter,
   log = console,
-  labels,
+  attributes = {},
+  inboundQueueMetrics,
 }) {
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
 
+  function warnUnexpectedKernelStat(key) {
+    if (!expectedKernelStats.has(key)) {
+      log.warn(`Unexpected SwingSet kernel statistic`, key);
+      expectedKernelStats.add(key);
+    }
+  }
+
+  let kernelStatsLast = 0;
+  let kernelStatsCache = {};
+  const getKernelStats = () => {
+    const now = Date.now();
+    if (now - kernelStatsLast < 800) {
+      return kernelStatsCache;
+    }
+    kernelStatsLast = now;
+    kernelStatsCache = controller.getStats();
+    Object.keys(kernelStatsCache).forEach(key => {
+      warnUnexpectedKernelStat(key);
+    });
+    return kernelStatsCache;
+  };
+
   KERNEL_STATS_SUM_METRICS.forEach(({ key, name, ...options }) => {
     expectedKernelStats.add(key);
-    kernelStatsMetrics.set(key, metricMeter.createSumObserver(name, options));
+    const counter = metricMeter.createObservableCounter(name, options);
+    counter.addCallback(observableResult => {
+      observableResult.observe(getKernelStats()[key], attributes);
+    });
+    kernelStatsMetrics.set(key, counter);
   });
 
   KERNEL_STATS_UPDOWN_METRICS.forEach(({ key, name, ...options }) => {
@@ -207,16 +333,31 @@ export function exportKernelStats({
     expectedKernelStats.add(`${key}Up`);
     expectedKernelStats.add(`${key}Down`);
     expectedKernelStats.add(`${key}Max`);
-    kernelStatsMetrics.set(
-      key,
-      metricMeter.createUpDownSumObserver(name, options),
-    );
+    const counter = metricMeter.createObservableUpDownCounter(name, options);
+    counter.addCallback(observableResult => {
+      observableResult.observe(getKernelStats()[key], attributes);
+    });
+    kernelStatsMetrics.set(key, counter);
   });
 
-  function warnUnexpectedKernelStat(key) {
-    if (!expectedKernelStats.has(key)) {
-      log.warn(`Unexpected SwingSet kernel statistic`, key);
-      expectedKernelStats.add(key);
+  if (inboundQueueMetrics) {
+    // These are not kernelStatsMetrics, they're outside the kernel.
+    for (const name of ['length', 'add', 'remove']) {
+      const key = `cosmic_swingset_inbound_queue_${name}`;
+      const options = {
+        description: `inbound queue ${name}`,
+      };
+      const counter =
+        name === 'length'
+          ? metricMeter.createObservableUpDownCounter(key, options)
+          : metricMeter.createObservableCounter(key, options);
+
+      counter.addCallback(observableResult => {
+        observableResult.observe(
+          inboundQueueMetrics.getStats()[key],
+          attributes,
+        );
+      });
     }
   }
 
@@ -233,66 +374,40 @@ export function exportKernelStats({
 
   // We check everything on initialization.  Other checks happen when scraping.
   checkKernelStats(controller.getStats());
-  metricMeter.createBatchObserver(batchObserverResult => {
-    const observations = [];
-    Object.entries(controller.getStats()).forEach(([key, value]) => {
-      warnUnexpectedKernelStat(key);
-      if (kernelStatsMetrics.has(key)) {
-        const metric = kernelStatsMetrics.get(key);
-        observations.push(metric.observation(value));
-      }
+
+  const [schedulerCrankTimeHistogram, schedulerBlockTimeHistogram] = [
+    'swingset_crank_processing_time',
+    'swingset_block_processing_seconds',
+  ].map(name => createHistogram(metricMeter, name));
+
+  /**
+   * @param {any} policy
+   * @param {() => number} clock
+   */
+  async function crankScheduler(policy, clock = () => Date.now()) {
+    let now = clock();
+    let crankStart = now;
+    const blockStart = now;
+
+    const instrumentedPolicy = harden({
+      ...policy,
+      crankComplete(details) {
+        const go = policy.crankComplete(details);
+        schedulerCrankTimeHistogram.record(now - crankStart, attributes);
+        crankStart = now;
+        now = clock();
+        return go;
+      },
     });
-    batchObserverResult.observe(labels, observations);
-  });
+    await controller.run(instrumentedPolicy);
 
-  const schedulerCrankTimeHistogram = metricMeter
-    .createValueRecorder('swingset_crank_processing_time', {
-      description: 'Processing time per crank (ms)',
-      boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
-    })
-    .bind(labels);
-
-  const schedulerBlockTimeHistogram = metricMeter
-    .createValueRecorder('swingset_block_processing_seconds', {
-      description: 'Processing time per block',
-      boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
-    })
-    .bind(labels);
-
-  return { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram };
-}
-
-/**
- * Interpret the meter provider environment variables.
- *
- * @param {{ log: Console['log'] }} console
- * @param {Record<string, string>} env
- */
-export function getMeterProvider(console, env) {
-  if (
-    !env.OTEL_EXPORTER_PROMETHEUS_HOST &&
-    !env.OTEL_EXPORTER_PROMETHEUS_PORT
-  ) {
-    return undefined;
+    now = Date.now();
+    schedulerBlockTimeHistogram.record((now - blockStart) / 1000, attributes);
   }
-  const host =
-    env.OTEL_EXPORTER_PROMETHEUS_HOST ||
-    PrometheusExporter.DEFAULT_OPTIONS.host ||
-    '0.0.0.0';
-  const port =
-    Number(env.OTEL_EXPORTER_PROMETHEUS_PORT) ||
-    PrometheusExporter.DEFAULT_OPTIONS.port;
-  const exporter = new PrometheusExporter(
-    {
-      startServer: true,
-      host,
-      port,
-    },
-    () => {
-      console.log(
-        `Prometheus scrape endpoint: http://${host}:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
-      );
-    },
-  );
-  return new MeterProvider({ exporter, interval: 1000 });
+
+  return {
+    crankScheduler,
+    schedulerCrankTimeHistogram,
+    schedulerBlockTimeHistogram,
+  };
 }

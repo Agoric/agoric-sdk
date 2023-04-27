@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { spawn } from 'child_process';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
   loadBasedir,
@@ -11,10 +11,9 @@ import {
   makeSwingsetController,
 } from '../src/index.js';
 import { checkKT } from './util.js';
+import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const emptyVP = kser({});
 
 function removeTriple(arr, a, b, c) {
   for (let i = 0; i < arr.length; i += 1) {
@@ -29,6 +28,7 @@ function removeTriple(arr, a, b, c) {
 test('load empty', async t => {
   const config = {};
   const controller = await buildVatController(config);
+  t.teardown(controller.shutdown);
   await controller.run();
   t.truthy(true);
 });
@@ -42,8 +42,9 @@ async function simpleCall(t) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
-  const controller = await buildVatController(config, [], { hostStorage });
+  const kernelStorage = initSwingStore().kernelStorage;
+  const controller = await buildVatController(config, [], { kernelStorage });
+  t.teardown(controller.shutdown);
   const data = controller.dump();
   // note: data.vatTables is sorted by vatID, but we have no particular
   // reason to believe that vat1 will get a lower ID than vatAdmin, because
@@ -55,23 +56,28 @@ async function simpleCall(t) {
   const timerVatID = controller.vatNameToID('timer');
 
   t.deepEqual(data.vatTables, [
-    { vatID: vat1ID, state: { transcript: [] } },
     { vatID: adminVatID, state: { transcript: [] } },
     { vatID: commsVatID, state: { transcript: [] } },
     { vatID: vattpVatID, state: { transcript: [] } },
     { vatID: timerVatID, state: { transcript: [] } },
+    { vatID: vat1ID, state: { transcript: [] } },
   ]);
   // the vatAdmin root is pre-registered
   const vatAdminRoot = ['ko20', adminVatID, 'o+0'];
   t.deepEqual(data.kernelTable, [vatAdminRoot]);
 
   // vat1:o+0 will map to ko21
-  controller.queueToVatRoot('vat1', 'foo', capdata('args'));
-  t.deepEqual(controller.dump().runQueue, [
+  controller.queueToVatRoot('vat1', 'foo', ['args']);
+  t.deepEqual(controller.dump().runQueue, []);
+  t.deepEqual(controller.dump().acceptanceQueue, [
+    { type: 'startVat', vatID: 'v1', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v2', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v3', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v4', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
     {
       msg: {
-        method: 'foo',
-        args: capdata('args'),
+        methargs: kser(['foo', ['args']]),
         result: 'kp40',
       },
       target: 'ko21',
@@ -79,10 +85,11 @@ async function simpleCall(t) {
     },
   ]);
   await controller.run();
-  t.deepEqual(JSON.parse(controller.dump().log[0]), {
+  const le = controller.dump().log[0];
+  t.deepEqual(JSON.parse(le), {
     target: 'o+0',
     method: 'foo',
-    args: capdata('args'),
+    args: kser(['args']),
   });
 
   controller.log('2');
@@ -105,15 +112,81 @@ test('simple call', async t => {
   await simpleCall(t);
 });
 
-test('bootstrap', async t => {
+async function doTestBootstrap(t, doPin) {
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
-  // the controller automatically runs the bootstrap function.
-  // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
-  // left[0].bootstrap
+  if (doPin) {
+    config.pinBootstrapRoot = true;
+  }
   const c = await buildVatController(config);
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  t.teardown(c.shutdown);
+
+  // figure out kernel object ID of bootstrap root object
+  const bootstrapVatID = c.vatNameToID('bootstrap');
+  const kernelTable = c.dump().kernelTable;
+  let rootKobjID;
+  for (const [kID, vatID, vobjID] of kernelTable) {
+    if (vatID === bootstrapVatID && vobjID === 'o+0') {
+      rootKobjID = kID;
+      break;
+    }
+  }
+  t.truthy(rootKobjID);
+
+  await c.run();
+
+  // after run, if bootstrap root is pinned, it will be there, if not, not
+  const objects = c.dump().objects;
+  let reachableRoot = false;
+  for (const [kID, _vatID, reachable] of objects) {
+    if (kID === rootKobjID) {
+      reachableRoot = !!reachable;
+      break;
+    }
+  }
+  t.is(reachableRoot, doPin);
+
+  const kpid = c.queueToVatRoot('bootstrap', 'doMore');
+  await c.run();
+  const status = c.kpStatus(kpid);
+  const result = c.kpResolution(kpid);
+
+  if (doPin) {
+    // if pinned, second message will have been handled
+    t.deepEqual(status, 'fulfilled');
+    t.deepEqual(c.dump().log, [
+      'buildRootObject called',
+      'bootstrap called',
+      'more stuff',
+    ]);
+  } else {
+    // if not pinned, second message will go splat
+    t.deepEqual(status, 'rejected');
+    // If we don't pin the bootstrap root, then it will be GC'd after it
+    // finishes done processing the 'bootstrap' messsage.  This means that when
+    // the 'doMore' message is delivered it will be addressed to an object (o+0)
+    // whose vref doesn't (any longer) exist.  In normal operation this is a
+    // thing that cannot happen, since, to send the message in the first place
+    // the sender (which would normally be another vat) needs the target vref,
+    // which in turn requires that the target object would have to be exported,
+    // which in turn means that the object could not have been GC'd since export
+    // bumps the refcount.  Consequently, receiving a message addressed to a
+    // vref that doesn't exist means something terrible has gone wrong so the
+    // kernel will kill the vat if that happens.  But since `queueToVatRoot` has
+    // the root object vref, 'o+0', hardcoded into it as a string, it manages to
+    // violate the invariant; this kills the receiving vat, meaning that the GC
+    // symptom we see from the here is a "vat terminated" rejection
+    t.deepEqual(kunser(result), Error('vat terminated'));
+  }
+}
+
+test('bootstrap', async t => {
+  await doTestBootstrap(t, true);
+});
+
+test('bootstrap without pin', async t => {
+  await doTestBootstrap(t, false);
 });
 
 test('XS bootstrap', async t => {
@@ -121,33 +194,35 @@ test('XS bootstrap', async t => {
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
-  const hostStorage = provideHostStorage();
-  const c = await buildVatController(config, [], { hostStorage });
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  const kernelStorage = initSwingStore().kernelStorage;
+  const c = await buildVatController(config, [], { kernelStorage });
+  t.teardown(c.shutdown);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.is(
-    hostStorage.kvStore.get('kernel.defaultManagerType'),
+    kernelStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
     'defaultManagerType is saved by kernelKeeper',
   );
   const vatID = c.vatNameToID('bootstrap');
-  const options = JSON.parse(hostStorage.kvStore.get(`${vatID}.options`));
+  const options = JSON.parse(kernelStorage.kvStore.get(`${vatID}.options`));
   t.is(
-    options.managerType,
-    'xs-worker',
+    options.workerOptions.type,
+    'xsnap',
     'managerType gets recorded for the bootstrap vat',
   );
 });
 
 test('static vats are unmetered on XS', async t => {
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
-  await initializeSwingset(config, [], hostStorage);
+  await initializeSwingset(config, [], kernelStorage);
   const limited = [];
   const c = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     {},
     {
       spawn(command, args, options) {
@@ -156,7 +231,9 @@ test('static vats are unmetered on XS', async t => {
       },
     },
   );
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  t.teardown(c.shutdown);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
 });
 
@@ -176,6 +253,7 @@ test.serial('bootstrap export', async t => {
   );
   config.defaultManagerType = 'xs-worker';
   const c = await buildVatController(config);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   const vatAdminVatID = c.vatNameToID('vatAdmin');
   const vatAdminDevID = c.deviceNameToID('vatAdmin');
@@ -214,34 +292,44 @@ test.serial('bootstrap export', async t => {
   ];
   checkKT(t, c, kt);
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
+    { type: 'startVat', vatID: 'v1', vatParameters: kser({ argv: [] }) },
+    { type: 'startVat', vatID: 'v2', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v3', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v4', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v6', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v7', vatParameters: emptyVP },
     {
       msg: {
         result: 'kp40',
-        method: 'bootstrap',
-        args: {
-          body:
-            '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: vref","index":0},"comms":{"@qclass":"slot","iface":"Alleged: vref","index":1},"left":{"@qclass":"slot","iface":"Alleged: vref","index":2},"right":{"@qclass":"slot","iface":"Alleged: vref","index":3},"timer":{"@qclass":"slot","iface":"Alleged: vref","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: vref","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: vref","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]',
-          slots: [
-            boot0,
-            comms0,
-            left0,
-            right0,
-            timer0,
-            vatAdminSvc,
-            vattp0,
-            adminDev,
+        methargs: kser([
+          'bootstrap',
+          [
+            {
+              bootstrap: kslot(boot0, 'root'),
+              comms: kslot(comms0, 'root'),
+              left: kslot(left0, 'root'),
+              right: kslot(right0, 'root'),
+              timer: kslot(timer0, 'root'),
+              vatAdmin: kslot(vatAdminSvc, 'root'),
+              vattp: kslot(vattp0, 'root'),
+            },
+            {
+              vatAdmin: kslot(adminDev, 'device'),
+            },
           ],
-        },
+        ]),
       },
       target: boot0,
       type: 'send',
     },
   ]);
 
-  // this test was designed before GC, and wants to single-step the kernel,
-  // but doesn't care about the GC action steps, so we use this helper
-  // function
+  // this test was designed before GC and acceptance queues, and wants to
+  // single-step the kernel, but doesn't care about the GC action steps,
+  // or the temporary acceptance queue, so we use this helper function
   async function stepGC() {
     while (c.dump().gcActions.length) {
       // eslint-disable-next-line no-await-in-loop
@@ -251,10 +339,18 @@ test.serial('bootstrap export', async t => {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
+    while (c.dump().acceptanceQueue.length) {
+      // eslint-disable-next-line no-await-in-loop
+      await c.step();
+    }
     await c.step(); // the non- GC action
   }
 
   t.deepEqual(c.dump().log, []);
+  for (let i = 0; i < 7; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await stepGC(); // vat starts
+  }
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
   await stepGC(); // message bootstrap
   // kernel promise for result of the foo() that bootstrap sends to vat-left
@@ -270,16 +366,13 @@ test.serial('bootstrap export', async t => {
   kt.push([adminDev, bootstrapVatID, 'd-70']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: left0,
       msg: {
-        method: 'foo',
-        args: {
-          body: '[1,{"@qclass":"slot","iface":"Alleged: vref","index":0}]',
-          slots: [right0],
-        },
+        methargs: kser(['foo', [1, kslot(right0, 'root')]]),
         result: fooP,
       },
     },
@@ -293,16 +386,13 @@ test.serial('bootstrap export', async t => {
   kt.push([barP, leftVatID, 'p+5']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: right0,
       msg: {
-        method: 'bar',
-        args: {
-          body: '[2,{"@qclass":"slot","iface":"Alleged: vref","index":0}]',
-          slots: [right0],
-        },
+        methargs: kser(['bar', [2, kslot(right0, 'root')]]),
         result: barP,
       },
     },
@@ -321,6 +411,8 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
+  ]);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
@@ -345,6 +437,7 @@ test.serial('bootstrap export', async t => {
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
+  t.deepEqual(c.dump().acceptanceQueue, []);
 
   await stepGC(); // notify
 

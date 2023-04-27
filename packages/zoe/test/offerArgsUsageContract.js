@@ -1,6 +1,4 @@
-// @ts-check
-
-/** @type {ContractStartFn} */
+/** @param {ZCF} zcf */
 const start = zcf => {
   /** @type {OfferHandler} */
   const handler = (_seat, offerArgs) => {

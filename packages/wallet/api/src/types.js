@@ -1,16 +1,14 @@
 // @ts-check
 
 /**
- * @typedef {string | string[]} Petname
- * A petname can either be a plain string
- * or a path for which the first element is a petname for the origin, and the
- * rest of the elements are a snapshot of the names that were first given by
- * that origin.  We are migrating away from using plain strings, for
- * consistency.
+ * This is the complete wallet, including the means to get the WalletAdminFacet
+ * (necessary for the operation of the Wallet UI, and useful for the REPL).
+ *
+ * @typedef {WalletUser & { getAdminFacet: () => WalletAdminFacet, getMarshaller: () => Marshaller }} WalletAdmin
  */
 
 /**
- * @typedef {Object} WalletUser
+ * @typedef {object} WalletUser
  * The presence exposed as `local.wallet` (or
  * `home.wallet`).  The idea is to provide someplace from which all the rest of
  * the API can be obtained.
@@ -48,16 +46,18 @@
  * Get all the purses (used by existing deploy scripts).
  * @property {(petname: Petname) => Purse} getPurse
  * Get a purse by petname (used by existing deploy scripts).
+ * @property {() => Marshaller} getMarshaller
  */
 
 /**
- * @typedef {Object} WalletBridge
+ * @typedef {object} WalletBridge
  * The methods that can be used by an untrusted
  * Dapp without breaching the wallet's integrity.  These methods are also
  * exposed via the iframe/WebSocket bridge that a Dapp UI can use to access the
  * wallet.
  *
  * @property {(offer: OfferState) => Promise<string>} addOffer
+ * @property {() => Promise<import('@agoric/cache').Coordinator>} getCacheCoordinator
  * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
  * Return the board ID to use to receive payments of the specified brand.
  * @property {() => Promise<Notifier<Array<PursesJSONState>>>} getPursesNotifier
@@ -85,7 +85,7 @@
  * is safe to pass to the dapp UI.
  * @property {() => Promise<ZoeService>} getZoe
  * Get the Zoe Service
- * @property {() => Promise<Board>} getBoard
+ * @property {() => Promise<import('@agoric/vats').Board>} getBoard
  * Get the Board
  * @property {(...path: Array<unknown>) => Promise<unknown>} getAgoricNames
  * Get the curated Agoric public naming hub
@@ -97,7 +97,7 @@
  */
 
 /**
- * @typedef {Object} RecordMetadata
+ * @typedef {object} RecordMetadata
  * @property {number} id
  * Identifies a particular record in the context of the wallet backend. This id
  * is stable and unique for a wallet backend (even across different record
@@ -113,11 +113,11 @@
  */
 
 /**
- * @typedef {Object} PursesJSONState
+ * @typedef {object} PursesJSONState
  * @property {Brand} brand
  * @property {string} brandBoardId
  * The board ID for this purse's brand
- * @property {string=} depositBoardId
+ * @property {string} [depositBoardId]
  * The board ID for the deposit-only facet of this purse
  * @property {Petname} brandPetname
  * The petname for this purse's brand
@@ -132,14 +132,14 @@
  */
 
 /**
- * @typedef {Object} OfferState
+ * @typedef {object} OfferState
  * @property {any} requestContext
  * @property {string} id
  */
 
 /**
  * @template T
- * @typedef {Object} PetnameManager
+ * @typedef {object} PetnameManager
  * @property {(petname: Petname, object: T) => Promise<void>} rename
  * @property {(petname: Petname) => T} get
  * @property { () => Array<[Petname, T]>} getAll
@@ -159,7 +159,7 @@
  */
 
 /**
- * @typedef {Object} IssuerTable
+ * @typedef {object} IssuerTable
  * @property {(brand: Brand) => boolean} hasByBrand
  * @property {(brand: Brand) => IssuerRecord} getByBrand
  * @property {(issuer: Issuer) => boolean} hasByIssuer

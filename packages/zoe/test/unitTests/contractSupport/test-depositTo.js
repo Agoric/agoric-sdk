@@ -1,11 +1,11 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import { E } from '@endo/eventual-send';
+import bundleSource from '@endo/bundle-source';
 
 import { setup } from '../setupBasicMints.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -23,14 +23,15 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const { zoeService } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const fakeVatAdmin = makeFakeVatAdmin(setJig);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin.admin);
 
   // pack the contract
-  const bundle = await bundleSource(contractRoot);
+  const contractBundle = await bundleSource(contractRoot);
+  fakeVatAdmin.vatAdminState.installBundle('b1-contract', contractBundle);
+
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  const installation = await E(zoe).installBundleID('b1-contract');
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

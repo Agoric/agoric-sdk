@@ -1,12 +1,10 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
-import { SECOND_PRICE } from '../../../src/contracts/auction/index';
+import { SECOND_PRICE } from '../../../src/contracts/auction/index.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
@@ -366,9 +364,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
       liquidity(10n),
     );
-    const removeLiquidityInvitation = E(
-      publicFacet,
-    ).makeRemoveLiquidityInvitation();
+    const removeLiquidityInvitation =
+      E(publicFacet).makeRemoveLiquidityInvitation();
 
     const removeLiquiditySeatP = await E(zoe).offer(
       removeLiquidityInvitation,
@@ -401,7 +398,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const { mintAndSellNFT } = installations;
     const { creatorFacet } = await E(zoe).startInstance(mintAndSellNFT);
 
-    // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+    // completeObj exists because of a current limitation in @endo/marshal : https://github.com/Agoric/agoric-sdk/issues/818
     const {
       sellItemsInstance: ticketSalesInstance,
       sellItemsCreatorSeat,

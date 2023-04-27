@@ -1,22 +1,34 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ContractFacet} zcf
- * @param {Proposal=} proposal
- * @param {PaymentPKeywordRecord=} payments
+ * @param {ZCF} zcf
+ * @param {Proposal} [proposal]
+ * @param {PaymentPKeywordRecord} [payments]
+ * @param {Pattern} [proposalShape]
+ * @param {string} [description]
  * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
  */
-export const makeOffer = async (zoe, zcf, proposal, payments) => {
+export const makeOffer = async (
+  zoe,
+  zcf,
+  proposal,
+  payments,
+  proposalShape = undefined,
+  description = 'seat',
+) => {
   let zcfSeat;
   const getSeat = seat => {
     zcfSeat = seat;
   };
-  const invitation = await zcf.makeInvitation(getSeat, 'seat');
-  const userSeat = await E(zoe).offer(invitation, proposal, payments);
+  const invitationP = zcf.makeInvitation(
+    getSeat,
+    description,
+    undefined,
+    proposalShape,
+  );
+  const userSeat = await E(zoe).offer(invitationP, proposal, payments);
   assert(zcfSeat);
   return { zcfSeat, userSeat };
 };

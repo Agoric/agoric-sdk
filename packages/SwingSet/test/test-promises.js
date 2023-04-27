@@ -6,7 +6,9 @@ import {
   loadBasedir,
   buildKernelBundles,
 } from '../src/index.js';
-import { capargs } from './util.js';
+import { kser, kslot, kunser } from '../src/lib/kmarshal.js';
+
+const bfile = name => new URL(name, import.meta.url).pathname;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -18,8 +20,9 @@ test('flush', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['flush'], t.context.data);
-  // all promises should settle before c.step() fires
-  await c.step();
+  t.teardown(c.shutdown);
+  // all promises should settle before c.run() fires
+  await c.run();
   t.deepEqual(c.dump().log, ['then1', 'then2']);
 });
 
@@ -28,6 +31,7 @@ test('E() resolve', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['e-then'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -43,6 +47,7 @@ test('E(E(x).foo()).bar()', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['chain1'], t.context.data);
+  t.teardown(c.shutdown);
 
   /*
   while (true) {
@@ -67,6 +72,7 @@ test('E(Promise.resolve(presence)).foo()', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['chain2'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -82,6 +88,7 @@ test('E(local).foo()', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['local1'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, ['b.local1.finish', 'local.foo 1', 'b.resolved 2']);
@@ -92,6 +99,7 @@ test('resolve-to-local', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['local2'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -107,6 +115,7 @@ test('send-promise-resolve-to-local', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['send-promise1'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -127,6 +136,7 @@ test('send-harden-promise-1', async t => {
     ['harden-promise-1'],
     t.context.data,
   );
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -148,6 +158,7 @@ test('circular promise resolution data', async t => {
     new URL('basedir-circular', import.meta.url).pathname,
   );
   const c = await buildVatController(config, [], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   const expectedPromises = [
@@ -155,28 +166,19 @@ test('circular promise resolution data', async t => {
       id: 'kp40',
       state: 'fulfilled',
       refCount: 1,
-      data: {
-        body: '{"@qclass":"undefined"}',
-        slots: [],
-      },
+      data: kser(undefined),
     },
     {
-      id: 'kp45',
+      id: 'kp42',
       state: 'fulfilled',
       refCount: 1,
-      data: {
-        body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp46'],
-      },
+      data: kser([kslot('kp44')]),
     },
     {
-      id: 'kp46',
+      id: 'kp44',
       state: 'fulfilled',
       refCount: 1,
-      data: {
-        body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp45'],
-      },
+      data: kser([kslot('kp42')]),
     },
   ];
   t.deepEqual(c.dump().promises, expectedPromises);
@@ -187,6 +189,7 @@ test('refcount while queued', async t => {
     new URL('basedir-promises-3', import.meta.url).pathname,
   );
   const c = await buildVatController(config, [], t.context.data);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // bootstrap() sets up an unresolved promise (p2, the result promise of
@@ -195,7 +198,7 @@ test('refcount while queued', async t => {
   await c.run();
 
   // then we tell that vat to resolve pk1 to a value (4)
-  c.queueToVatRoot('bootstrap', 'two', capargs([]), 'ignore');
+  c.queueToVatRoot('bootstrap', 'two', [], 'ignore');
   await c.run();
 
   // Now we have a resolved promise 'pk1' whose only reference is the
@@ -207,7 +210,74 @@ test('refcount while queued', async t => {
   // tell vat-right to resolve p2, which should transfer the 'four' message
   // from the p2 promise queue to the run-queue for vat-right. That message
   // will be delivered, with a new promise that is promptly resolved to '3'.
-  const kpid4 = c.queueToVatRoot('right', 'three', capargs([]), 'ignore');
+  const kpid4 = c.queueToVatRoot('right', 'three', [], 'ignore');
   await c.run();
-  t.deepEqual(c.kpResolution(kpid4), capargs([true, 3]));
+  t.deepEqual(c.kpResolution(kpid4), kser([true, 3]));
+});
+
+test('local promises are rejected by vat upgrade', async t => {
+  // TODO: Generalize packages/SwingSet/test/upgrade/test-upgrade.js
+  /** @type {SwingSetConfig} */
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType: 'xs-worker',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: {
+        sourceSpec: bfile('./bootstrap-relay.js'),
+      },
+    },
+    bundles: {
+      watcher: { sourceSpec: bfile('./vat-durable-promise-watcher.js') },
+    },
+  };
+  const c = await buildVatController(config);
+  t.teardown(c.shutdown);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    if (status === 'fulfilled') {
+      const result = c.kpResolution(kpid);
+      return kunser(result);
+    }
+    assert(status === 'rejected');
+    const err = c.kpResolution(kpid);
+    throw kunser(err);
+  };
+  const messageVat = (name, methodName, args) =>
+    run('messageVat', [{ name, methodName, args }]);
+  // eslint-disable-next-line no-unused-vars
+  const messageObject = (presence, methodName, args) =>
+    run('messageVatObject', [{ presence, methodName, args }]);
+
+  const S = Symbol.for('passable');
+  await run('createVat', [{ name: 'watcher', bundleCapName: 'watcher' }]);
+  await messageVat('watcher', 'watchLocalPromise', ['orphaned']);
+  await messageVat('watcher', 'watchLocalPromise', ['fulfilled', S]);
+  await messageVat('watcher', 'watchLocalPromise', ['rejected', undefined, S]);
+  const v1Settlements = await messageVat('watcher', 'getSettlements');
+  t.deepEqual(v1Settlements, {
+    fulfilled: { status: 'fulfilled', value: S },
+    rejected: { status: 'rejected', reason: S },
+  });
+  await run('upgradeVat', [{ name: 'watcher', bundleCapName: 'watcher' }]);
+  const v2Settlements = await messageVat('watcher', 'getSettlements');
+  t.deepEqual(v2Settlements, {
+    fulfilled: { status: 'fulfilled', value: S },
+    rejected: { status: 'rejected', reason: S },
+    orphaned: {
+      status: 'rejected',
+      reason: {
+        name: 'vatUpgraded',
+        upgradeMessage: 'vat upgraded',
+        incarnationNumber: 0,
+      },
+    },
+  });
 });

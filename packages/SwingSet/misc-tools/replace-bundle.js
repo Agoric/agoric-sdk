@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses';
+import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 const log = console.log;
 
@@ -35,7 +35,9 @@ async function run() {
   const stateDBDir = argv.shift();
   const srcPath = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kernelStorage, hostStorage } = openSwingStore(stateDBDir);
+  const { kvStore } = kernelStorage;
+  const { commit } = hostStorage;
   log(`will use ${srcPath} in ${stateDBDir} for ${bundleName}`);
 
   if (bundleName === 'kernel') {
@@ -59,7 +61,7 @@ async function run() {
   const newBundleStr = JSON.stringify(bundle);
   log(`new bundle is ${newBundleStr.length} bytes`);
   kvStore.set(bundleName, newBundleStr);
-  commit();
+  await commit();
   log(`bundle ${bundleName} replaced`);
 }
 

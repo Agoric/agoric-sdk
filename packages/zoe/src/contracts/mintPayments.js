@@ -1,9 +1,5 @@
-// @ts-check
-
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
-
-import '../../exported.js';
 
 /**
  * This is a very simple contract that creates a new issuer and mints payments
@@ -18,7 +14,7 @@ import '../../exported.js';
  * invitations for them, which when used to make an offer, will payout
  * the specified amount of tokens.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<{getTokenIssuer: unknown}, {makeInvitation: unknown, getTokenIssuer: unknown}>}
  */
 const start = async zcf => {
   // Create the internal token mint for a fungible digital asset. Note

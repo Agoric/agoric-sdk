@@ -3,6 +3,138 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.3...@agoric/deploy-script-support@0.9.4) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.9.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.2...@agoric/deploy-script-support@0.9.3) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.9.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.1...@agoric/deploy-script-support@0.9.2) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.0...@agoric/deploy-script-support@0.9.1) (2022-09-20)
+
+
+### Bug Fixes
+
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **deploy-script-helpers:** Update core proposal behavior test ([abeb52e](https://github.com/Agoric/agoric-sdk/commit/abeb52e6bd121d508b72662135926a1b405fc9c3))
+
+
+
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.8.0...@agoric/deploy-script-support@0.9.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **extract-proposal:** insist on an explicit `entrypoint`
+
+### Features
+
+* **core-proposal:** provide an `overrideManifest` to make the manifest explicit ([6557ecf](https://github.com/Agoric/agoric-sdk/commit/6557ecfb965fd668cf9538132e63a0419b86bd54))
+* **extract-proposal:** allow specifying module, entrypoint, args ([af712eb](https://github.com/Agoric/agoric-sdk/commit/af712eb979483e14bae765a018911b018d76b973))
+
+
+### Bug Fixes
+
+* **extract-proposal:** insist on an explicit `entrypoint` ([02df38b](https://github.com/Agoric/agoric-sdk/commit/02df38b8a5ef96a78fd6ff7f5c20ffcdba161038))
+
+
+
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.7.0...@agoric/deploy-script-support@0.8.0) (2022-05-09)
+
+
+### Features
+
+* **deploy-script-support:** persist option for installInPieces ([8241a0e](https://github.com/Agoric/agoric-sdk/commit/8241a0e0977a1ef2bbfd7e68197cb969bc80e1f1))
+
+
+### Bug Fixes
+
+* **deploy-script-support:** permit agoricNamesAdmin for installation ([49b5e89](https://github.com/Agoric/agoric-sdk/commit/49b5e89e287b9f5e8ccc5cb7c26dea53c09c42de))
+* **extract-proposal:** avoid reiterating bundleHandles ([9a0886d](https://github.com/Agoric/agoric-sdk/commit/9a0886d7d96699cf5698bbe81820626e3ee8c64b))
+* **extract-proposal:** coreProposal source paths were leaked onto the chain ([acc6672](https://github.com/Agoric/agoric-sdk/commit/acc66729cfa8459ef549b96f6fbeed1d55a4be3f))
+
+
+
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.3...@agoric/deploy-script-support@0.7.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **build-bundles:** create source bundles with helper ([732292a](https://github.com/Agoric/agoric-sdk/commit/732292acf817ab774dea3d15209c0b5a2b2e326d))
+* **deploy-script-support:** `getBundlerMaker` helper ([542786d](https://github.com/Agoric/agoric-sdk/commit/542786dfc7ef67ed718d8f1548d13dd45dbfc34f))
+* **deploy-script-support:** `installInPieces` interim implementation ([3db8233](https://github.com/Agoric/agoric-sdk/commit/3db823391f39d23e4dc42d8ca256bf9fa28466e7))
+* **deploy-script-support:** first cut at `writeCoreProposal` ([6129b38](https://github.com/Agoric/agoric-sdk/commit/6129b38201f80a4e195d4675981e693c06c8c547))
+* **deploy-script-support:** more `createBundles` work ([009b49f](https://github.com/Agoric/agoric-sdk/commit/009b49fc133ca9f6740bdebaec9baf7c549aec1f))
+* **deploy-script-support:** shell out to `bundle-source` ([18e8c88](https://github.com/Agoric/agoric-sdk/commit/18e8c88223da0f4ef6998e0bc0e39a7979dd317b))
+* **deploy-script-suppport:** e2e `writeCoreProposal` ([88a0cf7](https://github.com/Agoric/agoric-sdk/commit/88a0cf70c9078f0e9e2c46a6cc30bcb736e6e379))
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+
+
+### Bug Fixes
+
+* **deploy-script-support:** `makeEnactCoreProposals` for bootstrap ([cbff644](https://github.com/Agoric/agoric-sdk/commit/cbff644eb379fd61f38a64cd09140439551a6e80))
+* **writeCoreProposal:** linearize the `installInPieces` calls ([a92a22a](https://github.com/Agoric/agoric-sdk/commit/a92a22a124e5cf18b677b3067bc59aa508e9d5f1))
+* **writeCoreProposal:** merge permits and less ambient authority ([f34f7b7](https://github.com/Agoric/agoric-sdk/commit/f34f7b72aa2827e0f12ba46a8500d3b259c910f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.2...@agoric/deploy-script-support@0.6.3) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+
+
+
+### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.1...@agoric/deploy-script-support@0.6.2) (2022-02-21)
+
+
+### Features
+
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+
+
+
+### [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.0...@agoric/deploy-script-support@0.6.1) (2021-12-22)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
 ## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.5.5...@agoric/deploy-script-support@0.6.0) (2021-12-02)
 
 

@@ -1,13 +1,9 @@
-// @ts-check
-
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
   swap,
   assertProposalShape,
 } from '../contractSupport/index.js';
-
-import '../../exported.js';
 
 /**
  * Trade one item for another.
@@ -19,7 +15,7 @@ import '../../exported.js';
  * amount no greater than the original's give, and a give amount at least as
  * large as the original's want.
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));

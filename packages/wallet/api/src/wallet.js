@@ -8,21 +8,39 @@
  * itself.  The parts that are relied on by other dapps are documented in the
  * types.js file.
  */
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
-import { makeWallet } from './lib-wallet.js';
+import { makeWalletRoot } from './lib-wallet.js';
 import pubsub from './pubsub.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
 
 import './internal-types.js';
 
+/**
+ * @typedef {{
+ * agoricNames: ERef<NameHub>,
+ * board: ERef<import('@agoric/vats').Board>,
+ * cacheStorageNode: ERef<StorageNode>,
+ * localTimerPollInterval?: bigint,
+ * localTimerService?: import('@agoric/time/src/types').TimerService,
+ * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>,
+ * namesByAddress: ERef<NameHub>,
+ * timerDevice?: unknown,
+ * timerDeviceScale?: number,
+ * zoe: ERef<ZoeService>,
+ * }} StartupTerms
+ *
+ * @typedef {import('@agoric/vats').NameHub} NameHub
+ */
+
 export function buildRootObject(vatPowers) {
   // See if we have the device vat power.
   const { D } = vatPowers || {};
 
+  /** @type {import('./lib-wallet.js').WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
@@ -71,9 +89,8 @@ export function buildRootObject(vatPowers) {
   };
 
   const { publish: pursesPublish, subscribe: pursesSubscribe } = pubsub(E);
-  const { updater: inboxUpdater, notifier: offerNotifier } = makeNotifierKit(
-    inboxState,
-  );
+  const { updater: inboxUpdater, notifier: offerNotifier } =
+    makeNotifierKit(inboxState);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({
@@ -82,6 +99,9 @@ export function buildRootObject(vatPowers) {
     },
   });
 
+  /**
+   * @param {StartupTerms} terms
+   */
   async function startup({
     zoe,
     board,
@@ -93,6 +113,8 @@ export function buildRootObject(vatPowers) {
     localTimerService,
     localTimerPollInterval,
   }) {
+    assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
+
     /** @type {ERef<() => number> | undefined} */
     let dateNowP;
     if (timerDevice) {
@@ -106,7 +128,7 @@ export function buildRootObject(vatPowers) {
     }
 
     const dateNow = await dateNowP;
-    const w = makeWallet({
+    const w = makeWalletRoot({
       agoricNames,
       namesByAddress,
       myAddressNameAdmin,
@@ -116,9 +138,9 @@ export function buildRootObject(vatPowers) {
       inboxStateChangeHandler: inboxPublish,
       dateNow,
     });
-    console.error('waiting for wallet to initialize');
+    console.debug('waiting for wallet to initialize');
     await w.initialized;
-    console.error('wallet initialized');
+    console.debug('wallet initialized');
     walletAdmin = w.admin;
     walletRoot = w;
   }
@@ -152,6 +174,10 @@ export function buildRootObject(vatPowers) {
         observeIteration(makeApprovedNotifier(pursesNotifier), updater);
         return notifier;
       },
+      async getCacheCoordinator() {
+        await approve();
+        return walletAdmin.getDappCacheCoordinator(dappOrigin);
+      },
       async getIssuersNotifier() {
         await approve();
         return walletAdmin.getIssuersNotifier();
@@ -159,6 +185,10 @@ export function buildRootObject(vatPowers) {
       async addOffer(offer) {
         await approve();
         return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
+      },
+      async getAccountState() {
+        await approve();
+        return walletAdmin.getAccountState();
       },
       async getOffersNotifier(status = null) {
         await approve();
@@ -207,6 +237,10 @@ export function buildRootObject(vatPowers) {
         await approve();
         return walletAdmin.getUINotifier(rawId, dappOrigin);
       },
+      async getPublicNotifiers(rawId) {
+        await approve();
+        return walletAdmin.getPublicNotifiers(rawId, dappOrigin);
+      },
       async getZoe() {
         await approve();
         return walletAdmin.getZoe();
@@ -239,8 +273,12 @@ export function buildRootObject(vatPowers) {
    * @type {WalletBridge}
    */
   const preapprovedBridge = Far('preapprovedBridge', {
-    addOffer(offer) {
-      return walletAdmin.addOffer(offer);
+    /**
+     * @param {unknown} offer
+     * @param {{}} [meta]
+     */
+    addOffer(offer, meta) {
+      return walletAdmin.addOffer(offer, meta);
     },
     getDepositFacetId(brandBoardId) {
       return walletAdmin.getDepositFacetId(brandBoardId);
@@ -254,6 +292,9 @@ export function buildRootObject(vatPowers) {
     async getIssuersNotifier() {
       return walletAdmin.getIssuersNotifier();
     },
+    async getCacheCoordinator() {
+      return walletAdmin.getCacheCoordinator();
+    },
     suggestInstallation(petname, installationBoardId) {
       return walletAdmin.suggestInstallation(petname, installationBoardId);
     },
@@ -265,6 +306,9 @@ export function buildRootObject(vatPowers) {
     },
     getUINotifier(rawId) {
       return walletAdmin.getUINotifier(rawId);
+    },
+    getPublicNotifiers(rawId) {
+      return walletAdmin.getPublicNotifiers(rawId);
     },
     async getZoe() {
       return walletAdmin.getZoe();
@@ -284,15 +328,11 @@ export function buildRootObject(vatPowers) {
   });
   harden(preapprovedBridge);
 
-  async function getWallet(bank, feePurse) {
-    await walletRoot.importBankAssets(bank, feePurse);
+  async function getWallet(bank) {
+    await walletRoot.importBankAssets(bank);
 
     /**
-     * This is the complete wallet, including the means to get the
-     * WalletAdminFacet (which is not yet standardized, but necessary for the
-     * operation of the Wallet UI, and useful for the REPL).
-     *
-     * @type {WalletUser & { getAdminFacet: () => WalletAdminFacet }}
+     * @type {WalletAdmin}
      */
     const wallet = Far('wallet', {
       addPayment: walletAdmin.addPayment,
@@ -311,17 +351,25 @@ export function buildRootObject(vatPowers) {
       },
       getDepositFacetId: walletAdmin.getDepositFacetId,
       getAdminFacet() {
-        return Far('adminFacet', { ...walletAdmin, ...notifiers });
+        return Far('adminFacet', {
+          ...walletAdmin,
+          ...notifiers,
+          getScopedBridge: wallet.getScopedBridge,
+        });
       },
       getIssuer: walletAdmin.getIssuer,
       getIssuers: walletAdmin.getIssuers,
       getPurse: walletAdmin.getPurse,
       getPurses: walletAdmin.getPurses,
+
+      getMarshaller: walletAdmin.getMarshaller,
+
+      lookup: walletAdmin.lookup,
     });
     return harden(wallet);
   }
 
-  function setHTTPObject(o, _ROLES) {
+  function setHTTPObject(o) {
     http = o;
   }
 
@@ -357,7 +405,7 @@ export function buildRootObject(vatPowers) {
   function getBridgeURLHandler() {
     return Far('bridgeURLHandler', {
       /**
-       * @typedef {Object} WalletOtherSide
+       * @typedef {object} WalletOtherSide
        * The callbacks from a CapTP wallet client.
        * @property {(dappOrigin: string,
        *             suggestedDappPetname: Petname
@@ -618,7 +666,13 @@ export function buildRootObject(vatPowers) {
   });
 }
 
-// Adapter for spawner.
+/**
+ * Adapter for spawner.
+ * See @agoric/spawner/src/vat-spawned.js
+ *
+ * @param {StartupTerms} terms
+ * @param {*} _inviteMaker
+ */
 export default function spawn(terms, _inviteMaker) {
   const walletVat = buildRootObject();
   return walletVat.startup(terms).then(_ => walletVat);

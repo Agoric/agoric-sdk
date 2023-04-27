@@ -1,9 +1,7 @@
 package swingset
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 
@@ -34,12 +32,4 @@ func NewHandler(k Keeper) sdk.Handler {
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
-}
-
-func mailboxPeer(key string) (string, error) {
-	path := strings.Split(key, ".")
-	if len(path) != 2 || path[0] != "mailbox" {
-		return "", errors.New("Can only access 'mailbox.PEER'")
-	}
-	return path[1], nil
 }

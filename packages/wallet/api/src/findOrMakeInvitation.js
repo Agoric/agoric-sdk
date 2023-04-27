@@ -1,6 +1,6 @@
-import { assert, details as X, q } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
-import { passStyleOf } from '@agoric/marshal';
+import { assert, Fail, q } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;
@@ -8,22 +8,20 @@ export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;
 const assertFirstCapASCII = str => {
   assert.typeof(str, 'string');
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
-  assert(
-    firstCapASCII.test(str),
-    X`The string ${q(str)} must be ascii and must start with a capital letter.`,
-  );
-  assert(
-    str !== 'NaN' && str !== 'Infinity',
-    X`keyword ${q(str)} must not be a number's name`,
-  );
+  firstCapASCII.test(str) ||
+    Fail`The string ${q(
+      str,
+    )} must be an ascii identifier starting with upper case.`;
+  (str !== 'NaN' && str !== 'Infinity') ||
+    Fail`keyword ${q(str)} must not be a number's name`;
 };
 
 /**
- * @param {Amount} invitationPurseBalance
- * @param {Object} query
- * @param {Board} query.board
+ * @param {Amount<'set'>} invitationPurseBalance
+ * @param {object} query
+ * @param {import('@agoric/vats').Board} query.board
  * @param {string} query.boardId
- * @returns {Array}
+ * @returns {Promise<Array>}
  * @deprecated
  */
 const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
@@ -31,10 +29,7 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
   const invitationHandle = await E(board).getValue(boardId);
   const match = element => element.handle === invitationHandle;
   const matchingValue = invitationPurseBalance.value.find(match);
-  assert(
-    matchingValue,
-    X`Cannot find invitation corresponding to ${q(boardId)}`,
-  );
+  matchingValue || Fail`Cannot find invitation corresponding to ${q(boardId)}`;
 
   return harden([matchingValue]);
 };
@@ -42,7 +37,7 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
 // An invitation matching the query parameters is already expected
 // to be deposited in the default Zoe invitation purse
 /**
- * @param {Amount} invitationPurseBalance
+ * @param {Amount<'set'>} invitationPurseBalance
  * @param {Record<string, any>} kvs
  */
 const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
@@ -55,7 +50,7 @@ const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
     );
 
   const matchingValue = invitationPurseBalance.value.find(matches);
-  assert(matchingValue, X`Cannot find invitation corresponding to ${q(kvs)}`);
+  matchingValue || Fail`Cannot find invitation corresponding to ${q(kvs)}`;
   return harden([matchingValue]);
 };
 
@@ -92,9 +87,31 @@ const makeContinuingInvitation = async (
   return invitationP;
 };
 
+/** @typedef {{method: string, args: Array<any> }} InvitationMaker */
+/**
+ * @param {InvitationMaker} invitationMaker
+ * @param {string} instanceHandleBoardId
+ * @param {import('@agoric/vats').Board} board
+ * @param {ZoeService} zoe
+ * @returns {Promise<Invitation>}
+ */
+const makeInvitation = async (
+  invitationMaker,
+  instanceHandleBoardId,
+  board,
+  zoe,
+) => {
+  const instance = E(board).getValue(instanceHandleBoardId);
+  const publicFacet = E(zoe).getPublicFacet(instance);
+  const { method, args = [] } = invitationMaker;
+
+  return E(publicFacet)[method](...args);
+};
+
 export const findOrMakeInvitation = async (
   idToOfferResultPromiseKit,
   board,
+  zoe,
   invitationPurse,
   invitationBrand,
   offer,
@@ -124,6 +141,15 @@ export const findOrMakeInvitation = async (
     return findInvitation(findByBoardId, queryParams);
   }
 
+  if (offer.invitationMaker) {
+    return makeInvitation(
+      offer.invitationMaker,
+      offer.instanceHandleBoardId,
+      board,
+      zoe,
+    );
+  }
+
   if (offer.invitationQuery) {
     return findInvitation(findByKeyValuePairs, offer.invitationQuery);
   }
@@ -140,5 +166,5 @@ export const findOrMakeInvitation = async (
     );
   }
 
-  assert.fail(X`no invitation was found or made for this offer ${offer.id}`);
+  throw Fail`no invitation was found or made for this offer ${offer.id}`;
 };

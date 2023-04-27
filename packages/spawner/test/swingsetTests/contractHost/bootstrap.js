@@ -1,8 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Fail } from '@agoric/assert';
+import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
@@ -42,6 +42,25 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
   }
 
+  async function farFailureContractTest(spawner, trivialBundle) {
+    log('starting farFailureContractTest');
+    const installationP = E(spawner).install(trivialBundle);
+    const trivial = await E(installationP).spawn('terms are provided');
+    await E(trivial)
+      .getTerms(harden({ failureArg() {} }))
+      .then(
+        () => log(`wrong: far failure arg resolves`),
+        err => log(`send non-Far: ${err}`),
+      );
+    await E(trivial)
+      .failureToFar()
+      .then(
+        () => log(`wrong: far failure return resolves`),
+        err => log(`far failure: ${err}`),
+      );
+    log(`++ DONE`);
+  }
+
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
@@ -56,8 +75,11 @@ export function buildRootObject(vatPowers, vatParameters) {
         case 'exhaust': {
           return exhaustedContractTest(spawner, trivialBundle);
         }
+        case 'farFailure': {
+          return farFailureContractTest(spawner, trivialBundle);
+        }
         default: {
-          assert.fail(X`unrecognized argument value ${mode}`);
+          throw Fail`unrecognized argument value ${mode}`;
         }
       }
     },

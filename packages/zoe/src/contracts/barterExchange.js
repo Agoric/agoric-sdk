@@ -1,11 +1,7 @@
-// @ts-check
-
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeLegacyMap } from '@agoric/store';
-import '../../exported.js';
-
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { satisfies } from '../contractSupport/index.js';
+import { satisfies, atomicRearrange } from '../contractSupport/index.js';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
@@ -19,7 +15,7 @@ import { satisfies } from '../contractSupport/index.js';
  * successful trader gets their `want` and may trade with counter-parties who
  * specify any amount up to their specified `give`.
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   // bookOrders is a Map of Maps. The first key is the brand of the offer's
@@ -67,13 +63,24 @@ const start = zcf => {
     const matchingTrade = findMatchingTrade(offerDetails, orders);
     if (matchingTrade) {
       // reallocate by giving each side what it wants
-      offerDetails.seat.decrementBy(harden({ In: matchingTrade.amountOut }));
-      matchingTrade.seat.incrementBy(harden({ Out: matchingTrade.amountOut }));
+      atomicRearrange(
+        zcf,
+        harden([
+          [
+            offerDetails.seat,
+            matchingTrade.seat,
+            { In: matchingTrade.amountOut },
+            { Out: matchingTrade.amountOut },
+          ],
+          [
+            matchingTrade.seat,
+            offerDetails.seat,
+            { In: offerDetails.amountOut },
+            { Out: offerDetails.amountOut },
+          ],
+        ]),
+      );
 
-      matchingTrade.seat.decrementBy(harden({ In: offerDetails.amountOut }));
-      offerDetails.seat.incrementBy(harden({ Out: offerDetails.amountOut }));
-
-      zcf.reallocate(offerDetails.seat, matchingTrade.seat);
       removeFromOrders(matchingTrade);
       offerDetails.seat.exit();
       matchingTrade.seat.exit();

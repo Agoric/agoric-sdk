@@ -1,7 +1,5 @@
-// @ts-check
-
-import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { Fail, assert, details as X } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
 
 /**
  * Burn the invitation, assert that only one invitation was burned,
@@ -12,8 +10,6 @@ import { E } from '@agoric/eventual-send';
  * @returns {Promise<{
  *   instanceHandle: Instance,
  *   invitationHandle: InvitationHandle,
- *   fee: Amount | undefined,
- *   expiry: Timestamp | undefined,
  * }>}
  */
 export const burnInvitation = (invitationIssuer, invitation) => {
@@ -27,19 +23,14 @@ export const burnInvitation = (invitationIssuer, invitation) => {
   const handleFulfilled = invitationAmount => {
     const invitationValue = invitationAmount.value;
     assert(Array.isArray(invitationValue));
-    assert(
-      invitationValue.length === 1,
-      'Only one invitation can be redeemed at a time',
-    );
-    const [
-      { instance: instanceHandle, handle: invitationHandle, fee, expiry },
-    ] = invitationValue;
-    return {
+    invitationValue.length === 1 ||
+      Fail`Only one invitation can be redeemed at a time`;
+    const [{ instance: instanceHandle, handle: invitationHandle }] =
+      invitationValue;
+    return harden({
       instanceHandle,
       invitationHandle,
-      fee,
-      expiry,
-    };
+    });
   };
 
   return E.when(

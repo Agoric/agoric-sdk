@@ -12,13 +12,15 @@
 // this module must be considered a resource module.
 
 // The assertions re-exported here are defined in
-// https://github.com/endojs/endo/blob/master/packages/ses/src/error/assert.js
+// https://github.com/endojs/endo/blob/HEAD/packages/ses/src/error/assert.js
 
 // At https://github.com/Agoric/agoric-sdk/issues/2774
 // is a record of a failed attempt to remove '.types'.
 // To satisfy CI, not only do we need to keep the file,
 // but we need to import it here as well.
 import './types.js';
+
+/** @typedef {import('@endo/marshal').Checker} Checker */
 
 const { freeze } = Object;
 
@@ -31,16 +33,17 @@ if (globalAssert === undefined) {
   );
 }
 
-const missing = [
+const missing = /** @type {const} */ ([
   'fail',
   'equal',
   'typeof',
   'string',
   'note',
   'details',
+  'Fail',
   'quote',
   'makeAssert',
-].filter(name => globalAssert[name] === undefined);
+]).filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {
   throw new Error(
     `Cannot initialize @agoric/assert, missing globalThis.assert methods ${missing.join(
@@ -49,13 +52,24 @@ if (missing.length > 0) {
   );
 }
 
-const { details, quote, makeAssert } = globalAssert;
+const { details, Fail, quote, makeAssert } = globalAssert;
 
-export { globalAssert as assert, details, quote };
+export { globalAssert as assert, details, Fail, quote, quote as q, makeAssert };
 
-export { quote as q };
-
-export { makeAssert };
+/**
+ * @template T
+ * @param {T | null | undefined} val
+ * @param {string} [optDetails]
+ * @returns {T}
+ */
+export const NonNullish = (val, optDetails = `unexpected ${quote(val)}`) => {
+  if (val != null) {
+    // This `!= null` idiom checks that `val` is neither `null` nor `undefined`.
+    return val;
+  }
+  assert.fail(optDetails);
+};
+harden(NonNullish);
 
 /**
  * Prepend the correct indefinite article onto a noun, typically a typeof result
@@ -74,3 +88,16 @@ function an(str) {
 }
 freeze(an);
 export { an };
+
+/**
+ * In the `assertFoo`/`isFoo`/`checkFoo` pattern, `checkFoo` has a `check`
+ * parameter of type `Checker`. `assertFoo` calls `checkFoo` passes
+ * `assertChecker` as the `check` argument. `isFoo` passes `identChecker`
+ * as the `check` argument. `identChecker` acts precisely like an
+ * identity function, but is typed as a `Checker` to indicate its
+ * intended use.
+ *
+ * @type {Checker}
+ */
+export const identChecker = (cond, _details) => cond;
+harden(identChecker);

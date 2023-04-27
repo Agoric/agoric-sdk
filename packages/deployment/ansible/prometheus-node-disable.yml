@@ -1,5 +1,4 @@
 ---
-
 - hosts: all
   user: root
   gather_facts: no
@@ -8,7 +7,7 @@
     - service: node-exporter
     - user: root
     - to_remove:
-      - /etc/systemd/system/node-exporter.service
+        - /etc/systemd/system/node-exporter.service
   roles:
     - stop
     - remove

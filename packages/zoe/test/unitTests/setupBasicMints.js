@@ -1,77 +1,48 @@
-// @ts-check
-
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeStore } from '@agoric/store';
-import { E } from '@agoric/eventual-send';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
-const setup = () => {
-  const moolaBundle = makeIssuerKit('moola');
-  const simoleanBundle = makeIssuerKit('simoleans');
-  const bucksBundle = makeIssuerKit('bucks');
-  const allBundles = {
-    moola: moolaBundle,
-    simoleans: simoleanBundle,
-    bucks: bucksBundle,
+export const setup = () => {
+  const moolaKit = makeIssuerKit('moola');
+  const simoleanKit = makeIssuerKit('simoleans');
+  const bucksKit = makeIssuerKit('bucks');
+  const allIssuerKits = {
+    moola: moolaKit,
+    simoleans: simoleanKit,
+    bucks: bucksKit,
   };
-  /** @type {Store<string, Brand>} */
-  const brands = makeStore('brandName');
+  /** @type {MapStore<string, Brand<'nat'>>} */
+  const brands = makeScalarMapStore('brandName');
 
-  for (const k of Object.getOwnPropertyNames(allBundles)) {
-    brands.init(k, allBundles[k].brand);
+  for (const k of Object.getOwnPropertyNames(allIssuerKits)) {
+    brands.init(k, allIssuerKits[k].brand);
   }
 
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
-  /** @type {(brand: Brand) => (value: Value) => Amount} */
+  /** @type {<K extends AssetKind>(brand: Brand<K>) => (value: any) => Amount<K>} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
-  /**
-   * @typedef {Object} BasicMints
-   * @property {Issuer} moolaIssuer
-   * @property {Mint} moolaMint
-   * @property {IssuerKit} moolaR
-   * @property {IssuerKit} moolaKit
-   * @property {Issuer} simoleanIssuer
-   * @property {Mint} simoleanMint
-   * @property {IssuerKit} simoleanR
-   * @property {IssuerKit} simoleanKit
-   * @property {Issuer} bucksIssuer
-   * @property {Mint} bucksMint
-   * @property {IssuerKit} bucksR
-   * @property {IssuerKit} bucksKit
-   * @property {Store<string, Brand>} brands
-   * @property {(value: Value) => Amount} moola
-   * @property {(value: Value) => Amount} simoleans
-   * @property {(value: Value) => Amount} bucks
-   * @property {ERef<ZoeService>} zoe
-   */
-
-  /** @type {BasicMints} */
   const result = {
-    moolaIssuer: moolaBundle.issuer,
-    moolaMint: moolaBundle.mint,
-    moolaR: moolaBundle,
-    moolaKit: moolaBundle,
-    simoleanIssuer: simoleanBundle.issuer,
-    simoleanMint: simoleanBundle.mint,
-    simoleanR: simoleanBundle,
-    simoleanKit: simoleanBundle,
-    bucksIssuer: bucksBundle.issuer,
-    bucksMint: bucksBundle.mint,
-    bucksR: bucksBundle,
-    bucksKit: bucksBundle,
+    moolaIssuer: moolaKit.issuer,
+    moolaMint: moolaKit.mint,
+    moolaKit,
+    simoleanIssuer: simoleanKit.issuer,
+    simoleanMint: simoleanKit.mint,
+    simoleanKit,
+    bucksIssuer: bucksKit.issuer,
+    bucksMint: bucksKit.mint,
+    bucksKit,
     brands,
-    moola: makeSimpleMake(moolaBundle.brand),
-    simoleans: makeSimpleMake(simoleanBundle.brand),
-    bucks: makeSimpleMake(bucksBundle.brand),
+    moola: makeSimpleMake(moolaKit.brand),
+    simoleans: makeSimpleMake(simoleanKit.brand),
+    bucks: makeSimpleMake(bucksKit.brand),
     zoe,
+    vatAdminState,
   };
   harden(result);
   return result;
 };
 harden(setup);
-export { setup };

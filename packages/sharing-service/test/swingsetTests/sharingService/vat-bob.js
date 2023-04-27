@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 function makeBobMaker() {
   return Far('bobMaker', {
@@ -20,7 +20,7 @@ function makeBobMaker() {
   });
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     makeBobMaker(_host) {
       return makeBobMaker();

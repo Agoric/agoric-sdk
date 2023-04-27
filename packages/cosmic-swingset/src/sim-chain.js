@@ -2,24 +2,29 @@
 /* eslint-disable no-await-in-loop */
 import path from 'path';
 import fs from 'fs';
-import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify.js';
 import {
   importMailbox,
   exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox.js';
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
 import anylogger from 'anylogger';
 
+import { makeSlogSender } from '@agoric/telemetry';
+
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { assert, details as X } from '@agoric/assert';
-import { makeWithQueue } from '@agoric/vats/src/queue.js';
-import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
+import { Fail } from '@agoric/assert';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
+import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import makeBlockManager from './block-manager.js';
-import { getMeterProvider } from './kernel-stats.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
+import { getTelemetryProviders } from './kernel-stats.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
+import { parseQueueSizes } from './params.js';
+import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 
 const console = anylogger('fake-chain');
+
+const TELEMETRY_SERVICE_NAME = 'sim-cosmos';
 
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
@@ -34,14 +39,14 @@ async function makeMapStorage(file) {
     await fs.promises.writeFile(file, json);
   };
 
-  let obj = {};
-  try {
+  await (async () => {
     content = await fs.promises.readFile(file);
-    obj = JSON.parse(content);
-  } catch (e) {
-    return map;
-  }
-  Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v)));
+    return JSON.parse(content);
+  })().then(
+    obj =>
+      Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v))),
+    () => {},
+  );
 
   return map;
 }
@@ -53,51 +58,65 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
-  const vatconfig = new URL(
-    await importMetaResolve(
-      '@agoric/vats/decentral-config.json',
-      import.meta.url,
-    ),
-  ).pathname;
   const argv = {
-    ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
-    noFakeCurrencies: !process.env.FAKE_CURRENCIES,
     bootMsg: {
       supplyCoins: [
         { denom: 'ubld', amount: `${50_000n * 10n ** 6n}` },
-        { denom: 'urun', amount: `${1_000_000n * 10n ** 6n}` },
+        { denom: 'uist', amount: `${1_000_000n * 10n ** 6n}` },
       ],
+      params: DEFAULT_SIM_SWINGSET_PARAMS,
     },
   };
+
+  const url = await importMetaResolve(
+    process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+      argv.bootMsg.params.bootstrap_vat_config,
+    import.meta.url,
+  );
+  const vatconfig = new URL(url).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
-  function flushChainSends(replay) {
-    assert(!replay, X`Replay not implemented`);
+  function replayChainSends() {
+    Fail`Replay not implemented`;
+  }
+  async function clearChainSends() {
+    return [];
   }
 
-  const meterProvider = getMeterProvider(console, process.env);
-  const s = await launch(
-    stateDBdir,
+  const env = process.env;
+  const { metricsProvider } = getTelemetryProviders({
+    console,
+    env,
+    serviceName: TELEMETRY_SERVICE_NAME,
+  });
+
+  const slogSender = await makeSlogSender({
+    stateDir: stateDBdir,
+    serviceName: TELEMETRY_SERVICE_NAME,
+    env,
+  });
+
+  const actionQueueStorage = makeQueueStorageMock().storage;
+  const actionQueue = makeQueue(actionQueueStorage);
+
+  const s = await launch({
+    actionQueueStorage,
+    kernelStateDBDir: stateDBdir,
     mailboxStorage,
-    undefined,
-    undefined,
+    clearChainSends,
+    replayChainSends,
     vatconfig,
     argv,
-    GCI, // debugName
-    meterProvider,
-  );
+    debugName: GCI,
+    metricsProvider,
+    slogSender,
+  });
 
-  const { savedHeight, savedActions, savedChainSends } = s;
-  const blockManager = makeBlockManager({ ...s, flushChainSends });
+  const { blockingSend, savedHeight } = s;
 
   let blockHeight = savedHeight;
-  let blockTime =
-    savedActions.length > 0
-      ? savedActions[0].blockTime
-      : scaleBlockTime(Date.now());
-  let intoChain = [];
-  let thisBlock = [];
+  const intoChain = [];
   let nextBlockTimeout = 0;
 
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
@@ -105,46 +124,44 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const withBlockQueue = makeWithQueue();
   const unhandledSimulateBlock = withBlockQueue(
     async function unqueuedSimulateBlock() {
-      // Gather up the new messages into the latest block.
-      thisBlock.push(...intoChain);
-      intoChain = [];
-
-      blockTime = scaleBlockTime(Date.now());
+      const blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
       const params = DEFAULT_SIM_SWINGSET_PARAMS;
-      await blockManager(
-        { type: 'BEGIN_BLOCK', blockHeight, blockTime, params },
-        savedChainSends,
+      const beginAction = {
+        type: 'BEGIN_BLOCK',
+        blockHeight,
+        blockTime,
+        params,
+      };
+      await blockingSend(beginAction);
+      const inboundQueueMax = parseQueueSizes(params.queue_max)[QueueInbound];
+      const inboundQueueAllowed = Math.max(
+        0,
+        inboundQueueMax - actionQueue.size(),
       );
-      for (let i = 0; i < thisBlock.length; i += 1) {
-        const [newMessages, acknum] = thisBlock[i];
-        await blockManager(
-          {
+
+      // Gather up the new messages into the latest block.
+      const thisBlock = intoChain.splice(0, inboundQueueAllowed);
+
+      for (const [i, [newMessages, acknum]] of thisBlock.entries()) {
+        actionQueue.push({
+          action: {
             type: 'DELIVER_INBOUND',
             peer: bootAddress,
             messages: newMessages,
             ack: acknum,
             blockHeight,
             blockTime,
-            params,
           },
-          savedChainSends,
-        );
+          context: { blockHeight, txHash: 'simTx', msgIdx: i },
+        });
       }
-      await blockManager(
-        { type: 'END_BLOCK', blockHeight, blockTime, params },
-        savedChainSends,
-      );
+      const endAction = { type: 'END_BLOCK', blockHeight, blockTime };
+      await blockingSend(endAction);
 
       // Done processing, "commit the block".
-      await blockManager(
-        { type: 'COMMIT_BLOCK', blockHeight, blockTime },
-        savedChainSends,
-      );
-
-      // We now advance to the next block.
-      thisBlock = [];
+      await blockingSend({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
 
       clearTimeout(nextBlockTimeout);
       // eslint-disable-next-line no-use-before-define
@@ -170,10 +187,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
     intoChain.push([newMessages, acknum]);
     // Only actually simulate a block if we're not in bootstrap.
+    let p;
     if (blockHeight && !delay) {
       clearTimeout(nextBlockTimeout);
-      await simulateBlock();
+      p = simulateBlock();
     }
+    await p;
   }
 
   const bootSimChain = async () => {
@@ -183,7 +202,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    await blockManager({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
+    await blockingSend({
+      type: 'BOOTSTRAP_BLOCK',
+      blockTime: scaleBlockTime(Date.now()),
+    });
     blockHeight = initialHeight;
   };
 
@@ -198,5 +220,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   });
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
-  return makeBatchedDeliver(deliver, batchDelayMs);
+  return makeBatchedDeliver(
+    deliver,
+    { clearTimeout, setTimeout },
+    batchDelayMs,
+  );
 }

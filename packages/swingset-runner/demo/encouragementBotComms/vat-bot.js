@@ -1,8 +1,8 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     encourageMe(name) {
       log(`=> encouragementBot.encourageMe got the name: ${name}`);

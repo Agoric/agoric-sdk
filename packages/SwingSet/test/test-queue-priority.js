@@ -7,7 +7,7 @@ test('Promise queue should be higher priority than IO/timer queue', async t => {
   setImmediate(() => log.push(1));
   setImmediate(() => {
     log.push(2);
-    Promise.resolve().then(() => log.push(4));
+    void Promise.resolve().then(() => log.push(4));
     log.push(3);
   });
   setImmediate(() => log.push(5));

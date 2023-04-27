@@ -3,7 +3,7 @@
 package Legend <<Rectangle>> #EEEEEE {
 
     class ContractA {
-        constract terms are documented above the line
+        contract terms are documented above the line
         --
           accessiblePublicState
         + publicMethod()
@@ -25,7 +25,7 @@ package "Electorate Vat" <<Rectangle>>  {
         terms: committeeSize, committeeName
         --
         Questions[]
-        +getQuestionSubscription()
+        +getQuestionSubscriber()
         +getOpenQuestions()
         +getQuestion(questionHandle)
         #getVoterInvitation(): (via some mechanism)

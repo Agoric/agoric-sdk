@@ -1,9 +1,7 @@
-// @ts-check
-
 import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/far';
 import {
   observeIteration,
   makeNotifierKit,
@@ -11,7 +9,7 @@ import {
 } from '../src/index.js';
 import { paula, alice, bob } from './iterable-testing-tools.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 const last = array => array[array.length - 1];
 
@@ -35,7 +33,7 @@ test('notifier for-await-of cannot eat promise', async t => {
   const { updater, notifier } = makeNotifierKit();
   paula(updater);
   const subP = Promise.resolve(notifier);
-  // @ts-ignore We are testing a case which violates the static types
+  // @ts-expect-error We are testing a case which violates the static types
   const log = await alice(subP);
 
   // This TypeError is thrown by JavaScript when a for-await-in loop
@@ -78,7 +76,7 @@ test('notifier for-await-of on generic representative', async t => {
   paula(updater);
   const subP = Promise.resolve(notifier);
   const { updater: p, notifier: localSub } = makeNotifierKit();
-  observeIteration(subP, p);
+  await observeIteration(subP, p);
   const log = await alice(localSub);
 
   t.deepEqual(last(log), ['finished']);
@@ -89,7 +87,7 @@ test('notifier observeIteration on generic representative', async t => {
   paula(updater);
   const subP = Promise.resolve(notifier);
   const { updater: p, notifier: localSub } = makeNotifierKit();
-  observeIteration(subP, p);
+  await observeIteration(subP, p);
   const log = await bob(localSub);
 
   t.deepEqual(last(log), ['finished', 'done']);

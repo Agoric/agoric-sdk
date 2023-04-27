@@ -1,22 +1,25 @@
 {
   "name": "@agoric/assert",
-  "version": "0.3.15",
+  "version": "0.5.1",
   "description": "Assert expression support that protects sensitive data",
   "type": "module",
   "main": "src/assert.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
-    "test": "exit 0",
+    "test": "ava",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
-    "lint:eslint": "eslint '**/*.js'",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:eslint": "eslint .",
     "lint:types": "tsc -p jsconfig.json"
+  },
+  "devDependencies": {
+    "@endo/init": "^0.5.56",
+    "ava": "^5.2.0"
   },
   "repository": {
     "type": "git",
@@ -32,31 +35,11 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "devDependencies": {
-    "ava": "^3.12.1"
-  },
   "files": [
     "src/",
     "exported.js",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ]
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
-  "eslintIgnore": [
-    "bundle-*.js"
-  ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   }

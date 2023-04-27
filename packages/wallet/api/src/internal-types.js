@@ -1,47 +1,50 @@
 // @ts-check
 
 /**
- * @typedef {Object} PursesAddedState
+ * @typedef {object} PursesAddedState
  * @property {Purse} purse
  * @property {Brand} brand
  * @property {PurseActions} actions
  */
+
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
 
 /**
  * @typedef {PursesJSONState & PursesAddedState} PursesFullState
  */
 
 /**
- * @typedef {Object} PurseActions
- * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: Value) => Promise<void>} send
+ * @typedef {object} PurseActions
+ * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: AmountValue) => Promise<void>} send
  * @property {(payment: Payment) => Promise<Amount>} receive
  * @property {(payment: Payment, amount?: Amount) => Promise<Amount>} deposit
  */
 
 /**
- * @typedef {Object} BrandRecord
+ * @typedef {object} BrandRecord
  * @property {Brand} brand
  * @property {Issuer} issuer
  * @property {string} issuerBoardId
  */
 
 /**
- * @typedef {Object} Contact
- * @property {string=} depositBoardId
+ * @typedef {object} Contact
+ * @property {string} [depositBoardId]
  */
 
 /**
- * @typedef {Object} DappRecord
- * @property {Promise<void>=} approvalP
+ * @typedef {object} DappRecord
+ * @property {Promise<void>} [approvalP]
  * @property {Petname} suggestedPetname
  * @property {Petname} petname
  * @property {boolean} enable
  * @property {string} origin
+ * @property {ERef<import('@agoric/cache').Coordinator>} cacheCoordinator
  * @property {DappActions} actions
  */
 
 /**
- * @typedef {Object} DappActions
+ * @typedef {object} DappActions
  * @property {(petname: Petname) => DappActions} setPetname
  * @property {() => DappActions} enable
  * @property {(reason: any) => DappActions} disable
@@ -49,12 +52,15 @@
 
 /**
  * @template T
- * @typedef {Object} Mapping
+ * @typedef {object} Mapping
  * @property {(petname: Petname) => string} implode
  * @property {(str: string) => Petname} explode
- * @property {WeakStore<T, Petname>} valToPetname
- * @property {WeakStore<T, string[][]>} valToPaths
- * @property {Store<Petname, T>} petnameToVal
+ * @property {LegacyWeakMap<T, Petname>} valToPetname
+ * @property {WeakMapStore<T, string[][]>} valToPaths
+ *   TODO What about when useLegacyMap is true because contact have
+ *   identity? `T` would be `Contact`. Shouldn't `valToPaths` be
+ *   a `LegacyWeakMap`?
+ * @property {MapStore<Petname, T>} petnameToVal
  * @property {(petname: Petname, val: T) => void} addPetname
  * @property {(path: string[], val: T) => void} addPath
  * @property {(petname: Petname, val: T) => void} renamePetname
@@ -64,7 +70,7 @@
  */
 
 /**
- * @typedef {Object} PaymentRecord
+ * @typedef {object} PaymentRecord
  * @property {RecordMetadata} meta
  * @property {Issuer} [issuer]
  * @property {Payment} [payment]
@@ -75,8 +81,8 @@
  * @property {Amount} [depositedAmount]
  * @property {string} [issuerBoardId]
  *
- * @typedef {Object} PaymentActions
- * @property {(purseOrPetname?: (Purse | Petname)) => Promise<Value>} deposit
+ * @typedef {object} PaymentActions
+ * @property {(purseOrPetname?: (Purse | Petname)) => Promise<AmountValue>} deposit
  * @property {() => Promise<boolean>} refresh
  * @property {() => Promise<boolean>} getAmountOf
  */
@@ -87,6 +93,6 @@
  * would make them part of the WalletUser available as `home.wallet` in the
  * REPL.  Then, the Wallet UI could use that instead.
  *
- * @typedef {ReturnType<typeof import('./lib-wallet').makeWallet>['admin']}
+ * @typedef {import('./lib-wallet').WalletRoot['admin']}
  * WalletAdminFacet
  */

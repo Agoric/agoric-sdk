@@ -1,0 +1,195 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+header Agoric Systems Operating Company.
+footer Page %page% of %lastpage%
+title AMM Sequence Diagram Creation
+
+autonumber
+actor "AMM Creator" as masc #lime
+actor "Pool Adder N" as pa #yellow
+actor "Pool User" as pu
+database "AMM Contract" as AMM
+box "Zoe"
+entity "Zoe" as zoe
+entity "userSeat" as usA
+end box
+
+== AMM Creation ==
+masc -> AMM: Create instance
+return ""creatorFacet""
+== Pool Addition SML:BCK==
+autonumber 10
+pa -> AMM: ""addPool()""
+database "Pool SML:BUCK" as pool
+entity "poolSeat SML:BUCK" as psA
+
+AMM -> pool: Create pool for SML -> BUCK
+AMM --> pa: ""Issuer""
+== Pool Addition MOOL:BCK==
+autonumber 10
+pa -> AMM: ""addPool()""
+database "Pool MOOL:BUCK" as pool2
+AMM -> pool2: Create pool for MOOL -> BUCK
+AMM --> pa: ""Issuer""
+
+
+== Duplicate Pool Addition MOOL:BCK==
+autonumber 30
+pa -> AMM: ""addPool()""
+AMM -->x pa: pool for MOOL:BCK already exists
+newpage AMM Sequence Diagram Swap Request
+
+autonumber 50
+== Swap Request ==
+group asking for the current price UNK:BUCK
+pu -> AMM: ""getOutputPrice(UNK:BUCK)""
+AMM -->x pu: ""brands were not recognized""
+end
+group asking for the current price MOOL:BUCK
+
+
+pu -> AMM: ""getOutputPrice(MOOL:BUCK)""
+AMM -> pool2: ""getPriceForOutput(MOOL:BUCK)""
+pool2 --> AMM: ""quote""
+AMM --> pu: ""quote""
+end
+
+group making a proposal
+pu -> pu: create proposal for SML:BUCK as ""proposal""
+
+end
+
+group requesting an invitation for a SwapOut
+pu -> AMM: ""makeSwapOutInvitation()""
+return ""invitation""
+
+end
+
+group making an offer
+pu -> pu: withdraw funds from purse of SML into ""payment""
+pu -> zoe: ""offer(invitation, proposal, payment))""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA --> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA --> zoe: ""poolSeat""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA --> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+newpage AMM Sequence Diagram Adding Liquidity
+
+autonumber 100
+== Adding Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> AMM: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to add 1 BUCK, and 1 SML\nat ratio of ""poolAllocation"" for X ""liquidity""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""BUCK"" into ""payments"" record
+pu -> pu: withdraw funds for ""SML"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA --> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA --> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA --> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (give)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (want)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+end
+
+
+newpage AMM Sequence Diagram Removing Liquidity
+
+autonumber 200
+== Removing Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> AMM: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to remove 1 ""liquidity"" for 1 BUCK and 1 SML\nat ratio of ""poolAllocation""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""liquidity"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA --> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA --> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+AMM -> psA: stage assets
+AMM -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA --> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Liquidity")"" (give)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+pu -> usA: ""getPayout("Central")"" (want)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+@enduml

@@ -1,12 +1,8 @@
-// @ts-check
-
-import '../../../exported.js';
 import './types.js';
 
-import { assert, details as X } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
@@ -14,9 +10,12 @@ import {
   assertNatAssetKind,
   makeRatio,
   ceilMultiplyBy,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
+
+const { Fail } = assert;
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;
@@ -56,23 +55,26 @@ const BASIS_POINTS = 10000n;
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
+ *
+ * @param {ZCF<{
+ * strikePrice1: Amount<'nat'>,
+ * strikePrice2: Amount<'nat'>,
+ * settlementAmount: Amount<'nat'>,
+ * priceAuthority: PriceAuthority,
+ * expiration: bigint,
+ * underlyingAmount: Amount<'nat'>,
+ * }>} zcf
  */
-
-/** @type {ContractStartFn} */
 const start = zcf => {
-  const {
-    brands,
-    strikePrice1,
-    strikePrice2,
-    settlementAmount,
-  } = zcf.getTerms();
+  const { brands, strikePrice1, strikePrice2, settlementAmount } =
+    zcf.getTerms();
   assertNatAssetKind(zcf, brands.Collateral);
   assertNatAssetKind(zcf, brands.Strike);
   // notice that we don't assert that the Underlying is fungible.
 
   assert(
     AmountMath.isGTE(strikePrice2, strikePrice1),
-    X`strikePrice2 must be greater than strikePrice1`,
+    'strikePrice2 must be greater than strikePrice1',
   );
 
   zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
@@ -97,8 +99,9 @@ const start = zcf => {
     const option = payoffHandler.makeOptionInvitation(position);
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
+    const Option = await E(invitationIssuer).getAmountOf(option);
     const spreadAmount = harden({
-      Option: await E(invitationIssuer).getAmountOf(option),
+      Option,
     });
     // AWAIT ////
 
@@ -119,24 +122,23 @@ const start = zcf => {
       } = depositSeat.getProposal();
 
       // assert that the allocation includes the amount of collateral required
-      assert(
-        AmountMath.isEqual(newCollateral, deposit),
-        X`Collateral required: ${deposit.value}`,
-      );
+      AmountMath.isEqual(newCollateral, deposit) ||
+        Fail`Collateral required: ${deposit.value}`;
 
       // assert that the requested option was the right one.
       assert(
         spreadAmount.Option.value[0].instance ===
           desiredOption.value[0].instance,
-        X`wanted option not a match`,
+        'wanted option not a match',
       );
 
-      depositSeat.incrementBy(collateralSeat.decrementBy(harden(spreadAmount)));
-      collateralSeat.incrementBy(
-        depositSeat.decrementBy(harden({ Collateral: newCollateral })),
+      atomicRearrange(
+        zcf,
+        harden([
+          [collateralSeat, depositSeat, spreadAmount],
+          [depositSeat, collateralSeat, { Collateral: newCollateral }],
+        ]),
       );
-
-      zcf.reallocate(collateralSeat, depositSeat);
       depositSeat.exit();
     };
 

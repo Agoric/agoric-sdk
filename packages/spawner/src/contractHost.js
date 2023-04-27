@@ -1,8 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 // spawnBundle is built with 'yarn build'
 import spawnBundle from '../bundles/bundle-spawn.js';
@@ -14,7 +14,7 @@ function makeSpawner(vatAdminSvc) {
       return Far('installer', {
         async spawn(argsP) {
           const meter = await E(vatAdminSvc).createUnlimitedMeter();
-          const opts = { meter };
+          const opts = { name: 'spawn', meter };
           const { root } = await E(vatAdminSvc).createVat(spawnBundle, opts);
           return E(E(root).loadBundle(bundle)).start(argsP);
         },

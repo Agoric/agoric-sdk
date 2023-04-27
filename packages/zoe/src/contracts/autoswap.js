@@ -1,6 +1,4 @@
-// @ts-check
-
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { AmountMath, isNatValue } from '@agoric/ertp';
 
@@ -13,9 +11,8 @@ import {
   assertProposalShape,
   assertNatAssetKind,
   calcSecondaryRequired,
+  atomicRearrange,
 } from '../contractSupport/index.js';
-
-import '../../exported.js';
 
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for
@@ -54,17 +51,15 @@ import '../../exported.js';
  * (getLiquidityIssuer), the current outstanding liquidity (getLiquiditySupply),
  * and the current balances in the pool (getPoolAllocation).
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = async zcf => {
   // Create a local liquidity mint and issuer.
   const liquidityMint = await zcf.makeZCFMint('Liquidity');
   // AWAIT  ////////////////////
 
-  const {
-    issuer: liquidityIssuer,
-    brand: liquidityBrand,
-  } = liquidityMint.getIssuerRecord();
+  const { issuer: liquidityIssuer, brand: liquidityBrand } =
+    liquidityMint.getIssuerRecord();
   let liqTokenSupply = 0n;
 
   // In order to get all the brands, we must call zcf.getTerms() after
@@ -93,21 +88,23 @@ const start = async zcf => {
   };
 
   function consummate(tradeAmountIn, tradeAmountOut, swapSeat) {
-    swapSeat.decrementBy(harden({ In: tradeAmountIn }));
-    poolSeat.incrementBy(
-      harden({
-        [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn,
-      }),
+    atomicRearrange(
+      zcf,
+      harden([
+        [
+          swapSeat,
+          poolSeat,
+          { In: tradeAmountIn },
+          { [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn },
+        ],
+        [
+          poolSeat,
+          swapSeat,
+          { [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut },
+          { Out: tradeAmountOut },
+        ],
+      ]),
     );
-
-    poolSeat.decrementBy(
-      harden({
-        [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut,
-      }),
-    );
-    swapSeat.incrementBy(harden({ Out: tradeAmountOut }));
-
-    zcf.reallocate(swapSeat, poolSeat);
 
     swapSeat.exit();
     return `Swap successfully completed.`;
@@ -185,7 +182,9 @@ const start = async zcf => {
   const addLiquidity = (seat, secondaryAmount) => {
     const userAllocation = seat.getCurrentAllocation();
     const centralPool = getPoolAmount(brands.Central).value;
+    assert(!AmountMath.isEmpty(userAllocation.Central), 'Pool is empty');
     const centralIn = userAllocation.Central.value;
+
     const liquidityValueOut = calcLiqValueToMint(
       liqTokenSupply,
       centralIn,
@@ -205,13 +204,13 @@ const start = async zcf => {
       Central: AmountMath.make(brands.Central, centralIn),
       Secondary: secondaryAmount,
     };
-    poolSeat.incrementBy(seat.decrementBy(harden(liquidityDeposited)));
-    seat.incrementBy(
-      poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
+    atomicRearrange(
+      zcf,
+      harden([
+        [seat, poolSeat, liquidityDeposited],
+        [poolSeat, seat, { Liquidity: liquidityAmountOut }],
+      ]),
     );
-
-    zcf.reallocate(poolSeat, seat);
-
     seat.exit();
     return 'Added liquidity.';
   };
@@ -275,9 +274,13 @@ const start = async zcf => {
       want: { Central: null, Secondary: null },
       give: { Liquidity: null },
     });
+
     // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
-    const liquidityValueIn = userAllocation.Liquidity.value;
+    /** @type {Amount<'nat'>} */
+    const liquidityIn = userAllocation.Liquidity;
+    assert(!AmountMath.isEmpty(liquidityIn), 'Pool is empty');
+    const liquidityValueIn = liquidityIn.value;
     assert(isNatValue(liquidityValueIn));
 
     const newUserCentralAmount = AmountMath.make(
@@ -304,15 +307,13 @@ const start = async zcf => {
       Secondary: newUserSecondaryAmount,
     };
 
-    poolSeat.incrementBy(
-      removeLiqSeat.decrementBy(
-        harden({ Liquidity: userAllocation.Liquidity }),
-      ),
+    atomicRearrange(
+      zcf,
+      harden([
+        [removeLiqSeat, poolSeat, { Liquidity: userAllocation.Liquidity }],
+        [poolSeat, removeLiqSeat, liquidityRemoved],
+      ]),
     );
-
-    removeLiqSeat.incrementBy(poolSeat.decrementBy(harden(liquidityRemoved)));
-
-    zcf.reallocate(poolSeat, removeLiqSeat);
 
     removeLiqSeat.exit();
     return 'Liquidity successfully removed.';
@@ -334,9 +335,9 @@ const start = async zcf => {
    * `getOutputForGivenInput` calculates the result of a trade, given a certain
    * amount of digital assets in.
    *
-   * @param {Amount} amountIn - the amount of digital
+   * @param {Amount<'nat'>} amountIn - the amount of digital
    * assets to be sent in
-   * @param {Brand} brandOut - The brand of asset desired
+   * @param {Brand<'nat'>} brandOut - The brand of asset desired
    */
   const getOutputForGivenInput = (amountIn, brandOut) => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
@@ -357,8 +358,8 @@ const start = async zcf => {
    * `getInputForGivenOutput` calculates the amount of assets required to be
    * provided in order to obtain a specified gain.
    *
-   * @param {Amount} amountOut - the amount of digital assets desired
-   * @param {Brand} brandIn - The brand of asset desired
+   * @param {Amount<'nat'>} amountOut - the amount of digital assets desired
+   * @param {Brand<'nat'>} brandIn - The brand of asset desired
    */
   const getInputForGivenOutput = (amountOut, brandIn) => {
     const inputReserve = getPoolAmount(brandIn).value;
@@ -375,7 +376,7 @@ const start = async zcf => {
     return AmountMath.make(brandIn, outputValue);
   };
 
-  const getPoolAllocation = poolSeat.getCurrentAllocation;
+  const getPoolAllocation = () => poolSeat.getCurrentAllocation();
 
   /** @type {AutoswapPublicFacet} */
   const publicFacet = Far('publicFacet', {

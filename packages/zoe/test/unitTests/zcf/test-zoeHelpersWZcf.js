@@ -1,7 +1,7 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { M, mustMatch } from '@agoric/store';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints.js';
 import {
@@ -150,7 +150,8 @@ test(`zcf assertNatAssetKind - brand not registered`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"brand" not found: .*/,
-      /.* not found: .*/,
+      // / not found: /,
+      'key "[Alleged: gelt brand]" not found in collection "brandToIssuerRecord"',
   });
 });
 
@@ -216,8 +217,9 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
         // disclosure bug is fixed. See
         // https://github.com/endojs/endo/pull/640
         //
-        // /"issuer" not found: .*/,
-        /.* not found: .*/,
+        // /"issuer" not found: /,
+        // /not found: /,
+        'key "[Alleged: pieces of eight issuer]" not found in collection "issuerToIssuerRecord"',
     },
     'issuer should not be found',
   );
@@ -229,19 +231,15 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
       // disclosure bug is fixed. See
       // https://github.com/endojs/endo/pull/640
       //
-      // /"brand" not found: .*/,
-      /.* not found: .*/,
+      // /"brand" not found: /,
+      // /not found: /,
+      'key "[Alleged: pieces of eight brand]" not found in collection "brandToIssuerRecord"',
   });
 });
 
 test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
-  const {
-    moolaIssuer,
-    moola,
-    simoleanIssuer,
-    simoleanMint,
-    simoleans,
-  } = setup();
+  const { moolaIssuer, moola, simoleanIssuer, simoleanMint, simoleans } =
+    setup();
   const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
   const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
 
@@ -291,14 +289,47 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.notThrows(() => assertIssuerKeywords(zcf, ['A', 'B']));
 });
 
+test(`zoeHelper with zcf - mustMatch proposal patterns`, async t => {
+  const { moola, simoleans } = setup();
+
+  const proposal = harden({
+    want: { A: moola(20n) },
+    give: { B: simoleans(3n) },
+  });
+
+  t.throws(() => mustMatch(proposal, harden([])), {
+    message: /.* - Must be: \[\]/,
+  });
+  t.throws(
+    () => mustMatch(proposal, M.split({ want: { C: M.any() } })),
+    {
+      message:
+        'want: {"A":{"brand":"[Alleged: moola brand]","value":"[20n]"}} - Must have missing properties ["C"]',
+    },
+    'empty keywordRecord does not match',
+  );
+  t.notThrows(() => mustMatch(proposal, M.split({ want: { A: M.any() } })));
+  t.notThrows(() => mustMatch(proposal, M.split({ give: { B: M.any() } })));
+  t.throws(
+    () => mustMatch(proposal, M.split({ give: { c: M.any() } })),
+    {
+      message:
+        'give: {"B":{"brand":"[Alleged: simoleans brand]","value":"[3n]"}} - Must have missing properties ["c"]',
+    },
+    'wrong key in keywordRecord does not match',
+  );
+  t.throws(
+    () => mustMatch(proposal, M.split({ exit: { onDemaind: M.any() } })),
+    {
+      message: '{} - Must have missing properties ["exit"]',
+    },
+    'missing exit rule',
+  );
+});
+
 test(`zoeHelper with zcf - assertProposalShape`, async t => {
-  const {
-    moolaIssuer,
-    moola,
-    simoleanIssuer,
-    simoleanMint,
-    simoleans,
-  } = setup();
+  const { moolaIssuer, moola, simoleanIssuer, simoleanMint, simoleans } =
+    setup();
   const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
   const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
 
@@ -309,7 +340,7 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3n)) },
   );
 
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => assertProposalShape(zcfSeat, []), {
     message: 'Expected must be an non-array object',
   });
@@ -337,6 +368,12 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     'missing exit rule',
   );
 });
+
+const containsAll = (arr1, arr2) =>
+  arr2.every(arr2Item => arr1.includes(arr2Item));
+
+const sameMembers = (arr1, arr2) =>
+  containsAll(arr1, arr2) && containsAll(arr2, arr1);
 
 test(`zoeHelper w/zcf - swapExact`, async t => {
   const {
@@ -379,10 +416,12 @@ test(`zoeHelper w/zcf - swapExact`, async t => {
     await userSeatA.getPayout('B'),
     simoleans(0n),
   );
-  t.deepEqual(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
-    'B',
-    'A',
-  ]);
+  t.truthy(
+    sameMembers(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
+      'B',
+      'A',
+    ]),
+  );
   t.truthy(zcfSeatB.hasExited(), 'exit right');
   await assertPayoutAmount(
     t,
@@ -396,10 +435,12 @@ test(`zoeHelper w/zcf - swapExact`, async t => {
     await userSeatB.getPayout('D'),
     moola(0n),
   );
-  t.deepEqual(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
-    'D',
-    'C',
-  ]);
+  t.truthy(
+    sameMembers(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
+      'D',
+      'C',
+    ]),
+  );
 });
 
 test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
@@ -428,7 +469,8 @@ test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
+    message:
+      'rights were not conserved for brand "[Alleged: moola brand]" "[15n]" != "[20n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   await assertPayoutAmount(
@@ -484,7 +526,8 @@ test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
+    message:
+      'rights were not conserved for brand "[Alleged: moola brand]" "[40n]" != "[20n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   await assertPayoutAmount(
@@ -540,7 +583,8 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
+    message:
+      'rights were not conserved for brand "[Alleged: moola brand]" "[40n]" != "[0n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   await assertPayoutAmount(
@@ -564,14 +608,22 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 });
 
+test(`zcf/zoeHelper - mustMatch proposal pattern w/bad Expected`, async t => {
+  const { moola, simoleans } = setup();
+
+  const proposal = harden({
+    want: { A: moola(20n) },
+    give: { B: simoleans(3n) },
+  });
+
+  t.throws(() => mustMatch(proposal, M.split({ give: { B: moola(3n) } })), {
+    message: /.* - Must be: .*/,
+  });
+});
+
 test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
-  const {
-    moolaIssuer,
-    moola,
-    simoleanIssuer,
-    simoleanMint,
-    simoleans,
-  } = setup();
+  const { moolaIssuer, moola, simoleanIssuer, simoleanMint, simoleans } =
+    setup();
   const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
   const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
 
@@ -582,7 +634,7 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3n)) },
   );
 
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error purposeful type violation to test enforcement
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3n) } }), {
     message: /The value of the expected record must be null but was .*/,
   });

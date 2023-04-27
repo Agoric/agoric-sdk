@@ -1,5 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 /**
  * @param {*} log
@@ -13,9 +13,9 @@ const build = async (log, zoe, installations, feeMintAccess) => {
       log('starting runMintTest');
       const { instance } = await E(zoe).startInstance(
         installations.offerArgsUsageContract,
-        {
+        harden({
           RUN: E(zoe).getFeeIssuer(),
-        },
+        }),
         undefined,
       );
       const issuers = await E(zoe).getIssuers(instance);
@@ -55,6 +55,7 @@ const build = async (log, zoe, installations, feeMintAccess) => {
 
 export function buildRootObject(vatPowers) {
   return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (zoe, installations, feeMintAccess) =>
+      build(vatPowers.testLog, zoe, installations, feeMintAccess),
   });
 }

@@ -1,10 +1,7 @@
-// @ts-check
-
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import '../../exported.js';
 import { assert } from '@agoric/assert';
 
 /**
@@ -25,7 +22,9 @@ import { assert } from '@agoric/assert';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @type {ContractStartFn}
+ * @param {ZCF<{
+ * tokenName: string,
+ * }>} zcf
  */
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();
@@ -34,6 +33,14 @@ const start = zcf => {
 
   const zoeService = zcf.getZoeService();
 
+  /**
+   * @param {object} obj
+   * @param {Installation<import('./sellItems.js').start>} obj.sellItemsInstallation
+   * @param {*} obj.customValueProperties
+   * @param {number} obj.count
+   * @param {*} obj.moneyIssuer
+   * @param {*} obj.pricePerItem
+   */
   const sellTokens = ({
     customValueProperties,
     count,
@@ -77,14 +84,6 @@ const start = zcf => {
     const sellItemsTerms = harden({
       pricePerItem,
     });
-    /**
-     * @type {Promise<{
-     *   creatorInvitation: Invitation | undefined,
-     *   creatorFacet: SellItemsCreatorFacet,
-     *   instance: Instance,
-     *   publicFacet: SellItemsPublicFacet,
-     * }>}
-     */
     const instanceRecordP = E(zoeService).startInstance(
       sellItemsInstallation,
       issuerKeywordRecord,

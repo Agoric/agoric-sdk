@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Prepare global environment for zoe tests.
  *

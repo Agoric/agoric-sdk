@@ -1,23 +1,20 @@
 {
   "name": "@agoric/deploy-script-support",
-  "version": "0.6.0",
+  "version": "0.9.4",
   "description": "Helpers and other support for writing deploy scripts",
   "type": "module",
   "main": "src/helpers.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
-    "pretty-fix": "prettier --write '**/*.js'",
-    "pretty-check": "prettier --check '**/*.js'",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint:eslint": "eslint '**/*.js'",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint:eslint": "eslint .",
     "lint:types": "tsc -p jsconfig.json",
-    "lint": "yarn lint:types && yarn lint:eslint"
+    "lint": "run-s --continue-on-error lint:*"
   },
   "repository": {
     "type": "git",
@@ -37,24 +34,26 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/ertp": "^0.13.0",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/import-manager": "^0.2.32",
-    "@agoric/marshal": "^0.5.0",
-    "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.32",
-    "@agoric/promise-kit": "^0.2.29",
-    "@agoric/same-structure": "^0.1.29",
-    "@agoric/store": "^0.6.7",
-    "@agoric/vats": "^0.5.0",
-    "@agoric/zoe": "^0.21.0"
+    "@agoric/assert": "^0.5.1",
+    "@agoric/ertp": "^0.15.3",
+    "@agoric/import-manager": "^0.3.6",
+    "@agoric/internal": "^0.2.1",
+    "@endo/nat": "^4.1.27",
+    "@agoric/notifier": "^0.5.1",
+    "@agoric/store": "^0.8.3",
+    "@agoric/zoe": "^0.25.3",
+    "@endo/base64": "^0.2.31",
+    "@endo/bundle-source": "^2.5.1",
+    "@endo/far": "^0.2.18",
+    "@endo/marshal": "^0.8.5",
+    "@endo/promise-kit": "^0.2.56",
+    "@endo/zip": "^0.2.31"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.24.0",
-    "ava": "^3.12.1",
-    "import-meta-resolve": "^1.1.1"
+    "@agoric/vats": "^0.13.0",
+    "@endo/init": "^0.5.56",
+    "ava": "^5.2.0",
+    "import-meta-resolve": "^2.2.1"
   },
   "files": [
     "src",
@@ -65,15 +64,6 @@
     "files": [
       "test/**/test-*.js"
     ]
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   },
   "publishConfig": {
     "access": "public"

@@ -1,0 +1,44 @@
+{
+  "name": "@agoric/internal",
+  "version": "0.2.1",
+  "description": "Externally unsupported utilities internal to agoric-sdk",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
+    "test": "ava",
+    "test:nyc": "exit 0",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:eslint": "eslint .",
+    "lint:types": "tsc -p jsconfig.json"
+  },
+  "dependencies": {
+    "@agoric/zone": "^0.1.0",
+    "@endo/far": "^0.2.18",
+    "@endo/marshal": "^0.8.5",
+    "@endo/patterns": "^0.2.2",
+    "@endo/promise-kit": "^0.2.56",
+    "anylogger": "^0.21.0",
+    "jessie.js": "^0.3.2"
+  },
+  "devDependencies": {
+    "@endo/init": "^0.5.56",
+    "ava": "^5.2.0",
+    "tsd": "^0.28.1"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "files": [
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

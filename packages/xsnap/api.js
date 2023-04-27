@@ -1,9 +1,13 @@
 /* eslint-disable max-classes-per-file */
 
-/** The version identifier for our meter type.
+/**
+ * The version identifier for our meter type.
+ *
  * TODO Bump this whenever there's a change to metering semantics.
+ * Also, update golden master test/test-xs-perf.js to reflect new meter
+ * version.
  */
-export const METER_TYPE = 'xs-meter-12';
+export const METER_TYPE = 'xs-meter-20';
 
 export const ExitCode = {
   E_UNKNOWN_ERROR: -1,
@@ -30,7 +34,7 @@ export const ErrorMessage = {
 
 export class ErrorSignal extends Error {
   /**
-   * @param { string } signal
+   * @param {string} signal
    * @param {...string | undefined} params
    */
   constructor(signal, ...params) {
@@ -42,7 +46,7 @@ export class ErrorSignal extends Error {
 
 export class ErrorCode extends Error {
   /**
-   * @param { number } code
+   * @param {number} code
    * @param {...string | undefined} params
    */
   constructor(code, ...params) {

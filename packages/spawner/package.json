@@ -1,21 +1,20 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.4.32",
+  "version": "0.6.3",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "./src/contractHost.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
-    "build": "yarn build-bundle-spawn",
-    "build-bundle-spawn": "node scripts/build-bundle-spawn.js",
+    "build": "yarn build:bundles",
+    "build:bundles": "node scripts/build-bundles.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint:eslint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -31,34 +30,24 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/import-bundle": "^0.2.32",
-    "@agoric/marshal": "^0.5.0"
+    "@agoric/assert": "^0.5.1",
+    "@endo/eventual-send": "^0.17.2",
+    "@endo/import-bundle": "^0.3.4",
+    "@endo/marshal": "^0.8.5"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/swingset-vat": "^0.24.0",
-    "ava": "^3.12.1",
-    "c8": "^7.7.2"
+    "@agoric/internal": "^0.2.1",
+    "@agoric/swingset-vat": "^0.30.2",
+    "@endo/bundle-source": "^2.5.1",
+    "@endo/init": "^0.5.56",
+    "ava": "^5.2.0",
+    "c8": "^7.13.0"
   },
   "files": [
     "src/",
+    "bundles/",
     "NEWS.md"
   ],
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
-  "eslintIgnore": [
-    "bundle-*.js"
-  ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   },

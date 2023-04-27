@@ -1,14 +1,13 @@
 ---
-
-- hosts: "{{ user }}"
+- hosts: '{{ user }}'
   user: root
   #any_errors_fatal: true
   gather_facts: no
   strategy: free
   vars:
     - service: ag-chain-cosmos
-    - user: "{{ service }}"
-    - chdir: "/home/{{ user }}"
+    - user: '{{ service }}'
+    - chdir: '/home/{{ user }}'
     - NETWORK_NAME: "{{ lookup('file', SETUP_HOME + '/network.txt') }}"
   roles:
     - install

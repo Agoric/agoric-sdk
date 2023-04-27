@@ -1,6 +1,5 @@
-import { Far } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far, E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject() {
   let nextPK;

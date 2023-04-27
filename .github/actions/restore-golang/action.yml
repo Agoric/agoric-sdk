@@ -12,21 +12,24 @@ runs:
     - name: set default environment variables
       run: echo GOPATH="$HOME/go" >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         clean: 'false'
         submodules: 'true'
-    - uses: actions/setup-go@v2
+    - uses: actions/setup-go@v3
       with:
         go-version: ${{ inputs.go-version }}
+    - uses: kenchan0130/actions-system-info@master
+      id: system-info
     - name: cache Go modules
-      uses: actions/cache@v1
+      id: cache
+      uses: actions/cache@v3
       with:
         path: ${{ env.GOPATH }}/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-${{ hashFiles('go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-
+          ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-
     - name: go mod download
       run: go mod download
       shell: bash
-      if: steps.built.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true'

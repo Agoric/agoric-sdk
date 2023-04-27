@@ -1,36 +1,35 @@
-// @ts-check
-
-import { E as defaultE } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+import { Far, E as defaultE } from '@endo/far';
+import { makeScalarMapStore } from '@agoric/store';
+import { Fail } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';
 import './types.js';
 
 /**
- * @typedef {Object} Router A delimited string router implementation
- * @property {(addr: string) => [string, Protocol][]} getRoutes Return the match and route in order of preference
- * @property {(prefix: string, route: Protocol) => void} register Add a prefix->route to the database
- * @property {(prefix: string, route: Protocol) => void} unregister Remove a prefix->route from the database
+ * @template T
+ * @typedef {object} Router A delimited string router implementation
+ * @property {(addr: string) => [string, T][]} getRoutes Return the match and route in order of preference
+ * @property {(prefix: string, route: T) => void} register Add a prefix->route to the database
+ * @property {(prefix: string, route: T) => void} unregister Remove a prefix->route from the database
  */
 
 /**
  * Create a slash-delimited router.
  *
- * @returns {Router} a new Router
+ * @template T
+ * @returns {Router<T>} a new Router
  */
 export default function makeRouter() {
   /**
-   * @type {Store<string, any>}
+   * @type {MapStore<string, T>}
    */
-  const prefixToRoute = makeStore('prefix');
+  const prefixToRoute = makeScalarMapStore('prefix');
   return Far('Router', {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
       /**
-       * @type {[string, Protocol][]}
+       * @type {[string, T][]}
        */
       const ret = [];
       for (let i = parts.length; i > 0; i -= 1) {
@@ -54,17 +53,15 @@ export default function makeRouter() {
       prefixToRoute.init(prefix, route);
     },
     unregister(prefix, route) {
-      assert(
-        prefixToRoute.get(prefix) === route,
-        X`Router is not registered at prefix ${prefix}`,
-        TypeError,
-      );
+      prefixToRoute.get(prefix) === route ||
+        Fail`Router is not registered at prefix ${prefix}`;
       prefixToRoute.delete(prefix);
     },
   });
 }
+
 /**
- * @typedef {Object} RouterProtocol
+ * @typedef {object} RouterProtocol
  * @property {(prefix: string) => Promise<Port>} bind
  * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
@@ -78,8 +75,10 @@ export default function makeRouter() {
  */
 export function makeRouterProtocol(E = defaultE) {
   const router = makeRouter();
-  const protocols = makeStore('prefix');
-  const protocolHandlers = makeStore('prefix');
+  /** @type {MapStore<string, Protocol>} */
+  const protocols = makeScalarMapStore('prefix');
+  /** @type {MapStore<string, ProtocolHandler>} */
+  const protocolHandlers = makeScalarMapStore('prefix');
 
   function registerProtocolHandler(paths, protocolHandler) {
     const protocol = makeNetworkProtocol(protocolHandler);
@@ -94,11 +93,8 @@ export function makeRouterProtocol(E = defaultE) {
   // Needs to account for multiple paths.
   function unregisterProtocolHandler(prefix, protocolHandler) {
     const ph = protocolHandlers.get(prefix);
-    assert(
-      ph === protocolHandler,
-      X`Protocol handler is not registered at prefix ${prefix}`,
-      TypeError,
-    );
+    ph === protocolHandler ||
+      Fail`Protocol handler is not registered at prefix ${prefix}`;
     router.unregister(prefix, ph);
     protocols.delete(prefix);
     protocolHandlers.delete(prefix);
@@ -107,11 +103,7 @@ export function makeRouterProtocol(E = defaultE) {
   /** @type {Protocol['bind']} */
   async function bind(localAddr) {
     const [route] = router.getRoutes(localAddr);
-    assert(
-      route !== undefined,
-      X`No registered router for ${localAddr}`,
-      TypeError,
-    );
+    route !== undefined || Fail`No registered router for ${localAddr}`;
     return E(route[1]).bind(localAddr);
   }
 

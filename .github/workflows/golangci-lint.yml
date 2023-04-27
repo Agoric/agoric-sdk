@@ -1,0 +1,32 @@
+name: golangci-lint
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
+  pull_request:
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+jobs:
+  golangci:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.17'
+          check-latest: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # golangci-lint version and command line arguments
+          version: latest
+          args: --timeout=3m
+          # for pull requests, show only new issues
+          only-new-issues: true

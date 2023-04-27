@@ -5,10 +5,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-const paramsKey string = "params"
 const stateKey string = "state"
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
@@ -17,18 +19,18 @@ type Keeper struct {
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
-	bankKeeper       types.BankKeeper
-	feeCollectorName string
-	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	accountKeeper         types.AccountKeeper
+	bankKeeper            types.BankKeeper
+	rewardDistributorName string
+	PushAction            vm.ActionPusher
 }
 
 // NewKeeper creates a new vbank Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	bankKeeper types.BankKeeper,
-	feeCollectorName string,
-	callToController func(ctx sdk.Context, str string) (string, error),
+	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
+	rewardDistributorName string,
+	pushAction vm.ActionPusher,
 ) Keeper {
 
 	// set KeyTable if it has not already been set
@@ -37,12 +39,13 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:         key,
-		cdc:              cdc,
-		paramSpace:       paramSpace,
-		bankKeeper:       bankKeeper,
-		feeCollectorName: feeCollectorName,
-		CallToController: callToController,
+		storeKey:              key,
+		cdc:                   cdc,
+		paramSpace:            paramSpace,
+		accountKeeper:         accountKeeper,
+		bankKeeper:            bankKeeper,
+		rewardDistributorName: rewardDistributorName,
+		PushAction:            pushAction,
 	}
 }
 
@@ -54,12 +57,12 @@ func (k Keeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.bankKeeper.GetAllBalances(ctx, addr)
 }
 
-func (k Keeper) StoreFeeCoins(ctx sdk.Context, amt sdk.Coins) error {
+func (k Keeper) StoreRewardCoins(ctx sdk.Context, amt sdk.Coins) error {
 	return k.bankKeeper.MintCoins(ctx, types.ModuleName, amt)
 }
 
-func (k Keeper) SendCoinsToFeeCollector(ctx sdk.Context, amt sdk.Coins) error {
-	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.feeCollectorName, amt)
+func (k Keeper) SendCoinsToRewardDistributor(ctx sdk.Context, amt sdk.Coins) error {
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.rewardDistributorName, amt)
 }
 
 func (k Keeper) SendCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
@@ -74,6 +77,23 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 		return err
 	}
 	return k.bankKeeper.BurnCoins(ctx, types.ModuleName, amt)
+}
+
+func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAddress {
+	acct := k.accountKeeper.GetModuleAccount(ctx, name)
+	if acct == nil {
+		return nil
+	}
+	return acct.GetAddress()
+}
+
+func (k Keeper) IsModuleAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
+	acc := k.accountKeeper.GetAccount(ctx, addr)
+	if acc == nil {
+		return false
+	}
+	_, ok := acc.(authtypes.ModuleAccountI)
+	return ok
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {

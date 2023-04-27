@@ -1,18 +1,16 @@
 // @ts-check
 
-import '@agoric/install-ses';
+import '@endo/init/debug.js';
 import React from 'react';
 import { TextField } from '@material-ui/core';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import * as enzyme from 'enzyme';
+import enzyme from 'enzyme';
 
-// @ts-ignore path is correct for compiled output
+// @ts-expect-error path is correct for compiled output
 import { makeNatAmountInput } from '../../../dist/index.js'; // eslint-disable-line import/no-unresolved
 
-const { shallow, render } = enzyme.default || enzyme;
+const { shallow, render } = enzyme; // CJS so no named imports
 
 const NatAmountInput = makeNatAmountInput({ React, TextField });
 
@@ -119,7 +117,8 @@ test('error=true', t => {
   t.is(input.attr('aria-invalid'), 'true');
 });
 
-test('can simulate input - just calls onChange', async t => {
+test('can simulate input - just calls onChange', t => {
+  /** @type {bigint | undefined} */
   let receivedValue;
   const onChange = newValue => {
     receivedValue = newValue;
@@ -189,7 +188,21 @@ test('displays 3 eth correctly', t => {
   );
 });
 
-test.todo('negative values error');
+test('discards negative values', t => {
+  /** @type {bigint | undefined} */
+  let receivedValue;
+  const onChange = newValue => {
+    receivedValue = newValue;
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    wrapper.setProps({ value: receivedValue });
+  };
+  const wrapper = makeShallowNatAmountInput({ onChange });
+
+  wrapper.simulate('change', { target: { value: '-5' } });
+  t.is(receivedValue, 5n);
+  t.is(wrapper.prop('value'), '5');
+});
+
 test.todo(
   `you can click on the input and change the value, which changes the prop 'value'`,
 );

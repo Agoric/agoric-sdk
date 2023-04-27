@@ -1,18 +1,18 @@
 - name: Download Prometheus exporter
   delegate_to: localhost
   get_url:
-    url: "https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-{{ PROM_NODE_EXPORTER_VERSION }}.linux-amd64.tar.gz"
-    dest: "/root/node_exporter{{ PROM_NODE_EXPORTER_VERSION }}.tgz"
+    url: 'https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-{{ PROM_NODE_EXPORTER_VERSION }}.linux-amd64.tar.gz'
+    dest: '/root/node_exporter{{ PROM_NODE_EXPORTER_VERSION }}.tgz'
 
 - name: Extract Prometheus exporter
   delegate_to: localhost
   unarchive:
-    src: "/root/node_exporter{{ PROM_NODE_EXPORTER_VERSION }}.tgz"
-    dest: "/root"
-    creates: "/root/node_exporter-{{ PROM_NODE_EXPORTER_VERSION }}.linux-amd64/node_exporter"
+    src: '/root/node_exporter{{ PROM_NODE_EXPORTER_VERSION }}.tgz'
+    dest: '/root'
+    creates: '/root/node_exporter-{{ PROM_NODE_EXPORTER_VERSION }}.linux-amd64/node_exporter'
 
 - name: Install Prometheus exporter
   copy:
-    src: "/root/node_exporter-{{ PROM_NODE_EXPORTER_VERSION }}.linux-amd64/node_exporter"
-    dest: "/usr/local/sbin/node_exporter"
+    src: '/root/node_exporter-{{ PROM_NODE_EXPORTER_VERSION }}.linux-amd64/node_exporter'
+    dest: '/usr/local/sbin/node_exporter'
     mode: 0755

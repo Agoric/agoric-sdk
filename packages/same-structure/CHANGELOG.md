@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.2.2...@agoric/same-structure@0.2.3) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/same-structure
+
+
+
+
+
+### [0.2.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.2.1...@agoric/same-structure@0.2.2) (2022-09-20)
+
+**Note:** Version bump only for package @agoric/same-structure
+
+
+
+
+
+### [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.2.0...@agoric/same-structure@0.2.1) (2022-05-28)
+
+**Note:** Version bump only for package @agoric/same-structure
+
+
+
+
+
+## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.31...@agoric/same-structure@0.2.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+### [0.1.31](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.30...@agoric/same-structure@0.1.31) (2022-02-24)
+
+**Note:** Version bump only for package @agoric/same-structure
+
+
+
+
+
+### [0.1.30](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.29...@agoric/same-structure@0.1.30) (2022-02-21)
+
+
+### Bug Fixes
+
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric-sdk/issues/4190)) ([fea822e](https://github.com/Agoric/agoric-sdk/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+
+
+
 ### [0.1.29](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.28...@agoric/same-structure@0.1.29) (2021-12-02)
 
 **Note:** Version bump only for package @agoric/same-structure

@@ -1,15 +1,15 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
-// noinspection ES6PreferShortImport
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -19,9 +19,8 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const makeAlice = () => {
     return {
@@ -29,7 +28,8 @@ test('zoe - mint payments', async t => {
         // pack the contract
         const bundle = await bundleSource(mintPaymentsRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-mintpayments', bundle);
+        const installationP = E(zoe).installBundleID('b1-mintpayments');
         return installationP;
       },
       startInstance: async installation => {
@@ -43,7 +43,10 @@ test('zoe - mint payments', async t => {
     return {
       offer: async untrustedInvitation => {
         const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const {
           value: [invitationValue],
@@ -89,9 +92,8 @@ test('zoe - mint payments', async t => {
 
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 
@@ -101,7 +103,8 @@ test('zoe - mint payments with unrelated give and want', async t => {
         // pack the contract
         const bundle = await bundleSource(mintPaymentsRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-mintpayments', bundle);
+        const installationP = E(zoe).installBundleID('b1-mintpayments');
         return installationP;
       },
       startInstance: async installation => {
@@ -122,7 +125,10 @@ test('zoe - mint payments with unrelated give and want', async t => {
     return {
       offer: async untrustedInvitation => {
         const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const {
           value: [invitationValue],

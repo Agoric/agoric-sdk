@@ -1,0 +1,15 @@
+{
+  "bootstrap": "bootstrap",
+  "defaultManagerType": "xs-worker",
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    },
+    "busy": {
+      "sourceSpec": "vat-busy.js"
+    },
+    "idle": {
+      "sourceSpec": "vat-idle.js"
+    }
+  }
+}

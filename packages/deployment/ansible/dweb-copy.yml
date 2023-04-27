@@ -1,6 +1,5 @@
 ---
-
-- hosts: "{{ service }}"
+- hosts: '{{ service }}'
   user: root
   strategy: free
   vars:

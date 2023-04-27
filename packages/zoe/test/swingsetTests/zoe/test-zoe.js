@@ -1,15 +1,12 @@
-// @ts-check
-
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
+import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -34,6 +31,7 @@ test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   const step2 = Date.now();
   const contractBundles = {};
+  const contractNames = [];
   await Promise.all(
     CONTRACT_FILES.map(async settings => {
       let bundleName;
@@ -46,9 +44,11 @@ test.before(async t => {
       }
       const source = `${dirname}/../../../src/contracts/${contractPath}.js`;
       const bundle = await bundleSource(source);
-      contractBundles[bundleName] = bundle;
+      contractBundles[bundleName] = { bundle };
+      contractNames.push(bundleName);
     }),
   );
+  const bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   const step3 = Date.now();
 
   const vats = {};
@@ -62,10 +62,11 @@ test.before(async t => {
   const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
     bundle: await bundleSource(bootstrapSource),
-    parameters: { contractBundles }, // argv will be added to this
+    parameters: { contractNames }, // argv will be added to this
   };
-  const config = { bootstrap: 'bootstrap', vats };
+  const config = { bootstrap: 'bootstrap', vats, bundles };
   config.defaultManagerType = 'xs-worker';
+  config.relaxDurabilityRules = true;
 
   const step4 = Date.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;
@@ -80,6 +81,7 @@ test.before(async t => {
 async function main(t, argv) {
   const { kernelBundles, config } = t.context.data;
   const controller = await buildVatController(config, argv, { kernelBundles });
+  t.teardown(controller.shutdown);
   await controller.run();
   return controller.dump();
 }
@@ -157,16 +159,15 @@ test.serial('zoe - swapForOption - valid inputs', async t => {
 const expectedSecondPriceAuctionOkLog = [
   '=> alice, bob, carol and dave are set up',
   'Carol: The offer has been accepted. Once the contract has been completed, please check your payout',
-  '@@ schedule task for:1, currently: 0 @@',
   'Bob: The offer has been accepted. Once the contract has been completed, please check your payout',
+  '@@ schedule task for:1, currently: 0 @@',
   'Dave: The offer has been accepted. Once the contract has been completed, please check your payout',
   '@@ tick:1 @@',
-  '&& running a task scheduled for 1. &&',
-  'bobMoolaPurse: balance {"brand":{},"value":1}',
   'carolMoolaPurse: balance {"brand":{},"value":0}',
+  'bobMoolaPurse: balance {"brand":{},"value":1}',
   'daveMoolaPurse: balance {"brand":{},"value":0}',
-  'bobSimoleanPurse: balance {"brand":{},"value":4}',
   'carolSimoleanPurse: balance {"brand":{},"value":7}',
+  'bobSimoleanPurse: balance {"brand":{},"value":4}',
   'daveSimoleanPurse: balance {"brand":{},"value":5}',
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
@@ -279,9 +280,9 @@ test.serial('zoe - autoswap - valid inputs', async t => {
 
 const expectedSellTicketsOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'availableTickets: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
+  'availableTickets: {"brand":{},"value":[{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'boughtTicketAmount: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
-  'after ticket1 purchased: {"brand":{},"value":[{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
+  'after ticket1 purchased: {"brand":{},"value":[{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'alice earned: {"brand":{},"value":22}',
 ];
 test.serial('zoe - sellTickets - valid inputs', async t => {

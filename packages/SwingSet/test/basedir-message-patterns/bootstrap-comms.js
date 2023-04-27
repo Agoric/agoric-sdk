@@ -1,5 +1,4 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, E } from '@endo/far';
 
 // machine names, to link vattp messages and loopbox channels
 const A = 'A';

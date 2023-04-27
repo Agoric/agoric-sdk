@@ -1,4 +1,3 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -43,11 +42,23 @@ test(`zcf.reallocate undefined`, async t => {
   const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
   const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
 
-  // @ts-ignore Deliberate wrong type for testing
+  // @ts-expect-error Deliberate wrong type for testing
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, undefined), {
+    message: / - Must be a remotable/,
+  });
+});
+
+test(`zcf.reallocate unstaged`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
+  const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
+
+  const zcfMint = await zcf.makeZCFMint('RUN');
+  const { brand } = zcfMint.getIssuerRecord();
+  const empty = AmountMath.makeEmpty(brand, AssetKind.NAT);
+  zcfSeat1.incrementBy(harden({ RUN: empty }));
+  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2), {
     message:
-      // TODO: Improve error message if something other than a seat is
-      // passed.
-      'seat has been exited',
+      'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',
   });
 });

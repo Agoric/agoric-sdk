@@ -1,7 +1,8 @@
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { M } from '@agoric/store';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
   initializeSwingset,
@@ -9,171 +10,37 @@ import {
 } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
-
-function slot0(iface, kid) {
-  return {
-    body: `{"@qclass":"slot","iface":"Alleged: ${iface}","index":0}`,
-    slots: [kid],
-  };
-}
-
-test('virtual object representatives', async t => {
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: new URL('vat-representative-bootstrap.js', import.meta.url)
-          .pathname,
-        creationOptions: {
-          virtualObjectCacheSize: 3,
-        },
-      },
-    },
-  };
-
-  const c = await buildVatController(config, []);
-  c.pinVatRoot('bootstrap');
-  const nextLog = makeNextLog(c);
-
-  await c.run();
-  t.deepEqual(c.kpResolution(c.bootstrapResult), capargs('bootstrap done'));
-
-  async function doTestA(mode, result) {
-    const r = c.queueToVatRoot(
-      'bootstrap',
-      'testA',
-      capargs([`thing${mode}`, mode]),
-    );
-    await c.run();
-    t.is(c.kpStatus(r), 'fulfilled');
-    t.deepEqual(nextLog(), []);
-    t.deepEqual(c.kpResolution(r), slot0('thing', result));
-  }
-  await doTestA(1, 'ko25');
-  await doTestA(2, 'ko26');
-
-  async function doTestB(mode, result) {
-    const r = c.queueToVatRoot(
-      'bootstrap',
-      'testB',
-      capargs([`thing${mode}`, mode]),
-    );
-    await c.run();
-    t.is(c.kpStatus(r), 'fulfilled');
-    t.deepEqual(nextLog(), [
-      `test${mode} thing.name before rename "thing${mode}"`,
-      `test${mode} initialSelf.name before rename "thing${mode}"`,
-      `test${mode} thing.name after rename "thing${mode} modified"`,
-      `test${mode} initialSelf.name after rename "thing${mode} modified"`,
-    ]);
-    t.deepEqual(c.kpResolution(r), slot0('thing', result));
-  }
-  await doTestB(3, 'ko27');
-  await doTestB(4, 'ko28');
-  await doTestB(5, 'ko29');
-  await doTestB(6, 'ko30');
-
-  async function doTestC(mode) {
-    const r = c.queueToVatRoot(
-      'bootstrap',
-      'testC',
-      capargs([`thing${mode}`, mode]),
-    );
-    await c.run();
-    t.is(c.kpStatus(r), 'fulfilled');
-    t.deepEqual(nextLog(), [`test${mode} result is "47"`]);
-  }
-  await doTestC(7);
-  await doTestC(8);
-  await doTestC(9);
-  await doTestC(10);
-
-  async function doTestD(mode) {
-    const r = c.queueToVatRoot(
-      'bootstrap',
-      'testD',
-      capargs([`thing${mode}`, mode]),
-    );
-    await c.run();
-    t.is(c.kpStatus(r), 'fulfilled');
-    t.deepEqual(nextLog(), [`test${mode} result is "thing${mode}"`]);
-  }
-  await doTestD(11);
-  await doTestD(12);
-
-  async function doTestE(mode) {
-    const r = c.queueToVatRoot(
-      'bootstrap',
-      'testE',
-      capargs([`thing${mode}`, mode]),
-    );
-    await c.run();
-    t.is(c.kpStatus(r), 'fulfilled');
-    t.deepEqual(nextLog(), [`test${mode} result is "thing${mode} modified"`]);
-  }
-  await doTestE(13);
-  await doTestE(14);
-  await doTestE(15);
-  await doTestE(16);
-  await doTestE(17);
-  await doTestE(18);
-  await doTestE(19);
-  await doTestE(20);
-
-  const rz1 = c.queueToVatRoot(
-    'bootstrap',
-    'testCacheOverflow',
-    capargs([`zot1`, false]),
-  );
-  await c.run();
-  t.is(c.kpStatus(rz1), 'fulfilled');
-  t.deepEqual(nextLog(), []);
-  t.deepEqual(c.kpResolution(rz1), slot0('zot', 'ko31'));
-
-  const rz2 = c.queueToVatRoot(
-    'bootstrap',
-    'testCacheOverflow',
-    capargs([`zot2`, true]),
-  );
-  await c.run();
-  t.is(c.kpStatus(rz2), 'fulfilled');
-  t.deepEqual(nextLog(), [
-    'testCacheOverflow catches Error: cache overflowed with objects being initialized',
-  ]);
-  t.deepEqual(c.kpResolution(rz2), capdata('"overflow"'));
-});
+import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
+import { vstr } from '../util.js';
 
 test.serial('exercise cache', async t => {
   const config = {
-    bootstrap: 'bootstrap',
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType: 'xs-worker', // for stability against GC
+    defaultReapInterval: 1, // for explicitness (kernel defaults to 1 anyways)
+    // no bootstrap, to remove bootstrap(vats), to remove noise of GC drops
+    // bootstrap: 'bootstrap',
     vats: {
-      bootstrap: {
-        sourceSpec: new URL('vat-representative-bootstrap.js', import.meta.url)
-          .pathname,
-        creationOptions: {
-          virtualObjectCacheSize: 3,
-        },
+      representatives: {
+        sourceSpec: new URL('vat-representatives.js', import.meta.url).pathname,
       },
     },
   };
 
   const log = [];
 
-  const hostStorage = provideHostStorage();
-  const kvStore = hostStorage.kvStore;
+  let vatID; // set after initialization finishes
+  const kernelStorage = initSwingStore().kernelStorage;
+  const kvStore = kernelStorage.kvStore;
   function vsKey(key) {
-    return key.match(/^\w+\.vs\./);
+    // ignore everything except vatStores on the one vat under test
+    // (especially ignore comms, which performs vatstore operations during
+    // startup)
+    return vatID && key.startsWith(`${vatID}.`) && key.match(/^\w+\.vs\./);
   }
   const loggingKVStore = {
     has: key => kvStore.has(key),
-    getKeys: (start, end) => kvStore.getKeys(start, end),
     get(key) {
       const result = kvStore.get(key);
       if (vsKey(key)) {
@@ -181,6 +48,7 @@ test.serial('exercise cache', async t => {
       }
       return result;
     },
+    getNextKey: priorKey => kvStore.getNextKey(priorKey),
     set(key, value) {
       if (vsKey(key)) {
         log.push(['set', key, value]);
@@ -194,37 +62,26 @@ test.serial('exercise cache', async t => {
       kvStore.delete(key);
     },
   };
-  const loggingHostStorage = {
-    ...hostStorage,
+  const loggingKernelStorage = {
+    ...kernelStorage,
     kvStore: loggingKVStore,
   };
-
-  const bootstrapResult = await initializeSwingset(
-    config,
-    [],
-    loggingHostStorage,
-  );
-  const c = await makeSwingsetController(loggingHostStorage, {});
-  c.pinVatRoot('bootstrap');
+  // TODO: it'd be nice to { addVatAdmin: false } too, but kernel is stubborn
+  const initOpts = { addComms: false, addVattp: false, addTimer: false };
+  await initializeSwingset(config, [], loggingKernelStorage, initOpts);
+  const c = await makeSwingsetController(loggingKernelStorage, {});
+  t.teardown(c.shutdown);
+  c.pinVatRoot('representatives');
+  vatID = c.vatNameToID('representatives');
 
   const nextLog = makeNextLog(c);
 
-  await c.run();
-  t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));
-
   async function doSimple(method, what, ...args) {
-    let sendArgs;
+    let sendArgs = args;
     if (what) {
-      const whatArg = {
-        '@qclass': 'slot',
-        iface: 'Alleged: thing',
-        index: 0,
-      };
-      sendArgs = capargs([whatArg, ...args], [what]);
-    } else {
-      sendArgs = capargs(args);
+      sendArgs = [kslot(what, 'thing'), ...args];
     }
-    const r = c.queueToVatRoot('bootstrap', method, sendArgs);
+    const r = c.queueToVatRoot('representatives', method, sendArgs, 'ignore');
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
@@ -234,16 +91,16 @@ test.serial('exercise cache', async t => {
   async function make(name, holdIt, expect) {
     const r = await doSimple('makeThing', null, name, holdIt);
     const result = c.kpResolution(r);
-    t.deepEqual(result, slot0('thing', expect));
+    t.deepEqual(result, kser(kslot(expect, 'thing')));
     return result.slots[0];
   }
   async function read(what, expect) {
     const r = await doSimple('readThing', what);
-    t.deepEqual(c.kpResolution(r), capargs(expect));
+    t.deepEqual(c.kpResolution(r), kser(expect));
   }
   async function readHeld(expect) {
     const r = await doSimple('readHeldThing', null);
-    t.deepEqual(c.kpResolution(r), capargs(expect));
+    t.deepEqual(c.kpResolution(r), kser(expect));
   }
   async function write(what, newName) {
     await doSimple('writeThing', what, newName);
@@ -258,157 +115,266 @@ test.serial('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function dataKey(num) {
-    return `v1.vs.vom.o+1/${num}`;
+    return `${vatID}.vs.vom.o+v10/${num}`;
   }
   function esKey(num) {
-    return `v1.vs.vom.es.o+1/${num}`;
+    return `${vatID}.vs.vom.es.o+v10/${num}`;
   }
   function rcKey(num) {
-    return `v1.vs.vom.rc.o+1/${num}`;
+    return `${vatID}.vs.vom.rc.o+v10/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
-      name: capdata(JSON.stringify(name)),
+      name: kser(name),
     });
   }
 
+  function ck(...stuff) {
+    t.deepEqual(log.shift(), [...stuff]);
+  }
+
+  function done() {
+    t.deepEqual(log, []);
+  }
+
   // expected kernel object ID allocations
-  const T1 = 'ko25';
-  const T2 = 'ko26';
-  const T3 = 'ko27';
-  const T4 = 'ko28';
-  const T5 = 'ko29';
-  const T6 = 'ko30';
-  const T7 = 'ko31';
-  const T8 = 'ko32';
+  const T1 = 'ko22';
+  const T2 = 'ko23';
+  const T3 = 'ko24';
+  const T4 = 'ko25';
+  const T5 = 'ko26';
+  const T6 = 'ko27';
+  const T7 = 'ko28';
+  const T8 = 'ko29';
 
-  // init cache - []
-  await make('thing1', true, T1); // make t1 - [t1]
-  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-50', undefined]);
-  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-51', undefined]);
-  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-52', undefined]);
-  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-53', undefined]);
-  t.deepEqual(log.shift(), ['set', esKey(1), '1']);
-  t.deepEqual(log, []);
+  await c.run();
+  log.length = 0; // assume all the irrelevant setup stuff worked correctly
 
-  await make('thing2', false, T2); // make t2 - [t2 t1]
-  t.deepEqual(log.shift(), ['set', esKey(2), '1']);
-  t.deepEqual(log, []);
+  // note: defaultReapInterval=1, so every operation is followed by a
+  // BOYD. We aren't asserting the separation between the vatstore
+  // get/sets that happen during the real operation and during the
+  // subsequent BOYD, but we'll annotate them here for clarity. Also
+  // note that this test was more important back when we had a cache
+  // that spanned multiple cranks, whereas the current implementation
+  // is explicitly flushed at the end of every delivery.
 
-  await read(T1, 'thing1'); // refresh t1 - [t1 t2]
-  await read(T2, 'thing2'); // refresh t2 - [t2 t1]
-  await readHeld('thing1'); // refresh t1 - [t1 t2]
+  // thing1 is exported (so rs get/set)
+  await make('thing1', true, T1);
+  ck('get', esKey(1), undefined);
+  ck('set', esKey(1), 'r');
+  // end-of-crank:
+  ck('set', dataKey(1), thingVal('thing1'));
+  // BOYD: the Representative is held in RAM, no extra queries
+  done();
 
-  await make('thing3', false, T3); // make t3 - [t3 t1 t2]
-  t.deepEqual(log.shift(), ['set', esKey(3), '1']);
-  t.deepEqual(log, []);
+  await make('thing2', false, T2);
+  ck('get', esKey(2), undefined);
+  ck('set', esKey(2), 'r');
+  // end-of-crank:
+  ck('set', dataKey(2), thingVal('thing2'));
+  // BOYD: thing2 is not held, so the Representative drops, causing
+  // extra rc/es queries to decide whether to delete or not
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
 
-  await make('thing4', false, T4); // make t4 - [t4 t3 t1 t2]
-  t.deepEqual(log.shift(), ['set', esKey(4), '1']);
-  t.deepEqual(log, []);
+  await read(T1, 'thing1'); // still in RAM
+  // T1 was in RAM, so no new representative was needed, but creating
+  // a Representative wouldn't cause a data read. However invoking a
+  // method *does* require a data read, one per crank
+  ck('get', dataKey(1), thingVal('thing1'));
+  // end-of-crank: (none)
+  // BOYD: (none): thing1 is held, no extra queries
+  done();
 
-  await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
-  t.deepEqual(log.shift(), ['set', dataKey(2), thingVal('thing2')]);
-  t.deepEqual(log.shift(), ['set', esKey(5), '1']);
-  t.deepEqual(log.shift(), ['get', rcKey(2), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(2), '1']);
-  t.deepEqual(log, []);
+  await read(T2, 'thing2'); // reanimated
+  // T2 was not in RAM, so reanimateVO() makes a new Representative,
+  // but that doesn't cause a data read. But invoking a method does.
+  ck('get', dataKey(2), thingVal('thing2'));
+  // end-of-crank: (none)
+  // BOYD: thing2 is dropped, so extra queries
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
 
-  await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
-  t.deepEqual(log.shift(), ['set', dataKey(1), thingVal('thing1')]);
-  t.deepEqual(log.shift(), ['set', esKey(6), '1']);
-  t.deepEqual(log, []);
+  await readHeld('thing1'); // still in RAM
+  // same story: one data read per crank when a method is invoked
+  ck('get', dataKey(1), thingVal('thing1'));
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
 
-  await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
-  t.deepEqual(log.shift(), ['set', dataKey(3), thingVal('thing3')]);
-  t.deepEqual(log.shift(), ['set', esKey(7), '1']);
-  t.deepEqual(log.shift(), ['get', rcKey(3), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(3), '1']);
-  t.deepEqual(log, []);
+  await make('thing3', false, T3);
+  ck('get', esKey(3), undefined);
+  ck('set', esKey(3), 'r');
+  // end-of-crank: write T3 data
+  ck('set', dataKey(3), thingVal('thing3'));
+  // BOYD: T3 Representative dropped
+  ck('get', rcKey(3), undefined);
+  ck('get', esKey(3), 'r');
+  done();
 
-  await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
-  t.deepEqual(log.shift(), ['set', dataKey(4), thingVal('thing4')]);
-  t.deepEqual(log.shift(), ['set', esKey(8), '1']);
-  t.deepEqual(log.shift(), ['get', rcKey(4), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(4), '1']);
-  t.deepEqual(log, []);
+  await make('thing4', false, T4);
+  ck('get', esKey(4), undefined);
+  ck('set', esKey(4), 'r');
+  // end-of-crank: write T4 data
+  ck('set', dataKey(4), thingVal('thing4'));
+  // BOYD: T4 Representative dropped
+  ck('get', rcKey(4), undefined);
+  ck('get', esKey(4), 'r');
+  done();
 
-  await read(T2, 'thing2'); // reanimate t2, evict t5 - [t2 t8 t7 t6]
-  t.deepEqual(log.shift(), ['get', dataKey(2), thingVal('thing2')]);
-  t.deepEqual(log.shift(), ['set', dataKey(5), thingVal('thing5')]);
-  t.deepEqual(log.shift(), ['get', rcKey(5), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(5), '1']);
-  t.deepEqual(log, []);
+  await make('thing5', false, T5);
+  ck('get', esKey(5), undefined);
+  ck('set', esKey(5), 'r');
+  // end-of-crank: write T5 data
+  ck('set', dataKey(5), thingVal('thing5'));
+  // BOYD: T5 Representative dropped
+  ck('get', rcKey(5), undefined);
+  ck('get', esKey(5), 'r');
+  done();
 
-  await readHeld('thing1'); // reanimate t1, evict t6 - [t1 t2 t8 t7]
-  t.deepEqual(log.shift(), ['get', dataKey(1), thingVal('thing1')]);
-  t.deepEqual(log.shift(), ['set', dataKey(6), thingVal('thing6')]);
-  t.deepEqual(log.shift(), ['get', rcKey(6), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(6), '1']);
-  t.deepEqual(log, []);
+  await make('thing6', false, T6);
+  ck('get', esKey(6), undefined);
+  ck('set', esKey(6), 'r');
+  // end-of-crank: write T6 data
+  ck('set', dataKey(6), thingVal('thing6'));
+  // BOYD: T6 Representative dropped
+  ck('get', rcKey(6), undefined);
+  ck('get', esKey(6), 'r');
+  done();
 
-  await write(T2, 'thing2 updated'); // refresh t2 - [t2 t1 t8 t7]
-  await writeHeld('thing1 updated'); // refresh t1 - [t1 t2 t8 t7]
+  await make('thing7', false, T7);
+  ck('get', esKey(7), undefined);
+  ck('set', esKey(7), 'r');
+  // end-of-crank: write T7 data
+  ck('set', dataKey(7), thingVal('thing7'));
+  // BOYD: T7 Representative dropped
+  ck('get', rcKey(7), undefined);
+  ck('get', esKey(7), 'r');
+  done();
 
-  await read(T8, 'thing8'); // refresh t8 - [t8 t1 t2 t7]
-  await read(T7, 'thing7'); // refresh t7 - [t7 t8 t1 t2]
-  t.deepEqual(log, []);
+  await make('thing8', false, T8);
+  ck('get', esKey(8), undefined);
+  ck('set', esKey(8), 'r');
+  // end-of-crank: write T8 data
+  ck('set', dataKey(8), thingVal('thing8'));
+  // BOYD: T8 Representative dropped
+  ck('get', rcKey(8), undefined);
+  ck('get', esKey(8), 'r');
+  done();
 
-  await read(T6, 'thing6'); // reanimate t6, evict t2 - [t6 t7 t8 t1]
-  t.deepEqual(log.shift(), ['get', dataKey(6), thingVal('thing6')]);
-  t.deepEqual(log.shift(), ['set', dataKey(2), thingVal('thing2 updated')]);
-  t.deepEqual(log.shift(), ['get', rcKey(2), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(2), '1']);
-  t.deepEqual(log, []);
+  await read(T2, 'thing2'); // reanimate t2
+  ck('get', dataKey(2), thingVal('thing2'));
+  // end-of-crank: (none)
+  // BOYD: T2 Representative dropped
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
 
-  await read(T5, 'thing5'); // reanimate t5, evict t1 - [t5 t6 t7 t8]
-  t.deepEqual(log.shift(), ['get', dataKey(5), thingVal('thing5')]);
-  t.deepEqual(log.shift(), ['set', dataKey(1), thingVal('thing1 updated')]);
-  t.deepEqual(log, []);
+  await readHeld('thing1'); // still in RAM
+  ck('get', dataKey(1), thingVal('thing1'));
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
 
-  await read(T4, 'thing4'); // reanimate t4, evict t8 - [t4 t5 t6 t7]
-  t.deepEqual(log.shift(), ['get', dataKey(4), thingVal('thing4')]);
-  t.deepEqual(log.shift(), ['set', dataKey(8), thingVal('thing8')]);
-  t.deepEqual(log, []);
+  await write(T2, 'thing2 updated'); // reanimated
+  ck('get', dataKey(2), thingVal('thing2'));
+  // end-of-crank: flush T2
+  ck('set', dataKey(2), thingVal('thing2 updated'));
+  // BOYD: T2 Representative dropped
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
 
-  await read(T3, 'thing3'); // reanimate t3, evict t7 - [t3 t4 t5 t6]
-  t.deepEqual(log.shift(), ['get', dataKey(3), thingVal('thing3')]);
-  t.deepEqual(log.shift(), ['set', dataKey(7), thingVal('thing7')]);
-  t.deepEqual(log.shift(), ['get', rcKey(7), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(7), '1']);
-  t.deepEqual(log, []);
+  await writeHeld('thing1 updated'); // still in RAM
+  ck('get', dataKey(1), thingVal('thing1')); // but data is not
+  // end-of-crank: flush T1
+  ck('set', dataKey(1), thingVal('thing1 updated'));
+  // BOYD: (none)
+  done();
 
-  await read(T2, 'thing2 updated'); // reanimate t2, evict t6 - [t2 t3 t4 t5]
-  t.deepEqual(log.shift(), ['get', dataKey(2), thingVal('thing2 updated')]);
-  t.deepEqual(log.shift(), ['get', rcKey(6), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(6), '1']);
-  t.deepEqual(log, []);
+  await read(T8, 'thing8'); // reanimated T8
+  ck('get', dataKey(8), thingVal('thing8'));
+  // end-of-crank: (none)
+  // BOYD: T8 Representative dropped
+  ck('get', rcKey(8), undefined);
+  ck('get', esKey(8), 'r');
+  done();
 
-  await readHeld('thing1 updated'); // reanimate t1, evict t5 - [t1 t2 t3 t4]
-  t.deepEqual(log.shift(), ['get', dataKey(1), thingVal('thing1 updated')]);
-  t.deepEqual(log.shift(), ['get', rcKey(5), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(5), '1']);
-  t.deepEqual(log, []);
+  await read(T6, 'thing6'); // reanimate t6
+  ck('get', dataKey(6), thingVal('thing6'));
+  // end-of-crank: (none)
+  // BOYD: T6 Representative dropped
+  ck('get', rcKey(6), undefined);
+  ck('get', esKey(6), 'r');
+  done();
 
-  await forgetHeld(); // cache unchanged - [t1 t2 t3 t4]
-  t.deepEqual(log.shift(), ['get', rcKey(1), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(1), '1']);
-  t.deepEqual(log, []);
+  await read(T5, 'thing5'); // reanimate t5
+  ck('get', dataKey(5), thingVal('thing5'));
+  // end-of-crank: (none)
+  // BOYD: T5 Representative dropped
+  ck('get', rcKey(5), undefined);
+  ck('get', esKey(5), 'r');
+  done();
 
-  await hold(T8); // cache unchanged - [t1 t2 t3 t4]
-  t.deepEqual(log.shift(), ['get', rcKey(4), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(4), '1']);
-  t.deepEqual(log, []);
+  await read(T4, 'thing4'); // reanimate t4
+  ck('get', dataKey(4), thingVal('thing4'));
+  // end-of-crank: (none)
+  // BOYD: T4 Representative dropped
+  ck('get', rcKey(4), undefined);
+  ck('get', esKey(4), 'r');
+  done();
 
-  await read(T7, 'thing7'); // reanimate t7, evict t4 - [t7 t1 t2 t3]
-  t.deepEqual(log.shift(), ['get', dataKey(7), thingVal('thing7')]);
-  t.deepEqual(log.shift(), ['get', rcKey(3), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(3), '1']);
-  t.deepEqual(log, []);
+  await read(T3, 'thing3'); // reanimate t3
+  ck('get', dataKey(3), thingVal('thing3'));
+  // end-of-crank: (none)
+  // BOYD: T3 Representative dropped
+  ck('get', rcKey(3), undefined);
+  ck('get', esKey(3), 'r');
+  done();
 
-  await writeHeld('thing8 updated'); // reanimate t8, evict t3 - [t8 t7 t1 t2]
-  t.deepEqual(log.shift(), ['get', dataKey(8), thingVal('thing8')]);
-  t.deepEqual(log, []);
+  await read(T2, 'thing2 updated'); // reanimate t2
+  ck('get', dataKey(2), thingVal('thing2 updated'));
+  // end-of-crank: (none)
+  // BOYD: T2 Representative dropped
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
+
+  await readHeld('thing1 updated'); // reanimate t1
+  ck('get', dataKey(1), thingVal('thing1 updated'));
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
+
+  await forgetHeld();
+  // end-of-crank: (none)
+  // BOYD: T1 Representative dropped
+  ck('get', rcKey(1), undefined);
+  ck('get', esKey(1), 'r');
+  done();
+
+  await hold(T8); // reanimate T8, add to RAM
+  // we don't invoke any methods, so we don't need its data
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
+
+  await read(T7, 'thing7'); // reanimate t7
+  ck('get', dataKey(7), thingVal('thing7'));
+  // end-of-crank: (none)
+  // BOYD: T7 Representative dropped
+  ck('get', rcKey(7), undefined);
+  ck('get', esKey(7), 'r');
+  done();
+
+  await writeHeld('thing8 updated'); // T8 already in RAM
+  ck('get', dataKey(8), thingVal('thing8'));
+  // end-of-crank: flush T8 data
+  ck('set', dataKey(8), thingVal('thing8 updated'));
+  // BOYD: (none, T8 stays in RAM)
+  done();
 });
 
 test('virtual object gc', async t => {
@@ -449,15 +415,14 @@ test('virtual object gc', async t => {
     where they were originally stashed on creation
   */
 
+  /** @type {SwingSetConfig} */
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',
     vats: {
       bob: {
         sourceSpec: new URL('vat-vom-gc-bob.js', import.meta.url).pathname,
-        creationOptions: {
-          virtualObjectCacheSize: 3,
-        },
       },
       bootstrap: {
         sourceSpec: new URL('vat-vom-gc-bootstrap.js', import.meta.url)
@@ -466,25 +431,48 @@ test('virtual object gc', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  const c = await buildVatController(config, [], { hostStorage });
+  const c = await buildVatController(config, [], { kernelStorage });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   await c.run();
-  t.deepEqual(
-    c.kpResolution(c.bootstrapResult),
-    capargs({ '@qclass': 'undefined' }),
-  );
+  t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
+  const v = 'v6';
   const remainingVOs = {};
-  for (const key of hostStorage.kvStore.getKeys('v1.vs.', 'v1.vs/')) {
-    remainingVOs[key] = hostStorage.kvStore.get(key);
+  for (const key of enumeratePrefixedKeys(kernelStorage.kvStore, `${v}.vs.`)) {
+    remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
+  // prettier-ignore
   t.deepEqual(remainingVOs, {
-    'v1.vs.vom.es.o+1/3': '1',
-    'v1.vs.vom.o+1/2': '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
-    'v1.vs.vom.o+1/3': '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
-    'v1.vs.vom.o+1/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
-    'v1.vs.vom.o+1/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
+    [`${v}.vs.baggageID`]: 'o+d6/1',
+    [`${v}.vs.idCounters`]: '{"exportID":11,"collectionID":5,"promiseID":8}',
+    [`${v}.vs.kindIDID`]: '1',
+    [`${v}.vs.storeKindIDTable`]:
+      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
+    [`${v}.vs.vc.1.|entryCount`]: '0',
+    [`${v}.vs.vc.1.|nextOrdinal`]: '1',
+    [`${v}.vs.vc.1.|schemata`]: vstr({ label: 'baggage', keyShape: M.string() }),
+    [`${v}.vs.vc.2.|entryCount`]: '0',
+    [`${v}.vs.vc.2.|nextOrdinal`]: '1',
+    [`${v}.vs.vc.2.|schemata`]: vstr({ label: 'promiseRegistrations', keyShape: M.scalar() }),
+    [`${v}.vs.vc.3.|entryCount`]: '0',
+    [`${v}.vs.vc.3.|nextOrdinal`]: '1',
+    [`${v}.vs.vc.3.|schemata`]: vstr({ label: 'promiseWatcherByKind', keyShape: M.scalar() }),
+    [`${v}.vs.vc.4.|entryCount`]: '0',
+    [`${v}.vs.vc.4.|nextOrdinal`]: '1',
+    [`${v}.vs.vc.4.|schemata`]: vstr({ label: 'watchedPromises', keyShape: M.and(M.scalar(), M.string()) }),
+    [`${v}.vs.vom.es.o+v10/3`]: 'r',
+    [`${v}.vs.vom.o+v10/2`]: `{"label":${vstr('thing #2')}}`,
+    [`${v}.vs.vom.o+v10/3`]: `{"label":${vstr('thing #3')}}`,
+    [`${v}.vs.vom.o+v10/8`]: `{"label":${vstr('thing #8')}}`,
+    [`${v}.vs.vom.o+v10/9`]: `{"label":${vstr('thing #9')}}`,
+    [`${v}.vs.vom.rc.o+d6/1`]: '1',
+    [`${v}.vs.vom.rc.o+d6/3`]: '1',
+    [`${v}.vs.vom.rc.o+d6/4`]: '1',
+    [`${v}.vs.vom.vkind.10.descriptor`]: '{"kindID":"10","tag":"thing"}',
+    [`${v}.vs.watchedPromiseTableID`]: 'o+d6/4',
+    [`${v}.vs.watcherTableID`]: 'o+d6/3',
   });
 });

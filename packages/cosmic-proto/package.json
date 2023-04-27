@@ -1,0 +1,59 @@
+{
+  "name": "@agoric/cosmic-proto",
+  "version": "0.2.1",
+  "description": "Protobuf stubs for the Agoric cosmos-sdk module",
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/Agoric/agoric-sdk/tree/HEAD/packages/cosmic-proto#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./swingset/msgs.js": {
+      "types": "./dist/agoric/swingset/msgs.d.ts",
+      "default": "./dist/agoric/swingset/msgs.js"
+    },
+    "./swingset/query.js": {
+      "types": "./dist/agoric/swingset/query.d.ts",
+      "default": "./dist/agoric/swingset/query.js"
+    },
+    "./swingset/swingset.js": {
+      "types": "./dist/agoric/swingset/swingset.d.ts",
+      "default": "./dist/agoric/swingset/swingset.js"
+    }
+  },
+  "scripts": {
+    "build": "echo Use yarn rebuild to update dist output",
+    "rebuild": "rm -rf gen && mkdir -p gen && yarn generate && tsc --build && yarn prettier -w dist/agoric && rm -rf gen",
+    "generate": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=messages' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
+    "test": "node test/sanity-test.js",
+    "test:xs": "exit 0",
+    "lint": "exit 0",
+    "lint-fix": "exit 0"
+  },
+  "dependencies": {
+    "protobufjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "ts-proto": "^1.131.0"
+  },
+  "files": [
+    "dist",
+    "LICENSE*",
+    "swingset"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
+}

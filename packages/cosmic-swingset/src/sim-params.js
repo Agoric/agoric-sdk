@@ -1,9 +1,18 @@
-import { Nat } from '@agoric/nat';
+// @jessie-check
+
+import { Nat } from '@endo/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
+const makePowerFlagFee = (powerFlag, fee) => ({ powerFlag, fee });
+const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
+/**
+ * @param {string} key
+ * @param {number} size
+ */
+const makeQueueSize = (key, size) => ({ key, size });
 
 // This should roughly match the values in
-// `agoric-sdk/golang/cosmos/x/swingset/types/sim-params.go`.
+// `agoric-sdk/golang/cosmos/x/swingset/types/default-params.go`.
 //
 // Nothing bad happens if they diverge, but it makes for a truer simulation
 // experience if they don't.
@@ -29,13 +38,16 @@ export const defaultBeansPerBlockComputeLimit =
 export const defaultBeansPerVatCreation =
   300_000n * defaultBeansPerXsnapComputron;
 
-// Fees are denominated in units of $1 RUN.
-export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // $1
+// Fees are denominated in this unit.
+export const defaultFeeUnitPrice = [makeCoin('uist', 1_000_000n)]; // $1
 
-export const defaultBeansPerInboundTx = defaultBeansPerFeeUnit / 100_000n; // $0.00001
-export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000_000n; // $0.000001
-export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000_000n; // $0.0000002
-export const defaultBeansPerMinFeeDebit = defaultBeansPerFeeUnit / 4n; // $0.25
+// TODO: create the cost model we want, and update these to be more principled.
+// These defaults currently make deploying an ag-solo cost less than $1.00.
+export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // $1
+export const defaultBeansPerInboundTx = defaultBeansPerFeeUnit / 100n; // $0.01
+export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000n; // $0.001
+export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000n; // $0.0002
+export const defaultBeansPerMinFeeDebit = defaultBeansPerFeeUnit / 5n; // $0.2
 
 export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerFeeUnit, defaultBeansPerFeeUnit),
@@ -48,14 +60,24 @@ export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
 ];
 
-export const defaultFeeUnitPrice = [
-  {
-    denom: 'urun',
-    amount: '1000000',
-  },
+const defaultBootstrapVatConfig = '@agoric/vats/decentral-demo-config.json';
+
+export const defaultPowerFlagFees = [
+  makePowerFlagFee('SMART_WALLET', [makeCoin('ubld', 10_000_000n)]),
+];
+
+export const QueueInbound = 'inbound';
+
+export const defaultInboundQueueMax = 1_000;
+
+export const defaultQueueMax = [
+  makeQueueSize(QueueInbound, defaultInboundQueueMax),
 ];
 
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
   fee_unit_price: defaultFeeUnitPrice,
+  bootstrap_vat_config: defaultBootstrapVatConfig,
+  power_flag_fees: defaultPowerFlagFees,
+  queue_max: defaultQueueMax,
 };

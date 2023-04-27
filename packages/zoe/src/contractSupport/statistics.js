@@ -1,8 +1,8 @@
 /**
  * @template T
- * @typedef {Object} TypedMath
+ * @typedef {object} TypedMath
  * @property {(a: T, b: T) => T} add
- * @property {(a: T, b: T) => T} divide
+ * @property {(a: T, b: bigint) => T} divide
  * @property {(a: T, b: T) => boolean} isGTE
  */
 
@@ -12,7 +12,7 @@
  * @template T
  * @param {Array<T>} samples the input measurements
  * @param {TypedMath<T>} math
- * @returns {T=} the median (undefined if no samples)
+ * @returns {T | undefined} the median (undefined if no samples)
  */
 export const calculateMedian = (samples, math) => {
   const sorted = samples.sort((a, b) => {
@@ -37,5 +37,5 @@ export const calculateMedian = (samples, math) => {
   // Even length, take the mean of the two middle values.
   const secondIndex = sorted.length / 2;
   const sum = math.add(sorted[secondIndex - 1], sorted[secondIndex]);
-  return math.divide(sum, 2);
+  return math.divide(sum, 2n);
 };

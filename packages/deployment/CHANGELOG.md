@@ -3,6 +3,121 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.4.0...@agoric/deployment@2.5.0) (2022-10-05)
+
+
+### Features
+
+* **telemetry:** Support slog sender in subprocess ([9fa268f](https://github.com/Agoric/agoric-sdk/commit/9fa268fc9b59d9fb26d829300d7a9d5a768e47bc))
+
+
+
+## [2.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.3.1...@agoric/deployment@2.4.0) (2022-09-20)
+
+
+### Features
+
+* **cosmic-swingset:** Add heap snapshots ([42e43bc](https://github.com/Agoric/agoric-sdk/commit/42e43bce417a7538aa7bc6ed59320dfef45c1adb))
+* add env to keep old snapshots on disk ([96e1077](https://github.com/Agoric/agoric-sdk/commit/96e1077683c64ff0c66fdfaa3993043006c8f368))
+* use random snapshot memory init in integration test ([5c99976](https://github.com/Agoric/agoric-sdk/commit/5c999761e5cd0061f7eee483fcade290f98732c9))
+* **telemetry:** `otel-and-flight-recorder.js` for the best of both ([a191b34](https://github.com/Agoric/agoric-sdk/commit/a191b34bd6a4b14f7280b0886fcfd44b5a42b6b5))
+
+
+### Bug Fixes
+
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **deployment:** `unsafe-reset-all` is a subcommand of `tendermint` ([deeb345](https://github.com/Agoric/agoric-sdk/commit/deeb3458ef3b19d771b574e0821dc1eec425b217))
+* **deployment:** drive-by upgrade to Node.js 16 ([68ff922](https://github.com/Agoric/agoric-sdk/commit/68ff92257800022749494e169d62cffeaf1b53a7))
+
+
+
+### [2.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.3.0...@agoric/deployment@2.3.1) (2022-05-28)
+
+
+### Bug Fixes
+
+* **deployment:** Do not override explicit faucet SOLO_COINS ([#5360](https://github.com/Agoric/agoric-sdk/issues/5360)) ([70fa390](https://github.com/Agoric/agoric-sdk/commit/70fa3908dde52a79658b5ef8f58c17406a030ed3))
+* **vats:** make core config location independent ([9612d59](https://github.com/Agoric/agoric-sdk/commit/9612d591a4c58cf447f46e085f81dd0762b46d4a))
+
+
+
+## [2.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.2.1...@agoric/deployment@2.3.0) (2022-05-09)
+
+
+### Features
+
+* **deployment:** Add script to run integration test locally ([e0d366a](https://github.com/Agoric/agoric-sdk/commit/e0d366a3c1445d73db55141deac5bcbb8ce0da2e))
+* **deployment:** integration: record xsnap and swingStore traces ([fa669e0](https://github.com/Agoric/agoric-sdk/commit/fa669e05c98a42ca647e1603c9ba1e95bec42769))
+* **dockerfile:** include otel collector ([6f5e686](https://github.com/Agoric/agoric-sdk/commit/6f5e68604409b87592b7d810e0f412a5571d5459))
+
+
+### Bug Fixes
+
+* **deployment:** default `faucet-helper.sh` to `show-rpcaddrs` ([352f6a6](https://github.com/Agoric/agoric-sdk/commit/352f6a63d31a629aa88de860916b65801ce71513))
+* **deployment:** disable swingstore consistency check ([#5323](https://github.com/Agoric/agoric-sdk/issues/5323)) ([e9dc159](https://github.com/Agoric/agoric-sdk/commit/e9dc1592e2aa7b6d907c9e7bf63e0ff1b46af1d0))
+* **deployment:** give out some tokens to new clients ([847da8d](https://github.com/Agoric/agoric-sdk/commit/847da8d6f35a31525923cf18ca789c8b367ad943))
+* **deployment:** handle aarch64 and arm64 ([75965ee](https://github.com/Agoric/agoric-sdk/commit/75965ee3ba8e4ef42b55a710cc743ea8a874c4ef))
+* **deployment:** Install ansible for current os ([4b5940f](https://github.com/Agoric/agoric-sdk/commit/4b5940f5474b0b7ce3fe0ab07f5dd75b0f40b58a))
+* **deployment:** Update CI script ([#5322](https://github.com/Agoric/agoric-sdk/issues/5322)) ([efbbf54](https://github.com/Agoric/agoric-sdk/commit/efbbf54ec53e064e1038fd678fca9e88c083f312))
+* **faucet-helper:** use published network config ([72b0a81](https://github.com/Agoric/agoric-sdk/commit/72b0a819c04613c510fe8b08b934cc8801aca551))
+
+
+
+### [2.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.2.0...@agoric/deployment@2.2.1) (2022-04-18)
+
+
+### Bug Fixes
+
+* **deployment:** correct `cosmos-delegates.txt` discrepency ([e402593](https://github.com/Agoric/agoric-sdk/commit/e40259330bbde2efd74af55f1830e27fea02dd12))
+* **deployment:** correct quoting in `faucet-helper.sh` ([7d58ad8](https://github.com/Agoric/agoric-sdk/commit/7d58ad831652baff4ca35f0694279da0330a29ad))
+* **deployment:** faucet-helper add-egress ([27aca53](https://github.com/Agoric/agoric-sdk/commit/27aca53509ba6b88911e2c1d2de6e9b1a5a305fd))
+* **docker:** increase network timeout ([57d6504](https://github.com/Agoric/agoric-sdk/commit/57d6504ba19815442832ed16d1fdfe3a6bd5ba14))
+* **dockerfile:** add terrible retry logic for yarn install on failure ([9e8e9c4](https://github.com/Agoric/agoric-sdk/commit/9e8e9c49f868ed9a414a0b1fc4e9709c31763c31))
+
+
+
+## [2.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.1.0...@agoric/deployment@2.2.0) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+
+
+
+## [2.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.0.0...@agoric/deployment@2.1.0) (2022-02-21)
+
+
+### Features
+
+* **deployment:** include short loadgen test in CI ([bae4ce8](https://github.com/Agoric/agoric-sdk/commit/bae4ce82a044a7ff745b5fa40815a79e522ef5e8))
+
+
+### Bug Fixes
+
+* **deployment:** capture `flight-recorder.bin` ([451a817](https://github.com/Agoric/agoric-sdk/commit/451a81775e8d60b68c072759afaed07420a2b400))
+* **deployment:** use docker API instead of CLI ([0c049b4](https://github.com/Agoric/agoric-sdk/commit/0c049b4ffdd51af2b3c39541a84f7f349027a10d))
+
+
+
+## [2.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.30.0...@agoric/deployment@2.0.0) (2021-12-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deployment:** optional first block argument to `crunch.mjs`
+
+### Features
+
+* **deployment:** optional first block argument to `crunch.mjs` ([c03646d](https://github.com/Agoric/agoric-sdk/commit/c03646d7387200c3664e7aa03113514363a4611a))
+
+
+### Bug Fixes
+
+* **deployment:** use Docker `Cgroup Version` to init volumes ([3fa95e7](https://github.com/Agoric/agoric-sdk/commit/3fa95e77a0c79f4dfbf9651d5f295795ce7dc5df))
+
+
+
 ## [1.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.29.1...@agoric/deployment@1.30.0) (2021-12-02)
 
 

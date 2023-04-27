@@ -1,0 +1,37 @@
+@startuml Zoe/ZCF dataStore initialization
+
+box Zoe startup
+participant bootstrap
+participant Zoe
+participant ZoeStorageManager
+collections InstanceAdminStorage
+participant startInstance
+
+end box
+
+bootstrap -> Zoe: makeZoeKit(...)
+Zoe -> ZoeStorageManager : makeZoeStorageManager()
+ZoeStorageManager -> ZoeStorageManager : provideIssuerStorage()
+ZoeStorageManager -> ZoeStorageManager : provideEscrowStorage()
+ZoeStorageManager -> ZoeStorageManager : prepareInvitationKit()
+ZoeStorageManager -> InstanceAdminStorage : makeInstanceAdminStorage()
+InstanceAdminStorage -> InstanceAdminStorage : instanceToInstanceAdmin
+ZoeStorageManager /- InstanceAdminStorage : <font color=gray><size:12>getters..., \n<font color=gray><size:12>initInstanceAdmin
+ZoeStorageManager -> ZoeStorageManager : makeInstallationStorage()
+Zoe /-- ZoeStorageManager : <font color=gray><size:12>{makeZoeInstanceStorageManager,\n<font color=gray><size:12>getters, invitationIssuer}
+Zoe -> startInstance : makeStartInstance(makeZoeInstanceStorageManager, <bundle details>, ...)
+Zoe /- startInstance : <font color=gray><size:12>startInstance
+Zoe -> Zoe : makeOfferMethod()
+
+note right
+When Zoe starts up, it initializes datastores that hold data generic to
+all contracts. It creates InstanceAdminStorage which will hold
+instanceAdmins that have data for individual instances.
+startInstance() is used for creating new instances. offer() is used to
+exercise invitations.
+end note
+
+Zoe -> Zoe : makeZoeService(offer)
+Zoe -\ bootstrap : <font color=gray><size:12>ZoeService
+
+@enduml

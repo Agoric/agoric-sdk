@@ -2,8 +2,8 @@
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.
 
-import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
+import { Fail } from '@agoric/assert';
 import path from 'path';
 
 const filename = new URL(import.meta.url).pathname;
@@ -63,7 +63,7 @@ export default async function deployWallet(
       issuers.map(async ([issuerPetname, issuer]) => {
         const brand = await E(issuer).getBrand();
         const brandMatches = E(brand).isMyIssuer(issuer);
-        assert(brandMatches, X`issuer was using a brand which was not its own`);
+        brandMatches || Fail`issuer was using a brand which was not its own`;
         brandToIssuer.set(brand, { issuerPetname, issuer });
       }),
     ]);
@@ -87,7 +87,8 @@ export default async function deployWallet(
   // Claim the payments.
   const issuerToPetname = new Map();
   const issuerToPursePetnameP = new Map();
-  const wallet = E(walletVat).getWallet(bank, E(faucet).getFeePurse());
+  // AWAIT: Be sure this promise settles before this deploy script exits.
+  const wallet = await E(walletVat).getWallet(bank);
   const walletAdmin = E(wallet).getAdminFacet();
   await Promise.all(
     paymentInfo.map(async ({ issuerPetname, issuer }) => {

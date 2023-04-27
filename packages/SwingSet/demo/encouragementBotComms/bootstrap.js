@@ -1,5 +1,4 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, E } from '@endo/far';
 
 console.log(`=> loading bootstrap.js`);
 
@@ -16,10 +15,8 @@ export function buildRootObject(vatPowers) {
       D(devices.loopbox).registerInboundHandler(USER, vats.uservattp);
       const usersender = D(devices.loopbox).getSender(USER);
       await E(vats.uservattp).registerMailboxDevice(usersender);
-      const {
-        transmitter: txToBotForUser,
-        setReceiver: setRxFromBotForUser,
-      } = await E(vats.uservattp).addRemote(BOT);
+      const { transmitter: txToBotForUser, setReceiver: setRxFromBotForUser } =
+        await E(vats.uservattp).addRemote(BOT);
       await E(vats.usercomms).addRemote(
         BOT,
         txToBotForUser,
@@ -29,10 +26,8 @@ export function buildRootObject(vatPowers) {
       D(devices.loopbox).registerInboundHandler(BOT, vats.botvattp);
       const botsender = D(devices.loopbox).getSender(BOT);
       await E(vats.botvattp).registerMailboxDevice(botsender);
-      const {
-        transmitter: txToUserForBot,
-        setReceiver: setRxFromUserForBot,
-      } = await E(vats.botvattp).addRemote(USER);
+      const { transmitter: txToUserForBot, setReceiver: setRxFromUserForBot } =
+        await E(vats.botvattp).addRemote(USER);
       await E(vats.botcomms).addRemote(
         USER,
         txToUserForBot,

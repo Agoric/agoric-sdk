@@ -1,18 +1,15 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import { E } from '@endo/eventual-send';
+import bundleSource from '@endo/bundle-source';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-
-import '../../../exported.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -29,14 +26,13 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
     testJig = jig;
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService } = makeZoeKit(fakeVatAdminSvc);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID('b1-zcftester');
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
@@ -44,8 +40,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
     Money: simoleanIssuer,
   });
 
-  // eslint-disable-next-line no-unused-vars
-  const { creatorFacet } = await E(zoe).startInstance(
+  const { creatorFacet: _creatorFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -57,7 +52,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
 
   /** @type {OfferHandler} */
   const throwSeatExit = seat => {
-    // @ts-ignore Linting correctly identifies that exit takes no argument.
+    // @ts-expect-error Linting correctly identifies that exit takes no argument.
     throw seat.exit('here is a string');
   };
 
@@ -73,7 +68,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
 
   /** @type {OfferHandler} */
   const throwSeatFail = seat => {
-    // @ts-ignore Linting correctly identifies that the argument to
+    // @ts-expect-error Linting correctly identifies that the argument to
     // fail must be an error, not a string.
     throw seat.fail('here is a string');
   };

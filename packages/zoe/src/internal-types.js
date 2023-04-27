@@ -1,11 +1,9 @@
-// @ts-check
 /**
- * @typedef {Object} SeatData
+ * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
- * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
- * @property {Object=} offerArgs
+ * @property {object} [offerArgs]
  */
 
 /**
@@ -17,35 +15,48 @@
  */
 
 /**
- * @typedef {Object} ZoeSeatAdminKit
+ * @typedef WithdrawFacet
+ * @property {(allocation:Allocation) => PaymentPKeywordRecord} withdrawPayments
+ */
+
+/**
+ * @typedef {object} InstanceAdminHelper
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
+ */
+
+/**
+ * @typedef {object} ZoeSeatAdminKit
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
- * @property {Notifier<Allocation>} notifier
- *
+ */
+
+/**
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
- * @param {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
- * @param {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
+ * @param {InstanceAdminHelper} instanceAdminHelper
  * @param {ProposalRecord} proposal
- * @param {WithdrawPayments} withdrawPayments
+ * @param {WithdrawFacet} withdrawFacet
  * @param {ERef<ExitObj>} exitObj
- * @param {ERef<OfferResult>=} offerResult
+ * @param {ERef<unknown>} [offerResult]
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {ZoeSeatAdminKit}
  */
 
 /**
  * @callback ZoeSeatAdminExit
- * @param {Completion=} completion
+ * @param {Completion} [completion]
  * @returns {void}
  */
 
 /**
- * @typedef {Object} ZoeSeatAdmin
+ * @typedef {object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
+ * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
 
 /**
@@ -53,9 +64,9 @@
  */
 
 /**
- * @typedef {Object} HandleOfferResult
- * @property {Promise<any>} offerResultP
- * @property {Object} exitObj
+ * @typedef {object} HandleOfferResult
+ * @property {Promise<unknown>} offerResultPromise
+ * @property {ExitObj} exitObj
  */
 
 /**
@@ -63,31 +74,27 @@
  * depending on whether the seat comes from a normal offer or a
  * request by the contract for an "empty" seat.
  *
- * @typedef {Object} InstanceAdmin
+ * @typedef {object} InstanceAdmin
  * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
  *     proposal: ProposalRecord,
- *     offerArgs?: Object,
+ *     offerArgs?: object,
  * ) => UserSeat } makeUserSeat
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
- * @property {() => Object} getPublicFacet
+ * @property {() => object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
- * @property {() => Object} getTerms
- * @property {() => Installation} getInstallationForInstance
+ * @property {() => object} getTerms
+ * @property {() => string[]} getOfferFilter
+ * @property {() => Installation} getInstallation
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
- * @property {TransferFeeToCreator} transferFeeToCreator
- */
-
-/**
- * @callback TransferFeeToCreator
- * @param {ERef<FeePurse>} userFeePurse
- * @param {Amount} fee
- * @returns {Promise<Amount>}
+ * @property {(string: string) => boolean} isBlocked
+ * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
+ * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**
@@ -95,9 +102,8 @@
  * depending on whether the seat comes from a normal offer or a
  * request by the contract for an "empty" seat.
  *
- * @typedef {Object} HandleOfferObj
+ * @typedef {object} HandleOfferObj
  * @property {(invitationHandle: InvitationHandle,
- *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
  *            ) => HandleOfferResult} handleOffer
  */
@@ -106,14 +112,13 @@
  * @callback ZoeInstanceAdminMakeInvitation
  * @param {InvitationHandle} invitationHandle
  * @param {string} description
- * @param {Record<string, any>=} customProperties
- * @param {FeeChoice=} relativeFee
- * @param {ExpiryChoice=} relativeExpiry
- * @returns {Payment}
+ * @param {Record<string, any>} [customDetails]
+ * @param {Pattern} [proposalShape]
+ * @returns {Invitation}
  */
 
 /**
- * @typedef {Object} ZoeInstanceAdmin
+ * @typedef {object} ZoeInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
@@ -124,7 +129,12 @@
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
+ * @property {(seatHandle: SeatHandle, completion: Completion) => void} exitSeat
+ * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
  * @property {() => void} stopAcceptingOffers
+ * @property {(strings: Array<string>) => void} setOfferFilter
+ * @property {() => Array<string>} getOfferFilter
+ * @property {(seatHandle: SeatHandle) => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
 
 /**
@@ -145,8 +155,9 @@
 /**
  * @callback MakeZoeMint
  * @param {Keyword} keyword
- * @param {AssetKind=} assetKind
- * @param {AdditionalDisplayInfo=} displayInfo
+ * @param {AssetKind} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
+ * @param {IssuerOptionsRecord} [options]
  * @returns {ZoeMint}
  */
 
@@ -156,7 +167,7 @@
  * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
- * @returns {ZoeSeatAdminKit}
+ * @returns {UserSeat}
  */
 
 /**
@@ -165,13 +176,13 @@
  */
 
 /**
- * @typedef {Object} SeatHandleAllocation
+ * @typedef {object} SeatHandleAllocation
  * @property {SeatHandle} seatHandle
  * @property {Allocation} allocation
  */
 
 /**
- * @typedef {Object} ZoeMint
+ * @typedef {object} ZoeMint
  * @property {() => IssuerRecord} getIssuerRecord
  * @property {(totalToMint: Amount) => void} mintAndEscrow
  * @property {(totalToBurn: Amount) => void} withdrawAndBurn
@@ -182,27 +193,32 @@
  */
 
 /**
- * @typedef {Object} ZCFRoot
- * @property {ExecuteContract} executeContract
- *
- * @typedef {Object} ExecuteContractResult
- * @property {Object} creatorFacet
+ * @typedef {object} ZCFRoot
+ * @property {StartZcf} startZcf
+ * @property {RestartContract} restartContract
+ */
+
+/**
+ * @typedef {object} ExecuteContractResult
+ * @property {object} creatorFacet
  * @property {Promise<Invitation>} creatorInvitation
- * @property {Object} publicFacet
+ * @property {object} publicFacet
  * @property {HandleOfferObj} handleOfferObj
  */
 
 /**
- * @callback ExecuteContract
- * @param {SourceBundle} bundle
- * @param {ERef<ZoeService>} zoeService
- * @param {Issuer} invitationIssuer
+ * @callback StartZcf
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
- * @param {Object=} privateArgs
- * @param {ERef<FeePurse>} feePurse
+ * @param {object} [privateArgs]
  * @returns {Promise<ExecuteContractResult>}
+ */
+
+/**
+ * @callback RestartContract
+ * @param {object} [privateArgs]
+ * @returns {Promise<ExecuteUpgradeableContractResult>}
  */
 
 /**
@@ -213,39 +229,12 @@
  */
 
 /**
- * @typedef {Object} ExitObj
+ * @typedef {object} ExitObj
  * @property {() => void} exit
  */
 
 /**
- * @typedef {Handle<'SeatHandle'>} SeatHandle
- */
-
-/**
- * @typedef RootAndAdminNode
- * @property {Object} root
- * @property {AdminNode} adminNode
- */
-
-/**
- * @typedef RootAndAdminNodeAndMeter
- * @property {Object} root
- * @property {AdminNode} adminNode
- * @property {Meter} meter
- */
-
-/**
- * @typedef {Object} AdminNode
- * A powerful object that can be used to terminate the vat in which a contract
- * is running, to get statistics, or to be notified when it terminates.
- *
- * @property {() => Promise<Completion>} done
- * returns a promise that will be fulfilled or rejected when the contract is
- * terminated. If the contract terminates with a failure, the promise will be
- * rejected with the reason. If the contract terminates successfully, the
- * promise will fulfill to the completion value.
- * @property {ShutdownWithFailure} terminateWithFailure
- * Terminate the vat in which the contract is running as a failure.
+ * @typedef {Handle<'Seat'>} SeatHandle
  */
 
 /**
@@ -264,7 +253,6 @@
 
 /**
  * @callback MakeZCFSeat
- * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
  * @param {SeatData} seatData
  * @returns {ZCFSeat}
  */
@@ -278,14 +266,18 @@
  */
 
 /**
- * @callback ReallocateForZCFMint
- * @param {ZCFSeat} zcfSeat
- * @param {Allocation} newAllocation
- * @returns {void}
+ * @typedef {object} ZcfSeatManager
+ * @property {MakeZCFSeat} makeZCFSeat
+ * @property {Reallocate} reallocate
+ * @property {DropAllReferences} dropAllReferences
  */
 
 /**
- *
+ * @typedef {object} ZcfMintReallocator
+ * @property {(zcfSeat: ZCFSeat, newAllocation: Allocation) => void} reallocate
+ */
+
+/**
  * @callback CreateSeatManager
  *
  * The SeatManager holds the active zcfSeats and can reallocate and
@@ -294,14 +286,12 @@
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {ShutdownWithFailure} shutdownWithFailure
- * @returns {{ makeZCFSeat: MakeZCFSeat,
-    reallocate: Reallocate,
-    reallocateForZCFMint: ReallocateForZCFMint,
-    dropAllReferences: DropAllReferences }}
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
  */
 
 /**
- * @callback AddIssuerToInstanceRecord
+ * @callback InstanceStateAddIssuer
  *
  * Add an issuer and its keyword to the instanceRecord for the
  * contract instance
@@ -312,12 +302,12 @@
  */
 
 /**
- * @callback InstanceRecordManagerGetTerms
- * @returns {Terms}
+ * @callback InstanceStateGetTerms
+ * @returns {AnyTerms}
  */
 
 /**
- * @callback InstanceRecordManagerGetInstallationForInstance
+ * @callback InstanceStateGetInstallation
  * @returns {Installation}
  */
 
@@ -332,15 +322,14 @@
  */
 
 /**
- * @typedef {Object} InstanceRecordManager
- * @property {AddIssuerToInstanceRecord} addIssuerToInstanceRecord
+ * @typedef {object} InstanceState
+ * @property {InstanceStateAddIssuer} addIssuer
  * @property {GetInstanceRecord} getInstanceRecord
- * @property {InstanceRecordManagerGetTerms} getTerms
- * @property {InstanceRecordManagerGetInstallationForInstance} getInstallationForInstance
+ * @property {InstanceStateGetTerms} getTerms
+ * @property {InstanceStateGetInstallation} getInstallation
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
  * @property {(keyword: Keyword) => void} assertUniqueKeyword
- * @property {(startingInstanceRecord: InstanceRecord) => void} instantiate
  */
 
 /**

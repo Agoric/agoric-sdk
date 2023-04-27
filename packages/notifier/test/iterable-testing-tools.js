@@ -1,10 +1,28 @@
-// @ts-check
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';
 
-import '@agoric/marshal/exported.js';
-import '../src/types.js';
+import '../src/types-ambient.js';
+
+export const invertPromiseSettlement = promise =>
+  promise.then(
+    fulfillment => {
+      throw fulfillment;
+    },
+    rejection => rejection,
+  );
+
+// Return a promise that will resolve in the specified number of turns,
+// supporting asynchronous sleep.
+export const delayByTurns = async turnCount => {
+  while (turnCount) {
+    turnCount -= 1;
+    // eslint-disable-next-line no-await-in-loop
+    await undefined;
+  }
+};
+
+/** @typedef {import('@endo/marshal').Passable} Passable */
 
 /** @typedef {import('ava').Assertions} Assertions */
 
@@ -272,15 +290,15 @@ export const bob = async asyncIterableP => {
  * @returns {Promise<Passable[]>}
  */
 export const carol = async subscriptionP => {
-  // @ts-ignore
   const subscriptionIteratorP = E(subscriptionP)[Symbol.asyncIterator]();
+  /** @type {PromiseKit<ForkableAsyncIterator<Passable, Passable>>} */
   const { promise: afterA, resolve: afterAResolve } = makePromiseKit();
 
   const makeObserver = log =>
     harden({
       updateState: val => {
         if (val === 'a') {
-          afterAResolve(E(subscriptionIteratorP).subscribe());
+          afterAResolve(E(subscriptionIteratorP).fork());
         }
         log.push(['non-final', val]);
       },
@@ -294,8 +312,7 @@ export const carol = async subscriptionP => {
   const observer2 = makeObserver(log2);
 
   const p1 = observeIterator(subscriptionIteratorP, observer1);
-  // afterA is an ERef<Subscription> so we use observeIteration on it.
-  const p2 = observeIteration(afterA, observer2);
+  const p2 = observeIterator(afterA, observer2);
   await Promise.all([p1, p2]);
   return [log1, log2];
 };

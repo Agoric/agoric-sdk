@@ -1,5 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 const log = console.log;
 
@@ -18,7 +18,7 @@ function ppp(count) {
   }
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let myNickname;
   let total = 0;
 

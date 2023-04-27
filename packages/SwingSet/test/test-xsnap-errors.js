@@ -1,32 +1,32 @@
 /* global setTimeout */
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
+import { initSwingStore } from '@agoric/swing-store';
 
-import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap.js';
-import { makeStartXSnap } from '../src/controller.js';
-import { capargs } from './util.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from '../src/controller/bundle-handler.js';
+import { makeStartXSnap } from '../src/controller/startXSnap.js';
+import { kser } from '../src/lib/kmarshal.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
-  const makeb = rel =>
-    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
-  const lockdown = await makeb(
-    '../src/kernel/vatManager/lockdown-subprocess-xsnap.js',
-  );
-  const supervisor = await makeb(
-    '../src/kernel/vatManager/supervisor-subprocess-xsnap.js',
-  );
-  const bundles = [lockdown, supervisor];
-
   /** @type { ReturnType<typeof spawn> } */
   let theProc;
+  const { kernelStorage } = initSwingStore();
+  const { bundleStore } = kernelStorage;
+  const bundleData = makeXsnapBundleData();
+  const bundleHandler = makeWorkerBundleHandler(bundleStore, bundleData);
+  const bundleIDs = await bundleHandler.getCurrentBundleIDs();
 
-  const startXSnap = makeStartXSnap(bundles, {
-    snapstorePath: undefined, // close enough for this test
-    env: {},
-    // @ts-ignore we only need one path thru spawn
+  const startXSnap = makeStartXSnap({
+    bundleHandler,
+    snapstore: undefined, // unused by this test
+    // @ts-expect-error we only need one path thru spawn
     spawn: (command, args, opts) => {
       const noMetering = ['-l', '0'];
       theProc = spawn(command, [args, ...noMetering], opts);
@@ -38,38 +38,42 @@ test('child termination distinguished from meter exhaustion', async t => {
   /** @type { any } */
   const kernelKeeper = {
     provideVatKeeper: () => ({
-      getLastSnapshot: () => undefined,
+      getSnapshotInfo: () => undefined,
+      addToTranscript: () => undefined,
     }),
+    getRelaxDurabilityRules: () => false,
   };
 
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
-    // @ts-ignore kernelSlog is not used in this test
+    // @ts-expect-error kernelSlog is not used in this test
     kernelSlog: {},
-    allVatPowers: undefined,
-    testLog: undefined,
   });
 
   const fn = new URL('vat-xsnap-hang.js', import.meta.url).pathname;
   const bundle = await bundleSource(fn);
 
+  const workerOptions = { type: 'xsnap', bundleIDs };
   /** @type { ManagerOptions } */
-  // @ts-ignore close enough for this test
-  const managerOptions = {};
+  // @ts-expect-error close enough for this test
+  const managerOptions = { useTranscript: true, workerOptions };
   const schandler = _vso => ['ok', null];
+
   const m = await xsWorkerFactory.createFromBundle(
     'v1',
     bundle,
     managerOptions,
-    schandler,
+    {},
   );
 
-  const msg = { method: 'hang', args: capargs([]) };
+  await m.deliver(['startVat', kser()], schandler);
+
+  const msg = { methargs: kser(['hang', []]) };
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 
-  const p = m.deliver(delivery); // won't resolve until child dies
+  const p = m.deliver(delivery, schandler); // won't resolve until child dies
 
   // please excuse ambient authority
   setTimeout(
@@ -82,6 +86,6 @@ test('child termination distinguished from meter exhaustion', async t => {
   await t.throwsAsync(p, {
     instanceOf: Error,
     code: 'SIGTERM',
-    message: 'v1:undefined exited due to signal SIGTERM',
+    message: 'v1: exited due to signal SIGTERM',
   });
 });

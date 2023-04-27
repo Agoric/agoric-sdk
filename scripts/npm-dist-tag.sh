@@ -18,7 +18,7 @@ lerna)
 
   # Strip the first argument (`lerna`), so that `$@` gives us remaining args.
   shift
-  exec npm run -- lerna exec --stream --no-bail "$thisdir/$thisprog" ${1+"$@"}
+  exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- ${1+"$@"}
   ;;
 esac
 
@@ -32,13 +32,22 @@ true)
   ;;
 esac
 
+# Get the second argument, if any.
+TAG=${2-}
+
 # Find the package name and version from the package.json.
 pkg=$(jq -r .name package.json)
-version=$(jq -r .version package.json)
+case ${3-} in
+-*)
+  # If the tag starts with a dash, it's a suffix.
+  version=$(npm view "$pkg" versions --json | jq -r '.[]' | sed -ne "/[0-9]$3$/{ p; q; }" || true)
+  ;;
+*)
+  version=$(jq -r .version package.json)
+  ;;
+esac
 # echo "$OP $pkg@$version"
 
-# Get the second argument, if any.
-TAG=$2
 case $OP in
 add)
   # Add <tag> to the current-directory package's dist-tags.

@@ -2,9 +2,9 @@ import test from 'ava';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import url from 'url';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 function rimraf(dirPath) {
   try {
@@ -40,6 +40,7 @@ async function innerTest(t, extraFlags, dbdir) {
       output += data;
     });
     proc.addListener('exit', code => {
+      t.log(output);
       t.is(code, 0, 'exits successfully');
       const uMsg = 'user vat is happy';
       t.not(output.indexOf(`\n${uMsg}\n`), -1, uMsg);
@@ -57,8 +58,8 @@ test('run encouragmentBot demo with memdb', async t => {
   await innerTest(t, '--memdb');
 });
 
-test('run encouragmentBot demo with lmdb', async t => {
-  await innerTest(t, '--lmdb', 'lmdbtest');
+test('run encouragmentBot demo with sqlite', async t => {
+  await innerTest(t, '--sqlite', 'sqlitetest');
 });
 
 test('run encouragmentBot demo with default', async t => {

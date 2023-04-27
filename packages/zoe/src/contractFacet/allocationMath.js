@@ -1,6 +1,6 @@
-// @ts-check
-import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+
+const { Fail, quote: q } = assert;
 
 /**
  * @callback Operation
@@ -37,7 +37,7 @@ const doOperation = (allocation, amountKeywordRecord, operationFn) => {
     })
     .filter(([_keyword, result]) => result !== undefined);
 
-  return Object.fromEntries(entries);
+  return harden(Object.fromEntries(entries));
 };
 
 /** @type {Operation} */
@@ -60,14 +60,17 @@ const subtract = (amount, amountToSubtract, keyword) => {
     // amount is undefined, it is filtered out in doOperation.
     return /** @type {Amount} */ (amount);
   } else {
-    assert(
-      amount !== undefined,
-      X`The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword ${keyword}.`,
-    );
-    assert(
-      AmountMath.isGTE(amount, amountToSubtract),
-      X`The amount to be subtracted ${amountToSubtract} was greater than the allocation's amount ${amount} for the keyword ${keyword}`,
-    );
+    if (amount === undefined) {
+      // TypeScript confused about `||` control flow so use `if` instead
+      // https://github.com/microsoft/TypeScript/issues/50739
+      throw Fail`The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword ${q(
+        keyword,
+      )}.`;
+    }
+    AmountMath.isGTE(amount, amountToSubtract) ||
+      Fail`The amount to be subtracted ${amountToSubtract} was greater than the allocation's amount ${amount} for the keyword ${q(
+        keyword,
+      )}`;
     return AmountMath.subtract(amount, amountToSubtract);
   }
 };

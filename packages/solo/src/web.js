@@ -1,14 +1,18 @@
-/* global setTimeout clearTimeout setInterval clearInterval */
+/* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
 import path from 'path';
 import http from 'http';
 import { createConnection } from 'net';
+import { existsSync as existsSyncAmbient } from 'fs';
 import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import WebSocket from 'ws';
 import anylogger from 'anylogger';
 import morgan from 'morgan';
 
 import { getAccessToken } from '@agoric/access-token';
+
+const maximumBundleSize = 1024 * 1024 * 128; // 128MB
 
 const log = anylogger('web');
 
@@ -61,7 +65,16 @@ const verifyToken = (actual, expected) => {
   return !failed;
 };
 
-export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
+export async function makeHTTPListener(
+  basedir,
+  port,
+  host,
+  rawInboundCommand,
+  walletHtmlDir = '',
+  validateAndInstallBundle,
+  connections,
+  { env = process.env, existsSync = existsSyncAmbient } = {},
+) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
@@ -113,8 +126,23 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       },
     }),
   );
-  app.use(express.json()); // parse application/json
+  app.use(express.json({ limit: maximumBundleSize })); // parse application/json
   const server = http.createServer(app);
+
+  // Proxy to another wallet bridge
+  const { SOLO_BRIDGE_TARGET: bridgeTarget } = env;
+  if (bridgeTarget) {
+    app.use(
+      ['/wallet-bridge.html', '/wallet'],
+      createProxyMiddleware({
+        target: bridgeTarget,
+        pathRewrite: {
+          '^/wallet-bridge.html': '/wallet/bridge.html',
+        },
+        // changeOrigin: true,
+      }),
+    );
+  }
 
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
@@ -122,9 +150,23 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   app.use(express.static(htmldir));
   app.use(express.static(new URL('../public', import.meta.url).pathname));
 
-  app.get('/wallet/*', (_, res) =>
-    res.sendFile(path.resolve('html', 'wallet', 'index.html')),
-  );
+  if (walletHtmlDir && !bridgeTarget) {
+    // Transition localStorage based bridge
+    if (existsSync(path.join(walletHtmlDir, 'bridge.html'))) {
+      console.log('redirecting wallet bridge');
+      app.get('/wallet-bridge.html', (req, res) =>
+        res.redirect('/wallet/bridge.html'),
+      );
+    }
+
+    // Serve the wallet directory.
+    app.use('/wallet', express.static(walletHtmlDir));
+
+    // Default GETs to /wallet/index.html for history routing.
+    app.get('/wallet/*', (_, res) =>
+      res.sendFile(path.resolve(walletHtmlDir, 'index.html')),
+    );
+  }
 
   // The rules for validation:
   //
@@ -166,9 +208,10 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     return false;
   };
 
-  // accept POST messages to arbitrary endpoints
+  // accept POST messages as commands.
   app.post('*', async (req, res) => {
-    if (!(await validateAccessToken(req))) {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -182,12 +225,42 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       .catch(_ => {});
   });
 
+  app.get('/connections', async (req, res) => {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
+      res.json({ ok: false, rej: 'Unauthorized' });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      connections,
+    });
+  });
+
+  app.post('/publish-bundle', async (req, res) => {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
+      res.json({ ok: false, rej: 'Unauthorized' });
+      return;
+    }
+    try {
+      const bundle = harden(req.body);
+      await validateAndInstallBundle(bundle);
+    } catch (error) {
+      res.json({ ok: false, rej: error.message });
+    }
+
+    res.json({ ok: true });
+  });
+
   // accept WebSocket channels at the root path.
   // This senses the Upgrade header to distinguish between plain
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', async (req, socket, head) => {
-    if (!(await validateAccessToken(req))) {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
       socket.destroy();
       return;
     }
@@ -208,7 +281,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     );
     const existing = createConnection(port, host, _c => {
       clearTimeout(to);
-      reject(Error(`Something is aready listening on ${host}:${port}`));
+      reject(Error(`Something is already listening on ${host}:${port}`));
     });
     existing.on('error', err => {
       clearTimeout(to);
@@ -283,6 +356,9 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       try {
         obj = JSON.parse(message);
         const res = await inboundCommand(obj, meta, id);
+        if (typeof res === 'boolean') {
+          return;
+        }
 
         // eslint-disable-next-line no-use-before-define
         sendJSON({ ...res, meta });
@@ -298,9 +374,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   wss.on('connection', newChannel);
 
   function sendJSON(rawObj) {
-    const { meta: { channelID } = {} } = rawObj;
-    const obj = { ...rawObj };
-    delete obj.meta;
+    const { meta: { channelID } = {}, ...obj } = rawObj;
 
     // Point-to-point.
     const c = channels.get(channelID);

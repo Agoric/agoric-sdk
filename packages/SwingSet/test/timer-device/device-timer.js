@@ -1,3 +1,3 @@
-import setup from '../../src/devices/timer-src.js';
+import setup from '../../src/devices/timer/device-timer.js';
 
 export { setup };

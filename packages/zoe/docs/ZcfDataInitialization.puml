@@ -1,0 +1,50 @@
+@startuml Zoe/ZCF dataStore initialization
+
+actor bootstrap
+
+box Zoe Vat
+participant ZoeService
+participant StartInstance
+participant InstanceStorageManager
+end box
+
+box Zcf Vat
+participant vatRoot
+participant ZcfZygote
+participant contract
+end box
+
+bootstrap -> ZoeService : install(bundle)
+bootstrap <- ZoeService : <font color=gray><size:12>installation
+bootstrap -> ZoeService : startInstance(installation)
+ZoeService -> StartInstance : startInstance(\ninstallation, \nissuerKeywordRecord\nterms, privateArgs)
+StartInstance -> StartInstance : initialize instance state
+StartInstance -> InstanceStorageManager : makeInstanceStorageManager
+InstanceStorageManager -> vatRoot : createZcfVat(bundle)
+note right
+{ zoeService, invitationIssuer } = vatParameters;
+end note
+
+vatRoot -> ZcfZygote : makeZcfZygote(powers, zoeService,\ninvitationIssuer, bundle, baggage)
+ZcfZygote -> ZcfZygote : createSeatManager()
+ZcfZygote -> ZcfZygote : makeInstanceRecordStorage()
+ZcfZygote -> ZcfZygote : makeEmptySeatKit = () => {...}
+ZcfZygote -> ZcfZygote : makeHandleOfferObj = (...) => {...}
+ZcfZygote -> contract : evaluateContract(bundle)
+ZcfZygote /- contract : <font color=gray><size:12>start
+
+vatRoot /- ZcfZygote : <font color=gray><size:12>zcfZygote
+InstanceStorageManager /- vatRoot : <font color=gray><size:12>root
+StartInstance /- InstanceStorageManager : <font color=gray><size:12>root, adminNode, getters
+StartInstance -> vatRoot : startZcf(zoeInstanceAdmin,\ninstanceRecord,\nissuerStorage, privateArgs)
+vatRoot -> ZcfZygote : startContract(zoeInstanceAdmin,\ninstanceRecord,\nissuerStorage, privateArgs)
+ZcfZygote -> ZcfZygote : set up instance state
+ZcfZygote -> contract : start(zcf, privateArgs,...)
+ZcfZygote /- contract : <font color=gray><size:12>publicFacet, creatorFacet, handleOfferObj
+StartInstance /- ZcfZygote : <font color=gray><size:12>publicFacet, creatorFacet, handleOfferObj
+
+note left
+resolve facet & handleOfferObj promises
+end note
+
+@enduml

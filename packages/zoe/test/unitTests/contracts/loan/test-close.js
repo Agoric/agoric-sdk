@@ -1,11 +1,9 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '../../../../exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 import {
@@ -38,10 +36,8 @@ test('makeCloseLoanInvitation repay all', async t => {
   );
 
   // Set up the lender seat
-  const {
-    zcfSeat: lenderSeat,
-    userSeat: lenderUserSeatP,
-  } = zcf.makeEmptySeatKit();
+  const { zcfSeat: lenderSeat, userSeat: lenderUserSeatP } =
+    zcf.makeEmptySeatKit();
 
   const borrowedAmount = AmountMath.make(loanKit.brand, 20n);
   const interest = AmountMath.make(loanKit.brand, 3n);

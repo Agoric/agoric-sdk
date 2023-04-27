@@ -1,12 +1,11 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 /**
  * Tests zcf.registerFeeMint
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<undefined, {getMintedAmount: unknown, getMintedPayout: unknown}>}
  */
 const start = async (zcf, privateArgs) => {
   // make the `zcf` and `instance` available to the tests
@@ -26,7 +25,7 @@ const start = async (zcf, privateArgs) => {
     zcfSeat,
   );
 
-  const creatorFacet = harden({
+  const creatorFacet = Far('mint creator facet', {
     getMintedAmount: () => zcfSeat.getAmountAllocated('Winnings'),
     getMintedPayout: () => {
       zcfSeat.exit();
@@ -34,6 +33,7 @@ const start = async (zcf, privateArgs) => {
     },
   });
 
+  // @ts-expect-error creatorFacet not Far(), should it be?
   return harden({ creatorFacet });
 };
 

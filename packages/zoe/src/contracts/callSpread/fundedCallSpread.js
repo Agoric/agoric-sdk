@@ -1,16 +1,13 @@
-// @ts-check
-
-import '../../../exported.js';
 import './types.js';
 
-import { assert, details as X } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { E } from '@agoric/eventual-send';
+import { makePromiseKit } from '@endo/promise-kit';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
   depositToSeat,
   assertNatAssetKind,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
@@ -31,7 +28,7 @@ import { Position } from './position.js';
  * for the price oracle's quotes as to the value of the Underlying, as well as
  * the strike prices in the terms.
  *
- * The creatorInvitation has customProperties that include the amounts of the
+ * The creatorInvitation has customDetails that include the amounts of the
  * two options as longAmount and shortAmount. When the creatorInvitation is
  * exercised, the payout includes the two option positions, which are themselves
  * invitations which can be exercised for free, and provide the option payouts
@@ -55,21 +52,26 @@ import { Position } from './position.js';
  *   denominator.value=10000)
  */
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ZCF<{
+ * strikePrice1: Amount,
+ * strikePrice2: Amount,
+ * settlementAmount: Amount,
+ * priceAuthority: PriceAuthority,
+ * expiration: bigint,
+ * underlyingAmount: Amount,
+ * }>} zcf
+ */
 const start = async zcf => {
-  const {
-    brands,
-    strikePrice1,
-    strikePrice2,
-    settlementAmount,
-  } = zcf.getTerms();
+  const { brands, strikePrice1, strikePrice2, settlementAmount } =
+    zcf.getTerms();
   assertNatAssetKind(zcf, brands.Collateral);
   assertNatAssetKind(zcf, brands.Strike);
   // notice that we don't assert that the Underlying is fungible.
 
   assert(
     AmountMath.isGTE(strikePrice2, strikePrice1),
-    X`strikePrice2 must be greater than strikePrice1`,
+    'strikePrice2 must be greater than strikePrice1',
   );
 
   await zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
@@ -110,18 +112,20 @@ const start = async zcf => {
         give: { Collateral: null },
         want: { LongOption: null, ShortOption: null },
       });
-      collateralSeat.incrementBy(
-        creatorSeat.decrementBy(harden({ Collateral: settlementAmount })),
+      atomicRearrange(
+        zcf,
+        harden([
+          [creatorSeat, collateralSeat, { Collateral: settlementAmount }],
+          [
+            collateralSeat,
+            creatorSeat,
+            {
+              LongOption: longAmount,
+              ShortOption: shortAmount,
+            },
+          ],
+        ]),
       );
-      creatorSeat.incrementBy(
-        collateralSeat.decrementBy(
-          harden({
-            LongOption: longAmount,
-            ShortOption: shortAmount,
-          }),
-        ),
-      );
-      zcf.reallocate(collateralSeat, creatorSeat);
       payoffHandler.schedulePayoffs();
       creatorSeat.exit();
     };

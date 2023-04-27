@@ -1,63 +1,60 @@
 ---
-
 - name: Create start.sh
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   become: yes
   copy:
-    dest: "/home/{{ service }}/start.sh"
+    dest: '/home/{{ service }}/start.sh'
     content: "#! /bin/sh\nexec {{ execline }}\n"
     mode: '0755'
 
 - name: Ensure public exists
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   become: yes
   file:
-    path: "/home/{{ service }}/public"
+    path: '/home/{{ service }}/public'
     state: directory
     mode: '0755'
 
 - name: Copy network-config
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   become: yes
   copy:
-    src: "{{ SETUP_HOME }}/{{ service }}/data/cosmos-chain.json"
-    dest: "/home/{{ service }}/public/network-config"
+    src: '{{ SETUP_HOME }}/{{ service }}/data/cosmos-chain.json'
+    dest: '/home/{{ service }}/public/network-config'
     mode: '0644'
 
 - name: Copy genesis.json
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   become: yes
   copy:
-    src: "{{ SETUP_HOME }}/ag-chain-cosmos/data/genesis.json"
-    dest: "/home/{{ service }}/public/genesis.json"
+    src: '{{ SETUP_HOME }}/ag-chain-cosmos/data/genesis.json'
+    dest: '/home/{{ service }}/public/genesis.json'
     mode: '0644'
 
-- name: "Stat dweb.crt"
+- name: 'Stat dweb.crt'
   delegate_to: localhost
-  stat:
-    path="{{ SETUP_HOME }}/dweb.crt"
+  stat: path="{{ SETUP_HOME }}/dweb.crt"
   register: stat_crt
 
-- name: "Copy dweb.crt"
-  become_user: "{{ service }}"
+- name: 'Copy dweb.crt'
+  become_user: '{{ service }}'
   become: yes
   copy:
-    src: "{{ SETUP_HOME }}/dweb.crt"
-    dest: "/home/{{ service }}/dweb.crt"
+    src: '{{ SETUP_HOME }}/dweb.crt'
+    dest: '/home/{{ service }}/dweb.crt'
     mode: '0644'
   when: stat_crt.stat.exists
 
-- name: "Stat dweb.key"
+- name: 'Stat dweb.key'
   delegate_to: localhost
-  stat:
-    path="{{ SETUP_HOME }}/dweb.key"
+  stat: path="{{ SETUP_HOME }}/dweb.key"
   register: stat_key
 
-- name: "Copy dweb.key"
-  become_user: "{{ service }}"
+- name: 'Copy dweb.key'
+  become_user: '{{ service }}'
   become: yes
   copy:
-    src: "{{ SETUP_HOME }}/dweb.key"
-    dest: "/home/{{ service }}/dweb.key"
-    mode: "0600"
+    src: '{{ SETUP_HOME }}/dweb.key'
+    dest: '/home/{{ service }}/dweb.key'
+    mode: '0600'
   when: stat_key.stat.exists

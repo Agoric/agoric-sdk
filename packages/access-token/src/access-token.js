@@ -43,9 +43,9 @@ export async function getAccessToken(port) {
   const accessTokenKey = `accessToken/${port}`;
   if (!storage.has(accessTokenKey)) {
     storage.set(accessTokenKey, await generateAccessToken());
-    commit();
+    await commit();
   }
   const accessToken = storage.get(accessTokenKey);
-  close();
+  await close();
   return accessToken;
 }

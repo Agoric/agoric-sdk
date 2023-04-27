@@ -3,6 +3,137 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.3](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.13.2...@agoric/wallet-backend@0.13.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/wallet-backend
+
+
+
+
+
+### [0.13.2](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.13.1...@agoric/wallet-backend@0.13.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/wallet-backend
+
+
+
+
+
+### [0.13.1](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.13.0...@agoric/wallet-backend@0.13.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/wallet-backend
+
+
+
+
+
+## [0.13.0](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.12.1...@agoric/wallet-backend@0.13.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move some util where they are more reusable (#5990)
+* **run-protocol:** rename to inter-protocol
+
+### Features
+
+* **cache:** makeChainStorageCoordinator ([a9b8f3e](https://github.com/Agoric/agoric/commit/a9b8f3ebe4ff3e25c857426781ae5c403198f234))
+* **smart-wallet:** contract for wallet factory ([57eac62](https://github.com/Agoric/agoric/commit/57eac62e204dac3001e8e1643fcf04e1cf191071))
+* **wallet:** expose `getCacheCoordinator()` over the bridge ([bb1e8af](https://github.com/Agoric/agoric/commit/bb1e8af58943942241856cad340c73bbe76e66ea))
+* **wallet:** smart wallet performAction ([#5946](https://github.com/Agoric/agoric/issues/5946)) ([ab99e75](https://github.com/Agoric/agoric/commit/ab99e75cf1606f6892275f81696b9433e42fddc0))
+* **wallet:** use the bridge's casting `makeDefaultLeader` ([4118825](https://github.com/Agoric/agoric/commit/4118825165d5db64253025338e4ff72353b37a15))
+* **wallet-connection:** Connect dapp directly to wallet UI ([#5750](https://github.com/Agoric/agoric/issues/5750)) ([1dd584b](https://github.com/Agoric/agoric/commit/1dd584b195212705b1f74a8c89b7f3f121640e41))
+* **wallet/api:** marshal brand and issuer board ids ([df1d955](https://github.com/Agoric/agoric/commit/df1d9559127f1d8bb8f77ae421f85092e8b297ae))
+* **wallet/api:** marshal contexts for wallet, board ([#5883](https://github.com/Agoric/agoric/issues/5883)) ([088e144](https://github.com/Agoric/agoric/commit/088e1446a100932f801fb04d5881f80f5d94526f))
+
+
+### Bug Fixes
+
+* **wallet-api:** clarify some marshal code ([274f994](https://github.com/Agoric/agoric/commit/274f9941aa44f3049bd045877de170dc8bb1f8fe))
+* **wallet-api:** tolerate null slots ([5cf9803](https://github.com/Agoric/agoric/commit/5cf9803a704189a40c752e76d047b0c534105564))
+* import context requires board ids ([561fc72](https://github.com/Agoric/agoric/commit/561fc729f439033f9d3d2cb4266342ed905795c1))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric/issues/6174)) ([94625d3](https://github.com/Agoric/agoric/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* **wallet:** upgrade for new store coordinator ([51cfc04](https://github.com/Agoric/agoric/commit/51cfc0462187f7f459016b76a7583e87e0986f14))
+* **wallet/api:** prune inactive historical offers ([#6078](https://github.com/Agoric/agoric/issues/6078)) ([b99db49](https://github.com/Agoric/agoric/commit/b99db49a54b6a8427a5da62c1205f7d0bba7649e))
+* **wallet/contract:** bounded updates: recent offers / payments only ([#6095](https://github.com/Agoric/agoric/issues/6095)) ([64241cd](https://github.com/Agoric/agoric/commit/64241cd953efb5e50b5669b4d65088b71977d68e))
+* userSeat allocation only for testing ([#5826](https://github.com/Agoric/agoric/issues/5826)) ([9cb561b](https://github.com/Agoric/agoric/commit/9cb561b39d56cc54e87258980d333d912e837f38))
+* **wallet-api:** dont rely on attestation brand ([447380a](https://github.com/Agoric/agoric/commit/447380a754cd33aadf6246ac643c5ec8cae1230f))
+* **walletFactory:** marshal using petnames ([#5743](https://github.com/Agoric/agoric/issues/5743)) ([5d49ad7](https://github.com/Agoric/agoric/commit/5d49ad79947f44a7cbe98d232ecde105223763d5))
+* makePublishKit ([#5435](https://github.com/Agoric/agoric/issues/5435)) ([d8228d2](https://github.com/Agoric/agoric/commit/d8228d272cfe18aa2fba713fb5acc4e84eaa1e39))
+
+
+### Code Refactoring
+
+* **run-protocol:** rename to inter-protocol ([f49b342](https://github.com/Agoric/agoric/commit/f49b342aa468e0cac08bb6cfd313918674e924d7))
+
+
+
+### [0.12.1](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.12.0...@agoric/wallet-backend@0.12.1) (2022-05-28)
+
+**Note:** Version bump only for package @agoric/wallet-backend
+
+
+
+
+
+## [0.12.0](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.11.0...@agoric/wallet-backend@0.12.0) (2022-05-09)
+
+
+### Features
+
+* **wallet:** support attestations in offers ([f993c0b](https://github.com/Agoric/agoric/commit/f993c0b5f44f2b8d6beba50748da0b4889a26b5c))
+
+
+
+## [0.11.0](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.9...@agoric/wallet-backend@0.11.0) (2022-04-18)
+
+
+### Features
+
+* **wallet:** support reading notifiers from offer result ([934ed3c](https://github.com/Agoric/agoric/commit/934ed3c93b587ad7501fb6c122e8ef7be84ef940))
+* **wallet-api:** allow preapproved bridge to set offer meta ([adbbaaf](https://github.com/Agoric/agoric/commit/adbbaaff21c7223f840bc0b409c07be8fda7d5c4))
+* **wallet-api:** expose `E(wallet).lookup()` to traverse names ([5ef561d](https://github.com/Agoric/agoric/commit/5ef561d4f0cb96c743642d8e1713239f5cfe4721))
+* **wallet-api:** send `proposalTemplate.arguments` as offer args ([9c769f1](https://github.com/Agoric/agoric/commit/9c769f11cc9d04fbd8ab1898f983774b60393544))
+
+
+### Bug Fixes
+
+* **wallet:** change notifiers to publicNotifiers ([2fe5492](https://github.com/Agoric/agoric/commit/2fe5492821826f31bee4f99347aeea5abbd626ab))
+* **wallet-api:** don't drop unused invitations on the floor ([f63ed7e](https://github.com/Agoric/agoric/commit/f63ed7ef8f576d9f4807798c6befb46d4df517dd))
+
+
+
+### [0.10.9](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.8...@agoric/wallet-backend@0.10.9) (2022-02-24)
+
+
+### Bug Fixes
+
+* **wallet:** don't publish depositFacet until we're ready to receive ([f448176](https://github.com/Agoric/agoric/commit/f448176fd64ef47da5af00cab029104fb187afc7))
+
+
+
+### [0.10.8](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.7...@agoric/wallet-backend@0.10.8) (2022-02-21)
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **wallet:** resolve home.wallet before exiting deploy.js ([f09eb66](https://github.com/Agoric/agoric/commit/f09eb665ee76a3f1f415ca3f094a064a4ea8241e))
+* **wallet-backend:** default new purses to autodeposit ([9a06a92](https://github.com/Agoric/agoric/commit/9a06a926ce1c19b3483b10b27a19f37bd493006e))
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric/issues/4190)) ([fea822e](https://github.com/Agoric/agoric/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+
+
+
+### [0.10.7](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.6...@agoric/wallet-backend@0.10.7) (2021-12-22)
+
+
+### Bug Fixes
+
+* **wallet:** properly get the first timerService value ([636e099](https://github.com/Agoric/agoric/commit/636e0994761998b0857232f9bdd6f0b3ac451b31))
+
+
+
 ### 0.10.6 (2021-12-02)
 
 **Note:** Version bump only for package @agoric/wallet-backend

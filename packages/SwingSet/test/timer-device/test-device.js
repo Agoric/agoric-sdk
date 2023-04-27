@@ -1,13 +1,15 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { buildTimer } from '../../src/devices/timer.js';
+import { buildTimer } from '../../src/devices/timer/timer.js';
 
-const TimerSrc = new URL('../../src/devices/timer-src.js', import.meta.url)
-  .pathname;
+const TimerSrc = new URL(
+  '../../src/devices/timer/device-timer.js',
+  import.meta.url,
+).pathname;
 
 const timerConfig = {
   bootstrap: 'bootstrap',
@@ -28,10 +30,11 @@ test('wake', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['timer'], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['timer'], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
   timer.poll(5);
@@ -44,10 +47,11 @@ test('repeater', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['repeater', 3, 2], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
   timer.poll(5);
@@ -64,10 +68,11 @@ test('repeater2', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['repeater', 3, 2], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1n);
   await c.run();
   timer.poll(5n);
@@ -87,10 +92,11 @@ test('repeaterZero', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['repeater', 0, 3], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['repeater', 0, 3], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
   timer.poll(2);

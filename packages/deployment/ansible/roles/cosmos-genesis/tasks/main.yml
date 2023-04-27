@@ -1,4 +1,4 @@
-- name: "Copy faucet-helper.sh"
+- name: 'Copy faucet-helper.sh'
   delegate_to: localhost
   copy:
     src: faucet-helper.sh
@@ -8,12 +8,12 @@
 - set_fact:
     faucet: "{{ lookup('file', SETUP_HOME + '/../faucet/address.txt', errors='ignore') }}"
 
-- name: "Create faucet account"
+- name: 'Create faucet account'
   delegate_to: localhost
   shell: "agd --home={{ SETUP_HOME + '/../faucet' }} --keyring-backend=test keys add faucet < /dev/null"
   when: not faucet
 
-- name: "Extract faucet address"
+- name: 'Extract faucet address'
   delegate_to: localhost
   shell: "{{ SETUP_HOME + '/faucet-helper.sh' }} show-faucet-address \
     > {{ SETUP_HOME + '/../faucet/address.txt' }}"
@@ -22,39 +22,39 @@
 - set_fact:
     faucet: "{{ lookup('file', SETUP_HOME + '/../faucet/address.txt') }}"
 
-- name: "Check {{ STAKER }}-{{ STAKER_NODE }} exists"
+- name: 'Check {{ STAKER }}-{{ STAKER_NODE }} exists'
   become: yes
-  become_user: "{{ service }}"
-  shell: "agd keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
+  become_user: '{{ service }}'
+  shell: 'agd keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}'
   ignore_errors: true
   register: staker_exists
 
-- name: "Create {{ STAKER_NODE }} account for {{ service }}"
+- name: 'Create {{ STAKER_NODE }} account for {{ service }}'
   become: yes
-  become_user: "{{ service }}"
-  shell: "agd keys add --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
+  become_user: '{{ service }}'
+  shell: 'agd keys add --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}'
   when: staker_exists.rc != 0
 
-- name: "Remove transaction directories"
+- name: 'Remove transaction directories'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   file:
     state: absent
-    path: "{{ item }}"
+    path: '{{ item }}'
   with_items:
-    - "/home/{{ service }}/.{{ service }}/config/gentx"
-    - "/home/{{ service }}/validator-txes.txt"
+    - '/home/{{ service }}/.{{ service }}/config/gentx'
+    - '/home/{{ service }}/validator-txes.txt'
 
-- name: "Add faucet coins to {{ service }} genesis account"
+- name: 'Add faucet coins to {{ service }} genesis account'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   shell: "\
     {{ service }} add-genesis-account \
-      {{ faucet }} {{ FAUCET_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
+    {{ faucet }} {{ FAUCET_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
 
-- name: "Add {{ STAKER_INIT_COINS }} coins to {{ STAKER }}-{{ STAKER_NODE }}"
+- name: 'Add {{ STAKER_INIT_COINS }} coins to {{ STAKER }}-{{ STAKER_NODE }}'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   shell: "{{ service }} add-genesis-account \
     $(agd keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} -a) \
     {{ STAKER_INIT_COINS }}"
@@ -62,48 +62,48 @@
 - set_fact:
     delegates: "{{ lookup('file', SETUP_HOME + '/cosmos-delegates.txt', errors='ignore') }}"
 
-- name: "Transfer stake to delegates"
-  become_user: "{{ service }}"
+- name: 'Transfer stake to delegates'
+  become_user: '{{ service }}'
   become: true
   shell: "\
     {{ service }} add-genesis-account \
     {{ item | regex_replace('^([^:]*):([^:]*).*$', '\\1 \\2') }}"
   ignore_errors: true
   with_items:
-    - "{{ delegates.splitlines() }}"
+    - '{{ delegates.splitlines() }}'
   when: delegates != ""
 
-- name: "Create transaction directory"
+- name: 'Create transaction directory'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   file:
     state: directory
-    path: "{{ item }}"
+    path: '{{ item }}'
     mode: 0700
   with_items:
-    - "/home/{{ service }}/.{{ service }}/config/gentx"
+    - '/home/{{ service }}/.{{ service }}/config/gentx'
 
-- name: "Create first validator gentx"
+- name: 'Create first validator gentx'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   shell: "\
     {{ service }} gentx --keyring-dir=/home/{{ service }}/.agoric \
-      --keyring-backend=test \
-      {{ (website | default(None)) and '--website=' ~ website }} \
-      {{ (identity | default(None)) and '--identity=' ~ identity }} \
-      {{ STAKER }}-{{ STAKER_NODE }} {{ STAKER_SELF_DELEGATION }} \
-      --chain-id={{ CHAIN_NAME }} --output-document={{ json }}"
+    --keyring-backend=test \
+    {{ (website | default(None)) and '--website=' ~ website }} \
+    {{ (identity | default(None)) and '--identity=' ~ identity }} \
+    {{ STAKER }}-{{ STAKER_NODE }} {{ STAKER_SELF_DELEGATION }} \
+    --chain-id={{ CHAIN_NAME }} --output-document={{ json }}"
   vars:
-    json: "/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json"
+    json: '/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json'
   args:
-    creates: "{{ json }}"
+    creates: '{{ json }}'
 
-- name: "Collect gentxs"
+- name: 'Collect gentxs'
   become: yes
-  become_user: "{{ service }}"
-  shell: "{{ service }} collect-gentxs"
+  become_user: '{{ service }}'
+  shell: '{{ service }} collect-gentxs'
 
-- name: "Validate genesis"
+- name: 'Validate genesis'
   become: yes
-  become_user: "{{ service }}"
-  shell: "{{ service }} validate-genesis"
+  become_user: '{{ service }}'
+  shell: '{{ service }} validate-genesis'

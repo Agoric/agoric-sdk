@@ -22,6 +22,7 @@ FLAGS may be:
   --help      - print this helpful usage information
   --out PATH  - output dump to PATH ("-" indicates stdout, the default)
   --stats     - just print summary stats and exit
+  --wide      - don't truncate unreadably long values
 
 TARGET is one of: the base directory where a swingset's vats live, a swingset
 data store directory, or the path to a swingset database file.  If omitted, it
@@ -58,12 +59,16 @@ export function main() {
   let justStats = false;
   let doDump = true;
   let refDump = false;
+  let wideMode = false;
   let outfile;
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
       case '--raw':
         rawMode = true;
+        break;
+      case '--wide':
+        wideMode = true;
         break;
       case '--refcounts':
       case '--refCounts':
@@ -114,17 +119,17 @@ export function main() {
   if (!kernelStateDBDir) {
     fail(`can't find a database at ${target}`, false);
   }
-  const swingStore = openSwingStore(kernelStateDBDir);
+  const kernelStorage = openSwingStore(kernelStateDBDir).kernelStorage;
   if (justStats) {
-    const rawStats = JSON.parse(swingStore.kvStore.get('kernelStats'));
-    const cranks = Number(swingStore.kvStore.get('crankNumber'));
+    const rawStats = JSON.parse(kernelStorage.kvStore.get('kernelStats'));
+    const cranks = Number(kernelStorage.kvStore.get('crankNumber'));
     printMainStats(organizeMainStats(rawStats, cranks));
   } else {
     if (doDump) {
-      dumpStore(swingStore, outfile, rawMode);
+      dumpStore(kernelStorage, outfile, rawMode, !wideMode);
     }
     if (refCounts) {
-      auditRefCounts(swingStore.kvStore, refDump, doDump);
+      auditRefCounts(kernelStorage.kvStore, refDump, doDump);
     }
   }
 }

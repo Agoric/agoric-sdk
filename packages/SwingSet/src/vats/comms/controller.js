@@ -1,10 +1,6 @@
-import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
-
-const UNDEFINED = harden({
-  body: JSON.stringify({ '@qclass': 'undefined' }),
-  slots: [],
-});
+import { Nat } from '@endo/nat';
+import { assert, Fail } from '@agoric/assert';
+import { kser, kunser, kslot, krefOf } from '../../lib/kmarshal.js';
 
 // deliverToController() is used for local vats which want to talk to us as a
 // vat, rather than as a conduit to talk to remote vats. The bootstrap
@@ -18,8 +14,7 @@ const UNDEFINED = harden({
 export function deliverToController(
   state,
   clistKit,
-  method,
-  controllerArgs,
+  methargs,
   result,
   syscall,
 ) {
@@ -30,91 +25,71 @@ export function deliverToController(
     provideLocalForKernel,
   } = clistKit;
 
-  // We use a degenerate form of deserialization, just enough to handle the
-  // handful of methods implemented by the commsController. 'args.body' can
-  // normally have arbitrary {'@qclass': whatever} objects, but we only
-  // handle {'@qclass':'slot', index} objects, which point into the
-  // 'args.slots' array.
+  const methargsdata = kunser(methargs);
+  const [method, args] = methargsdata;
 
   function doAddRemote() {
     // comms!addRemote(name, tx, setRx)
     //  we then do setRx!setReceiver(rx)
-    const args = JSON.parse(controllerArgs.body);
-    const { slots } = controllerArgs;
 
     const name = args[0];
-    assert.typeof(name, 'string', X`bad addRemote name ${name}`);
-    assert(
-      args[1]['@qclass'] === 'slot' && args[1].index === 0,
-      X`unexpected args for addRemote(): ${controllerArgs}`,
-    );
-    assert(
-      args[2]['@qclass'] === 'slot' && args[2].index === 1,
-      X`unexpected args for addRemote(): ${controllerArgs}`,
-    );
-    const transmitterID = slots[args[1].index];
-    const setReceiverID = slots[args[2].index];
+    const transmitterID = krefOf(args[1]);
+    assert(transmitterID, 'bad "transmitter" arg for addRemote()');
+    const setReceiverID = krefOf(args[2]);
+    assert(setReceiverID, 'bad "setReceiver" arg for addRemote()');
 
     const { receiverID } = state.addRemote(name, transmitterID);
 
-    const rxArg = { '@qclass': 'slot', index: 0 };
-    const setReceiverArgs = harden({
-      body: JSON.stringify([rxArg]),
-      slots: [receiverID],
-    });
-    syscall.send(setReceiverID, 'setReceiver', setReceiverArgs);
+    const setReceiverMethargs = kser(['setReceiver', [kslot(receiverID)]]);
+    syscall.send(setReceiverID, setReceiverMethargs);
     // todo: consider, this leaves one message (setReceiver) on the queue,
     // rather than giving the caller of comms!addRemote() something to
     // synchronize upon. I don't think it hurts, but might affect debugging.
-    syscall.resolve([[result, false, UNDEFINED]]);
+    syscall.resolve([[result, false, kser(undefined)]]);
   }
 
   function doAddEgress() {
     // comms!addEgress(name, index, obj)
-    const args = JSON.parse(controllerArgs.body);
-    const { slots } = controllerArgs;
 
     const remoteName = args[0];
     const remoteID = state.getRemoteIDForName(remoteName);
-    assert(remoteID, X`unknown remote name ${remoteName}`);
+    remoteID || Fail`unknown remote name ${remoteName}`;
     const remoteRefID = args[1];
-    assert(
-      args[2]['@qclass'] === 'slot' && args[2].index === 0,
-      X`unexpected args for addEgress(): ${controllerArgs}`,
-    );
-    const localRef = provideLocalForKernel(slots[args[2].index]);
+    const kernelRefID = krefOf(args[2]);
+    assert(kernelRefID, 'bad "obj0" arg for addEgress()');
+    const localRef = provideLocalForKernel(kernelRefID);
     addEgress(remoteID, remoteRefID, localRef);
-    syscall.resolve([[result, false, UNDEFINED]]);
+    syscall.resolve([[result, false, kser(undefined)]]);
   }
 
   function doAddIngress() {
     // obj = comms!addIngress(name, index)
-    const args = JSON.parse(controllerArgs.body);
 
     const remoteName = args[0];
     const remoteID = state.getRemoteIDForName(remoteName);
-    assert(remoteID, X`unknown remote name ${remoteName}`);
+    remoteID || Fail`unknown remote name ${remoteName}`;
     const remoteRefID = Nat(args[1]);
     const iface = args[2];
-    const localRef = addIngress(remoteID, remoteRefID);
-    const data = {
-      body: '{"@qclass":"slot","index":0}',
-      slots: [provideKernelForLocal(localRef)],
-    };
     if (iface) {
-      data.body = `{"@qclass":"slot","iface":"${iface}","index":0}`;
+      assert.typeof(iface, 'string', 'unexpected iface type in addIngress()');
     }
+    const localRef = addIngress(remoteID, remoteRefID);
+    const data = kser(kslot(provideKernelForLocal(localRef), iface));
     syscall.resolve([[result, false, data]]);
   }
 
   switch (method) {
-    case 'addRemote':
+    case 'addRemote': {
       return doAddRemote();
-    case 'addEgress':
+    }
+    case 'addEgress': {
       return doAddEgress();
-    case 'addIngress':
+    }
+    case 'addIngress': {
       return doAddIngress();
-    default:
-      assert.fail(X`method ${method} is not available`);
+    }
+    default: {
+      throw Fail`method ${method} is not available`;
+    }
   }
 }

@@ -88,10 +88,10 @@ boundary).
 ## Transactions
 
 This implies a string-to-string key-value store, with a two-level write-back
-cache. We define **StorageAPI** as a set of functions `{ has, getKeys, get,
-set, delete }`, with the usual semantics (`has` takes a string and returns a
-boolean, `get` returns `undefined` for missing objects). `getKeys(start,
-end)` returns an iterator of sorted keys `start <= key < end`.
+cache. We define **StorageAPI** (typed as **KVStore**) as a set of functions
+`{ has, getKeys, get, set, delete }`, with the usual semantics (`has` takes a
+string and returns a boolean, `get` returns `undefined` for missing objects).
+`getKeys(start, end)` returns an iterator of sorted keys `start <= key < end`.
 
 We also define a **HostDB** as an object with functions `{ has, getKeys, get,
 applyBatch }`. The batch is a list of `{op: 'set', key, value}` or `{op:
@@ -127,7 +127,7 @@ construction of these objects starting from the host side:
   then wrapped with some helper methods: `{ enumeratePrefixedKeys,
   getPrefixedValues, deletePrefixedKeys }` to produce the
   `enhancedCrankBuffer`, which provides both StorageAPI plus the helper
-  methods.
+  methods (typed as **KVStorePlus**).
 * All `kernelKeeper` and `vatKeeper` operations use the
   `enhancedCrankBuffer`. They are unaware of Crank or Block boundaries, nor
   can they sense the operation of the read cache.

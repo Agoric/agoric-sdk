@@ -1,8 +1,7 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockBrand } from './mockBrand.js';
@@ -11,7 +10,7 @@ import { mockBrand } from './mockBrand.js';
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
-const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
+const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   // a2 is a copy of a which should have the same values but not same
   // identity. This doesn't make sense to use for handle tests, but
   // makes sense for anything where the identity is based on data.
@@ -22,10 +21,15 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     { brand: mockBrand, value: harden([a]) },
     `[a] is a valid set`,
   );
-  t.deepEqual(
-    m.make(mockBrand, harden([a, b])),
-    { brand: mockBrand, value: harden([a, b]) },
-    `[a, b] is a valid set`,
+  t.assert(
+    m.isEqual(
+      m.make(mockBrand, harden([a, b])),
+      harden({
+        brand: mockBrand,
+        value: harden([b, a]),
+      }),
+    ),
+    `[b, a] is a valid set`,
   );
   t.deepEqual(
     m.make(mockBrand, harden([])),
@@ -37,15 +41,20 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     { message: /value has duplicates/ },
     `duplicates in make should throw`,
   );
-  t.deepEqual(
-    m.make(mockBrand, harden(['a', 'b'])),
-    { brand: mockBrand, value: harden(['a', 'b']) },
-    'anything comparable is a valid element',
+  t.assert(
+    m.isEqual(
+      m.make(mockBrand, harden(['a', 'b'])),
+      harden({ brand: mockBrand, value: harden(['b', 'a']) }),
+    ),
+    'any key is a valid element',
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'a'),
-    { message: 'value "a" must be a bigint or an array, not "string"' },
+    {
+      message:
+        'value "a" must be a bigint, copySet, copyBag, or an array, not "string"',
+    },
     'strings are not valid',
   );
   if (a2 !== undefined) {
@@ -62,9 +71,11 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     { brand: mockBrand, value: harden([a]) },
     `[a] is a valid set`,
   );
-  t.deepEqual(
-    m.coerce(mockBrand, harden({ brand: mockBrand, value: harden([a, b]) })),
-    { brand: mockBrand, value: harden([a, b]) },
+  t.assert(
+    m.isEqual(
+      m.coerce(mockBrand, harden({ brand: mockBrand, value: harden([a, b]) })),
+      harden({ brand: mockBrand, value: harden([b, a]) }),
+    ),
     `[a, b] is a valid set`,
   );
   t.deepEqual(
@@ -77,15 +88,20 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     { message: /value has duplicates/ },
     `duplicates in coerce should throw`,
   );
-  t.deepEqual(
-    m.coerce(mockBrand, m.make(mockBrand, harden(['a', 'b']))),
-    { brand: mockBrand, value: harden(['a', 'b']) },
-    'anything comparable is a valid element',
+  t.assert(
+    m.isEqual(
+      m.coerce(mockBrand, m.make(mockBrand, harden(['a', 'b']))),
+      harden({ brand: mockBrand, value: harden(['b', 'a']) }),
+    ),
+    'any key is a valid element',
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: 'a' })),
-    { message: 'value "a" must be a bigint or an array, not "string"' },
+    {
+      message:
+        'value "a" must be a bigint, copySet, copyBag, or an array, not "string"',
+    },
     'strings are not valid',
   );
   if (a2 !== undefined) {
@@ -116,9 +132,12 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     `m.isEmpty([]) is true`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: {} })),
-    { message: 'value {} must be a bigint or an array, not "copyRecord"' },
+    {
+      message:
+        'value {} must be a bigint, copySet, copyBag, or an array, not "copyRecord"',
+    },
     `m.isEmpty({}) throws`,
   );
   t.falsy(
@@ -274,23 +293,27 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [a] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /Sets must not have common elements: .*/ },
     `overlap between left and right of add should throw`,
   );
-  t.deepEqual(
-    m.add(
-      harden({ brand: mockBrand, value: [] }),
-      harden({ brand: mockBrand, value: [b, c] }),
+  t.assert(
+    m.isEqual(
+      m.add(
+        harden({ brand: mockBrand, value: [] }),
+        harden({ brand: mockBrand, value: [b, c] }),
+      ),
+      harden({ brand: mockBrand, value: [c, b] }),
     ),
-    { brand: mockBrand, value: [b, c] },
     `anything + identity stays same`,
   );
-  t.deepEqual(
-    m.add(
-      harden({ brand: mockBrand, value: [b, c] }),
-      harden({ brand: mockBrand, value: [] }),
+  t.assert(
+    m.isEqual(
+      m.add(
+        harden({ brand: mockBrand, value: [b, c] }),
+        harden({ brand: mockBrand, value: [] }),
+      ),
+      harden({ brand: mockBrand, value: [c, b] }),
     ),
-    { brand: mockBrand, value: [b, c] },
     `anything + identity stays same`,
   );
   if (a2 !== undefined) {
@@ -338,15 +361,17 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, b] }),
         harden({ brand: mockBrand, value: [c] }),
       ),
-    { message: /was not in left/ },
+    { message: /right element .* was not in left/ },
     `elements in right but not in left of subtract should throw`,
   );
-  t.deepEqual(
-    m.subtract(
-      harden({ brand: mockBrand, value: [b, c] }),
-      harden({ brand: mockBrand, value: [] }),
+  t.assert(
+    m.isEqual(
+      m.subtract(
+        harden({ brand: mockBrand, value: [b, c] }),
+        harden({ brand: mockBrand, value: [] }),
+      ),
+      harden({ brand: mockBrand, value: [c, b] }),
     ),
-    { brand: mockBrand, value: [b, c] },
     `anything - identity stays same`,
   );
   t.deepEqual(
@@ -374,9 +399,9 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 };
 
 test('setMathHelpers with handles', t => {
-  const a = Far('iface', {});
-  const b = Far('iface', {});
-  const c = Far('iface', {});
+  const a = Far('iface a', {});
+  const b = Far('iface b', {});
+  const c = Far('iface c', {});
 
   runSetMathHelpersTests(t, [a, b, c]);
 });

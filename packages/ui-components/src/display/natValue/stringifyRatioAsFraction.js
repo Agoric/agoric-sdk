@@ -3,15 +3,12 @@
 import { assert } from '@agoric/assert';
 import { isNatValue } from '@agoric/ertp';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/exported.js';
-
 import { stringifyNat } from './stringifyNat.js';
 
 const PLACES_TO_SHOW = 2;
 
 /**
- * @param {Ratio} ratio
+ * @param {import('../../ratio.js').Ratio} ratio
  * @param {(brand: Brand) => number | undefined } getDecimalPlaces
  * @param {number} [numPlacesToShow]
  * @param {number} [denomPlacesToShow]
@@ -38,13 +35,11 @@ export const stringifyRatioAsFraction = (
     `decimalPlaces for denominator ${ratio.denominator} must be provided`,
   );
   const numeratorString = stringifyNat(
-    // @ts-ignore value is BigInt
     ratio.numerator.value,
     numDecimalPlaces,
     numPlacesToShow,
   );
   const denominatorString = stringifyNat(
-    // @ts-ignore value is BigInt
     ratio.denominator.value,
     denomDecimalPlaces,
     denomPlacesToShow,

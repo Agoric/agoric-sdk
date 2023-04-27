@@ -1,13 +1,13 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -18,9 +18,12 @@ const dirname = path.dirname(filename);
 
 const root = `${dirname}/../../../src/contracts/otcDesk.js`;
 
+let vatAdminState;
+
 const installCode = async zoe => {
   const bundle = await bundleSource(root);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-otcdesk', bundle);
+  const installation = await E(zoe).installBundleID('b1-otcdesk');
   return installation;
 };
 
@@ -28,7 +31,8 @@ const installCoveredCall = async zoe => {
   const bundle = await bundleSource(
     `${dirname}/../../../src/contracts/coveredCall`,
   );
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const installation = await E(zoe).installBundleID('b1-coveredcall');
   return installation;
 };
 
@@ -41,14 +45,8 @@ const makeAlice = async (
   coveredCallInstallation,
 ) => {
   let creatorFacet;
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    bucksIssuer,
-    moola,
-    simoleans,
-    bucks,
-  } = issuers;
+  const { moolaIssuer, simoleanIssuer, bucksIssuer, moola, simoleans, bucks } =
+    issuers;
   const { moolaPayment, simoleanPayment, bucksPayment } = origPayments;
 
   const simoleanPurse = await E(simoleanIssuer).makeEmptyPurse();
@@ -114,14 +112,8 @@ const makeBob = (
   origPayments,
   coveredCallInstallation,
 ) => {
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    bucksIssuer,
-    moola,
-    simoleans,
-    bucks,
-  } = issuers;
+  const { moolaIssuer, simoleanIssuer, bucksIssuer, moola, simoleans, bucks } =
+    issuers;
   const { moolaPayment, simoleanPayment, bucksPayment } = origPayments;
   const moolaPurse = moolaIssuer.makeEmptyPurse();
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();
@@ -133,20 +125,26 @@ const makeBob = (
   return Far('Bob', {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Moola: moola(3n) },
         `bob will get 3 moola`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Simolean: simoleans(4n) },
         `bob must give 4 simoleans`,
       );
@@ -184,20 +182,26 @@ const makeBob = (
     },
     offerExpired: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Moola: moola(3n) },
         `bob will get 3 moola`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Simolean: simoleans(4n) },
         `bob must give 4 simoleans`,
       );
@@ -238,20 +242,26 @@ const makeBob = (
     },
     offerWantTooMuch: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Simolean: simoleans(15n) },
         `bob will get 15 simoleans`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Buck: bucks(500n), Moola: moola(35n) },
         `bob must give 500 bucks and 35 moola`,
       );
@@ -273,7 +283,7 @@ const makeBob = (
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
         message:
-          'rights were not conserved for brand "[Alleged: simoleans brand]"',
+          'rights were not conserved for brand "[Alleged: simoleans brand]" "[15n]" != "[16n]"',
       });
 
       await assertPayoutAmount(
@@ -300,20 +310,26 @@ const makeBob = (
     },
     offerNotCovered: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Simolean: simoleans(15n) },
         `bob will get 15 simoleans`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Buck: bucks(500n), Moola: moola(35n) },
         `bob must give 500 bucks and 35 moola`,
       );
@@ -369,6 +385,8 @@ const makeBob = (
   });
 };
 
+// eslint complains about these shadowing local variables if this is defined
+// too early, but vatAdminState needs to be visible earlier
 const {
   moolaKit,
   simoleanKit,
@@ -380,7 +398,9 @@ const {
   bucksIssuer,
   bucks,
   zoe,
+  vatAdminState: vas0,
 } = setup();
+vatAdminState = vas0;
 
 const issuers = {
   moolaIssuer,
@@ -392,9 +412,9 @@ const issuers = {
 };
 
 /**
- * @param {Value} moolaValue
- * @param {Value} simoleanValue
- * @param {Value} bucksValue
+ * @param {bigint} moolaValue
+ * @param {bigint} simoleanValue
+ * @param {bigint} bucksValue
  * @returns {{ moolaPayment: Payment, simoleanPayment: Payment,
  * bucksPayment: Payment }}
  */
@@ -405,7 +425,7 @@ const makeInitialPayments = (moolaValue, simoleanValue, bucksValue) => ({
 });
 
 test('zoe - otcDesk - offerOk', async t => {
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
 
@@ -454,7 +474,7 @@ test('zoe - otcDesk - offerOk', async t => {
 });
 
 test('zoe - otcDesk - offerExpired', async t => {
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
 
@@ -497,14 +517,14 @@ test('zoe - otcDesk - offerExpired', async t => {
     timer,
     1n,
   );
-  timer.tick();
+  await timer.tick();
 
   // Bob tries to offer but the quote is expired.
   await bob.offerExpired(invitation2);
 });
 
 test('zoe - otcDesk - offerWantTooMuch', async t => {
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
 

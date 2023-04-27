@@ -1,10 +1,10 @@
-// @ts-check
+// @jessie-check
 
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 
-import '../types.js';
+import '../types-ambient.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 const empty = 0n;
 
 /**
@@ -14,16 +14,16 @@ const empty = 0n;
  *
  * Natural numbers are used for fungible erights such as money because
  * rounding issues make floats problematic. All operations should be
- * done with the smallest whole unit such that the NatMathHelpers never
+ * done with the smallest whole unit such that the `natMathHelpers` never
  * deals with fractional parts.
  *
- * @type {NatMathHelpers}
+ * @type {MathHelpers<NatValue>}
  */
-const natMathHelpers = {
+export const natMathHelpers = harden({
   doCoerce: nat => {
     // TODO: tighten the definition of Nat in @agoric/nat to throw on `number`
     assert.typeof(nat, 'bigint');
-    assert(isNat(nat), X`value ${nat} must be a natural number`);
+    isNat(nat) || Fail`value ${nat} must be a natural number`;
     return Nat(nat);
   },
   doMakeEmpty: () => empty,
@@ -33,7 +33,4 @@ const natMathHelpers = {
   // BigInts don't observably overflow
   doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
-};
-
-harden(natMathHelpers);
-export default natMathHelpers;
+});

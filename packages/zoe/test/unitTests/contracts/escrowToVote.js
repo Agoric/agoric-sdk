@@ -1,8 +1,7 @@
-// @ts-check
+// @ts-nocheck
 
-import { assert, details as X, q } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
-import { makeStore } from '@agoric/store';
+import { Far } from '@endo/marshal';
+import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -11,7 +10,7 @@ import {
   assertNatAssetKind,
 } from '../../../src/contractSupport/index.js';
 
-import '../../../exported.js';
+const { details: X, quote: q } = assert;
 
 /**
  * This contract implements coin voting. There are two roles: the
@@ -23,7 +22,7 @@ import '../../../exported.js';
  * issuerKeywordRecord. The instantiator gets the only Secretary
  * access through the creatorFacet.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<undefined, {closeElection: unknown, makeVoterInvitation: unknown}>}
  */
 const start = zcf => {
   const {
@@ -35,14 +34,13 @@ const start = zcf => {
   assert.typeof(question, 'string');
   assertNatAssetKind(zcf, assetsBrand);
 
-  const seatToResponse = makeStore('seat');
+  const seatToResponse = makeScalarMapStore('seat');
 
   // We assume the only valid responses are 'YES' and 'NO'
   const assertResponse = response => {
-    assert(
-      response === 'NO' || response === 'YES',
-      X`the answer ${q(response)} was not 'YES' or 'NO'`,
-    );
+    response === 'NO' ||
+      response === 'YES' ||
+      assert.fail(X`the answer ${q(response)} was not 'YES' or 'NO'`);
     // Throw an error if the response is not valid, but do not
     // exit the seat. We should allow the voter to recast their vote.
   };
@@ -60,7 +58,7 @@ const start = zcf => {
       vote: response => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(!voterSeat.hasExited(), X`the voter seat has exited`);
+        assert(!voterSeat.hasExited(), 'the voter seat has exited');
 
         assertResponse(response);
 

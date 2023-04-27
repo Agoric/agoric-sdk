@@ -6,8 +6,6 @@ coveredCallOk
 swapForOptionOk
 secondPriceAuctionOk
 atomicSwapOk
-simpleExchangeOk
-simpleExchangeNotifier
-autoswapOk
 sellTicketsOk
 otcDeskOk
+badTimer

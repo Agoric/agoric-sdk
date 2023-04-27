@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses/pre-bundle-source.js';
-import '@agoric/install-ses';
+import '@endo/init/pre-bundle-source.js';
+import '@endo/init';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
 import { loadBasedir, buildVatController } from '../src/index.js';
-import { buildLoopbox } from '../src/devices/loopbox.js';
+import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
@@ -27,10 +27,12 @@ async function main() {
     argv[0] === '--' || argv[0] === undefined ? '.' : argv.shift();
   const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
+  assert(basedir);
   const config = await loadBasedir(basedir);
   const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
   config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
 
+  // @ts-expect-error expects string[], not boolean, in second position
   const controller = await buildVatController(config, withSES, vatArgv);
   if (command === 'run') {
     await controller.run();
@@ -45,17 +47,19 @@ async function main() {
       deepLog(d.promises);
       console.log('Run Queue:');
       deepLog(d.runQueue);
+      console.log('Acceptance Queue:');
+      deepLog(d.acceptanceQueue);
     };
     r.context.dump2 = () => controller.dump();
     r.context.run = () => {
       console.log('run!');
-      controller.run();
+      return controller.run();
     };
     r.context.step = () => {
       console.log('step!');
-      controller.step();
+      return controller.step();
     };
   }
 }
 
-main();
+void main();

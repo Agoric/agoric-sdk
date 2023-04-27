@@ -1,6 +1,7 @@
-/* global setTimeout Buffer */
+/* global clearTimeout setTimeout Buffer */
 import path from 'path';
 import fs from 'fs';
+import url from 'url';
 import { execFile } from 'child_process';
 import { open as tempOpen } from 'temp';
 
@@ -8,26 +9,23 @@ import WebSocket from 'ws';
 
 import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
-} from '@agoric/vats/src/batched-deliver.js';
+} from '@agoric/internal/src/batched-deliver.js';
+import { forever, whileTrue } from '@agoric/internal';
 
 const console = anylogger('chain-cosmos-sdk');
 
-// the `agd` tool in our repo is built by 'cd golang/cosmos &&
-// make'. It lives in the build tree along with `bin/ag-solo`, in case there are
-// multiple checkouts of `agoric-sdk`.
-export const HELPER = new URL(
-  '../../../golang/cosmos/build/agd',
-  import.meta.url,
-).pathname;
-
-const FAUCET_ADDRESS =
-  'the appropriate faucet channel on Discord (https://agoric.com/discord)';
+// the `agd` tool in our repo is built on demand.  It lives in the build tree
+// along with `bin/ag-solo`, in case there are multiple checkouts of
+// `agoric-sdk`.
+export const HELPER = url.fileURLToPath(
+  new URL('../../../bin/agd', import.meta.url),
+);
 
 // Transaction simulation should be an accurate measure of gas.
 const GAS_ADJUSTMENT = '1.2';
@@ -35,12 +33,11 @@ const GAS_ADJUSTMENT = '1.2';
 const adviseEgress = egressAddr =>
   `\
 
-
-Send:
-
-  !faucet client ${egressAddr}
-
-to ${FAUCET_ADDRESS}`;
+Visit https://devnet.faucet.agoric.net/
+enter address: ${egressAddr}
+choose client, ag-solo
+and then Submit.
+`;
 
 // Retry if our latest message failed.
 const INITIAL_SEND_RETRY_DELAY_MS = 1_000;
@@ -165,7 +162,7 @@ export async function connectToChain(
   // The helper address may not have a token balance, and instead uses a
   // separate fee account, set up with something like:
   //
-  // agd tx feegrant grant --period=5 --period-limit=200000urun \
+  // agd tx feegrant grant --period=5 --period-limit=200000uist \
   // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
   const feeAccountAddr = await readOrDefault(
     path.join(basedir, 'cosmos-fee-account'),
@@ -176,7 +173,7 @@ export async function connectToChain(
   async function retryRpcHref(tryOnce) {
     let rpcHrefIndex = lastGoodRpcHrefIndex;
     // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for await (const _ of forever) {
       const thisRpcHref = rpcHrefs[rpcHrefIndex];
 
       // tryOnce will either throw if cancelled (which rejects this promise),
@@ -193,6 +190,7 @@ export async function connectToChain(
       await new Promise(resolve => setTimeout(resolve, 5000));
       rpcHrefIndex = (rpcHrefIndex + 1) % rpcHrefs.length;
     }
+    throw Error(`Unreachable, but the tools don't know that`);
   }
 
   let goodRpcHref = rpcHrefs[0];
@@ -382,10 +380,8 @@ export async function connectToChain(
           // console.info(`got ${storagePath} query`, obj);
           if (obj.result && obj.result.response && obj.result.response.value) {
             // Decode the layers up to the actual storage value.
-            const {
-              value: b64JsonStorage,
-              height: heightString,
-            } = obj.result.response;
+            const { value: b64JsonStorage, height: heightString } =
+              obj.result.response;
             const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
               'utf8',
             );
@@ -585,6 +581,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     const bigPool = messagePool.concat(newMessages);
 
     // Sort the big pool by sequence number.
+    // @ts-expect-error FIXME bigint as sort value
     const sortedPool = bigPool.sort((a, b) => a[0] - b[0]);
 
     // Only keep messages that have a unique sequence number.
@@ -613,7 +610,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
     const messages = messagePool;
 
-    try {
+    const tryBody = async () => {
       totalDeliveries += 1;
       console.log(
         `delivering to chain (trips=${totalDeliveries})`,
@@ -662,7 +659,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
       // We just try a single delivery per block.
       let retry = true;
-      while (retry) {
+      for await (const _ of whileTrue(() => retry)) {
         retry = false;
         // eslint-disable-next-line no-await-in-loop
         const { stderr, stdout } = await runHelper([
@@ -691,11 +688,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           console.debug(`helper said: ${stdout}`);
           const out = JSON.parse(stdout);
 
-          assert.equal(
-            out.code,
-            0,
-            X`Unexpected output: ${out.raw_log || stdout.trimRight()}`,
-          );
+          out.code === 0 ||
+            Fail`Unexpected output: ${out.raw_log || stdout.trimRight()}`;
 
           // Wait for the transaction to be included in a block.
           const txHash = out.txhash;
@@ -705,7 +699,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
             if (txResult.code) {
               // eslint-disable-next-line no-use-before-define
               failedSend(
-                assert.error(X`Error in tx processing: ${txResult.log}`),
+                assert.error(`Error in tx processing: ${txResult.log}`),
               );
             }
           });
@@ -716,11 +710,9 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           sequenceNumber += 1n;
         }
       }
-    } finally {
-      if (tmpInfo) {
-        await fs.promises.unlink(tmpInfo.path);
-      }
-    }
+    };
+
+    await tryBody().finally(() => tmpInfo && fs.promises.unlink(tmpInfo.path));
   };
 
   /**
@@ -729,13 +721,13 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    *
    * It then delivers the mailbox to inbound.  There are no optimisations.
    *
-   * @param {number=} lastMailboxUpdate
+   * @param {bigint} [lastMailboxUpdate]
    */
   const recurseEachMailboxUpdate = async (lastMailboxUpdate = undefined) => {
     const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
       lastMailboxUpdate,
     );
-    assert(updateCount, X`${GCI} unexpectedly finished!`);
+    updateCount || Fail`${GCI} unexpectedly finished!`;
     if (mailbox) {
       const { outbox, ack } = mailbox;
       // console.info('have mailbox', mailbox);
@@ -760,6 +752,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     // Reset the backoff period.
     retryBackoff = randomizeDelay(INITIAL_SEND_RETRY_DELAY_MS);
   };
+  /** @param {Error} [e]  */
   const failedSend = (e = undefined) => {
     if (e) {
       console.error(`Error sending`, e);
@@ -780,10 +773,11 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   };
 
   // This function ensures we only have one outgoing send operation at a time.
+  /** @type {(lastSendUpdate?: bigint) => Promise<void>} */
   const recurseEachSend = async (lastSendUpdate = undefined) => {
     // See when there is another requested send since our last time.
     const { updateCount } = await sendNotifier.getUpdateSince(lastSendUpdate);
-    assert(updateCount, X`Sending unexpectedly finished!`);
+    updateCount || Fail`Sending unexpectedly finished!`;
 
     await sendFromMessagePool().then(successfulSend, failedSend);
     recurseEachSend(updateCount);
@@ -812,5 +806,9 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
-  return makeBatchedDeliver(deliver, Math.min(DEFAULT_BATCH_TIMEOUT_MS, 2000));
+  return makeBatchedDeliver(
+    deliver,
+    { clearTimeout, setTimeout },
+    Math.min(DEFAULT_BATCH_TIMEOUT_MS, 2000),
+  );
 }

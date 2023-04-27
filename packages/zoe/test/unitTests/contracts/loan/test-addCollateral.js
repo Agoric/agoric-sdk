@@ -1,8 +1,7 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
 import '../../../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';
@@ -36,9 +35,9 @@ test('makeAddCollateralInvitation', async t => {
 
   const { zcfSeat: lenderSeat } = await zcf.makeEmptySeatKit();
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
-  const priceAuthority = makeFakePriceAuthority({
+  const priceAuthority = await makeFakePriceAuthority({
     priceList: [],
     timer,
     actualBrandIn: collateralKit.brand,

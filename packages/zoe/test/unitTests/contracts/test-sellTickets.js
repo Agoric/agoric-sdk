@@ -1,16 +1,16 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
 import { assert } from '@agoric/assert';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { E } from '@endo/eventual-send';
 
-// noinspection ES6PreferShortImport
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 
@@ -22,15 +22,16 @@ const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;
 
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
-  const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
+  vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
+  const mintAndSellNFTInstallation = await E(zoe).installBundleID('b1-nft');
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  const sellItemsInstallation = await E(zoe).install(sellItemsBundle);
+  vatAdminState.installBundle('b1-sell-items', sellItemsBundle);
+  const sellItemsInstallation = await E(zoe).installBundleID('b1-sell-items');
 
   const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
 
@@ -67,7 +68,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
-          number: 1,
+          number: 3,
         },
         {
           show: 'Steven Universe, the Opera',
@@ -77,7 +78,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
-          number: 3,
+          number: 1,
         },
       ],
     },
@@ -106,12 +107,12 @@ test(`mint and sell tickets for multiple shows`, async t => {
         {
           show: 'Reserved for private party',
           start: 'Tues May 12, 2020 at 8pm',
-          number: 1,
+          number: 2,
         },
         {
           show: 'Reserved for private party',
           start: 'Tues May 12, 2020 at 8pm',
-          number: 2,
+          number: 1,
         },
       ],
     },
@@ -148,15 +149,16 @@ test(`mint and sell opera tickets`, async t => {
 
   const moola = value => AmountMath.make(moolaBrand, value);
 
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
-  const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
+  vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
+  const mintAndSellNFTInstallation = await E(zoe).installBundleID('b1-nft');
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  const sellItemsInstallation = await E(zoe).install(sellItemsBundle);
+  vatAdminState.installBundle('b1-sell-items', sellItemsBundle);
+  const sellItemsInstallation = await E(zoe).installBundleID('b1-sell-items');
 
   // === Initial Opera de Bordeaux part ===
 
@@ -282,7 +284,10 @@ test(`mint and sell opera tickets`, async t => {
   // Joker attempts to buy ticket 1 (and should fail)
   const jokerBuysTicket1 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -355,7 +360,10 @@ test(`mint and sell opera tickets`, async t => {
     moola100Payment,
   ) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -385,9 +393,8 @@ test(`mint and sell opera tickets`, async t => {
       want: { Items: ticket2Amount },
     });
 
-    const jokerInsufficientPaymentForTicket = jokerPurse.withdraw(
-      insufficientAmount,
-    );
+    const jokerInsufficientPaymentForTicket =
+      jokerPurse.withdraw(insufficientAmount);
 
     const seat = await E(zoe).offer(
       invitation,
@@ -423,7 +430,10 @@ test(`mint and sell opera tickets`, async t => {
 
   const bobBuysTicket2And3 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -544,15 +554,16 @@ test(`mint and sell opera tickets`, async t => {
 //
 test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
-  const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
+  vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
+  const mintAndSellNFTInstallation = await E(zoe).installBundleID('b1-nft');
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  const sellItemsInstallation = await E(zoe).install(sellItemsBundle);
+  vatAdminState.installBundle('b1-sell-items', sellItemsBundle);
+  const sellItemsInstallation = await E(zoe).installBundleID('b1-sell-items');
 
   const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
 
@@ -584,12 +595,11 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   const birdBrand = await E(birdIssuerP).getBrand();
   const birdSalesPublicFacet = E(zoe).getPublicFacet(sellItemsInstance);
   const birdsForSale = await E(birdSalesPublicFacet).getAvailableItems();
-  const birdsForSaleNotifier = E(
-    birdSalesPublicFacet,
-  ).getAvailableItemsNotifier();
+  const birdsForSaleNotifier =
+    E(birdSalesPublicFacet).getAvailableItemsNotifier();
 
   const birdsForSalePresolved = await E(birdsForSaleNotifier).getUpdateSince();
-  t.is(birdsForSale, birdsForSalePresolved.value);
+  t.deepEqual(birdsForSale, birdsForSalePresolved.value);
   t.is(birdsForSale.brand, birdBrand);
   t.is(birdsForSalePresolved.value.brand, birdBrand);
 });

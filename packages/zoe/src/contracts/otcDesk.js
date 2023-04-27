@@ -1,15 +1,12 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import {
   offerTo,
   saveAllIssuers,
   assertProposalShape,
+  atomicTransfer,
 } from '../contractSupport/index.js';
-
-import '../../exported.js';
 
 /**
  * This contract is inspired by the description of an OTC Desk smart
@@ -48,7 +45,7 @@ import '../../exported.js';
  * offered are already escrowed, and the trade is guaranteed to
  * succeed if their proposal matches the quote.
  *
- * @type {ContractStartFn}
+ * @param {ZCF<Record<string, any>>} zcf
  */
 const start = zcf => {
   const { coveredCallInstallation } = zcf.getTerms();
@@ -66,6 +63,7 @@ const start = zcf => {
    * @returns {Promise<Payment>}
    */
   const makeQuote = async (price, assets, timeAuthority, deadline) => {
+    /** @type {{ creatorInvitation: Invitation<Payment>} } */
     const { creatorInvitation } = await E(zoe).startInstance(
       coveredCallInstallation,
       zcf.getTerms().issuers,
@@ -83,12 +81,12 @@ const start = zcf => {
       },
     });
 
+    /** @type {{ userSeatPromise: Promise<UserSeat<Payment>>}} */
     const { userSeatPromise: coveredCallUserSeat } = await offerTo(
       zcf,
       creatorInvitation,
       undefined,
       proposal,
-      marketMakerSeat,
       marketMakerSeat,
     );
 
@@ -99,10 +97,8 @@ const start = zcf => {
   const addInventory = seat => {
     assertProposalShape(seat, { want: {} });
     // Take everything in this seat and add it to the marketMakerSeat
-    marketMakerSeat.incrementBy(
-      seat.decrementBy(harden(seat.getCurrentAllocation())),
-    );
-    zcf.reallocate(marketMakerSeat, seat);
+    atomicTransfer(zcf, seat, marketMakerSeat, seat.getCurrentAllocation());
+
     seat.exit();
     return 'Inventory added';
   };
@@ -110,8 +106,8 @@ const start = zcf => {
   const removeInventory = seat => {
     assertProposalShape(seat, { give: {} });
     const { want } = seat.getProposal();
-    seat.incrementBy(marketMakerSeat.decrementBy(harden(want)));
-    zcf.reallocate(marketMakerSeat, seat);
+    atomicTransfer(zcf, marketMakerSeat, seat, want);
+
     seat.exit();
     return 'Inventory removed';
   };
@@ -121,7 +117,7 @@ const start = zcf => {
      * The inventory can be added in bulk before any quotes are made
      * or can be added immediately before a quote.
      *
-     * @param {IssuerKeywordRecord=} issuerKeywordRecord
+     * @param {IssuerKeywordRecord} [issuerKeywordRecord]
      * @returns {Promise<Payment>}
      */
     makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {

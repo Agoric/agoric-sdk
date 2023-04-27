@@ -10,8 +10,8 @@ const worker = xsnap();
 await worker.evaluate(`
   // Incrementer, running on XS.
   function handleCommand(message) {
-    const number = Number(String.fromArrayBuffer(message));
-    return ArrayBuffer.fromString(String(number + 1));
+    const number = parseInt(new TextDecoder().decode(message), 10);
+    return new TextEncoder().encode(`${number + 1}`).buffer;
   }
 `);
 await worker.snapshot('bootstrap.xss');

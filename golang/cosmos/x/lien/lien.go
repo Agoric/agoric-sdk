@@ -24,7 +24,7 @@ type portMessage struct {
 	Type       string   `json:"type"`
 	Address    string   `json:"address"`
 	Denom      string   `json:"denom"`
-	Amount     sdk.Int  `json:"amount"`
+	Delta      sdk.Int  `json:"delta"`
 	Validators []string `json:"validators"`
 	Delegators []string `json:"delegators"`
 }
@@ -37,6 +37,7 @@ type msgAccountState struct {
 	Unbonding   sdk.Int `json:"unbonding"`
 	Locked      sdk.Int `json:"locked"`
 	Liened      sdk.Int `json:"liened"`
+	// TODO: send unvested amount
 }
 
 type delegatorState struct {
@@ -62,7 +63,7 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 const (
 	LIEN_GET_ACCOUNT_STATE = "LIEN_GET_ACCOUNT_STATE"
 	LIEN_GET_STAKING       = "LIEN_GET_STAKING"
-	LIEN_SET_LIENED        = "LIEN_SET_LIENED"
+	LIEN_CHANGE_LIENED     = "LIEN_CHANGE_LIENED"
 )
 
 // Receive implements the vm.PortHandler method.
@@ -82,8 +83,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 	case LIEN_GET_STAKING:
 		return ch.handleGetStaking(ctx.Context, msg)
 
-	case LIEN_SET_LIENED:
-		return ch.handleSetLiened(ctx.Context, msg)
+	case LIEN_CHANGE_LIENED:
+		return ch.handleChangeLiened(ctx.Context, msg)
 	}
 	return "", fmt.Errorf("unrecognized type %s", msg.Type)
 }
@@ -178,9 +179,9 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	return string(bz), nil
 }
 
-// handleSetLiened processes a LIEN_SET_LIENED message.
+// handleChangeLiened processes a LIEN_CHANGE_LIENED message.
 // See spec/02_messages.md for the messages and responses.
-func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string, error) {
+func (ch portHandler) handleChangeLiened(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
 		return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
@@ -189,27 +190,14 @@ func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string,
 	if err = sdk.ValidateDenom(denom); err != nil {
 		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
 	}
-	lien := ch.keeper.GetLien(ctx, addr)
-	oldAmount := lien.GetCoins().AmountOf(denom)
-	if msg.Amount.Equal(oldAmount) {
-		// no-op, no need to do anything
-		return "true", nil
-	} else if msg.Amount.LT(oldAmount) {
-		// always okay to reduce liened amount
-		diff := sdk.NewCoin(denom, oldAmount.Sub(msg.Amount))
-		lien.Coins = lien.GetCoins().Sub(sdk.NewCoins(diff))
-		ch.keeper.SetLien(ctx, addr, lien)
-		return "true", nil
-	} else {
-		// check if it's okay to increase lein
-		state := ch.keeper.GetAccountState(ctx, addr)
-		bonded := state.Bonded.AmountOf(denom)
-		if msg.Amount.GT(bonded) {
-			return "false", nil
-		}
-		diff := sdk.NewCoin(denom, msg.Amount.Sub(oldAmount))
-		lien.Coins = lien.GetCoins().Add(diff)
-		ch.keeper.SetLien(ctx, addr, lien)
-		return "true", nil
+
+	newAmt, err := ch.keeper.ChangeLien(ctx, addr, denom, msg.Delta)
+	if err != nil {
+		return "", err
 	}
+	bz, err := json.Marshal(&newAmt)
+	if err != nil {
+		return "", fmt.Errorf("cannot marshal %v: %w", newAmt, err)
+	}
+	return string(bz), nil
 }

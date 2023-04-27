@@ -1,6 +1,9 @@
 package types
 
 import (
+	"encoding/json"
+	"strings"
+
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -8,8 +11,35 @@ import (
 
 const RouterKey = ModuleName // this was defined in your key.go file
 
-var _, _ sdk.Msg = &MsgDeliverInbound{}, &MsgProvision{}
-var _ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
+var (
+	_ sdk.Msg = &MsgDeliverInbound{}
+	_ sdk.Msg = &MsgProvision{}
+	_ sdk.Msg = &MsgInstallBundle{}
+	_ sdk.Msg = &MsgWalletAction{}
+	_ sdk.Msg = &MsgWalletSpendAction{}
+
+	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
+	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
+	_ vm.ControllerAdmissionMsg = &MsgProvision{}
+	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
+	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
+)
+
+// Charge an account address for the beans associated with given messages and storage.
+// See list of bean charges in default-params.go
+func chargeAdmission(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress, msgs []string, storage []string) error {
+	beansPerUnit := keeper.GetBeansPerUnit(ctx)
+	beans := beansPerUnit[BeansPerInboundTx]
+	beans = beans.Add(beansPerUnit[BeansPerMessage].Mul(sdk.NewUint(uint64(len(msgs)))))
+	for _, msg := range msgs {
+		beans = beans.Add(beansPerUnit[BeansPerMessageByte].Mul(sdk.NewUint(uint64(len(msg)))))
+	}
+	for _, store := range storage {
+		beans = beans.Add(beansPerUnit[BeansPerStorageByte].Mul(sdk.NewUint(uint64(len(store)))))
+	}
+
+	return keeper.ChargeBeans(ctx, addr, beans)
+}
 
 func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
 	return &MsgDeliverInbound{
@@ -20,16 +50,26 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 	}
 }
 
-func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, callToController func(sdk.Context, string) (string, error)) error {
-	// TODO: This is where we would consult the controller for deterministic
-	// advice on whether we are overwhelmed.
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
 	/*
 		// The nondeterministic torture test.  Mark every third message as not inadmissible.
 		if rand.Intn(3) == 0 {
 			return fmt.Errorf("FIGME: MsgDeliverInbound is randomly not admissible")
 		}
 	*/
-	return nil
+
+	return chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages, nil)
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgDeliverInbound) GetInboundMsgCount() int32 {
+	return 1
 }
 
 // Route should return the name of the module
@@ -46,16 +86,10 @@ func (msg MsgDeliverInbound) ValidateBasic() error {
 	if len(msg.Messages) != len(msg.Nums) {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
 	}
-	for i, num := range msg.Nums {
-		if len(msg.Messages[i]) == 0 {
+	for _, m := range msg.Messages {
+		if len(m) == 0 {
 			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
 		}
-		if num < 0 {
-			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nums cannot be negative")
-		}
-	}
-	if msg.Ack < 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Ack cannot be negative")
 	}
 	return nil
 }
@@ -69,12 +103,113 @@ func (msg MsgDeliverInbound) GetSignBytes() []byte {
 	if msg.Nums == nil {
 		msg.Nums = []uint64{}
 	}
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required
 func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
+}
+
+func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
+	return &MsgWalletAction{
+		Owner:  owner,
+		Action: action,
+	}
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action}, nil)
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgWalletAction) GetInboundMsgCount() int32 {
+	return 1
+}
+
+func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
+}
+
+// GetSignBytes encodes the message for signing
+func (msg MsgWalletAction) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
+}
+
+// Route should return the name of the module
+func (msg MsgWalletAction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgWalletAction) Type() string { return "wallet_action" }
+
+// Route should return the name of the module
+func (msg MsgWalletSpendAction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
+
+// GetSignBytes encodes the message for signing
+func (msg MsgWalletSpendAction) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
+}
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgWalletAction) ValidateBasic() error {
+	if msg.Owner.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
+	}
+	if len(strings.TrimSpace(msg.Action)) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Action cannot be empty")
+	}
+	if !json.Valid([]byte(msg.Action)) {
+		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet action must be valid JSON")
+	}
+	return nil
+}
+
+func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalletSpendAction {
+	return &MsgWalletSpendAction{
+		Owner:       owner,
+		SpendAction: spendAction,
+	}
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction}, nil)
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgWalletSpendAction) GetInboundMsgCount() int32 {
+	return 1
+}
+func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
+}
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgWalletSpendAction) ValidateBasic() error {
+	if msg.Owner.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
+	}
+	if len(strings.TrimSpace(msg.SpendAction)) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Spend action cannot be empty")
+	}
+	if !json.Valid([]byte(msg.SpendAction)) {
+		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet spend action must be valid JSON")
+	}
+	return nil
 }
 
 func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) *MsgProvision {
@@ -103,10 +238,19 @@ func (msg MsgProvision) ValidateBasic() error {
 	if len(msg.Nickname) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
 	}
-	if msg.PowerFlags == nil {
-		msg.PowerFlags = []string{}
-	}
 	return nil
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgProvision) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	// We have our own fee charging mechanism within Swingset itself,
+	// so there are no admission restriction here.
+	return nil
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgProvision) GetInboundMsgCount() int32 {
+	return 1
 }
 
 // GetSignBytes encodes the message for signing
@@ -114,10 +258,54 @@ func (msg MsgProvision) GetSignBytes() []byte {
 	if msg.PowerFlags == nil {
 		msg.PowerFlags = []string{}
 	}
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required
 func (msg MsgProvision) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Submitter}
+}
+
+func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstallBundle {
+	return &MsgInstallBundle{
+		Bundle:    bundleJson,
+		Submitter: submitter,
+	}
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle}, []string{msg.Bundle})
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgInstallBundle) GetInboundMsgCount() int32 {
+	return 1
+}
+
+// Route should return the name of the module
+func (msg MsgInstallBundle) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgInstallBundle) Type() string { return "installBundle" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgInstallBundle) ValidateBasic() error {
+	if msg.Submitter.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+	}
+	if len(msg.Bundle) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle cannot be empty")
+	}
+	return nil
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgInstallBundle) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
 }

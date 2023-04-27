@@ -1,8 +1,8 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { M } from '@agoric/store';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockBrand } from './mockBrand.js';
 
@@ -12,29 +12,34 @@ import { mockBrand } from './mockBrand.js';
 
 test('natMathHelpers make', t => {
   t.deepEqual(m.make(mockBrand, 4n), { brand: mockBrand, value: 4n });
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => m.make(mockBrand, 4), {
-    message: 'value 4 must be a bigint or an array, not "number"',
+    message:
+      'value 4 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
     {
-      message: 'value "abc" must be a bigint or an array, not "string"',
+      message:
+        'value "abc" must be a bigint, copySet, copyBag, or an array, not "string"',
     },
     `'abc' is not a nat`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, -1),
-    { message: 'value -1 must be a bigint or an array, not "number"' },
+    {
+      message:
+        'value -1 must be a bigint, copySet, copyBag, or an array, not "number"',
+    },
     `- 1 is not a valid Nat`,
   );
 });
 
 test('natMathHelpers make no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(4n),
     {
       message: '"brand" "[4n]" must be a remotable, not "bigint"',
@@ -61,17 +66,19 @@ test('natMathHelpers coerce', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountShape: () => M.any(),
           }),
           value: 4n,
         }),
       ),
     {
-      message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
+      message:
+        /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
     `coerce can't take the wrong brand`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(3n, mockBrand),
     {
       message: '"brand" "[3n]" must be a remotable, not "bigint"',
@@ -82,7 +89,7 @@ test('natMathHelpers coerce', t => {
 
 test('natMathHelpers coerce no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(m.make(4n, mockBrand)),
     {
       message: '"brand" "[4n]" must be a remotable, not "bigint"',
@@ -93,15 +100,16 @@ test('natMathHelpers coerce no brand', t => {
 
 test('natMathHelpers getValue', t => {
   t.is(m.getValue(mockBrand, m.make(mockBrand, 4n)), 4n);
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => m.getValue(mockBrand, m.make(mockBrand, 4)), {
-    message: 'value 4 must be a bigint or an array, not "number"',
+    message:
+      'value 4 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
 });
 
 test('natMathHelpers getValue no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.getValue(m.make(4n, mockBrand)),
     {
       message: '"brand" "[4n]" must be a remotable, not "bigint"',
@@ -118,7 +126,7 @@ test('natMathHelpers makeEmpty', t => {
 
 test('natMathHelpers makeEmpty no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.makeEmpty(AssetKind.NAT),
     {
       message: '"brand" "nat" must be a remotable, not "string"',
@@ -139,7 +147,7 @@ test('natMathHelpers isEmpty', t => {
   t.assert(m.isEmpty(m.make(mockBrand, 0n)), `isEmpty(0) is true`);
   t.falsy(m.isEmpty(m.make(mockBrand, 6n)), `isEmpty(6) is false`);
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty('abc'),
     {
       message: '"amount" "abc" must be a pass-by-copy record, not "string"',
@@ -147,15 +155,16 @@ test('natMathHelpers isEmpty', t => {
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: 'abc' })),
     {
-      message: 'value "abc" must be a bigint or an array, not "string"',
+      message:
+        'value "abc" must be a bigint, copySet, copyBag, or an array, not "string"',
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(0n),
     {
       message: '"amount" "[0n]" must be a pass-by-copy record, not "bigint"',
@@ -185,6 +194,7 @@ test('natMathHelpers isGTE mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountShape: () => M.any(),
           }),
           5n,
         ),
@@ -206,6 +216,7 @@ test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountShape: () => M.any(),
         }),
       ),
     {
@@ -234,6 +245,7 @@ test('natMathHelpers isEqual mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountShape: () => M.any(),
           }),
           4n,
         ),
@@ -255,6 +267,7 @@ test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountShape: () => M.any(),
         }),
       ),
     {
@@ -280,6 +293,7 @@ test('natMathHelpers add mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountShape: () => M.any(),
           }),
           5n,
         ),
@@ -301,6 +315,7 @@ test(`natMathHelpers add - brands don't match objective brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountShape: () => M.any(),
         }),
       ),
     {
@@ -326,6 +341,7 @@ test('natMathHelpers subtract mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountShape: () => M.any(),
           }),
           6n,
         ),
@@ -347,6 +363,7 @@ test(`natMathHelpers subtract brands don't match brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountShape: () => M.any(),
         }),
       ),
     {

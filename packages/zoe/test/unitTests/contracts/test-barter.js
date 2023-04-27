@@ -1,11 +1,11 @@
-// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -26,9 +26,14 @@ test('barter with valid offers', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, barter);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    barter,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
@@ -72,7 +77,10 @@ test('barter with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   t.is(bobInstallation, installation);
   t.is(bobInstance, instance);
@@ -93,17 +101,13 @@ test('barter with valid offers', async t => {
     bobPayments,
   );
 
-  const {
-    In: bobSimoleanPayout,
-    Out: bobMoolaPayout,
-  } = await bobSeat.getPayouts();
+  const { In: bobSimoleanPayout, Out: bobMoolaPayout } =
+    await bobSeat.getPayouts();
 
   assertOfferResult(t, bobSeat, 'Trade completed.');
 
-  const {
-    In: aliceMoolaPayout,
-    Out: aliceSimoleanPayout,
-  } = await aliceSeat.getPayouts();
+  const { In: aliceMoolaPayout, Out: aliceSimoleanPayout } =
+    await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
   t.truthy(

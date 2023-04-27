@@ -1,9 +1,64 @@
-export { makeScalarMap, makeScalarMap as makeStore } from './scalarMap.js';
 export {
-  makeScalarWeakMap,
-  makeScalarWeakMap as makeWeakStore,
-} from './scalarWeakMap.js';
-// export default as well as makeLegacy* only for compatibility
-// during the transition.
-export { makeLegacyMap, makeLegacyMap as default } from './legacyMap.js';
-export { makeLegacyWeakMap } from './legacyWeakMap.js';
+  isKey,
+  assertKey,
+  assertScalarKey,
+  makeCopySet,
+  getCopySetKeys,
+  makeCopyBag,
+  makeCopyBagFromElements,
+  getCopyBagEntries,
+  makeCopyMap,
+  getCopyMapEntries,
+  coerceToElements,
+  coerceToBagEntries,
+  compareKeys,
+  keyLT,
+  keyLTE,
+  keyEQ,
+  keyGTE,
+  keyGT,
+  elementsIsSuperset,
+  elementsIsDisjoint,
+  elementsCompare,
+  elementsUnion,
+  elementsDisjointUnion,
+  elementsIntersection,
+  elementsDisjointSubtract,
+  setIsSuperset,
+  setIsDisjoint,
+  setCompare,
+  setUnion,
+  setDisjointUnion,
+  setIntersection,
+  setDisjointSubtract,
+  bagIsSuperbag,
+  bagCompare,
+  bagUnion,
+  bagIntersection,
+  bagDisjointSubtract,
+  M,
+  getRankCover,
+  isPattern,
+  assertPattern,
+  matches,
+  mustMatch,
+} from '@endo/patterns';
+
+export {
+  initEmpty,
+  defineExoClass,
+  defineExoClassKit,
+  makeExo,
+} from '@endo/exo';
+
+export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
+export { makeScalarSetStore } from './stores/scalarSetStore.js';
+export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
+export { makeScalarMapStore } from './stores/scalarMapStore.js';
+
+export { provideLazy } from './stores/store-utils.js';
+
+// /////////////////////// Deprecated Legacy ///////////////////////////////////
+
+export { makeLegacyMap } from './legacy/legacyMap.js';
+export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';

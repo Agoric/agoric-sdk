@@ -26,7 +26,6 @@ async function run() {
     // lineNumber += 1;
     const e = JSON.parse(line);
     if (e.vatID !== vatID) {
-      // eslint-disable-next-line no-continue
       continue; // wrong vat, or not associated with any vat
     }
     console.log(`e:`, e.type);
@@ -38,16 +37,16 @@ async function run() {
         throw Error(`unable to reconstruct transcript`);
       }
       case 'create-vat': {
-        const { type, dynamic, vatParameters, vatSourceBundle } = e;
+        const { type, name, dynamic, vatParameters, vatSourceBundle } = e;
         const t = {
-          transcriptNum,
           type,
+          transcriptNum,
           vatID,
+          vatName: name,
           dynamic,
           vatParameters,
           vatSourceBundle,
         };
-        transcriptNum += 1;
         // first line of transcript is the source bundle
         fs.writeSync(fd, JSON.stringify(t));
         fs.writeSync(fd, '\n');
@@ -66,27 +65,23 @@ async function run() {
       }
       case 'syscall-result': {
         console.log(` -- syscall-result`);
-        // The vatstoreGet result is null when key was missing. To match the
-        // transcript extracted from a DB (in which a missing key gets
-        // 'undefined', causing the .response to be omitted entirely),
-        // special-case a vatstoreGet with a null result.
-        //
-        // vatstoreSet result is always null
-        const [status, result] = e.vsr; // e.g. ["ok", string]
-        if (status !== 'ok') {
-          throw Error(`encountered non-ok syscall result`);
-        }
-        if (!(syscall.d[0] === 'vatstoreGet' && result === null)) {
-          syscall.response = result;
-        }
+        syscall.response = e.vsr;
         syscalls.push(syscall);
         break;
       }
       case 'deliver-result': {
         console.log(` -- deliver-result`);
-        const entry = { transcriptNum, d: delivery, syscalls };
         transcriptNum += 1;
+        const entry = { transcriptNum, d: delivery, syscalls };
         fs.writeSync(fd, JSON.stringify(entry));
+        fs.writeSync(fd, '\n');
+        break;
+      }
+      case 'heap-snapshot-save': {
+        console.log(' -- heap-snapshot-save');
+        const { type, snapshotID } = e;
+        const t = { transcriptNum, type, vatID, snapshotID };
+        fs.writeSync(fd, JSON.stringify(t));
         fs.writeSync(fd, '\n');
         break;
       }

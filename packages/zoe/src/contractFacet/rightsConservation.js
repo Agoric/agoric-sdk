@@ -1,10 +1,7 @@
-// @ts-check
-
-import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+import { makeScalarMapStore } from '@agoric/store';
+import { assert, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
 import '../internal-types.js';
 
 /**
@@ -12,11 +9,12 @@ import '../internal-types.js';
  * map by brand.
  *
  * @param  {Amount[]} amounts - an array of amounts
- * @returns {Store<Brand, Amount>} sumsByBrand - a map of Brand keys and
+ * @returns {MapStore<Brand, Amount>} sumsByBrand - a map of Brand keys and
  * Amount values. The amounts are the sums.
  */
 const sumByBrand = amounts => {
-  const sumsByBrand = makeStore('brand');
+  /** @type {MapStore<Brand, Amount>} */
+  const sumsByBrand = makeScalarMapStore('brand');
   amounts.forEach(amount => {
     const { brand } = amount;
     if (!sumsByBrand.has(brand)) {
@@ -32,8 +30,8 @@ const sumByBrand = amounts => {
 /**
  * Assert that the left sums by brand equal the right sums by brand
  *
- * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
- * @param  {Store<Brand, Amount>} rightSumsByBrand - a map of brands to sums
+ * @param  {MapStore<Brand, Amount>} leftSumsByBrand - a map of brands to sums
+ * @param  {MapStore<Brand, Amount>} rightSumsByBrand - a map of brands to sums
  */
 const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   // We cannot assume that all of the brand keys present in
@@ -77,10 +75,8 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
 
   allBrands.forEach(brand => {
     const { leftSum, rightSum } = getSums(brand);
-    assert(
-      AmountMath.isEqual(leftSum, rightSum),
-      X`rights were not conserved for brand ${brand}`,
-    );
+    AmountMath.isEqual(leftSum, rightSum) ||
+      Fail`rights were not conserved for brand ${brand} ${leftSum.value} != ${rightSum.value}`;
   });
 };
 

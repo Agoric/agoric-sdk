@@ -1,5 +1,5 @@
 /**
- * @typedef {Notifier<Timestamp>} PeriodNotifier
+ * @typedef {Notifier<import('@agoric/time/src/types').Timestamp>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.
  *  Since notifiers can't be relied on to produce an output every time
@@ -10,8 +10,8 @@
 
 /**
  * @typedef {Instance} AutoswapInstance
- *   The running contract instance for an Autoswap or constant product
- *   AMM installation.  The publicFacet from the Autoswap
+ *   The running contract instance for an Autoswap installation.  The
+ *   publicFacet from the Autoswap
  *   instance is used for producing an invitation to sell the
  *   collateral on liquidation.
  */
@@ -35,7 +35,7 @@
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
  *
- * @property {RelativeTime} interestPeriod
+ * @property {import('@agoric/time/src/types').RelativeTime} interestPeriod
  *
  * @property {Brand} loanBrand
  * @property {Brand} collateralBrand
@@ -62,7 +62,7 @@
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
  *
- * @property {() => Amount} getDebt
+ * @property {() => Amount<'nat'>} getDebt
  *
  *   A function to get the current debt
  *
@@ -99,27 +99,27 @@
 
 /**
  * @callback ScheduleLiquidation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  */
 
 /**
  * @callback MakeLendInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanTerms} config
  * @returns {Promise<Invitation>} lendInvitation
  */
 
 /**
  * @callback MakeBorrowInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithLender} config
  * @returns {Promise<Invitation>} borrowInvitation
  */
 
 /**
  * @callback MakeCloseLoanInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  * @returns {Promise<Invitation>} closeLoanInvitation
  */
@@ -129,14 +129,14 @@
  * after adding.
  *
  * @callback MakeAddCollateralInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  * @returns {Promise<Invitation>} addCollateralInvitation
  */
 
 /**
  * @callback Liquidate
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  * @returns {void}
  */
@@ -148,19 +148,19 @@
 
 /**
  * @callback CalcInterestFn
- * @param {Amount} oldDebt
+ * @param {Amount<'nat'>} oldDebt
  * @param {Ratio} interestRate
- * @returns {Amount} interest
+ * @returns {Amount<'nat'>} interest
  */
 
 /**
- * @typedef {Object} DebtCalculatorConfig
+ * @typedef {object} DebtCalculatorConfig
  * @property {CalcInterestFn} calcInterestFn
  *
  *   A function to calculate the interest, given the debt value and an
  *   interest rate in basis points.
  *
- * @property {Amount} originalDebt
+ * @property {Amount<'nat'>} originalDebt
  *
  *   The debt at the start of the loan, in Loan brand
  *
@@ -169,19 +169,19 @@
  *   The AsyncIterable to notify when a period has occurred
  *
  * @property {Ratio} interestRate
- * @property {RelativeTime} interestPeriod
+ * @property {import('@agoric/time/src/types').RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate
  *
- * @property {ContractFacet} zcf
+ * @property {ZCF} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
- * @property {Timestamp} basetime The starting point from which to calculate
+ * @property {import('@agoric/time/src/types').Timestamp} basetime The starting point from which to calculate
  * interest.
  */
 
 /**
- * @typedef {Object} ConfigMinusGetDebt
+ * @typedef {object} ConfigMinusGetDebt
  * @property {ZCFSeat} collateralSeat
  * @property {PromiseRecord<any>} liquidationPromiseKit
  * @property {bigint} [mmr]
@@ -189,12 +189,12 @@
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {bigint} interestRate
- * @property {RelativeTime} interestPeriod
+ * @property {import('@agoric/time/src/types').RelativeTime} interestPeriod
  * @property {ZCFSeat} lenderSeat
  */
 
 /**
- * @typedef {Object} BorrowFacet
+ * @typedef {object} BorrowFacet
  *
  * @property {() => Promise<Invitation>} makeCloseLoanInvitation
  *
@@ -212,7 +212,7 @@
  * triggered the liquidation. This may be lower than expected if the
  * price is moving quickly.
  *
- * @property {() => Timestamp} getLastCalculationTimestamp
+ * @property {() => import('@agoric/time/src/types').Timestamp} getLastCalculationTimestamp
  *
  * Get the timestamp at which the debt was most recently recalculated.
  *

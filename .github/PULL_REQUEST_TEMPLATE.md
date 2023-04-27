@@ -18,6 +18,10 @@ are the most critical to review.
 <!-- Does this change introduce new assumptions or dependencies that, if violated, could introduce security vulnerabilities? How does this PR change the boundaries between mutually-suspicious components? What new authorities are introduced by this change, perhaps by new API calls? 
 -->
 
+### Scaling Considerations
+
+<!-- Does this change require or encourage significant increase in consumption of CPU cycles, RAM, on-chain storage, message exchanges, or other scarce resources? If so, can that be prevented or mitigated? -->
+
 ### Documentation Considerations
 
 <!-- Give our docs folks some hints about what needs to be described to downstream users.

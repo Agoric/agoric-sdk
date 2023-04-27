@@ -1,11 +1,12 @@
-// @ts-check
-
 import './types.js';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { assertProposalShape } from '../../contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicRearrange,
+} from '../../contractSupport/index.js';
 
 // The debt, the amount which must be repaid, is just the amount
 // loaned plus interest (aka stability fee). All debt must be repaid
@@ -33,28 +34,23 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     const debt = getDebt();
 
     // All debt must be repaid.
-    assert(
-      AmountMath.isGTE(repaid, debt),
-      X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
-    );
+    AmountMath.isGTE(repaid, debt) ||
+      Fail`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`;
 
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.
     // Transfer the repaid loan amount to the lender
-
-    repaySeat.incrementBy(
-      collateralSeat.decrementBy(
-        harden({
-          Collateral: collateralSeat.getAmountAllocated(
-            'Collateral',
-            collateralBrand,
-          ),
-        }),
-      ),
+    const collateralAmount = collateralSeat.getAmountAllocated(
+      'Collateral',
+      collateralBrand,
     );
-    lenderSeat.incrementBy(repaySeat.decrementBy(harden({ Loan: debt })));
-
-    zcf.reallocate(repaySeat, collateralSeat, lenderSeat);
+    atomicRearrange(
+      zcf,
+      harden([
+        [collateralSeat, repaySeat, { Collateral: collateralAmount }],
+        [repaySeat, lenderSeat, { Loan: debt }],
+      ]),
+    );
 
     repaySeat.exit();
     lenderSeat.exit();
@@ -64,7 +60,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     return closeMsg;
   };
 
-  // Note: we can't put the debt to be repaid in the customProperties
+  // Note: we can't put the debt to be repaid in the customDetails
   // because it will change
   return zcf.makeInvitation(repayAndClose, 'repayAndClose');
 };

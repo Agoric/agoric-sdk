@@ -1,81 +1,121 @@
-/* global setInterval */
+// @ts-check
+
+import { resolve as pathResolve } from 'path';
+import v8 from 'node:v8';
+import process from 'node:process';
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify.js';
+import tmpfs from 'tmp';
+import { fork } from 'node:child_process';
+
+import { E } from '@endo/far';
+import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
+import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import {
   importMailbox,
   exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox.js';
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
+import {
+  makeChainStorageRoot,
+  makeSerializeToStorage,
+} from '@agoric/internal/src/lib-chainStorage.js';
+import { makeMarshal } from '@endo/marshal';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
+import * as ActionType from '@agoric/internal/src/action-types.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import {
+  makeBufferedStorage,
+  makeReadCachingStorage,
+} from './helpers/bufferedStorage.js';
+import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import makeBlockManager from './block-manager.js';
-import { getMeterProvider } from './kernel-stats.js';
+import { getTelemetryProviders } from './kernel-stats.js';
+import { makeProcessValue } from './helpers/process-value.js';
+import { spawnSwingStoreExport } from './export-kernel-db.js';
+import { performStateSyncImport } from './import-kernel-db.js';
+
+// eslint-disable-next-line no-unused-vars
+let whenHellFreezesOver = null;
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
+const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
+
 const toNumber = specimen => {
   const number = parseInt(specimen, 10);
-  assert(
-    String(number) === String(specimen),
-    X`Could not parse ${JSON.stringify(specimen)} as a number`,
-  );
+  String(number) === String(specimen) ||
+    Fail`Could not parse ${JSON.stringify(specimen)} as a number`;
   return number;
 };
 
-const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
-  let cache = new Map();
-  let changedKeys = new Set();
-  const storage = {
-    has(key) {
-      // It's more efficient just to get the value.
-      const val = storage.get(key);
-      return !!val;
-    },
-    set(key, obj) {
-      if (cache.get(key) !== obj) {
-        cache.set(key, obj);
-        changedKeys.add(key);
-      }
-    },
-    get(key) {
-      if (cache.has(key)) {
-        // Our cache has the value.
-        return cache.get(key);
-      }
-      const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
+/**
+ * @template {unknown} [T=unknown]
+ * @param {(req: string) => string} call
+ * @param {string} prefix
+ * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
+ * @param {(value: string) => T} fromBridgeStringValue
+ * @param {(value: T) => string} toBridgeStringValue
+ * @returns {import("./helpers/bufferedStorage.js").KVStore<T>}
+ */
+const makePrefixedBridgeStorage = (
+  call,
+  prefix,
+  setterMethod,
+  fromBridgeStringValue = x => JSON.parse(x),
+  toBridgeStringValue = x => stringify(x),
+) => {
+  prefix.endsWith('.') || Fail`prefix ${prefix} must end with a dot`;
+
+  return harden({
+    has: key => {
+      const retStr = call(
+        stringify({ method: 'has', args: [`${prefix}${key}`] }),
+      );
       const ret = JSON.parse(retStr);
-      const value = ret && JSON.parse(ret);
-      // console.log(` value=${value}`);
-      const obj = value && imp(value);
-      cache.set(key, obj);
-      // We need to add this in case the caller mutates the state, as in
-      // mailbox.js, which mutates on basically every get.
-      changedKeys.add(key);
-      return obj;
+      return ret;
     },
-    commit() {
-      for (const key of changedKeys.keys()) {
-        const obj = cache.get(key);
-        const value = stringify(exp(obj));
-        call(
-          stringify({
-            method: 'set',
-            key: `${prefix}${key}`,
-            value,
-          }),
-        );
+    get: key => {
+      const retStr = call(
+        stringify({ method: 'get', args: [`${prefix}${key}`] }),
+      );
+      const ret = JSON.parse(retStr);
+      if (ret == null) {
+        return undefined;
       }
-      // Reset our state.
-      storage.abort();
+      return fromBridgeStringValue(ret);
     },
-    abort() {
-      // Just reset our state.
-      cache = new Map();
-      changedKeys = new Set();
+    set: (key, value) => {
+      const path = `${prefix}${key}`;
+      const entry = [path, toBridgeStringValue(value)];
+      call(
+        stringify({
+          method: setterMethod,
+          args: [entry],
+        }),
+      );
     },
-  };
-  return storage;
+    delete: key => {
+      const path = `${prefix}${key}`;
+      const entry = [path];
+      call(
+        stringify({
+          method: setterMethod,
+          args: [entry],
+        }),
+      );
+    },
+    getNextKey(_previousKey) {
+      throw new Error('not implemented');
+    },
+  });
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -83,31 +123,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   // TODO: use the 'basedir' pattern
 
-  // Try to determine the cosmos chain home.
-  function getFlagValue(flagName, deflt) {
-    let flagValue = deflt;
-    const envValue = env[`AG_CHAIN_COSMOS_${flagName.toUpperCase()}`];
-    if (envValue !== undefined) {
-      flagValue = envValue;
-    }
-    const flag = `--${flagName}`;
-    const flagEquals = `--${flagName}=`;
-    for (let i = 0; i < args.length; i += 1) {
-      const arg = args[i];
-      if (arg === flag) {
-        i += 1;
-        flagValue = args[i];
-      } else if (arg.startsWith(flagEquals)) {
-        flagValue = arg.substr(flagEquals.length);
-      }
-    }
-    return flagValue;
-  }
+  const processValue = makeProcessValue({ env, args });
 
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
-  const cosmosHome = getFlagValue('home', `${homedir}/.ag-chain-cosmos`);
+  const cosmosHome = processValue.getFlag(
+    'home',
+    `${homedir}/.ag-chain-cosmos`,
+  );
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
+  fs.mkdirSync(stateDBDir, { recursive: true });
 
   // console.log('Have AG_COSMOS', agcc);
 
@@ -116,14 +141,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   function registerPortHandler(portHandler) {
     lastPort += 1;
     const port = lastPort;
-    portHandlers[port] = async (...phArgs) => {
-      try {
-        return await portHandler(...phArgs);
-      } catch (e) {
+    portHandlers[port] = async (...phArgs) =>
+      E.resolve(portHandler(...phArgs)).catch(e => {
         console.error('portHandler threw', e);
         throw e;
-      }
-    };
+      });
     return port;
   }
 
@@ -136,10 +158,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
     const action = JSON.parse(str);
     const p = Promise.resolve(handler(action));
-    p.then(
+    void E.when(
+      p,
       res => {
         // console.error(`Replying in Node to ${str} with`, res);
-        replier.resolve(`${res}`);
+        replier.resolve(stringify(res !== undefined ? res : null));
       },
       rej => {
         // console.error(`Rejecting in Node to ${str} with`, rej);
@@ -154,8 +177,25 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   const nodePort = registerPortHandler(toSwingSet);
 
   // Need to keep the process alive until Go exits.
-  setInterval(() => undefined, 30000);
+  whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
+
+  /**
+   * @type {undefined | {
+   *   blockHeight: number,
+   *   exporter?: import('./export-kernel-db.js').StateSyncExporter,
+   *   exportDir?: string,
+   *   cleanup?: () => Promise<void>,
+   * }}
+   */
+  let stateSyncExport;
+
+  async function discardStateSyncExport() {
+    const exportData = stateSyncExport;
+    stateSyncExport = undefined;
+    await exportData?.exporter?.stop();
+    await exportData?.cleanup?.();
+  }
 
   let savedChainSends = [];
 
@@ -166,17 +206,20 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return ret;
   }
 
-  // Flush the chain send queue.
-  // If doReplay is truthy, replay each send and insist
-  // it hase the same return result.
-  function flushChainSends(doReplay) {
-    // Remove our queue.
+  const clearChainSends = async () => {
+    // Cosmos should have blocked before calling commit, but wait just in case
+    await stateSyncExport?.exporter?.onStarted().catch(() => {});
+
     const chainSends = savedChainSends;
     savedChainSends = [];
+    return chainSends;
+  };
 
-    if (!doReplay) {
-      return;
-    }
+  // Replay and clear the chain send queue.
+  // While replaying each send, insist it has the same return result.
+  function replayChainSends() {
+    // Remove our queue.
+    const chainSends = [...savedChainSends];
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
@@ -194,30 +237,82 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
   }
 
+  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
+  let blockingSend;
+  /** @type {((obj: object) => void) | undefined} */
+  let writeSlogObject;
+
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
   async function launchAndInitializeSwingSet(bootMsg) {
+    const sendToChain = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
-    const mailboxStorage = makeChainStorage(
-      msg => chainSend(portNums.storage, msg),
-      'mailbox.',
-      data => {
-        const ack = toNumber(data.ack);
-        const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
-        return importMailbox({ outbox, ack });
-      },
-      exportMailbox,
+    const fromBridgeMailbox = data => {
+      const ack = toNumber(data.ack);
+      const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
+      return importMailbox({ outbox, ack });
+    };
+    const mailboxStorage = makeReadCachingStorage(
+      makePrefixedBridgeStorage(
+        sendToChain,
+        `${STORAGE_PATH.MAILBOX}.`,
+        'legacySet',
+        val => fromBridgeMailbox(JSON.parse(val)),
+        val => stringify(exportMailbox(val)),
+      ),
     );
-    function setActivityhash(activityhash) {
-      const msg = stringify({
-        method: 'set',
-        key: 'activityhash',
-        value: activityhash,
+    const actionQueueRawStorage = makeBufferedStorage(
+      makePrefixedBridgeStorage(
+        sendToChain,
+        `${STORAGE_PATH.ACTION_QUEUE}.`,
+        'setWithoutNotify',
+        x => x,
+        x => x,
+      ),
+    );
+    const actionQueueStorage = harden({
+      ...actionQueueRawStorage.kvStore,
+      commit: actionQueueRawStorage.commit,
+      abort: actionQueueRawStorage.abort,
+    });
+    /**
+     * Callback invoked during SwingSet execution when new "export data" is
+     * generated by swingStore to be saved in the host's verified DB. In our
+     * case, we publish these entries in vstorage under a dedicated prefix.
+     * This effectively shadows the "export data" of the swingStore so that
+     * processes like state-sync can generate a verified "root of trust" to
+     * restore SwingSet state.
+     *
+     * @param {ReadonlyArray<[path: string, value?: string | null]>} updates
+     */
+    const swingStoreExportCallback = async updates => {
+      // Allow I/O to proceed first
+      await waitUntilQuiescent();
+
+      const entries = updates.map(([key, value]) => {
+        if (typeof key !== 'string') {
+          throw Fail`Unexpected swingStore exported key ${q(key)}`;
+        }
+        const path = `${STORAGE_PATH.SWING_STORE}.${key}`;
+        if (value == null) {
+          return [path];
+        }
+        if (typeof value !== 'string') {
+          throw Fail`Unexpected ${typeof value} value for swingStore exported key ${q(
+            key,
+          )}`;
+        }
+        return [path, value];
       });
-      chainSend(portNums.storage, msg);
-    }
-    function doOutboundBridge(dstID, obj) {
+      sendToChain(
+        stringify({
+          method: 'setWithoutNotify',
+          args: entries,
+        }),
+      );
+    };
+    function doOutboundBridge(dstID, msg) {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
         console.error(
@@ -228,44 +323,275 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
         );
       }
-      const retStr = chainSend(portNum, stringify(obj));
+      const respStr = chainSend(portNum, stringify(msg));
       try {
-        return JSON.parse(retStr);
+        return JSON.parse(respStr);
       } catch (e) {
-        assert.fail(X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
+        throw Fail`cannot JSON.parse(${JSON.stringify(respStr)}): ${e}`;
       }
     }
 
-    const vatconfig = new URL(
-      await importMetaResolve(
-        '@agoric/vats/decentral-config.json',
-        import.meta.url,
-      ),
-    ).pathname;
+    const toStorage = message => {
+      return doOutboundBridge(BRIDGE_ID.STORAGE, message);
+    };
+
+    const makeInstallationPublisher = () => {
+      const installationStorageNode = makeChainStorageRoot(
+        toStorage,
+        STORAGE_PATH.BUNDLES,
+        { sequence: true },
+      );
+      const marshaller = makeMarshal();
+      const publish = makeSerializeToStorage(
+        installationStorageNode,
+        marshaller,
+      );
+      const publisher = harden({ publish });
+      return publisher;
+    };
+
     const argv = {
-      ROLE: 'chain',
-      noFakeCurrencies: !env.FAKE_CURRENCIES,
       bootMsg,
     };
-    const meterProvider = getMeterProvider(console, env);
-    const slogFile = env.SLOGFILE;
-    const consensusMode = env.DEBUG === undefined;
-    const s = await launch(
-      stateDBDir,
+    const vatHref = await importMetaResolve(
+      env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+        argv.bootMsg.params.bootstrap_vat_config,
+      import.meta.url,
+    );
+    const vatconfig = new URL(vatHref).pathname;
+
+    // Delay makeShutdown to override the golang interrupts
+    const { registerShutdown } = makeShutdown();
+
+    const { metricsProvider } = getTelemetryProviders({
+      console,
+      env,
+      serviceName: TELEMETRY_SERVICE_NAME,
+    });
+
+    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+    const slogSender = await makeSlogSender({
+      stateDir: stateDBDir,
+      env,
+      serviceName: TELEMETRY_SERVICE_NAME,
+    });
+
+    const swingStoreTraceFile = processValue.getPath({
+      envName: 'SWING_STORE_TRACE',
+      flagName: 'trace-store',
+      trueValue: pathResolve(stateDBDir, 'store-trace.log'),
+    });
+
+    const keepSnapshots =
+      XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
+
+    const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
+
+    let lastCommitTime = 0;
+    let commitCallsSinceLastSnapshot = NaN;
+    const snapshotBaseDir = pathResolve(stateDBDir, 'node-heap-snapshots');
+
+    if (nodeHeapSnapshots >= 0) {
+      fs.mkdirSync(snapshotBaseDir, { recursive: true });
+    }
+
+    const afterCommitCallback = async () => {
+      const slogSenderFlushed = tryFlushSlogSender(slogSender, {
+        env,
+        log: console.warn,
+      });
+
+      // delay until all current promise reactions are drained so we can be sure
+      // that the commit-block reply has been sent to agcc through replier.resolve
+      await Promise.all([slogSenderFlushed, waitUntilQuiescent()]);
+
+      try {
+        let heapSnapshot;
+        let heapSnapshotTime;
+
+        const t0 = performance.now();
+        engineGC();
+        const t1 = performance.now();
+        const memoryUsage = process.memoryUsage();
+        const t2 = performance.now();
+        const heapStats = v8.getHeapStatistics();
+        const t3 = performance.now();
+
+        commitCallsSinceLastSnapshot += 1;
+        if (
+          (nodeHeapSnapshots >= 0 && t0 - lastCommitTime > 30 * 1000) ||
+          (nodeHeapSnapshots > 0 &&
+            !(nodeHeapSnapshots > commitCallsSinceLastSnapshot))
+        ) {
+          commitCallsSinceLastSnapshot = 0;
+          heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+          const snapshotPath = pathResolve(snapshotBaseDir, heapSnapshot);
+          v8.writeHeapSnapshot(snapshotPath);
+          heapSnapshotTime = performance.now() - t3;
+        }
+        lastCommitTime = t0;
+
+        return {
+          memoryUsage,
+          heapStats,
+          heapSnapshot,
+          statsTime: {
+            forcedGc: t1 - t0,
+            memoryUsage: t2 - t1,
+            heapStats: t3 - t2,
+            heapSnapshot: heapSnapshotTime,
+          },
+        };
+      } catch (err) {
+        console.warn('Failed to gather memory stats', err);
+        return {};
+      }
+    };
+
+    const s = await launch({
+      actionQueueStorage,
+      kernelStateDBDir: stateDBDir,
+      makeInstallationPublisher,
       mailboxStorage,
-      setActivityhash,
-      doOutboundBridge,
+      clearChainSends,
+      replayChainSends,
+      bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
-      undefined,
-      meterProvider,
-      slogFile,
-      consensusMode,
+      env,
+      verboseBlocks: true,
+      metricsProvider,
+      slogSender,
+      swingStoreExportCallback,
+      swingStoreTraceFile,
+      keepSnapshots,
+      afterCommitCallback,
+    });
+
+    let shutdown;
+    ({ blockingSend, shutdown, writeSlogObject, savedChainSends } = s);
+
+    registerShutdown(async () =>
+      Promise.all([shutdown(), discardStateSyncExport()]).then(() => {}),
     );
-    return s;
+
+    return blockingSend;
   }
 
-  let blockManager;
+  async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
+    switch (request) {
+      case 'restore': {
+        const exportDir = requestArgs[0];
+        if (typeof exportDir !== 'string') {
+          throw Fail`Invalid exportDir argument ${q(exportDir)}`;
+        }
+        console.info(
+          'Restoring SwingSet state from snapshot at block height',
+          blockHeight,
+        );
+        return performStateSyncImport(
+          { exportDir, stateDir: stateDBDir, blockHeight },
+          { fs: { ...fs, ...fsPromises }, pathResolve, log: null },
+        );
+      }
+      case 'initiate': {
+        !stateSyncExport ||
+          Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
+
+        const exportData =
+          /** @type {Required<NonNullable<typeof stateSyncExport>>} */ ({
+            blockHeight,
+          });
+        stateSyncExport = exportData;
+
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await new Promise((resolve, reject) => {
+          tmpfs.dir(
+            {
+              prefix: `agd-state-sync-${blockHeight}-`,
+              unsafeCleanup: true,
+            },
+            (err, exportDir, cleanup) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              exportData.exportDir = exportDir;
+              /** @type {Promise<void> | undefined} */
+              let cleanupResult;
+              exportData.cleanup = async () => {
+                cleanupResult ||= new Promise(cleanupDone => {
+                  // If the exporter is still the same, then the retriever
+                  // is in charge of cleanups
+                  if (stateSyncExport !== exportData) {
+                    // @ts-expect-error wrong type definitions
+                    cleanup(cleanupDone);
+                  } else {
+                    console.warn('unexpected call of state-sync cleanup');
+                    cleanupDone();
+                  }
+                });
+                await cleanupResult;
+              };
+              resolve(null);
+            },
+          );
+        });
+
+        console.info(
+          'Initiating SwingSet state snapshot at block height',
+          blockHeight,
+        );
+        exportData.exporter = spawnSwingStoreExport(
+          {
+            stateDir: stateDBDir,
+            exportDir: exportData.exportDir,
+            blockHeight,
+          },
+          {
+            fork,
+          },
+        );
+
+        exportData.exporter.onDone().catch(() => {
+          if (exportData === stateSyncExport) {
+            stateSyncExport = undefined;
+          }
+          exportData.cleanup();
+        });
+
+        return exportData.exporter.onStarted().catch(err => {
+          console.warn(
+            `State-sync export failed for block ${blockHeight}`,
+            err,
+          );
+          throw err;
+        });
+      }
+      case 'discard': {
+        return discardStateSyncExport();
+      }
+      case 'retrieve': {
+        const exportData = stateSyncExport;
+        if (!exportData || !exportData.exporter) {
+          throw Fail`No snapshot in progress`;
+        }
+
+        return exportData.exporter.onDone().then(() => {
+          if (exportData === stateSyncExport) {
+            // Don't cleanup, cosmos is now in charge
+            stateSyncExport = undefined;
+            return exportData.exportDir;
+          } else {
+            throw Fail`Snapshot was discarded`;
+          }
+        });
+      }
+      default:
+        throw Fail`Unknown cosmos snapshot request ${request}`;
+    }
+  }
+
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
     if (action.vibcPort) {
@@ -286,24 +612,51 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.lien = action.lienPort;
     }
 
-    if (!blockManager) {
-      const {
-        savedChainSends: scs,
-        ...fns
-      } = await launchAndInitializeSwingSet(action);
-      savedChainSends = scs;
-      blockManager = makeBlockManager({
-        ...fns,
-        flushChainSends,
-        verboseBlocks: true,
+    // Snapshot actions are specific to cosmos chains and handled here
+    if (action.type === ActionType.COSMOS_SNAPSHOT) {
+      const { blockHeight, request, args: requestArgs } = action;
+      writeSlogObject?.({
+        type: 'cosmic-swingset-snapshot-start',
+        blockHeight,
+        request,
+        args: requestArgs,
       });
+
+      const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
+
+      resultP.then(
+        result => {
+          writeSlogObject?.({
+            type: 'cosmic-swingset-snapshot-finish',
+            blockHeight,
+            request,
+            args: requestArgs,
+            result,
+          });
+        },
+        error => {
+          writeSlogObject?.({
+            type: 'cosmic-swingset-snapshot-finish',
+            blockHeight,
+            request,
+            args: requestArgs,
+            error,
+          });
+        },
+      );
+
+      return resultP;
     }
+
+    // Ensure that initialization has completed.
+    blockingSend = await (blockingSend || launchAndInitializeSwingSet(action));
 
     if (action.type === AG_COSMOS_INIT) {
       // console.error('got AG_COSMOS_INIT', action);
       return true;
     }
 
-    return blockManager(action, savedChainSends);
+    // Block related actions are processed by `blockingSend`
+    return blockingSend(action);
   }
 }

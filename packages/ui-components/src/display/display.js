@@ -2,18 +2,19 @@
 import { assert, details } from '@agoric/assert';
 import { AssetKind } from '@agoric/ertp';
 import '@agoric/ertp/exported.js';
-
 import { parseAsNat } from './natValue/parseAsNat.js';
 import { stringifyNat } from './natValue/stringifyNat.js';
 import { parseAsSet } from './setValue/parseAsSet.js';
 import { stringifySet } from './setValue/stringifySet.js';
+import { parseAsCopyBag } from './copyBagValue/parseAsCopyBag.js';
+import { stringifyCopyBag } from './copyBagValue/stringifyCopyBag.js';
 
 /**
  *
  * @param {string} str - string to parse as a value
  * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
- * @returns {Value}
+ * @returns {AmountValue}
  */
 export const parseAsValue = (
   str,
@@ -26,7 +27,10 @@ export const parseAsValue = (
   if (assetKind === AssetKind.SET) {
     return parseAsSet(str);
   }
-  assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);
+  if (assetKind === AssetKind.COPY_BAG) {
+    return parseAsCopyBag(str);
+  }
+  assert.fail(details`AssetKind ${assetKind} must be NAT or SET or COPY_BAG`);
 };
 
 /**
@@ -47,7 +51,7 @@ export const parseAsAmount = (
 
 /**
  *
- * @param {Value} value - value to stringify
+ * @param {AmountValue} value - value to stringify
  * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
@@ -58,17 +62,19 @@ export const stringifyValue = (
   value,
   assetKind = AssetKind.NAT,
   decimalPlaces = 0,
-  placesToShow = 2,
+  placesToShow,
 ) => {
   if (assetKind === AssetKind.NAT) {
-    // @ts-ignore Value is a Nat
+    // @ts-expect-error AmountValue is a Nat
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
   if (assetKind === AssetKind.SET) {
-    // @ts-ignore Value is a SetValue
     return stringifySet(value);
   }
-  assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);
+  if (assetKind === AssetKind.COPY_BAG) {
+    return stringifyCopyBag(value);
+  }
+  assert.fail(details`AssetKind ${assetKind} must be NAT or SET or COPY_BAG`);
 };
 
 /**

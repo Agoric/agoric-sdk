@@ -1,10 +1,8 @@
-// @ts-check
-
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   ChoiceMethod,
   ElectionType,
   QuorumRule,
@@ -17,13 +15,14 @@ const closingRule = { timer, deadline: 37n };
 
 test('good QuestionSpec', t => {
   t.truthy(
-    looksLikeQuestionSpec(
+    coerceQuestionSpec(
       harden({
         method: ChoiceMethod.UNRANKED,
         issue,
         positions,
         electionType: ElectionType.SURVEY,
-        maxChoices: 2,
+        maxChoices: 1,
+        maxWinners: 1,
         closingRule,
         quorumRule: QuorumRule.MAJORITY,
         tieOutcome: positions[1],
@@ -32,11 +31,11 @@ test('good QuestionSpec', t => {
   );
 });
 
-test('bad Question', t => {
+test('bad Issue', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
-        // @ts-ignore Illegal Question
+      coerceQuestionSpec(
+        // @ts-expect-error Illegal Question
         harden({
           method: ChoiceMethod.UNRANKED,
           issue: 'will it blend?',
@@ -49,7 +48,7 @@ test('bad Question', t => {
         }),
       ),
     {
-      message: 'A question can only be a pass-by-copy record: "will it blend?"',
+      message: / - Must match one of /,
     },
   );
 });
@@ -57,8 +56,8 @@ test('bad Question', t => {
 test('bad timer', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
-        // @ts-ignore Illegal timer
+      coerceQuestionSpec(
+        // @ts-expect-error Illegal timer
         harden({
           method: ChoiceMethod.UNRANKED,
           issue,
@@ -70,15 +69,15 @@ test('bad timer', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Timer must be a timer 37' },
+    { message: / - Must match one of / },
   );
 });
 
 test('bad method', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
-        // @ts-ignore Illegal Method
+      coerceQuestionSpec(
+        // @ts-expect-error Illegal Method
         harden({
           method: 'choose',
           issue,
@@ -90,76 +89,81 @@ test('bad method', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal "ChoiceMethod": "choose"' },
+    { message: / - Must match one of / },
   );
 });
 
 test('bad Quorum', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
-        // @ts-ignore Illegal Quorum
+      coerceQuestionSpec(
+        // @ts-expect-error Illegal Quorum
         harden({
           method: ChoiceMethod.ORDER,
           issue,
           positions,
           electionType: ElectionType.SURVEY,
-          maxChoices: 2,
+          maxChoices: 1,
           closingRule,
           quorumRule: 0.5,
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal "QuorumRule": 0.5' },
+    { message: / - Must match one of / },
   );
 });
 
 test('bad tieOutcome', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
-        // @ts-ignore Illegal tieOutcome
+      coerceQuestionSpec(
         harden({
           method: ChoiceMethod.ORDER,
           issue,
           positions,
           electionType: ElectionType.SURVEY,
-          maxChoices: 2,
+          maxChoices: 1,
+          maxWinners: 1,
           closingRule,
           quorumRule: QuorumRule.NO_QUORUM,
-          tieOutcome: 'try again',
+          tieOutcome: { text: 'try again' },
         }),
       ),
-    { message: 'tieOutcome must be a legal position: "try again"' },
+    {
+      message:
+        '{"text":"try again"} - Must match one of [{"text":"yes"},{"text":"no"}]',
+    },
   );
 });
 
 test('bad maxChoices', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         harden({
-          method: ChoiceMethod.ORDER,
+          method: ChoiceMethod.UNRANKED,
           issue,
           positions,
           electionType: ElectionType.SURVEY,
           maxChoices: 0,
+          maxWinners: 1,
           closingRule,
           quorumRule: QuorumRule.NO_QUORUM,
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'maxChoices must be positive: 0' },
+    { message: / - Must match one of / },
   );
 });
 
 test('bad positions', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec({
+      coerceQuestionSpec({
         method: ChoiceMethod.ORDER,
         issue,
-        positions: [{ text: 'yes' }, { text: 'no' }],
+        // @ts-expect-error intentionally erroneous
+        positions: [{ text: 'yes' }, { verbiage: 'no' }],
         electionType: ElectionType.SURVEY,
         maxChoices: 1,
         closingRule,
@@ -167,8 +171,7 @@ test('bad positions', t => {
         tieOutcome: positions[1],
       }),
     {
-      message:
-        'Cannot pass non-frozen objects like {"text":"yes"}. Use harden()',
+      message: / - Must match one of /,
     },
   );
 });

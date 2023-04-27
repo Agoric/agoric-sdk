@@ -1,11 +1,11 @@
-import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
-import { insistCapData } from '../../capdata.js';
+import { Nat } from '@endo/nat';
+import { assert, Fail } from '@agoric/assert';
+import { insistCapData } from '../../lib/capdata.js';
 import {
   makeVatSlot,
   insistVatType,
   parseVatSlot,
-} from '../../parseVatSlots.js';
+} from '../../lib/parseVatSlots.js';
 import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
 import { initializeRemoteState, makeRemote, insistRemoteID } from './remote.js';
 import { cdebug } from './cdebug.js';
@@ -43,14 +43,22 @@ function makeSyscallStore(syscall) {
     getRequired(key) {
       assert.typeof(key, 'string');
       const result = syscall.vatstoreGet(key);
-      assert(result !== undefined, X`store lacks required key ${key}`);
+      result !== undefined || Fail`store lacks required key ${key}`;
       return result;
     },
   });
 }
 
 function commaSplit(s) {
-  if (s === undefined || s === '') {
+  // 's' might be 'undefined' (because the DB key that feeds it was not
+  // present, and undefined is the obvious return value from a
+  // .get(missingKey), or null (because the DB lookup actually happened on
+  // the other side of a JSON-encoded vat-worker-to-kernel-process pipe and
+  // the JSON decoder produces null instead of undefined), or '' (because the
+  // key is present but was populated with slots.join(',') and slots was
+  // empty, so join() produces an empty string). In all three cases, and
+  // empty list is the correct return value.
+  if (!s) {
     return [];
   }
   return s.split(',');
@@ -72,7 +80,7 @@ function commaSplit(s) {
 // record the new `p+NN` value anywhere. The counter we use for allocation
 // will continue on to the next higher NN.
 
-export function makeState(syscall, identifierBase = 0) {
+export function makeState(syscall) {
   // Comms vat state is kept in the vatstore, which is managed by the kernel and
   // accessed as part of the syscall interface.  The schema used here is very
   // similar to (in fact, modelled upon) the schema the kernel uses for its own
@@ -81,7 +89,7 @@ export function makeState(syscall, identifierBase = 0) {
   //
   // The schema is:
   //
-  // initialized = true // present if this comms vat has had its storage intialized
+  // initialized = true // present if this comms vat has had its storage initialized
   //
   // o.nextID = $NN  // kernel-facing object identifier allocation counter (o+NN)
   // p.nextID = $NN  // kernel-facing promise identifier allocation counter (p+NN)
@@ -131,9 +139,10 @@ export function makeState(syscall, identifierBase = 0) {
   }
   const store = makeSyscallStore(syscall);
 
-  function maybeInitialize(controller) {
+  function initialize(controller, identifierBase) {
     if (!store.get('initialized')) {
       store.set('identifierBase', `${identifierBase}`);
+      store.set('sendExplicitSeqNums', '1');
       store.set('lo.nextID', `${identifierBase + 10}`);
       store.set('lp.nextID', `${identifierBase + 20}`);
       store.set('o.nextID', `${identifierBase + 30}`);
@@ -146,6 +155,16 @@ export function makeState(syscall, identifierBase = 0) {
         cdebug(`comms controller is ${controller}`);
       }
     }
+  }
+
+  function setSendExplicitSeqNums(sendExplicitSeqNums) {
+    const digit = Number(Boolean(sendExplicitSeqNums));
+    store.set('sendExplicitSeqNums', `${digit}`);
+  }
+
+  function getSendExplicitSeqNums() {
+    const digit = Number(store.getRequired('sendExplicitSeqNums'));
+    return Boolean(digit);
   }
 
   function deleteLocalPromiseState(lpid) {
@@ -168,12 +187,12 @@ export function makeState(syscall, identifierBase = 0) {
       case 'rejected':
         break;
       default:
-        assert.fail(X`unknown status for ${lpid}: ${status}`);
+        Fail`unknown status for ${lpid}: ${status}`;
     }
     deleteLocalPromiseState(lpid);
   }
 
-  /* we need syscall.vatstoreGetKeys to do it this way
+  /* we need syscall.vatstoreGetNextKey to do it this way
   function addImporter(lref, remoteID) {
     assert(!lref.includes('.'), lref);
     const key = `imps.${lref}.${remoteID}`;
@@ -186,11 +205,9 @@ export function makeState(syscall, identifierBase = 0) {
   }
   function getImporters(lref) {
     const remoteIDs = [];
-    const prefix = `imps.${lref}`;
-    const startKey = `${prefix}.`;
-    const endKey = `${prefix}/`; // '.' and '/' are adjacent
-    for (const k of store.getKeys(startKey, endKey)) {
-      const remoteID = k.slice(0, prefix.length);
+    const prefix = `imps.${lref}.`;
+    for (const k of enumeratePrefixedKeys(store, prefix)) {
+      const remoteID = k.slice(prefix.length);
       if (remoteID !== 'kernel') {
         insistRemoteID(remoteID);
       }
@@ -260,7 +277,7 @@ export function makeState(syscall, identifierBase = 0) {
    * @param {string} mode  Reference type
    */
   function incrementRefCount(lref, _tag, mode = 'data') {
-    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
+    referenceModes.includes(mode) || Fail`unknown reference mode ${mode}`;
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
@@ -286,11 +303,11 @@ export function makeState(syscall, identifierBase = 0) {
    * @throws if this tries to decrement a reference count below zero.
    */
   function decrementRefCount(lref, tag, mode = 'data') {
-    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
+    referenceModes.includes(mode) || Fail`unknown reference mode ${mode}`;
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       let refCount = parseInt(store.get(`${lref}.refCount`), 10);
-      assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
+      refCount > 0n || Fail`refCount underflow {lref} ${tag}`;
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
       store.set(`${lref}.refCount`, `${Nat(refCount)}`);
@@ -375,10 +392,9 @@ export function makeState(syscall, identifierBase = 0) {
           if (!reachable) {
             // the object is unreachable
 
-            // eslint-disable-next-line no-use-before-define
-            const { owner, isReachable, isRecognizable } = getOwnerAndStatus(
-              lref,
-            );
+            const { owner, isReachable, isRecognizable } =
+              // eslint-disable-next-line no-use-before-define
+              getOwnerAndStatus(lref);
             if (isReachable) {
               // but the exporter doesn't realize it yet, so schedule a
               // dropExport to them, which will clear the isReachable flag at
@@ -566,29 +582,19 @@ export function makeState(syscall, identifierBase = 0) {
 
   function insistDeciderIsRemote(lpid, remoteID) {
     const decider = store.getRequired(`${lpid}.decider`);
-    assert.equal(
-      decider,
-      remoteID,
-      `${lpid} is decided by ${decider}, not ${remoteID}`,
-    );
+    decider === remoteID ||
+      Fail`${lpid} is decided by ${decider}, not ${remoteID}`;
   }
 
   function insistDeciderIsComms(lpid) {
     const decider = store.getRequired(`${lpid}.decider`);
-    assert.equal(
-      decider,
-      COMMS,
-      `${decider} is the decider for ${lpid}, not me`,
-    );
+    decider === COMMS || Fail`${decider} is the decider for ${lpid}, not me`;
   }
 
   function insistDeciderIsKernel(lpid) {
     const decider = store.getRequired(`${lpid}.decider`);
-    assert.equal(
-      decider,
-      KERNEL,
-      `${decider} is the decider for ${lpid}, not kernel`,
-    );
+    decider === KERNEL ||
+      Fail`${decider} is the decider for ${lpid}, not kernel`;
   }
 
   // Decision authority always transfers through the comms vat, so the only
@@ -643,7 +649,7 @@ export function makeState(syscall, identifierBase = 0) {
 
   function insistPromiseIsUnresolved(lpid) {
     const status = store.getRequired(`${lpid}.status`);
-    assert(status === 'unresolved', X`${lpid} already resolved`);
+    status === 'unresolved' || Fail`${lpid} already resolved`;
   }
 
   function subscribeRemoteToPromise(lpid, subscriber) {
@@ -667,7 +673,7 @@ export function makeState(syscall, identifierBase = 0) {
   function subscribeKernelToPromise(lpid) {
     insistPromiseIsUnresolved(lpid);
     const decider = store.getRequired(`${lpid}.decider`);
-    assert(decider !== KERNEL, X`kernel is decider for ${lpid}, hush`);
+    decider !== KERNEL || Fail`kernel is decider for ${lpid}, hush`;
     // cdebug(`subscribeKernelToPromise ${lpid} d=${decider}`);
     store.set(`${lpid}.kernelSubscribed`, 'true');
   }
@@ -695,9 +701,9 @@ export function makeState(syscall, identifierBase = 0) {
   }
 
   function addRemote(name, transmitterID) {
-    assert(/^[-\w.+]+$/.test(name), `not a valid remote name: ${name}`);
+    /^[-\w.+]+$/.test(name) || Fail`not a valid remote name: ${name}`;
     const nameKey = `rname.${name}`;
-    assert(!store.get(nameKey), X`remote name ${name} already in use`);
+    !store.get(nameKey) || Fail`remote name ${name} already in use`;
 
     insistVatType('object', transmitterID);
     addMetaObject(transmitterID);
@@ -730,7 +736,10 @@ export function makeState(syscall, identifierBase = 0) {
   }
 
   const state = harden({
-    maybeInitialize,
+    initialize,
+
+    setSendExplicitSeqNums,
+    getSendExplicitSeqNums,
 
     mapFromKernel,
     mapToKernel,

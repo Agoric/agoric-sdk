@@ -4,7 +4,7 @@
  *
  * @param {Brand} brand
  * @param {Issuer} issuer
- * @param {DisplayInfo=} displayInfo
+ * @param {DisplayInfo} displayInfo
  * @returns {IssuerRecord}
  */
 export const makeIssuerRecord = (brand, issuer, displayInfo) =>

@@ -1,14 +1,14 @@
-// @ts-check
-
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import {
   ChoiceMethod,
   QuorumRule,
   ElectionType,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
 } from '../../../src/index.js';
 
 const { quote: q } = assert;
@@ -19,6 +19,13 @@ const makeVoterVat = async (log, vats, zoe) => {
   return voterCreator;
 };
 
+/**
+ *
+ * @param {Pick<QuestionDetails, 'issue' | 'positions' | 'electionType'>} qDetails
+ * @param {import('@agoric/time/src/types').Timestamp} closingTime
+ * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: import('@agoric/time/src/types').TimerService }} tools
+ * @param {*} quorumRule
+ */
 const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {
   const { electorateFacet, installations } = tools;
   const { issue, positions, electionType } = qDetails;
@@ -27,13 +34,14 @@ const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {
     deadline: closingTime,
   };
 
-  const questionSpec = looksLikeQuestionSpec(
+  const questionSpec = coerceQuestionSpec(
     harden({
       method: ChoiceMethod.UNRANKED,
       issue,
       positions,
       electionType,
       maxChoices: 1,
+      maxWinners: 1,
       closingRule,
       quorumRule,
       tieOutcome: positions[1],
@@ -55,10 +63,11 @@ const committeeBinaryStart = async (
   installations,
 ) => {
   const electorateTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
-  const {
-    creatorFacet: electorateFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+  const { creatorFacet: electorateFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    });
 
   const choose = { text: 'Choose' };
   const electionType = ElectionType.SURVEY;
@@ -117,10 +126,11 @@ const committeeBinaryTwoQuestions = async (
   log('starting TWO questions test');
 
   const electorateTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
-  const {
-    creatorFacet: electorateFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+  const { creatorFacet: electorateFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    });
 
   const invitations = await E(electorateFacet).getVoterInvitations();
   const details2 = await E(zoe).getInvitationDetails(invitations[2]);
@@ -232,10 +242,16 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const [testName] = argv;
   switch (testName) {
     case 'committeeBinaryStart':
-      committeeBinaryStart(zoe, voterCreator, timer, log, installations);
+      await committeeBinaryStart(zoe, voterCreator, timer, log, installations);
       break;
     case 'committeeBinaryTwoQuestions':
-      committeeBinaryTwoQuestions(zoe, voterCreator, timer, log, installations);
+      await committeeBinaryTwoQuestions(
+        zoe,
+        voterCreator,
+        timer,
+        log,
+        installations,
+      );
       break;
     default:
       log(`didn't find test: ${argv}`);

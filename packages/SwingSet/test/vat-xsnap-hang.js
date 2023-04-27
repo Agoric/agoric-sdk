@@ -1,6 +1,6 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/far';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     hang() {
       // eslint-disable-next-line no-empty

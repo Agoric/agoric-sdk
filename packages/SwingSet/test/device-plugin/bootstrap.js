@@ -1,6 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Far, E } from '@endo/far';
+import { Fail } from '@agoric/assert';
 import { makePluginManager } from '../../src/vats/plugin-manager.js';
 
 export function buildRootObject(vatPowers, vatParameters) {
@@ -19,10 +18,10 @@ export function buildRootObject(vatPowers, vatParameters) {
               prefix: 'Whoopie ',
             },
           );
-          await E(vats.bridge).init(pingPongP, devices.bridge);
           D(devices.bridge).registerInboundHandler(vats.bridge);
+          await E(vats.bridge).init(pingPongP, devices.bridge);
         } else {
-          assert.fail(X`unknown argv mode '${argv[0]}'`);
+          Fail`unknown argv mode '${argv[0]}'`;
         }
       } catch (e) {
         console.error('have error', e);

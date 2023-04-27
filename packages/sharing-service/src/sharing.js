@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Fail } from '@agoric/assert';
+import { Far } from '@endo/marshal';
 import { makeSharedMap } from './sharedMap.js';
 
 function makeSharingService() {
@@ -16,30 +16,24 @@ function makeSharingService() {
       if (!sharedMaps.has(key)) {
         return undefined;
       }
-      assert(
-        sharedMaps.get(key) !== tombstone,
-        X`Entry for ${key} has already been collected.`,
-      );
+      sharedMaps.get(key) !== tombstone ||
+        Fail`Entry for ${key} has already been collected.`;
       const result = sharedMaps.get(key);
       // these are single-use entries. Leave a tombstone to prevent MITM.
       sharedMaps.set(key, tombstone);
       return result;
     },
     createSharedMap(preferredName) {
-      assert(
-        !sharedMaps.has(preferredName),
-        X`Entry already exists: ${preferredName}`,
-      );
+      !sharedMaps.has(preferredName) ||
+        Fail`Entry already exists: ${preferredName}`;
       const sharedMap = makeSharedMap(preferredName);
       sharedMaps.set(preferredName, sharedMap);
       brand.add(sharedMap);
       return sharedMap;
     },
     validate(allegedSharedMap) {
-      assert(
-        brand.has(allegedSharedMap),
-        X`Unrecognized sharedMap: ${allegedSharedMap}`,
-      );
+      brand.has(allegedSharedMap) ||
+        Fail`Unrecognized sharedMap: ${allegedSharedMap}`;
       return allegedSharedMap;
     },
     // We don't need remove, since grabSharedMap can be used for that.

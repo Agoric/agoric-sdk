@@ -1,22 +1,22 @@
-- name: "Create data/*.dst directory"
+- name: 'Create data/*.dst directory'
   delegate_to: localhost
   file:
     state: directory
     path: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst"
 
-- name: "Copy to data/*.dst/app.toml"
+- name: 'Copy to data/*.dst/app.toml'
   delegate_to: localhost
   copy:
     src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/app.toml"
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/app.toml"
 
-- name: "Copy to data/*.dst/config.toml"
+- name: 'Copy to data/*.dst/config.toml'
   delegate_to: localhost
   copy:
     src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/config.toml"
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/config.toml"
 
-- name: "Copy to data/*.dst/genesis.json"
+- name: 'Copy to data/*.dst/genesis.json'
   delegate_to: localhost
   copy:
     src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/genesis.json"

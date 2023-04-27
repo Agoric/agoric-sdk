@@ -4,10 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 
+	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const EmptyMailboxValue = `"{\"outbox\":[], \"ack\":0}"`
+
+// Returns a new Mailbox with an empty mailbox
+func NewMailbox() *vstoragetypes.Data {
+	return &vstoragetypes.Data{
+		Value: EmptyMailboxValue,
+	}
+}
 
 func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egress {
 	return &Egress{
@@ -17,31 +25,17 @@ func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egres
 	}
 }
 
-func NewStorage() *Storage {
-	return &Storage{}
-}
-
-// Returns a new Mailbox with an empty mailbox
-func NewMailbox() *Storage {
-	return &Storage{
-		Value: EmptyMailboxValue,
-	}
-}
-
-func NewKeys() *Keys {
-	return &Keys{}
-}
-
-// FIXME: Should have @agoric/nat
+// FIXME: Should have @endo/nat
 func Nat(num float64) (uint64, error) {
+	if num < 0 {
+		return 0, errors.New("Not a natural")
+	}
+
 	nat := uint64(num)
 	if float64(nat) != num {
 		return 0, errors.New("Not a precise integer")
 	}
 
-	if nat < 0 {
-		return 0, errors.New("Not a natural")
-	}
 	return nat, nil
 }
 
@@ -88,6 +82,9 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 			return nil, errors.New("Message Num is not an integer")
 		}
 		ret.Nums[i], err = Nat(numFloat)
+		if err != nil {
+			return nil, errors.New("Message num is not a Nat")
+		}
 		msg, ok := nummsg[1].(string)
 		if !ok {
 			return nil, errors.New("Message is not a string")
@@ -96,4 +93,13 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 	}
 
 	return ret, nil
+}
+
+func QueueSizeEntry(qs []QueueSize, key string) (int32, bool) {
+	for _, q := range qs {
+		if q.Key == key {
+			return q.Size_, true
+		}
+	}
+	return 0, false
 }

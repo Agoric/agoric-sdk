@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { processNextGCAction } from '../src/kernel/gc-actions.js';
+import { processGCActionSet } from '../src/kernel/gc-actions.js';
 
 test('gc actions', t => {
   let rc = {};
@@ -29,6 +29,7 @@ test('gc actions', t => {
       const [reachable, recognizable] = rc[kref];
       return { reachable, recognizable };
     },
+    emitCrankHashes() {},
     provideVatKeeper(vatID) {
       return {
         hasCListEntry(kref) {
@@ -41,7 +42,7 @@ test('gc actions', t => {
     },
   };
   function process() {
-    return processNextGCAction(kernelKeeper);
+    return processGCActionSet(kernelKeeper);
   }
 
   function make(type, vatID, ...krefs) {
@@ -75,7 +76,7 @@ test('gc actions', t => {
   rc = { ko1: [1, 1] }; // re-exported, still reachable+recognizable
   clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
-  t.deepEqual(msg, undefined);
+  t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
   t.deepEqual(newActions, []);
 
   // fully dropped, dropExport happens, then fully re-reachable: retire negated
@@ -89,7 +90,7 @@ test('gc actions', t => {
   rc = { ko1: [1, 1] };
   clistState.v1.ko1 = { exists: true, isReachable: false };
   msg = process();
-  t.deepEqual(msg, undefined);
+  t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
   t.deepEqual(newActions, []);
 
   // fully dropped, re-reachable, partial drop, then dropExport
@@ -106,7 +107,7 @@ test('gc actions', t => {
   setActions(['v1 retireExport ko1']);
   rc = { ko1: [0, 1] };
   msg = process();
-  t.deepEqual(msg, undefined);
+  t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
   t.deepEqual(newActions, []);
 
   // fully dropped, dropExports happens, re-reachable, partial drop: retire
@@ -121,7 +122,7 @@ test('gc actions', t => {
   clistState.v1.ko1 = { exists: true, isReachable: true };
   rc = { ko1: [0, 1] };
   msg = process();
-  t.deepEqual(msg, undefined);
+  t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
   t.deepEqual(newActions, []);
 
   // partially dropped: recognizable but not reachable
@@ -137,7 +138,7 @@ test('gc actions', t => {
   rc = { ko1: [1, 1] };
   clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
-  t.deepEqual(msg, undefined);
+  t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
   t.deepEqual(newActions, []);
 
   // priority order: retireImports is last
@@ -168,6 +169,12 @@ test('gc actions', t => {
   setActions(['v1 retireImport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };
   clistState.v1.ko2 = { exists: false, isReachable: false };
+  msg = process();
+  t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
+  t.deepEqual(newActions, []);
+
+  // empty action set should result in no actions
+  setActions([]);
   msg = process();
   t.deepEqual(msg, undefined);
   t.deepEqual(newActions, []);

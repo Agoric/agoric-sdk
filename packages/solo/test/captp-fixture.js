@@ -1,7 +1,7 @@
 /* global process setTimeout */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
-import { makeCapTP, E } from '@agoric/captp';
+import { makeCapTP, E } from '@endo/captp';
 
 import { getAccessToken } from '@agoric/access-token';
 
@@ -44,7 +44,7 @@ export async function makeFixture(PORT, noisy = false) {
       /** @type {() => void} */
       let abortCapTP;
       ws = new WebSocket(
-        `ws://localhost:${PORT}/private/captp?accessToken=${accessToken}`,
+        `ws://127.0.0.1:${PORT}/private/captp?accessToken=${accessToken}`,
         {
           origin: `http://localhost:${PORT}`,
         },
@@ -107,7 +107,7 @@ export async function makeFixture(PORT, noisy = false) {
           console.log(buf);
         }
         // We only reject if the child exits before CapTP is established.
-        reject(code);
+        reject(new Error(`CapTP fixture exited with ${code}`));
       });
       tryConnect(resolve, reject);
     });

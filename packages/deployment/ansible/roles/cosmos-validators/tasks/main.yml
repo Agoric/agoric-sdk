@@ -1,44 +1,44 @@
-- name: "Check {{ STAKER }}-* exists"
+- name: 'Check {{ STAKER }}-* exists'
   become: yes
-  become_user: "{{ service }}"
-  shell: "agd keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
+  become_user: '{{ service }}'
+  shell: 'agd keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}'
   ignore_errors: true
   register: staker_exists
 
-- name: "Create {{ STAKER }}-*"
-  become_user: "{{ service }}"
+- name: 'Create {{ STAKER }}-*'
+  become_user: '{{ service }}'
   become: true
-  shell: "agd keys add --keyring-backend=test {{ staker }}"
+  shell: 'agd keys add --keyring-backend=test {{ staker }}'
   vars:
-    staker: "{{ STAKER }}-{{ inventory_hostname }}"
+    staker: '{{ STAKER }}-{{ inventory_hostname }}'
   when: inventory_hostname != STAKER_NODE and staker_exists.rc != 0
 
-- name: "Check {{ STAKER }}-* exists"
+- name: 'Check {{ STAKER }}-* exists'
   become: yes
-  become_user: "{{ service }}"
-  shell: "agd keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
+  become_user: '{{ service }}'
+  shell: 'agd keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}'
   register: staker_address
 
-- name: "Transfer {{ STAKER_INIT_COINS }} to {{ STAKER }}-*"
+- name: 'Transfer {{ STAKER_INIT_COINS }} to {{ STAKER }}-*'
   delegate_to: localhost
   shell: "\
     agd --home={{ SETUP_HOME + '/../faucet' }} \
-     tx bank send faucet {{ staker_address.stdout }} {{ STAKER_INIT_COINS }} \
-      --node=tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 --keyring-backend=test --chain-id={{ CHAIN_NAME }} \
-      --broadcast-mode=block --yes"
+    tx bank send faucet {{ staker_address.stdout }} {{ STAKER_INIT_COINS }} \
+    --node=tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 --keyring-backend=test --chain-id={{ CHAIN_NAME }} \
+    --broadcast-mode=block --yes"
   vars:
-    staker: "{{ STAKER }}-{{ inventory_hostname }}"
+    staker: '{{ STAKER }}-{{ inventory_hostname }}'
   when: inventory_hostname != STAKER_NODE
 
-- name: "Find staking_denom from {{ STAKER_SELF_DELEGATION }}"
+- name: 'Find staking_denom from {{ STAKER_SELF_DELEGATION }}'
   set_fact:
     staking_denom: "{{ STAKER_SELF_DELEGATION | regex_search('^[0-9]*(.*)', '\\1') | first }}"
 
-- name: "Specially set JSON valconspub"
+- name: 'Specially set JSON valconspub'
   set_fact:
     valconspub: "{{ lookup('file', data + '/' + inventory_hostname + '/pubkey') | string }}"
 
-- name: "Wait for transfer of {{ staking_denom }} to arrive at {{ inventory_hostname }}"
+- name: 'Wait for transfer of {{ staking_denom }} to arrive at {{ inventory_hostname }}'
   shell: "\
     agd query bank balances {{ staker_address.stdout }}"
   register: staker_balance
@@ -46,17 +46,17 @@
   delay: 10
   retries: 20 # 200 seconds === 3m20s
 
-- name: "Create validators for {{ STAKER }}-*"
-  become_user: "{{ service }}"
+- name: 'Create validators for {{ STAKER }}-*'
+  become_user: '{{ service }}'
   become: true
   shell: "\
     agd tx staking create-validator --keyring-backend=test \
-      --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_SELF_DELEGATION }} \
-      --moniker={{ moniker | default(inventory_hostname) }} --pubkey='{{ valconspub }}' \
-      {{ (website | default(None)) and '--website=' ~ website }} \
-      {{ (identity | default(None)) and '--identity=' ~ identity }} \
-      --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
-      --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
+    --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_SELF_DELEGATION }} \
+    --moniker={{ moniker | default(inventory_hostname) }} --pubkey='{{ valconspub }}' \
+    {{ (website | default(None)) and '--website=' ~ website }} \
+    {{ (identity | default(None)) and '--identity=' ~ identity }} \
+    --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
+    --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
   vars:
-    staker: "{{ STAKER }}-{{ inventory_hostname }}"
+    staker: '{{ STAKER }}-{{ inventory_hostname }}'
   when: inventory_hostname != STAKER_NODE

@@ -3,6 +3,99 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.6.2...@agoric/spawner@0.6.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.6.1...@agoric/spawner@0.6.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.6.0...@agoric/spawner@0.6.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.5.2...@agoric/spawner@0.6.0) (2022-09-20)
+
+
+### Features
+
+* **spawner:** tag spawned vats with `spawn` ([1d27b38](https://github.com/Agoric/agoric-sdk/commit/1d27b382d6ec714f724163c90803e06dd4e856bd))
+
+
+### Bug Fixes
+
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+
+
+
+### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.5.1...@agoric/spawner@0.5.2) (2022-05-28)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.5.0...@agoric/spawner@0.5.1) (2022-05-09)
+
+
+### Bug Fixes
+
+* **spawner:** propagate `VatData` ([7bb8475](https://github.com/Agoric/agoric-sdk/commit/7bb847510ebfa873049a26457e58827f8c15a15b))
+
+
+
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.35...@agoric/spawner@0.5.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+### [0.4.35](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.34...@agoric/spawner@0.4.35) (2022-02-24)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.34](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.33...@agoric/spawner@0.4.34) (2022-02-21)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.33](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.32...@agoric/spawner@0.4.33) (2021-12-22)
+
+
+### Bug Fixes
+
+* **liveSlots:** reflect return value marshalling failures ([fd17b22](https://github.com/Agoric/agoric-sdk/commit/fd17b22874927540f0bad7fb081c9a7e56c901e9))
+
+
+
 ### [0.4.32](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.31...@agoric/spawner@0.4.32) (2021-12-02)
 
 

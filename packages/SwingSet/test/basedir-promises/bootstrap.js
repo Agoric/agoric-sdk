@@ -1,8 +1,7 @@
-import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far, E } from '@endo/far';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
@@ -10,8 +9,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     bootstrap(vats) {
       const mode = vatParameters.argv[0];
       if (mode === 'flush') {
-        Promise.resolve().then(log('then1'));
-        Promise.resolve().then(log('then2'));
+        void Promise.resolve('then1').then(log);
+        void Promise.resolve('then2').then(log);
       } else if (mode === 'e-then') {
         E(vats.left)
           .callRight(1, vats.right)
@@ -37,7 +36,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         });
         const p1 = E(t1).foo(1);
-        p1.then(x => log(`b.resolved ${x}`));
+        void p1.then(x => log(`b.resolved ${x}`));
         log(`b.local1.finish`);
       } else if (mode === 'local2') {
         const t1 = Far('t1', {
@@ -75,7 +74,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.call-promise1.finish`);
       } else {
-        assert.fail(X`unknown mode ${mode}`);
+        Fail`unknown mode ${mode}`;
       }
     },
   });

@@ -1,5 +1,5 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
@@ -39,7 +39,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) =>
-      mint.mintPayment(AmountMath.make(brands[i], values[i])),
+      mint.mintPayment(AmountMath.make(brands[i], BigInt(values[i]))),
     );
   const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 

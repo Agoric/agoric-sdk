@@ -1,9 +1,6 @@
-// @ts-check
-
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 const setupNonFungible = () => {
   const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
@@ -22,20 +19,25 @@ const setupNonFungible = () => {
     brands.set(k, allBundles[k].brand);
   }
 
-  function createRpgItem(name, power, desc = undefined) {
+  /**
+   *
+   * @param {string} name
+   * @param {string} power
+   * @param {string} [desc]
+   */
+  function createRpgItem(name, power, desc) {
     return harden([{ name, description: desc || name, power }]);
   }
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const ccIssuer = ccBundle.issuer;
   const rpgIssuer = rpgBundle.issuer;
   const ccMint = ccBundle.mint;
   const rpgMint = rpgBundle.mint;
-  /** @param {Value} value */
+  /** @param {SetValue} value */
   const cryptoCats = value => AmountMath.make(allBundles.cc.brand, value);
-  /** @param {Value} value */
+  /** @param {SetValue} value */
   const rpgItems = value => AmountMath.make(allBundles.rpg.brand, value);
   return {
     ccIssuer,
@@ -47,6 +49,7 @@ const setupNonFungible = () => {
     brands,
     createRpgItem,
     zoe,
+    vatAdminState,
   };
 };
 harden(setupNonFungible);

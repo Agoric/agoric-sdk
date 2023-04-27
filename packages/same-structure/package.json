@@ -1,19 +1,18 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.1.29",
+  "version": "0.2.3",
   "description": "Deep equals",
   "type": "module",
   "main": "index.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint:eslint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -30,36 +29,15 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/marshal": "^0.5.0"
-  },
-  "devDependencies": {
-    "ava": "^3.12.1"
+    "@agoric/assert": "^0.5.1",
+    "@agoric/store": "^0.8.1",
+    "@endo/marshal": "^0.8.5"
   },
   "files": [
-    "src/",
     "*.js",
     "NEWS.md"
   ],
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
-  "eslintIgnore": [
-    "bundle-*.js"
-  ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "timeout": "2m"
   }
 }

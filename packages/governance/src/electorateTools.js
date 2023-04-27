@@ -1,8 +1,24 @@
-// @ts-check
+import { E } from '@endo/eventual-send';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 
-import { E } from '@agoric/eventual-send';
-import { allComparable } from '@agoric/same-structure';
-import { Far } from '@agoric/marshal';
+/**
+ * @typedef {object} QuestionRecord
+ * @property {ERef<VoteCounterCreatorFacet>} voteCap
+ * @property {VoteCounterPublicFacet} publicFacet
+ * @property {import('@agoric/time/src/types').Timestamp} deadline
+ */
+
+/**
+ * @callback StartCounter
+ * @param {ZCF} zcf
+ * @param {QuestionSpec} questionSpec
+ * @param {unknown} quorumThreshold
+ * @param {ERef<Installation>} voteCounter
+ * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {Publisher<unknown>} questionPublisher
+ * @param {Publisher<OutcomeRecord>} outcomePublisher
+ * @returns {AddQuestionReturn}
+ */
 
 /**
  * Start up a new Counter for a question
@@ -15,7 +31,8 @@ const startCounter = async (
   quorumThreshold,
   voteCounter,
   questionStore,
-  publication,
+  questionsPublisher,
+  outcomePublisher,
 ) => {
   const voteCounterTerms = {
     questionSpec,
@@ -23,14 +40,20 @@ const startCounter = async (
     quorumThreshold,
   };
 
+  const { deadline } = questionSpec.closingRule;
   // facets of the voteCounter. creatorInvitation and adminFacet not used
   /** @type {{ creatorFacet: VoteCounterCreatorFacet, publicFacet: VoteCounterPublicFacet, instance: Instance }} */
   const { creatorFacet, publicFacet, instance } = await E(
     zcf.getZoeService(),
-  ).startInstance(voteCounter, {}, voteCounterTerms);
+  ).startInstance(
+    voteCounter,
+    {},
+    voteCounterTerms,
+    { outcomePublisher },
+    `voteCounter.${deadline}`,
+  );
   const details = await E(publicFacet).getDetails();
-  const { deadline } = questionSpec.closingRule;
-  publication.updateState(details);
+  questionsPublisher.publish(details);
   const questionHandle = details.questionHandle;
 
   const voteCounterFacets = { voteCap: creatorFacet, publicFacet, deadline };
@@ -40,15 +63,15 @@ const startCounter = async (
   return { creatorFacet, publicFacet, instance, deadline, questionHandle };
 };
 
-/** @param {Store<Handle<'Question'>, QuestionRecord>} questionStore */
+/** @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore */
 const getOpenQuestions = async questionStore => {
-  const isOpenPQuestions = questionStore
-    .entries()
-    .map(([key, { publicFacet }]) => {
+  const isOpenPQuestions = [...questionStore.entries()].map(
+    ([key, { publicFacet }]) => {
       return [E(publicFacet).isOpen(), key];
-    });
+    },
+  );
 
-  const isOpenQuestions = await allComparable(harden(isOpenPQuestions));
+  const isOpenQuestions = await deeplyFulfilled(harden(isOpenPQuestions));
   return isOpenQuestions
     .filter(([open, _key]) => open)
     .map(([_open, key]) => key);
@@ -56,7 +79,7 @@ const getOpenQuestions = async questionStore => {
 
 /**
  * @param {ERef<Handle<'Question'>>} questionHandleP
- * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
  */
 const getQuestion = (questionHandleP, questionStore) =>
   E.when(questionHandleP, questionHandle =>
@@ -64,7 +87,7 @@ const getQuestion = (questionHandleP, questionStore) =>
   );
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {AddQuestion} addQuestion
  */
 const getPoserInvitation = (zcf, addQuestion) => {

@@ -1,30 +1,20 @@
-/* global makeKind */
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { defineKind } from '@agoric/vat-data';
 
 const things = [];
 
-export function buildRootObject(_vatPowers) {
-  function makeThingInstance(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
+export function buildRootObject() {
+  const makeThing = defineKind('thing', label => ({ label }), {
+    getLabel: ({ state }) => state.label,
+  });
 
-  const thingMaker = makeKind(makeThingInstance);
   let nextThingNumber = 0;
 
   return Far('root', {
     prepare() {
       for (let i = 1; i <= 9; i += 1) {
-        things.push(thingMaker(`thing #${i}`));
+        things.push(makeThing(`thing #${i}`));
       }
     },
     getThing(forWhom) {

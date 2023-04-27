@@ -1,21 +1,12 @@
-// This file can contain .js-specific Typescript compiler config.
 {
-  "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-
-    "noEmit": true,
-/*
-    // The following flags are for creating .d.ts files:
-    "noEmit": false,
-    "declaration": true,
-    "emitDeclarationOnly": true,
-*/
-    "downlevelIteration": true,
-    "strictNullChecks": true,
-    "moduleResolution": "node",
-  },
-  // To include tests, change to:
-  //  "include": ["src/**/*.js", "exported.js", "tools/**/*.js", "test/**/*.js"], 
-  "include": ["src/**/*.js", "exported.js", "tools/**/*.js"],
+  "extends": "../../tsconfig.json",
+  "include": [
+    "contractFacet.js",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "src/**/*.ts",
+    "test/**/*.js",
+    "test/**/*.ts",
+    "tools/**/*.js",
+  ],
 }

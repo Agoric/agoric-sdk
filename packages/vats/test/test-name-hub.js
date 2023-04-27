@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeNameHubKit } from '../src/nameHub.js';
@@ -17,12 +18,20 @@ test('makeNameHubKit - lookup paths', async t => {
   t.deepEqual(nh3.values(), []);
   t.deepEqual(nh3.entries(), []);
 
-  na1.update('path1', nh2);
+  t.is(na1.readonly(), nh1);
+  t.is(na2.readonly(), nh2);
+  t.is(na3.readonly(), nh3);
+
+  na1.update('path1', nh2, na2);
   t.is(await nh1.lookup('path1'), nh2);
-  na2.update('path2', nh3);
+  na2.update('path2', nh3, na3);
   t.is(await nh2.lookup('path2'), nh3);
   na3.update('path3', 'finish');
   t.is(await nh3.lookup('path3'), 'finish');
+
+  await na1
+    .lookupAdmin('path1', 'path2')
+    .then(na3b => na3b.update('path3', 'finish2'));
 
   t.deepEqual(nh1.keys(), ['path1']);
   t.deepEqual(nh1.values(), [nh2]);
@@ -31,13 +40,13 @@ test('makeNameHubKit - lookup paths', async t => {
   t.deepEqual(nh2.values(), [nh3]);
   t.deepEqual(nh2.entries(), [['path2', nh3]]);
   t.deepEqual(nh3.keys(), ['path3']);
-  t.deepEqual(nh3.values(), ['finish']);
-  t.deepEqual(nh3.entries(), [['path3', 'finish']]);
+  t.deepEqual(nh3.values(), ['finish2']);
+  t.deepEqual(nh3.entries(), [['path3', 'finish2']]);
 
   t.is(await nh1.lookup(), nh1);
   t.is(await nh1.lookup('path1'), nh2);
   t.is(await nh1.lookup('path1', 'path2'), nh3);
-  t.is(await nh1.lookup('path1', 'path2', 'path3'), 'finish');
+  t.is(await nh1.lookup('path1', 'path2', 'path3'), 'finish2');
   await t.throwsAsync(() => nh1.lookup('path1', 'path2', 'path3', 'path4'), {
     message: /^target has no method "lookup", has/,
   });
@@ -45,6 +54,8 @@ test('makeNameHubKit - lookup paths', async t => {
 
 test('makeNameHubKit - reserve and update', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
+
+  t.is(nameAdmin.readonly(), nameHub);
 
   await t.throwsAsync(() => nameHub.lookup('hello'), {
     message: /"nameKey" not found: .*/,
@@ -81,6 +92,8 @@ test('makeNameHubKit - reserve and update', async t => {
 test('makeNameHubKit - reserve and delete', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
 
+  t.is(nameAdmin.readonly(), nameHub);
+
   await t.throwsAsync(() => nameHub.lookup('goodbye'), {
     message: /"nameKey" not found: .*/,
   });
@@ -113,4 +126,47 @@ test('makeNameHubKit - reserve and delete', async t => {
   await t.throwsAsync(() => nameHub.lookup('goodbye'), {
     message: /"nameKey" not found: .*/,
   });
+});
+
+test('makeNameHubKit - default and set', async t => {
+  const { nameAdmin, nameHub } = makeNameHubKit();
+
+  t.is(nameAdmin.readonly(), nameHub);
+
+  t.is(nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
+  nameAdmin.update('already set', 'initial');
+  t.is(await nameAdmin.readonly().lookup('already set'), 'initial');
+  // @ts-expect-error
+  t.is(nameAdmin.default('already set'), 'initial');
+  nameAdmin.set('already set', 'new');
+  t.is(await nameAdmin.readonly().lookup('already set'), 'new');
+  // @ts-expect-error
+  t.is(nameAdmin.default('already set'), 'new');
+  t.throws(() => nameAdmin.set('not set', 'irrelevant'), {
+    message: 'key "not set" is not already initialized',
+  });
+});
+
+test('makeNameHubKit - listen for updates', t => {
+  const { nameAdmin } = makeNameHubKit();
+
+  const brandBLD = harden({ name: 'BLD' });
+  nameAdmin.update('BLD', brandBLD);
+
+  const capture = [];
+  nameAdmin.onUpdate(entries => capture.push(entries));
+
+  const brandIST = harden({ name: 'IST' });
+  nameAdmin.update('IST', brandIST);
+  nameAdmin.reserve('AUSD');
+
+  nameAdmin.delete('BLD');
+
+  t.deepEqual(capture, [
+    [
+      ['BLD', brandBLD],
+      ['IST', brandIST],
+    ],
+    [['IST', brandIST]],
+  ]);
 });

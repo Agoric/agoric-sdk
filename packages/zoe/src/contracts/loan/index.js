@@ -1,9 +1,4 @@
-// @ts-check
-
-import '../../../exported.js';
-
-import { assert, details as X } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 
 import {
   assertIssuerKeywords,
@@ -37,7 +32,7 @@ import { makeLendInvitation } from './lend.js';
  *  * priceAuthority - will be used for getting the current value of
  *    collateral and setting liquidation triggers.
  *  * autoswapInstance - The running contract instance for an Autoswap
- *    or constant product AMM installation. The publicFacet of the
+ *    installation. The publicFacet of the
  *    instance is used for producing an invitation to sell the
  *    collateral on liquidation.
  *  * periodNotifier - the Notifier that provides notifications that
@@ -55,7 +50,14 @@ import { makeLendInvitation } from './lend.js';
  *  * Keyword: 'Loan' - The issuer for the digital assets to be loaned
  *    out.
  *
- * @type {ContractStartFn}
+ * @param {ZCF<{
+ *   mmr: Ratio,
+ *   autoswapInstance: Instance,
+ *   priceAuthority: PriceAuthority,
+ *   periodNotifier: PeriodNotifier,
+ *   interestRate: Ratio,
+ *   interestPeriod: bigint,
+ * }>} zcf
  */
 const start = async zcf => {
   assertIssuerKeywords(zcf, harden(['Collateral', 'Loan']));
@@ -73,9 +75,9 @@ const start = async zcf => {
     mmr = makeRatio(150n, loanBrand), // Maintenance Margin Requirement
   } = zcf.getTerms();
 
-  assert(autoswapInstance, X`autoswapInstance must be provided`);
-  assert(priceAuthority, X`priceAuthority must be provided`);
-  assert(periodNotifier, X`periodNotifier must be provided`);
+  assert(autoswapInstance, 'autoswapInstance must be provided');
+  assert(priceAuthority, 'priceAuthority must be provided');
+  assert(periodNotifier, 'periodNotifier must be provided');
   Nat(interestPeriod);
 
   /** @type {LoanTerms} */

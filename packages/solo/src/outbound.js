@@ -1,7 +1,7 @@
 /* global process */
 import anylogger from 'anylogger';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =
@@ -10,11 +10,11 @@ const SOLO_MAX_DEBUG_LENGTH =
 const log = anylogger('outbound');
 
 /**
- * @typedef {Object} TargetRecord
+ * @typedef {object} TargetRecord
  * @property {(newMessages: Array<[number, string]>, acknum: number) => void} deliverator
  * @property {number} highestSent
  * @property {number} highestAck
- * @property {number} trips
+ * @property {number} [trips]
  */
 
 /**
@@ -28,7 +28,7 @@ export function deliver(mbs) {
   for (const target of Object.getOwnPropertyNames(data)) {
     if (!knownTargets.has(target)) {
       log.error(`eek, no delivery method for target`, target);
-      // eslint-disable-next-line no-continue
+
       continue;
     }
     const t = knownTargets.get(target);
@@ -62,7 +62,7 @@ export function deliver(mbs) {
 }
 
 export function addDeliveryTarget(target, deliverator) {
-  assert(!knownTargets.has(target), X`target ${target} already added`);
+  !knownTargets.has(target) || Fail`target ${target} already added`;
   /** @type {TargetRecord} */
   const targetRecord = { deliverator, highestSent: 0, highestAck: 0 };
   knownTargets.set(target, targetRecord);

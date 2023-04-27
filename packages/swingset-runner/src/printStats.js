@@ -124,8 +124,10 @@ export function printBenchmarkStats(stats) {
   const h3 = `${'PerRound'.padStart(w3)}`;
   const d3 = ` ${''.padStart(w3 - 1, '-')}`;
 
-  // eslint-disable-next-line prettier/prettier
-  log(`In ${stats.cranks} cranks over ${stats.rounds} rounds (${pn(stats.cranksPerRound).trim()} cranks/round):`);
+  const cpr = pn(stats.cranksPerRound).trim();
+  log(
+    `In ${stats.cranks} cranks over ${stats.rounds} rounds (${cpr} cranks/round):`,
+  );
   log(`${h1} ${h2} ${h3}`);
   log(`${d1} ${d2} ${d3}`);
 

@@ -1,5 +1,3 @@
-// @ts-check
-
 import './types.js';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 

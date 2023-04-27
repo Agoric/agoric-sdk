@@ -3,6 +3,204 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.1...@agoric/cosmos@0.32.2) (2022-10-18)
+
+
+### Bug Fixes
+
+* actually run the upgrade handler for test ([142b769](https://github.com/Agoric/agoric-sdk/commit/142b7696061e724c5bf25c627b1356610dc5fa75))
+* allow test flag for update ([237c56e](https://github.com/Agoric/agoric-sdk/commit/237c56edbf9de28d6947d8f6e482aa554aae02f9))
+* init in the right order ([3050d11](https://github.com/Agoric/agoric-sdk/commit/3050d11a9bff53251d9fb7ccfea7cb713fd14ca8))
+* use fromVM instead of vm since vm is an import ([131f0db](https://github.com/Agoric/agoric-sdk/commit/131f0db9dfcd46aa04ce7e0b5115fc3735a175fd))
+
+
+
+### [0.32.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.0...@agoric/cosmos@0.32.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* implement upgrade handler ([0f64bf1](https://github.com/Agoric/agoric-sdk/commit/0f64bf15e78e27e7e3127a62740025ab823a4a96))
+* review comments ([c67dc3c](https://github.com/Agoric/agoric-sdk/commit/c67dc3c17b1158c6a56ecd94856b55ec5f873983))
+
+
+
+## [0.32.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.31.0...@agoric/cosmos@0.32.0) (2022-10-05)
+
+
+### Features
+
+* compute separate mempool limit for allowed inbound ([ebfc852](https://github.com/Agoric/agoric-sdk/commit/ebfc85272ab9c589d6a0ecb6dac5b59f931f3001))
+* Cosmos-side ante handler, storage of allowed queue size ([20dc36b](https://github.com/Agoric/agoric-sdk/commit/20dc36b78efa43be608efaade25ce8e83d69c42d))
+* **cosmic-swingset:** inboundQueue limit ([1b2d08f](https://github.com/Agoric/agoric-sdk/commit/1b2d08fcb4dd3de42f92358646d2c88e3b3687f5))
+* **cosmic-swingset:** parse go->node send results as JSON ([2839223](https://github.com/Agoric/agoric-sdk/commit/2839223f4447deed7c32e73ca37ff142f7c563ef))
+* notify on all balance changes ([56a7b88](https://github.com/Agoric/agoric-sdk/commit/56a7b88a814e7c763bed6e5a518e4bfa6b4638f7))
+* run CI and mergify on release-pismo ([#6338](https://github.com/Agoric/agoric-sdk/issues/6338)) ([cf973d0](https://github.com/Agoric/agoric-sdk/commit/cf973d08c8a15678d2c3bdbddf96d330ce5246db))
+* upgrade handler for upgrade 8 ([54c8746](https://github.com/Agoric/agoric-sdk/commit/54c8746247aafc4888f55be759d20b86faee4956))
+
+
+### Bug Fixes
+
+* detect CheckTx correctly, reject inbound before fees ([ae8fc79](https://github.com/Agoric/agoric-sdk/commit/ae8fc790d7966dd011da7c359b1a783b4aaa672e))
+* **golang:** add actionQueue overflow check ([5a579d9](https://github.com/Agoric/agoric-sdk/commit/5a579d936f8de08b178ad12a72700c27d2c9dbc0))
+* **x/swingset:** amino encoding details ([9a2c435](https://github.com/Agoric/agoric-sdk/commit/9a2c435e03350683142d70bc4610653845fbe99f))
+* generate vbank notifications for zero balances ([9769886](https://github.com/Agoric/agoric-sdk/commit/976988605fb2de00ebceee3c98db8a4d7b8a0199))
+* remove unneeded store upgrade ([f1cc0da](https://github.com/Agoric/agoric-sdk/commit/f1cc0dacb37948777329f7bc8ade6218e3f03a34))
+
+
+
+## [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.30.0...@agoric/cosmos@0.31.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vstorage:** separate `x/vstorage` from `x/swingset` module
+
+### Features
+
+* **cosmic-swingset:** Add chainStorage interface ([#5385](https://github.com/Agoric/agoric-sdk/issues/5385)) ([109ff65](https://github.com/Agoric/agoric-sdk/commit/109ff65845caaa503b03e2663437f62e7cdc686e)), closes [#4558](https://github.com/Agoric/agoric-sdk/issues/4558)
+* **cosmos:** enable fees for MsgWalletAction, MsgWalletSpendAction ([406e13a](https://github.com/Agoric/agoric-sdk/commit/406e13a4baf4999fb500b484e8db7a9720ff6f62))
+* **cosmos:** pay per provisioning power flag ([b22417e](https://github.com/Agoric/agoric-sdk/commit/b22417ec638158945fb35cdfa2c14f56136b90df))
+* **golang:** add module account for provisioning ([6f4e845](https://github.com/Agoric/agoric-sdk/commit/6f4e84577ff0a58e7a59a2db31f2d95c650bbdf2))
+* charge fee based on bundle size ([2ebdfea](https://github.com/Agoric/agoric-sdk/commit/2ebdfea4cd95912cffb6830869e6e4eb4d2cafc8))
+* **cosmos:** report `state_change` events ([203b10d](https://github.com/Agoric/agoric-sdk/commit/203b10d09acace40939843e798d8ea4e1c5e94cd))
+* **keeper:** storage path key encoding ([9a27e24](https://github.com/Agoric/agoric-sdk/commit/9a27e2400c7d325f4d9f95d549101216277ae07d))
+* **vats:** Add support for configuring chainStorage nodes as sequences ([461204a](https://github.com/Agoric/agoric-sdk/commit/461204af30c5437a072d17a1703f3ec02395721b))
+* **vstorage:** backport `SetStorageAndNotify` ([3ad5774](https://github.com/Agoric/agoric-sdk/commit/3ad5774d03794d0d544c2ac93005c4aa0107a318))
+* **vstorage:** just one store for paths and data ([f17623c](https://github.com/Agoric/agoric-sdk/commit/f17623c6cad0204ca696735dc67424e5f37ae23f))
+* **vstorage:** provide the data prefix for the storeKey ([f08b2ac](https://github.com/Agoric/agoric-sdk/commit/f08b2ac85830ab16ce1f1688cede98a6a64c8062))
+* **vstorage:** separate `x/vstorage` from `x/swingset` module ([cf7b993](https://github.com/Agoric/agoric-sdk/commit/cf7b99334f7152694a98aec4a1e221794792287c))
+
+
+### Bug Fixes
+
+* move auth module earlier in genesis order ([d689d2e](https://github.com/Agoric/agoric-sdk/commit/d689d2e153917486f26a213cfd09c076eb3fa776))
+* **cosmic-swingset:** Publish installation success and failure topic ([6a9f533](https://github.com/Agoric/agoric-sdk/commit/6a9f533b5b9095768f25b5642e001fd6e9aa8b47))
+* **golang:** complete ledger support for MsgWallet{Spend}Action ([#5779](https://github.com/Agoric/agoric-sdk/issues/5779)) ([6cbf3c2](https://github.com/Agoric/agoric-sdk/commit/6cbf3c2b6c26174330cb692f2ae96044a531863f)), closes [#3628](https://github.com/Agoric/agoric-sdk/issues/3628)
+* **golang:** swingset wallet-action was not quite wired up ([36f8bcd](https://github.com/Agoric/agoric-sdk/commit/36f8bcda3fe5e08202cdc3a27200b25f35eee589)), closes [#5144](https://github.com/Agoric/agoric-sdk/issues/5144)
+* avoid race by requesting lien change as a delta ([a20afe7](https://github.com/Agoric/agoric-sdk/commit/a20afe7b2977ac1ef5763c1306776bd368139c48))
+* remove unused message definition ([06a73c0](https://github.com/Agoric/agoric-sdk/commit/06a73c0f1081f518a171768361b632dace17af15))
+* **chain-storage:** ensure state is exportable ([7f0b452](https://github.com/Agoric/agoric-sdk/commit/7f0b45226a8fc59d187024ed35389afcfacc227b))
+* **cosmos:** exit 99 if `start` ever stops ([5f3ba46](https://github.com/Agoric/agoric-sdk/commit/5f3ba462fe6962bfa031dc4b2852ded7fc1cb1dc))
+* **vats:** update `chainStorage` to use new `vstorage` API ([094044c](https://github.com/Agoric/agoric-sdk/commit/094044c6e75203a47d069242cfa225b2c15d80d5))
+* **vstorage:** efficient ancestry ([68df8ed](https://github.com/Agoric/agoric-sdk/commit/68df8ede30eddfb2559654994dd8517cec4427b3))
+
+
+
+## [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.29.0...@agoric/cosmos@0.30.0) (2022-05-28)
+
+
+### Features
+
+* **agd:** Add install-bundle command ([6d3e227](https://github.com/Agoric/agoric-sdk/commit/6d3e227314da09609ea17aead2c0e1b48510b128))
+* **cosmic-swingset:** Handle InstallBundle messages ([e3ae969](https://github.com/Agoric/agoric-sdk/commit/e3ae969e4824ad5fb43c18e17c6ed863743a08e2))
+* **cosmos:** divert all fees to the vbank/reserve ([50755ec](https://github.com/Agoric/agoric-sdk/commit/50755ece181033a6c26ab1a247e5dd3f318a099b))
+* **golang/cosmos:** Add InstallBundle RPC message types to Protobuf definitions ([2d11fde](https://github.com/Agoric/agoric-sdk/commit/2d11fdeff8af1c671c9b833017456c9dd4f29ca1))
+* **golang/cosmos:** Implement SDK InstallBundle message type ([b69b94f](https://github.com/Agoric/agoric-sdk/commit/b69b94f22e0a2953f3783868bfb30f31c2782f1f))
+* **vbank:** separate smoothing and distribution fraction from epoch ([9116ede](https://github.com/Agoric/agoric-sdk/commit/9116ede69169ebb252faf069d90022e8e05c6a4e))
+* **vbank:** update with `vbank/reserve` module account ([3799383](https://github.com/Agoric/agoric-sdk/commit/379938358a669b6b247474d3e7fabf576f75b01d))
+* cli for sending Wallet{Spend}Action transactions ([ddb9629](https://github.com/Agoric/agoric-sdk/commit/ddb96291d37c3832e9593e3a9ed466d89fc8a824))
+
+
+### Bug Fixes
+
+* **keeper:** do not delete keys with descendents ([cb272ae](https://github.com/Agoric/agoric-sdk/commit/cb272ae97a042ceefd3af93b1b4601ca49dfe3a7))
+* **vbank:** avoid panicing on invalid denoms ([adc22d6](https://github.com/Agoric/agoric-sdk/commit/adc22d6ba3125a7e878885b066019f0e6b95a6a1))
+* Correct a dead link for package @agoric/cosmos ([#5143](https://github.com/Agoric/agoric-sdk/issues/5143)) ([1e51f6a](https://github.com/Agoric/agoric-sdk/commit/1e51f6a0bedefd0e33260a78b21ad72d31048f08))
+
+
+
+## [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.28.0...@agoric/cosmos@0.29.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* can only lien vested tokens ([9eea226](https://github.com/Agoric/agoric-sdk/commit/9eea22695b43e899c2dc701a6cdc6b3aa2e5f987))
+* track delegation in lien wrapper account ([05da39f](https://github.com/Agoric/agoric-sdk/commit/05da39fdbaaaeadef52f7eee874517fd1e8c0299))
+
+
+### Bug Fixes
+
+* prevent panic in `BindPort` ([5df86b0](https://github.com/Agoric/agoric-sdk/commit/5df86b0753367af883a2d1563a7267bcb15d1779))
+* **cosmos:** make swingset key cli easier to use ([08f61a3](https://github.com/Agoric/agoric-sdk/commit/08f61a33da95cd2481cbb8bedf88b5f5c0784482))
+* add account wrappers for whole account hierarchy ([633a07f](https://github.com/Agoric/agoric-sdk/commit/633a07f4179e55824ba37b2b341347dd7db83b64))
+* **cosmosswingset:** check negativity before castnig to uint ([db6c3da](https://github.com/Agoric/agoric-sdk/commit/db6c3dab4162e3e52720e81d10b1798064b94817))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
+## [0.28.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.27.3...@agoric/cosmos@0.28.0) (2022-02-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** RUN protocol etc. is not started by default.
+
+To start RUN protocol, Pegasus, etc., use:
+
+CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vats/decentral-demo-config.json \
+  agoric start local-chain
+
+Stay tuned for a mechanism to turn them on via governance.
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+* **cosmos:** add CoreEval and WalletAction protos ([0fe56dd](https://github.com/Agoric/agoric-sdk/commit/0fe56dda06017ee4f8906d6de0d3e1ae022db812))
+* **cosmos:** implement `x/swingset` CoreEval and Wallet ([251cf41](https://github.com/Agoric/agoric-sdk/commit/251cf41b36c6c3b32678ef5a707794e6cdc07197))
+* **cosmos:** robustly handle kvstore rollback ([c58ddb4](https://github.com/Agoric/agoric-sdk/commit/c58ddb490229741e57ef2130493608cbe9b13d4c))
+
+
+### Bug Fixes
+
+* **cosmos:** use core bootstrap by default ([2cbf293](https://github.com/Agoric/agoric-sdk/commit/2cbf293f4d5fab85fc8c14cd1566a2dd78e99f86))
+
+
+
+### [0.27.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.27.2...@agoric/cosmos@0.27.3) (2022-02-21)
+
+
+### Features
+
+* **cosmos:** charge SwingSet fees at the Cosmos level ([5da6fec](https://github.com/Agoric/agoric-sdk/commit/5da6fece5c89c46a159970a734feb17bbd9a4d08))
+* **cosmos:** set `swingset.params.bootstrap_vat_config` at genesis ([63e6e67](https://github.com/Agoric/agoric-sdk/commit/63e6e67957bad2bb05b7693f667e2efd1cbc9e48))
+* **ibc:** reimplement `relativeTimeoutNs`, per `ibc-go` ([4673493](https://github.com/Agoric/agoric-sdk/commit/4673493df11f51e9aa018b0ded9632776759f1ee))
+
+
+### Bug Fixes
+
+* **cosmos:** remove unnecessary IBC complexity ([08f9a44](https://github.com/Agoric/agoric-sdk/commit/08f9a44751d0122f90368d6d64d512482a7dbf41))
+* make `default-params.go` match `sim-params.js` ([550ba3a](https://github.com/Agoric/agoric-sdk/commit/550ba3a058cc2f7e0200479c6c3ceaf5dc39e21e))
+* **sim-params:** update parameters to charge higher SwingSet fees ([341ddbb](https://github.com/Agoric/agoric-sdk/commit/341ddbbf43637c38eb194f3e7c6fd20fb1e5cb4e))
+
+
+
+### [0.27.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.27.1...@agoric/cosmos@0.27.2) (2021-12-22)
+
+
+### Features
+
+* **cosmos:** adapt Agoric changes to new `gaiad` ([29535de](https://github.com/Agoric/agoric-sdk/commit/29535ded86ca87db70b2fa59d85dc4394bbba761))
+* **cosmos:** upgrade to `gaia/releases/v6.0.0` ([2fe7008](https://github.com/Agoric/agoric-sdk/commit/2fe7008ed699bb543db0ad8c3fb750dfd8c6c425))
+
+
+### Bug Fixes
+
+* **cosmos:** add `upgradegaia.sh` to apply Gaia source upgrades ([b9669c5](https://github.com/Agoric/agoric-sdk/commit/b9669c5dfe80c9942aed620fdaa19b164c9f3600))
+* **cosmos:** also look for `ag-chain-cosmos` in the `agd` directory ([f598d40](https://github.com/Agoric/agoric-sdk/commit/f598d40e0f55814bd17fc021503fbb45bddcfd67))
+* **cosmos:** don't twiddle the genesis params, set them explicitly ([c9c8d81](https://github.com/Agoric/agoric-sdk/commit/c9c8d81f476a0df7559eae35c0dd323cd26a9d7b))
+* **cosmos:** properly put `x/capability` in `SetOrderBeginBlockers` ([823f4fe](https://github.com/Agoric/agoric-sdk/commit/823f4fe86a8f2109f87746f00ffbd3eeb4bf1e38))
+
+
+
 ### [0.27.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.27.0...@agoric/cosmos@0.27.1) (2021-12-02)
 
 

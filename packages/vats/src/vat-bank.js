@@ -1,10 +1,10 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore, makeWeakStore } from '@agoric/store';
-
+import { makeScalarMapStore, makeScalarWeakMapStore } from '@agoric/store';
+import { whileTrue } from '@agoric/internal';
 import { makeVirtualPurse } from './virtual-purse.js';
 
 import '@agoric/notifier/exported.js';
@@ -16,8 +16,8 @@ import '@agoric/notifier/exported.js';
 
 /**
  * @callback BalanceUpdater
- * @param {any} value
- * @param {any} [nonce]
+ * @param {string} value
+ * @param {string} [nonce]
  */
 
 /**
@@ -41,7 +41,7 @@ const makePurseController = (
     async *getBalances(b) {
       assert.equal(b, brand);
       let updateRecord = await balanceNotifier.getUpdateSince();
-      while (updateRecord.updateCount) {
+      for await (const _ of whileTrue(() => updateRecord.updateCount)) {
         yield updateRecord.value;
         // eslint-disable-next-line no-await-in-loop
         updateRecord = await balanceNotifier.getUpdateSince(
@@ -74,10 +74,11 @@ const makePurseController = (
 };
 
 /**
- * @typedef {Object} AssetIssuerKit
- * @property {Mint} [mint]
- * @property {Issuer} issuer
- * @property {Brand} brand
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} AssetIssuerKit
+ * @property {ERef<Mint<K>>} [mint]
+ * @property {ERef<Issuer<K>>} issuer
+ * @property {Brand<K>} brand
  */
 
 /**
@@ -85,26 +86,48 @@ const makePurseController = (
  */
 
 /**
- * @typedef {Object} Bank
+ * @typedef {object} AssetDescriptor
+ * @property {Brand} brand
+ * @property {ERef<Issuer>} issuer
+ * @property {string} issuerName
+ * @property {string} denom
+ * @property {string} proposedName
+ */
+
+/**
+ * @typedef { AssetDescriptor & {
+ *   issuer: Issuer<'nat'>, // settled identity
+ *   displayInfo: DisplayInfo,
+ * }} AssetInfo
+ */
+
+/**
+ * @typedef {object} Bank
  * @property {() => Subscription<AssetDescriptor>} getAssetSubscription Returns
  * assets as they are added to the bank
  * @property {(brand: Brand) => VirtualPurse} getPurse Find any existing vpurse
  * (keyed by address and brand) or create a new one.
  */
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('bankMaker', {
     /**
-     * @param {import('./bridge').BridgeManager} [bankBridgeManager] a bridge
+     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
+     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdmin] update facet of
+     *   a NameAdmin; see addAsset() for detail.
      */
-    async makeBankManager(bankBridgeManager = undefined) {
-      /** @type {WeakStore<Brand, AssetRecord>} */
-      const brandToAssetRecord = makeWeakStore('brand');
+    async makeBankManager(
+      bankBridgeManagerP = undefined,
+      nameAdmin = undefined,
+    ) {
+      const bankBridgeManager = await bankBridgeManagerP;
+      /** @type {WeakMapStore<Brand, AssetRecord>} */
+      const brandToAssetRecord = makeScalarWeakMapStore('brand');
 
-      /** @type {Store<string, Store<string, BalanceUpdater>>} */
-      const denomToAddressUpdater = makeStore('denom');
+      /** @type {MapStore<string, MapStore<string, BalanceUpdater>>} */
+      const denomToAddressUpdater = makeScalarMapStore('denom');
 
       const updateBalances = obj => {
         switch (obj && obj.type) {
@@ -116,9 +139,9 @@ export function buildRootObject(_vatPowers) {
                 const updater = addressToUpdater.get(address);
 
                 updater(value, obj.nonce);
-                console.error('Successful update', update);
+                console.info('bank balance update', update);
               } catch (e) {
-                console.error('Unregistered update', update);
+                // console.error('Unregistered update', update);
               }
             }
             return true;
@@ -129,47 +152,38 @@ export function buildRootObject(_vatPowers) {
       };
 
       /**
-       * @param {import('./bridge').BridgeManager} bankBridgeMgr
+       * @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr]
        */
       async function makeBankCaller(bankBridgeMgr) {
+        // We do the logic here if the bridge manager is available.  Otherwise,
+        // the bank is not "remote" (such as on sim-chain), so we just use
+        // immediate purses instead of virtual ones.
+        if (!bankBridgeMgr) {
+          return undefined;
+        }
         // We need to synchronise with the remote bank.
         const handler = Far('bankHandler', {
-          async fromBridge(_srcID, obj) {
+          async fromBridge(obj) {
             if (!updateBalances(obj)) {
-              assert.fail(X`Unrecognized request ${obj && obj.type}`);
+              Fail`Unrecognized request ${obj && obj.type}`;
             }
           },
         });
 
-        await E(bankBridgeMgr).register('bank', handler);
+        await E(bankBridgeMgr).setHandler(handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return obj => E(bankBridgeMgr).toBridge('bank', obj);
+        return obj => E(bankBridgeMgr).toBridge(obj);
       }
 
-      // We do the logic here if the bridge manager is available.  Otherwise,
-      // the bank is not "remote" (such as on sim-chain), so we just use
-      // immediate purses instead of virtual ones.
-      const bankCall = await (bankBridgeManager
-        ? makeBankCaller(bankBridgeManager)
-        : undefined);
+      const bankCall = await makeBankCaller(bankBridgeManager);
 
-      /**
-       * @typedef {Object} AssetDescriptor
-       * @property {Brand} brand
-       * @property {Issuer} issuer
-       * @property {string} issuerName
-       * @property {string} denom
-       * @property {string} proposedName
-       */
       /** @type {SubscriptionRecord<AssetDescriptor>} */
-      const {
-        subscription: assetSubscription,
-        publication: assetPublication,
-      } = makeSubscriptionKit();
+      const { subscription: assetSubscription, publication: assetPublication } =
+        makeSubscriptionKit();
 
-      /** @type {Store<string, Bank>} */
-      const addressToBank = makeStore('address');
+      /** @type {MapStore<string, Bank>} */
+      const addressToBank = makeScalarMapStore('address');
 
       /**
        * Create a new personal bank interface for a given address.
@@ -183,8 +197,8 @@ export function buildRootObject(_vatPowers) {
           return addressToBank.get(address);
         }
 
-        /** @type {WeakStore<Brand, VirtualPurse>} */
-        const brandToVPurse = makeWeakStore('brand');
+        /** @type {WeakMapStore<Brand, VirtualPurse>} */
+        const brandToVPurse = makeScalarWeakMapStore('brand');
 
         /** @type {Bank} */
         const bank = Far('bank', {
@@ -268,11 +282,11 @@ export function buildRootObject(_vatPowers) {
         /**
          * @param {string} denom
          * @param {AssetIssuerKit} feeKit
-         * @returns {import('@agoric/far').EOnly<DepositFacet>}
+         * @returns {import('@endo/far').EOnly<DepositFacet>}
          */
-        getFeeCollectorDepositFacet(denom, feeKit) {
+        getRewardDistributorDepositFacet(denom, feeKit) {
           if (!bankCall) {
-            throw Error(`Bank doesn't implement fee collectors`);
+            throw Error(`Bank doesn't implement reward collectors`);
           }
 
           /** @type {VirtualPurseController} */
@@ -282,12 +296,12 @@ export function buildRootObject(_vatPowers) {
               yield new Promise(_ => {});
             },
             async pullAmount(_amount) {
-              throw Error(`Cannot pull from fee collector`);
+              throw Error(`Cannot pull from reward distributor`);
             },
             async pushAmount(amount) {
               const value = AmountMath.getValue(feeKit.brand, amount);
               await bankCall({
-                type: 'VBANK_GIVE_TO_FEE_COLLECTOR',
+                type: 'VBANK_GIVE_TO_REWARD_DISTRIBUTOR',
                 denom,
                 amount: `${value}`,
               });
@@ -298,7 +312,29 @@ export function buildRootObject(_vatPowers) {
         },
 
         /**
+         * Get the address of named module account.
+         *
+         * @param {string} moduleName
+         * @returns {Promise<string | null>} address of named module account, or
+         * null if unimplemented (no bankCall)
+         */
+        getModuleAccountAddress: async moduleName => {
+          if (!bankCall) {
+            return null;
+          }
+
+          return bankCall({
+            type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS',
+            moduleName,
+          });
+        },
+
+        /**
          * Add an asset to the bank, and publish it to the subscriptions.
+         * If nameAdmin is defined, update with denom to AssetInfo entry.
+         *
+         * Note that AssetInfo has the settled identity of the issuer,
+         * not just a promise for it.
          *
          * @param {string} denom lower-level denomination string
          * @param {string} issuerName
@@ -331,7 +367,7 @@ export function buildRootObject(_vatPowers) {
             brand,
           });
           brandToAssetRecord.init(brand, assetRecord);
-          denomToAddressUpdater.init(denom, makeStore('address'));
+          denomToAddressUpdater.init(denom, makeScalarMapStore('address'));
           assetPublication.updateState(
             harden({
               brand,
@@ -341,6 +377,26 @@ export function buildRootObject(_vatPowers) {
               proposedName,
             }),
           );
+
+          if (nameAdmin) {
+            // publish settled issuer identity
+            void Promise.all([kit.issuer, E(kit.brand).getDisplayInfo()]).then(
+              ([issuer, displayInfo]) =>
+                E(nameAdmin).update(
+                  denom,
+                  /** @type { AssetInfo } */ (
+                    harden({
+                      brand,
+                      issuer,
+                      issuerName,
+                      denom,
+                      proposedName,
+                      displayInfo,
+                    })
+                  ),
+                ),
+            );
+          }
         },
         getBankForAddress,
       });

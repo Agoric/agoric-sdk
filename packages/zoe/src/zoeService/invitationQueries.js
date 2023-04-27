@@ -1,7 +1,5 @@
-// @ts-check
-
 import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {
   /** @type {GetInvitationDetails} */
@@ -14,11 +12,8 @@ export const makeInvitationQueryFns = invitationIssuer => {
       throw err;
     };
     return E.get(
-      E.get(
-        E(invitationIssuer)
-          .getAmountOf(invitationP)
-          .catch(onRejected),
-      ).value,
+      E.get(E(invitationIssuer).getAmountOf(invitationP).catch(onRejected))
+        .value,
     )[0];
   };
 

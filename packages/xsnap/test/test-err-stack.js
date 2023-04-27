@@ -1,6 +1,7 @@
 // JavaScript correctness tests
 
-// @ts-check
+import '@endo/init/debug.js';
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import * as proc from 'child_process';
@@ -33,24 +34,28 @@ async function makeWorker() {
   await vat.evaluate(`
     globalThis.handleCommand = bytes => {
       const report = {};
-      const src = String.fromArrayBuffer(bytes);
+      const src = new TextDecoder().decode(bytes);
       const it = eval(src);
-      report.result = ArrayBuffer.fromString(JSON.stringify(it));
+      report.result = new TextEncoder().encode(JSON.stringify(it)).buffer;
       return report;
     };
   `);
 
   return {
-    /** @param { string } src */
+    /** @param {string} src */
     async run(src) {
       const { reply } = await vat.issueStringCommand(src);
       return JSON.parse(reply);
+    },
+    async close() {
+      return vat.close();
     },
   };
 }
 
 test('XS stack traces include file, line numbers', async t => {
   const w = await makeWorker();
+  t.teardown(w.close);
 
   const x = await w.run('1+1');
   t.is(x, 2);

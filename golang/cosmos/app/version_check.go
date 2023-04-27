@@ -1,6 +1,6 @@
-//+build !go1.15
+//+build !go1.17
 
 package gaia
 
-cosmic-swingset requires requires Golang version 1.15.
+golang/cosmos requires Golang version 1.17.
 See https://golang.org/dl/ for upgrade information.

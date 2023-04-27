@@ -1,8 +1,6 @@
-// @ts-check
+import { E } from '@endo/eventual-send';
 
-import { E } from '@agoric/eventual-send';
-
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * Assert that the governed contract was started by the governor. Throws if
@@ -22,19 +20,17 @@ const assertContractGovernance = async (
   const realGovernedP = E(allegedGovernorPF).getGovernedContract();
   const allegedGovernedTermsP = E(zoe).getTerms(allegedGoverned);
 
-  const [
-    { electionManager: realGovernorInstance },
-    realGovernedInstance,
-  ] = await Promise.all([allegedGovernedTermsP, realGovernedP]);
+  const [{ electionManager: realGovernorInstance }, realGovernedInstance] =
+    await Promise.all([allegedGovernedTermsP, realGovernedP]);
 
   assert(
     allegedGovernor === realGovernorInstance,
-    X`The alleged governor did not match the governor retrieved from the governed contract`,
+    'The alleged governor did not match the governor retrieved from the governed contract',
   );
 
   assert(
     allegedGoverned === realGovernedInstance,
-    X`The alleged governed did not match the governed contract retrieved from the governor`,
+    'The alleged governed did not match the governed contract retrieved from the governor',
   );
 
   const governorInstallationFromGoverned = await E(
@@ -43,7 +39,7 @@ const assertContractGovernance = async (
 
   assert(
     governorInstallationFromGoverned === contractGovernorInstallation,
-    X`The governed contract is not governed by an instance of the provided installation.`,
+    'The governed contract is not governed by an instance of the provided installation.',
   );
 
   return { governor: realGovernorInstance, governed: realGovernedInstance };
@@ -61,11 +57,8 @@ const assertContractElectorate = async (
 ) => {
   const allegedGovernorPF = E(zoe).getPublicFacet(allegedGovernor);
   const electorate = await E(allegedGovernorPF).getElectorate();
-
-  assert(
-    electorate === allegedElectorate,
-    X`The allegedElectorate didn't match the actual ${q(electorate)}`,
-  );
+  electorate === allegedElectorate ||
+    Fail`The allegedElectorate didn't match the actual ${q(electorate)}`;
 
   return true;
 };

@@ -1,4 +1,45 @@
-# Landing pull requests
+# Contributing to the Agoric SDK
+
+Thanks for getting involved!
+
+## Platforms, Dev Tools and Testing
+
+We support MacOS, Linux, and Windows Subsystem for Linux (WSL).
+
+For many of the packages here, JavaScript development tools suffice:
+
+ - [node](https://nodejs.org/) 14.15.0 or higher
+ - [yarn](https://classic.yarnpkg.com/en/docs/install) (`npm install -g yarn`)
+
+But to ensure contributions are compatible with all packages, you will
+also need:
+
+ - [Golang](https://golang.org/doc/install) (version 1.17 or higher)
+ - a C compiler and make
+   - On linux, `apt install build-essentials` or the like
+   - On MacOS, `xcode-select --install` or similar
+   - On WSL, use `nmake` instead of `make`
+
+To check that everything is working before you start, or
+to thoroughly check a contribution, run:
+
+```
+yarn # short for: yarn install
+yarn build
+yarn test
+yarn lint
+```
+
+A standard Visual Studio Code configuration can be initialized or updated by
+running [`scripts/configure-vscode.sh`](scripts/configure-vscode.sh).
+
+See also notes on [Coding
+style](https://github.com/Agoric/agoric-sdk/wiki/Coding-Style),
+including [unit
+testing](https://github.com/Agoric/agoric-sdk/wiki/agoric-sdk-unit-testing)
+etc.
+
+## Landing pull requests
 
 The agreement so far is for every change to have a [conventional commit
 message][CC] and for every commit following the leftmost parent from
@@ -39,3 +80,20 @@ after a PR had been approved and tests were passing, then landed the stack with
 "Rebase and merge" or "Create merge commit".
 
 [CC]: https://www.conventionalcommits.org/en/v1.0.0/
+
+### Integration tests
+
+Some tests take time to complete and will not run by default on every PR push.
+However once a PR is ready for review and flagged for merging through one of
+the `automerge` labels, these integrations tests will run and be required
+before the PR can land.
+
+If you believe your PR may impact the result of the integration tests, you can
+force them to run unconditionally by using the label `force:integration`. If
+you know your PR has no impact on integration tests, you can use the label
+`bypass:integration` to prevent them from running at all.
+
+If a commit was merged without going through the merge queue (`automerge`
+label), or if the integration tests were bypassed in the PR, the tests will
+run on the merge commit instead. While the PR has landed at that point, it is
+still the responsibility of the PR author to fix any breakage.

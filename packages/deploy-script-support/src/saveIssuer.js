@@ -1,10 +1,20 @@
 // @ts-check
+import { E } from '@endo/far';
 
-import { E } from '@agoric/eventual-send';
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
 
-/** @type {MakeSaveIssuerHelper} */
+/**
+ * @param {ERef<any>} walletAdmin - an internal type of the
+ * wallet, not defined here
+ * @param {ERef<import('./startInstance').IssuerManager>} issuerManager
+ */
 export const makeSaveIssuer = (walletAdmin, issuerManager) => {
-  /** @type {SaveIssuerHelper} */
+  /**
+   * @param {ERef<Issuer>} issuerP
+   * @param {Petname} brandPetname
+   * @param {Petname} pursePetname
+   * @returns {Promise<Petname>}
+   */
   const saveIssuer = async (issuerP, brandPetname, pursePetname) => {
     console.log(`-- Installing issuer for: ${brandPetname}`);
 

@@ -1,10 +1,10 @@
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject(vatPowers) {
-  const log = vatPowers.testLog;
+  const { testLog: log } = vatPowers;
   let service;
   let control;
+  const notifierToUpdateCount = new WeakMap();
 
   return Far('root', {
     async bootstrap(vats, devices) {
@@ -33,13 +33,18 @@ export function buildRootObject(vatPowers) {
 
     async whenMeterNotifiesNext(meter) {
       const notifier = await E(meter).getNotifier();
-      const initial = await E(notifier).getUpdateSince();
-      return E(notifier).getUpdateSince(initial);
+      const update = await E(notifier).getUpdateSince(
+        notifierToUpdateCount.get(notifier),
+      );
+      notifierToUpdateCount.set(notifier, update.updateCount);
+      return update;
     },
 
-    async createVat(bundle, dynamicOptions) {
-      control = await E(service).createVat(bundle, dynamicOptions);
+    async createVat(name, dynamicOptions) {
+      const bundlecap = await E(service).getNamedBundleCap(name);
+      control = await E(service).createVat(bundlecap, dynamicOptions);
       const done = E(control.adminNode).done();
+      done.catch(() => 'hush');
       // the caller checks this later, but doesn't wait for it
       return ['created', done];
     },
