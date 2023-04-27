@@ -258,32 +258,49 @@ test('serialize concurrent messages', async t => {
   t.deepEqual([...count(101, 1)], messages);
 });
 
-test('write and read snapshot', async t => {
+const writeAndReadSnapshot = async (t, snapshotUseFs) => {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decode(message));
     return new Uint8Array();
   }
 
-  const vat0 = await xsnap({ ...options(io), handleCommand });
+  const vat0 = await xsnap({ ...options(io), handleCommand, snapshotUseFs });
   await vat0.evaluate(`
     globalThis.hello = "Hello, World!";
   `);
-  const snapshotStream = vat0.makeSnapshotStream();
 
   const vat1 = await xsnap({
     ...options(io),
     handleCommand,
-    snapshotStream,
+    snapshotStream: vat0.makeSnapshotStream(),
+    snapshotUseFs: true,
   });
-  await vat0.close();
   await vat1.evaluate(`
     issueCommand(new TextEncoder().encode(hello).buffer);
   `);
   await vat1.close();
 
-  t.deepEqual(['Hello, World!'], messages);
-});
+  await vat0.evaluate(`
+    globalThis.hello += " Bienvenue!";
+  `);
+
+  const snapshotStream2 = vat0.makeSnapshotStream();
+  const vat2 = await xsnap({
+    ...options(io),
+    handleCommand,
+    snapshotStream: snapshotStream2,
+  });
+  await vat2.evaluate(`
+    issueCommand(new TextEncoder().encode(hello).buffer);
+  `);
+  await vat2.close();
+
+  await vat0.close();
+  t.deepEqual(['Hello, World!', 'Hello, World! Bienvenue!'], messages);
+};
+test('write and read snapshot (use FS)', writeAndReadSnapshot, true);
+test('write and read snapshot (use stream)', writeAndReadSnapshot, false);
 
 test('execute immediately after makeSnapshotStream', async t => {
   const messages = [];

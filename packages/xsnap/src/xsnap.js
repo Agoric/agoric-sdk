@@ -12,12 +12,13 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
+import { finished } from 'stream/promises';
+import { PassThrough } from 'stream';
 import { promisify } from 'util';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit, racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
-import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
 
@@ -36,6 +37,8 @@ const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 
 const OK_SEPARATOR = 1;
+
+const SNAPSHOT_SAVE_FD = 7;
 
 const { freeze } = Object;
 
@@ -66,6 +69,7 @@ const safeHintFromDescription = description =>
  * @property {number} [parserBufferSize] in kB (must be an integer)
  * @property {AsyncIterable<Uint8Array>} [snapshotStream]
  * @property {string} [snapshotDescription]
+ * @property {boolean} [snapshotUseFs]
  * @property {'ignore' | 'inherit'} [stdout]
  * @property {'ignore' | 'inherit'} [stderr]
  * @property {number} [meteringLimit]
@@ -83,6 +87,7 @@ export async function xsnap(options) {
     parserBufferSize = undefined,
     snapshotStream,
     snapshotDescription = snapshotStream && 'unknown',
+    snapshotUseFs = false,
     stdout = 'ignore',
     stderr = 'ignore',
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
@@ -100,7 +105,7 @@ export async function xsnap(options) {
   }
 
   /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
-  const ptmpName = promisify(fs.tmpName);
+  const ptmpName = fs.tmpName && promisify(fs.tmpName);
 
   let bin = new URL(
     `../xsnap-native/xsnap/build/bin/${platform}/${
@@ -150,7 +155,16 @@ export async function xsnap(options) {
     console.log('XSNAP_DEBUG_RR', { bin, args });
   }
   const xsnapProcess = spawn(bin, args, {
-    stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
+    stdio: [
+      'ignore', // 0: stdin
+      stdout, // 1: stdout
+      stderr, // 2: stderr
+      'pipe', // 3: messagesToXsnap
+      'pipe', // 4: messagesFromXsnap
+      'ignore', // 5: XSBug
+      'ignore', // 6: XSProfiler
+      snapshotUseFs ? 'ignore' : 'pipe', // 7: snapshotSaveStream
+    ],
   });
 
   xsnapProcess.once('exit', (code, signal) => {
@@ -188,7 +202,7 @@ export async function xsnap(options) {
   }
 
   const xsnapProcessStdio =
-    /** @type {[undefined, Readable, Readable, Writable, Readable]} */ (
+    /** @type {[undefined, Readable, Readable, Writable, Readable, undefined, undefined, Readable]} */ (
       /** @type {(Readable | Writable | undefined | null)[]} */ (
         xsnapProcess.stdio
       )
@@ -201,6 +215,8 @@ export async function xsnap(options) {
     makeNodeReader(xsnapProcessStdio[4]),
     { maxMessageLength: netstringMaxChunkSize },
   );
+
+  const snapshotSaveStream = xsnapProcessStdio[SNAPSHOT_SAVE_FD];
 
   /** @type {Promise<void>} */
   let baton = Promise.resolve();
@@ -353,41 +369,110 @@ export async function xsnap(options) {
    * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
   async function* makeSnapshotInternal(description, batonKit) {
-    // TODO: Refactor to use tmpFile rather than tmpName.
-    const tmpSnapPath = await ptmpName({
-      template: `make-snapshot-${safeHintFromDescription(
-        description,
-      )}-XXXXXX.xss`,
-    });
+    const output = new PassThrough({ highWaterMark: 1024 * 1024 });
+    let piped = false;
+    let cleaned = false;
+    let done = Promise.resolve();
 
     let snapshotReadSize = 0;
+    /** @type {number | undefined} */
     let snapshotSize;
     try {
+      /** @type {string} */
+      let snapPath;
+      /** @type {Readable} */
+      let sourceStream;
+
+      const maybePipe = () => {
+        if (!piped && !cleaned) {
+          sourceStream.pipe(output);
+          piped = true;
+        }
+      };
+
+      if (snapshotUseFs) {
+        // TODO: Refactor to use tmpFile rather than tmpName.
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        snapPath = await ptmpName({
+          template: `make-snapshot-${safeHintFromDescription(
+            description,
+          )}-XXXXXX.xss`,
+        });
+
+        // For similarity with the pipe mode, we want to have a `sourceStream`
+        // available right away. However in FS mode, the temporary file will
+        // only be populated and ready to read after the command to xsnap
+        // returns.
+        // To work around this we create a file in `w+` mode first, create a
+        // readable stream immediately, then instruct xsnap to write into the
+        // same file (which it does with wb mode, re-truncating the file), and
+        // then wait for the command response to pipe the file stream into the
+        // output, causing the file read to begin.
+
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        const handle = await fs.open(snapPath, 'w+');
+        // @ts-expect-error 'close' event added in Node 15.4
+        handle.on('close', () => {
+          fs.unlink(snapPath);
+        });
+        sourceStream = handle.createReadStream();
+        finished(output).finally(() => sourceStream.destroy());
+      } else {
+        sourceStream = snapshotSaveStream;
+        snapPath = `@${SNAPSHOT_SAVE_FD}`;
+
+        // It's only safe to hook the shared save stream once we get the baton,
+        // ensuring that any previous save stream usage has ended. However we
+        // must start the flow before receiving the command's response or the
+        // xsnap process would block on a full pipe, causing an IPC deadlock.
+        batonKit.promise.then(maybePipe);
+      }
+
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        sourceStream.unpipe(output);
+        // eslint-disable-next-line no-use-before-define
+        output.off('data', onData);
+        output.end();
+      };
+      const checkDone = () => {
+        if (snapshotSize !== undefined && snapshotReadSize >= snapshotSize) {
+          cleanup();
+        }
+      };
+      const onData = chunk => {
+        snapshotReadSize += chunk.length;
+        checkDone();
+      };
+      output.on('data', onData);
+
       const result = batonKit.promise.then(async () => {
-        await messagesToXsnap.next(encoder.encode(`w${tmpSnapPath}`));
-        return runToIdle();
+        // Tell xsnap to write the snapshot to the FS or the pipe
+        await messagesToXsnap.next(encoder.encode(`w${snapPath}`));
+        const { reply } = await runToIdle();
+        const lengthStr = decoder.decode(reply);
+        if (lengthStr.length) {
+          snapshotSize = Number(lengthStr);
+          // The snapshot was written successfully, start piping to the
+          // output in FS mode
+          maybePipe();
+        } else {
+          // This will cause the `finally` clause to throw, and inform any
+          // stream consumer any data seen so far is invalid
+          snapshotSize = -1;
+        }
+        checkDone();
       });
       batonKit.resolve(result);
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      snapshotSize = await racePromises([
-        vatCancelled,
-        result.then(({ reply }) => {
-          const lengthStr = decoder.decode(reply);
-          return lengthStr.length ? Number(lengthStr) : undefined;
-        }),
-      ]);
-      const snapReader = fs.createReadStream(tmpSnapPath);
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      await fsStreamReady(snapReader);
-      snapReader.on('data', chunk => {
-        snapshotReadSize += chunk.length;
-      });
-      yield* snapReader;
+      done = racePromises([vatCancelled, result]);
+      done.catch(() => cleanup());
+
+      yield* output;
     } finally {
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await fs.unlink(tmpSnapPath);
-      snapshotSize === undefined ||
-        snapshotReadSize === snapshotSize ||
+      await done;
+      (piped && snapshotReadSize === snapshotSize) ||
         Fail`Snapshot size does not match. saved=${q(snapshotSize)}, read=${q(
           snapshotReadSize,
         )}`;
