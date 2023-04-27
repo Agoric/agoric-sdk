@@ -95,6 +95,9 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   );
   /** a powerful object; can modify the invitation */
   trace('awaiting makeParamManagerFromTerms');
+  trace(
+    'NOTICE if restarting with re-used invitations this will loudly log usage failures in an unhandled promise rejection',
+  );
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
     {
       publisher: governanceSubscriptionKit.publication,

@@ -133,15 +133,17 @@ const quoteAsRatio = quoteAmount =>
 
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
- * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {ERef<Marshaller>} marshaller
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
+ * @param {{
+ *   zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ *   marshaller: ERef<Marshaller>,
+ *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
+ *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit,
+ *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * }} powers
  * @param {Readonly<{
  *   debtMint: ZCFMint<'nat'>,
  *   collateralBrand: Brand<'nat'>,
  *   collateralUnit: Amount<'nat'>,
- *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
  *   descriptionScope: string,
  *   startTimeStamp: Timestamp,
  *   storageNode: StorageNode,
@@ -149,16 +151,12 @@ const quoteAsRatio = quoteAmount =>
  */
 export const prepareVaultManagerKit = (
   baggage,
-  zcf,
-  marshaller,
-  makeRecorderKit,
-  makeERecorderKit,
+  { zcf, marshaller, makeRecorderKit, makeERecorderKit, factoryPowers },
   {
     debtMint,
     collateralBrand,
     collateralUnit,
     descriptionScope,
-    factoryPowers,
     startTimeStamp,
     storageNode,
   },
@@ -172,9 +170,12 @@ export const prepareVaultManagerKit = (
 
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
+  const getCollateralParams = () =>
+    factoryPowers.getGovernedParams(collateralBrand);
+
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    factoryPowers.getGovernedParams().getChargingPeriod(),
+    getCollateralParams().getChargingPeriod(),
   );
 
   const assetKit = makeRecorderKit(
@@ -368,9 +369,7 @@ export const prepareVaultManagerKit = (
             updateTime,
           });
 
-          const interestRate = factoryPowers
-            .getGovernedParams()
-            .getInterestRate();
+          const interestRate = getCollateralParams().getInterestRate();
 
           // Update state with the results of charging interest
 
@@ -383,12 +382,8 @@ export const prepareVaultManagerKit = (
             },
             {
               interestRate,
-              chargingPeriod: factoryPowers
-                .getGovernedParams()
-                .getChargingPeriod(),
-              recordingPeriod: factoryPowers
-                .getGovernedParams()
-                .getRecordingPeriod(),
+              chargingPeriod: getCollateralParams().getChargingPeriod(),
+              recordingPeriod: getCollateralParams().getRecordingPeriod(),
             },
             {
               latestInterestUpdate: state.latestInterestUpdate,
@@ -407,9 +402,7 @@ export const prepareVaultManagerKit = (
 
         assetNotify() {
           const { state } = this;
-          const interestRate = factoryPowers
-            .getGovernedParams()
-            .getInterestRate();
+          const interestRate = getCollateralParams().getInterestRate();
           /** @type {AssetState} */
           const payload = harden({
             compoundedInterest: state.compoundedInterest,
@@ -814,7 +807,7 @@ export const prepareVaultManagerKit = (
 
       manager: {
         getGovernedParams() {
-          return factoryPowers.getGovernedParams();
+          return getCollateralParams();
         },
 
         /**
@@ -833,8 +826,8 @@ export const prepareVaultManagerKit = (
           );
           const collatlVal = ceilMultiplyBy(collateralAmount, collateralPrice);
           const minimumCollateralization = calculateMinimumCollateralization(
-            factoryPowers.getGovernedParams().getLiquidationMargin(),
-            factoryPowers.getGovernedParams().getLiquidationPadding(),
+            getCollateralParams().getLiquidationMargin(),
+            getCollateralParams().getLiquidationPadding(),
           );
           // floorDivide because we want the debt ceiling lower
           return floorDivideBy(collatlVal, minimumCollateralization);
@@ -845,7 +838,7 @@ export const prepareVaultManagerKit = (
           const { totalDebt } = state;
 
           checkDebtLimit(
-            factoryPowers.getGovernedParams().getDebtLimit(),
+            getCollateralParams().getDebtLimit(),
             totalDebt,
             toMint,
           );
@@ -960,7 +953,7 @@ export const prepareVaultManagerKit = (
       },
       self: {
         getGovernedParams() {
-          return factoryPowers.getGovernedParams();
+          return factoryPowers.getGovernedParams(collateralBrand);
         },
 
         /**
@@ -1139,7 +1132,7 @@ export const prepareVaultManagerKit = (
         void assetKit.recorder.write(
           harden({
             compoundedInterest: state.compoundedInterest,
-            interestRate: factoryPowers.getGovernedParams().getInterestRate(),
+            interestRate: getCollateralParams().getInterestRate(),
             latestInterestUpdate: state.latestInterestUpdate,
           }),
         );

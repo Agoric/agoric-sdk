@@ -53,13 +53,13 @@ harden(provideEmptySeat);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {string} category diagnostic tag
  * @param {M} prepareSingleton
- * @param {any[]} categoryArgs
+ * @param {{}} categoryPowers
  */
 export const provideCategorySingletons = (
   baggage,
   category,
   prepareSingleton,
-  categoryArgs,
+  categoryPowers,
 ) => {
   /** @type {MapStore<number, unknown[]>} */
   const singletonArgs = provideDurableMapStore(baggage, `args of ${category}`);
@@ -74,7 +74,7 @@ export const provideCategorySingletons = (
   // restore from baggage
   const singletons = [...singletonArgs.entries()].map(([index, args]) => {
     const singletonBaggage = singletonBaggages.get(index);
-    return prepareSingleton(singletonBaggage, ...categoryArgs, ...args);
+    return prepareSingleton(singletonBaggage, categoryPowers, ...args)();
   });
 
   return {
@@ -98,12 +98,11 @@ export const provideCategorySingletons = (
         baggage,
         `${tag}${category}`,
       );
-      const makeSingleton = prepareSingleton(
+      const singleton = prepareSingleton(
         singletonBaggage,
-        ...categoryArgs,
+        categoryPowers,
         ...args,
-      );
-      const singleton = makeSingleton();
+      )();
 
       // upon success, commit
       singletons[index] = singleton;
