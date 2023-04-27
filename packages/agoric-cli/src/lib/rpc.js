@@ -267,7 +267,7 @@ export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
       vstorage,
     };
   } catch (err) {
-    throw new Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
+    throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
   }
 };
 /** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */

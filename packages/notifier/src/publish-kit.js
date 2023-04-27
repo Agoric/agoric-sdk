@@ -92,7 +92,7 @@ export const makePublishKit = () => {
   let currentP = tailP;
   const advanceCurrent = (done, value, rejection) => {
     if (tailR === undefined) {
-      throw new Error('Cannot update state after termination.');
+      throw Error('Cannot update state after termination.');
     }
 
     currentPublishCount += 1n;
@@ -135,7 +135,7 @@ export const makePublishKit = () => {
       } else if (publishCount < currentPublishCount) {
         return currentP;
       } else {
-        throw new Error(
+        throw Error(
           'subscribeAfter argument must be a previously-issued publishCount.',
         );
       }
@@ -314,7 +314,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const { state, facets } = context;
   const { valueDurability, status } = state;
   if (status !== 'live') {
-    throw new Error('Cannot update state after termination.');
+    throw Error('Cannot update state after termination.');
   }
   const done = targetStatus !== 'live';
   if (done || valueDurability === 'mandatory') {
@@ -419,7 +419,7 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
           } else if (publishCount < currentPublishCount) {
             return currentP || provideCurrentP(state, facets, tailP);
           } else {
-            throw new Error(
+            throw Error(
               'subscribeAfter argument must be a previously-issued publishCount.',
             );
           }

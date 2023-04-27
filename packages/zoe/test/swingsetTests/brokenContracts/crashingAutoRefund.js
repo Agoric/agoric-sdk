@@ -21,7 +21,7 @@ const start = zcf => {
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
   if (terms.throw) {
-    throw new Error('blowup in makeContract');
+    throw Error('blowup in makeContract');
   }
 
   const safeAutoRefund = seat => {
@@ -34,7 +34,7 @@ const start = zcf => {
 
   const throwing = () => {
     offersCount += 1n;
-    throw new Error('someException');
+    throw Error('someException');
   };
   const makeThrowingInvitation = () =>
     zcf.makeInvitation(throwing, 'getRefund');
@@ -77,7 +77,7 @@ const start = zcf => {
     zcfShutdownWithFailure,
     throwSomething: () => {
       offersCount += 1n;
-      throw new Error('someException');
+      throw Error('someException');
     },
   });
 

@@ -11,9 +11,7 @@ export function buildRootDeviceNode(tools) {
 
   registerInboundCallback((count, bodyString) => {
     if (!inboundHandler) {
-      throw new Error(
-        `CMD inboundHandler not set before registerInboundHandler`,
-      );
+      throw Error(`CMD inboundHandler not set before registerInboundHandler`);
     }
     try {
       const body = JSON.parse(`${bodyString}`);

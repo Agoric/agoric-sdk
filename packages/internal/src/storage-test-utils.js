@@ -41,7 +41,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'append':
         for (const [key, value] of message.args) {
           if (value === undefined) {
-            throw new Error(`attempt to append with no value`);
+            throw Error(`attempt to append with no value`);
           }
           let sequence = data.get(key);
           if (!Array.isArray(sequence)) {
@@ -63,7 +63,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         return [...data.keys()].filter(k => k.startsWith(`${message.args[0]}.`))
           .length;
       default:
-        throw new Error(`unsupported method: ${message.method}`);
+        throw Error(`unsupported method: ${message.method}`);
     }
   };
   const rootNode = makeChainStorageRoot(toStorage, rootPath, rootOptions);

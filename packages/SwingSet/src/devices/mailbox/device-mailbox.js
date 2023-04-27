@@ -11,7 +11,7 @@ export function buildRootDeviceNode(tools) {
 
   function inboundCallback(peer, messages, ack) {
     if (!deliverInboundMessages) {
-      throw new Error(
+      throw Error(
         `mailbox.inboundCallback(${peer}) called before handler was registered`,
       );
     }

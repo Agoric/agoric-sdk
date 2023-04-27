@@ -218,7 +218,7 @@ export function getReplHandler(replObjects, send) {
       console.debug(`doEval`, histnum, body);
       Nat(histnum);
       if (histnum <= highestHistory) {
-        throw new Error(
+        throw Error(
           `histnum ${histnum} is not larger than highestHistory ${highestHistory}`,
         );
       }

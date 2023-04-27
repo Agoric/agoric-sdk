@@ -156,7 +156,7 @@ export const main = async (
 
   const stateDirStat = await fs.stat(stateDir);
   if (!stateDirStat.isDirectory()) {
-    throw new Error('state-dir must be an exiting directory');
+    throw Error('state-dir must be an exiting directory');
   }
 
   const exportDir = pathResolve(

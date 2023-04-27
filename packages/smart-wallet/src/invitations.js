@@ -158,7 +158,7 @@ export const makeInvitationsHelper = (
       case 'continuing':
         return invitationGetters.continuing(spec);
       default:
-        throw new Error('unrecognize invitation source');
+        throw Error('unrecognize invitation source');
     }
   };
   return invitationFromSpec;

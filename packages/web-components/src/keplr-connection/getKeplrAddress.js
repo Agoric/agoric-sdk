@@ -8,7 +8,7 @@ import { Errors } from './errors.js';
 export const getKeplrAddress = async chainId => {
   await onLoadP;
   if (!('keplr' in window)) {
-    throw new Error(Errors.noKeplr);
+    throw Error(Errors.noKeplr);
   }
   /** @type {import('@keplr-wallet/types').Keplr} */
   // @ts-expect-error cast (checked above)
@@ -18,7 +18,7 @@ export const getKeplrAddress = async chainId => {
     // eslint-disable-next-line @jessie.js/no-nested-await
     await keplr.enable(chainId);
   } catch {
-    throw new Error(Errors.enableKeplr);
+    throw Error(Errors.enableKeplr);
   }
   const offlineSigner = keplr.getOfflineSigner(chainId);
 

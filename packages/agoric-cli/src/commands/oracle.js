@@ -22,7 +22,7 @@ export const makeOracleCommand = logger => {
     `
   WALLET=my-wallet
   export AGORIC_NET=ollinet
-  
+
   # provision wallet if necessary
   agd keys add $WALLET
   # provision with faucet, e.g.
@@ -35,7 +35,7 @@ export const makeOracleCommand = logger => {
   # prepare an offer to send
   # (offerId is optional but best to specify as each must be higher than the last and the default value is a huge number)
   agops oracle accept --offerId 12 > offer-12.json
-  
+
   # sign and send
   agoric wallet send --from $WALLET --offer offer-12.json
   `,
@@ -49,7 +49,7 @@ export const makeOracleCommand = logger => {
       const instance = utils.agoricNames.instance[name];
       if (!instance) {
         logger.debug('known instances:', utils.agoricNames.instance);
-        throw new Error(`Unknown instance ${name}`);
+        throw Error(`Unknown instance ${name}`);
       }
       return instance;
     };

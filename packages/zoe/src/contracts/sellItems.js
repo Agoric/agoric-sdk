@@ -93,7 +93,7 @@ const start = zcf => {
     // Check that the wanted items are still for sale.
     if (!AmountMath.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
-      throw buyerSeat.fail(new Error(rejectMsg));
+      throw buyerSeat.fail(Error(rejectMsg));
     }
 
     // All items are the same price.

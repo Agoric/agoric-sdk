@@ -94,13 +94,11 @@ export const makeSlogSender = async (opts = {}) => {
           }) => {
             if (typeof maker !== 'function') {
               return Promise.reject(
-                new Error(`No 'makeSlogSender' function exported by module`),
+                Error(`No 'makeSlogSender' function exported by module`),
               );
             } else if (maker === makeSlogSender) {
               return Promise.reject(
-                new Error(
-                  `Cannot recursively load 'makeSlogSender' aggregator`,
-                ),
+                Error(`Cannot recursively load 'makeSlogSender' aggregator`),
               );
             }
 

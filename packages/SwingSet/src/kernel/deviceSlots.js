@@ -201,7 +201,7 @@ export function makeDeviceSlots(
     );
     const t = slotToVal.get(deviceID);
     if (!(method in t)) {
-      throw new TypeError(
+      throw TypeError(
         `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
           t,
         )}`,
@@ -210,7 +210,7 @@ export function makeDeviceSlots(
     const fn = t[method];
     const ftype = typeof fn;
     if (ftype !== 'function') {
-      throw new TypeError(
+      throw TypeError(
         `target[${method}] is not a function, typeof is ${ftype}, has ${Object.getOwnPropertyNames(
           t,
         )}`,

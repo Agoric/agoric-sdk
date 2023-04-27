@@ -9,7 +9,7 @@ import { makeAggregateError } from '../utils.js';
 export const fsStreamReady = stream =>
   new Promise((resolve, reject) => {
     if (stream.destroyed) {
-      reject(new Error('Stream already destroyed'));
+      reject(Error('Stream already destroyed'));
       return;
     }
 

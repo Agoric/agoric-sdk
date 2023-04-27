@@ -359,7 +359,7 @@ async function replay(transcriptFile) {
     }
     syscallResults = {};
     if (divergent && !argv.ignoreConcurrentWorkerDivergences) {
-      throw new Error('Divergent execution between workers');
+      throw Error('Divergent execution between workers');
     }
   };
 
@@ -566,7 +566,7 @@ async function replay(transcriptFile) {
         if (argv.ignoreSnapshotHashDifference) {
           console.warn(errorMessage);
         } else {
-          throw new Error(errorMessage);
+          throw Error(errorMessage);
         }
       } else {
         console.log(
@@ -720,7 +720,7 @@ async function replay(transcriptFile) {
           if (argv.ignoreSnapshotHashDifference) {
             console.warn(errorMessage);
           } else {
-            throw new Error(errorMessage);
+            throw Error(errorMessage);
           }
         }
 

@@ -57,7 +57,7 @@ export const watchWallet = async (leader, address, context, rpcs) => {
   } catch {
     // XXX: We can technically show vbank purses without a smart wallet
     // existing, maybe don't throw but indicate no smart wallet in the result?
-    throw new Error(Errors.noSmartWallet);
+    throw Error(Errors.noSmartWallet);
   }
 
   const publicSubscriberPathsNotifierKit = makeNotifierKit(

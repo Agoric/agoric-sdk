@@ -21,7 +21,7 @@ async function main() {
   }
   const command = argv.shift();
   if (command !== 'run' && command !== 'shell') {
-    throw new Error(`use 'vat run' or 'vat shell', not 'vat ${command}'`);
+    throw Error(`use 'vat run' or 'vat shell', not 'vat ${command}'`);
   }
   const basedir =
     argv[0] === '--' || argv[0] === undefined ? '.' : argv.shift();

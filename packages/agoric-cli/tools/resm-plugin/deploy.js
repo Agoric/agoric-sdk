@@ -14,6 +14,6 @@ export default async function deployPlugin(
     new Promise(resolve => setTimeout(resolve, PONG_TIMEOUT, 'timeout')),
   ]);
   if (result !== 'pong') {
-    throw new Error(`ping failed ${result}`);
+    throw Error(`ping failed ${result}`);
   }
 }

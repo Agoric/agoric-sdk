@@ -58,9 +58,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
         )
         .then(code => {
           if (code !== 0) {
-            throw new Error(
-              `Cosmos client helper build failed with code ${code}`,
-            );
+            throw Error(`Cosmos client helper build failed with code ${code}`);
           }
           return pspawn(cosmosHelper, args, hopts);
         });

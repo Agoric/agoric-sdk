@@ -391,7 +391,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
               read,
               url.pathToFileURL(moduleFile),
             ).catch(cause => {
-              throw new Error(
+              throw Error(
                 `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
                 { cause },
               );

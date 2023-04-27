@@ -37,11 +37,11 @@ function makeCLI(command, { spawn }) {
         resolve(undefined);
       });
       child.on('error', err => {
-        reject(new Error(`${command} error ${err}`));
+        reject(Error(`${command} error ${err}`));
       });
       child.on('exit', code => {
         if (code !== 0) {
-          reject(new Error(`${command} exited with code ${code}`));
+          reject(Error(`${command} exited with code ${code}`));
         }
       });
     });
@@ -224,7 +224,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   const platform = ModdableSDK.platforms[os.type()];
   if (!platform) {
-    throw new Error(`Unsupported OS found: ${os.type()}`);
+    throw Error(`Unsupported OS found: ${os.type()}`);
   }
 
   const make = makeCLI(platform.make || 'make', { spawn });

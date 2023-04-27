@@ -87,7 +87,7 @@ export const MAKE_DEFAULT_DECODER = () => {
     try {
       return harden(JSON.parse(str));
     } catch (error) {
-      throw new Error(`Cannot decode alleged JSON (${error.message}): ${str}`);
+      throw Error(`Cannot decode alleged JSON (${error.message}): ${str}`);
     }
   });
 };

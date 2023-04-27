@@ -113,7 +113,7 @@ const makePrefixedBridgeStorage = (
       );
     },
     getNextKey(_previousKey) {
-      throw new Error('not implemented');
+      throw Error('not implemented');
     },
   });
 };

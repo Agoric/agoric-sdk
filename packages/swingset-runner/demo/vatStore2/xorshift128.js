@@ -41,20 +41,20 @@ const defaultSeed = [0xb0b5c0ff, 0xeefacade, 0xb0b5c0ff, 0xeefacade];
 export const makeXorShift128 = (seed = defaultSeed) => {
   // Assertions about the seed's shape.
   if (seed.length !== 4) {
-    throw new TypeError(
+    throw TypeError(
       `Cannot construct xorshift128 random number generator: seed must have a length of 4, got ${seed.length}`,
     );
   }
   for (let i = 0; i < 4; i += 1) {
     if (typeof seed[i] !== 'number') {
-      throw new TypeError(
+      throw TypeError(
         `Cannot construct xorshift128 random number generator: seed[${i}] must be a number, got ${typeof seed[
           i
         ]}`,
       );
     }
     if (seed[i] >>> 0 !== seed[i]) {
-      throw new RangeError(
+      throw RangeError(
         `Cannot construct xorshift128 random number generator: seed[${i}] must have a value in the range of a 32 bit unsigned integer, got ${seed[i]}`,
       );
     }

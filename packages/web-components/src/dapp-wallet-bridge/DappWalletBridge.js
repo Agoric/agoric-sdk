@@ -174,7 +174,7 @@ export class DappWalletBridge extends LitElement {
   onBridgeMessage(ev) {
     console.debug('bridge message received', ev);
     if (ev.detail.data.type === BridgeProtocol.error) {
-      this.onError(new Error(ev.detail.data.message));
+      this.onError(Error(ev.detail.data.message));
       return;
     }
 

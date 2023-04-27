@@ -38,9 +38,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   });
 
   if (activeBidsCount === 0n) {
-    throw sellSeat.fail(
-      new Error(`Could not close auction. No bids were active`),
-    );
+    throw sellSeat.fail(Error(`Could not close auction. No bids were active`));
   }
 
   // Everyone else gets a refund so their values remain the same.

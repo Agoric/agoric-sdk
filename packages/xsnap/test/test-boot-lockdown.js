@@ -172,7 +172,7 @@ test('console - objects should include detail', async t => {
       richStructure,
       new ArrayBuffer(10),
       new Promise(_r => null),
-      new Error('oops!'),
+      Error('oops!'),
     ];
 
     const { Fail } = assert;

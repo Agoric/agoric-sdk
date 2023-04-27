@@ -159,7 +159,7 @@ export const createSeatManager = (
         E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
       },
       fail(
-        reason = new Error(
+        reason = Error(
           'Seat exited with failure. Please check the log for more information.',
         ),
       ) {

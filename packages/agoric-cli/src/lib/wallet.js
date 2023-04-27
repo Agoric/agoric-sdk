@@ -234,7 +234,7 @@ export const makeWalletUtils = async (
  * @returns {(a: string) => Amount<'nat'>}
  */
 export const makeParseAmount =
-  (agoricNames, makeError = msg => new RangeError(msg)) =>
+  (agoricNames, makeError = msg => RangeError(msg)) =>
   opt => {
     assert.typeof(opt, 'string', 'parseAmount expected string');
     const m = opt.match(/^(?<value>[\d_]+(\.[\d_]+)?)(?<brand>[A-Z]\w*?)$/);

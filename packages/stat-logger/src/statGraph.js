@@ -154,9 +154,9 @@ export function addGraphToGraphSpec(spec, tag, statsPath, yField, color) {
 
 export async function renderGraph(spec, outputPath, type = 'png') {
   if (spec.data.length === 0) {
-    throw new Error('graph spec contains no data');
+    throw Error('graph spec contains no data');
   } else if (spec.marks.length === 0) {
-    throw new Error('graph spec has no graphs defined');
+    throw Error('graph spec has no graphs defined');
   }
   type === 'png' ||
     type === 'pdf' ||

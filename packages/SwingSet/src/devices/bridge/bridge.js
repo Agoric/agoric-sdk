@@ -100,14 +100,14 @@ export function buildBridge(outboundCallback) {
 
   function registerInboundCallback(inbound) {
     if (inboundCallback) {
-      throw new Error('inboundCallback already registered');
+      throw Error('inboundCallback already registered');
     }
     inboundCallback = inbound;
   }
 
   function deliverInbound(...args) {
     if (!inboundCallback) {
-      throw new Error('inboundCallback not yet registered');
+      throw Error('inboundCallback not yet registered');
     }
     inboundCallback(...args);
   }

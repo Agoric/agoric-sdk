@@ -28,7 +28,7 @@ export const delayByTurns = async turnCount => {
 
 const obj = harden({});
 const unresP = new Promise(_ => {});
-const rejP = Promise.reject(new Error('foo'));
+const rejP = Promise.reject(Error('foo'));
 rejP.catch(_ => {}); // Suppress Node UnhandledPromiseRejectionWarning
 
 /**
@@ -50,7 +50,7 @@ const refResult = harden({});
  * The value to be used and tested for as the reason for an unsuccessful
  * failure.
  */
-const refReason = new Error('bar');
+const refReason = Error('bar');
 
 /**
  * Returns an AsyncIterable that enumerates the successive `payload` values

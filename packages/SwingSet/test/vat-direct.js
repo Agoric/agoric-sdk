@@ -101,7 +101,7 @@ export default function setup(syscall, _state, _helpers, vatPowers) {
         }
 
         default:
-          throw new Error(`unrecognized method ${method}`);
+          throw Error(`unrecognized method ${method}`);
       }
     } catch (err) {
       resolutions = promiseRejection(result, err);

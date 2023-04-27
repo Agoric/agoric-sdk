@@ -71,7 +71,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
       this._contentWindow = iframe.contentWindow;
       this._timeout = window.setTimeout(() => {
         const ev = new CustomEvent('error', {
-          detail: { error: new Error('connection timeout') },
+          detail: { error: Error('connection timeout') },
         });
         this.dispatchEvent(ev);
       }, CONNECTION_TIMEOUT_MS);

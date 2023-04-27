@@ -88,7 +88,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
         case 'rejected':
           throw kunser(controller.kpResolution(kpid));
         case 'unresolved':
-          throw new Error(`unresolved for method ${method}`);
+          throw Error(`unresolved for method ${method}`);
         default:
           throw Fail`unknown status ${status}`;
       }

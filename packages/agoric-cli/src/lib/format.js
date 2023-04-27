@@ -17,7 +17,7 @@ import '@agoric/ertp/src/types-ambient.js';
 export const Natural = str => {
   const b = BigInt(str);
   if (b < 0) {
-    throw new RangeError(`${b} is negative`);
+    throw RangeError(`${b} is negative`);
   }
   return b;
 };
@@ -93,7 +93,7 @@ export const asBoardRemote = x => {
 
 /**
  * Summarize the balances array as user-facing informative tuples
- 
+
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord['purses']} purses
  * @param {AssetDescriptor[]} assets
  */
