@@ -38,7 +38,7 @@ async function makeKernel() {
   return buildKernel(endowments, {}, {});
 }
 
-const tsv = [{ d: ['startVat', kser({})], sc: [], r: { status: 'ok' } }];
+const tsv = [[0, { d: ['startVat', kser({})], sc: [], r: { status: 'ok' } }]];
 
 test('build kernel', async t => {
   const kernel = await makeKernel();
@@ -150,7 +150,7 @@ test('vat store', async t => {
   ]);
   const data = kernel.dump();
   // check that we're not sticking an undefined into the transcript
-  t.deepEqual(data.vatTables[0].state.transcript[1].sc[0].r, ['ok', null]);
+  t.deepEqual(data.vatTables[0].state.transcript[1][1].sc[0].r, ['ok', null]);
 });
 
 test('map inbound', async t => {
@@ -1171,27 +1171,30 @@ test('transcript', async t => {
   const tr = kernel.dump().vatTables[0].state.transcript;
   t.is(tr.length, 2);
   t.deepEqual(tr[0], tsv[0]);
-  t.deepEqual(tr[1], {
-    d: [
-      'message',
-      aliceForAlice,
-      {
-        methargs: kser(['store', [kslot(aliceForAlice), kslot(bobForAlice)]]),
-        result: 'p-60',
-      },
-    ],
-    sc: [
-      {
-        s: [
-          'send',
-          bobForAlice,
-          { methargs: kser(['foo', ['fooarg']]), result: 'p+5' },
-        ],
-        r: ['ok', null],
-      },
-    ],
-    r: { status: 'ok' },
-  });
+  t.deepEqual(tr[1], [
+    1,
+    {
+      d: [
+        'message',
+        aliceForAlice,
+        {
+          methargs: kser(['store', [kslot(aliceForAlice), kslot(bobForAlice)]]),
+          result: 'p-60',
+        },
+      ],
+      sc: [
+        {
+          s: [
+            'send',
+            bobForAlice,
+            { methargs: kser(['foo', ['fooarg']]), result: 'p+5' },
+          ],
+          r: ['ok', null],
+        },
+      ],
+      r: { status: 'ok' },
+    },
+  ]);
 });
 
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a

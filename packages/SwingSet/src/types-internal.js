@@ -18,6 +18,8 @@ export {};
  * @typedef { import('./types-external.js').OptManagerType } OptManagerType
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallHandler } VatSyscallHandler
  *
  * // used by vatKeeper.setSourceAndOptions(source, RecordedVatOptions)
@@ -57,7 +59,7 @@ export {};
  *
  * @typedef { { deliver: (delivery: VatDeliveryObject, vatSyscallHandler: VatSyscallHandler)
  *                       => Promise<VatDeliveryResult>,
- *              makeSnapshot?: undefined | ((endPos: number, ss: SnapStore) => Promise<SnapshotResult>),
+ *              makeSnapshot?: undefined | ((snapPos: number, ss: SnapStore) => Promise<SnapshotResult>),
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { { createFromBundle: (vatID: string,
@@ -93,4 +95,25 @@ export {};
  *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
  *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead
  *          } RunQueueEvent
+ */
+
+/**
+ * @typedef { { source: { bundleID?: BundleID }, workerOptions: WorkerOptions } } TranscriptDeliveryInitializeWorkerOptions
+ * @typedef { [tag: 'initialize-worker', options: TranscriptDeliveryInitializeWorkerOptions] } TranscriptDeliveryInitializeWorker
+ * @typedef { [tag: 'save-snapshot'] } TranscriptDeliverySaveSnapshot
+ * @typedef { { snapshotID: string } } TranscriptDeliverySnapshotConfig
+ * @typedef { [tag: 'load-snapshot', config: TranscriptDeliverySnapshotConfig] } TranscriptDeliveryLoadSnapshot
+ * @typedef { [tag: 'shutdown-worker'] } TranscriptDeliveryShutdownWorker
+ * @typedef { VatDeliveryObject
+ *             | TranscriptDeliveryInitializeWorker
+ *             | TranscriptDeliverySaveSnapshot
+ *             | TranscriptDeliveryLoadSnapshot
+ *             | TranscriptDeliveryShutdownWorker
+ *          } TranscriptDelivery
+ * @typedef { { s: VatSyscallObject, r: VatSyscallResult } } TranscriptSyscall
+ * @typedef { { status: string, snapshotID: string } } TranscriptDeliverySaveSnapshotResults
+ * @typedef { { status: string, metering?: { computrons: number } } } TranscriptDeliveryGenericResults
+ * @typedef { TranscriptDeliverySaveSnapshotResults | TranscriptDeliveryGenericResults } TranscriptDeliveryResults
+ * @typedef { { d: TranscriptDelivery, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
+ *
  */

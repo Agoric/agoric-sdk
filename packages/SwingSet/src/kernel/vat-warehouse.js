@@ -11,6 +11,12 @@ import djson from '../lib/djson.js';
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
  * @typedef {import('../types-internal.js').VatManager} VatManager
+ * @typedef {import('../types-internal.js').VatID} VatID
+ * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorkerOptions} TDInitializeWorkerOptions
+ * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorker} TDInitializeWorker
+ * @typedef {import('../types-internal.js').TranscriptDeliveryShutdownWorker} TDShutdownWorker
+ * @typedef {import('../types-internal.js').TranscriptDeliveryResults} TranscriptDeliveryResults
+ * @typedef {import('../types-internal.js').TranscriptEntry} TranscriptEntry
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
@@ -36,8 +42,37 @@ function recordSyscalls(origHandler) {
     syscalls.push({ s: vso, r: vres });
     return vres;
   };
-  const getTranscriptSyscalls = () => syscalls;
-  return { syscallHandler, getTranscriptSyscalls };
+  const getTranscriptEntry = (vd, deliveryResult) => {
+    // TODO add metering computrons to results
+    /** @type {TranscriptDeliveryResults} */
+    const tdr = { status: deliveryResult[0] };
+    if (deliveryResult[0] === 'ok') {
+      const usage = deliveryResult[2];
+      if (usage) {
+        tdr.metering = { computrons: usage.compute };
+      }
+    }
+    const transcriptEntry = { d: vd, sc: syscalls, r: tdr };
+    return transcriptEntry;
+  };
+  return { syscallHandler, getTranscriptEntry };
+}
+
+/**
+ * @param {TranscriptEntry} transcriptEntry
+ * @returns {VatDeliveryObject}
+ */
+function onlyRealDelivery(transcriptEntry) {
+  const dtype = transcriptEntry.d[0];
+  if (
+    dtype === 'save-snapshot' ||
+    dtype === 'load-snapshot' ||
+    dtype === 'initialize-worker' ||
+    dtype === 'shutdown-worker'
+  ) {
+    throw Fail`replay should not see ${dtype}`;
+  }
+  return transcriptEntry.d;
 }
 
 /**
@@ -49,7 +84,7 @@ function recordSyscalls(origHandler) {
  * @param {*} kernelSlog
  * @param {string} vatID
  * @param {number} deliveryNum
- * @param {import('../types-external.js').TranscriptEntry} transcriptEntry
+ * @param {TranscriptEntry} transcriptEntry
  * @returns { {
  *   syscallHandler: (vso: VatSyscallObject) => VatSyscallResult,
  *   finishSimulation: () => void,
@@ -251,28 +286,33 @@ export function makeVatWarehouse({
    * @returns {Promise<void>}
    */
   async function replayTranscript(vatID, vatKeeper, manager) {
-    const snapshotInfo = vatKeeper.getSnapshotInfo();
-    const startPos = snapshotInfo ? snapshotInfo.endPos : undefined;
-    // console.log('replay from', { vatID, startPos });
-
-    const total = vatKeeper.vatStats().transcriptCount;
+    const total = vatKeeper.transcriptSize();
     kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
-    // TODO glean deliveryNum better, make sure we get the post-snapshot
-    // transcript starting point right. getTranscript() should probably
-    // return [deliveryNum, t] pairs.
-    let deliveryNum = startPos || 0;
-    for await (const te of vatKeeper.getTranscript(startPos)) {
+    let first = true;
+    for await (const [deliveryNum, te] of vatKeeper.getTranscript()) {
       // if (deliveryNum % 100 === 0) {
       //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
       // }
       //
+      if (first) {
+        // the first entry should always be initialize-worker or
+        // load-snapshot
+        first = false;
+        const dtype = te.d[0];
+        if (dtype === 'initialize-worker' || dtype === 'load-snapshot') {
+          continue; // TODO: use this to launch the worker
+        } else {
+          console.error(`transcript for ${vatID} starts with ${te.d[0]}`);
+          throw Fail`transcript for ${vatID} doesn't start with init/load`;
+        }
+      }
       // we slog the replay just like the original, but some fields are missing
       const finishSlog = slogReplay(kernelSlog, vatID, deliveryNum, te);
+      const delivery = onlyRealDelivery(te);
       const sim = makeSyscallSimulator(kernelSlog, vatID, deliveryNum, te);
-      const status = await manager.deliver(te.d, sim.syscallHandler);
+      const status = await manager.deliver(delivery, sim.syscallHandler);
       finishSlog(status);
       sim.finishSimulation(); // will throw if syscalls did not match
-      deliveryNum += 1;
     }
     kernelSlog.write({ type: 'finish-replay', vatID });
   }
@@ -295,6 +335,22 @@ export function makeVatWarehouse({
     // ensureVatOnline?, make sure it gets deleted eventually
     const translators = provideTranslators(vatID);
     const syscallHandler = buildVatSyscallHandler(vatID, translators);
+
+    // if we use transcripts, but don't have one, create one with an
+    // initialize-worker event, to represent the vatLoader.create()
+    // we're about to do
+    if (options.useTranscript && vatKeeper.transcriptSize() === 0) {
+      /** @type { TDInitializeWorkerOptions } */
+      const initOpts = { source: {}, workerOptions: options.workerOptions };
+      // if the vat is somehow using a full bundle, we don't want that
+      // in the transcript: we only record bundleIDs
+      initOpts.source.bundleID = source.bundleID;
+      vatKeeper.addToTranscript({
+        d: /** @type {TDInitializeWorker} */ ['initialize-worker', initOpts],
+        sc: [],
+        r: { status: 'ok' },
+      });
+    }
 
     const isDynamic = kernelKeeper.getDynamicVats().includes(vatID);
     const managerP = vatLoader.create(vatID, {
@@ -437,7 +493,7 @@ export function makeVatWarehouse({
    * options: pay $/block to keep in RAM - advisory; not consensus
    * creation arg: # of vats to keep in RAM (LRU 10~50~100)
    *
-   * @param {string} currentVatID
+   * @param {VatID} currentVatID
    */
   async function applyAvailabilityPolicy(currentVatID) {
     const lru = recent.add(currentVatID);
@@ -451,13 +507,9 @@ export function makeVatWarehouse({
     await evict(lru);
   }
 
-  /** @type { string | undefined } */
-  let lastVatID;
-
   /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<VatDeliveryResult> } */
   async function deliverToVat(vatID, kd, vd, vs) {
     await applyAvailabilityPolicy(vatID);
-    lastVatID = vatID;
 
     const recreate = true; // PANIC in the failure case
     // create the worker and replay the transcript, if necessary
@@ -477,7 +529,7 @@ export function makeVatWarehouse({
 
     // wrap the syscallHandler with a syscall recorder
     const recorder = recordSyscalls(origHandler);
-    const { syscallHandler, getTranscriptSyscalls } = recorder;
+    const { syscallHandler, getTranscriptEntry } = recorder;
     assert(syscallHandler);
 
     // make the delivery
@@ -488,11 +540,7 @@ export function makeVatWarehouse({
     // TODO: if the dispatch failed for whatever reason, and we choose to
     // destroy the vat, change what we do with the transcript here.
     if (options.useTranscript) {
-      // record transcript entry
-      /** @type { import('../types-external.js').TranscriptDeliveryResults} */
-      const tdr = { status: deliveryResult[0] };
-      const transcriptEntry = { d: vd, sc: getTranscriptSyscalls(), r: tdr };
-      vatKeeper.addToTranscript(transcriptEntry);
+      vatKeeper.addToTranscript(getTranscriptEntry(vd, deliveryResult));
     }
 
     // TODO: if per-vat policy decides it wants a BOYD or heap snapshot,
@@ -502,21 +550,19 @@ export function makeVatWarehouse({
   }
 
   /**
-   * Save a snapshot of most recently used vat,
-   * depending on snapshotInterval.
+   * Save a heap snapshot for the given vatID, if the snapshotInterval
+   * is satisified
+   *
+   * @param {VatID} vatID
    */
-  async function maybeSaveSnapshot() {
-    if (!lastVatID || !lookup(lastVatID)) {
-      return false;
-    }
-
+  async function maybeSaveSnapshot(vatID) {
     const recreate = true; // PANIC in the failure case
-    const { manager } = await ensureVatOnline(lastVatID, recreate);
+    const { manager } = await ensureVatOnline(vatID, recreate);
     if (!manager.makeSnapshot) {
-      return false;
+      return false; // worker cannot make snapshots
     }
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     let reason;
     const { totalEntries, snapshottedEntries } =
       vatKeeper.transcriptSnapshotStats();
@@ -530,10 +576,15 @@ export function makeVatWarehouse({
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
-      return false;
+      return false; // not time to make a snapshot
     }
+
+    // in addition to saving the actual snapshot,
+    // vatKeeper.saveSnapshot() pushes a save-snapshot transcript
+    // entry, then starts a new transcript span, then pushes a
+    // load-snapshot entry, so that the current span always starts
+    // with an initialize-snapshot or load-snapshot pseudo-delivery
     await vatKeeper.saveSnapshot(manager);
-    lastVatID = undefined;
     return true;
   }
 
@@ -582,6 +633,11 @@ export function makeVatWarehouse({
   async function beginNewWorkerIncarnation(vatID) {
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    vatKeeper.addToTranscript({
+      d: /** @type {TDShutdownWorker} */ ['shutdown-worker'],
+      sc: [],
+      r: { status: 'ok' },
+    });
     return vatKeeper.beginNewIncarnation();
   }
 

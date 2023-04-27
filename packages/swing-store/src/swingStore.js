@@ -160,8 +160,8 @@ function getKeyType(key) {
  *
  * Content of validation data (with supporting entries for indexing):
  * - kv.${key} = ${value}  // ordinary kvStore data entry
- * - snapshot.${vatID}.${endPos} = ${{ vatID, endPos, hash });
- * - snapshot.${vatID}.current = `snapshot.${vatID}.${endPos}`
+ * - snapshot.${vatID}.${snapPos} = ${{ vatID, snapPos, hash });
+ * - snapshot.${vatID}.current = `snapshot.${vatID}.${snapPos}`
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
@@ -174,7 +174,7 @@ function getKeyType(key) {
  *
  * Artifact names:
  * - transcript.${vatID}.${startPos}.${endPos}
- * - snapshot.${vatID}.${endPos}
+ * - snapshot.${vatID}.${snapPos}
  *
  * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
  *
@@ -1073,7 +1073,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
       transcriptInfo.startPos === 0 ||
         Fail`missing current snapshot for vat ${q(vatID)}`;
     } else {
-      snapshotInfo.endPos === transcriptInfo.startPos ||
+      snapshotInfo.snapPos + 1 === transcriptInfo.startPos ||
         Fail`current transcript for vat ${q(vatID)} doesn't go with snapshot`;
       fetchedArtifacts.add(vatInfo.snapshotKey);
     }

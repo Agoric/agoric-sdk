@@ -232,8 +232,8 @@ async function replay(transcriptFile) {
 
   if (argv.useCustomSnapStore) {
     snapStore = /** @type {SnapStore} */ ({
-      async saveSnapshot(_vatID, endPos, saveRaw) {
-        const snapFile = `${vatID}-${endPos}-${
+      async saveSnapshot(_vatID, snapPos, saveRaw) {
+        const snapFile = `${vatID}-${snapPos}-${
           saveSnapshotID || 'unknown'
         }.xss`;
         const { duration: rawSaveSeconds } = await measureSeconds(() =>

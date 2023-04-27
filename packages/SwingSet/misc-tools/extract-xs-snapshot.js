@@ -34,13 +34,13 @@ if (!vatIDToExtract) {
   const h = `all snapshots:                 pos    hash       compressed    raw`;
   console.warn(h);
   for (const info of snapStore.listAllSnapshots()) {
-    const { vatID, inUse, endPos, hash } = info;
+    const { vatID, inUse, snapPos, hash } = info;
     const name = namedVats.get(vatID) || '?';
     const used = inUse ? 'used' : 'old';
     const sVatID = vatID.padEnd(3);
     const sName = name.padEnd(15);
     const sUsed = used.padStart(4);
-    const sPos = endPos.toString().padStart(6);
+    const sPos = snapPos.toString().padStart(6);
     const sHash = `${hash.slice(0, 10)}..`;
     const sCompressed = info.compressedSize.toString().padStart(7);
     const sRaw = info.uncompressedSize.toString().padStart(8);
@@ -50,10 +50,10 @@ if (!vatIDToExtract) {
   }
 } else {
   const info = snapStore.getSnapshotInfo(vatIDToExtract);
-  const { endPos, hash } = info;
+  const { snapPos, hash } = info;
   const write = async tmpFilePath => {
     const snapshot = fs.readFileSync(tmpFilePath);
-    const fn = `${vatIDToExtract}-${endPos}-${hash}.xss`;
+    const fn = `${vatIDToExtract}-${snapPos}-${hash}.xss`;
     fs.writeFileSync(fn, snapshot);
     console.log(`wrote snapshot to ${fn}`);
   };
