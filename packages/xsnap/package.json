@@ -36,7 +36,8 @@
     "@endo/promise-kit": "^0.2.56",
     "@endo/stream": "^0.3.25",
     "@endo/stream-node": "^0.2.26",
-    "glob": "^7.1.6"
+    "glob": "^7.1.6",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@endo/base64": "^0.2.31",

@@ -6,14 +6,16 @@ import '@endo/init/debug.js';
 import test from 'ava';
 
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';
 import { ExitCode } from '../api.js';
 
 import { options } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
 test('heap exhaustion: orderly fail-stop', async t => {
   const grow = `
@@ -23,7 +25,8 @@ test('heap exhaustion: orderly fail-stop', async t => {
   }
   `;
   for (const debug of [false, true]) {
-    const vat = xsnap({ ...options(io), meteringLimit: 0, debug });
+    // eslint-disable-next-line no-await-in-loop
+    const vat = await xsnap({ ...options(io), meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
     // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(vat.evaluate(grow), {
@@ -50,7 +53,8 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
   }
   `;
   for (const debug of [false, true]) {
-    const vat = xsnap({ ...options(io), meteringLimit: 0, debug });
+    // eslint-disable-next-line no-await-in-loop
+    const vat = await xsnap({ ...options(io), meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
     t.log({ debug, qty: 31000 });
     // eslint-disable-next-line no-await-in-loop
@@ -90,7 +94,7 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
         parserBufferSize || 'default'
       }k; rep ${qty}; debug ${debug}`, async t => {
         const opts = { ...options(io), meteringLimit: 1e8, debug };
-        const vat = xsnap({ ...opts, parserBufferSize });
+        const vat = await xsnap({ ...opts, parserBufferSize });
         t.teardown(() => vat.terminate());
         const expected = failure ? [failure] : [qty * 4 + 2];
         // eslint-disable-next-line no-await-in-loop
@@ -116,7 +120,7 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
 
   for (const statement of challenges) {
     test(`large sizes - abort cluster: ${statement}`, async t => {
-      const vat = xsnap(options(io));
+      const vat = await xsnap(options(io));
       t.teardown(() => vat.terminate());
       // eslint-disable-next-line no-await-in-loop
       await t.throwsAsync(

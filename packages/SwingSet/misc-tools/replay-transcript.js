@@ -11,10 +11,10 @@ import process from 'process';
 import { spawn } from 'child_process';
 import { promisify } from 'util';
 import { createHash } from 'crypto';
-import { pipeline } from 'stream';
+import { Readable, finished as finishedCallback } from 'stream';
 import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { file as tmpFile, tmpName, dirSync as tmpDirSync } from 'tmp';
+import { tmpName, dirSync as tmpDirSync } from 'tmp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import sqlite3 from 'better-sqlite3';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -33,7 +33,7 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
 
-const pipe = promisify(pipeline);
+const finished = promisify(finishedCallback);
 
 // TODO: switch to full yargs for documenting output
 const argv = yargsParser(process.argv.slice(2), {
@@ -142,26 +142,11 @@ const argv = yargsParser(process.argv.slice(2), {
   },
 });
 
-/** @type {(filename: string) => Promise<string>} */
-async function fileHash(filename) {
-  const hash = createHash('sha256');
-  const input = fs.createReadStream(filename);
-  await pipe(input, hash);
-  return hash.digest('hex');
-}
-
 const measureSeconds = makeMeasureSeconds(performance.now.bind(performance));
 
 function makeSnapStoreIO() {
   return {
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
     measureSeconds,
-    open: fs.promises.open,
-    stat: fs.promises.stat,
-    tmpFile,
-    tmpName,
-    unlink: fs.promises.unlink,
   };
 }
 
@@ -232,21 +217,29 @@ async function replay(transcriptFile) {
 
   if (argv.useCustomSnapStore) {
     snapStore = /** @type {SnapStore} */ ({
-      async saveSnapshot(_vatID, snapPos, saveRaw) {
+      async saveSnapshot(_vatID, snapPos, snapshotStream) {
         const snapFile = `${vatID}-${snapPos}-${
           saveSnapshotID || 'unknown'
         }.xss`;
-        const { duration: rawSaveSeconds } = await measureSeconds(() =>
-          saveRaw(snapFile),
-        );
-        const hash = await fileHash(snapFile);
+        const hasher = createHash('sha256');
+        const output = fs.createWriteStream(snapFile);
+        const { duration: saveSeconds } = await measureSeconds(async () => {
+          const readable = Readable.from(snapshotStream);
+          readable.pipe(hasher);
+          readable.pipe(output);
+          await finished(readable);
+        });
+        const hash = hasher.digest('hex');
+
         const filePath = `${vatID}-${hash}.xss`;
         await fs.promises.rename(snapFile, filePath);
-        return { hash, rawSaveSeconds };
+        // We use `compressSeconds` since that's where the save time
+        // would be included in for the real snapstore
+        return { hash, compressSeconds: saveSeconds };
       },
-      async loadSnapshot(_vatID, loadRaw) {
+      async *loadSnapshot(_vatID) {
         const snapFile = `${vatID}-${loadSnapshotID}.xss`;
-        return loadRaw(snapFile);
+        yield* fs.createReadStream(snapFile);
       },
     });
   } else {
@@ -318,6 +311,8 @@ async function replay(transcriptFile) {
     const startXSnap = makeStartXSnap({
       snapStore,
       spawn: capturePIDSpawn,
+      fs,
+      tmpName,
       debug: argv.useXsnapDebug,
       workerTraceRootPath: argv.recordXsnapTrace ? process.cwd() : undefined,
       overrideBundles,
@@ -545,7 +540,7 @@ async function replay(transcriptFile) {
     async workerData => {
       const { manager, xsnapPID, firstTranscriptNum } = workerData;
       if (!manager.makeSnapshot) return null;
-      const { hash, rawSaveSeconds } = await manager.makeSnapshot(
+      const { hash, compressSeconds: saveSeconds } = await manager.makeSnapshot(
         lastTranscriptNum,
         snapStore,
       );
@@ -571,7 +566,7 @@ async function replay(transcriptFile) {
       } else {
         console.log(
           `made snapshot ${hash} after delivery ${lastTranscriptNum} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
-            Math.round(rawSaveSeconds * 1000) / 1000
+            Math.round(saveSeconds * 1000) / 1000
           }s. Delivery time since last snapshot ${
             Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
           }s. Up ${

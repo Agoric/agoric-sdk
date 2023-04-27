@@ -2,6 +2,8 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { spawn } from 'child_process';
+import fs from 'fs';
+import { tmpName } from 'tmp';
 import sqlite3 from 'better-sqlite3';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
@@ -22,6 +24,8 @@ function make(snapStore) {
       pk.resolve(args);
       return spawn(command, args, opts);
     },
+    fs,
+    tmpName,
     overrideBundles: [], // do not load *any* bundles, not even defaults
   });
   return { p: pk.promise, startXSnap };
@@ -60,7 +64,7 @@ async function doTest(t, metered) {
   t.teardown(() => worker1.close());
 
   // now extract a snapshot
-  await store.saveSnapshot('vat', 1, worker1.snapshot);
+  await store.saveSnapshot('vat', 1, worker1.makeSnapshot());
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);

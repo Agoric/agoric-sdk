@@ -30,10 +30,12 @@ export function loader(url, readFile = undefined) {
  * @param {{
  *   spawn: typeof import('child_process').spawn,
  *   os: string,
+ *   fs: import('fs'),
+ *   tmpName: import('tmp')['tmpName'],
  * }} io
  * @returns {import('../src/xsnap.js').XSnapOptions & { messages: string[]}}
  */
-export function options({ spawn, os }) {
+export function options({ spawn, os, fs, tmpName }) {
   const messages = [];
 
   /** @param {Uint8Array} message */
@@ -47,6 +49,7 @@ export function options({ spawn, os }) {
     stderr: 'inherit',
     stdout: 'inherit',
     spawn,
+    fs: { ...fs, ...fs.promises, tmpName },
     os,
     handleCommand,
     messages,

@@ -5,6 +5,8 @@ import process from 'process';
 import crypto from 'crypto';
 import { performance } from 'perf_hooks';
 import { spawn as ambientSpawn } from 'child_process';
+import fs from 'fs';
+import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
@@ -132,6 +134,8 @@ export async function makeSwingsetController(
     bundleHandler,
     snapStore: kernelStorage.snapStore,
     spawn,
+    fs,
+    tmpName,
     debug: !!env.XSNAP_DEBUG,
     workerTraceRootPath: env.XSNAP_TEST_RECORD,
   });

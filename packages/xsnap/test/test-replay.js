@@ -6,13 +6,15 @@ import '@endo/init/debug.js';
 import test from 'ava';
 
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 
 import { recordXSnap, replayXSnap } from '../src/replay.js';
 
 import { options, encode, decode } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
 const transcript1 = [
   [
@@ -34,7 +36,7 @@ test('record: evaluate and issueCommand', async t => {
   const files = new Map();
   const writeFileSync = (fn, bs) => files.set(fn, bs.slice());
 
-  const vat = recordXSnap(opts, '/xsnap-tests/', { writeFileSync });
+  const vat = await recordXSnap(opts, '/xsnap-tests/', { writeFileSync });
 
   await vat.evaluate(
     `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,

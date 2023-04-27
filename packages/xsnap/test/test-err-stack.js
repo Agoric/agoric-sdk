@@ -5,11 +5,13 @@ import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
 const code = `
 const e = () => { throw Error('lose'); };
@@ -29,7 +31,7 @@ try {
 
 async function makeWorker() {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
 
   await vat.evaluate(`
     globalThis.handleCommand = bytes => {

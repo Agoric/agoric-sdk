@@ -1,4 +1,3 @@
-import fs from 'fs';
 import path from 'path';
 import { Fail } from '@agoric/assert';
 import { type as osType } from 'os';
@@ -11,6 +10,8 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   bundleHandler: import('./bundle-handler.js').BundleHandler,
  *   snapStore?: import('@agoric/swing-store').SnapStore,
  *   spawn: typeof import('child_process').spawn
+ *   fs: import('fs'),
+ *   tmpName: import('tmp')['tmpName'],
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
  *   overrideBundles?: import('../types-external.js').Bundle[],
@@ -21,6 +22,8 @@ export function makeStartXSnap(options) {
   // 'startXSnap' function we return
   const {
     spawn,
+    fs,
+    tmpName,
     bundleHandler, // required unless bundleIDs is empty
     snapStore,
     workerTraceRootPath,
@@ -51,6 +54,7 @@ export function makeStartXSnap(options) {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
+    fs: { ...fs, ...fs.promises, tmpName },
     spawn,
     stdout: 'inherit',
     stderr: 'inherit',
@@ -74,21 +78,30 @@ export function makeStartXSnap(options) {
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && reload) {
-      // console.log('startXSnap from', { snapshotHash });
-      return snapStore.loadSnapshot(vatID, async snapshot => {
-        const xs = doXSnap({
-          snapshot,
-          name,
-          handleCommand,
-          ...meterOpts,
-          ...xsnapOpts,
-        });
-        await xs.isReady();
-        return xs;
+      const { hash: snapshotID, snapPos } = snapStore.getSnapshotInfo(vatID);
+      // console.log('startXSnap from', { snapshotID });
+      const snapshotStream = snapStore.loadSnapshot(vatID);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const xs = await doXSnap({
+        snapshotStream,
+        // TODO
+        snapshotDescription: `${vatID}-${snapPos}-${snapshotID}`,
+        name,
+        handleCommand,
+        ...meterOpts,
+        ...xsnapOpts,
       });
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await xs.isReady();
+      return xs;
     }
     // console.log('fresh xsnap', { snapStore: snapStore });
-    const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
+    const worker = await doXSnap({
+      handleCommand,
+      name,
+      ...meterOpts,
+      ...xsnapOpts,
+    });
 
     let bundles;
     if (overrideBundles) {
