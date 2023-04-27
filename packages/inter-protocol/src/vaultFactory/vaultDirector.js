@@ -6,8 +6,7 @@ import '@agoric/governance/exported.js';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
 import { prepareExoClassKit, provideDurableMapStore } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
@@ -27,7 +26,7 @@ import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { scheduleLiquidationWakeups } from './liquidation.js';
 import {
-  makeVaultParamManager,
+  provideVaultParamManagers,
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
@@ -108,10 +107,8 @@ export const prepareVaultDirector = (
 
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
-  /**
-   * @type {MapStore<Brand, ReturnType<typeof makeVaultParamManager>>}
-   */
-  const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
+  /** a powerful object; can modify parameters */
+  const vaultParamManagers = provideVaultParamManagers(baggage, marshaller);
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
 
@@ -384,16 +381,11 @@ export const prepareVaultDirector = (
             managerId,
           );
 
-          /** a powerful object; can modify parameters */
-          const vaultParamManager = makeVaultParamManager(
-            makeStoredPublisherKit(
-              managerStorageNode,
-              marshaller,
-              'governance',
-            ),
+          vaultParamManagers.addParamManager(
+            collateralBrand,
+            managerStorageNode,
             initialParamValues,
           );
-          vaultParamManagers.init(collateralBrand, vaultParamManager);
 
           const startTimeStamp = await E(timer).getCurrentTimestamp();
 
