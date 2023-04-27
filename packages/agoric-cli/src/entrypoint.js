@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @jessie-check
 
 /* global process */
 

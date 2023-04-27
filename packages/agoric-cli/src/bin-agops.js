@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
+// @jessie-check
+
 /* eslint-disable @jessie.js/no-nested-await */
 /* global fetch, setTimeout */
 
