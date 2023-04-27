@@ -87,10 +87,13 @@
  * @template T
  */
 /**
+ * @template [V=unknown]
  * @typedef {{
- *   consume: Record<string, Promise<unknown>>,
- *   produce: Record<string, Producer<unknown>>,
+ *   consume: Record<string, Promise<V>>,
+ *   produce: Record<string, Producer<V>>,
  * }} PromiseSpace
+ */
+/**
  *
  * @typedef {{
  *   assignBundle: (ps: PropertyMaker[]) => void

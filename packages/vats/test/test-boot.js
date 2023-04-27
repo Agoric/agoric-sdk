@@ -78,7 +78,7 @@ test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t
   const { loadBundle } = t.context;
   /** @type {undefined | import('../src/types.js').BridgeHandler} */
   let handler;
-  const { produce, consume } = makePromiseSpace(t.log);
+  const { produce, consume } = makePromiseSpace({ log: t.log });
   const { admin, vatAdminState } = makeFakeVatAdmin();
   const vatPowers = vatAdminState.getVatPowers();
 

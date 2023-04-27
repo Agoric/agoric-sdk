@@ -49,7 +49,7 @@ harden(setUpZoeForTest);
  * }} LoadVat
  */
 test('connectFaucet produces payments', async t => {
-  const space = /** @type {any} */ (makePromiseSpace(t.log));
+  const space = /** @type {any} */ (makePromiseSpace({ log: t.log }));
   const { consume, produce } =
     /** @type { BootstrapPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
       space

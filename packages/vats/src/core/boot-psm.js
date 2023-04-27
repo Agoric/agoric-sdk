@@ -135,7 +135,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   mustMatch(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
-  const { produce, consume } = makePromiseSpace(log);
+  const { produce, consume } = makePromiseSpace({ log });
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
     log,
     agoricNamesReserved,
