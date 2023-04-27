@@ -12,7 +12,7 @@ RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
 [ $# -gt 0 ] && RESULTSDIR="$1"
 
 clean_slog() {
-  jq -cr 'del(.time, .monotime, .dr[2].timestamps, .memoryUsage, .heapStats, .statsTime, .compressSeconds, .rawSaveSeconds)'
+  jq -cr 'del(.time, .monotime, .dr[2].timestamps, .memoryUsage, .heapStats, .statsTime, .compressSeconds, .rawSaveSeconds, .dbSaveSeconds)'
 }
 
 "$thisdir/process-integration-swingstore-traces.sh" "$RESULTSDIR"

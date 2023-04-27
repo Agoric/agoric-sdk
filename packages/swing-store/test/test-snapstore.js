@@ -1,15 +1,13 @@
 // @ts-check
 
 import '@endo/init/debug.js';
-import fs from 'fs';
-import path from 'path';
+import { Buffer } from 'node:buffer';
 import zlib from 'zlib';
 import sqlite3 from 'better-sqlite3';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import tmp from 'tmp';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 
@@ -27,28 +25,25 @@ function makeExportLog() {
 
 function ensureTxn() {}
 
-test('build temp file; compress to cache file', async t => {
+/** @param {string} payload */
+async function* getSnapshotStream(payload) {
+  yield Buffer.from(payload);
+}
+
+test('compress to cache file; closes snapshot stream', async t => {
   const db = sqlite3(':memory:');
   const exportLog = makeExportLog();
   const store = makeSnapStore(
     db,
     ensureTxn,
     {
-      ...tmp,
-      tmpFile: tmp.file,
-      ...path,
-      ...fs,
-      ...fs.promises,
       measureSeconds: makeMeasureSeconds(() => 0),
     },
     exportLog.noteExport,
   );
-  let keepTmp = '';
-  const result = await store.saveSnapshot('fakeVatID', 47, async filePath => {
-    t.falsy(fs.existsSync(filePath));
-    fs.writeFileSync(filePath, 'abc');
-    keepTmp = filePath;
-  });
+
+  const snapshotStream = getSnapshotStream('abc');
+  const result = await store.saveSnapshot('fakeVatID', 47, snapshotStream);
   const { hash } = result;
   const expectedHash =
     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
@@ -56,7 +51,7 @@ test('build temp file; compress to cache file', async t => {
     hash: expectedHash,
     uncompressedSize: 3,
     compressedSize: 23,
-    rawSaveSeconds: 0,
+    dbSaveSeconds: 0,
     compressSeconds: 0,
   });
   const snapshotInfo = store.getSnapshotInfo('fakeVatID');
@@ -77,10 +72,8 @@ test('build temp file; compress to cache file', async t => {
     '0000000000000000000000000000000000000000000000000000000000000000';
   t.is(store.hasHash('fakeVatID', zero), false);
   t.is(store.hasHash('nonexistentVatID', hash), false);
-  t.falsy(
-    fs.existsSync(keepTmp),
-    'temp file should have been deleted after withTempName',
-  );
+  const nextResult = await snapshotStream.next();
+  t.true(nextResult.done, 'snapshot content should have been fully consumed');
 
   const sqlGetSnapshot = db.prepare(`
     SELECT compressedSnapshot
@@ -101,11 +94,6 @@ test('build temp file; compress to cache file', async t => {
 
 test('snapStore prepare / commit delete is robust', async t => {
   const io = {
-    ...tmp,
-    tmpFile: tmp.file,
-    ...path,
-    ...fs,
-    ...fs.promises,
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
@@ -116,8 +104,10 @@ test('snapStore prepare / commit delete is robust', async t => {
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const { hash } = await store.saveSnapshot('fakeVatID2', i, async fn =>
-      fs.promises.writeFile(fn, `file ${i}`),
+    const { hash } = await store.saveSnapshot(
+      'fakeVatID2',
+      i,
+      getSnapshotStream(`file ${i}`),
     );
     hashes.push(hash);
   }
@@ -134,9 +124,7 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   // Restore (re-save) between prepare and commit.
   store.deleteSnapshotByHash('fakeVatID2', hashes[3]);
-  await store.saveSnapshot('fakeVatID3', 29, async fn =>
-    fs.promises.writeFile(fn, `file 3`),
-  );
+  await store.saveSnapshot('fakeVatID3', 29, getSnapshotStream(`file 3`));
   t.true(store.hasHash('fakeVatID3', hashes[3]));
 
   store.deleteVatSnapshots('fakeVatID2');
@@ -146,8 +134,10 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const { hash } = await store.saveSnapshot('fakeVatID4', i, async fn =>
-      fs.promises.writeFile(fn, `file ${i}`),
+    const { hash } = await store.saveSnapshot(
+      'fakeVatID4',
+      i,
+      getSnapshotStream(`file ${i}`),
     );
     hashes.push(hash);
   }

@@ -8,6 +8,10 @@ Usage:
 
 /* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 import '@endo/init';
+
+import fs from 'fs';
+import { tmpName } from 'tmp';
+
 import { assert, q, Fail } from '@agoric/assert';
 import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
@@ -158,7 +162,7 @@ async function runTestScript(
     globalThis.__dirname = ${literal(dirname(testPath))};
    `;
 
-  const worker = spawnXSnap({ handleCommand, name: basename(filename) });
+  const worker = await spawnXSnap({ handleCommand, name: basename(filename) });
   try {
     for (const script of preamble) {
       await worker.evaluate(script);
@@ -315,11 +319,12 @@ export async function main(
     await avaConfig(args, {}, { readFile, glob });
 
   /** @param {Record<string, unknown>} opts */
-  const spawnXSnap = opts =>
+  const spawnXSnap = async opts =>
     xsnap({
       ...opts,
       debug,
       spawn,
+      fs: { ...fs, ...fs.promises, tmpName },
       os: osType(),
       meteringLimit: 0,
       stdout: 'inherit',

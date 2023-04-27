@@ -6,6 +6,7 @@ import '@endo/init/debug.js';
 import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
+import { tmpName } from 'tmp';
 
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 
@@ -13,7 +14,7 @@ import { xsnap } from '../src/xsnap.js';
 
 import { options, loader } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 const ld = loader(import.meta.url, fs.promises.readFile);
 
 const getBootScript = () =>
@@ -26,7 +27,7 @@ const getBootScript = () =>
  */
 async function bootWorker(name, script, savePrinted = false) {
   const opts = options(io);
-  const worker = xsnap({ ...opts, name });
+  const worker = await xsnap({ ...opts, name });
 
   const preface = savePrinted
     ? `
@@ -64,7 +65,7 @@ test('bootstrap to SES lockdown', async t => {
   const bootScript = await getBootScript();
   const opts = options(io);
   const name = 'SES lockdown worker';
-  const vat = xsnap({ ...opts, name });
+  const vat = await xsnap({ ...opts, name });
   await vat.evaluate(bootScript);
   t.deepEqual([], opts.messages);
 

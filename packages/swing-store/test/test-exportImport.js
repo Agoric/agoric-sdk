@@ -1,7 +1,7 @@
 // @ts-check
 
 import '@endo/init/debug.js';
-import fs from 'fs';
+import { Buffer } from 'node:buffer';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -85,12 +85,10 @@ function actLikeAVatRunningACrank(vat, ks, crank, doFail) {
 }
 
 async function fakeAVatSnapshot(vat, ks) {
-  await ks.snapStore.saveSnapshot(vat.vatID, vat.endPos, async filePath => {
-    fs.writeFileSync(
-      filePath,
-      `snapshot of vat ${vat.vatID} as of ${vat.endPos}`,
-    );
-  });
+  async function* getSnapshotStream() {
+    yield Buffer.from(`snapshot of vat ${vat.vatID} as of ${vat.endPos}`);
+  }
+  await ks.snapStore.saveSnapshot(vat.vatID, vat.endPos, getSnapshotStream());
   ks.transcriptStore.addItem(vat.vatID, 'save-snapshot');
   vat.endPos += 1;
   ks.transcriptStore.rolloverSpan(vat.vatID);

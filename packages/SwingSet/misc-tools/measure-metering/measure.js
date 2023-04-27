@@ -39,7 +39,7 @@ function countingPolicy() {
 }
 
 async function run() {
-  const x = xsnap({ os: os.type(), spawn: proc.spawn });
+  const x = await xsnap({ os: os.type(), spawn: proc.spawn });
   const res = await x.evaluate('4');
   const { meterType } = res.meterUsage;
   console.log(`meterType: ${meterType}`);

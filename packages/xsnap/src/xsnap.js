@@ -10,10 +10,12 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
+import { promisify } from 'util';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
+import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
 
@@ -43,33 +45,40 @@ function echoCommand(arg) {
   return arg;
 }
 
+const safeHintFromDescription = description =>
+  description.replaceAll(/[^a-zA-Z0-9_.-]/g, '-');
+
 /**
  * @param {XSnapOptions} options
  *
  * @typedef {object} XSnapOptions
  * @property {string} os
  * @property {Spawn} spawn
+ * @property {Pick<typeof import('fs/promises'), 'open' | 'stat' | 'unlink'> & Pick<typeof import('fs'), 'createReadStream'> & Pick<typeof import('tmp'), 'tmpName'>} fs
  * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
  * @property {string} [name]
  * @property {boolean} [debug]
  * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
  * @property {number} [parserBufferSize] in kB (must be an integer)
- * @property {string} [snapshot]
+ * @property {AsyncIterable<Uint8Array>} [snapshotStream]
+ * @property {string} [snapshotDescription]
  * @property {'ignore' | 'inherit'} [stdout]
  * @property {'ignore' | 'inherit'} [stderr]
  * @property {number} [meteringLimit]
  * @property {Record<string, string>} [env]
  */
-export function xsnap(options) {
+export async function xsnap(options) {
   const {
     os,
     spawn,
+    fs,
     name = '<unnamed xsnap worker>',
     handleCommand = echoCommand,
     debug = false,
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
-    snapshot = undefined,
+    snapshotStream,
+    snapshotDescription = snapshotStream && 'unknown',
     stdout = 'ignore',
     stderr = 'ignore',
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
@@ -86,6 +95,9 @@ export function xsnap(options) {
     throw Error(`xsnap does not support platform ${os}`);
   }
 
+  /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
+  const ptmpName = promisify(fs.tmpName);
+
   let bin = new URL(
     `../xsnap-native/xsnap/build/bin/${platform}/${
       debug ? 'debug' : 'release'
@@ -98,10 +110,29 @@ export function xsnap(options) {
 
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
+  /** @type {(() => Promise<void>) | undefined} */
+  let startCleanup;
+
   let args = [name];
-  if (snapshot) {
-    args.push('-r', snapshot);
-  }
+  await (snapshotStream &&
+    (async () => {
+      const tmpSnapPath = await ptmpName({
+        template: `load-snapshot-${safeHintFromDescription(
+          snapshotDescription,
+        )}-XXXXXX.xss`,
+      });
+
+      startCleanup = async () => fs.unlink(tmpSnapPath);
+
+      const tmpSnap = await fs.open(tmpSnapPath, 'w');
+      await tmpSnap.writeFile(
+        // @ts-expect-error incorrect typings, does support AsyncIterable
+        snapshotStream,
+      );
+      await tmpSnap.close();
+
+      args.push('-r', tmpSnapPath);
+    })());
   if (meteringLimit) {
     args.push('-l', `${meteringLimit}`);
   }
@@ -142,6 +173,16 @@ export function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
+  if (startCleanup) {
+    vatExit.promise.catch(noop).then(() => {
+      if (startCleanup) {
+        const cleanup = startCleanup;
+        startCleanup = undefined;
+        return cleanup();
+      }
+    });
+  }
+
   const writer = xsnapProcess.stdio[3];
   const reader = xsnapProcess.stdio[4];
 
@@ -169,6 +210,12 @@ export function xsnap(options) {
   async function runToIdle() {
     for await (const _ of forever) {
       const iteration = await messagesFromXsnap.next(undefined);
+      if (startCleanup) {
+        const cleanup = startCleanup;
+        startCleanup = undefined;
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await cleanup();
+      }
       if (iteration.done) {
         xsnapProcess.kill();
         return vatCancelled;
@@ -293,16 +340,33 @@ export function xsnap(options) {
   }
 
   /**
-   * @param {string} file
-   * @returns {Promise<void>}
+   * @param {string} [description]
+   * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
-  async function writeSnapshot(file) {
-    const result = baton.then(async () => {
-      await messagesToXsnap.next(encoder.encode(`w${file}`));
-      await runToIdle();
+  async function* makeSnapshot(description = 'unknown') {
+    // TODO: Refactor to use tmpFile rather than tmpName.
+    const tmpSnapPath = await ptmpName({
+      template: `make-snapshot-${safeHintFromDescription(
+        description,
+      )}-XXXXXX.xss`,
     });
-    baton = result.then(noop, noop);
-    return racePromises([vatExit.promise, baton]);
+
+    try {
+      const result = baton.then(async () => {
+        await messagesToXsnap.next(encoder.encode(`w${tmpSnapPath}`));
+        await runToIdle();
+      });
+      baton = result.then(noop, noop);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await racePromises([vatExit.promise, baton]);
+      const snapReader = fs.createReadStream(tmpSnapPath);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await fsStreamReady(snapReader);
+      yield* snapReader;
+    } finally {
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await fs.unlink(tmpSnapPath);
+    }
   }
 
   /**
@@ -343,6 +407,6 @@ export function xsnap(options) {
     evaluate,
     execute,
     import: importModule,
-    snapshot: writeSnapshot,
+    makeSnapshot,
   });
 }

@@ -5,16 +5,18 @@ import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import * as proc from 'child_process';
+import fs from 'fs';
 import * as os from 'os';
+import { tmpName } from 'tmp';
 import { encodeBase64 } from '@endo/base64';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
-const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
 test('reject odd regex range', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   await vat
     .evaluate(
       `const FILENAME_FILTER = /^((?:.*[( ])?)[:/\\w-_]*\\/(packages\\/.+)$/;`,
@@ -30,7 +32,7 @@ test('reject odd regex range', async t => {
 
 test('accept std regex range', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   await vat.evaluate(
     `const FILENAME_FILTER = /^((?:.*[( ])?)[:/\\w_-]*\\/(packages\\/.+)$/;`,
   );
@@ -40,7 +42,7 @@ test('accept std regex range', async t => {
 
 test('simple TextEncoder / TextDecoder are available', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -54,7 +56,7 @@ test('simple TextEncoder / TextDecoder are available', async t => {
 
 test('Base64.encode', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -72,7 +74,7 @@ test('Base64.encode', async t => {
 
 test('Base64.encode degenerate input case', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -90,7 +92,7 @@ test('Base64.encode degenerate input case', async t => {
 
 test('Base64.decode', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const decoder = new TextDecoder();
@@ -111,7 +113,7 @@ test('Base64.decode', async t => {
 
 test('bigint map key', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -124,7 +126,7 @@ test('bigint map key', async t => {
 
 test('bigint toString', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -137,7 +139,7 @@ test('bigint toString', async t => {
 
 test('keyword in destructuring', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -150,7 +152,7 @@ test('keyword in destructuring', async t => {
 
 test('round-trip byte sequences via JSON including string literals', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
 
   // Appease typescript.
@@ -201,7 +203,7 @@ test('round-trip byte sequences via JSON including string literals', async t => 
 
 test('Text encode / decode edge cases with CESU-8', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
 
   const send = _val => /* dummy */ {}; // for static checker
@@ -248,7 +250,7 @@ test('Text encode / decode edge cases with CESU-8', async t => {
 
 test('String.prototype.localeCompare', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   await vat.evaluate(`
   const encoder = new TextEncoder();
   const send = it => issueCommand(encoder.encode(JSON.stringify(it)).buffer);
