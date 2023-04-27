@@ -11,6 +11,7 @@ import {
   provide,
   prepareExoClassKit,
 } from '@agoric/vat-data';
+import { FeeMintAccessShape } from '../typeGuards.js';
 
 const { Fail } = assert;
 
@@ -47,7 +48,7 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
 
   const FeeMintIKit = harden({
     feeMint: M.interface('FeeMint', {
-      getFeeIssuerKit: M.call(M.remotable('FeeMintAccess')).returns(M.record()),
+      getFeeIssuerKit: M.call(FeeMintAccessShape).returns(M.record()),
       getFeeIssuer: M.call().returns(IssuerShape),
       getFeeBrand: M.call().returns(BrandShape),
     }),
