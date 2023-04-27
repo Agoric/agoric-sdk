@@ -133,6 +133,7 @@ export const prepareVaultDirector = (
       rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
     });
   };
+  const updateMetrics = () => E(metricsKit.recorderP).write(sampleMetrics());
 
   const updateShortfallReporter = async () => {
     const oldInvitation = baggage.has(shortfallInvitationKey)
@@ -209,7 +210,7 @@ export const prepareVaultDirector = (
         debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
         throw e;
       }
-      void E(metricsKit.recorderP).write(sampleMetrics());
+      void updateMetrics();
     },
     getShortfallReporter: async () => {
       await updateShortfallReporter();
@@ -289,7 +290,6 @@ export const prepareVaultDirector = (
           M.promise(),
         ),
         makeCollectFeesInvitation: M.call().returns(M.promise()),
-        updateMetrics: M.call().returns(M.promise()),
         getRewardAllocation: M.call().returns({ Minted: AmountShape }),
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
@@ -364,7 +364,6 @@ export const prepareVaultDirector = (
           initialParamValues,
         ) {
           trace('addVaultType', collateralKeyword, initialParamValues);
-          const { facets } = this;
           mustMatch(collateralIssuer, M.remotable(), 'collateralIssuer');
           assertKeywordName(collateralKeyword);
           mustMatch(
@@ -402,9 +401,6 @@ export const prepareVaultDirector = (
           const brandName = await E(collateralBrand).getAllegedName();
           const collateralUnit = await unitAmount(collateralBrand);
 
-          // FIXME need to be able to restore these singletons.
-          // The whole "addChild" thing needs to go away. Start over with managing a list of singletons, retaining the precious arguments used to make them
-
           const result = vaultManagers.makeSingleton(brandName, {
             debtMint,
             collateralBrand,
@@ -417,7 +413,7 @@ export const prepareVaultDirector = (
           const { self: vm } = result;
           vm || Fail`no vault`;
           collateralManagers.init(collateralBrand, managerIndex);
-          void facets.machine.updateMetrics();
+          void updateMetrics();
           return vm;
         },
         makeCollectFeesInvitation() {
@@ -427,9 +423,6 @@ export const prepareVaultDirector = (
             debtMint.getIssuerRecord().brand,
             'Minted',
           );
-        },
-        updateMetrics() {
-          return E(metricsKit.recorderP).write(sampleMetrics());
         },
         // XXX accessors for tests
         getRewardAllocation() {
