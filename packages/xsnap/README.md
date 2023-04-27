@@ -6,7 +6,7 @@ worker, using Moddable’s XS JavaScript engine.
 Xsnap provides a Node.js API for controlling Xsnap workers.
 
 ```js
-const worker = xsnap();
+const worker = await xsnap();
 await worker.evaluate(`
   // Incrementer, running on XS.
   function handleCommand(message) {
@@ -22,7 +22,9 @@ Some time later, possibly on a different computer…
 
 ```js
 const decoder = new TextDecoder();
-const worker = xsnap({ snapshot: 'bootstrap.xss' });
+const worker = await xsnap({ 
+  snapshotStream: fs.createFileStream('bootstrap.xss'),
+});
 const response = await worker.issueCommand('1');
 console.log(decoder.decode(response)); // 2
 await worker.close();

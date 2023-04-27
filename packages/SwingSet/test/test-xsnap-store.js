@@ -34,7 +34,7 @@ const snapSize = {
  * @param {string} script to execute
  */
 async function bootWorker(name, handleCommand, script) {
-  const worker = xsnap({
+  const worker = await xsnap({
     os: osType(),
     fs: { ...fs, ...fs.promises, tmpName },
     spawn,
@@ -107,17 +107,16 @@ test('create SES worker, save, restore, resume', async t => {
   await vat0.evaluate('globalThis.x = harden({a: 1})');
   await store.saveSnapshot('vat0', 1, vat0.makeSnapshot());
 
-  const worker = await store.loadSnapshot('vat0', async snapshot => {
-    const xs = xsnap({
-      name: 'ses-resume',
-      snapshot,
-      os: osType(),
-      spawn,
-      fs: { ...fs, ...fs.promises, tmpName },
-    });
-    await xs.isReady();
-    return xs;
+  const snapshotStream = store.loadSnapshot('vat0');
+
+  const worker = await xsnap({
+    name: 'ses-resume',
+    snapshotStream,
+    os: osType(),
+    spawn,
+    fs: { ...fs, ...fs.promises, tmpName },
   });
+  await worker.isReady();
   t.teardown(() => worker.close());
   await worker.evaluate('x.a');
   t.pass();

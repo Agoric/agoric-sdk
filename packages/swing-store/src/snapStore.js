@@ -1,11 +1,10 @@
 // @ts-check
 import { createHash } from 'crypto';
-import { finished as finishedCallback, Readable } from 'stream';
+import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@agoric/assert';
 import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
-import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { buffer } from './util.js';
 
 /**
@@ -29,7 +28,7 @@ import { buffer } from './util.js';
  * @typedef { import('./swingStore').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
- *   loadSnapshot: <T>(vatID: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
+ *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
  *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterableIterator<Uint8Array>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
  *   deleteVatSnapshots: (vatID: string) => void,
@@ -54,17 +53,11 @@ import { buffer } from './util.js';
 
 const finished = promisify(finishedCallback);
 
-const noPath = /** @type {import('fs').PathLike} */ (
-  /** @type {unknown} */ (undefined)
-);
-
 /**
  * @param {*} db
  * @param {() => void} ensureTxn
  * @param {{
- *   createWriteStream: typeof import('fs').createWriteStream,
  *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
- *   tmpFile: typeof import('tmp').file,
  * }} io
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
@@ -74,7 +67,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
 export function makeSnapStore(
   db,
   ensureTxn,
-  { createWriteStream, measureSeconds, tmpFile },
+  { measureSeconds },
   noteExport = () => {},
   { keepSnapshots = false } = {},
 ) {
@@ -92,19 +85,6 @@ export function makeSnapStore(
       CHECK(compressedSnapshot is not null or inUse is null)
     )
   `);
-
-  // Manually promisify `tmpFile` to preserve its post-`error` callback arguments.
-  const ptmpFile = (options = {}) => {
-    return new Promise((resolve, reject) => {
-      tmpFile(options, (err, path, fd, cleanupCallback) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ path, fd, cleanup: cleanupCallback });
-        }
-      });
-    });
-  };
 
   const sqlDeleteAllUnusedSnapshots = db.prepare(`
     DELETE FROM snapshots
@@ -311,52 +291,30 @@ export function makeSnapStore(
    * Loads the most recent snapshot for a given vat.
    *
    * @param {string} vatID
-   * @param {(filePath: string) => Promise<T>} loadRaw
-   * @template T
+   * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
-  async function loadSnapshot(vatID, loadRaw) {
-    const cleanup = [];
-    return aggregateTryFinally(
-      async () => {
-        const loadInfo = sqlLoadSnapshot.get(vatID);
-        loadInfo || Fail`no snapshot available for vat ${q(vatID)}`;
-        const { hash, compressedSnapshot } = loadInfo;
-        compressedSnapshot || Fail`no snapshot available for vat ${q(vatID)}`;
-        const gzReader = Readable.from(compressedSnapshot);
-        cleanup.push(() => gzReader.destroy());
-        const snapReader = gzReader.pipe(createGunzip());
+  async function* loadSnapshot(vatID) {
+    const loadInfo = sqlLoadSnapshot.get(vatID);
+    loadInfo || Fail`no snapshot available for vat ${q(vatID)}`;
+    const { hash: snapshotID, compressedSnapshot } = loadInfo;
+    compressedSnapshot || Fail`no snapshot available for vat ${q(vatID)}`;
+    const gzReader = Readable.from(compressedSnapshot);
+    const snapReader = gzReader.pipe(createGunzip());
+    const hashStream = createHash('sha256');
+    const output = new PassThrough();
+    snapReader.pipe(hashStream);
+    snapReader.pipe(output);
 
-        const {
-          path,
-          fd,
-          cleanup: tmpCleanup,
-        } = await ptmpFile({ template: `load-${hash}-XXXXXX.xss` });
-        cleanup.push(tmpCleanup);
-        const snapWriter = createWriteStream(noPath, {
-          fd,
-          autoClose: false,
-        });
-        cleanup.push(() => snapWriter.close());
-
-        await fsStreamReady(snapWriter);
-        const hashStream = createHash('sha256');
-        snapReader.pipe(hashStream);
-        snapReader.pipe(snapWriter);
-
-        await Promise.all([finished(gzReader), finished(snapWriter)]);
-        const h = hashStream.digest('hex');
-        h === hash || Fail`actual hash ${q(h)} !== expected ${q(hash)}`;
-        const snapWriterClose = cleanup.pop();
-        snapWriterClose();
-
-        return loadRaw(path);
-      },
-      async () => {
-        await PromiseAllOrErrors(
-          cleanup.reverse().map(fn => Promise.resolve().then(() => fn())),
-        );
-      },
-    );
+    try {
+      yield* output;
+    } finally {
+      gzReader.destroy();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await finished(gzReader);
+      const hash = hashStream.digest('hex');
+      hash === snapshotID ||
+        Fail`actual hash ${q(hash)} !== expected ${q(snapshotID)}`;
+    }
   }
 
   const sqlDeleteVatSnapshots = db.prepare(`

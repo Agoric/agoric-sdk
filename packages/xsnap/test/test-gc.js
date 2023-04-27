@@ -47,7 +47,7 @@ async function provokeGC(myGC) {
 
 test(`can provoke gc on xsnap`, async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   const code = `
 ${makeGcAndFinalize}
 ${makeVictim}

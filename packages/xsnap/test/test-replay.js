@@ -36,7 +36,7 @@ test('record: evaluate and issueCommand', async t => {
   const files = new Map();
   const writeFileSync = (fn, bs) => files.set(fn, bs.slice());
 
-  const vat = recordXSnap(opts, '/xsnap-tests/', { writeFileSync });
+  const vat = await recordXSnap(opts, '/xsnap-tests/', { writeFileSync });
 
   await vat.evaluate(
     `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,

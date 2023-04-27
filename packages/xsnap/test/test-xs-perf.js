@@ -21,7 +21,7 @@ const shape = obj => fromEntries(entries(obj).map(([p, v]) => [p, typeof v]));
 
 test('meter details', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
   let m = new Map();
@@ -90,7 +90,7 @@ test.skip('meter timestamps', async t => {
     return result;
   }
   const opts = { ...options(io), handleCommand };
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   addTimestamp('kern send delivery');
   const result = await vat.evaluate(
@@ -142,9 +142,9 @@ test.skip('meter timestamps', async t => {
 
 test('isReady does not compute / allocate', async t => {
   const opts = options(io);
-  const vat1 = xsnap(opts);
+  const vat1 = await xsnap(opts);
   t.teardown(() => vat1.terminate());
-  const vat2 = xsnap(opts);
+  const vat2 = await xsnap(opts);
   t.teardown(() => vat2.terminate());
 
   await vat1.evaluate('null');
@@ -163,7 +163,7 @@ test('isReady does not compute / allocate', async t => {
 
 test('metering regex - REDOS', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   // Java Classname Evil Regex
   // https://en.wikipedia.org/wiki/ReDoS
@@ -177,7 +177,7 @@ test('metering regex - REDOS', async t => {
 
 test('meter details are still available with no limit', async t => {
   const opts = options(io);
-  const vat = xsnap({ ...opts, meteringLimit: 0 });
+  const vat = await xsnap({ ...opts, meteringLimit: 0 });
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
   for (ix = 0; ix < 200; ix++) {
@@ -195,7 +195,7 @@ test('meter details are still available with no limit', async t => {
 
 test('high resolution timer', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
       const send = it => issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
@@ -210,7 +210,7 @@ test('high resolution timer', async t => {
 
 test('metering can be switched off / on at run-time', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   t.teardown(() => vat.terminate());
   const {
     meterUsage: { compute: noUnMeteredCompute },
@@ -244,7 +244,7 @@ test('metering can be switched off / on at run-time', async t => {
 
 test('metering switch - start compartment only', async t => {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
   await vat.evaluate(`
     const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     resetMeter(0, 0);
@@ -301,7 +301,7 @@ function dataStructurePerformance(logn) {
 // performance character of XS collections regresses.
 test.skip('Array, Map, Set growth is O(log(n))', async t => {
   const opts = options(io);
-  const vat = xsnap({ ...opts, meteringLimit: 0 });
+  const vat = await xsnap({ ...opts, meteringLimit: 0 });
   await vat.evaluate(
     `globalThis.dataStructurePerformance = (${dataStructurePerformance})`,
   );

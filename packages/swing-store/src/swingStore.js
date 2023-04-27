@@ -3,7 +3,6 @@
 import fs from 'fs';
 import path from 'path';
 import { performance } from 'perf_hooks';
-import { file as tmpFile } from 'tmp';
 
 import sqlite3 from 'better-sqlite3';
 
@@ -34,9 +33,7 @@ export const buffer = async inStream => {
 
 export function makeSnapStoreIO() {
   return {
-    createWriteStream: fs.createWriteStream,
     measureSeconds: makeMeasureSeconds(performance.now),
-    tmpFile,
   };
 }
 

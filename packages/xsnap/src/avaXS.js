@@ -162,7 +162,7 @@ async function runTestScript(
     globalThis.__dirname = ${literal(dirname(testPath))};
    `;
 
-  const worker = spawnXSnap({ handleCommand, name: basename(filename) });
+  const worker = await spawnXSnap({ handleCommand, name: basename(filename) });
   try {
     for (const script of preamble) {
       await worker.evaluate(script);
@@ -319,7 +319,7 @@ export async function main(
     await avaConfig(args, {}, { readFile, glob });
 
   /** @param {Record<string, unknown>} opts */
-  const spawnXSnap = opts =>
+  const spawnXSnap = async opts =>
     xsnap({
       ...opts,
       debug,

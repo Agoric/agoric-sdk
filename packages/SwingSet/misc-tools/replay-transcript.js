@@ -14,7 +14,7 @@ import { createHash } from 'crypto';
 import { Readable, finished as finishedCallback } from 'stream';
 import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { file as tmpFile, tmpName, dirSync as tmpDirSync } from 'tmp';
+import { tmpName, dirSync as tmpDirSync } from 'tmp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import sqlite3 from 'better-sqlite3';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -146,9 +146,7 @@ const measureSeconds = makeMeasureSeconds(performance.now.bind(performance));
 
 function makeSnapStoreIO() {
   return {
-    createWriteStream: fs.createWriteStream,
     measureSeconds,
-    tmpFile,
   };
 }
 
@@ -239,9 +237,9 @@ async function replay(transcriptFile) {
         // would be included in for the real snapstore
         return { hash, compressSeconds: saveSeconds };
       },
-      async loadSnapshot(_vatID, loadRaw) {
+      async *loadSnapshot(_vatID) {
         const snapFile = `${vatID}-${loadSnapshotID}.xss`;
-        return loadRaw(snapFile);
+        yield* fs.createReadStream(snapFile);
       },
     });
   } else {

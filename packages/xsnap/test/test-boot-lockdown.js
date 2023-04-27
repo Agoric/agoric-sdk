@@ -27,7 +27,7 @@ const getBootScript = () =>
  */
 async function bootWorker(name, script, savePrinted = false) {
   const opts = options(io);
-  const worker = xsnap({ ...opts, name });
+  const worker = await xsnap({ ...opts, name });
 
   const preface = savePrinted
     ? `
@@ -65,7 +65,7 @@ test('bootstrap to SES lockdown', async t => {
   const bootScript = await getBootScript();
   const opts = options(io);
   const name = 'SES lockdown worker';
-  const vat = xsnap({ ...opts, name });
+  const vat = await xsnap({ ...opts, name });
   await vat.evaluate(bootScript);
   t.deepEqual([], opts.messages);
 

@@ -1,16 +1,13 @@
 // @ts-check
 
 import '@endo/init/debug.js';
-import fs from 'fs';
 import { Buffer } from 'node:buffer';
-import path from 'path';
 import zlib from 'zlib';
 import sqlite3 from 'better-sqlite3';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import tmp from 'tmp';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 
@@ -40,11 +37,6 @@ test('compress to cache file; closes snapshot stream', async t => {
     db,
     ensureTxn,
     {
-      ...tmp,
-      tmpFile: tmp.file,
-      ...path,
-      ...fs,
-      ...fs.promises,
       measureSeconds: makeMeasureSeconds(() => 0),
     },
     exportLog.noteExport,
@@ -102,8 +94,6 @@ test('compress to cache file; closes snapshot stream', async t => {
 
 test('snapStore prepare / commit delete is robust', async t => {
   const io = {
-    tmpFile: tmp.file,
-    createWriteStream: fs.createWriteStream,
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');

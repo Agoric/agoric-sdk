@@ -11,6 +11,7 @@
 import childProcessPowers from 'child_process';
 import osPowers from 'os';
 import fsPowers from 'fs';
+import { Readable } from 'stream';
 import { tmpName as tmpNamePower } from 'tmp';
 import { makeQueue } from '@endo/stream';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
@@ -21,6 +22,10 @@ const encoder = new TextEncoder();
 
 /** @param {number} n */
 const pad5 = n => `${n}`.padStart(5, '0');
+
+/** @param {string | undefined} description */
+const filenameFromDescription = description =>
+  `${(description || 'unknown').replaceAll(/[^a-zA-Z0-9_.-]/g, '-')}.xss`;
 
 /**
  * @param {string} path
@@ -86,7 +91,7 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
  * @typedef {ReturnType <typeof import('./xsnap.js').xsnap>} XSnap
  * @typedef { import('./xsnap.js').XSnapOptions } XSnapOptions
  */
-export function recordXSnap(options, folderPath, { writeFileSync }) {
+export async function recordXSnap(options, folderPath, { writeFileSync }) {
   const folder = makeSyncStorage(folderPath, { writeFileSync });
 
   let ix = 0;
@@ -117,7 +122,8 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
     name = '_replay_',
     debug = false,
     parserBufferSize = undefined,
-    snapshot = undefined,
+    snapshotStream,
+    snapshotDescription,
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
   } = options;
   nextFile('options', 'json').putText(
@@ -126,12 +132,12 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
       name,
       debug,
       parserBufferSize,
-      snapshot,
+      snapshot: snapshotStream && filenameFromDescription(snapshotDescription),
       meteringLimit,
     }),
   );
 
-  const it = xsnap({ ...options, handleCommand });
+  const it = await xsnap({ ...options, handleCommand });
 
   return freeze({
     name: it.name,
@@ -161,9 +167,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
       throw Error('recording: import not supported');
     },
     makeSnapshot: async function* makeSnapshot(description) {
-      nextFile('snapshot').putText(
-        (description || 'unknown').replaceAll(/[^a-zA-Z0-9_.-]/g, '-'),
-      );
+      nextFile('snapshot').putText(filenameFromDescription(description));
       yield* it.makeSnapshot(description);
     },
   });
@@ -192,18 +196,21 @@ export async function replayXSnap(
   }
 
   /** @param {string} folder */
-  function start(folder) {
+  async function start(folder) {
     const rd = makeSyncAccess(folder, { readdirSync, readFileSync });
     const [optionsFn] = rd.readdir();
     const storedOpts = JSON.parse(rd.file(optionsFn).getText());
     console.log(folder, optionsFn, ':', storedOpts);
     const { os } = opts; // override stored os
-    return xsnap({ ...opts, ...storedOpts, os, handleCommand });
+    const { snapshot: snapshotFile } = storedOpts;
+    const snapshot =
+      snapshotFile && Readable.from(rd.file(snapshotFile).getData());
+    return xsnap({ ...opts, ...storedOpts, os, snapshot, handleCommand });
   }
 
   let running;
   const done = [];
-  const it = start(folders[0]);
+  const it = await start(folders[0]);
 
   /**
    * @param {ReturnType<typeof makeSyncAccess>} rd

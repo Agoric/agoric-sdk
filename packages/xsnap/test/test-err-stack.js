@@ -31,7 +31,7 @@ try {
 
 async function makeWorker() {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
 
   await vat.evaluate(`
     globalThis.handleCommand = bytes => {

@@ -60,7 +60,7 @@ const testCases = [
 
 async function makeWorker() {
   const opts = options(io);
-  const vat = xsnap(opts);
+  const vat = await xsnap(opts);
 
   const boot = await getBootScript();
 

@@ -45,6 +45,9 @@ function echoCommand(arg) {
   return arg;
 }
 
+const safeHintFromDescription = description =>
+  description.replaceAll(/[^a-zA-Z0-9_.-]/g, '-');
+
 /**
  * @param {XSnapOptions} options
  *
@@ -57,13 +60,14 @@ function echoCommand(arg) {
  * @property {boolean} [debug]
  * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
  * @property {number} [parserBufferSize] in kB (must be an integer)
- * @property {string} [snapshot]
+ * @property {AsyncIterable<Uint8Array>} [snapshotStream]
+ * @property {string} [snapshotDescription]
  * @property {'ignore' | 'inherit'} [stdout]
  * @property {'ignore' | 'inherit'} [stderr]
  * @property {number} [meteringLimit]
  * @property {Record<string, string>} [env]
  */
-export function xsnap(options) {
+export async function xsnap(options) {
   const {
     os,
     spawn,
@@ -73,7 +77,8 @@ export function xsnap(options) {
     debug = false,
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
-    snapshot = undefined,
+    snapshotStream,
+    snapshotDescription = snapshotStream && 'unknown',
     stdout = 'ignore',
     stderr = 'ignore',
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
@@ -105,10 +110,29 @@ export function xsnap(options) {
 
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
+  /** @type {(() => Promise<void>) | undefined} */
+  let startCleanup;
+
   let args = [name];
-  if (snapshot) {
-    args.push('-r', snapshot);
-  }
+  await (snapshotStream &&
+    (async () => {
+      const tmpSnapPath = await ptmpName({
+        template: `load-snapshot-${safeHintFromDescription(
+          snapshotDescription,
+        )}-XXXXXX.xss`,
+      });
+
+      startCleanup = async () => fs.unlink(tmpSnapPath);
+
+      const tmpSnap = await fs.open(tmpSnapPath, 'w');
+      await tmpSnap.writeFile(
+        // @ts-expect-error incorrect typings, does support AsyncIterable
+        snapshotStream,
+      );
+      await tmpSnap.close();
+
+      args.push('-r', tmpSnapPath);
+    })());
   if (meteringLimit) {
     args.push('-l', `${meteringLimit}`);
   }
@@ -149,6 +173,16 @@ export function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
+  if (startCleanup) {
+    vatExit.promise.catch(noop).then(() => {
+      if (startCleanup) {
+        const cleanup = startCleanup;
+        startCleanup = undefined;
+        return cleanup();
+      }
+    });
+  }
+
   const writer = xsnapProcess.stdio[3];
   const reader = xsnapProcess.stdio[4];
 
@@ -176,6 +210,12 @@ export function xsnap(options) {
   async function runToIdle() {
     for await (const _ of forever) {
       const iteration = await messagesFromXsnap.next(undefined);
+      if (startCleanup) {
+        const cleanup = startCleanup;
+        startCleanup = undefined;
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await cleanup();
+      }
       if (iteration.done) {
         xsnapProcess.kill();
         return vatCancelled;
@@ -306,9 +346,8 @@ export function xsnap(options) {
   async function* makeSnapshot(description = 'unknown') {
     // TODO: Refactor to use tmpFile rather than tmpName.
     const tmpSnapPath = await ptmpName({
-      template: `make-snapshot-${description.replaceAll(
-        /[^a-zA-Z0-9_.-]/g,
-        '-',
+      template: `make-snapshot-${safeHintFromDescription(
+        description,
       )}-XXXXXX.xss`,
     });
 

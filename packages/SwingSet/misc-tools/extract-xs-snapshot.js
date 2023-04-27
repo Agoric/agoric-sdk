@@ -51,11 +51,8 @@ if (!vatIDToExtract) {
 } else {
   const info = snapStore.getSnapshotInfo(vatIDToExtract);
   const { snapPos, hash } = info;
-  const write = async tmpFilePath => {
-    const snapshot = fs.readFileSync(tmpFilePath);
-    const fn = `${vatIDToExtract}-${snapPos}-${hash}.xss`;
-    fs.writeFileSync(fn, snapshot);
-    console.log(`wrote snapshot to ${fn}`);
-  };
-  snapStore.loadSnapshot(vatIDToExtract, write);
+  const snapshot = snapStore.loadSnapshot(vatIDToExtract);
+  const fn = `${vatIDToExtract}-${snapPos}-${hash}.xss`;
+  await fs.promises.writeFile(fn, snapshot);
+  console.log(`wrote snapshot to ${fn}`);
 }

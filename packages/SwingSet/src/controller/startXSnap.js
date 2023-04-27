@@ -78,21 +78,30 @@ export function makeStartXSnap(options) {
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && reload) {
-      // console.log('startXSnap from', { snapshotHash });
-      return snapStore.loadSnapshot(vatID, async snapshot => {
-        const xs = doXSnap({
-          snapshot,
-          name,
-          handleCommand,
-          ...meterOpts,
-          ...xsnapOpts,
-        });
-        await xs.isReady();
-        return xs;
+      const { hash: snapshotID, snapPos } = snapStore.getSnapshotInfo(vatID);
+      // console.log('startXSnap from', { snapshotID });
+      const snapshotStream = snapStore.loadSnapshot(vatID);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const xs = await doXSnap({
+        snapshotStream,
+        // TODO
+        snapshotDescription: `${vatID}-${snapPos}-${snapshotID}`,
+        name,
+        handleCommand,
+        ...meterOpts,
+        ...xsnapOpts,
       });
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await xs.isReady();
+      return xs;
     }
     // console.log('fresh xsnap', { snapStore: snapStore });
-    const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
+    const worker = await doXSnap({
+      handleCommand,
+      name,
+      ...meterOpts,
+      ...xsnapOpts,
+    });
 
     let bundles;
     if (overrideBundles) {
