@@ -6,6 +6,7 @@ import '../../src/vaultFactory/types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
@@ -16,12 +17,16 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-import { E } from '@endo/eventual-send';
+import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
+
+import { E, Far } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeTracer } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
@@ -29,6 +34,8 @@ import {
   subscriptionKey,
   withAmountUtils,
 } from '../supports.js';
+import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
+import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -98,21 +105,27 @@ const makeTestContext = async () => {
   const minted = withAmountUtils(mintedKit);
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
-  const committeeInstall = await E(zoe).install(committeeBundle);
-  const psmInstall = await E(zoe).install(psmBundle);
-  const centralSupply = await E(zoe).install(centralSupplyBundle);
+  const installs = {
+    contractGovernor: await E(zoe).install(contractGovernorBundle),
+    committeeInstall: await E(zoe).install(committeeBundle),
+    psm: await E(zoe).install(psmBundle),
+    centralSupply: await E(zoe).install(centralSupplyBundle),
+    mintHolder: await E(zoe).install(mintHolderBundle),
+  };
 
-  const marshaller = makeBoard().getReadonlyMarshaller();
+  const board = makeBoard();
+  const marshaller = board.getReadonlyMarshaller();
 
+  const chainStorage = makeMockChainStorageRoot();
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
-    committeeInstall,
+    installs.committeeInstall,
     harden({}),
     {
       committeeName: 'Demos',
       committeeSize: 1,
     },
     {
-      storageNode: makeMockChainStorageRoot().makeChildNode('thisCommittee'),
+      storageNode: chainStorage.makeChildNode('thisCommittee'),
       marshaller,
     },
   );
@@ -126,10 +139,13 @@ const makeTestContext = async () => {
     bundles: { psmBundle },
     zoe: await zoe,
     feeMintAccess,
+    economicCommitteeCreatorFacet: committeeCreator,
     initialPoserInvitation,
+    chainStorage,
     minted,
     anchor,
-    installs: { committeeInstall, psmInstall, centralSupply },
+    installs,
+    board,
     marshaller,
     terms: {
       anchorBrand: anchor.brand,
@@ -168,7 +184,7 @@ async function makePsmDriver(t, customTerms) {
     feeMintAccess,
     initialPoserInvitation,
     terms,
-    installs: { psmInstall },
+    installs: { psm: psmInstall },
     anchor,
   } = t.context;
 
@@ -699,4 +715,177 @@ test('extra give wantMintedInvitation', async t => {
         /"wantMinted" proposal: .* - Must not have unexpected properties: \["Extra"\]/,
     },
   );
+});
+
+// XXX copied (with minor tweak) from packages/inter-protocol/test/test-gov-collateral.js
+const makeMockBankManager = t => {
+  /** @type {BankManager} */
+  const bankManager = Far('mock BankManager', {
+    getAssetSubscription: () => assert.fail('not impl'),
+    getModuleAccountAddress: () => assert.fail('not impl'),
+    getRewardDistributorDepositFacet: () =>
+      Far('depositFacet', {
+        receive: () => /** @type {any} */ (null),
+      }),
+    addAsset: async (denom, keyword, proposedName, kit) => {
+      t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
+      t.truthy(kit.mint);
+    },
+    getBankForAddress: () => assert.fail('not impl'),
+  });
+  return bankManager;
+};
+
+test('restore PSM: startPSM with previous metrics, params', async t => {
+  /** @type { import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers } */
+  // @ts-expect-error mock
+  const { produce, consume } = makePromiseSpace();
+  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { zoe } = t.context;
+
+  // Prep bootstrap space
+  {
+    const {
+      installs,
+      board,
+      minted,
+      feeMintAccess,
+      economicCommitteeCreatorFacet,
+      chainStorage,
+    } = t.context;
+
+    const provisionPoolStartResult = harden({
+      creatorFacet: {
+        initPSM: (brand, psm) => t.log('initPSM', { brand, psm }),
+      },
+    });
+
+    const econCharterKit = harden({
+      creatorFacet: {
+        addInstance: (psm, creatorFacet, instance) =>
+          t.log('addInstance', { psm, creatorFacet, instance }),
+      },
+    });
+
+    for (const [name, value] of Object.entries({
+      agoricNamesAdmin,
+      board,
+      chainStorage,
+      zoe,
+      feeMintAccess,
+      economicCommitteeCreatorFacet,
+      econCharterKit,
+      provisionPoolStartResult,
+      bankManager: makeMockBankManager(t),
+      chainTimerService: null, // not used in this test
+    })) {
+      produce[name].resolve(value);
+    }
+
+    for (const [name, installation] of Object.entries(installs)) {
+      spaces.installation.produce[name].resolve(installation);
+    }
+
+    spaces.brand.produce[Stable.symbol].resolve(minted.brand);
+  }
+
+  const powers = {
+    vatParameters: { chainStorageEntries, anchorAssets },
+    produce,
+    consume,
+    ...spaces,
+  };
+
+  // Run code under test
+  await Promise.all([
+    ...anchorAssets.map(anchorOptions =>
+      makeAnchorAsset(powers, {
+        options: { anchorOptions },
+      }),
+    ),
+    ...anchorAssets.map(anchorOptions =>
+      startPSM(powers, {
+        options: { anchorOptions },
+      }),
+    ),
+  ]);
+
+  // Check results: USDC_axl metrics, params
+  const stableIssuer = E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
+  {
+    const anchorBrand = await agoricNames.lookup('brand', 'USDC_axl');
+    const expected = {
+      metrics: {
+        anchorPoolBalance: { brand: anchorBrand, value: 487_464_281_410n },
+        feePoolBalance: { brand: stableBrand, value: 0n },
+        mintedPoolBalance: { brand: stableBrand, value: 487_464_281_410n },
+        totalAnchorProvided: { brand: anchorBrand, value: 4_327_825_824_427n },
+        totalMintedProvided: { brand: stableBrand, value: 4_815_290_105_837n },
+      },
+      params: {
+        GiveMintedFee: {
+          type: 'ratio',
+          value: {
+            numerator: { brand: stableBrand, value: 0n },
+            denominator: { brand: stableBrand, value: 10_000n },
+          },
+        },
+        MintLimit: {
+          type: 'amount',
+          value: { brand: stableBrand, value: 1_000_000_000_000n },
+        },
+        WantMintedFee: {
+          type: 'ratio',
+          value: {
+            numerator: { brand: stableBrand, value: 0n },
+            denominator: { brand: stableBrand, value: 10_000n },
+          },
+        },
+      },
+    };
+
+    const instance0 = await E(E(agoricNamesAdmin).readonly()).lookup(
+      'instance',
+      'psm-IST-USDC_axl',
+    );
+    /** @type {ERef<PsmPublicFacet>} */
+    const pf0 = E(zoe).getPublicFacet(instance0);
+
+    const { value: contractMetrics } = await E(
+      E(pf0).getMetrics(),
+    ).getUpdateSince();
+    t.deepEqual(contractMetrics, expected.metrics);
+
+    const contractParams = await E(pf0).getGovernedParams();
+
+    /** @param {ParamStateRecord} p */
+    const omitElectorate = ({ Electorate: _, ...params }) => params;
+    t.deepEqual(omitElectorate(contractParams), expected.params);
+  }
+
+  // Check USDT fees
+  {
+    const expected = { brand: stableBrand, value: 58_732_736n };
+    const anchorBrand = await agoricNames.lookup('brand', 'USDT_axl');
+    const instance1 = await E(E(agoricNamesAdmin).readonly()).lookup(
+      'instance',
+      'psm-IST-USDT_axl',
+    );
+    /** @type {ERef<PsmPublicFacet>} */
+    const pf1 = E(zoe).getPublicFacet(instance1);
+
+    const { value: contractMetrics } = await E(
+      E(pf1).getMetrics(),
+    ).getUpdateSince();
+    t.deepEqual(contractMetrics.feePoolBalance, expected);
+
+    // actually collect the fees and see how much we got
+    const psmKit = await consume.psmKit;
+    const { psmCreatorFacet } = psmKit.get(anchorBrand);
+    const seat = E(zoe).offer(E(psmCreatorFacet).makeCollectFeesInvitation());
+    const pmt = await E.get(E(seat).getPayouts()).Fee;
+    const amt = await E(stableIssuer).getAmountOf(pmt);
+    t.deepEqual(amt, { brand: stableBrand, value: expected.value });
+  }
 });

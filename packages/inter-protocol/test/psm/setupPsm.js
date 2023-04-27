@@ -74,7 +74,7 @@ export const setupPsmBootstrap = async (
   produce.chainStorage.resolve(mockChainStorage);
   produce.board.resolve(makeBoard());
 
-  return { produce, consume, ...spaces, mockChainStorage };
+  return { vatParameters: {}, produce, consume, ...spaces, mockChainStorage };
 };
 
 /**

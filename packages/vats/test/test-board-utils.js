@@ -2,9 +2,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { chainStorageEntries } from '@agoric/inter-protocol/test/psm/psm-storage-fixture.js';
+
 import {
   boardSlottingMarshaller,
   makeAgoricNamesRemotesFromFakeStorage,
+  makeHistoryReviver,
 } from '../tools/board-utils.js';
 
 /** @type {Array<[string, any]>} */
@@ -201,3 +204,26 @@ test(
     slots: ['board123Ist', 'board123Atom'],
   },
 );
+
+test('restore PSM: revive metrics, governance with old board IDs', async t => {
+  const toSlotReviver = makeHistoryReviver(chainStorageEntries);
+
+  const psmNames = toSlotReviver.children('published.psm.IST.');
+  t.true(psmNames.includes('USDC_axl'));
+
+  const a0 = {
+    metrics: toSlotReviver.getItem(`published.psm.IST.USDC_axl.metrics`),
+    governance: toSlotReviver.getItem(`published.psm.IST.USDC_axl.governance`),
+  };
+
+  t.deepEqual(
+    a0.metrics.anchorPoolBalance,
+    { brand: 'board0223', value: 487_464_281_410n },
+    'metrics.anchorPoolBalance',
+  );
+  t.deepEqual(
+    a0.governance.current.MintLimit.value,
+    { brand: 'board02314', value: 1_000_000_000_000n },
+    'governance.MintLimit',
+  );
+});

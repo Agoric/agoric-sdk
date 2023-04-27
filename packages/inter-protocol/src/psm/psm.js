@@ -13,6 +13,7 @@ import {
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicRearrange,
+  atomicTransfer,
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
@@ -20,8 +21,12 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import { makeMetricsPublishKit } from '../contractSupport.js';
+import {
+  makeMetricsPublishKit,
+  makeNatAmountShape,
+} from '../contractSupport.js';
 
 const { Fail } = assert;
 
@@ -133,6 +138,41 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
   };
   updateMetrics();
+
+  const AnchorAmountShape = makeNatAmountShape(anchorBrand);
+  const StableAmountShape = makeNatAmountShape(stableBrand);
+
+  /**
+   * @param {ZCFSeat} seat
+   * @param {Omit<MetricsNotification, 'anchorPoolBalance'>} target
+   */
+  const restoreMetricsHook = (seat, target) => {
+    assert(
+      AmountMath.isEmpty(anchorPool.getAmountAllocated('Anchor', anchorBrand)),
+      'cannot restoreMetrics: anchorPool is not empty',
+    );
+    assert(
+      AmountMath.isEmpty(feePool.getAmountAllocated('Minted', stableBrand)),
+      'cannot restoreMetrics: feePool is not empty',
+    );
+    mustMatch(
+      target,
+      harden({
+        feePoolBalance: StableAmountShape,
+        mintedPoolBalance: StableAmountShape,
+        totalAnchorProvided: AnchorAmountShape,
+        totalMintedProvided: StableAmountShape,
+      }),
+    );
+    const {
+      give: { Anchor },
+    } = seat.getProposal();
+    stableMint.mintGains({ Minted: target.feePoolBalance }, feePool);
+    atomicTransfer(zcf, seat, anchorPool, { Anchor });
+    ({ mintedPoolBalance, totalAnchorProvided, totalMintedProvided } = target);
+    seat.exit();
+    updateMetrics();
+  };
 
   /**
    * @param {Amount<'nat'>} toMint
@@ -293,6 +333,18 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     makeCollectFeesInvitation() {
       return makeCollectFeesInvitation(zcf, feePool, stableBrand, 'Minted');
+    },
+    makeRestoreMetricsInvitation() {
+      return zcf.makeInvitation(
+        restoreMetricsHook,
+        'restoreMetrics',
+        undefined,
+        M.splitRecord({
+          give: {
+            Anchor: AnchorAmountShape,
+          },
+        }),
+      );
     },
   });
 

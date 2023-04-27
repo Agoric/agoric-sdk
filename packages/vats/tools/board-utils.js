@@ -24,7 +24,7 @@
  */
 
 import { Fail } from '@agoric/assert';
-import { Far } from '@endo/marshal';
+import { Far, isObject } from '@endo/marshal';
 
 /**
  * @param {*} slotInfo
@@ -138,4 +138,82 @@ export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => {
     fromCapData: capData => marshaller.unserialize(capData),
   };
   return marshaller;
+};
+
+/**
+ * @param {string} cellText
+ * @returns {unknown[]}
+ */
+export const parsedValuesFromStreamCellText = cellText => {
+  assert.typeof(cellText, 'string');
+  const cell = /** @type {{blockHeight: string, values: string[]}} */ (
+    JSON.parse(cellText)
+  );
+
+  assert(isObject(cell));
+  const { values } = cell;
+
+  assert(Array.isArray(values));
+  const parsedValues = values.map(value => JSON.parse(value));
+
+  return harden(parsedValues);
+};
+harden(parsedValuesFromStreamCellText);
+
+/**
+ * @param {unknown} data
+ * @returns {asserts data is import('@endo/marshal').CapData<string>}
+ */
+export const assertCapData = data => {
+  assert.typeof(data, 'object');
+  assert(data);
+  assert.typeof(data.body, 'string');
+  assert(Array.isArray(data.slots));
+  // XXX check that the .slots array elements are actually strings
+};
+harden(assertCapData);
+
+/**
+ * Decode vstorage value to CapData
+ *
+ * @param {string} cellText
+ * @returns {import('@endo/marshal').CapData<string>}
+ */
+export const deserializeVstorageValue = cellText => {
+  const values = parsedValuesFromStreamCellText(cellText);
+
+  assert.equal(values.length, 1);
+  const [data] = values;
+  assertCapData(data);
+  return data;
+};
+harden(deserializeVstorageValue);
+
+/**
+ * Provide access to object graphs serialized in vstorage.
+ *
+ * @param {Array<[string, string]>} entries
+ * @param {(slot: string, iface?: string) => any} [slotToVal]
+ */
+export const makeHistoryReviver = (entries, slotToVal = undefined) => {
+  const board = boardSlottingMarshaller(slotToVal);
+  const vsMap = new Map(entries);
+
+  const getItem = key => {
+    const raw = vsMap.get(key) || Fail`no ${key}`;
+    const capData = deserializeVstorageValue(raw);
+    return harden(board.fromCapData(capData));
+  };
+  const children = prefix => {
+    prefix.endsWith('.') || Fail`prefix must end with '.'`;
+    return [
+      ...new Set(
+        entries
+          .map(([k, _]) => k)
+          .filter(k => k.startsWith(prefix))
+          .map(k => k.slice(prefix.length).split('.')[0]),
+      ),
+    ];
+  };
+  return harden({ getItem, children, has: k => vsMap.has(k) });
 };

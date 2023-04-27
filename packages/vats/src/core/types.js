@@ -45,6 +45,10 @@
  *   vatAdmin: VatAdminVat,
  *   vattp: VattpVat,
  * }} SwingsetVats
+ *
+ * @typedef {{
+ *   vatParameters: { chainStorageEntries?: Array<[k: string, v: string]>,
+ * }}} ChainStorageVatParams
  */
 
 /**
