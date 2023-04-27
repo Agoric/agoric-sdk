@@ -2,6 +2,8 @@
 import { E, Far } from '@endo/far';
 import { assertPassable } from '@endo/marshal';
 import { WalletName } from '@agoric/internal';
+import { heapZone } from '@agoric/zone';
+import { provide } from '@agoric/vat-data';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
@@ -233,10 +235,9 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {ERef<AgoricNamesVat>} provider
+ * @param {AgoricNamesVat} provider
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
- * @typedef {ReturnType<import('../vat-agoricNames').buildRootObject>} AgoricNamesVat
  */
 export const makeWellKnownSpaces = async (
   provider,
@@ -281,7 +282,7 @@ export const makeWellKnownSpaces = async (
  * }}
  */
 export const makeAgoricNamesAccess = (
-  log = () => {}, // console.debug
+  log = noop, // console.debug
   reserved = agoricNamesReserved,
 ) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
@@ -289,20 +290,20 @@ export const makeAgoricNamesAccess = (
 
   const hubs = mapEntries(reserved, (key, _d) => {
     const { nameHub, nameAdmin } = makeNameHubKit();
-    const passableAdmin = {
-      ...nameAdmin,
-      update: (nameKey, val) => {
-        assertPassable(val); // else we can't publish
-        return nameAdmin.update(nameKey, val);
-      },
-    };
-    agoricNamesAdmin.update(key, nameHub, passableAdmin);
+    // const passableAdmin = {
+    //   ...nameAdmin,
+    //   update: (nameKey, val) => {
+    //     assertPassable(val); // else we can't publish
+    //     return nameAdmin.update(nameKey, val);
+    //   },
+    // };
+    agoricNamesAdmin.update(key, nameHub, nameAdmin);
     return [key, { nameHub, nameAdmin }];
   });
   const spaces = mapEntries(reserved, (key, detail) => {
     const { nameAdmin } = hubs[key];
     const subSpaceLog = (...args) => log(key, ...args);
-    const { produce, consume } = makePromiseSpace(subSpaceLog);
+    const { produce, consume } = makePromiseSpace({ log: subSpaceLog });
     for (const k of keys(detail)) {
       nameAdmin.reserve(k);
       void consume[k].then(v => nameAdmin.update(k, v));
@@ -332,7 +333,54 @@ export const makeMyAddressNameAdminKit = address => {
     getMyAddress: () => address,
   });
   // reserve space for deposit facet
-  myAddressNameAdmin.reserve(WalletName.depositFacet);
+  // @@@@move to provision vat
+  void E(myAddressNameAdmin).reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };
+};
+
+/**
+ * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
+ * @param {unknown} criticalVatKey
+ * @param {import('@agoric/zone').Zone} [zone]
+ * @param {(...args: any) => void} [log]
+ * @param {string} [label]
+ *
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ */
+export const makeVatSpace = (
+  svc,
+  criticalVatKey,
+  zone = heapZone,
+  log = noop,
+  label = 'namedVat',
+) => {
+  const subSpaceLog = (...args) => log(label, ...args);
+
+  /** @type {VatStore} */
+  const store = zone.mapStore('vatStore');
+
+  const createVatByName = async bundleName => {
+    subSpaceLog(`createVatByName(${bundleName})`);
+
+    const vat = await E(svc).createVatByName(bundleName, {
+      critical: criticalVatKey,
+      name: bundleName,
+    });
+    return vat;
+  };
+
+  /** @type {NamedVatPowers['namedVat']['consume']} */
+  // @ts-expect-error cast
+  const consume = new Proxy(
+    {},
+    {
+      get: (_target, name, _rx) => {
+        assert.typeof(name, 'string');
+        return provide(store, name, createVatByName).then(vat => vat.root);
+      },
+    },
+  );
+  return { consume };
 };

@@ -5,7 +5,6 @@ import * as farExports from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
-  makeStoredPublishKit,
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
@@ -427,13 +426,18 @@ export const produceHighPrioritySendersManager = async ({
 };
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {BootstrapPowers & NamedVatPowers} powers
  * @param {{ options?: {agoricNamesOptions?: {
  *   topLevel?: string[]
  * }}}} config
  */
 export const publishAgoricNames = async (
-  { consume: { agoricNamesAdmin, board, chainStorage: rootP } },
+  {
+    consume: { board, chainStorage: rootP },
+    namedVat: {
+      consume: { agoricNames },
+    },
+  },
   { options: { agoricNamesOptions } = {} } = {},
 ) => {
   const root = await rootP;
@@ -446,16 +450,7 @@ export const publishAgoricNames = async (
 
   // brand, issuer, ...
   const { topLevel = keys(agoricNamesReserved) } = agoricNamesOptions || {};
-  await Promise.all(
-    topLevel.map(async kind => {
-      const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
-
-      const kindNode = await E(nameStorage).makeChildNode(kind);
-      const { publisher } = makeStoredPublishKit(kindNode, marshaller);
-      publisher.publish([]);
-      kindAdmin.onUpdate(v => publisher.publish(v));
-    }),
-  );
+  await E(agoricNames).publishNameHubs(nameStorage, marshaller, topLevel);
 };
 
 /**
@@ -638,10 +633,10 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   },
   [publishAgoricNames.name]: {
     consume: {
-      agoricNamesAdmin: true,
       board: 'board',
       chainStorage: 'bridge',
     },
+    namedVat: { consume: { agoricNames: 'agoricNames' } },
   },
   [makeProvisioner.name]: {
     consume: {

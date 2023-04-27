@@ -137,6 +137,10 @@ test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
     /** @type {VatPowers} */ /** @type {any} */ ({
       D: mockDProxy,
       logger: t.log,
+      exitVatWithFailure: reason => {
+        console.error(reason);
+        throw t.fail(reason);
+      },
     }),
     {},
   );

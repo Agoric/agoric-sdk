@@ -157,7 +157,7 @@ test('makeNameHubKit - listen for updates', async t => {
 
   const capture = [];
   nameAdmin.onUpdate(
-    Far('onUpdate', { entries: entries => capture.push(entries) }),
+    Far('onUpdate', { write: entries => capture.push(entries) }),
   );
 
   const brandIST = harden({ name: 'IST' });

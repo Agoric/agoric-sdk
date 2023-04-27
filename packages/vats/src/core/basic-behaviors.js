@@ -416,7 +416,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
   [makeOracleBrands.name]: {
     oracleBrand: {
       produce: {
-        USD: true,
+        USD: 'agoricNames',
       },
     },
   },
@@ -467,20 +467,20 @@ export const BASIC_BOOTSTRAP_PERMITS = {
 
   [makeAddressNameHubs.name]: {
     consume: {
-      agoricNames: true,
+      agoricNames: 'agoricNames',
       client: true,
     },
     produce: {
-      namesByAddress: true,
-      namesByAddressAdmin: true,
+      namesByAddress: 'provisioning',
+      namesByAddressAdmin: 'provisioning',
     },
     home: {
-      produce: { myAddressNameAdmin: true },
+      produce: { myAddressNameAdmin: 'provisioning' },
     },
   },
   [makeClientBanks.name]: {
     consume: {
-      namesByAddressAdmin: true,
+      namesByAddressAdmin: 'provisioning',
       bankManager: 'bank',
       client: true,
       walletFactoryStartResult: 'walletFactory',
@@ -501,8 +501,8 @@ export const BASIC_BOOTSTRAP_PERMITS = {
       argv: { bootMsg: true },
     },
     consume: {
-      feeMintAccess: true,
-      zoe: true,
+      feeMintAccess: 'zoe',
+      zoe: 'zoe',
     },
     produce: {
       initialSupply: true,
@@ -513,12 +513,12 @@ export const BASIC_BOOTSTRAP_PERMITS = {
   },
   [addBankAssets.name]: {
     consume: {
-      agoricNamesAdmin: true,
+      agoricNamesAdmin: 'agoricNames',
       initialSupply: true,
       bridgeManager: 'bridge',
       // TODO: re-org loadCriticalVat to be subject to permits
       loadCriticalVat: true,
-      zoe: true,
+      zoe: 'zoe',
     },
     produce: {
       bankManager: 'bank',

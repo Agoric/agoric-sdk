@@ -1,7 +1,12 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import { makeAgoricNamesAccess, runModuleBehaviors } from './utils.js';
+import { heapZone } from '@agoric/zone';
+import {
+  makeVatSpace,
+  makeWellKnownSpaces,
+  runModuleBehaviors,
+} from './utils.js';
 import { makePromiseSpace } from './promise-space.js';
 
 const { Fail, quote: q } = assert;
@@ -44,6 +49,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {BootstrapManifest} bootManifest
  * @param {Record<string, BootBehavior>} behaviors
  * @param {BootModules} modules
+ * @param {import('@agoric/zone').Zone} [zone]
  */
 export const makeBootstrap = (
   vatPowers,
@@ -51,16 +57,14 @@ export const makeBootstrap = (
   bootManifest,
   behaviors,
   modules,
+  zone = heapZone,
 ) => {
   const { keys } = Object;
   const extra = setDiff(keys(bootManifest), keys(behaviors));
   extra.length === 0 || Fail`missing behavior for manifest keys: ${extra}`;
 
   const log = vatPowers.logger || console.info;
-  const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+  const { produce, consume } = makePromiseSpace({ log });
 
   /**
    * Bootstrap vats and devices.
@@ -77,6 +81,16 @@ export const makeBootstrap = (
     await (devices.mailbox &&
       (D(devices.mailbox).registerInboundHandler(vats.vattp),
       E(vats.vattp).registerMailboxDevice(devices.mailbox)));
+
+    const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+    const namedVat = makeVatSpace(svc, criticalVatKey, zone, console.log);
+
+    const namesVat = namedVat.consume.agoricNames;
+    const { agoricNames, agoricNamesAdmin } = await E(namesVat).getNameHubKit();
+    const spaces = await makeWellKnownSpaces(namesVat, log);
+    produce.agoricNames.resolve(agoricNames);
+    produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
@@ -99,6 +113,7 @@ export const makeBootstrap = (
       devices,
       produce,
       consume,
+      namedVat,
       ...spaces,
       runBehaviors,
       // These module namespaces might be useful for core eval governance.

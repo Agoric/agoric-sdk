@@ -69,7 +69,7 @@ export const prepareNameHubKit = (zone = heapZone) => {
       return;
     }
     // XXX use nameToValue.entries() instead?
-    void E(updateCallback).entries(
+    void E(updateCallback).write(
       harden(
         [
           ...mapIterable(keyToRecord.entries(), ([name, record]) =>
@@ -108,7 +108,7 @@ export const prepareNameHubKit = (zone = heapZone) => {
       /** @type {MapStore<string, NameAdmin>} */
       keyToAdmin: zone.detached().mapStore('nameKey'),
 
-      /** @type {undefined | { entries: (entries: [string, unknown][]) => void }} */
+      /** @type {undefined | { write: (item: unknown) => void }} */
       updateCallback: undefined,
     }),
     {
