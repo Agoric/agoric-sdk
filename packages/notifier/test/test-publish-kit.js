@@ -650,8 +650,12 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   const sub2LIFO = [];
 
   const sub1FirstAll = [];
-  E.when(sub1.subscribeAfter(), cell => void sub1FirstAll.push(cell), t.fail);
-  E.when(sub1.subscribeAfter(), cell => void sub1FirstAll.push(cell), t.fail);
+  E.when(sub1.subscribeAfter(), cell => void sub1FirstAll.push(cell)).catch(
+    t.fail,
+  );
+  E.when(sub1.subscribeAfter(), cell => void sub1FirstAll.push(cell)).catch(
+    t.fail,
+  );
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter());
@@ -670,21 +674,18 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
 
   const sub1FirstLateAll = [];
   const sub1SecondAll = [];
-  E.when(
+  void E.when(
     sub1.subscribeAfter(),
     cell => void sub1FirstLateAll.push(cell),
-    t.fail,
-  );
-  E.when(
+  ).catch(t.fail);
+  void E.when(
     sub1.subscribeAfter(0n),
     cell => void sub1FirstLateAll.push(cell),
-    t.fail,
-  );
-  E.when(
+  ).catch(t.fail);
+  void E.when(
     sub1.subscribeAfter(sub1FirstAll[0].publishCount),
     cell => void sub1SecondAll.push(cell),
-    t.fail,
-  );
+  ).catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
@@ -709,13 +710,12 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   const sub1SecondLateAll = [];
   const sub1FinalAll = [];
   for (const p of [sub1.subscribeAfter(), sub1.subscribeAfter(0n)]) {
-    E.when(p, cell => void sub1SecondLateAll.push(cell), t.fail);
+    E.when(p, cell => void sub1SecondLateAll.push(cell)).catch(t.fail);
   }
-  E.when(
+  void E.when(
     sub1.subscribeAfter(sub1SecondAll[0].publishCount),
     result => void sub1FinalAll.push(result),
-    t.fail,
-  );
+  ).catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
