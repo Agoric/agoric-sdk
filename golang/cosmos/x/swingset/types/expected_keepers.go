@@ -14,4 +14,5 @@ type AccountKeeper interface {
 type SwingSetKeeper interface {
 	GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint
 	ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error
+	IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error)
 }

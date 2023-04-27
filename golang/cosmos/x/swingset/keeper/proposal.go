@@ -22,5 +22,5 @@ func (k Keeper) CoreEvalProposal(ctx sdk.Context, p *types.CoreEvalProposal) err
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	return k.PushAction(ctx, action)
+	return k.PushHighPriorityAction(ctx, action)
 }

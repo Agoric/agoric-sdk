@@ -3,7 +3,9 @@ package keeper
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,6 +46,9 @@ type BatchingChangeManager struct {
 }
 
 var _ ChangeManager = (*BatchingChangeManager)(nil)
+
+// 2 ** 256 - 1
+var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
 
 // TODO: Use bytes.CutPrefix once we can rely upon go >= 1.20.
 func cutPrefix(s, prefix []byte) (after []byte, found bool) {
@@ -396,4 +401,53 @@ func (k Keeper) GetDataPrefix() []byte {
 
 func (k Keeper) GetNoDataValue() []byte {
 	return types.EncodedNoDataValue
+}
+
+func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdk.Int, error) {
+	indexEntry := k.GetEntry(ctx, path)
+	if !indexEntry.HasData() {
+		return sdk.NewInt(0), nil
+	}
+
+	index, ok := sdk.NewIntFromString(indexEntry.StringValue())
+	if !ok {
+		return index, fmt.Errorf("couldn't parse %s as Int: %s", path, indexEntry.StringValue())
+	}
+	return index, nil
+}
+
+func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdk.Int, error) {
+	head, err := k.getIntValue(ctx, queuePath+".head")
+	if err != nil {
+		return sdk.NewInt(0), err
+	}
+	tail, err := k.getIntValue(ctx, queuePath+".tail")
+	if err != nil {
+		return sdk.NewInt(0), err
+	}
+	// The tail index is exclusive
+	return tail.Sub(head), nil
+}
+
+func (k Keeper) PushQueueItem(ctx sdk.Context, queuePath string, value string) error {
+	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
+	// The `tail` is the value of the next index to be inserted
+	tail, err := k.getIntValue(ctx, queuePath+".tail")
+	if err != nil {
+		return err
+	}
+
+	if tail.Equal(MaxSDKInt) {
+		return errors.New(queuePath + " overflow")
+	}
+	nextTail := tail.Add(sdk.NewInt(1))
+
+	// Set the vstorage corresponding to the queue entry for the current tail.
+	path := queuePath + "." + tail.String()
+	k.SetStorage(ctx, types.NewStorageEntry(path, value))
+
+	// Update the tail to point to the next available entry.
+	path = queuePath + ".tail"
+	k.SetStorage(ctx, types.NewStorageEntry(path, nextTail.String()))
+	return nil
 }

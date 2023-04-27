@@ -98,10 +98,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   });
 
   const actionQueueStorage = makeQueueStorageMock().storage;
+  const highPriorityQueueStorage = makeQueueStorageMock().storage;
   const actionQueue = makeQueue(actionQueueStorage);
 
   const s = await launch({
     actionQueueStorage,
+    highPriorityQueueStorage,
     kernelStateDBDir: stateDBdir,
     mailboxStorage,
     clearChainSends,

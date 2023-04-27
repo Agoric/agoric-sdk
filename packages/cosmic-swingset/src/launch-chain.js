@@ -250,6 +250,7 @@ function neverStop() {
 
 export async function launch({
   actionQueueStorage,
+  highPriorityQueueStorage,
   kernelStateDBDir,
   mailboxStorage,
   clearChainSends,
@@ -290,9 +291,11 @@ export async function launch({
   });
   const { kvStore, commit } = hostStorage;
 
-  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} ActionQueue */
-  /** @type {ActionQueue} */
+  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
+  /** @type {InboundQueue} */
   const actionQueue = makeQueue(actionQueueStorage);
+  /** @type {InboundQueue} */
+  const highPriorityQueue = makeQueue(highPriorityQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -323,7 +326,9 @@ export async function launch({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const inboundQueueMetrics = makeInboundQueueMetrics(actionQueue.size());
+  const inboundQueueMetrics = makeInboundQueueMetrics(
+    actionQueue.size() + highPriorityQueue.size(),
+  );
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
@@ -498,7 +503,7 @@ export async function launch({
       });
       // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
       // that needs to be revisited, it used to be called once per
-      // block, now it's once per processed inboundQueue item
+      // block, now it's once per processed inbound queue item
       await crankScheduler(runPolicy);
       const remainingBeans = runPolicy.remainingBeans();
       controller.writeSlogObject({
@@ -516,8 +521,37 @@ export async function launch({
       return runPolicy.shouldRun();
     }
 
+    /**
+     * Process as much as we can from an inbound queue, which contains
+     * first the old actions not previously processed, followed by actions
+     * newly added, running the kernel to completion after each.
+     *
+     * @param {InboundQueue} inboundQueue
+     */
+    async function processActions(inboundQueue) {
+      let keepGoing = true;
+      for (const { action, context } of inboundQueue.consumeAll()) {
+        const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
+        inboundQueueMetrics.decStat();
+        // eslint-disable-next-line no-await-in-loop
+        await performAction(action, inboundNum);
+        // eslint-disable-next-line no-await-in-loop
+        keepGoing = await runSwingset();
+        if (!keepGoing) {
+          // any leftover actions will remain on the inbound queue for possible
+          // processing in the next block
+          break;
+        }
+      }
+      return keepGoing;
+    }
+
     // First, complete leftover work, if any
     let keepGoing = await runSwingset();
+    if (!keepGoing) return;
+
+    // Then, process as much as we can from the priorityQueue.
+    keepGoing = await processActions(highPriorityQueue);
     if (!keepGoing) return;
 
     // Then, update the timer device with the new external time, which might
@@ -533,22 +567,8 @@ export async function launch({
     keepGoing = await runSwingset();
     if (!keepGoing) return;
 
-    // Finally, process as much as we can from the actionQueue, which contains
-    // first the old actions followed by the newActions, running the
-    // kernel to completion after each.
-    for (const { action, context } of actionQueue.consumeAll()) {
-      const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-      inboundQueueMetrics.decStat();
-      // eslint-disable-next-line no-await-in-loop
-      await performAction(action, inboundNum);
-      // eslint-disable-next-line no-await-in-loop
-      keepGoing = await runSwingset();
-      if (!keepGoing) {
-        // any leftover actions will remain on the actionQueue for possible
-        // processing in the next block
-        return;
-      }
-    }
+    // Finally, process as much as we can from the actionQueue.
+    await processActions(actionQueue);
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -558,7 +578,9 @@ export async function launch({
 
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
-    inboundQueueMetrics.updateLength(actionQueue.size());
+    inboundQueueMetrics.updateLength(
+      actionQueue.size() + highPriorityQueue.size(),
+    );
 
     // make a runPolicy that will be shared across all cycles
     const runPolicy = computronCounter(params.beansPerUnit);
@@ -760,7 +782,7 @@ export async function launch({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
-          actionQueueStats: inboundQueueMetrics.getStats(),
+          inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
         return undefined;
@@ -814,7 +836,7 @@ export async function launch({
           type: 'cosmic-swingset-end-block-finish',
           blockHeight,
           blockTime,
-          actionQueueStats: inboundQueueMetrics.getStats(),
+          inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
         endBlockFinish = Date.now();

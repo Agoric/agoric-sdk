@@ -30,6 +30,19 @@ type deliverInboundAction struct {
 	BlockTime   int64           `json:"blockTime"`
 }
 
+func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionMsg, action vm.Jsonable) error {
+	isHighPriority, err := msg.IsHighPriority(ctx, keeper)
+	if err != nil {
+		return err
+	}
+
+	if isHighPriority {
+		return keeper.PushHighPriorityAction(ctx, action)
+	} else {
+		return keeper.PushAction(ctx, action)
+	}
+}
+
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -50,7 +63,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	err := keeper.PushAction(ctx, action)
+	err := keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -78,7 +91,7 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 
-	err := keeper.PushAction(ctx, action)
+	err := keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -105,7 +118,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	err := keeper.PushAction(ctx, action)
+	err := keeper.routeAction(ctx, msg, action)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +154,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		return nil, err
 	}
 
-	err = keeper.PushAction(ctx, action)
+	err = keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -167,7 +180,7 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 		BlockTime:        ctx.BlockTime().Unix(),
 	}
 
-	err := keeper.PushAction(ctx, action)
+	err := keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
