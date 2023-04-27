@@ -76,9 +76,7 @@ describe('AgoricWalletConnection', () => {
   });
 
   it(`has a default state of 'idle' and has a walletConnection`, async () => {
-    const onState = ev => {
-      expect(ev.detail.state).to.equal('idle');
-    };
+    const onState = ev => expect(ev.detail.state).to.equal('idle');
     const el = await fixture(
       html`
         <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
@@ -104,7 +102,7 @@ describe('AgoricWalletConnection', () => {
         <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
       `,
     );
-    expect(el.state).to.equal('locating');
+    await expect(el.state).to.equal('locating');
   });
 
   describe('on getAdminBootstrap', () => {
@@ -149,14 +147,14 @@ describe('AgoricWalletConnection', () => {
       );
     });
 
-    it('starts at locating', () => {
-      expect(el.state).to.equal('locating');
+    it('starts at locating', async () => {
+      await expect(el.state).to.equal('locating');
     });
 
-    it('starts connecting after locating completes', () => {
+    it('starts connecting after locating completes', async () => {
       iframeOnMessage('http://localhost:8000');
 
-      expect(el.state).to.equal('connecting');
+      await expect(el.state).to.equal('connecting');
     });
 
     it('goes to admin state once connected', async () => {
@@ -165,7 +163,7 @@ describe('AgoricWalletConnection', () => {
       await createStatePromise('bridged');
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(el.state).to.equal('bridged');
+      await expect(el.state).to.equal('bridged');
     });
 
     it('lets the websocket dispatch messages through capTP', async () => {
@@ -173,7 +171,7 @@ describe('AgoricWalletConnection', () => {
 
       socket.send(JSON.stringify({ foo: 'bar' }));
 
-      expect(captpInnards.lastDispatched).to.deep.equal({ foo: 'bar' });
+      await expect(captpInnards.lastDispatched).to.deep.equal({ foo: 'bar' });
     });
 
     it('lets capTP send messages through the websocket', async () => {
@@ -183,7 +181,7 @@ describe('AgoricWalletConnection', () => {
       captpInnards.send({ foo: 'bar2' });
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar2' }));
+      await expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar2' }));
     });
 
     it('aborts capTP when the socket disconnects', async () => {
@@ -191,7 +189,7 @@ describe('AgoricWalletConnection', () => {
 
       socket.close();
 
-      expect(captpInnards.isAborted).to.equal(true);
+      await expect(captpInnards.isAborted).to.equal(true);
     });
 
     it('returns the admin bootstrap', async () => {
@@ -205,7 +203,7 @@ describe('AgoricWalletConnection', () => {
     const el = await fixture(
       html` <agoric-wallet-connection></agoric-wallet-connection> `,
     );
-    expect(el.state).to.equal('idle');
+    await expect(el.state).to.equal('idle');
     expect(() => (el.state = 'notset')).to.throw(/Cannot set/);
   });
 

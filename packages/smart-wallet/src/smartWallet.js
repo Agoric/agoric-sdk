@@ -290,7 +290,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           } else {
             purseBalances.init(purse, balance);
           }
-          updateRecorderKit.recorder.write({
+          void updateRecorderKit.recorder.write({
             updated: 'balance',
             currentAmount: balance,
           });
@@ -306,7 +306,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             purseBalances,
             liveOffers,
           } = this.state;
-          currentRecorderKit.recorder.write({
+          void currentRecorderKit.recorder.write({
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
               balance: a,
@@ -437,7 +437,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             onStatusChange: offerStatus => {
               logger.info('offerStatus', offerStatus);
 
-              updateRecorderKit.recorder.write({
+              void updateRecorderKit.recorder.write({
                 updated: 'offerStatus',
                 status: offerStatus,
               });
@@ -507,7 +507,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const recordError = err => {
             const { address, updateRecorderKit } = this.state;
             console.error('wallet', address, 'handleBridgeAction error:', err);
-            updateRecorderKit.recorder.write({
+            void updateRecorderKit.recorder.write({
               updated: 'walletAction',
               status: { error: err.message },
             });

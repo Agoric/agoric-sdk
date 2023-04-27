@@ -108,7 +108,7 @@ test('issuer.makeEmptyPurse', async t => {
   const performWithdrawal = () => purse.withdraw(fungible837);
 
   const checkWithdrawal = async newPayment => {
-    issuer.getAmountOf(newPayment).then(amount => {
+    await issuer.getAmountOf(newPayment).then(amount => {
       t.assert(
         AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,

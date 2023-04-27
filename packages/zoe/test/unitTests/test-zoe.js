@@ -215,7 +215,7 @@ test(`E(zoe).getPublicFacet`, async t => {
   /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
-  t.throwsAsync(() =>
+  await t.throwsAsync(() =>
     // @ts-expect-error not on public facet
     E(publicFacet).missingMethod(),
   );

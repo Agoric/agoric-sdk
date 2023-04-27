@@ -560,7 +560,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           if (exportData === stateSyncExport) {
             stateSyncExport = undefined;
           }
-          exportData.cleanup();
+          return exportData.cleanup();
         });
 
         return exportData.exporter.onStarted().catch(err => {

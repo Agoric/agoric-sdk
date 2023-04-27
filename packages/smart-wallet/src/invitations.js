@@ -142,7 +142,9 @@ export const makeInvitationsHelper = (
 
       const { previousOffer, invitationArgs = [], invitationMakerName } = spec;
       const makers = getInvitationContinuation(String(previousOffer));
-      makers || Fail`invalid value stored for previous offer ${previousOffer}`;
+      if (!makers) {
+        Fail`invalid value stored for previous offer ${previousOffer}`;
+      }
       return E(makers)[invitationMakerName](...invitationArgs);
     },
   });

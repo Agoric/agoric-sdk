@@ -124,7 +124,10 @@ export const watchWallet = async (leader, address, context, rpcs) => {
     void watchBank();
   };
 
-  watchCurrent();
+  watchCurrent().catch(e => {
+    console.error('Error watching wallet current', e);
+    throw e;
+  });
   watchChainBalances();
 
   return {
