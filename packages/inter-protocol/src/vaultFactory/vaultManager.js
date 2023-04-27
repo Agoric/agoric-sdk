@@ -590,7 +590,9 @@ export const prepareVaultManagerKit = (
             ),
           );
 
+          const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
           // Liquidation.md describes how to process liquidation proceeds
+          const bestToWorst = [...vaultData.entries()].reverse();
           if (AmountMath.isEmpty(accounting.shortfall)) {
             // Flow #1: no shortfall
 
@@ -607,26 +609,24 @@ export const prepareVaultManagerKit = (
             facets.helper.sendToReserve(accounting.overage, liqSeat, 'Minted');
 
             // return remaining funds to vaults before closing
-            const collateralPortion = makeRatioFromAmounts(
-              distributableCollateral,
-              totalCollateral,
-            );
 
             /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
             const transfers = [];
-            let collatRemaining = distributableCollateral;
+            let leftToStage = distributableCollateral;
 
-            for (const [vault, amounts] of vaultData.entries()) {
+            // iterate from best to worst, returning collateral until it has
+            // been exhausted. Vaults after that get nothing.
+            for (const [vault, amounts] of bestToWorst) {
+              const { collateralAmount: vCollat, debtAmount } = amounts;
               facets.helper.subtractPhantomInterest(
-                amounts.debtAmount,
+                debtAmount,
                 vault.getCurrentDebt(),
               );
-              if (collateralToDistribute) {
-                const collat = floorMultiplyBy(
-                  amounts.collateralAmount,
-                  collateralPortion,
-                );
-                collatRemaining = AmountMath.subtract(collatRemaining, collat);
+              const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
+              const collatPostDebt = AmountMath.subtract(vCollat, vaultDebt);
+              if (!AmountMath.isEmpty(leftToStage)) {
+                const collat = AmountMath.min(leftToStage, collatPostDebt);
+                leftToStage = AmountMath.subtract(leftToStage, collat);
                 transfers.push([
                   liqSeat,
                   vault.getVaultSeat(),
@@ -640,7 +640,7 @@ export const prepareVaultManagerKit = (
             }
 
             const forReserve = collateralToDistribute
-              ? AmountMath.add(collatRemaining, totalPenalty)
+              ? AmountMath.add(leftToStage, totalPenalty)
               : collateralProceeds;
             facets.helper.sendToReserve(forReserve, liqSeat);
 
@@ -681,7 +681,6 @@ export const prepareVaultManagerKit = (
 
             // iterate from best to worst returning remaining funds to vaults
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
-            const bestToWorst = [...vaultData.entries()].reverse();
             for (const [vault, balance] of bestToWorst) {
               // from best to worst, return minted above penalty if any remains
               const { collateralAmount: vCollat, debtAmount } = balance;
@@ -735,7 +734,6 @@ export const prepareVaultManagerKit = (
               ? AmountMath.subtract(collateralProceeds, totalPenalty)
               : AmountMath.makeEmptyFromAmount(collateralProceeds);
 
-            const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
             let collatRemaining = distributableCollateral;
             let debtRemaining = totalDebt;
             /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
@@ -754,7 +752,6 @@ export const prepareVaultManagerKit = (
             // iterate from best to worst attempting to reconstitute, by
             // returning remaining funds to vaults
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
-            const bestToWorst = [...vaultData.entries()].reverse();
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);

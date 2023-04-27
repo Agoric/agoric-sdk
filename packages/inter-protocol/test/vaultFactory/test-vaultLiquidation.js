@@ -15,6 +15,7 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
@@ -26,6 +27,7 @@ import {
 } from '../metrics.js';
 import { setUpZoeForTest, withAmountUtils } from '../supports.js';
 import {
+  BASIS_POINTS,
   defaultParamValues,
   getRunFromFaucet,
   legacyOfferResult,
@@ -2125,4 +2127,203 @@ test('Bug 7422 vault reinstated with no assets', async t => {
 
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.deepEqual(reserveAllocations, {});
+});
+
+test('refund to one of two loans', async t => {
+  const { zoe, aeth, run } = t.context;
+
+  const manualTimer = buildManualTimer();
+  // The price starts at 5 RUN per Aeth. One loan will start with 400 Aeth
+  // collateral and will borrow 1600, which is a CR of 1.25. Another loan will
+  // have 200 Aeth and borrow 790.  After the price falls to 4, both will get
+  // liquidated. They bidder will offer enough for most of the collateral to pay
+  // off the debt, but only the second will get collateral back.
+  t.context.interestTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+  };
+
+  // The default mint fee is 500 BP. This means the initial indebtedness is 105%.
+  // When the starting point of the auction is 105% of the collateral value, the
+  // auction can't collect more than the debt in order to be able to refund
+  // anything to vault holders. We'll use a mint fee of 100 BP.
+  const mintFee = makeRatio(100n, run.brand, BASIS_POINTS);
+
+  // reduce the penalty, so there is some collateral to distribute.
+  const liquidationPenalty = makeRatio(1n, run.brand);
+  t.context.rates = {
+    ...defaultParamValues(run.brand),
+    liquidationPenalty,
+    mintFee,
+  };
+  const initialDebtRatio = makeRatio(101n, run.brand);
+
+  const services = await setupServices(
+    t,
+    makeRatio(50n, run.brand, 10n, aeth.brand),
+    aeth.make(400n),
+    manualTimer,
+    undefined,
+    500n,
+  );
+
+  const {
+    vaultFactory: { vaultFactory, aethCollateralManager },
+    priceAuthority,
+    reserveKit: { reserveCreatorFacet },
+    auctioneerKit,
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+
+  const aliceCollateralAmount = aeth.make(400n);
+  const aliceWantMinted = run.make(1600n);
+
+  /** @type {UserSeat<VaultKit>} */
+  const aliceVaultSeat = await E(zoe).offer(
+    await E(aethCollateralManager).makeVaultInvitation(),
+    harden({
+      give: { Collateral: aliceCollateralAmount },
+      want: { Minted: aliceWantMinted },
+    }),
+    harden({
+      Collateral: aeth.mint.mintPayment(aliceCollateralAmount),
+    }),
+  );
+
+  const bobCollateralAmount = aeth.make(200n);
+  const bobWantMinted = run.make(790n);
+  /** @type {UserSeat<VaultKit>} */
+  const bobVaultSeat = await E(zoe).offer(
+    await E(aethCollateralManager).makeVaultInvitation(),
+    harden({
+      give: { Collateral: bobCollateralAmount },
+      want: { Minted: bobWantMinted },
+    }),
+    harden({
+      Collateral: aeth.mint.mintPayment(bobCollateralAmount),
+    }),
+  );
+
+  // A bidder places a bid //////////////////////////
+  const bidAmount = run.make(3000n);
+  const desired = aeth.make(590n);
+  const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
+
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceVaultNotifier },
+  } = await legacyOfferResult(aliceVaultSeat);
+  const {
+    vault: bobVault,
+    publicNotifiers: { vault: bobVaultNotifier },
+  } = await legacyOfferResult(bobVaultSeat);
+
+  const aliceFee = ceilMultiplyBy(aliceWantMinted, mintFee);
+  let aliceNotification = await E(aliceVaultNotifier).getUpdateSince();
+  t.is(aliceNotification.value.vaultState, Phase.ACTIVE);
+  t.deepEqual((await aliceNotification.value).debtSnapshot, {
+    debt: AmountMath.add(aliceWantMinted, aliceFee),
+    interest: makeRatio(100n, run.brand),
+  });
+  const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
+  t.truthy(AmountMath.isEqual(lentAmount, aliceWantMinted));
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(400n));
+
+  // @ts-expect-error mock
+  await priceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
+  aliceNotification = await E(aliceVaultNotifier).getUpdateSince();
+  t.is(aliceNotification.value.vaultState, Phase.ACTIVE);
+
+  const { startTime, time } = await startAuctionClock(
+    auctioneerKit,
+    manualTimer,
+  );
+  let currentTime = time;
+
+  aliceNotification = await E(aliceVaultNotifier).getUpdateSince();
+  t.is(aliceNotification.value.vaultState, Phase.LIQUIDATING);
+  const bobNotification = await E(bobVaultNotifier).getUpdateSince();
+  t.is(bobNotification.value.vaultState, Phase.LIQUIDATING);
+
+  t.deepEqual(
+    await E(aliceVault).getCollateralAmount(),
+    aeth.makeEmpty(),
+    'Collateral consumed while liquidating',
+  );
+
+  t.deepEqual(
+    await E(aliceVault).getCurrentDebt(),
+    multiplyBy(aliceWantMinted, initialDebtRatio),
+    'Debt remains while liquidating',
+  );
+
+  t.deepEqual(
+    await E(bobVault).getCollateralAmount(),
+    aeth.makeEmpty(),
+    'Collateral consumed while liquidating',
+  );
+  t.deepEqual(
+    await E(bobVault).getCurrentDebt(),
+    multiplyBy(bobWantMinted, initialDebtRatio),
+    'Debt remains while liquidating',
+  );
+
+  currentTime = await setClockAndAdvanceNTimes(manualTimer, 2, startTime, 2n);
+  trace(`advanced time to `, currentTime);
+
+  aliceNotification = await E(aliceVaultNotifier).getUpdateSince();
+  t.is(aliceNotification.value.vaultState, Phase.LIQUIDATED);
+
+  t.truthy(await E(aliceVaultSeat).hasExited());
+
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+
+  await m.assertInitial(reserveInitialState(run.makeEmpty()));
+  const debtAmountAfter = await E(aliceVault).getCurrentDebt();
+
+  const finalNotification = await E(aliceVaultNotifier).getUpdateSince();
+  t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
+
+  t.deepEqual(finalNotification.value.locked, aeth.make(0n));
+  t.is(debtAmountAfter.value, 0n);
+
+  const totalWantMinted = AmountMath.add(aliceWantMinted, bobWantMinted);
+  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
+    Minted: ceilMultiplyBy(totalWantMinted, mintFee),
+  });
+
+  /** @type {UserSeat<string>} */
+  const aliceCloseSeat = await E(zoe).offer(
+    E(aliceVault).makeCloseInvitation(),
+  );
+  await E(aliceCloseSeat).getOfferResult();
+
+  /** @type {UserSeat<string>} */
+  const bobCloseSeat = await E(zoe).offer(E(bobVault).makeCloseInvitation());
+  await E(bobCloseSeat).getOfferResult();
+
+  // Alice got nothing
+  const alicePayouts = await E(aliceCloseSeat).getPayouts();
+  const aliceCollOut = await aeth.issuer.getAmountOf(alicePayouts.Collateral);
+  t.falsy(alicePayouts.Minted);
+  t.deepEqual(aliceCollOut, aeth.make(0n));
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.makeEmpty());
+
+  // bob got something
+  const bobPayouts = await E(bobCloseSeat).getPayouts();
+  const bobCollOut = await aeth.issuer.getAmountOf(bobPayouts.Collateral);
+  t.falsy(bobPayouts.Minted);
+  t.deepEqual(bobCollOut, aeth.make(19n));
+  t.deepEqual(await E(bobVault).getCollateralAmount(), aeth.makeEmpty());
+
+  await E(bidderSeat).tryExit();
+  //  Bidder bought 400 Aeth
+  await assertBidderPayout(t, bidderSeat, run, 586n, aeth, 574n);
+
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {
+    Aeth: aeth.make(7n),
+    Fee: run.makeEmpty(),
+  });
 });
