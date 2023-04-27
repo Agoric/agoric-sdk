@@ -38,7 +38,6 @@ const makeScenario = async (
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'local', // Overridden in CI with SWINGSET_WORKER_TYPE=xs-worker
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {

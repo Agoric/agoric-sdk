@@ -4,8 +4,10 @@ import path from 'path';
 
 import { assert, Fail } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
+import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
+import { ManagerType } from '../typeGuards.js';
 import { makeNodeBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
@@ -325,21 +327,32 @@ export async function initializeSwingset(
   // Use ambient process.env only if caller did not specify.
   const { env: { SWINGSET_WORKER_TYPE } = process.env } = runtimeOptions;
 
-  // Override the worker type if specified by the caller, to avoid having to
-  // edit the config just to run everything under a different manager.
-  const defaultManagerType = SWINGSET_WORKER_TYPE || config.defaultManagerType;
-  switch (defaultManagerType) {
-    case 'local':
-    case 'xsnap': // preferred
-    case 'xs-worker': // alias accepted for now
-      config.defaultManagerType = defaultManagerType;
-      break;
-    case undefined:
-      config.defaultManagerType = 'local';
-      break;
-    default:
-      Fail`unknown manager type ${defaultManagerType}`;
+  // The worker/manager type used by each vat is controlled by a
+  // hierarchy of settings.
+  //
+  // * config.vats.NAME.creationOptions.managerType (highest priority, but
+  //                                                 only for static vats)
+  // * config.defaultManagerType (applies to both static and dynamic vats)
+  // * env.SWINGSET_WORKER_TYPE
+  // * use a 'local' worker (lowest priority)
+  //
+  // The environment variable allows us to run a batch of unit tests
+  // under a different worker (e.g. 'yarn test:xs'), without editing
+  // all their config records individually. `config.defaultManagerType`
+  // has a higher priority so that tests which require a specific
+  // worker (e.g. which exercise XS heap snapshots, or metering) can
+  // override the env var, so they won't break under `yarn test:xs`.
+
+  if (!config.defaultManagerType) {
+    config.defaultManagerType = /** @type {any} */ (
+      SWINGSET_WORKER_TYPE || 'local'
+    );
   }
+  if (config.defaultManagerType === 'xs-worker') {
+    // 'xs-worker' is an alias accepted for now
+    config.defaultManagerType = 'xsnap'; // but 'xsnap' is preferred
+  }
+  mustMatch(config.defaultManagerType, ManagerType);
 
   const obtainKernelBundles = async () =>
     initializationOptions.kernelBundles || buildVatAndDeviceBundles();

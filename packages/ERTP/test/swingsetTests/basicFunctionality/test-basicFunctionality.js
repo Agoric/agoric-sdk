@@ -7,7 +7,6 @@ import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 async function main(basedir, argv) {
   const dir = new URL(`../${basedir}`, import.meta.url).pathname;
   const config = await loadBasedir(dir);
-  config.defaultManagerType = 'xs-worker';
   const controller = await buildVatController(config, argv);
   await controller.run();
   const res = controller.dump();

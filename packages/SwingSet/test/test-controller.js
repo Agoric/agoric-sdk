@@ -201,7 +201,7 @@ test('XS bootstrap', async t => {
   t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.is(
     kernelStorage.kvStore.get('kernel.defaultManagerType'),
-    'xs-worker',
+    'xsnap',
     'defaultManagerType is saved by kernelKeeper',
   );
   const vatID = c.vatNameToID('bootstrap');
