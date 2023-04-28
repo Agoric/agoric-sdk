@@ -725,4 +725,6 @@
  * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed contract (without the powers the governor needs)
  * @property {GovernorCreatorFacet<SF>} governorCreatorFacet of the governing contract
  * @property {Awaited<ReturnType<SF>>['publicFacet']} publicFacet
+ * @property {Instance} instance
+ * @property {Instance} governor
  */
