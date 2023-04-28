@@ -26,7 +26,7 @@
         "interchainAssetOptions": {
           "denom": "ibc/toyatom",
           "decimalPlaces": 4,
-          "keyword": "IbcATOM",
+          "keyword": "ATOM",
           "oracleBrand": "ATOM",
           "proposedName": "ATOM"
         }
