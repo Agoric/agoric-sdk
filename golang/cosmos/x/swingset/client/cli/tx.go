@@ -20,6 +20,7 @@ import (
 
 const (
 	FlagAllowSpend = "allow-spend"
+	FlagCompress   = "compress"
 )
 
 func GetTxCmd(storeKey string) *cobra.Command {
@@ -91,7 +92,7 @@ func GetCmdDeliver() *cobra.Command {
 // InstallBundle message in a transaction.
 func GetCmdInstallBundle() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "install-bundle <JSON>/@<FILE>/-",
+		Use:  "install-bundle [--compress=true] <JSON>/@<FILE>/-",
 		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -122,9 +123,26 @@ func GetCmdInstallBundle() *cobra.Command {
 				return err
 			}
 
+			compress, err := cmd.Flags().GetBool(FlagCompress)
+			if err != nil {
+				return err
+			}
+			if compress {
+				err = msg.Compress()
+				if err != nil {
+					return err
+				}
+				// re-validate to be sure
+				err = msg.ValidateBasic()
+				if err != nil {
+					return err
+				}
+			}
+
 			return tx.GenerateOrBroadcastTxCLI(cctx, cmd.Flags(), msg)
 		},
 	}
+	cmd.Flags().Bool(FlagCompress, false, "Compress the bundle in transit")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
