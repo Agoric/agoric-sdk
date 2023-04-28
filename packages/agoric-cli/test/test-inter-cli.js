@@ -31,7 +31,7 @@ const topBrands = harden({
 });
 
 const agoricNames = harden({
-  brand: { IST: topBrands.IST, ATOM: topBrands.ATOM, ATOM: topBrands.ATOM },
+  brand: { IST: topBrands.IST, ATOM: topBrands.ATOM },
 
   instance: {
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
