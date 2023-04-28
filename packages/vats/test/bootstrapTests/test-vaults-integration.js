@@ -16,7 +16,7 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 const test = anyTest;
 
 // presently all these tests use one collateral manager
-const collateralBrandKey = 'IbcATOM';
+const collateralBrandKey = 'ATOM';
 
 const likePayouts = (collateral, minted) => ({
   Collateral: {
@@ -39,7 +39,7 @@ const makeDefaultTestContext = async t => {
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
-  // Wait for IbcATOM to make it into agoricNames
+  // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
@@ -47,7 +47,7 @@ const makeDefaultTestContext = async t => {
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
     swingsetTestKit.storage,
   );
-  agoricNamesRemotes.brand.IbcATOM || Fail`IbcATOM missing from agoricNames`;
+  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
@@ -224,7 +224,7 @@ test('open vault with insufficient funds gives helpful error', async t => {
   const giveCollateral = 9.0;
   const wantMinted = giveCollateral * 100;
   const message =
-    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: IbcATOM brand]","value":"[9000000n]"} collateral';
+    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: ATOM brand]","value":"[9000000n]"} collateral';
   await t.throwsAsync(
     wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId: 'open-vault',
@@ -273,7 +273,7 @@ test('exit bid', async t => {
 
   wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
-    maxBuy: '1.23IbcATOM',
+    maxBuy: '1.23ATOM',
     give: '0.1IST',
     price: 5,
     parseAmount,

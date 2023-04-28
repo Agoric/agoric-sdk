@@ -57,7 +57,7 @@ const snapshotHeap = async step => {
 };
 
 // presently all these tests use one collateral manager
-const collateralBrandKey = 'IbcATOM';
+const collateralBrandKey = 'ATOM';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
@@ -67,7 +67,7 @@ const makeDefaultTestContext = async t => {
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
-  // Wait for IbcATOM to make it into agoricNames
+  // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
@@ -75,7 +75,7 @@ const makeDefaultTestContext = async t => {
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
     swingsetTestKit.storage,
   );
-  agoricNamesRemotes.brand.IbcATOM || Fail`IbcATOM missing from agoricNames`;
+  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
