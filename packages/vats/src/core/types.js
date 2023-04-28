@@ -203,6 +203,40 @@
  */
 
 /**
+ * @template {GovernableStartFn} SF
+ * @typedef {{
+ *   installation: ERef<Installation<SF>>,
+ *   issuerKeywordRecord?: IssuerKeywordRecord,
+ *   governedParams: Record<string, unknown>,
+ *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers' | 'governedParams' | 'electionManager'>,
+ *   privateArgs: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'], 'initialPoserInvitation'>,
+ *   label: string,
+ *   produceResults: Producer<GovernanceFacetKit<SF>>,
+ * }} StartGovernedUpgradeableOpts
+ *
+ */
+/**
+ * @typedef {<SF extends GovernableStartFn>(opts: StartGovernedUpgradeableOpts<SF>) => Promise<GovernanceFacetKit<SF>>
+ * } StartGovernedUpgradeable
+ */
+
+/**
+ * @template {import('@agoric/zoe/src/zoeService/utils').ContractStartFunction} SF
+ * @typedef {{
+ *   installation: ERef<Installation<SF>>,
+ *   issuerKeywordRecord?: IssuerKeywordRecord,
+ *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers'>,
+ *   privateArgs: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
+ *   label: string,
+ *   produceResults: Producer<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>,
+ * }} StartUpgradeableOpts
+ */
+/**
+ * @typedef {<SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>(opts: StartUpgradeableOpts<SF>) => Promise<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>
+ * } StartUpgradeable
+ */
+
+/**
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
@@ -231,6 +265,8 @@
  *   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   storageBridgeManager: import('../types.js').ScopedBridgeManager?,
+ *   startUpgradeable: StartUpgradeable,
+ *   startGovernedUpgradeable: StartGovernedUpgradeable,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,

@@ -5,7 +5,13 @@ import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
-import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
+import {
+  BridgeId,
+  deeplyFulfilledObject,
+  VBankAccount,
+  WalletName,
+} from '@agoric/internal';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -82,6 +88,35 @@ export const makeVatsFromBundles = async ({
   loadCriticalVat.resolve(makeLazyVatLoader({ critical: criticalVatKey }));
 };
 harden(makeVatsFromBundles);
+
+/** @param {BootstrapPowers} powers */
+export const produceStartUpgradeable = async ({
+  consume: { zoe },
+  produce, // startUpgradeable
+}) => {
+  /** @type {StartUpgradeable} */
+  const startUpgradeable = async ({
+    installation,
+    issuerKeywordRecord,
+    terms,
+    privateArgs,
+    label,
+    produceResults,
+  }) => {
+    const startResult = E(zoe).startInstance(
+      installation,
+      issuerKeywordRecord,
+      terms,
+      privateArgs,
+      label,
+    );
+    produceResults.resolve(startResult);
+    return startResult;
+  };
+
+  produce.startUpgradeable.resolve(startUpgradeable);
+};
+harden(produceStartUpgradeable);
 
 /**
  * @template {GovernableStartFn} SF
@@ -172,6 +207,47 @@ const startGovernedInstance = async (
   };
   return facets;
 };
+
+export const produceStartGovernedUpgradeable = async ({
+  consume: { chainTimerService, economicCommitteeCreatorFacet, zoe },
+  produce, // startGovernedUpgradeable
+  installation: {
+    consume: { contractGovernor },
+  },
+}) => {
+  /** @type {StartGovernedUpgradeable} */
+  const startGovernedUpgradeable = async ({
+    installation,
+    issuerKeywordRecord,
+    governedParams,
+    terms,
+    privateArgs,
+    label,
+    produceResults,
+  }) => {
+    const facetsP = startGovernedInstance(
+      {
+        zoe,
+        governedContractInstallation: installation,
+        issuerKeywordRecord,
+        terms,
+        privateArgs,
+        label,
+      },
+      {
+        governedParams,
+        timer: chainTimerService,
+        contractGovernor,
+        economicCommitteeCreatorFacet,
+      },
+    );
+    produceResults.resolve(facetsP);
+    return facetsP;
+  };
+
+  produce.startGovernedUpgradeable.resolve(startGovernedUpgradeable);
+};
+harden(produceStartGovernedUpgradeable);
 
 /**
  * @param { BootstrapPowers & {
@@ -619,6 +695,21 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     },
     issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
+  },
+  [produceStartUpgradeable.name]: {
+    consume: { zoe: 'zoe' },
+    produce: { startUpgradeable: true },
+  },
+  [produceStartGovernedUpgradeable.name]: {
+    consume: {
+      chainTimerService: 'timer',
+      economicCommitteeCreatorFacet: 'economicCommittee',
+      zoe: 'zoe',
+    },
+    produce: { startGovernedUpgradeable: true },
+    installation: {
+      consume: { contractGovernor: 'zoe' },
+    },
   },
 };
 harden(BASIC_BOOTSTRAP_PERMITS);
