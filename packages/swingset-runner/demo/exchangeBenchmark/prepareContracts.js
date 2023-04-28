@@ -23,4 +23,7 @@ const generateBundlesP = Promise.all(
   }),
 );
 
-generateBundlesP.then(() => console.log('contracts prepared'));
+generateBundlesP.then(
+  () => console.log('contracts prepared'),
+  reason => console.error('Failed to generate contracts', reason),
+);
