@@ -77,7 +77,7 @@ test('inter-protocol ATOM proposal handles initialPrice option', async t => {
     decimalPlaces: 6,
     denom: 'ibc/toyatom',
     initialPrice: 12.34,
-    keyword: 'IbcATOM',
+    keyword: 'ATOM',
     oracleBrand: 'ATOM',
     proposedName: 'ATOM',
   };
