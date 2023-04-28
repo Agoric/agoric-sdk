@@ -126,7 +126,7 @@ message MsgInstallBundle {
     // Default compression algorithm is gzip.
     bytes compressed_bundle = 3 [
         (gogoproto.jsontag)    = "compressedBundle",
-        (gogoproto.moretags)   = "yaml:\"bcompressedBndle\""
+        (gogoproto.moretags)   = "yaml:\"compressedBundle\""
     ];
     // Size in bytes of uncompression of compressed_bundle.
     int64 uncompressed_size = 4 [

@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
+	"math"
 	"strings"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -33,9 +34,9 @@ var (
 func chargeAdmission(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress, msgs []string, storageLen uint64) error {
 	beansPerUnit := keeper.GetBeansPerUnit(ctx)
 	beans := beansPerUnit[BeansPerInboundTx]
-	beans = beans.Add(beansPerUnit[BeansPerMessage].Mul(sdk.NewUint(uint64(len(msgs)))))
+	beans = beans.Add(beansPerUnit[BeansPerMessage].MulUint64((uint64(len(msgs)))))
 	for _, msg := range msgs {
-		beans = beans.Add(beansPerUnit[BeansPerMessageByte].Mul(sdk.NewUint(uint64(len(msg)))))
+		beans = beans.Add(beansPerUnit[BeansPerMessageByte].MulUint64(uint64(len(msg))))
 	}
 	beans = beans.Add(beansPerUnit[BeansPerStorageByte].MulUint64(storageLen))
 
@@ -334,13 +335,17 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle cannot be empty")
 	}
 	if len(msg.Bundle) != 0 && len(msg.CompressedBundle) != 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit both compressed and uncompressed bundles")
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit both a compressed and an uncompressed bundle at the same time")
 	}
 	if len(msg.Bundle) > 0 && msg.UncompressedSize != 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size not be set when not compressing")
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be set without a compressed bundle")
 	}
 	if len(msg.CompressedBundle) > 0 && !(msg.UncompressedSize > 0) {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be positive")
+	}
+	if msg.UncompressedSize == math.MaxInt64 {
+		// must avoid the limit because we compute its successor in Uncompress()
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
 	}
 	// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
 	return nil
@@ -359,8 +364,7 @@ func (msg MsgInstallBundle) ExpectedUncompressedSize() uint64 {
 	return uint64(len(msg.Bundle))
 }
 
-// Compress gzip-compresses a validated bundle.
-// Do nothing if it looks like it's already compressed.
+// Compress ensures that a validated bundle has been gzip-compressed.
 func (msg *MsgInstallBundle) Compress() error {
 	if len(msg.Bundle) == 0 {
 		return nil
@@ -379,8 +383,8 @@ func (msg *MsgInstallBundle) Compress() error {
 	return nil
 }
 
-// Uncompress gzip-uncompresses a validated bundle.
-// Do nothing if it looks like it's already uncompressed.
+// Uncompress ensures that a validated bundle is uncompressed,
+// gzip-uncompressing it if necessary.
 // Returns an error (and ends uncompression early) if the uncompressed
 // size does not match the expected uncompressed size.
 func (msg *MsgInstallBundle) Uncompress() error {
@@ -392,7 +396,11 @@ func (msg *MsgInstallBundle) Uncompress() error {
 	if err != nil {
 		return err
 	}
-	limitedReader := io.LimitedReader{R: ungzipReader, N: msg.UncompressedSize}
+	// Read at most one byte over expected size.
+	// Computation doesn't overflow because of ValidateBasic check.
+	// Setting the limit over the expected size is needed to detect
+	// expansion beyond expectations.
+	limitedReader := io.LimitedReader{R: ungzipReader, N: msg.UncompressedSize + 1}
 	var buf bytes.Buffer
 	n, err := io.Copy(&buf, &limitedReader)
 	if err != nil {
@@ -400,9 +408,6 @@ func (msg *MsgInstallBundle) Uncompress() error {
 	}
 	if n != msg.UncompressedSize {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "Uncompressed size does not match expected value")
-	}
-	if limitedReader.N > 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "Uncompressed size larger thah expected value")
 	}
 	msg.Bundle = buf.String()
 	msg.CompressedBundle = []byte{}

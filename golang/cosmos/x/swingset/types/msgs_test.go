@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"math"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -145,6 +146,15 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			name: "max",
+			msg: &MsgInstallBundle{
+				Submitter:        addr,
+				CompressedBundle: []byte{1, 2, 3},
+				UncompressedSize: math.MaxInt64,
+			},
+			shouldErr: true,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.msg.ValidateBasic()
@@ -220,5 +230,17 @@ func TestInstallBundle_Compress(t *testing.T) {
 	}
 	if !eq(msg, origMsg) {
 		t.Errorf("round-trip got %+v, want %+v", msg, origMsg)
+	}
+	msgModLo := proto.Clone(compressedMsg).(*MsgInstallBundle)
+	msgModLo.UncompressedSize--
+	err = msgModLo.Uncompress()
+	if err == nil {
+		t.Errorf("wanted Uncompress error for low uncompressed size")
+	}
+	msgModHi := proto.Clone(compressedMsg).(*MsgInstallBundle)
+	msgModHi.UncompressedSize++
+	err = msgModHi.Uncompress()
+	if err == nil {
+		t.Errorf("wanted Uncompress error for high uncompressed size")
 	}
 }
