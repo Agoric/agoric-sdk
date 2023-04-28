@@ -166,9 +166,9 @@ export async function recordXSnap(options, folderPath, { writeFileSync }) {
     import: async _fileName => {
       throw Error('recording: import not supported');
     },
-    makeSnapshot: async function* makeSnapshot(description) {
+    makeSnapshot(description) {
       nextFile('snapshot').putText(filenameFromDescription(description));
-      yield* it.makeSnapshot(description);
+      return it.makeSnapshot(description);
     },
   });
 }

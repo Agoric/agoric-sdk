@@ -7,6 +7,7 @@ import test from 'ava';
 import * as proc from 'child_process';
 import * as os from 'os';
 import fs from 'fs';
+import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { tmpName } from 'tmp';
 
@@ -284,7 +285,7 @@ test('write and read snapshot', async t => {
   t.deepEqual(['Hello, World!'], messages);
 });
 
-test.failing('execute immediately after makeSnapshot', async t => {
+test('execute immediately after makeSnapshot', async t => {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decode(message));
@@ -400,7 +401,8 @@ function pickXSnap(env = process.env) {
     console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
     let serial = 0;
     doXSnap = opts => {
-      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      const workerTrace =
+        path.resolve(XSNAP_TEST_RECORD, String(serial)) + path.sep;
       serial += 1;
       fs.mkdirSync(workerTrace, { recursive: true });
       return recordXSnap(opts, workerTrace, {
@@ -439,6 +441,7 @@ test('GC after snapshot vs restore', async t => {
 
   const optClone = { ...options(io), name: 'clone', snapshotStream };
   const clone = await xsnapr(optClone);
+  await clone.isReady();
   t.log('cloned');
   t.teardown(clone.terminate);
 

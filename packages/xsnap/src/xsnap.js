@@ -15,7 +15,7 @@
 import { promisify } from 'util';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
-import { racePromises } from '@endo/promise-kit';
+import { makePromiseKit, racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
 import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
@@ -346,10 +346,11 @@ export async function xsnap(options) {
   }
 
   /**
-   * @param {string} [description]
+   * @param {string} description
+   * @param {import('@endo/promise-kit').PromiseKit<void>} batonKit
    * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
-  async function* makeSnapshot(description = 'unknown') {
+  async function* makeSnapshotInternal(description, batonKit) {
     // TODO: Refactor to use tmpFile rather than tmpName.
     const tmpSnapPath = await ptmpName({
       template: `make-snapshot-${safeHintFromDescription(
@@ -358,11 +359,11 @@ export async function xsnap(options) {
     });
 
     try {
-      const result = baton.then(async () => {
+      const result = batonKit.promise.then(async () => {
         await messagesToXsnap.next(encoder.encode(`w${tmpSnapPath}`));
         await runToIdle();
       });
-      baton = result.then(noop, noop);
+      batonKit.resolve(result);
       // eslint-disable-next-line @jessie.js/no-nested-await
       await racePromises([vatExit.promise, baton]);
       const snapReader = fs.createReadStream(tmpSnapPath);
@@ -373,6 +374,18 @@ export async function xsnap(options) {
       // eslint-disable-next-line @jessie.js/no-nested-await
       await fs.unlink(tmpSnapPath);
     }
+  }
+
+  /**
+   * @param {string} [description]
+   * @returns {AsyncGenerator<Uint8Array, void, undefined>}
+   */
+  function makeSnapshot(description = 'unknown') {
+    const { promise: internalResult, ...batonKitResolvers } = makePromiseKit();
+    const batonKit = { promise: baton, ...batonKitResolvers };
+    baton = internalResult.then(noop, noop);
+
+    return makeSnapshotInternal(description, batonKit);
   }
 
   /**
