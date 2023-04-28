@@ -254,10 +254,10 @@ inter auction status
     "nextDescendingStepTime": "2023-04-19T22:51:02.000Z"
   },
   "book0": {
-    "startPrice": "12.34 IST/IbcATOM",
-    "currentPriceLevel": "11.723 IST/IbcATOM",
-    "startCollateral": "0 IbcATOM",
-    "collateralAvailable": "0 IbcATOM"
+    "startPrice": "12.34 IST/ATOM",
+    "currentPriceLevel": "11.723 IST/ATOM",
+    "startCollateral": "0 ATOM",
+    "collateralAvailable": "0 ATOM"
   },
   "params": {
     "DiscountStep": "5.00%",
@@ -377,7 +377,7 @@ inter auction status
         '--maxBuy <amount>',
         'max Collateral wanted',
         String,
-        '1_000_000IbcATOM',
+        '1_000_000ATOM',
       )
       .option(
         '--wantMinimum <amount>',
@@ -539,8 +539,8 @@ inter auction status
 For example:
 
 $ inter bid list --from my-acct
-{"id":"bid-1679677228803","price":"9 IST/IbcATOM","give":{"Bid":"50IST"},"want":"5IbcATOM"}
-{"id":"bid-1679677312341","discount":10,"give":{"Bid":"200IST"},"want":"1IbcATOM"}
+{"id":"bid-1679677228803","price":"9 IST/ATOM","give":{"Bid":"50IST"},"want":"5ATOM"}
+{"id":"bid-1679677312341","discount":10,"give":{"Bid":"200IST"},"want":"1ATOM"}
 `,
     )
     .requiredOption(

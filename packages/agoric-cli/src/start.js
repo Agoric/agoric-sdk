@@ -31,7 +31,7 @@ const PROVISION_COINS = [
   `5000000000000000${CENTRAL_DENOM}`,
   `100provisionpass`,
   `100sendpacketpass`,
-  `1000000000000ibc/toyatom`, // IbcATOM
+  `1000000000000ibc/toyatom`, // ATOM
   `1000000000000ibc/toyellie`, // AUSD
   `1000000000000ibc/toyusdc`, // USDC
   `1000000000000ibc/toyollie`, // USDT
