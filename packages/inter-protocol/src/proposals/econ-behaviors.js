@@ -157,6 +157,8 @@ export const setupReserve = async ({
 
   reserveKit.resolve(
     harden({
+      instance,
+      governor: g.instance,
       publicFacet,
       creatorFacet,
       governorCreatorFacet: g.creatorFacet,
