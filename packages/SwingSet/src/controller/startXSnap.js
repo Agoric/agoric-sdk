@@ -13,12 +13,21 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  */
 
 /**
+ * @typedef {object} StartXSnapInitFromSnapshotStreamDetails
+ * @property {'snapshotStream'} from
+ * @property {AsyncIterable<Uint8Array>} snapshotStream
+ * @property {string} [snapshotDescription]
+ */
+
+/**
  * @typedef {object} StartXSnapInitFromSnapStoreDetails
  * @property {'snapStore'} from
  * @property {string} vatID
+ *
+ * TODO: transition to direct snapshot stream, and remove this option
  */
 
-/** @typedef {StartXSnapInitFromBundlesDetails | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails */
+/** @typedef {StartXSnapInitFromBundlesDetails | StartXSnapInitFromSnapshotStreamDetails | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails */
 
 /** @typedef {ReturnType<typeof makeStartXSnap>} StartXSnap */
 
@@ -96,6 +105,11 @@ export function makeStartXSnap(options) {
         // console.log('startXSnap from', { snapshotID });
         const snapshotStream = snapStore.loadSnapshot(vatID);
         const snapshotDescription = `${vatID}-${snapPos}-${snapshotID}`;
+        return { snapshotStream, snapshotDescription };
+      }
+
+      case 'snapshotStream': {
+        const { snapshotStream, snapshotDescription } = initDetails;
         return { snapshotStream, snapshotDescription };
       }
 

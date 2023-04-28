@@ -1,3 +1,4 @@
+import { synchronizedTee } from '@agoric/internal';
 import { assert, Fail, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
@@ -140,7 +141,7 @@ export function makeXsSubprocessFactory({
     let handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
 
     // start the worker and establish a connection
-    const worker = await startXSnap(argName, {
+    let worker = await startXSnap(argName, {
       bundleIDs,
       handleCommand: handleCommandKit.handleCommand,
       metered,
@@ -235,12 +236,49 @@ export function makeXsSubprocessFactory({
      * @param {SnapStore} snapStore
      * @returns {Promise<SnapshotResult>}
      */
-    function makeSnapshot(snapPos, snapStore) {
-      return snapStore.saveSnapshot(
-        vatID,
-        snapPos,
-        worker.makeSnapshotStream(`${vatID}-${snapPos}`),
+    async function makeSnapshot(snapPos, snapStore) {
+      const snapshotDescription = `${vatID}-${snapPos}`;
+      const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
+
+      /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
+      const [restartWorkerStream, snapStoreSaveStream] = synchronizedTee(
+        snapshotStream,
+        2,
       );
+
+      handleCommandKit?.revoke();
+      handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
+
+      let snapshotResults;
+      const closeP = worker.close();
+      [worker, snapshotResults] = await Promise.all([
+        startXSnap(argName, {
+          bundleIDs,
+          handleCommand: handleCommandKit.handleCommand,
+          metered,
+          init: {
+            from: 'snapshotStream',
+            snapshotStream: restartWorkerStream,
+            snapshotDescription,
+          },
+        }),
+        snapStore.saveSnapshot(vatID, snapPos, snapStoreSaveStream),
+      ]);
+      await closeP;
+
+      /** @type {Partial<import('@agoric/swing-store/src/snapStore.js').SnapshotInfo>} */
+      const reloadSnapshotInfo = {
+        snapPos,
+        hash: snapshotResults.hash,
+      };
+
+      kernelSlog.write({
+        type: 'heap-snapshot-load',
+        vatID,
+        ...reloadSnapshotInfo,
+      });
+
+      return snapshotResults;
     }
 
     return mk.getManager(shutdown, makeSnapshot);
