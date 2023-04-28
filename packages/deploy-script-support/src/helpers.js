@@ -3,9 +3,13 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
+import fs from 'fs/promises';
+import os from 'os';
+
 import { makeInstall } from './install.js';
 import { makeOfferAndFindInvitationAmount } from './offer.js';
 import { makeStartInstance } from './startInstance.js';
+import { makeCacheAndGetBundleSpec } from './cachedBundleSpec.js';
 import { makeDepositInvitation } from './depositInvitation.js';
 import { makeSaveIssuer } from './saveIssuer.js';
 import { makeGetBundlerMaker } from './getBundlerMaker.js';
@@ -20,68 +24,124 @@ export * from '@agoric/internal/src/node/createBundles.js';
 // on this end.
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
+/**
+ * @template {Record<PropertyKey, any>} T
+ *
+ * Lazily populate the returned object's properties from the properties of a
+ * source object.  Each `sourceObject` property value is sampled at most once.
+ *
+ * @param {T} sourceObject
+ * @returns {T}
+ */
+const makeLazyObject = sourceObject => {
+  const lazyObject = new Proxy(
+    {},
+    {
+      get(t, key) {
+        if (!(key in t)) {
+          if (key in sourceObject) {
+            t[key] = sourceObject[key];
+          }
+        }
+        return t[key];
+      },
+    },
+  );
+  return /** @type {T} */ (lazyObject);
+};
+
 export const makeHelpers = async (homePromise, endowments) => {
-  const { zoe, wallet, scratch, board } = E.get(homePromise);
-
-  const { lookup, publishBundle, pathResolve } = endowments;
-
-  const walletAdmin = E(wallet).getAdminFacet();
-  const installationManager = E(walletAdmin).getInstallationManager();
-  const instanceManager = E(walletAdmin).getInstanceManager();
-  const issuerManager = E(walletAdmin).getIssuerManager();
-
-  // TODO: Rather than using one purse with a hard-coded petname, find
-  // a better solution.
-  const zoeInvitationPurse = E(walletAdmin).getPurse(ZOE_INVITE_PURSE_PETNAME);
-
-  // Create the methods
-
-  const install = makeInstall(
-    bundleSource,
-    zoe,
-    installationManager,
-    board,
+  // Endowments provided via `agoric run` or `agoric deploy`.
+  const {
+    now,
+    lookup,
     publishBundle,
     pathResolve,
-  );
+    cacheDir = pathResolve(os.homedir(), '.agoric/cache'),
+  } = endowments;
 
-  const startInstance = makeStartInstance(
-    issuerManager,
-    instanceManager,
-    zoe,
-    zoeInvitationPurse,
-  );
-
-  const { offer, findInvitationAmount } = makeOfferAndFindInvitationAmount(
-    walletAdmin,
-    zoe,
-    zoeInvitationPurse,
-  );
-
-  const saveIssuer = makeSaveIssuer(walletAdmin, issuerManager);
-
-  const depositInvitation = makeDepositInvitation(zoeInvitationPurse);
-
-  const getBundlerMaker = makeGetBundlerMaker(
-    { board, scratch, zoe },
-    { bundleSource, lookup },
-  );
-
-  const writeCoreProposal = makeWriteCoreProposal(homePromise, endowments, {
-    installInPieces,
-    getBundlerMaker,
+  // Internal-to-this-function lazy dependencies.
+  const deps = makeLazyObject({
+    get cacheAndGetBundleSpec() {
+      return makeCacheAndGetBundleSpec(cacheDir, {
+        now,
+        fs,
+        pathResolve,
+      });
+    },
+    get home() {
+      return E.get(homePromise);
+    },
+    get installationManager() {
+      return E(deps.walletAdmin).getInstallationManager();
+    },
+    get instanceManager() {
+      return E(deps.walletAdmin).getInstanceManager();
+    },
+    get issuerManager() {
+      return E(deps.walletAdmin).getIssuerManager();
+    },
+    get offerAndFind() {
+      return makeOfferAndFindInvitationAmount(
+        deps.walletAdmin,
+        deps.home.zoe,
+        deps.zoeInvitationPurse,
+      );
+    },
+    get walletAdmin() {
+      return E(deps.home.wallet).getAdminFacet();
+    },
+    get zoeInvitationPurse() {
+      // TODO: Rather than using one purse with a hard-coded petname, find
+      // a better solution.
+      return E(deps.walletAdmin).getPurse(ZOE_INVITE_PURSE_PETNAME);
+    },
   });
 
-  return {
-    install,
-    startInstance,
-    offer,
-    findInvitationAmount,
-    installInPieces,
-    getBundlerMaker,
-    saveIssuer,
-    depositInvitation,
+  // The memo returned to our callers.
+  const helpers = makeLazyObject({
     assertOfferResult,
-    writeCoreProposal,
-  };
+    get depositInvitation() {
+      return makeDepositInvitation(deps.zoeInvitationPurse);
+    },
+    get findInvitationAmount() {
+      return deps.offerAndFind.findInvitationAmount;
+    },
+    get install() {
+      return makeInstall(
+        bundleSource,
+        deps.home.zoe,
+        deps.installationManager,
+        deps.home.board,
+        publishBundle,
+        pathResolve,
+      );
+    },
+    installInPieces,
+    get offer() {
+      return deps.offerAndFind.offer;
+    },
+    get saveIssuer() {
+      return makeSaveIssuer(deps.walletAdmin, deps.issuerManager);
+    },
+    get startInstance() {
+      return makeStartInstance(
+        deps.issuerManager,
+        deps.instanceManager,
+        deps.home.zoe,
+        deps.zoeInvitationPurse,
+      );
+    },
+    get getBundlerMaker() {
+      return makeGetBundlerMaker(homePromise, { bundleSource, lookup });
+    },
+    get writeCoreProposal() {
+      return makeWriteCoreProposal(homePromise, endowments, {
+        getBundleSpec: deps.cacheAndGetBundleSpec,
+        getBundlerMaker: helpers.getBundlerMaker,
+      });
+    },
+  });
+
+  return helpers;
 };

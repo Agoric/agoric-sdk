@@ -14,11 +14,12 @@ import { E } from '@endo/far';
 import url from 'url';
 
 export const makeGetBundlerMaker =
-  ({ board: optionalBoard, zoe, scratch }, { lookup, bundleSource }) =>
+  (homeP, { lookup, bundleSource }) =>
   async ({
     BUNDLER_MAKER_LOOKUP = JSON.stringify(['scratch', 'bundlerMaker']),
     log = console.log,
   } = {}) => {
+    const { board: optionalBoard, zoe, scratch } = await homeP;
     const lookupOrCreate = async () => {
       // Locate the bundler maker if any already exists at the given path.
       let bundlerMaker = await lookup(JSON.parse(BUNDLER_MAKER_LOOKUP));
