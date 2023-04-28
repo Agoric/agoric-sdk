@@ -27,7 +27,10 @@ import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
-import { prepareVaultDirector } from './vaultDirector.js';
+import {
+  prepareVaultDirector,
+  provideAndStartDirector,
+} from './vaultDirector.js';
 
 const trace = makeTracer('VF', false);
 
@@ -95,9 +98,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   );
   /** a powerful object; can modify the invitation */
   trace('awaiting makeParamManagerFromTerms');
-  trace(
-    'NOTICE if restarting with re-used invitations this will loudly log usage failures in an unhandled promise rejection',
-  );
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
     {
       publisher: governanceSubscriptionKit.publication,
@@ -111,7 +111,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     vaultDirectorParamTypes,
   );
 
-  const makeVaultDirector = prepareVaultDirector(
+  const director = provideAndStartDirector(
     baggage,
     zcf,
     vaultDirectorParamManager,
@@ -124,8 +124,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     makeRecorderKit,
     makeERecorderKit,
   );
-
-  const director = provide(baggage, 'director', makeVaultDirector);
 
   // validate async to wait for params to be finished
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343

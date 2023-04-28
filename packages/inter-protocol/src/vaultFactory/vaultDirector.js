@@ -7,7 +7,11 @@ import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
-import { prepareExoClassKit, provideDurableMapStore } from '@agoric/vat-data';
+import {
+  prepareExoClassKit,
+  provide,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
   atomicRearrange,
@@ -63,7 +67,6 @@ const trace = makeTracer('VD', false);
  *
  * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} VaultDirectorParamManager
  */
-// TODO find a way to type 'finish' with the context (state and facets)
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
@@ -308,7 +311,8 @@ export const prepareVaultDirector = (
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
       helper: M.interface('helper', {
-        rescheduleLiquidationWakeups: M.call().returns(),
+        rescheduleLiquidationWakeups: M.call().returns(M.promise()),
+        start: M.call().returns(M.promise()),
       }),
     },
     initState,
@@ -429,7 +433,7 @@ export const prepareVaultDirector = (
         makeReschedulerWaker() {
           const { facets } = this;
           return makeWaker('reschedulerWaker', () => {
-            facets.helper.rescheduleLiquidationWakeups();
+            void facets.helper.rescheduleLiquidationWakeups();
           });
         },
         makePriceLockWaker() {
@@ -523,7 +527,7 @@ export const prepareVaultDirector = (
           const priceLockWaker = facets.machine.makePriceLockWaker();
           const liquidationWaker = facets.machine.makeLiquidationWaker();
           const rescheduleWaker = facets.machine.makeReschedulerWaker();
-          void scheduleLiquidationWakeups(
+          return scheduleLiquidationWakeups(
             auctioneer,
             timer,
             priceLockWaker,
@@ -531,15 +535,33 @@ export const prepareVaultDirector = (
             rescheduleWaker,
           );
         },
-      },
-    },
-    {
-      finish: ({ facets }) => {
-        facets.helper.rescheduleLiquidationWakeups();
-        void updateShortfallReporter();
+        /**
+         * Start non-durable processes (or restart if needed after vat restart)
+         */
+        async start() {
+          const { helper } = this.facets;
+          helper.rescheduleLiquidationWakeups();
+          await updateShortfallReporter();
+        },
       },
     },
   );
   return makeVaultDirector;
 };
 harden(prepareVaultDirector);
+
+/**
+ * Prepare the VaultDirector kind, get or make the singleton, and call .start() to kick off processes.
+ *
+ * @type {(...pvdArgs: Parameters<typeof prepareVaultDirector>) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
+ */
+export const provideAndStartDirector = (...args) => {
+  const makeVaultDirector = prepareVaultDirector(...args);
+
+  const [baggage] = args;
+
+  const director = provide(baggage, 'director', makeVaultDirector);
+  director.helper.start();
+  return director;
+};
+harden(provideAndStartDirector);
