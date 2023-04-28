@@ -284,6 +284,37 @@ test('write and read snapshot', async t => {
   t.deepEqual(['Hello, World!'], messages);
 });
 
+test.failing('execute immediately after makeSnapshot', async t => {
+  const messages = [];
+  async function handleCommand(message) {
+    messages.push(decode(message));
+    return new Uint8Array();
+  }
+
+  const vat0 = await xsnap({ ...options(io), handleCommand });
+  void vat0.evaluate(`
+    globalThis.when = 'before';
+  `);
+  const snapshotStream = vat0.makeSnapshot();
+
+  void vat0.evaluate(`
+    globalThis.when = 'after';
+  `);
+
+  const vat1 = await xsnap({
+    ...options(io),
+    handleCommand,
+    snapshotStream,
+  });
+  await vat0.close();
+  void vat1.evaluate(`
+    issueCommand(new TextEncoder().encode(when).buffer);
+  `);
+  await vat1.close();
+
+  t.deepEqual(['before'], messages);
+});
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
