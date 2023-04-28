@@ -8,8 +8,9 @@ const t = 'makeCoreProposalBehavior';
  * @typedef {*} BootstrapPowers
  */
 
+// These permits apply to `allPowers` in `behavior` below.
 export const permits = {
-  consume: { board: t, agoricNamesAdmin: t },
+  consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
   evaluateBundleCap: t,
   installation: { produce: t },
   modules: { utils: { runModuleBehaviors: t } },
@@ -57,6 +58,8 @@ export const makeCoreProposalBehavior = ({
 
   /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} allPowers */
   const behavior = async allPowers => {
+    // NOTE: If updating any of these names extracted from `allPowers`, you must
+    // change `permits` above to reflect their accessibility.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },
       evaluateBundleCap,
