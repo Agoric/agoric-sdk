@@ -50,12 +50,7 @@ const makeRevokableHandleCommandKit = handleUpstream => {
  * @param {{
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (vatID: string, name: string,
- *                details: {
- *                 bundleIDs: BundleID[],
- *                 handleCommand: AsyncHandler,
- *                 metered?: boolean,
- *                 reload?: boolean } ) => Promise<XSnap>,
+ *   startXSnap: import('../../controller/startXSnap.js').StartXSnap,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -145,11 +140,11 @@ export function makeXsSubprocessFactory({
     let handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
 
     // start the worker and establish a connection
-    const worker = await startXSnap(vatID, argName, {
+    const worker = await startXSnap(argName, {
       bundleIDs,
       handleCommand: handleCommandKit.handleCommand,
       metered,
-      reload: !!snapshotInfo,
+      init: snapshotInfo && { from: 'snapStore', vatID },
     });
 
     /** @type { (item: Tagged) => Promise<WorkerResults> } */
