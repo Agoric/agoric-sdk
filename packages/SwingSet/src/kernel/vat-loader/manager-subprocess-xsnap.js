@@ -26,6 +26,26 @@ function parentLog(first, ...args) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+/** @param { (item: Tagged) => unknown } [handleUpstream] */
+const makeRevokableHandleCommandKit = handleUpstream => {
+  /**
+   * @param {Uint8Array} msg
+   * @returns {Promise<Uint8Array>}
+   */
+  const handleCommand = async msg => {
+    // parentLog('handleCommand', { length: msg.byteLength });
+    if (!handleUpstream) {
+      throw Fail`Worker received command after revocation`;
+    }
+    const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
+    return encoder.encode(JSON.stringify(tagged));
+  };
+  const revoke = () => {
+    handleUpstream = undefined;
+  };
+  return harden({ handleCommand, revoke });
+};
+
 /**
  * @param {{
  *   kernelKeeper: KernelKeeper,
@@ -110,13 +130,6 @@ export function makeXsSubprocessFactory({
       }
     }
 
-    /** @type { (msg: Uint8Array) => Promise<Uint8Array> } */
-    async function handleCommand(msg) {
-      // parentLog('handleCommand', { length: msg.byteLength });
-      const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
-      return encoder.encode(JSON.stringify(tagged));
-    }
-
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const snapshotInfo = vatKeeper.getSnapshotInfo();
     if (snapshotInfo) {
@@ -128,10 +141,13 @@ export function makeXsSubprocessFactory({
     // a shell-escape attack
     const argName = `${vatID}:${vatName !== undefined ? vatName : ''}`;
 
+    /** @type {ReturnType<typeof makeRevokableHandleCommandKit> | undefined} */
+    let handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
+
     // start the worker and establish a connection
     const worker = await startXSnap(vatID, argName, {
       bundleIDs,
-      handleCommand,
+      handleCommand: handleCommandKit.handleCommand,
       metered,
       reload: !!snapshotInfo,
     });
@@ -215,6 +231,8 @@ export function makeXsSubprocessFactory({
     mk.setDeliverToWorker(deliverToWorker);
 
     function shutdown() {
+      handleCommandKit?.revoke();
+      handleCommandKit = undefined;
       return worker.close().then(_ => undefined);
     }
     /**
