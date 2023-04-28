@@ -1,13 +1,9 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import {
-  deeplyFulfilledObject,
-  makeTracer,
-  VBankAccount,
-} from '@agoric/internal';
+import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '../tokens.js';
 
@@ -52,14 +48,13 @@ export const startWalletFactory = async (
       provisionWalletBridgeManager: provisionWalletBridgeManagerP,
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
-      zoe,
-      chainTimerService,
-      economicCommitteeCreatorFacet,
       econCharterKit,
+      startUpgradeable: startUpgradeableP,
+      startGovernedUpgradeable: startGovernedUpgradeableP,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
-      consume: { walletFactory, provisionPool, contractGovernor },
+      consume: { walletFactory, provisionPool },
     },
     instance: { produce: instanceProduce },
     brand: {
@@ -116,47 +111,43 @@ export const startWalletFactory = async (
       }),
     }),
   );
-  /** @type {WalletFactoryStartResult} */
-  const wfFacets = await E(zoe).startInstance(
-    walletFactory,
-    { Fee: feeIssuer },
+
+  const startUpgradeable = await startUpgradeableP;
+  const wfFacets = await startUpgradeable({
+    installation: walletFactory,
+    issuerKeywordRecord: { Fee: feeIssuer },
     terms,
-    {
+    privateArgs: {
       storageNode: walletStorageNode,
       walletBridgeManager,
     },
-    'walletFactory',
-  );
-  walletFactoryStartResult.resolve(wfFacets);
+    label: 'walletFactory',
+    produceResults: walletFactoryStartResult,
+  });
+  // TODO: push this resolve instance into startUpgradeable too
+  // but make it optional, since not all instances go in agoricNames
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const ppFacets = await startGovernedInstance(
-    {
-      zoe,
-      governedContractInstallation: provisionPool,
-      terms: {},
-      privateArgs: harden({
-        poolBank,
-        storageNode: poolStorageNode,
-        marshaller: E(board).getPublishingMarshaller(),
-      }),
-      label: 'provisionPool',
-    },
-    {
-      governedParams: {
-        PerAccountInitialAmount: {
-          type: ParamTypes.AMOUNT,
-          value: AmountMath.make(feeBrand, perAccountInitialValue),
-        },
+  const startGovernedUpgradeable = await startGovernedUpgradeableP;
+  const ppFacets = await startGovernedUpgradeable({
+    installation: provisionPool,
+    terms: {},
+    privateArgs: harden({
+      poolBank,
+      storageNode: poolStorageNode,
+      marshaller: await E(board).getPublishingMarshaller(),
+    }),
+    label: 'provisionPool',
+    governedParams: {
+      PerAccountInitialAmount: {
+        type: ParamTypes.AMOUNT,
+        value: AmountMath.make(feeBrand, perAccountInitialValue),
       },
-      timer: chainTimerService,
-      contractGovernor,
-      economicCommitteeCreatorFacet,
     },
-  );
+    produceResults: provisionPoolStartResult,
+  });
+  // TODO: push this resolve instance into startGovernedUpgradeable likewise
   instanceProduce.provisionPool.resolve(ppFacets.instance);
-
-  provisionPoolStartResult.resolve(ppFacets);
 
   const handler = await E(ppFacets.creatorFacet).makeHandler({
     bankManager,
@@ -197,9 +188,8 @@ export const WALLET_FACTORY_MANIFEST = {
       provisionWalletBridgeManager: true,
       chainStorage: 'bridge',
       namesByAddressAdmin: true,
-      zoe: 'zoe',
-      chainTimerService: 'timer',
-      economicCommitteeCreatorFacet: 'economicCommittee',
+      startUpgradeable: true,
+      startGovernedUpgradeable: true,
       econCharterKit: 'psmCharter',
     },
     produce: {
@@ -211,7 +201,6 @@ export const WALLET_FACTORY_MANIFEST = {
       consume: {
         walletFactory: 'zoe',
         provisionPool: 'zoe',
-        contractGovernor: 'zoe',
       },
     },
     brand: {
