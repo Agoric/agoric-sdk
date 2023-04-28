@@ -79,7 +79,7 @@ export const reserveThenDeposit = async (
   );
 };
 
-/** @type {<T>(store: ERef<Map<string, T> | import('@agoric/solo/src/scratch').ScratchPad>, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: ERef<Map<string, T> | import('@agoric/internal/src/scratch.js').ScratchPad>, key: string, make: () => T) => Promise<T>} */
 const provideWhen = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
@@ -92,7 +92,7 @@ const provideWhen = async (store, key, make) => {
 
 /**
  *
- * @param {{ scratch: ERef<import('@agoric/solo/src/scratch').ScratchPad> }} homeP
+ * @param {{ scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad> }} homeP
  * @param {object} opts
  * @param {(specifier: string) => Promise<{default: Bundle}>} opts.loadBundle
  * @param {string} [opts.installCacheKey]
