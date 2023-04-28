@@ -41,8 +41,8 @@ export default function buildCommand(broadcastCallback) {
     const count = Nat(kCount);
     const isReject = Boolean(kIsReject);
     let obj;
-    // TODO: is this safe against kernel-realm trickery? It's awfully handy
-    // to let the kernel-side result be 'undefined'
+    // TODO: Start Compartment globals are tamed, no longer need this
+    // sanitization
     if (kResponseString !== undefined) {
       obj = JSON.parse(`${kResponseString}`);
     }
