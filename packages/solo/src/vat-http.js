@@ -104,18 +104,23 @@ export function buildRootObject(vatPowers) {
 
   const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
   const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
-  Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
-    const walletAdmin = await E(wallet).getAdminFacet();
-    // console.debug('introduce', { wallet, walletAdmin, attMaker });
-    E(walletAdmin).resolveAttMaker(attMaker);
-  });
+
+  const resolvedAttrMakers = Promise.all([walletP, attMakerP]).then(
+    async ([wallet, attMaker]) => {
+      const walletAdmin = await E(wallet).getAdminFacet();
+      // console.debug('introduce', { wallet, walletAdmin, attMaker });
+      await E(walletAdmin).resolveAttMaker(attMaker);
+    },
+  );
 
   return Far('root', {
-    setCommandDevice(d) {
+    async setCommandDevice(d) {
+      await resolvedAttrMakers;
+
       commandDevice = d;
 
       const replHandler = getReplHandler(replObjects, send, vatPowers);
-      registerURLHandler(replHandler, '/private/repl');
+      const replRegistered = registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
       const captpHandler = Far('captpHandler', {
@@ -134,7 +139,11 @@ export function buildRootObject(vatPowers) {
           return harden(exported);
         },
       });
-      registerURLHandler(captpHandler, '/private/captp');
+      const captpRegistered = registerURLHandler(
+        captpHandler,
+        '/private/captp',
+      );
+      return Promise.all([replRegistered, captpRegistered]);
     },
 
     registerURLHandler,
@@ -142,12 +151,14 @@ export function buildRootObject(vatPowers) {
     send,
     doneLoading,
 
-    setWallet(wallet) {
+    async setWallet(wallet) {
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
       resolveCacheCooordinator(E(E(wallet).getBridge()).getCacheCoordinator());
 
       resolveWallet(wallet);
+
+      await resolvedAttrMakers;
     },
 
     /**

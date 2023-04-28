@@ -38,7 +38,7 @@ export async function makeFixture(PORT, noisy = false) {
   let ws;
   function connect() {
     process.stdout.write('# connecting');
-    async function tryConnect(resolve, reject) {
+    function tryConnect(resolve, reject) {
       process.stdout.write('.');
 
       /** @type {() => void} */
