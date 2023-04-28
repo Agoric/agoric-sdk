@@ -349,14 +349,14 @@ const makeScenario = async (t, { env = process.env } = {}) => {
 
     return Far('benefactor', {
       depositInReserve: async (qty = 10_000n) => {
-        const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
+        const atomBrand = await E(agoricNames).lookup('brand', 'ATOM');
         /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
         const reserveAPI = E(zoe).getPublicFacet(
           E(agoricNames).lookup('instance', 'reserve'),
         );
 
         const proposal = harden({
-          give: { Collateral: AmountMath.make(ibcAtomBrand, qty * UNIT) },
+          give: { Collateral: AmountMath.make(atomBrand, qty * UNIT) },
         });
         const atom10k = await E(purses.atom).withdraw(proposal.give.Collateral);
         const seat = E(zoe).offer(
@@ -475,7 +475,7 @@ test.skip('assets are in Vaults', async t => {
     consume: { zoe, agoricNames },
     instance: { consume: instanceP },
   } = s.space;
-  const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
+  const brand = await E(agoricNames).lookup('brand', 'ATOM');
   const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
@@ -504,7 +504,7 @@ test.skip('Committee can raise debt limit', async t => {
   ]);
 
   const { agoricNames } = s.space.consume;
-  const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
+  const brand = await E(agoricNames).lookup('brand', 'ATOM');
   const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
   const vaultsInstance = await E(agoricNames).lookup(
     'instance',
