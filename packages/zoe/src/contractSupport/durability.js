@@ -1,6 +1,5 @@
-import { Fail } from '@agoric/assert';
 import { allValues, objectMap } from '@agoric/internal';
-import { provide, provideDurableMapStore } from '@agoric/vat-data';
+import { provide } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 /**
@@ -45,84 +44,6 @@ export const provideEmptySeat = (zcf, baggage, name) => {
   return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
 };
 harden(provideEmptySeat);
-
-/**
- * For making singletons, so that each baggage carries a separate kind definition (albeit of the definer)
- *
- * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: any[]) => any} M Maker function
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {string} category diagnostic tag
- * @param {M} prepareSingleton
- * @param {{}} categoryPowers
- */
-export const provideCategorySingletons = (
-  baggage,
-  category,
-  prepareSingleton,
-  categoryPowers,
-) => {
-  /** @type {MapStore<number, unknown[]>} */
-  const singletonArgs = provideDurableMapStore(baggage, `args of ${category}`);
-  /** @type {MapStore<number, import('@agoric/vat-data').Baggage>} */
-  const singletonBaggages = provideDurableMapStore(
-    baggage,
-    `baggages of ${category}`,
-  );
-  singletonArgs.getSize() === singletonBaggages.getSize() ||
-    Fail`mismatched store sizes`;
-
-  // restore from baggage
-  const singletons = [...singletonArgs.entries()].map(([index, args]) => {
-    const singletonBaggage = singletonBaggages.get(index);
-    return prepareSingleton(singletonBaggage, categoryPowers, ...args)();
-  });
-
-  return {
-    /**
-     * @param {string} tag diagnostic tag
-     * @param {any[]} args
-     * @returns {ReturnType<ReturnType<M>>}
-     */
-    makeSingleton: (tag, ...args) => {
-      console.log(
-        'DURABILITY makeSingleton',
-        singletonArgs.getSize(),
-        singletonBaggages.getSize(),
-        ...args,
-      );
-      const index = singletonArgs.getSize();
-      index === singletonBaggages.getSize() || Fail`mismatched store sizes`;
-
-      // new data
-      const singletonBaggage = provideDurableMapStore(
-        baggage,
-        `${tag}${category}`,
-      );
-      const singleton = prepareSingleton(
-        singletonBaggage,
-        categoryPowers,
-        ...args,
-      )();
-
-      // upon success, commit
-      singletons[index] = singleton;
-      singletonArgs.init(index, harden(args));
-      singletonBaggages.init(index, singletonBaggage);
-
-      return singleton;
-    },
-    /** @type {(index: number) => ReturnType<ReturnType<M>>} */
-    get: index => {
-      // assume the stores are equal size but check against the array
-      singletons.length === singletonBaggages.getSize() ||
-        Fail`mismatched lengths`;
-      index < singletons.length || Fail`no singleton at index ${index}`;
-      return singletons[index];
-    },
-    length: () => singletons.length,
-  };
-};
-harden(provideCategorySingletons);
 
 /**
  * For use in contract upgrades to provide values that come from other vats.

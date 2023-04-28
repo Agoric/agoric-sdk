@@ -22,15 +22,11 @@ import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovern
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
-import { provide } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
-import {
-  prepareVaultDirector,
-  provideAndStartDirector,
-} from './vaultDirector.js';
+import { provideAndStartDirector } from './vaultDirector.js';
 
 const trace = makeTracer('VF', false);
 

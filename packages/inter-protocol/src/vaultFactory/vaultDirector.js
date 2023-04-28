@@ -19,7 +19,6 @@ import {
   getAmountOut,
   makeRatioFromAmounts,
   makeRecorderTopic,
-  provideCategorySingletons,
   provideEmptySeat,
   SubscriberShape,
   TopicsRecordShape,
@@ -34,7 +33,10 @@ import {
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
-import { prepareVaultManagerKit } from './vaultManager.js';
+import {
+  prepareVaultManagerKit,
+  provideAndStartVaultManagerKits,
+} from './vaultManager.js';
 
 const { Fail, quote: q } = assert;
 
@@ -225,18 +227,15 @@ export const prepareVaultDirector = (
     },
   });
 
-  const vaultManagers = provideCategorySingletons(
-    baggage,
-    'Vault Managers',
-    prepareVaultManagerKit,
-    {
-      makeERecorderKit,
-      makeRecorderKit,
-      marshaller,
-      factoryPowers,
-      zcf,
-    },
-  );
+  const makeVaultManagerKit = prepareVaultManagerKit(baggage, {
+    makeERecorderKit,
+    makeRecorderKit,
+    marshaller,
+    factoryPowers,
+    zcf,
+  });
+
+  const vaultManagers = provideAndStartVaultManagerKits(baggage);
 
   /** @type {(brand: Brand) => VaultManager} */
   const managerForCollateral = brand => {
@@ -393,11 +392,9 @@ export const prepareVaultDirector = (
 
           const startTimeStamp = await E(timer).getCurrentTimestamp();
 
-          // alleged okay because used only as a diagnostic tag
-          const brandName = await E(collateralBrand).getAllegedName();
           const collateralUnit = await unitAmount(collateralBrand);
 
-          const result = vaultManagers.makeSingleton(brandName, {
+          const kit = await makeVaultManagerKit({
             debtMint,
             collateralBrand,
             collateralUnit,
@@ -405,8 +402,10 @@ export const prepareVaultDirector = (
             startTimeStamp,
             storageNode: managerStorageNode,
           });
-          console.log('DEBUG result', result);
-          const { self: vm } = result;
+          vaultManagers.add(kit);
+          vaultManagers.length() - 1 === managerIndex ||
+            Fail`mismatch VaultManagerKit count`;
+          const { self: vm } = kit;
           vm || Fail`no vault`;
           collateralManagers.init(collateralBrand, managerIndex);
           void updateMetrics();
