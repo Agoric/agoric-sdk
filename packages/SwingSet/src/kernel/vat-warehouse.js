@@ -137,7 +137,8 @@ export function makeSyscallSimulator(
   };
 
   const syscallHandler = vso => {
-    kernelSlog.syscall(vatID, undefined, vso); // TODO: finish()?
+    // slog entries have no kernel-translated kso/ksr
+    const finish = kernelSlog.syscall(vatID, undefined, vso);
     const expected = syscallsExpected[syscallsMade.length];
     syscallsMade.push(vso);
     if (!expected) {
@@ -153,6 +154,7 @@ export function makeSyscallSimulator(
       throw error;
     }
     syscallStatus.push('ok');
+    finish(undefined, expected.r);
     return expected.r;
   };
 
