@@ -298,7 +298,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       defaultManagerType = 'local',
       defaultReapInterval = 1,
       relaxDurabilityRules = false,
-      snapshotInitial = 2,
+      snapshotInitial = 3,
       snapshotInterval = 200,
     } = kernelOptions;
 

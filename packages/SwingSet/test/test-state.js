@@ -197,7 +197,7 @@ test('kernel state', async t => {
     ['kp.nextID', '40'],
     ['kernel.defaultManagerType', 'local'],
     ['kernel.defaultReapInterval', '1'],
-    ['kernel.snapshotInitial', '2'],
+    ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
   ]);
@@ -233,7 +233,7 @@ test('kernelKeeper vat names', async t => {
     ['vat.name.Frank', 'v2'],
     ['kernel.defaultManagerType', 'local'],
     ['kernel.defaultReapInterval', '1'],
-    ['kernel.snapshotInitial', '2'],
+    ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
   ]);
@@ -283,7 +283,7 @@ test('kernelKeeper device names', async t => {
     ['device.name.Frank', 'd8'],
     ['kernel.defaultManagerType', 'local'],
     ['kernel.defaultReapInterval', '1'],
-    ['kernel.snapshotInitial', '2'],
+    ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
   ]);
@@ -465,7 +465,7 @@ test('kernelKeeper promises', async t => {
     [`${ko}.refCount`, '1,1'],
     ['kernel.defaultManagerType', 'local'],
     ['kernel.defaultReapInterval', '1'],
-    ['kernel.snapshotInitial', '2'],
+    ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
   ]);
