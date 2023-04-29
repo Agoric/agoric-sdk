@@ -22,7 +22,7 @@ import '../../../src/contracts/exported.js';
  * @property {Installation<typeof import('../../../src/contracts/scaledPriceAuthority.js').start>} scaledPriceInstallation
  * @property {Brand<'nat'>} atomBrand
  * @property {Brand<'nat'>} usdBrand
- * @property {IssuerKit<'nat'>} ibcAtom
+ * @property {IssuerKit<'nat'>} atom
  * @property {IssuerKit<'nat'>} run
  */
 
@@ -57,7 +57,7 @@ test.before('setup scaled price authority', async ot => {
   const { brand: atomBrand } = makeIssuerKit('$ATOM', 'nat', dp(5));
   const { brand: usdBrand } = makeIssuerKit('$USD', 'nat', dp(4));
 
-  const ibcAtom = makeIssuerKit('IBC-ATOM', 'nat', dp(6));
+  const atom = makeIssuerKit('ATOM', 'nat', dp(6));
   const run = makeIssuerKit('RUN', 'nat', dp(6));
 
   ot.context.zoe = zoe;
@@ -66,7 +66,7 @@ test.before('setup scaled price authority', async ot => {
   );
   ot.context.atomBrand = atomBrand;
   ot.context.usdBrand = usdBrand;
-  ot.context.ibcAtom = ibcAtom;
+  ot.context.atom = atom;
   ot.context.run = run;
 });
 
@@ -94,7 +94,7 @@ const makeScenario = async (t, initialPriceInCents) => {
         10n ** 5n,
         t.context.atomBrand,
         10n ** 6n,
-        t.context.ibcAtom.brand,
+        t.context.atom.brand,
       ),
       scaleOut: makeRatio(
         10n ** 4n,
@@ -107,7 +107,7 @@ const makeScenario = async (t, initialPriceInCents) => {
             initialPriceInCents,
             t.context.run.brand,
             100n,
-            t.context.ibcAtom.brand,
+            t.context.atom.brand,
           )
         : undefined,
     },
@@ -123,7 +123,7 @@ test('scaled price authority', async t => {
     await makeScenario(t);
 
   const notifier = E(pa).makeQuoteNotifier(
-    AmountMath.make(t.context.ibcAtom.brand, 10n ** 6n),
+    AmountMath.make(t.context.atom.brand, 10n ** 6n),
     t.context.run.brand,
   );
   const sourceNotifier = E(sourcePriceAuthority).makeQuoteNotifier(
@@ -137,7 +137,7 @@ test('scaled price authority', async t => {
   } = await E(notifier).getUpdateSince();
   t.deepEqual(qa1.value, [
     {
-      amountIn: { brand: t.context.ibcAtom.brand, value: 10n ** 6n },
+      amountIn: { brand: t.context.atom.brand, value: 10n ** 6n },
       amountOut: { brand: t.context.run.brand, value: 35_610_000n },
       timer,
       timestamp: 0n,
@@ -164,7 +164,7 @@ test('scaled price authority', async t => {
   } = await E(notifier).getUpdateSince(uc1);
   t.deepEqual(qa2.value, [
     {
-      amountIn: { brand: t.context.ibcAtom.brand, value: 1_000_000n },
+      amountIn: { brand: t.context.atom.brand, value: 1_000_000n },
       amountOut: { brand: t.context.run.brand, value: 32_430_100n },
       timer,
       timestamp: 1n,
@@ -189,7 +189,7 @@ test('mutableQuoteWhenLT: brands in/out match', async t => {
     await makeScenario(t);
 
   const mutableQuote = E(pa).mutableQuoteWhenLT(
-    AmountMath.make(t.context.ibcAtom.brand, 10n ** 6n),
+    AmountMath.make(t.context.atom.brand, 10n ** 6n),
     AmountMath.make(t.context.run.brand, 32_430_100n),
   );
   const sourceNotifier = E(sourcePriceAuthority).makeQuoteNotifier(
@@ -215,7 +215,7 @@ test('mutableQuoteWhenLT: brands in/out match', async t => {
   const { quoteAmount: qa2 } = await E(mutableQuote).getPromise();
   t.deepEqual(qa2.value, [
     {
-      amountIn: { brand: t.context.ibcAtom.brand, value: 1_000_000n },
+      amountIn: { brand: t.context.atom.brand, value: 1_000_000n },
       amountOut: { brand: t.context.run.brand, value: 30_430_100n },
       timer,
       timestamp: 1n,
@@ -246,7 +246,7 @@ const unitAmount = async brand => {
 
 test('initialPrice', async t => {
   const { make } = AmountMath;
-  const { ibcAtom: collateral, run: debt } = t.context;
+  const { atom: collateral, run: debt } = t.context;
   const { timer, pa } = await makeScenario(t, 12_34n);
 
   t.log('vault manager makes unit quote notifier');

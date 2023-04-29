@@ -31,7 +31,7 @@ const topBrands = harden({
 });
 
 const agoricNames = harden({
-  brand: { IST: topBrands.IST, ATOM: topBrands.ATOM, IbcATOM: topBrands.ATOM },
+  brand: { IST: topBrands.IST, ATOM: topBrands.ATOM },
 
   instance: {
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
@@ -418,7 +418,7 @@ test.todo('fmtBid with error does not show result');
 /*
 _not_ like this:
 
-{"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Bid":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
+{"id":"bid-1680211654832","price":"0.7999999999999999 IST/ATOM","give":{"Bid":"10IST"},"want":"3ATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
 */
 
 test('README: inter auction status', async t => {
@@ -457,16 +457,16 @@ test('README: inter auction status', async t => {
       },
       book0: {
         _: {
-          collateralAvailable: { brand: brand.IbcATOM, value: 0n },
+          collateralAvailable: { brand: brand.ATOM, value: 0n },
           currentPriceLevel: {
-            denominator: { brand: brand.IbcATOM, value: 10000000000n },
+            denominator: { brand: brand.ATOM, value: 10000000000n },
             numerator: { brand: brand.IST, value: 44955000000n },
           },
           proceedsRaised: undefined,
           remainingProceedsGoal: null,
-          startCollateral: { brand: brand.IbcATOM, value: 0n },
+          startCollateral: { brand: brand.ATOM, value: 0n },
           startPrice: {
-            denominator: { brand: brand.IbcATOM, value: 1000000n },
+            denominator: { brand: brand.ATOM, value: 1000000n },
             numerator: { brand: brand.IST, value: 9990000n },
           },
           startProceedsGoal: null,
@@ -597,7 +597,7 @@ $ agops inter bid by-price --price 0.81 --give 0.5 --maxBuy 3 --from gov2
 bid is broadcast:
 {"timestamp":"2023-03-30T21:48:19Z","height":"49619","offerId":"bid-1680212903989","txhash":"472A47AAE24F27E747E3E64F4644860D2A5D3AD7EC5388C4C849805034E20D38"}
 first bid update:
-{"id":"bid-1680212903989","price":"0.81 IST/IbcATOM","give":{"Bid":"0.5IST"},"want":"3IbcATOM","result":"Your bid has been accepted"}
+{"id":"bid-1680212903989","price":"0.81 IST/ATOM","give":{"Bid":"0.5IST"},"want":"3ATOM","result":"Your bid has been accepted"}
 */
 
 test.todo('execSwingsetTransaction returns non-0 code');

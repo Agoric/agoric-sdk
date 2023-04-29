@@ -19,7 +19,7 @@ export const makeReserveCommand = (_logger, io = {}) => {
     .command('add')
     .description('add collateral to the reserve')
     .requiredOption('--give <number>', 'Collateral to give', Number)
-    .option('--collateral-brand <string>', 'Collateral brand key', 'IbcATOM')
+    .option('--collateral-brand <string>', 'Collateral brand key', 'ATOM')
     .option('--offer-id <string>', 'Offer id', String, `addCollateral-${now()}`)
     .action(
       /**

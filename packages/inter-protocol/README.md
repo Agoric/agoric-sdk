@@ -111,7 +111,7 @@ vaultFactoryPublicFacet = E(home.zoe).getPublicFacet(vaultFactoryInstance)
 E(home.agoricNames).lookup('brand', 'IST');
 runBrand=history[-1]
 # get a reference to the collateral brand
-E(home.agoricNames).lookup('brand', 'IbcATOM')
+E(home.agoricNames).lookup('brand', 'ATOM')
 atomBrand=history[-1]
 # get a reference to the collateral manager, using history because the brand must be the same object
 collateralManager = E(vaultFactoryPublicFacet).getCollateralManager(atomBrand)

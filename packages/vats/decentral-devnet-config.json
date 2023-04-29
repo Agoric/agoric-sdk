@@ -31,7 +31,7 @@
             "denom": "ibc/toyatom",
             "decimalPlaces": 6,
             "initialPrice": 12.34,
-            "keyword": "IbcATOM",
+            "keyword": "ATOM",
             "oracleBrand": "ATOM",
             "proposedName": "ATOM"
           }

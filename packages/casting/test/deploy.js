@@ -1,7 +1,7 @@
 import { E } from '@endo/far';
 import { iterateLatest, makeFollower } from '../src/main.js';
 
-const COLLATERAL = 'IbcATOM';
+const COLLATERAL = 'ATOM';
 const getVaultManagerMetrics = async (homeP, { cache, lookup }) => {
   const zoe = E.get(homeP).zoe;
   const publicFacet = cache(`publicFacet.vault`, () =>
