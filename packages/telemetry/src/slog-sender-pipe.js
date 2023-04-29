@@ -157,7 +157,7 @@ export const makeSlogSender = async opts => {
   const init = async options => sendWaitReply('init', { options });
 
   const send = obj => {
-    void pipeSend({ type: 'send', obj });
+    void pipeSend({ type: 'send', obj }).catch(() => {});
   };
 
   const shutdown = async () => {
