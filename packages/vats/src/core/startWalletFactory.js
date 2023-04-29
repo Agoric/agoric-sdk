@@ -243,7 +243,7 @@ export const startWalletFactory = async (
     E(provisionWalletBridgeManager).setHandler(handler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
-      ppFacets.creatorFacet,
+      ppFacets.governorCreatorFacet,
       'provisionPool',
     ),
   ]);
