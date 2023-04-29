@@ -10,7 +10,11 @@ import { makeInstallCache } from '../src/proposals/utils.js';
 
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
-  { interchainAssetOptions = /** @type {object} */ ({}) } = {},
+  {
+    debtLimitValue = undefined,
+    interestRateValue = undefined,
+    interchainAssetOptions = /** @type {object} */ ({}),
+  } = {},
   { env = process.env } = {},
 ) => {
   /** @type {import('../src/proposals/addAssetToVault.js').InterchainAssetOptions} */
@@ -35,6 +39,8 @@ export const defaultProposalBuilder = async (
     getManifestCall: [
       getManifestForAddAssetToVault.name,
       {
+        debtLimitValue: debtLimitValue && BigInt(debtLimitValue),
+        interestRateValue: interestRateValue && BigInt(interestRateValue),
         interchainAssetOptions: {
           denom,
           issuerBoardId,

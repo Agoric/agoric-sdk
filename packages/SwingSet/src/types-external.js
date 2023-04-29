@@ -175,7 +175,7 @@ export {};
  */
 
 /**
- * @typedef {{ module: string, entrypoint: string, args?: Array<unknown>} | string} ConfigProposal
+ * @typedef {string | { module: string, entrypoint: string, args?: Array<unknown> }} ConfigProposal
  */
 
 /**
