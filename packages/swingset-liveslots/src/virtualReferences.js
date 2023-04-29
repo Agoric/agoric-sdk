@@ -17,6 +17,8 @@ import {
  *   converts an object ID (vref) to an object.
  * @param {*} FinalizationRegistry  Powerful JavaScript intrinsic normally denied
  *   by SES
+ * @param {*} WeakRef  Powerful JavaScript intrinsic normally denied
+ *   by SES
  * @param {*} addToPossiblyDeadSet  Function to record objects whose deaths
  *   should be reinvestigated
  * @param {*} addToPossiblyRetiredSet  Function to record dead objects whose
@@ -29,6 +31,7 @@ export function makeVirtualReferenceManager(
   getSlotForVal,
   requiredValForSlot,
   FinalizationRegistry,
+  WeakRef,
   addToPossiblyDeadSet,
   addToPossiblyRetiredSet,
   relaxDurabilityRules,
@@ -36,6 +39,17 @@ export function makeVirtualReferenceManager(
   const droppedCollectionRegistry = new FinalizationRegistry(
     finalizeDroppedCollection,
   );
+  // Our JS engine is configured to treat WeakRefs as strong during
+  // organic (non-forced GC), to minimize execution variation. To
+  // prevent FinalizationRegistry callbacks from varying this way, we
+  // must maintain WeakRefs to everything therein. The WeakRef is
+  // retained by the FR "heldValue" context record, next to the
+  // descriptor, and is thus released when the FR fires.
+
+  function registerDroppedCollection(target, descriptor) {
+    const wr = new WeakRef(target);
+    droppedCollectionRegistry.register(target, { descriptor, wr });
+  }
 
   /**
    * Check if a virtual object is unreachable via virtual-data references.
@@ -636,7 +650,13 @@ export function makeVirtualReferenceManager(
     }
   }
 
-  function finalizeDroppedCollection(descriptor) {
+  function finalizeDroppedCollection({ descriptor }) {
+    // the 'wr' WeakRef will be dropped about now
+    //
+    // note: technically, the engine is allowed to inspect this
+    // callback, observe that 'wr' is not extracted, and then not
+    // retain it in the first place (back in
+    // registerDroppedCollection), but no engine goes that far
     descriptor.collectionDeleter(descriptor);
   }
 
@@ -666,6 +686,8 @@ export function makeVirtualReferenceManager(
     getReachableRefCount,
     countCollectionsForWeakKey,
 
+    // don't harden() the mock FR, that will break it
+    getDroppedCollectionRegistry: () => droppedCollectionRegistry,
     remotableRefCounts,
     vrefRecognizers,
     kindInfoTable,
@@ -680,7 +702,7 @@ export function makeVirtualReferenceManager(
   }
 
   return harden({
-    droppedCollectionRegistry,
+    registerDroppedCollection,
     isDurable,
     isDurableKind,
     registerKind,

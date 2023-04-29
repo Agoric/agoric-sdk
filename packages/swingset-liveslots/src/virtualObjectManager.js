@@ -418,7 +418,7 @@ export const makeVirtualObjectManager = (
       actualWeakMaps.set(this, new WeakMap());
       const vmap = new Map();
       virtualObjectMaps.set(this, vmap);
-      vrm.droppedCollectionRegistry.register(this, {
+      vrm.registerDroppedCollection(this, {
         collectionDeleter: voAwareWeakMapDeleter,
         vmap,
       });
@@ -496,7 +496,7 @@ export const makeVirtualObjectManager = (
       const vset = new Set();
       virtualObjectSets.set(this, vset);
 
-      vrm.droppedCollectionRegistry.register(this, {
+      vrm.registerDroppedCollection(this, {
         collectionDeleter: voAwareWeakSetDeleter,
         vset,
       });

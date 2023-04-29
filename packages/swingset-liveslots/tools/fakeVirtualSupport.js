@@ -1,4 +1,5 @@
 /* global WeakRef */
+/* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../src/parseVatSlots.js';
@@ -19,6 +20,18 @@ class FakeFinalizationRegistry {
   unregister(_unregisterToken) {}
 }
 
+class FakeWeakRef {
+  constructor(target) {
+    this.target = target;
+  }
+
+  deref() {
+    return this.target; // strong ref
+  }
+}
+
+const RealWeakRef = WeakRef;
+
 export function makeFakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
@@ -31,6 +44,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     weak = false,
     log,
     FinalizationRegistry = FakeFinalizationRegistry,
+    WeakRef = FakeWeakRef, // VRM uses this
     addToPossiblyDeadSet = () => {},
     addToPossiblyRetiredSet = () => {},
   } = options;
@@ -174,7 +188,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function setValForSlot(slot, val) {
-    slotToVal.set(slot, weak ? new WeakRef(val) : val);
+    slotToVal.set(slot, weak ? new RealWeakRef(val) : val);
   }
 
   function convertValToSlot(val) {
@@ -255,6 +269,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     marshal,
     deleteEntry,
     FinalizationRegistry,
+    WeakRef,
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
     dumpStore,
@@ -273,6 +288,7 @@ export function makeFakeVirtualReferenceManager(
     fakeStuff.getSlotForVal,
     fakeStuff.getValForSlot,
     fakeStuff.FinalizationRegistry,
+    fakeStuff.WeakRef,
     fakeStuff.addToPossiblyDeadSet,
     fakeStuff.addToPossiblyRetiredSet,
     relaxDurabilityRules,

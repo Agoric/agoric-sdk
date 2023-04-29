@@ -46,6 +46,10 @@ export function makeMockGC() {
     log(` kill done`);
   }
 
+  function weakRefFor(val) {
+    return valToWeakRef.get(val);
+  }
+
   const mockFinalizationRegistryProto = {
     register(val, context) {
       log(`FR.register(context=${context})`);
@@ -95,6 +99,7 @@ export function makeMockGC() {
     WeakRef: mockWeakRef,
     FinalizationRegistry: mockFinalizationRegistry,
     kill,
+    weakRefFor,
     getAllFRs,
     flushAllFRs,
     waitUntilQuiescent,
