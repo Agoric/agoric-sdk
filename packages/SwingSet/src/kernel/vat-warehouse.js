@@ -10,6 +10,7 @@ import djson from '../lib/djson.js';
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
+ * @typedef {import('../types-external.js').KernelDeliveryObject} KernelDeliveryObject
  * @typedef {import('../types-internal.js').VatManager} VatManager
  * @typedef {import('../types-internal.js').VatID} VatID
  * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorkerOptions} TDInitializeWorkerOptions
@@ -43,12 +44,12 @@ function recordSyscalls(origHandler) {
     return vres;
   };
   const getTranscriptEntry = (vd, deliveryResult) => {
-    // TODO add metering computrons to results
     /** @type {TranscriptDeliveryResults} */
     const tdr = { status: deliveryResult[0] };
     if (deliveryResult[0] === 'ok') {
       const usage = deliveryResult[2];
       if (usage) {
+        // add metering computrons to results, if any
         tdr.metering = { computrons: usage.compute };
       }
     }
@@ -136,7 +137,8 @@ export function makeSyscallSimulator(
   };
 
   const syscallHandler = vso => {
-    kernelSlog.syscall(vatID, undefined, vso); // TODO: finish()?
+    // slog entries have no kernel-translated kso/ksr
+    const finish = kernelSlog.syscall(vatID, undefined, vso);
     const expected = syscallsExpected[syscallsMade.length];
     syscallsMade.push(vso);
     if (!expected) {
@@ -152,6 +154,7 @@ export function makeSyscallSimulator(
       throw error;
     }
     syscallStatus.push('ok');
+    finish(undefined, expected.r);
     return expected.r;
   };
 
@@ -590,13 +593,11 @@ export function makeVatWarehouse({
 
   /**
    * @param {string} vatID
-   * @param {unknown[]} kd
+   * @param {KernelDeliveryObject} kd
    * @returns {VatDeliveryObject}
    */
   function kernelDeliveryToVatDelivery(vatID, kd) {
     const translators = provideTranslators(vatID);
-
-    // @ts-expect-error TODO: types for kernelDeliveryToVatDelivery
     return translators.kernelDeliveryToVatDelivery(kd);
   }
 

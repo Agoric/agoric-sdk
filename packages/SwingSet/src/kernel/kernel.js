@@ -1484,11 +1484,11 @@ export default function buildKernel(
 
           // kres is a KernelResult: ['ok', value] or ['error', problem],
           // where 'error' means we want the calling vat's syscall() to
-          // throw. Vats (liveslots) record the response in the transcript
-          // (which is why we use 'null' instead of 'undefined', TODO clean
-          // this up #4390), but otherwise most syscalls ignore it. The one
-          // syscall that pays attention is callNow(), which assumes it's
-          // capdata.
+          // throw. Vats record the response in the transcript (which is why
+          // we use 'null' instead of 'undefined', TODO clean this up
+          // #4390), but otherwise most syscalls ignore it. The two that
+          // pay attention are 'callNow' (which assumes it's capdata), and
+          // 'vatstoreGet' (which assumes string or null).
 
           // this can throw if the translator is buggy
           vres = translators.kernelSyscallResultToVatSyscallResult(

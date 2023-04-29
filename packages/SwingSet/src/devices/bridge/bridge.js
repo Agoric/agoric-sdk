@@ -113,12 +113,9 @@ export function buildBridge(outboundCallback) {
   }
 
   function callOutbound(...args) {
-    // TODO: prevent cross-Realm contamination by serializing/deserializing
-    // all the data that crosses this boundary. Inside the device
-    // (device-bridge.js), we know we're immediately serializaing this data, so
-    // we don't need to sanitize it there. But here, we have no idea what
-    // outboundCallback() might do, so we want to avoid confusion. When we
-    // switch to new-SES, we can remove this protection.
+    // TODO: this existed to prevent cross-Realm contamination, but
+    // now that the Start Compartment has tamed globals, we no longer
+    // need it
     return outboundCallback(...sanitize(args));
   }
 
