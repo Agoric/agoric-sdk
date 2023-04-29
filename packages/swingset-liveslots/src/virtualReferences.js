@@ -40,6 +40,10 @@ export function makeVirtualReferenceManager(
     finalizeDroppedCollection,
   );
 
+  function registerDroppedCollection(target, descriptor) {
+    droppedCollectionRegistry.register(target, descriptor);
+  }
+
   /**
    * Check if a virtual object is unreachable via virtual-data references.
    *
@@ -683,7 +687,7 @@ export function makeVirtualReferenceManager(
   }
 
   return harden({
-    droppedCollectionRegistry,
+    registerDroppedCollection,
     isDurable,
     isDurableKind,
     registerKind,
