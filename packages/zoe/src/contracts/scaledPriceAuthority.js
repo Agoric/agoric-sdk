@@ -22,6 +22,10 @@ import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.j
  * A contract that scales a source price authority to a target price authority
  * via ratios.
  *
+ * Not durable. Because it only transforms there's nothing important to save.
+ * The facets may sever upon vat restart, but the priceAuthorityRegistry that
+ * holds them can be given a fresh scaling contract to replace them.
+ *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
  * @param {object} [root0]
  * @param {ERef<Mint<'set'>>} [root0.quoteMint]
