@@ -10,6 +10,7 @@ export const makeFreshShutdown = (verbose = true) => {
   /** @type {NodeJS.SignalsListener & NodeJS.BeforeExitListener} */
   const shutdown = code => {
     const sig = typeof code === 'string' && code.startsWith('SIG');
+    const isSigInt = code === 'SIGINT';
     if (sig) {
       process.exitCode = 98;
     }
@@ -26,7 +27,9 @@ export const makeFreshShutdown = (verbose = true) => {
     verbose && console.error(`Shutting down cleanly...`);
     const shutdowners = [...shutdownThunks.keys()];
     shutdownThunks.clear();
-    Promise.allSettled([...shutdowners].map(t => Promise.resolve().then(t)))
+    Promise.allSettled(
+      [...shutdowners].map(t => Promise.resolve(isSigInt).then(t)),
+    )
       .then(statuses => {
         for (const status of statuses) {
           if (status.status === 'rejected') {
