@@ -212,7 +212,7 @@
  *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers' | 'governedParams' | 'electionManager'>,
  *   privateArgs: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'], 'initialPoserInvitation'>,
  *   label: string,
- *   produceResults: Producer<GovernanceFacetKit<SF>>,
+ *   produceResults: Pick<Producer<GovernanceFacetKit<SF>>, 'resolve'>,
  * }} StartGovernedUpgradeableOpts
  *
  */
@@ -229,7 +229,7 @@
  *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers'>,
  *   privateArgs: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
  *   label: string,
- *   produceResults: Producer<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>,
+ *   produceResults: Pick<Producer<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>, 'resolve'>,
  * }} StartUpgradeableOpts
  */
 /**
@@ -251,6 +251,7 @@
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: import('../types.js').BridgeHandler,
  *   feeMintAccess: FeeMintAccess,
+ *   fluxAggregatorKits: ERef<GovernanceFacetKit<GovernableStartFn>>[],
  *   highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager?,
  *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,
