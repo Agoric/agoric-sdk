@@ -75,7 +75,7 @@ function makeConsole(tagOrTagCreator) {
 function unhandledRejectionHandler(e, pr) {
   // Don't trigger sensitive hosts (like AVA).
   pr.catch(() => {});
-  console.error('UnhandledPromiseRejectionWarning:', e);
+  console.error('🤞 UnhandledPromiseRejection:', e);
 }
 
 /**
