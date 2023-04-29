@@ -19,7 +19,7 @@ import path from 'path';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { makeBoard } from '../src/lib-board.js';
 import { makeNameHubKit } from '../src/nameHub.js';
-import { makeBridgeProvisionTool } from '../src/provisionPool.js';
+import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
 import { PowerFlags } from '../src/walletFlags.js';
 import { makeFakeBankKit } from '../tools/bank-utils.js';
