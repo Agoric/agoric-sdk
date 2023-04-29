@@ -1,5 +1,4 @@
-import { provide } from '@agoric/vat-data';
-import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { Far } from '@endo/marshal';
 
 /**
@@ -11,8 +10,6 @@ import { Far } from '@endo/marshal';
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export function buildRootObject(_vatPowers, _vatParams, baggage) {
-  const registry = provide(baggage, 'priceAuthorityRegistry', () =>
-    makePriceAuthorityRegistry(baggage),
-  );
+  const registry = providePriceAuthorityRegistry(baggage);
   return Far('root', { getRegistry: () => registry });
 }

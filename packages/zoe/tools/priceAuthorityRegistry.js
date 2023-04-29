@@ -1,7 +1,14 @@
-import { E } from '@endo/eventual-send';
-import { makeScalarMapStore } from '@agoric/store';
 import { Fail } from '@agoric/assert';
+import { BrandShape } from '@agoric/ertp';
+import {
+  M,
+  prepareExo,
+  provide,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { PriceAuthorityI } from '../src/contractSupport/priceAuthority.js';
 
 /**
  * @typedef {object} Deleter
@@ -13,8 +20,8 @@ import { Far } from '@endo/marshal';
  * @property {(pa: ERef<PriceAuthority>,
  *             brandIn: Brand,
  *             brandOut: Brand,
- *             force?: boolean) => Deleter} registerPriceAuthority Add a unique price authority for a given
- * pair
+ *             force?: boolean) => Promise<Deleter>} registerPriceAuthority
+ * Add a unique price authority for a given pair
  */
 
 /**
@@ -26,9 +33,12 @@ import { Far } from '@endo/marshal';
  */
 
 /**
+ * Make a singleton registry for priceAuthorities
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {PriceAuthorityRegistry}
  */
-export const makePriceAuthorityRegistry = () => {
+export const providePriceAuthorityRegistry = baggage => {
   /**
    * @typedef {object} PriceAuthorityRecord A record indicating a registered
    * price authority.  We put a box around the priceAuthority to ensure the
@@ -38,7 +48,7 @@ export const makePriceAuthorityRegistry = () => {
    */
 
   /** @type {MapStore<Brand, MapStore<Brand, PriceAuthorityRecord>>} */
-  const assetToPriceStore = makeScalarMapStore('brandIn');
+  const assetToPriceStore = provideDurableMapStore(baggage, 'brandIn');
 
   /**
    * Get the registered price authority for a given input and output pair.
@@ -96,76 +106,97 @@ export const makePriceAuthorityRegistry = () => {
    *
    * @type {PriceAuthority}
    */
-  const priceAuthority = Far('fake price authority', {
-    async getQuoteIssuer(brandIn, brandOut) {
-      return E(paFor(brandIn, brandOut)).getQuoteIssuer(brandIn, brandOut);
+  const priceAuthority = prepareExo(
+    baggage,
+    'composite price authority',
+    PriceAuthorityI,
+    {
+      getQuoteIssuer(brandIn, brandOut) {
+        return E(paFor(brandIn, brandOut)).getQuoteIssuer(brandIn, brandOut);
+      },
+      getTimerService(brandIn, brandOut) {
+        return E(paFor(brandIn, brandOut)).getTimerService(brandIn, brandOut);
+      },
+      quoteGiven(amountIn, brandOut) {
+        return E(paFor(amountIn.brand, brandOut)).quoteGiven(
+          amountIn,
+          brandOut,
+        );
+      },
+      quoteWanted(brandIn, amountOut) {
+        return E(paFor(brandIn, amountOut.brand)).quoteWanted(
+          brandIn,
+          amountOut,
+        );
+      },
+      makeQuoteNotifier(amountIn, brandOut) {
+        return E(paFor(amountIn.brand, brandOut)).makeQuoteNotifier(
+          amountIn,
+          brandOut,
+        );
+      },
+      quoteAtTime(deadline, amountIn, brandOut) {
+        return E(paFor(amountIn.brand, brandOut)).quoteAtTime(
+          deadline,
+          amountIn,
+          brandOut,
+        );
+      },
+      quoteWhenLT: makeQuoteWhen('LT'),
+      quoteWhenLTE: makeQuoteWhen('LTE'),
+      quoteWhenGTE: makeQuoteWhen('GTE'),
+      quoteWhenGT: makeQuoteWhen('GT'),
+      mutableQuoteWhenLT: makeMutableQuoteWhen('LT'),
+      mutableQuoteWhenLTE: makeMutableQuoteWhen('LTE'),
+      mutableQuoteWhenGTE: makeMutableQuoteWhen('GTE'),
+      mutableQuoteWhenGT: makeMutableQuoteWhen('GT'),
     },
-    async getTimerService(brandIn, brandOut) {
-      return E(paFor(brandIn, brandOut)).getTimerService(brandIn, brandOut);
-    },
-    async quoteGiven(amountIn, brandOut) {
-      return E(paFor(amountIn.brand, brandOut)).quoteGiven(amountIn, brandOut);
-    },
-    async quoteWanted(brandIn, amountOut) {
-      return E(paFor(brandIn, amountOut.brand)).quoteWanted(brandIn, amountOut);
-    },
-    async makeQuoteNotifier(amountIn, brandOut) {
-      return E(paFor(amountIn.brand, brandOut)).makeQuoteNotifier(
-        amountIn,
-        brandOut,
-      );
-    },
-    async quoteAtTime(deadline, amountIn, brandOut) {
-      return E(paFor(amountIn.brand, brandOut)).quoteAtTime(
-        deadline,
-        amountIn,
-        brandOut,
-      );
-    },
-    quoteWhenLT: makeQuoteWhen('LT'),
-    quoteWhenLTE: makeQuoteWhen('LTE'),
-    quoteWhenGTE: makeQuoteWhen('GTE'),
-    quoteWhenGT: makeQuoteWhen('GT'),
-    mutableQuoteWhenLT: makeMutableQuoteWhen('LT'),
-    mutableQuoteWhenLTE: makeMutableQuoteWhen('LTE'),
-    mutableQuoteWhenGTE: makeMutableQuoteWhen('GTE'),
-    mutableQuoteWhenGT: makeMutableQuoteWhen('GT'),
-  });
+  );
 
   /** @type {PriceAuthorityRegistryAdmin} */
-  const adminFacet = Far('price authority admin facet', {
-    registerPriceAuthority(pa, brandIn, brandOut, force = false) {
-      /** @type {MapStore<Brand, PriceAuthorityRecord>} */
-      let priceStore;
-      if (assetToPriceStore.has(brandIn)) {
-        priceStore = assetToPriceStore.get(brandIn);
-      } else {
-        priceStore = makeScalarMapStore('brandOut');
-        assetToPriceStore.init(brandIn, priceStore);
-      }
+  const adminFacet = prepareExo(
+    baggage,
+    'price authority admin facet',
+    M.interface('priceAuthorityRegistryAdmin', {
+      registerPriceAuthority: M.callWhen(
+        M.await(M.remotable('priceAuthority')),
+        BrandShape,
+        BrandShape,
+      )
+        .optional(M.boolean())
+        .returns(M.remotable('deleter')),
+    }),
+    {
+      registerPriceAuthority(pa, brandIn, brandOut, force = false) {
+        /** @type {MapStore<Brand, PriceAuthorityRecord>} */
+        const priceStore = provide(assetToPriceStore, brandIn, () =>
+          provideDurableMapStore(baggage, 'brandOut'),
+        );
 
-      // Put a box around the authority so that we can be ensured the deleter
-      // won't delete the wrong thing.
-      const record = {
-        priceAuthority: pa,
-      };
+        // Put a box around the authority so that we can be ensured the deleter
+        // won't delete the wrong thing.
+        const record = {
+          priceAuthority: pa,
+        };
 
-      // Set up the record.
-      if (force && priceStore.has(brandOut)) {
-        priceStore.set(brandOut, harden(record));
-      } else {
-        priceStore.init(brandOut, harden(record));
-      }
+        // Set up the record.
+        if (force && priceStore.has(brandOut)) {
+          priceStore.set(brandOut, harden(record));
+        } else {
+          priceStore.init(brandOut, harden(record));
+        }
 
-      return Far('deleter', {
-        delete() {
-          (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
-            Fail`Price authority already dropped`;
-          priceStore.delete(brandOut);
-        },
-      });
+        return Far('deleter', {
+          // @ts-expect-error XXX callWhen
+          delete() {
+            (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
+              Fail`Price authority already dropped`;
+            priceStore.delete(brandOut);
+          },
+        });
+      },
     },
-  });
+  );
 
   return harden({
     priceAuthority,
