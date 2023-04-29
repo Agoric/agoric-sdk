@@ -326,6 +326,7 @@ export const distributeProportionalSharesWithLimits = (
 
       const addRemainderInBid = collateralAdded => {
         const collateralVal = ceilMultiplyBy(collateralAdded, avgPrice);
+        /** @type {Amount<'nat'>} XXX for package depth type resolution */
         const valueNeeded = AmountMath.subtract(depositorValue, collateralVal);
 
         proceedsLeft = AmountMath.subtract(proceedsLeft, valueNeeded);
