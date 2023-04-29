@@ -123,14 +123,14 @@ harden(buildZoe);
  *
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  */
-export const startPriceAuthority = async ({
+export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
   produce,
 }) => {
   const vats = { priceAuthority: E(loadCriticalVat)('priceAuthority') };
   const { priceAuthority, adminFacet } = await E(
     vats.priceAuthority,
-  ).makePriceAuthorityRegistry();
+  ).getRegistry();
 
   produce.priceAuthorityVat.resolve(vats.priceAuthority);
   produce.priceAuthority.resolve(priceAuthority);
@@ -138,7 +138,7 @@ export const startPriceAuthority = async ({
 
   return E(client).assignBundle([_addr => ({ priceAuthority })]);
 };
-harden(startPriceAuthority);
+harden(startPriceAuthorityRegistry);
 
 /**
  * Create inert brands (no mint or issuer) referred to by price oracles.
@@ -420,7 +420,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
       },
     },
   },
-  [startPriceAuthority.name]: {
+  [startPriceAuthorityRegistry.name]: {
     consume: { loadCriticalVat: true, client: true },
     produce: {
       priceAuthorityVat: 'priceAuthority',

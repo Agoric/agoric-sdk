@@ -11,7 +11,7 @@ import {
   makeAddressNameHubs,
   makeOracleBrands,
   makeBoard,
-  startPriceAuthority,
+  startPriceAuthorityRegistry,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {
@@ -217,7 +217,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       // @ts-expect-error TODO: align types better
       bridgeCoreEval(space),
       // @ts-expect-error TODO: align types better
-      startPriceAuthority(space),
+      startPriceAuthorityRegistry(space),
     ]);
   };
 

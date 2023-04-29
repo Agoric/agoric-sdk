@@ -108,7 +108,9 @@ export const setupServices = async (t, params = defaultParams) => {
 
   void E(reserveCF).addIssuer(collateral.issuer, 'Collateral');
 
-  const { priceAuthority, adminFacet: registry } = makePriceAuthorityRegistry();
+  const paBaggage = makeScalarMapStore();
+  const { priceAuthority, adminFacet: registry } =
+    makePriceAuthorityRegistry(paBaggage);
   space.produce.priceAuthority.resolve(priceAuthority);
 
   await startAuctioneer(space, { auctionParams: params });
