@@ -95,11 +95,11 @@ test('transcript of new vats', async t => {
 
 test('transcript spans', async t => {
   const config = {
-    snapshotInitial: 2,
+    snapshotInitial: 3,
     // the new pseudo-deliveries ('initialize-worker',
-    // 'save-snapshot', and 'load-snapshot' all count against the
-    // snapshotInterval. So setting it to 7 will get us 5 actual
-    // deliveries between the two snapshot events.
+    // 'save-snapshot') count against the snapshotInterval. So setting
+    // it to 7 will get us 6 actual deliveries before the
+    // boyd/save-snapshot, and a 9-delivery cycle
     snapshotInterval: 7,
     defaultReapInterval: 'never',
     defaultManagerType: 'xsnap',
@@ -131,7 +131,6 @@ test('transcript spans', async t => {
   };
 
   c = await restart(); // actually just starting for the first time
-  let expectedFull = ['initialize-worker'];
   c.pinVatRoot('bootstrap');
   const vatID = c.vatNameToID('bootstrap');
 
@@ -153,55 +152,70 @@ test('transcript spans', async t => {
   const save = ['save-snapshot'];
   const load = ['load-snapshot'];
   const notify = ['notify'];
-  const snap = [].concat(save, load);
+  const snap = [].concat(boyd, save, load);
   const boot = ['message']; // bootstrap(), not nothing()
   const msg = ['message']; // nothing()
   const msgN = n => Array(n).fill('message');
-  const bounds = () => {
+  const curBounds = () => {
     const b = transcriptStore.getCurrentSpanBounds(vatID);
     return [b.startPos, b.endPos];
   };
   const incarnation = () =>
     transcriptStore.getCurrentSpanBounds(vatID)?.incarnation;
 
-  // snapshotInitial=2 and snapshotInterval=7, so we'll see a
-  // save-snapshot on deliveryNum 2, and when (deliveryNum -
-  // snapshot.snapPos) = k*7. Until an upgrade causes a span to end
-  // early, that means save-snapshot on deliveries 2, 9, 16, 23
+  // snapshotInitial=3 and snapshotInterval=7, so we'll start on
+  // deliveryNum d3 (BOYD on d3, save-snapshot on d4), and when there
+  // are 7 or more deliveries in the current transcript span
 
-  // the full sequence of deliveries will be:
-  // span 0-2 = [0,3) (ended by snapshot)
-  // 0 initialize-worker
-  //  1 startVat
-  // 2 save-snapshot
-  // span 3-9 = [3, 10) (ended by snapshot)
-  // 3 load-snapshot
-  //  4 boot (message: bootstrap())
-  //  5 notify (response to createVatAdminService)
-  //  6 message (nothing-1)
-  //  7 message (nothing-2)
-  //  8 message (nothing-3)
-  // 9 save-snapshot
-  // span 10-15 =  [10, 16) (ended by upgrade)
-  // 10 load-snapshot
-  //  11 message (nothing-4)
-  //  12 message (nothing-5)
-  //  13 message (nothing-6)
-  //  14 bringOutYourDead (for upgrade)
-  // 15 shutdown-worker (for upgrade)
-  //      (span ended, snapshot removed, span started)
-  // span 16-19 = [16,20)
-  // 16 initialize-worker (added by ensureVatOnline)
-  //  17 startVat
-  //  18 message (nothing-7)
-  //      (now maybeSaveSnapshot notices)
-  // 19 save-snapshot
-  // span 20- = [20,..) (still active at end of test)
-  // 20 load-snapshot
+  // | what       | pseudo   | delivery | span | span            |
+  // |            |          |      num | size | bounds          |
+  // |------------+----------+----------+------+-----------------|
+  // |            | init     |        0 |    1 | 0-4 / [0,5)     |
+  // | startVat   |          |        1 |    2 |                 |
+  // | bootstrap  |          |        2 |   3! |                 |
+  // |            | BOYD     |        3 |      |                 |
+  // |            | save     |        4 |      |                 |
+  // |            | new-span |          |      |                 |
+  // |            | load     |        5 |    1 | 5-13 / [5,14)   |
+  // | notify     |          |        6 |    2 |                 |
+  // | nothing-1  |          |        7 |    3 |                 |
+  // | nothing-2  |          |        8 |    4 |                 |
+  // | nothing-3  |          |        9 |    5 |                 |
+  // | nothing-4  |          |       10 |    6 |                 |
+  // | nothing-5  |          |       11 |   7! |                 |
+  // |            | BOYD     |       12 |      |                 |
+  // |            | save     |       13 |      |                 |
+  // |            | new-span |          |      |                 |
+  // |            | load     |       14 |    1 | 14-17 / [14,18) |
+  // | nothing-6  |          |       15 |    2 |                 |
+  // | UPGRADE!   |          |          |      |                 |
+  // |            | BOYD     |       16 |      |                 |
+  // |            | shutdown |       17 |      |                 |
+  // |            | new-span |          |      |                 |
+  // |            | init     |       18 |    1 | 18-22 / [18,23) |
+  // | startVat   |          |       19 |    2 |                 |
+  // | nothing-7  |          |       20 |   3! |                 |
+  // |            | BOYD     |       21 |      |                 |
+  // |            | save     |       22 |      |                 |
+  // |            | new-span |          |      |                 |
+  // |            | load     |       23 |    1 | 23-31 / [23,32) |
+  // | nothing-8  |          |       24 |    2 |                 |
+  // | nothing-9  |          |       25 |    3 |                 |
+  // | nothing-10 |          |       26 |    4 |                 |
+  // | nothing-11 |          |       27 |    5 |                 |
+  // | nothing-12 |          |       28 |    6 |                 |
+  // | nothing-13 |          |       29 |   7! |                 |
+  // |            | BOYD     |       30 |      |                 |
+  // |            | save     |       31 |      |                 |
+  // |            | new-span |          |      |                 |
+  // |            | load     |       32 |    1 | 32-             |
+  // | nothing-14 |          |       33 |    2 |                 |
+  // |            |          |          |      |                 |
 
+  let expectedFull = [].concat(init);
   t.deepEqual(fullSummary(), expectedFull);
-  t.deepEqual(bounds(), [0, 1]);
-  t.deepEqual(curSummary(), ['initialize-worker']);
+  t.deepEqual(curBounds(), [0, 1]);
+  t.deepEqual(curSummary(), [].concat(init));
   t.is(snapInfo(), undefined);
   t.is(incarnation(), 0);
 
@@ -209,23 +223,23 @@ test('transcript spans', async t => {
   // initialize-worker
 
   c = await restart();
-  t.deepEqual(curSummary(), ['initialize-worker']);
+  t.deepEqual(curSummary(), [].concat(init));
   t.is(snapInfo(), undefined);
   t.is(incarnation(), 0);
 
-  // starting the kernel will deliver the 'startVat' delivery to all
-  // vats. And since snapshotInitial=2, we'll get an immediate
-  // snapshot cycle after the 'startVat'. Then 'bootstrap()' and the
-  // notify from createVatAdminService are delivered
+  // starting the kernel will deliver the 'startVat' and bootstrap()
+  // messages. Since snapshotInitial=3, we'll get an immediate
+  // snapshot cycle after the 'bootstrap'. The notify from
+  // createVatAdminService is delivered after the snapshot completes.
   await c.run();
-  expectedFull = expectedFull.concat('startVat', snap, boot, notify);
-  // first span is 0-2 = [0,3), snapshot happened on the last event
-  // "2". current span is 3-5 = [3,6)
-  t.is(snapInfo(), 2);
+  expectedFull = expectedFull.concat('startVat', boot, snap, notify);
+  // first span is 0-4 = [0,5), snapshot happened on the last event
+  // d4. current span is 5-6 = [5,7)
+  t.is(snapInfo(), 4);
   t.is(incarnation(), 0);
-  t.deepEqual(bounds(), [3, 6]);
-  t.deepEqual(oldSummary(0), [].concat(start, save));
-  t.deepEqual(curSummary(), [].concat(load, boot, notify));
+  t.deepEqual(curBounds(), [5, 7]);
+  t.deepEqual(oldSummary(0), [].concat(start, boot, boyd, save));
+  t.deepEqual(curSummary(), [].concat(load, notify));
   t.deepEqual(fullSummary(), expectedFull);
 
   // all delivery events should record computrons
@@ -234,20 +248,20 @@ test('transcript spans', async t => {
   t.truthy(teStartVat.r.metering);
   t.is(typeof teStartVat.r.metering.computrons, 'number');
 
-  // do some deliveries to trigger an XS heap snapshot event, creating
-  // a new span
+  // do some deliveries to trigger more XS heap snapshots and create
+  // more spans
   const doSomeNothing = async () => {
     const kpid = c.queueToVatRoot('bootstrap', 'nothing', [], 'panic');
     await c.run();
     t.is(c.kpStatus(kpid), 'fulfilled');
   };
 
-  await doSomeNothing(); // d6: nothing-1
+  await doSomeNothing(); // d7: nothing-1
   expectedFull = expectedFull.concat(msg);
-  t.is(snapInfo(), 2);
+  t.is(snapInfo(), 4);
   t.is(incarnation(), 0);
-  t.deepEqual(bounds(), [3, 7]);
-  t.deepEqual(curSummary(), [].concat(load, boot, notify, msgN(1)));
+  t.deepEqual(curBounds(), [5, 8]);
+  t.deepEqual(curSummary(), [].concat(load, notify, msgN(1)));
   t.deepEqual(fullSummary(), expectedFull);
 
   const teNothing1 = cur().slice(-1)[0];
@@ -256,46 +270,40 @@ test('transcript spans', async t => {
   t.is(typeof teNothing1.r.metering.computrons, 'number');
 
   c = await restart();
-  t.deepEqual(curSummary(), [].concat(load, boot, notify, msgN(1)));
+  t.deepEqual(curSummary(), [].concat(load, notify, msgN(1)));
 
-  await doSomeNothing(); // d7: nothing-2
+  await doSomeNothing(); // d8: nothing-2
   expectedFull = expectedFull.concat(msg);
-  t.deepEqual(curSummary(), [].concat(load, boot, notify, msgN(2)));
-  await doSomeNothing(); // d8: nothing-3
+  t.deepEqual(curSummary(), [].concat(load, notify, msgN(2)));
+  await doSomeNothing(); // d9: nothing-3
   expectedFull = expectedFull.concat(msg);
-  // 8th delivery hits snapshotInterval, so we get a save/load
-  // cycle. Spans are [0,3), [3,10), [10,11). There were snapshots on
-  // 2 and 9.
+  await doSomeNothing(); // d10: nothing-4
+  expectedFull = expectedFull.concat(msg);
+  t.deepEqual(curSummary(), [].concat(load, notify, msgN(4)));
+  t.deepEqual(fullSummary(), expectedFull);
+
+  // the 7th delivery of the span will reach snapshotInterval
+  await doSomeNothing(); // d11: nothing-5
+  expectedFull = expectedFull.concat(msg);
+  // so we get a save/load cycle. Spans are [0,5), [5,14),
+  // [14,15). There were snapshots on 4 and 13.
   expectedFull = expectedFull.concat(snap);
-  t.is(snapInfo(), 9);
+  t.is(snapInfo(), 13);
   t.is(incarnation(), 0);
-  t.deepEqual(bounds(), [10, 11]);
+  t.deepEqual(curBounds(), [14, 15]);
   t.deepEqual(curSummary(), [].concat(load));
   t.deepEqual(fullSummary(), expectedFull);
+
   c = await restart();
   t.deepEqual(curSummary(), [].concat(load));
 
-  await doSomeNothing(); // nothing-4
+  // one more for good measure, before the upgrade
+  await doSomeNothing(); // d15: nothing-5
   expectedFull = expectedFull.concat(msg);
-  t.is(snapInfo(), 9);
+  t.is(snapInfo(), 13);
   t.is(incarnation(), 0);
-  t.deepEqual(bounds(), [10, 12]);
-  t.deepEqual(oldSummary(3), [].concat(load, boot, notify, msgN(3), save));
+  t.deepEqual(curBounds(), [14, 16]);
   t.deepEqual(curSummary(), [].concat(load, msg));
-  t.deepEqual(fullSummary(), expectedFull);
-
-  c = await restart();
-  t.deepEqual(curSummary(), [].concat(load, msg));
-
-  // two more for good measure
-  await doSomeNothing(); // nothing-5
-  expectedFull = expectedFull.concat(msg);
-  await doSomeNothing(); // nothing-6
-  expectedFull = expectedFull.concat(msg);
-  t.is(snapInfo(), 9);
-  t.is(incarnation(), 0);
-  t.deepEqual(bounds(), [10, 14]);
-  t.deepEqual(curSummary(), [].concat(load, msgN(3)));
   t.deepEqual(fullSummary(), expectedFull);
 
   // Now upgrade the vat, introducing a new incarnation. We do a null
@@ -305,15 +313,14 @@ test('transcript spans', async t => {
   c.upgradeStaticVat('bootstrap', false, bundleID);
   expectedFull = expectedFull.concat(boyd, shutdown, start);
   await c.run();
-  // a weirdness in the way maybeSaveSnapshot counts means that after
-  // an upgrade, we'll do a snapshot immediately after the first
-  // message delivery (because processDeliveryMessage calls
-  // maybeSaveSnapshot), but not after the startVat done by
-  // processUpgradeVat
-  t.is(snapInfo(), undefined);
+  // upgrade starts with a BOYD in d16, then a shutdown-worker
+  // pseudo-delivery in d17, then we erase the snapshot and start a
+  // new span with an initialize-worker and a startVat.
+
+  t.is(snapInfo(), undefined); // no snapshot yet
   t.is(incarnation(), 1);
-  t.deepEqual(oldSummary(10), [].concat(load, msgN(3), boyd, shutdown));
-  t.deepEqual(bounds(), [16, 18]);
+  t.deepEqual(oldSummary(14), [].concat(load, msg, boyd, shutdown));
+  t.deepEqual(curBounds(), [18, 20]);
   t.deepEqual(curSummary(), [].concat(start));
   t.deepEqual(fullSummary(), expectedFull);
 
@@ -324,13 +331,48 @@ test('transcript spans', async t => {
   t.is(incarnation(), 1);
   t.deepEqual(curSummary(), [].concat(start));
 
-  // so this provokes a snapshot, leaving us in an empty span
-  await doSomeNothing(); // nothing-7
+  // one delivery will be enough to reach snapshotInitial
+  // (init+startVat+message = 3) and provoke the first snapshot of the
+  // new incarnation (thus boyd on d21 and save-snapshot on d22)
+
+  await doSomeNothing(); // d20: nothing-7
   expectedFull = expectedFull.concat(msg, snap);
-  t.is(snapInfo(), 19);
+  t.is(snapInfo(), 22);
   t.is(incarnation(), 1);
-  t.deepEqual(bounds(), [20, 21]);
-  t.deepEqual(oldSummary(16), [].concat(init, ['startVat'], msg, save));
+  t.deepEqual(oldSummary(18), [].concat(start, msg, boyd, save));
+  t.deepEqual(curBounds(), [23, 24]);
+  t.deepEqual(curSummary(), [].concat(load));
+  t.deepEqual(fullSummary(), expectedFull);
+
+  // we need another six deliveries to reach snapshotInterval
+  await doSomeNothing(); // d24: nothing-8
+  expectedFull = expectedFull.concat(msg);
+  t.deepEqual(fullSummary(), expectedFull);
+
+  await doSomeNothing(); // d25: nothing-9
+  expectedFull = expectedFull.concat(msg);
+  t.deepEqual(fullSummary(), expectedFull);
+
+  await doSomeNothing(); // d26: nothing-10
+  expectedFull = expectedFull.concat(msg);
+  t.deepEqual(fullSummary(), expectedFull);
+
+  await doSomeNothing(); // d27: nothing-11
+  expectedFull = expectedFull.concat(msg);
+  t.deepEqual(fullSummary(), expectedFull);
+
+  await doSomeNothing(); // d28: nothing-12
+  expectedFull = expectedFull.concat(msg);
+  t.deepEqual(fullSummary(), expectedFull);
+  t.is(snapInfo(), 22); // no snapshot yet
+
+  // this will trigger snapshotInterval
+  await doSomeNothing(); // d28: nothing-12
+  expectedFull = expectedFull.concat(msg, snap);
+  t.is(snapInfo(), 31);
+  t.is(incarnation(), 1);
+  t.deepEqual(oldSummary(23), [].concat(load, msgN(6), boyd, save));
+  t.deepEqual(curBounds(), [32, 33]);
   t.deepEqual(curSummary(), [].concat(load));
   t.deepEqual(fullSummary(), expectedFull);
 });

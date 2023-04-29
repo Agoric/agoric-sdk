@@ -173,11 +173,12 @@ test('xsnap bundles are stable', async t => {
   // snapshotInitial: 2
 
   // now allow the bootstrap message to be delivered as deliveryNum=1,
-  // which should trigger a snapshot, which is recorded in a
-  // save-snapshot as deliveryNum=2
+  // which should trigger a snapshot, which first performs a BOYD in
+  // deliveryNum=2, then the snapshot is recorded in a save-snapshot
+  // as deliveryNum=3
   t.is(snapStore.getSnapshotInfo('v1'), undefined);
   await c2.run();
-  t.is(snapStore.getSnapshotInfo('v1')?.snapPos, 2);
+  t.is(snapStore.getSnapshotInfo('v1')?.snapPos, 3);
   await c2.shutdown;
 
   // now that the worker has a snapshot, the vat preload won't fetch

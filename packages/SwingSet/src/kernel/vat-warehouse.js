@@ -567,20 +567,37 @@ export function makeVatWarehouse({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     let reason;
-    const { totalEntries, snapshottedEntries } =
-      vatKeeper.transcriptSnapshotStats();
-    if (snapshotInitial === totalEntries) {
+
+    const hasSnapshot = !!vatKeeper.getSnapshotInfo();
+    const deliveriesInSpan = vatKeeper.transcriptSpanEntries();
+
+    if (!hasSnapshot && deliveriesInSpan >= snapshotInitial) {
+      // begin snapshot after 'snapshotInitial' deliveries in an incarnation
       reason = { snapshotInitial };
-    } else if (
-      totalEntries > snapshotInitial &&
-      totalEntries - snapshottedEntries >= snapshotInterval
-    ) {
+    } else if (deliveriesInSpan >= snapshotInterval) {
+      // begin snapshot after 'snapshotInterval' deliveries in a span
       reason = { snapshotInterval };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
       return false; // not time to make a snapshot
     }
+
+    // always do a bringOutYourDead just before a snapshot, to shake
+    // loose as much garbage as we can, and to minimize the GC
+    // sensitivity effects of the forced GC that snapshots perform
+    // TODO:
+    // * computrons consumed are not reported to the runPolicy
+    // * computrons consumed are not deducted from the meter
+    //   (not sure we'd want that anyways)
+    // * vat-fatal errors or self-termination are not processed
+    //
+    /** @type { KernelDeliveryObject } */
+    const kd = harden(['bringOutYourDead']);
+    // eslint-disable-next-line no-use-before-define
+    const vd = kernelDeliveryToVatDelivery(vatID, kd);
+    const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
+    await deliverToVat(vatID, kd, vd, vs);
 
     // in addition to saving the actual snapshot,
     // vatKeeper.saveSnapshot() pushes a save-snapshot transcript
