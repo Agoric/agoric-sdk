@@ -59,6 +59,7 @@ const BASIS_POINTS = 10_000n;
  *   },
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
+ *   vBankKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,

@@ -54,8 +54,15 @@ export const publishInterchainAssetFromBoardId = async (
  */
 export const publishInterchainAssetFromBank = async (
   {
-    consume: { zoe, bankManager, agoricNamesAdmin, bankMints, reserveKit },
-    produce: { bankMints: produceBankMints },
+    consume: {
+      bankManager,
+      agoricNamesAdmin,
+      bankMints,
+      vBankKits,
+      reserveKit,
+      startUpgradeable: startUpgradeableP,
+    },
+    produce: { bankMints: produceBankMints, vBankKits: produceVBankKits },
     installation: {
       consume: { mintHolder },
     },
@@ -80,12 +87,21 @@ export const publishInterchainAssetFromBank = async (
       assetKind: AssetKind.NAT,
     },
   };
-  const { creatorFacet: mintP, publicFacet: issuerP } = E.get(
-    E(zoe).startInstance(mintHolder, {}, terms, undefined, keyword),
-  );
 
-  const [issuer, brand] = await Promise.all([issuerP, E(issuerP).getBrand()]);
-  const kit = { mint: mintP, issuer, brand };
+  const startUpgradeable = await startUpgradeableP;
+  produceVBankKits.resolve([]);
+  const { creatorFacet: mint, publicFacet: issuer } = await startUpgradeable({
+    installation: mintHolder,
+    label: keyword,
+    privateArgs: undefined,
+    terms,
+    produceResults: {
+      resolve: kit => Promise.resolve(vBankKits).then(kits => kits.push(kit)),
+    },
+  });
+
+  const brand = await E(issuer).getBrand();
+  const kit = { mint, issuer, brand };
 
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
@@ -93,8 +109,7 @@ export const publishInterchainAssetFromBank = async (
   produceBankMints.resolve([]);
   await Promise.all([
     Promise.resolve(bankMints).then(
-      // @ts-expect-error pushing a promise to a presence array
-      mints => mints.push(mintP),
+      mints => mints.push(mint),
       () => {}, // If the bankMints list was rejected, ignore the error.
     ),
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
@@ -275,13 +290,14 @@ export const getManifestForAddAssetToVault = (
       ...(publishIssuerFromBank && {
         [publishInterchainAssetFromBank.name]: {
           consume: {
-            zoe: true,
             bankManager: true,
             agoricNamesAdmin: true,
             bankMints: true,
             reserveKit: true,
+            vBankKits: true,
+            startUpgradeable: true,
           },
-          produce: { bankMints: true },
+          produce: { bankMints: true, vBankKits: true },
           installation: {
             consume: { mintHolder: true },
           },
