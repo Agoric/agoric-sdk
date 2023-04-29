@@ -465,7 +465,7 @@ test.serial('dead vat state removed', async t => {
   const { kvStore } = kernelStorage;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 30, true);
+  t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 10, true);
   const beforeDump = debug.dump(true);
   t.truthy(beforeDump.transcripts.v6);
   t.truthy(beforeDump.snapshots.v6);

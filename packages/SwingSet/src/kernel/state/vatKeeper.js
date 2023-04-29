@@ -44,7 +44,6 @@ export function initializeVatState(kvStore, transcriptStore, vatID) {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
-  kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   transcriptStore.initTranscript(vatID);
 }
 
@@ -166,9 +165,8 @@ export function makeVatKeeper(
   }
 
   function nextDeliveryNum() {
-    const num = Nat(BigInt(getRequired(`${vatID}.nextDeliveryNum`)));
-    kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
-    return num;
+    const { endPos } = transcriptStore.getCurrentSpanBounds(vatID);
+    return Nat(endPos);
   }
 
   function getIncarnationNumber() {

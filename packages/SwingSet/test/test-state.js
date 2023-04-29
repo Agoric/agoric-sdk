@@ -522,14 +522,13 @@ test('vatKeeper', async t => {
   t.is(vk.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
   t.is(vk.nextDeliveryNum(), 0n);
-  t.is(vk.nextDeliveryNum(), 1n);
+  t.is(vk.nextDeliveryNum(), 0n); // incremented only by addToTranscript
 
   k.emitCrankHashes();
   let vk2 = duplicateKeeper(store.serialize).provideVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
-  t.is(vk2.nextDeliveryNum(), 2n);
-  t.is(vk2.nextDeliveryNum(), 3n);
+  t.is(vk2.nextDeliveryNum(), 0n);
 
   const kernelImport2 = k.addKernelObject('v1', 25);
   const vatImport2 = vk.mapKernelSlotToVatSlot(kernelImport2);

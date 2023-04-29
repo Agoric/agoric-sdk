@@ -83,7 +83,6 @@ const enableKernelGC = true;
 //   $R is 'R' when reachable, '_' when merely recognizable
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
-// v$NN.nextDeliveryNum = $NN
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN // XXX does this exist?
 // v$NN.reapInterval = $NN or 'never'

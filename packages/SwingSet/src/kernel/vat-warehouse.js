@@ -526,7 +526,7 @@ export function makeVatWarehouse({
     // then log the delivery so it appears after transcript replay
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const crankNum = kernelKeeper.getCrankNumber();
-    const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
+    const deliveryNum = vatKeeper.nextDeliveryNum(); // transcript endPos
     /** @type { SlogFinishDelivery } */
     const finishSlog = vs.delivery(crankNum, deliveryNum, kd, vd);
 
