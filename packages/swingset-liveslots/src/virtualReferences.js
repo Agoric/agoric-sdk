@@ -17,6 +17,8 @@ import {
  *   converts an object ID (vref) to an object.
  * @param {*} FinalizationRegistry  Powerful JavaScript intrinsic normally denied
  *   by SES
+ * @param {*} WeakRef  Powerful JavaScript intrinsic normally denied
+ *   by SES
  * @param {*} addToPossiblyDeadSet  Function to record objects whose deaths
  *   should be reinvestigated
  * @param {*} addToPossiblyRetiredSet  Function to record dead objects whose
@@ -29,6 +31,7 @@ export function makeVirtualReferenceManager(
   getSlotForVal,
   requiredValForSlot,
   FinalizationRegistry,
+  WeakRef,
   addToPossiblyDeadSet,
   addToPossiblyRetiredSet,
   relaxDurabilityRules,

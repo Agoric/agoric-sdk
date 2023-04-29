@@ -1,4 +1,4 @@
-/* global FinalizationRegistry */
+/* global FinalizationRegistry WeakRef */
 import test from 'ava';
 import '@endo/init/debug.js';
 
@@ -16,6 +16,7 @@ function makeVRM() {
     getSlotForVal,
     requiredValForSlot,
     FinalizationRegistry,
+    WeakRef,
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
     false,

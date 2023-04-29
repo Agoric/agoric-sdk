@@ -650,6 +650,7 @@ function build(
     getSlotForVal,
     requiredValForSlot,
     FinalizationRegistry,
+    WeakRef,
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
     relaxDurabilityRules,
