@@ -75,7 +75,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   } else {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', yesCmd);
-    return execFileSync(agdBinary, yesCmd);
+    return execFileSync(agdBinary, yesCmd, { encoding: 'utf-8' });
   }
 };
 harden(execSwingsetTransaction);

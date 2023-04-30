@@ -68,7 +68,7 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   const { compressedSize } = await store.saveSnapshot(
     'vat0',
     1,
-    vat.makeSnapshot(),
+    vat.makeSnapshotStream(),
   );
 
   t.true(
@@ -89,7 +89,7 @@ test('SES bootstrap, save, compress', async t => {
   const { compressedSize } = await store.saveSnapshot(
     'vat0',
     1,
-    vat.makeSnapshot(),
+    vat.makeSnapshotStream(),
   );
 
   t.true(
@@ -105,7 +105,7 @@ test('create SES worker, save, restore, resume', async t => {
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
   await vat0.evaluate('globalThis.x = harden({a: 1})');
-  await store.saveSnapshot('vat0', 1, vat0.makeSnapshot());
+  await store.saveSnapshot('vat0', 1, vat0.makeSnapshotStream());
 
   const snapshotStream = store.loadSnapshot('vat0');
 
@@ -140,7 +140,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
     filePath: _path1,
     compressedSize: _csize1,
     ...info1
-  } = await store.saveSnapshot('vat0', 1, vat.makeSnapshot());
+  } = await store.saveSnapshot('vat0', 1, vat.makeSnapshotStream());
   t.snapshot(info1, 'initial snapshot');
 
   const bootScript = await getBootScript();
@@ -150,7 +150,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
     filePath: _path2,
     compressedSize: _csize2,
     ...info2
-  } = await store.saveSnapshot('vat0', 2, vat.makeSnapshot());
+  } = await store.saveSnapshot('vat0', 2, vat.makeSnapshotStream());
   t.snapshot(
     info2,
     'after SES boot - sensitive to SES-shim, XS, and supervisor',
@@ -161,7 +161,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
     filePath: _path3,
     compressedSize: _csize3,
     ...info3
-  } = await store.saveSnapshot('vat0', 3, vat.makeSnapshot());
+  } = await store.saveSnapshot('vat0', 3, vat.makeSnapshotStream());
   t.snapshot(
     info3,
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
@@ -182,7 +182,7 @@ async function makeTestSnapshot() {
   const bootScript = await getBootScript();
   await vat.evaluate(bootScript);
   await vat.evaluate('globalThis.x = harden({a: 1})');
-  const info = await store.saveSnapshot('vat0', 1, vat.makeSnapshot());
+  const info = await store.saveSnapshot('vat0', 1, vat.makeSnapshotStream());
   await vat.close();
   return info;
 }

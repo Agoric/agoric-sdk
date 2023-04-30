@@ -7,6 +7,7 @@ import test from 'ava';
 import * as proc from 'child_process';
 import * as os from 'os';
 import fs from 'fs';
+import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { tmpName } from 'tmp';
 
@@ -257,7 +258,51 @@ test('serialize concurrent messages', async t => {
   t.deepEqual([...count(101, 1)], messages);
 });
 
-test('write and read snapshot', async t => {
+const writeAndReadSnapshot = async (t, snapshotUseFs) => {
+  const messages = [];
+  async function handleCommand(message) {
+    messages.push(decode(message));
+    return new Uint8Array();
+  }
+
+  const vat0 = await xsnap({ ...options(io), handleCommand, snapshotUseFs });
+  await vat0.evaluate(`
+    globalThis.hello = "Hello, World!";
+  `);
+
+  const vat1 = await xsnap({
+    ...options(io),
+    handleCommand,
+    snapshotStream: vat0.makeSnapshotStream(),
+    snapshotUseFs: true,
+  });
+  await vat1.evaluate(`
+    issueCommand(new TextEncoder().encode(hello).buffer);
+  `);
+  await vat1.close();
+
+  await vat0.evaluate(`
+    globalThis.hello += " Bienvenue!";
+  `);
+
+  const snapshotStream2 = vat0.makeSnapshotStream();
+  const vat2 = await xsnap({
+    ...options(io),
+    handleCommand,
+    snapshotStream: snapshotStream2,
+  });
+  await vat2.evaluate(`
+    issueCommand(new TextEncoder().encode(hello).buffer);
+  `);
+  await vat2.close();
+
+  await vat0.close();
+  t.deepEqual(['Hello, World!', 'Hello, World! Bienvenue!'], messages);
+};
+test('write and read snapshot (use FS)', writeAndReadSnapshot, true);
+test('write and read snapshot (use stream)', writeAndReadSnapshot, false);
+
+test('execute immediately after makeSnapshotStream', async t => {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decode(message));
@@ -265,10 +310,14 @@ test('write and read snapshot', async t => {
   }
 
   const vat0 = await xsnap({ ...options(io), handleCommand });
-  await vat0.evaluate(`
-    globalThis.hello = "Hello, World!";
+  void vat0.evaluate(`
+    globalThis.when = 'before';
   `);
-  const snapshotStream = vat0.makeSnapshot();
+  const snapshotStream = vat0.makeSnapshotStream();
+
+  void vat0.evaluate(`
+    globalThis.when = 'after';
+  `);
 
   const vat1 = await xsnap({
     ...options(io),
@@ -276,12 +325,12 @@ test('write and read snapshot', async t => {
     snapshotStream,
   });
   await vat0.close();
-  await vat1.evaluate(`
-    issueCommand(new TextEncoder().encode(hello).buffer);
+  void vat1.evaluate(`
+    issueCommand(new TextEncoder().encode(when).buffer);
   `);
   await vat1.close();
 
-  t.deepEqual(['Hello, World!'], messages);
+  t.deepEqual(['before'], messages);
 });
 
 function delay(ms) {
@@ -369,7 +418,8 @@ function pickXSnap(env = process.env) {
     console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
     let serial = 0;
     doXSnap = opts => {
-      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      const workerTrace =
+        path.resolve(XSNAP_TEST_RECORD, String(serial)) + path.sep;
       serial += 1;
       fs.mkdirSync(workerTrace, { recursive: true });
       return recordXSnap(opts, workerTrace, {
@@ -404,10 +454,11 @@ test('GC after snapshot vs restore', async t => {
 
   const beforeClone = await nextGC(worker, opts);
 
-  const snapshotStream = worker.makeSnapshot();
+  const snapshotStream = worker.makeSnapshotStream();
 
   const optClone = { ...options(io), name: 'clone', snapshotStream };
   const clone = await xsnapr(optClone);
+  await clone.isReady();
   t.log('cloned');
   t.teardown(clone.terminate);
 
