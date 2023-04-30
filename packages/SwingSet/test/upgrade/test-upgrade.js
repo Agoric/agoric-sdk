@@ -183,6 +183,8 @@ test('null upgrade - xsnap', async t => {
 test('kernel sends bringOutYourDead for vat upgrade', async t => {
   const config = makeConfigFromPaths('../bootstrap-relay.js', {
     defaultReapInterval: 'never',
+    snapshotInitial: 10000, // effectively disabled
+    snapshotInterval: 10000, // effectively disabled
     staticVatPaths: {
       staticVat: '../vat-exporter.js',
     },
@@ -251,10 +253,14 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
     slogEntry => slogEntry.vatID === staticVatID,
   );
   const expectedDeliveries = [
-    messageDeliveryShape(1n, 'getVersion', []),
-    deliveryShape(2n, ['bringOutYourDead']),
-    deliveryShape(3n, ['startVat']),
-    messageDeliveryShape(4n, 'getVersion', []),
+    // 0: initialize-worker
+    // 1: startVat
+    messageDeliveryShape(2n, 'getVersion', []),
+    deliveryShape(3n, ['bringOutYourDead']),
+    // 4: shutdown-worker
+    // 5: initialize-worker
+    deliveryShape(6n, ['startVat']),
+    messageDeliveryShape(7n, 'getVersion', []),
   ];
   t.like(staticVatDeliveries, arrayShape(expectedDeliveries));
   t.is(staticVatDeliveries.length, expectedDeliveries.length);
