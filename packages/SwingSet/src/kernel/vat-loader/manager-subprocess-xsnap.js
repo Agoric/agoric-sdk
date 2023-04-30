@@ -234,11 +234,16 @@ export function makeXsSubprocessFactory({
     /**
      * @param {number} snapPos
      * @param {SnapStore} snapStore
+     * @param {boolean} [restartWorker]
      * @returns {Promise<SnapshotResult>}
      */
-    async function makeSnapshot(snapPos, snapStore) {
+    async function makeSnapshot(snapPos, snapStore, restartWorker) {
       const snapshotDescription = `${vatID}-${snapPos}`;
       const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
+
+      if (!restartWorker) {
+        return snapStore.saveSnapshot(vatID, snapPos, snapshotStream);
+      }
 
       /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
       const [restartWorkerStream, snapStoreSaveStream] = synchronizedTee(

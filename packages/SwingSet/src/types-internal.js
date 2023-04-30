@@ -57,9 +57,11 @@ export {};
  *   bundle?: Bundle,
  * }} ManagerOptions
  *
+ * @typedef {(snapPos: number, ss: SnapStore, restartWorker?: boolean) => Promise<SnapshotResult>} MakeSnapshot
+ *
  * @typedef { { deliver: (delivery: VatDeliveryObject, vatSyscallHandler: VatSyscallHandler)
  *                       => Promise<VatDeliveryResult>,
- *              makeSnapshot?: undefined | ((snapPos: number, ss: SnapStore) => Promise<SnapshotResult>),
+ *              makeSnapshot?: undefined | MakeSnapshot,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { { createFromBundle: (vatID: string,

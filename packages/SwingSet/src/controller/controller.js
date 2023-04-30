@@ -435,7 +435,7 @@ export async function makeSwingsetController(
  *   slogCallbacks?: unknown;
  *   slogSender?: import('@agoric/telemetry').SlogSender;
  *   testTrackDecref?: unknown;
- *    warehousePolicy?: { maxVatsOnline?: number };
+ *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
