@@ -17,6 +17,7 @@
 /**
  * @typedef {{
  *   brand: Record<string, Brand>,
+ *   oracleBrand: Record<string, Brand>,
  *   instance: Record<string, Instance>,
  *   vbankAsset: Record<string, VBankAssetDetail>,
  *   reverse: Record<string, string>,
@@ -45,7 +46,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
 
   const reverse = {};
   // TODO support vbankAsset which must recur
-  const entries = ['brand', 'instance'].map(kind => {
+  const entries = ['brand', 'oracleBrand', 'instance'].map(kind => {
     const key = `published.agoricNames.${kind}`;
 
     const values = data.get(key);
