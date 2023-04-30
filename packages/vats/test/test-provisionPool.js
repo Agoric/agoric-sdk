@@ -19,7 +19,7 @@ import path from 'path';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { makeBoard } from '../src/lib-board.js';
 import { makeNameHubKit } from '../src/nameHub.js';
-import { makeBridgeProvisionTool } from '../src/provisionPool.js';
+import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
 import { PowerFlags } from '../src/walletFlags.js';
 import { makeFakeBankKit } from '../tools/bank-utils.js';
@@ -54,7 +54,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool').start>} */
+  /** @type {Installation<import('../src/provisionPool')['prepare']>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -266,7 +266,7 @@ const makeWalletFactoryKitFor1 = async address => {
   const fees = withAmountUtils(makeIssuerKit('FEE'));
   await bankManager.addAsset('ufee', 'FEE', 'FEE', fees);
 
-  const sendInitialPayment = async (_addr, dest) => {
+  const sendInitialPayment = async dest => {
     const pmt = fees.mint.mintPayment(fees.make(250n));
     return E(E(dest).getPurse(fees.brand)).deposit(pmt);
   };

@@ -26,15 +26,18 @@ agoric wallet send --offer "$OFFER" --from gov1 --keyring-backend="test"
 # list my vaults
 bin/agops vaults list --from gov1 --keyring-backend="test"
 
+# in another terminal watch:
+agoric follow :published.vaultFactory.manager0.vaults.vault0
+
 # adjust
 OFFER=$(mktemp -t agops.XXX)
-bin/agops vaults adjust --vaultId vault1 --giveCollateral 1.0 --from gov1 --keyring-backend="test" >|"$OFFER"
+bin/agops vaults adjust --vaultId vault0 --giveCollateral 1.0 --from gov1 --keyring-backend="test" >|"$OFFER"
 jq ".body | fromjson" <"$OFFER"
 agoric wallet send --from gov1 --keyring-backend="test" --offer "$OFFER"
 
 # close a vault
 OFFER=$(mktemp -t agops.XXX)
 # 5.05 for 5.00 debt plus 1% fee
-bin/agops vaults close --vaultId vault1 --giveMinted 5.05 --from gov1 --keyring-backend="test" >|"$OFFER"
+bin/agops vaults close --vaultId vault0 --giveMinted 5.05 --from gov1 --keyring-backend="test" >|"$OFFER"
 jq ".body | fromjson" <"$OFFER"
 agoric wallet send --from gov1 --keyring-backend="test" --offer "$OFFER"
