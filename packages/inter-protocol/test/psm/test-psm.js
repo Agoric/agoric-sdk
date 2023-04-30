@@ -24,6 +24,7 @@ import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { produceStartUpgradeable } from '@agoric/vats/src/core/basic-behaviors.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
@@ -749,6 +750,9 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
 
   // Prep bootstrap space
   {
+    // @ts-expect-error Doesnt actually require all bootstrap powers
+    await produceStartUpgradeable({ consume, produce });
+
     const {
       installs,
       board,
