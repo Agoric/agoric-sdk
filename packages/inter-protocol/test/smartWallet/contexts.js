@@ -2,6 +2,7 @@ import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { produceStartUpgradeable } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
@@ -37,6 +38,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   const { consume, produce } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
+
+  // @ts-expect-error Doesnt actually require all bootstrap powers
+  await produceStartUpgradeable({ consume, produce });
 
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;

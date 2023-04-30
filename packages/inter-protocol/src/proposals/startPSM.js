@@ -287,12 +287,19 @@ harden(startPSM);
 export const makeAnchorAsset = async (
   {
     vatParameters: { chainStorageEntries = [] },
-    consume: { agoricNamesAdmin, bankManager, zoe, anchorBalancePayments },
+    consume: {
+      agoricNamesAdmin,
+      bankManager,
+      startUpgradeable: startUpgradeableP,
+      anchorBalancePayments,
+      anchorKits,
+    },
     installation: {
       consume: { mintHolder },
     },
     produce: {
       testFirstAnchorKit,
+      anchorKits: produceAnchorKits,
       anchorBalancePayments: produceAnchorBalancePayments,
     },
   },
@@ -321,12 +328,20 @@ export const makeAnchorAsset = async (
       },
     }),
   );
-  // TODO: save adminFacet of this contract, like all others.
+
+  const startUpgradeable = await startUpgradeableP;
+  produceAnchorKits.resolve([]);
   /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
   // @ts-expect-error cast
-  const { creatorFacet: mint, publicFacet: issuerP } = E.get(
-    E(zoe).startInstance(mintHolder, {}, terms, undefined, keyword),
-  );
+  const { creatorFacet: mint, publicFacet: issuerP } = await startUpgradeable({
+    installation: mintHolder,
+    label: keyword,
+    terms,
+    privateArgs: undefined,
+    produceResults: {
+      resolve: kit => Promise.resolve(anchorKits).then(kits => kits.push(kit)),
+    },
+  });
   const issuer = await issuerP; // identity of issuers is important
 
   const brand = await E(issuer).getBrand();
@@ -462,11 +477,16 @@ export const PSM_MANIFEST = {
     consume: {
       agoricNamesAdmin: true,
       bankManager: 'bank',
-      zoe: 'zoe',
+      startUpgradeable: true,
       anchorBalancePayments: true,
+      anchorKits: true,
     },
     installation: { consume: { mintHolder: 'zoe' } },
-    produce: { testFirstAnchorKit: true, anchorBalancePayments: true },
+    produce: {
+      testFirstAnchorKit: true,
+      anchorBalancePayments: true,
+      anchorKits: true,
+    },
   },
   [startPSM.name]: {
     vatParameters: { chainStorageEntries: true },
