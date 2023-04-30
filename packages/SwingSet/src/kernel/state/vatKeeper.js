@@ -507,11 +507,15 @@ export function makeVatKeeper(
     return snapStore?.getSnapshotInfo(vatID);
   }
 
-  function transcriptSnapshotStats() {
-    const totalEntries = getTranscriptEndPosition();
-    const snapshotInfo = getSnapshotInfo();
-    const snapshottedEntries = snapshotInfo ? snapshotInfo.snapPos : 0;
-    return { totalEntries, snapshottedEntries };
+  /**
+   * Returns count of deliveries made since initialization or
+   * load-snapshot
+   *
+   * @returns {number}
+   */
+  function transcriptSpanEntries() {
+    const { startPos, endPos } = transcriptStore.getCurrentSpanBounds(vatID);
+    return endPos - startPos;
   }
 
   /**
@@ -662,7 +666,8 @@ export function makeVatKeeper(
     deleteCListEntriesForKernelSlots,
     transcriptSize,
     getTranscript,
-    transcriptSnapshotStats,
+    getTranscriptEndPosition,
+    transcriptSpanEntries,
     addToTranscript,
     vatStats,
     dumpState,
