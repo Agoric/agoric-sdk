@@ -237,8 +237,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
   }
 
-  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
-  let blockingSend;
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
@@ -471,14 +469,26 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       afterCommitCallback,
     });
 
-    let shutdown;
-    ({ blockingSend, shutdown, writeSlogObject, savedChainSends } = s);
+    const { blockingSend, shutdown } = s;
+    ({ writeSlogObject, savedChainSends } = s);
 
-    registerShutdown(async () =>
-      Promise.all([shutdown(), discardStateSyncExport()]).then(() => {}),
+    let pendingBlockingSend = Promise.resolve();
+
+    registerShutdown(async interrupted =>
+      Promise.all([
+        interrupted && pendingBlockingSend.then(shutdown),
+        discardStateSyncExport(),
+      ]).then(() => {}),
     );
 
-    return blockingSend;
+    return async action => {
+      const result = blockingSend(action);
+      pendingBlockingSend = Promise.resolve(result).then(
+        () => {},
+        () => {},
+      );
+      return result;
+    };
   }
 
   async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
@@ -594,6 +604,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         throw Fail`Unknown cosmos snapshot request ${request}`;
     }
   }
+
+  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
+  let blockingSend;
 
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
