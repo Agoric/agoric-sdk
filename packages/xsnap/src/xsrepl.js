@@ -87,7 +87,7 @@ async function main() {
       });
     } else if (answer === 'save') {
       const file = await ask('file> ');
-      await fs.promises.writeFile(file, vat.makeSnapshot(file));
+      await fs.promises.writeFile(file, vat.makeSnapshotStream(file));
     } else {
       await vat.issueStringCommand(answer);
     }
