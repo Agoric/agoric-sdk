@@ -171,13 +171,13 @@ export const makeBootstrap = (
       const { root } = vat;
       const decodedArgs = args.map(decodePassable);
       const result = await E(root)[methodName](...decodedArgs);
-      return encodePassable(result);
+      return encodePassable(harden(result));
     },
     messageVatObject: async ({ presence, methodName, args = [] }) => {
       const object = decodePassable(presence);
       const decodedArgs = args.map(decodePassable);
       const result = await E(object)[methodName](...decodedArgs);
-      return encodePassable(result);
+      return encodePassable(harden(result));
     },
     /* Like `messageVatObject` but does not await return value */
     messageVatObjectSendOnly: ({ presence, methodName, args = [] }) => {
