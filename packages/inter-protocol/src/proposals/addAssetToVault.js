@@ -125,7 +125,16 @@ export const publishInterchainAssetFromBank = async (
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const registerScaledPriceAuthority = async (
-  { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
+  {
+    consume: {
+      agoricNamesAdmin,
+      startUpgradeable: startUpgradeableP,
+      priceAuthorityAdmin,
+      priceAuthority,
+      scaledPriceAuthorityKits,
+    },
+    produce: { scaledPriceAuthorityKits: produceScaledPriceAuthorityKits },
+  },
   { options: { interchainAssetOptions } },
 ) => {
   const {
@@ -199,17 +208,23 @@ export const registerScaledPriceAuthority = async (
       initialPrice,
     }),
   );
-  const { publicFacet } = E.get(
-    E(zoe).startInstance(
-      scaledPriceAuthority,
-      undefined,
-      terms,
-      undefined,
-      `scaledPriceAuthority-${keyword}`,
-    ),
-  );
+
+  const startUpgradeable = await startUpgradeableP;
+  produceScaledPriceAuthorityKits.resolve([]);
+  const spaKit = await startUpgradeable({
+    installation: scaledPriceAuthority,
+    label: `scaledPriceAuthority-${keyword}`,
+    terms,
+    produceResults: {
+      resolve: kit =>
+        Promise.resolve(scaledPriceAuthorityKits).then(kits => kits.push(kit)),
+    },
+    privateArgs: undefined,
+  });
+
   await E(priceAuthorityAdmin).registerPriceAuthority(
-    E(publicFacet).getPriceAuthority(),
+    // @ts-expect-error The public facet should have getPriceAuthority
+    E(spaKit.publicFacet).getPriceAuthority(),
     interchainBrand,
     runBrand,
     true, // force
@@ -304,9 +319,13 @@ export const getManifestForAddAssetToVault = (
       [registerScaledPriceAuthority.name]: {
         consume: {
           agoricNamesAdmin: true,
-          zoe: true,
+          startUpgradeable: true,
           priceAuthorityAdmin: true,
           priceAuthority: true,
+          scaledPriceAuthorityKits: true,
+        },
+        produce: {
+          scaledPriceAuthorityKits: true,
         },
         installation: {
           consume: { scaledPriceAuthority: true },

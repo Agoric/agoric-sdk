@@ -266,6 +266,7 @@
  *   provisioning: Awaited<ProvisioningVat> | undefined,
  *   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
+ *   scaledPriceAuthorityKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   storageBridgeManager: import('../types.js').ScopedBridgeManager?,
  *   startUpgradeable: StartUpgradeable,
  *   startGovernedUpgradeable: StartGovernedUpgradeable,
