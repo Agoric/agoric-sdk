@@ -543,6 +543,7 @@ async function replay(transcriptFile) {
       const { hash, compressSeconds: saveSeconds } = await manager.makeSnapshot(
         lastTranscriptNum,
         snapStore,
+        false, // Do not restart, we'll do that ourselves if needed
       );
       fs.writeSync(
         snapshotActivityFd,

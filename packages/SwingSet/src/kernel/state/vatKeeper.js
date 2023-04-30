@@ -547,16 +547,21 @@ export function makeVatKeeper(
    * Store a snapshot, if given a snapStore.
    *
    * @param {VatManager} manager
+   * @param {boolean} [restartWorker]
    * @returns {Promise<void>}
    */
-  async function saveSnapshot(manager) {
+  async function saveSnapshot(manager, restartWorker) {
     if (!snapStore || !manager.makeSnapshot) {
       return;
     }
 
     // tell the manager to save a heap snapshot to the snapStore
     const endPosition = getTranscriptEndPosition();
-    const info = await manager.makeSnapshot(endPosition, snapStore);
+    const info = await manager.makeSnapshot(
+      endPosition,
+      snapStore,
+      restartWorker,
+    );
 
     const {
       hash: snapshotID,
@@ -586,6 +591,7 @@ export function makeVatKeeper(
       compressedSize,
       compressSeconds,
       endPosition,
+      restartWorker,
     });
   }
 

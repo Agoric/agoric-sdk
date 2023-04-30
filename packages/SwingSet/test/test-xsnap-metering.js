@@ -52,11 +52,10 @@ async function doTest(t, metered) {
   const store = makeSnapStore(db, () => {}, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);
-  const worker1 = await start1('vat', 'name', {
+  const worker1 = await start1('name', {
     bundleIDs: [],
     handleCommand,
     metered,
-    reload: false,
   });
   const spawnArgs1 = await p1;
   checkMetered(t, spawnArgs1, metered);
@@ -68,11 +67,11 @@ async function doTest(t, metered) {
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);
-  const worker2 = await start2('vat', 'name', {
+  const worker2 = await start2('name', {
     bundleIDs: [],
     handleCommand,
     metered,
-    reload: true,
+    init: { from: 'snapStore', vatID: 'vat' },
   });
   const spawnArgs2 = await p2;
   checkMetered(t, spawnArgs2, metered);

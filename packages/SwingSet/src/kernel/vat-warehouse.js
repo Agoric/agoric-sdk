@@ -243,7 +243,8 @@ export function makeVatWarehouse({
   panic,
   warehousePolicy,
 }) {
-  const { maxVatsOnline = 50 } = warehousePolicy || {};
+  const { maxVatsOnline = 50, restartWorkerOnSnapshot = true } =
+    warehousePolicy || {};
   // Often a large contract evaluation is among the first few deliveries,
   // so let's do a snapshot after just a few deliveries.
   const snapshotInitial = kernelKeeper.getSnapshotInitial();
@@ -603,8 +604,10 @@ export function makeVatWarehouse({
     // vatKeeper.saveSnapshot() pushes a save-snapshot transcript
     // entry, then starts a new transcript span, then pushes a
     // load-snapshot entry, so that the current span always starts
-    // with an initialize-snapshot or load-snapshot pseudo-delivery
-    await vatKeeper.saveSnapshot(manager);
+    // with an initialize-snapshot or load-snapshot pseudo-delivery,
+    // regardless of whether the worker was restarted from snapshot
+    // or not.
+    await vatKeeper.saveSnapshot(manager, restartWorkerOnSnapshot);
     return true;
   }
 

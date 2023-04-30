@@ -11,6 +11,7 @@ import {
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('../../types-internal.js').VatManager} VatManager
+ * @typedef {import('../../types-internal.js').MakeSnapshot} MakeSnapshot
  */
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
@@ -57,7 +58,7 @@ import {
 /**
  *
  * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: (snapPos: number, ss: SnapStore) => Promise<SnapshotResult>) => VatManager,
+ *                           makeSnapshot?: MakeSnapshot) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -170,7 +171,7 @@ function makeManagerKit(retainSyscall = false) {
   /**
    *
    * @param { () => Promise<void>} shutdown
-   * @param {(snapPos: number, ss: SnapStore) => Promise<SnapshotResult>} [makeSnapshot]
+   * @param {MakeSnapshot} [makeSnapshot]
    * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {

@@ -9,7 +9,7 @@ import {
 } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
-test('vat reload from snapshot', async t => {
+const vatReloadFromSnapshot = async (t, restartWorkerOnSnapshot) => {
   const config = {
     defaultReapInterval: 'never',
     snapshotInitial: 3,
@@ -30,7 +30,10 @@ test('vat reload from snapshot', async t => {
   const argv = [];
   await initializeSwingset(config, argv, kernelStorage);
 
-  const c1 = await makeSwingsetController(kernelStorage, null);
+  const warehousePolicy = { restartWorkerOnSnapshot };
+  const runtimeOptions = { warehousePolicy };
+
+  const c1 = await makeSwingsetController(kernelStorage, null, runtimeOptions);
   c1.pinVatRoot('target');
   const vatID = c1.vatNameToID('target');
 
@@ -97,4 +100,7 @@ test('vat reload from snapshot', async t => {
   t.deepEqual(c2.dump().log, expected2); // note: *not* 0-11
   t.deepEqual(getPositions(), [18, 19, 23]);
   await c2.shutdown();
-});
+};
+
+test('vat reload from snapshot (restart worker)', vatReloadFromSnapshot, true);
+test('vat reload from snapshot (reuse worker)', vatReloadFromSnapshot, false);
