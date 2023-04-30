@@ -1,19 +1,17 @@
 {
-  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. Pending #5819, it includes vaults in coreProposals; once #5819 is done, vaults are expected to be added by devnet governance.",
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. It does not include vaults in coreProposals; vaults are expected to be added by BLD staker governance.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [
     "@agoric/vats/scripts/init-core.js",
     {
       "module": "@agoric/inter-protocol/scripts/init-core.js",
-      "entrypoint": "defaultProposalBuilder",
+      "entrypoint": "committeeProposalBuilder",
       "args": [
         {
           "econCommitteeOptions": {
             "committeeSize": 3
-          },
-          "endorsedUi": "bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e",
-          "minInitialPoolLiquidity": "0"
+          }
         }
       ]
     },
@@ -21,22 +19,6 @@
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
       "entrypoint": "psmGovernanceBuilder",
       "args": []
-    },
-    {
-      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
-      "entrypoint": "defaultProposalBuilder",
-      "args": [
-        {
-          "interchainAssetOptions": {
-            "denom": "ibc/toyatom",
-            "decimalPlaces": 6,
-            "initialPrice": 12.34,
-            "keyword": "ATOM",
-            "oracleBrand": "ATOM",
-            "proposedName": "ATOM"
-          }
-        }
-      ]
     },
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
