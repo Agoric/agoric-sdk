@@ -266,7 +266,7 @@ const makeWalletFactoryKitFor1 = async address => {
   const fees = withAmountUtils(makeIssuerKit('FEE'));
   await bankManager.addAsset('ufee', 'FEE', 'FEE', fees);
 
-  const sendInitialPayment = async (_addr, dest) => {
+  const sendInitialPayment = async dest => {
     const pmt = fees.mint.mintPayment(fees.make(250n));
     return E(E(dest).getPurse(fees.brand)).deposit(pmt);
   };

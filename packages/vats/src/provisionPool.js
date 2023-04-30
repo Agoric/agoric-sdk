@@ -34,7 +34,7 @@ const privateArgsShape = harden({
  * Given attenuated access to the funding purse,
  * handle requests to provision smart wallets.
  *
- * @param {(address: string, depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
+ * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
  * @param {() => void} onProvisioned
  * @typedef {import('./vat-bank.js').Bank} Bank
  */
@@ -62,7 +62,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
         );
 
         const bank = E(bankManager).getBankForAddress(address);
-        await sendInitialPayment(address, bank);
+        await sendInitialPayment(bank);
         // only proceed  if we can provide funds
 
         const [_, created] = await E(walletFactory).provideSmartWallet(
@@ -202,11 +202,9 @@ export const start = async (zcf, privateArgs) => {
 
   /**
    *
-   * @param {string} address
    * @param {ERef<Bank>} destBank
    */
-  const sendInitialPayment = async (address, destBank) => {
-    console.log('sendInitialPayment', address);
+  const sendInitialPayment = async destBank => {
     const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
       params.getPerAccountInitialAmount()
     );
