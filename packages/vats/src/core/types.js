@@ -241,6 +241,7 @@
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
+ *   anchorKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: import('@agoric/vats').Board,
