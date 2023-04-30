@@ -380,7 +380,7 @@ export async function xsnap(options) {
    * @param {string} [description]
    * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
-  function makeSnapshot(description = 'unknown') {
+  function makeSnapshotStream(description = 'unknown') {
     const { promise: internalResult, ...batonKitResolvers } = makePromiseKit();
     const batonKit = { promise: baton, ...batonKitResolvers };
     baton = internalResult.then(noop, noop);
@@ -426,6 +426,6 @@ export async function xsnap(options) {
     evaluate,
     execute,
     import: importModule,
-    makeSnapshot,
+    makeSnapshotStream,
   });
 }

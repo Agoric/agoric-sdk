@@ -64,7 +64,7 @@ async function doTest(t, metered) {
   t.teardown(() => worker1.close());
 
   // now extract a snapshot
-  await store.saveSnapshot('vat', 1, worker1.makeSnapshot());
+  await store.saveSnapshot('vat', 1, worker1.makeSnapshotStream());
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);

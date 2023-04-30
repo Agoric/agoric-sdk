@@ -226,7 +226,7 @@ export function makeXsSubprocessFactory({
       return snapStore.saveSnapshot(
         vatID,
         snapPos,
-        worker.makeSnapshot(`${vatID}-${snapPos}`),
+        worker.makeSnapshotStream(`${vatID}-${snapPos}`),
       );
     }
 

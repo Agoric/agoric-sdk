@@ -269,7 +269,7 @@ test('write and read snapshot', async t => {
   await vat0.evaluate(`
     globalThis.hello = "Hello, World!";
   `);
-  const snapshotStream = vat0.makeSnapshot();
+  const snapshotStream = vat0.makeSnapshotStream();
 
   const vat1 = await xsnap({
     ...options(io),
@@ -285,7 +285,7 @@ test('write and read snapshot', async t => {
   t.deepEqual(['Hello, World!'], messages);
 });
 
-test('execute immediately after makeSnapshot', async t => {
+test('execute immediately after makeSnapshotStream', async t => {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decode(message));
@@ -296,7 +296,7 @@ test('execute immediately after makeSnapshot', async t => {
   void vat0.evaluate(`
     globalThis.when = 'before';
   `);
-  const snapshotStream = vat0.makeSnapshot();
+  const snapshotStream = vat0.makeSnapshotStream();
 
   void vat0.evaluate(`
     globalThis.when = 'after';
@@ -437,7 +437,7 @@ test('GC after snapshot vs restore', async t => {
 
   const beforeClone = await nextGC(worker, opts);
 
-  const snapshotStream = worker.makeSnapshot();
+  const snapshotStream = worker.makeSnapshotStream();
 
   const optClone = { ...options(io), name: 'clone', snapshotStream };
   const clone = await xsnapr(optClone);

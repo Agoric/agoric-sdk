@@ -166,9 +166,9 @@ export async function recordXSnap(options, folderPath, { writeFileSync }) {
     import: async _fileName => {
       throw Error('recording: import not supported');
     },
-    makeSnapshot(description) {
+    makeSnapshotStream(description) {
       nextFile('snapshot').putText(filenameFromDescription(description));
-      return it.makeSnapshot(description);
+      return it.makeSnapshotStream(description);
     },
   });
 }
@@ -260,7 +260,7 @@ export async function replayXSnap(
               const snapFile = await opts.fs.open(snapshotPath, 'w');
               await snapFile.writeFile(
                 // @ts-expect-error incorrect typings, does accept AsyncIterable
-                it.makeSnapshot(snapshotPath),
+                it.makeSnapshotStream(snapshotPath),
               );
               await snapFile.close();
             })().catch(err => {
