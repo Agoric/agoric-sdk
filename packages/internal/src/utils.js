@@ -356,10 +356,10 @@ export const allValues = async obj => {
  * throwing early will affect the others.
  *
  * @template [T=unknown]
- * @param {AsyncIterator<T, void, void>} stream
- * @param {number} quantity
+ * @param {AsyncIterator<T, void, void>} sourceStream
+ * @param {number} readerCount
  */
-export const syncTee = (stream, quantity) => {
+export const synchronizedTee = (sourceStream, readerCount) => {
   /** @type {IteratorReturnResult<void> | undefined} */
   let doneResult;
 
@@ -390,13 +390,16 @@ export const syncTee = (stream, quantity) => {
       const error = assert.error(assert.details`Teed stream threw`);
       assert.note(error, assert.details`Teed rejections: ${rejections}`);
       result =
-        stream.throw?.(error) ||
-        Promise.resolve(stream.return?.()).then(() => Promise.reject(error));
+        sourceStream.throw?.(error) ||
+        Promise.resolve(sourceStream.return?.()).then(() =>
+          Promise.reject(error),
+        );
     } else if (done) {
       result =
-        stream.return?.() || Promise.resolve({ done: true, value: undefined });
+        sourceStream.return?.() ||
+        Promise.resolve({ done: true, value: undefined });
     } else {
-      result = stream.next();
+      result = sourceStream.next();
     }
     result.then(
       r => {
@@ -412,7 +415,7 @@ export const syncTee = (stream, quantity) => {
     return pullNext();
   };
 
-  const readers = Array.from({ length: quantity }).map(() => {
+  const readers = Array.from({ length: readerCount }).map(() => {
     /** @type {import('@endo/stream').AsyncQueue<QueuePayload>} */
     const queue = makeQueue();
     queues.push(queue);

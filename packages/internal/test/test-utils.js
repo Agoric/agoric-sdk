@@ -12,7 +12,7 @@ import {
   untilTrue,
   forever,
   deeplyFulfilledObject,
-  syncTee,
+  synchronizedTee,
 } from '../src/utils.js';
 
 test('fromUniqueEntries', t => {
@@ -167,12 +167,12 @@ test('forever', async t => {
  * @template T
  * @param {AsyncIterable<T>} stream
  * @param {Array<T>} output
- * @param {number} [breakAfter]
+ * @param {number} [maxItems]
  */
-const consumeStreamInto = async (stream, output, breakAfter) => {
+const consumeStreamInto = async (stream, output, maxItems) => {
   for await (const item of stream) {
     output.push(item);
-    if (output.length === breakAfter) break;
+    if (output.length === maxItems) break;
   }
 };
 
@@ -184,21 +184,21 @@ const generateStream = async function* generateStream(items) {
   yield* items;
 };
 
-test('syncTee - consumeAll - 1 reader', async t => {
+test('synchronizedTee - consumeAll - 1 reader', async t => {
   const sourceData = [1, 2, 3];
   const source = generateStream(sourceData);
   const output = /** @type {number[]} */ ([]);
-  const [reader] = syncTee(source, 1);
+  const [reader] = synchronizedTee(source, 1);
   await consumeStreamInto(reader, output);
   t.deepEqual(output, sourceData);
 });
 
-test('syncTee - consumeAll - 2 reader', async t => {
+test('synchronizedTee - consumeAll - 2 reader', async t => {
   const sourceData = [1, 2, 3];
   const source = generateStream(sourceData);
   const output1 = /** @type {number[]} */ ([]);
   const output2 = /** @type {number[]} */ ([]);
-  const [reader1, reader2] = syncTee(source, 2);
+  const [reader1, reader2] = synchronizedTee(source, 2);
   await Promise.all([
     consumeStreamInto(reader1, output1),
     consumeStreamInto(reader2, output2),
@@ -208,12 +208,12 @@ test('syncTee - consumeAll - 2 reader', async t => {
   t.deepEqual(output2, sourceData);
 });
 
-test('syncTee - break early', async t => {
+test('synchronizedTee - break early', async t => {
   const sourceData = [1, 2, 3];
   const source = generateStream(sourceData);
   const output1 = /** @type {number[]} */ ([]);
   const output2 = /** @type {number[]} */ ([]);
-  const [reader1, reader2] = syncTee(source, 2);
+  const [reader1, reader2] = synchronizedTee(source, 2);
   await Promise.all([
     consumeStreamInto(reader1, output1, 2),
     consumeStreamInto(reader2, output2),
@@ -223,11 +223,11 @@ test('syncTee - break early', async t => {
   t.deepEqual(output2, sourceData.slice(0, 2));
 });
 
-test('syncTee - throw', async t => {
+test('synchronizedTee - throw', async t => {
   const sourceData = [1, 2, 3];
   const source = generateStream(sourceData);
   const output1 = /** @type {number[]} */ ([]);
-  const [reader1, reader2] = syncTee(source, 2);
+  const [reader1, reader2] = synchronizedTee(source, 2);
   const rejection = { message: 'Interrupted' };
   const result1 = consumeStreamInto(reader1, output1);
   const result2 = reader2.throw(Error(rejection.message));
@@ -236,7 +236,7 @@ test('syncTee - throw', async t => {
   await t.throwsAsync(result2, rejection);
 });
 
-test('syncTee - consume synchronized', async t => {
+test('synchronizedTee - consume synchronized', async t => {
   const sourceData = [1, 2, 3];
   const output1 = /** @type {number[]} */ ([]);
   const output2 = /** @type {number[]} */ ([]);
@@ -249,7 +249,7 @@ test('syncTee - consume synchronized', async t => {
     }
   }
   const source = generate();
-  const [reader1, reader2] = syncTee(source, 2);
+  const [reader1, reader2] = synchronizedTee(source, 2);
   await Promise.all([
     consumeStreamInto(reader1, output1),
     consumeStreamInto(reader2, output2),
