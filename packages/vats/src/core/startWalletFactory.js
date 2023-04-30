@@ -92,14 +92,16 @@ const startGovernedInstance = async (
     }),
     `${label}-governor`,
   );
-  const [instance, creatorFacet, adminFacet] = await Promise.all([
+  const [instance, publicFacet, creatorFacet, adminFacet] = await Promise.all([
     E(governorFacets.creatorFacet).getInstance(),
+    E(governorFacets.creatorFacet).getPublicFacet(),
     E(governorFacets.creatorFacet).getCreatorFacet(),
     E(governorFacets.creatorFacet).getAdminFacet(),
   ]);
   const facets = {
     instance,
     governor: governorFacets.instance,
+    publicFacet,
     creatorFacet,
     adminFacet,
     governorCreatorFacet: governorFacets.creatorFacet,
