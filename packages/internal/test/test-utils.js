@@ -240,21 +240,26 @@ test('synchronizedTee - consume synchronized', async t => {
   const sourceData = [1, 2, 3];
   const output1 = /** @type {number[]} */ ([]);
   const output2 = /** @type {number[]} */ ([]);
+  let i = 0;
   async function* generate() {
-    for (let i = 0; i < sourceData.length; ) {
-      yield sourceData[i];
-      i += 1;
-      t.deepEqual(output1, sourceData.slice(0, i));
-      t.deepEqual(output2, sourceData.slice(0, i));
+    while (i < sourceData.length) {
+      try {
+        yield sourceData[i];
+      } finally {
+        i += 1;
+        t.deepEqual(output1, sourceData.slice(0, i));
+        t.deepEqual(output2, sourceData.slice(0, i));
+      }
     }
   }
   const source = generate();
   const [reader1, reader2] = synchronizedTee(source, 2);
   await Promise.all([
     consumeStreamInto(reader1, output1),
-    consumeStreamInto(reader2, output2),
+    consumeStreamInto(reader2, output2, 2),
   ]);
 
-  t.deepEqual(output1, sourceData);
-  t.deepEqual(output2, sourceData);
+  t.is(i, 2);
+  t.deepEqual(output1, sourceData.slice(0, i));
+  t.deepEqual(output2, sourceData.slice(0, i));
 });
