@@ -4,6 +4,7 @@ import {
   provide,
   provideDurableSetStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
@@ -134,3 +135,30 @@ export const provideAll = (baggage, thunks) => {
   });
 };
 harden(provideAll);
+
+/**
+ * Like provideAsync in AtomicProvider but assumes only one call so there are no race conditions.
+ * Additionally offers a `withValue` helper useful for triggering procesess on a provided object.
+ *
+ * @see {makeAtomicProvider}
+ * @see {AtomicProvider}
+ * @template {() => ERef<any>} T
+ * @param {import('@agoric/vat-data').Baggage} mapStore
+ * @param {string} key
+ * @param {T} makeValue
+ * @param {(value: Awaited<ReturnType<T>>) => void} [withValue]
+ * @returns {Promise<Awaited<ReturnType<T>>>}
+ */
+export const provideSingleton = (mapStore, key, makeValue, withValue) => {
+  const stored =
+    mapStore.has(key) ||
+    E.when(makeValue(), v => mapStore.init(key, harden(v)));
+
+  return E.when(stored, () => {
+    const value = mapStore.get(key);
+    if (withValue) {
+      withValue(value);
+    }
+    return value;
+  });
+};
