@@ -186,7 +186,7 @@ export const registerScaledPriceAuthority = async (
   );
   const { publicFacet } = E.get(
     E(zoe).startInstance(
-      /** @type {Installation<import('@agoric/zoe/src/contracts/scaledPriceAuthority.js').start>} */ (
+      /** @type {Installation<import('@agoric/zoe/src/contracts/scaledPriceAuthority.js').prepare>} */ (
         scaledPriceAuthority
       ),
       undefined,
