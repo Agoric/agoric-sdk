@@ -12,6 +12,7 @@ import {
   untilTrue,
   forever,
   deeplyFulfilledObject,
+  synchronizedTee,
 } from '../src/utils.js';
 
 test('fromUniqueEntries', t => {
@@ -160,4 +161,105 @@ test('forever', async t => {
     }
   }
   t.is(count, 4, 'count is expected');
+});
+
+/**
+ * @template T
+ * @param {AsyncIterable<T>} stream
+ * @param {Array<T>} output
+ * @param {number} [maxItems]
+ */
+const consumeStreamInto = async (stream, output, maxItems) => {
+  for await (const item of stream) {
+    output.push(item);
+    if (output.length === maxItems) break;
+  }
+};
+
+/**
+ * @template T
+ * @param {Iterable<T> | AsyncIterable<T>} items
+ */
+const generateStream = async function* generateStream(items) {
+  yield* items;
+};
+
+test('synchronizedTee - consumeAll - 1 reader', async t => {
+  const sourceData = [1, 2, 3];
+  const source = generateStream(sourceData);
+  const output = /** @type {number[]} */ ([]);
+  const [reader] = synchronizedTee(source, 1);
+  await consumeStreamInto(reader, output);
+  t.deepEqual(output, sourceData);
+});
+
+test('synchronizedTee - consumeAll - 2 reader', async t => {
+  const sourceData = [1, 2, 3];
+  const source = generateStream(sourceData);
+  const output1 = /** @type {number[]} */ ([]);
+  const output2 = /** @type {number[]} */ ([]);
+  const [reader1, reader2] = synchronizedTee(source, 2);
+  await Promise.all([
+    consumeStreamInto(reader1, output1),
+    consumeStreamInto(reader2, output2),
+  ]);
+
+  t.deepEqual(output1, sourceData);
+  t.deepEqual(output2, sourceData);
+});
+
+test('synchronizedTee - break early', async t => {
+  const sourceData = [1, 2, 3];
+  const source = generateStream(sourceData);
+  const output1 = /** @type {number[]} */ ([]);
+  const output2 = /** @type {number[]} */ ([]);
+  const [reader1, reader2] = synchronizedTee(source, 2);
+  await Promise.all([
+    consumeStreamInto(reader1, output1, 2),
+    consumeStreamInto(reader2, output2),
+  ]);
+
+  t.deepEqual(output1, sourceData.slice(0, 2));
+  t.deepEqual(output2, sourceData.slice(0, 2));
+});
+
+test('synchronizedTee - throw', async t => {
+  const sourceData = [1, 2, 3];
+  const source = generateStream(sourceData);
+  const output1 = /** @type {number[]} */ ([]);
+  const [reader1, reader2] = synchronizedTee(source, 2);
+  const rejection = { message: 'Interrupted' };
+  const result1 = consumeStreamInto(reader1, output1);
+  const result2 = reader2.throw(Error(rejection.message));
+
+  await t.throwsAsync(result1, { message: 'Teed stream threw' });
+  await t.throwsAsync(result2, rejection);
+});
+
+test('synchronizedTee - consume synchronized', async t => {
+  const sourceData = [1, 2, 3];
+  const output1 = /** @type {number[]} */ ([]);
+  const output2 = /** @type {number[]} */ ([]);
+  let i = 0;
+  async function* generate() {
+    while (i < sourceData.length) {
+      try {
+        yield sourceData[i];
+      } finally {
+        i += 1;
+        t.deepEqual(output1, sourceData.slice(0, i));
+        t.deepEqual(output2, sourceData.slice(0, i));
+      }
+    }
+  }
+  const source = generate();
+  const [reader1, reader2] = synchronizedTee(source, 2);
+  await Promise.all([
+    consumeStreamInto(reader1, output1),
+    consumeStreamInto(reader2, output2, 2),
+  ]);
+
+  t.is(i, 2);
+  t.deepEqual(output1, sourceData.slice(0, i));
+  t.deepEqual(output2, sourceData.slice(0, i));
 });

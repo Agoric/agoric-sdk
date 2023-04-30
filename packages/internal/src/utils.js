@@ -3,7 +3,8 @@
 
 import { E } from '@endo/far';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
-import { isPromise } from '@endo/promise-kit';
+import { isPromise, makePromiseKit } from '@endo/promise-kit';
+import { makeQueue } from '@endo/stream';
 import { asyncGenerate, makeSet } from 'jessie.js';
 
 const { entries, fromEntries, keys, values } = Object;
@@ -347,4 +348,105 @@ export const allValues = async obj => {
   const resolved = await Promise.all(values(obj));
   // @ts-expect-error cast
   return harden(fromEntries(zip(keys(obj), resolved)));
+};
+
+/**
+ * A tee implementation where all readers are synchronized with each other.
+ * They all consume the source stream in lockstep, and any one returning or
+ * throwing early will affect the others.
+ *
+ * @template [T=unknown]
+ * @param {AsyncIterator<T, void, void>} sourceStream
+ * @param {number} readerCount
+ */
+export const synchronizedTee = (sourceStream, readerCount) => {
+  /** @type {IteratorReturnResult<void> | undefined} */
+  let doneResult;
+
+  /** @typedef {IteratorResult<(value: PromiseLike<IteratorResult<T>>) => void>} QueuePayload */
+  /** @type {import('@endo/stream').AsyncQueue<QueuePayload>[]} */
+  const queues = [];
+
+  /** @returns {Promise<void>} */
+  const pullNext = async () => {
+    const requests = await Promise.allSettled(queues.map(queue => queue.get()));
+    const rejections = [];
+    /** @type {Array<(value: PromiseLike<IteratorResult<T>>) => void>} */
+    const resolvers = [];
+    let done = false;
+    for (const settledResult of requests) {
+      if (settledResult.status === 'rejected') {
+        rejections.push(settledResult.reason);
+      } else {
+        done ||= !!settledResult.value.done;
+        resolvers.push(settledResult.value.value);
+      }
+    }
+    /** @type {Promise<IteratorResult<T>>} */
+    let result;
+    if (doneResult) {
+      result = Promise.resolve(doneResult);
+    } else if (rejections.length) {
+      const error = assert.error(assert.details`Teed stream threw`);
+      assert.note(error, assert.details`Teed rejections: ${rejections}`);
+      result =
+        sourceStream.throw?.(error) ||
+        Promise.resolve(sourceStream.return?.()).then(() =>
+          Promise.reject(error),
+        );
+    } else if (done) {
+      result =
+        sourceStream.return?.() ||
+        Promise.resolve({ done: true, value: undefined });
+    } else {
+      result = sourceStream.next();
+    }
+    result.then(
+      r => {
+        if (r.done) {
+          doneResult = r;
+        }
+      },
+      () => {
+        doneResult = { done: true, value: undefined };
+      },
+    );
+    resolvers.forEach(resolve => resolve(result));
+    return pullNext();
+  };
+
+  const readers = Array.from({ length: readerCount }).map(() => {
+    /** @type {import('@endo/stream').AsyncQueue<QueuePayload>} */
+    const queue = makeQueue();
+    queues.push(queue);
+
+    /** @type {AsyncGenerator<T, void, void>} */
+    const reader = harden({
+      async next() {
+        /** @type {import('@endo/promise-kit').PromiseKit<IteratorResult<T>>} */
+        const { promise, resolve } = makePromiseKit();
+        queue.put({ value: resolve, done: false });
+        return promise;
+      },
+      async return() {
+        /** @type {import('@endo/promise-kit').PromiseKit<IteratorResult<T>>} */
+        const { promise, resolve } = makePromiseKit();
+        queue.put({ value: resolve, done: true });
+        return promise;
+      },
+      async throw(reason) {
+        const rejection = Promise.reject(reason);
+        queue.put(rejection);
+        return rejection;
+      },
+      // eslint-disable-next-line no-restricted-globals
+      [Symbol.asyncIterator]() {
+        return reader;
+      },
+    });
+    return reader;
+  });
+
+  void pullNext();
+  return readers;
 };
