@@ -25,6 +25,7 @@
     "@endo/marshal": "^0.8.5",
     "@endo/patterns": "^0.2.2",
     "@endo/promise-kit": "^0.2.56",
+    "@endo/stream": "^0.3.25",
     "anylogger": "^0.21.0",
     "jessie.js": "^0.3.2"
   },
