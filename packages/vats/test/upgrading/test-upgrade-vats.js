@@ -1,8 +1,9 @@
+// @ts-check
 /* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { buildVatController } from '@agoric/swingset-vat';
 import { BridgeId } from '@agoric/internal';
+import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -26,7 +27,7 @@ test.before(async t => {
  * @param {any} t
  * @param {Partial<SwingSetConfig>} [kernelConfigOverrides]
  * @param {Record<string, unknown>} [deviceEndowments]
- * @returns {ReturnType<typeof makeRunUtils>}
+ * @returns {Promise<ReturnType<typeof makeRunUtils>>}
  */
 const makeScenario = async (
   t,
@@ -99,6 +100,7 @@ test.skip('upgrade bootstrap vat', async t => {
   const bundles = {
     chain: { sourceSpec: bfile('../src/core/boot-chain.js') },
   };
+  // @ts-expect-error error in skipped test
   const { EV } = await makeScenario(t, bundles);
 
   t.log('create initial version');
