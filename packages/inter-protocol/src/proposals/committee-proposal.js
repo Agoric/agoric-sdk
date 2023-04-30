@@ -177,26 +177,6 @@ export const getManifestForInviteCommittee = async (
           produce: { econCommitteeCharter: t },
         },
       },
-      [addGovernorsToEconCharter.name]: {
-        consume: {
-          auctioneerKit: t,
-          reserveGovernorCreatorFacet: t,
-          vaultFactoryGovernorCreator: t,
-          econCharterKit: t,
-          zoe: t,
-          agoricNames: t,
-          namesByAddressAdmin: t,
-          economicCommitteeCreatorFacet: t,
-          reserveKit: t,
-          vaultFactoryKit: t,
-        },
-        installation: {
-          consume: { binaryVoteCounter: t },
-        },
-        instance: {
-          consume: { auctioneer: t, reserve: t, VaultFactory: t },
-        },
-      },
       [inviteToEconCharter.name]: {
         consume: { namesByAddressAdmin: t, econCharterKit: t },
       },

@@ -1,6 +1,8 @@
 // @jessie-check
 
 import { Stable } from '@agoric/vats/src/tokens.js';
+// XXX move to econ-behaviors?
+import { addGovernorsToEconCharter } from './committee-proposal.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
@@ -9,6 +11,8 @@ export * from './econ-behaviors.js';
 // named 'EconomyBootstrapPowers'.
 export * from './startPSM.js'; // eslint-disable-line import/export
 export * from './startEconCommittee.js'; // eslint-disable-line import/export
+
+const t = true;
 
 /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
@@ -96,6 +100,25 @@ const SHARED_MAIN_MANIFEST = harden({
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },
+    },
+  },
+
+  [addGovernorsToEconCharter.name]: {
+    consume: {
+      auctioneerKit: t,
+      econCharterKit: t,
+      zoe: t,
+      agoricNames: t,
+      namesByAddressAdmin: t,
+      economicCommitteeCreatorFacet: t,
+      reserveKit: t,
+      vaultFactoryKit: t,
+    },
+    installation: {
+      consume: { binaryVoteCounter: t },
+    },
+    instance: {
+      consume: { auctioneer: t, reserve: t, VaultFactory: t },
     },
   },
 });
