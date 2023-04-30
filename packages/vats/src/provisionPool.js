@@ -1,11 +1,15 @@
 // @jessie-check
 // @ts-check
 
-import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import {
+  handleParamGovernance,
+  ParamTypes,
+  publicMixinAPI,
+} from '@agoric/governance';
 import { M } from '@agoric/store';
+import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Far } from '@endo/far';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
 export const privateArgsShape = harden({
@@ -31,7 +35,7 @@ export const privateArgsShape = harden({
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   const { poolBank } = privateArgs;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -71,17 +75,20 @@ export const start = async (zcf, privateArgs, baggage) => {
     kit => kit.helper.start(),
   );
 
-  // For documentation and/or future upgrade to Far
-  // const ProvisionI = M.interface('ProvisionPool', {
-  //   getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
-  //   ...publicMixinAPI,
-  // });
-  const publicFacet = Far('Provisioning Pool public', {
-    getMetrics() {
-      return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
+  const publicFacet = prepareExo(
+    baggage,
+    'Provisioning Pool public',
+    M.interface('ProvisionPool', {
+      getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+      ...publicMixinAPI,
+    }),
+    {
+      getMetrics() {
+        return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
+      },
+      ...publicMixin,
     },
-    ...publicMixin,
-  });
+  );
 
   return harden({
     creatorFacet: makeDurableGovernorFacet(baggage, provisionPoolKit.machine)
@@ -90,4 +97,4 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 };
 
-harden(start);
+harden(prepare);
