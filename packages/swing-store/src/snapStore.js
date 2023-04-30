@@ -29,7 +29,7 @@ import { buffer } from './util.js';
  *
  * @typedef {{
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
- *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterableIterator<Uint8Array>) => Promise<SnapshotResult>,
+ *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
  *   deleteVatSnapshots: (vatID: string) => void,
  *   stopUsingLastSnapshot: (vatID: string) => void,
@@ -167,7 +167,7 @@ export function makeSnapStore(
    *
    * @param {string} vatID
    * @param {number} snapPos
-   * @param {AsyncIterableIterator<Uint8Array>} snapshotStream
+   * @param {AsyncIterable<Uint8Array>} snapshotStream
    * @returns {Promise<SnapshotResult>}
    */
   async function saveSnapshot(vatID, snapPos, snapshotStream) {

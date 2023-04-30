@@ -1,3 +1,4 @@
+import { synchronizedTee } from '@agoric/internal';
 import { assert, Fail, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
@@ -26,16 +27,31 @@ function parentLog(first, ...args) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+/** @param { (item: Tagged) => unknown } [handleUpstream] */
+const makeRevokableHandleCommandKit = handleUpstream => {
+  /**
+   * @param {Uint8Array} msg
+   * @returns {Promise<Uint8Array>}
+   */
+  const handleCommand = async msg => {
+    // parentLog('handleCommand', { length: msg.byteLength });
+    if (!handleUpstream) {
+      throw Fail`Worker received command after revocation`;
+    }
+    const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
+    return encoder.encode(JSON.stringify(tagged));
+  };
+  const revoke = () => {
+    handleUpstream = undefined;
+  };
+  return harden({ handleCommand, revoke });
+};
+
 /**
  * @param {{
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (vatID: string, name: string,
- *                details: {
- *                 bundleIDs: BundleID[],
- *                 handleCommand: AsyncHandler,
- *                 metered?: boolean,
- *                 reload?: boolean } ) => Promise<XSnap>,
+ *   startXSnap: import('../../controller/startXSnap.js').StartXSnap,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -110,13 +126,6 @@ export function makeXsSubprocessFactory({
       }
     }
 
-    /** @type { (msg: Uint8Array) => Promise<Uint8Array> } */
-    async function handleCommand(msg) {
-      // parentLog('handleCommand', { length: msg.byteLength });
-      const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
-      return encoder.encode(JSON.stringify(tagged));
-    }
-
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const snapshotInfo = vatKeeper.getSnapshotInfo();
     if (snapshotInfo) {
@@ -128,12 +137,15 @@ export function makeXsSubprocessFactory({
     // a shell-escape attack
     const argName = `${vatID}:${vatName !== undefined ? vatName : ''}`;
 
+    /** @type {ReturnType<typeof makeRevokableHandleCommandKit> | undefined} */
+    let handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
+
     // start the worker and establish a connection
-    const worker = await startXSnap(vatID, argName, {
+    let worker = await startXSnap(argName, {
       bundleIDs,
-      handleCommand,
+      handleCommand: handleCommandKit.handleCommand,
       metered,
-      reload: !!snapshotInfo,
+      init: snapshotInfo && { from: 'snapStore', vatID },
     });
 
     /** @type { (item: Tagged) => Promise<WorkerResults> } */
@@ -215,19 +227,63 @@ export function makeXsSubprocessFactory({
     mk.setDeliverToWorker(deliverToWorker);
 
     function shutdown() {
+      handleCommandKit?.revoke();
+      handleCommandKit = undefined;
       return worker.close().then(_ => undefined);
     }
     /**
      * @param {number} snapPos
      * @param {SnapStore} snapStore
+     * @param {boolean} [restartWorker]
      * @returns {Promise<SnapshotResult>}
      */
-    function makeSnapshot(snapPos, snapStore) {
-      return snapStore.saveSnapshot(
-        vatID,
-        snapPos,
-        worker.makeSnapshotStream(`${vatID}-${snapPos}`),
+    async function makeSnapshot(snapPos, snapStore, restartWorker) {
+      const snapshotDescription = `${vatID}-${snapPos}`;
+      const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
+
+      if (!restartWorker) {
+        return snapStore.saveSnapshot(vatID, snapPos, snapshotStream);
+      }
+
+      /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
+      const [restartWorkerStream, snapStoreSaveStream] = synchronizedTee(
+        snapshotStream,
+        2,
       );
+
+      handleCommandKit?.revoke();
+      handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
+
+      let snapshotResults;
+      const closeP = worker.close();
+      [worker, snapshotResults] = await Promise.all([
+        startXSnap(argName, {
+          bundleIDs,
+          handleCommand: handleCommandKit.handleCommand,
+          metered,
+          init: {
+            from: 'snapshotStream',
+            snapshotStream: restartWorkerStream,
+            snapshotDescription,
+          },
+        }),
+        snapStore.saveSnapshot(vatID, snapPos, snapStoreSaveStream),
+      ]);
+      await closeP;
+
+      /** @type {Partial<import('@agoric/swing-store/src/snapStore.js').SnapshotInfo>} */
+      const reloadSnapshotInfo = {
+        snapPos,
+        hash: snapshotResults.hash,
+      };
+
+      kernelSlog.write({
+        type: 'heap-snapshot-load',
+        vatID,
+        ...reloadSnapshotInfo,
+      });
+
+      return snapshotResults;
     }
 
     return mk.getManager(shutdown, makeSnapshot);

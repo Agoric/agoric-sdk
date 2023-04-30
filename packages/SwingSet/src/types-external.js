@@ -236,6 +236,7 @@ export {};
  *
  * @typedef {object} VatWarehousePolicy
  * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
+ * @property { boolean } [restartWorkerOnSnapshot]     Reload worker immediately upon snapshot creation
  */
 
 /**

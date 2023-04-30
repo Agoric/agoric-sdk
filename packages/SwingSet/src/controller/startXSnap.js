@@ -6,6 +6,32 @@ import { xsnap, recordXSnap } from '@agoric/xsnap';
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
 /**
+ * @typedef {object} StartXSnapInitFromBundlesDetails
+ * @property {'bundles'} from
+ *
+ * TODO: Move bundleIDs here
+ */
+
+/**
+ * @typedef {object} StartXSnapInitFromSnapshotStreamDetails
+ * @property {'snapshotStream'} from
+ * @property {AsyncIterable<Uint8Array>} snapshotStream
+ * @property {string} [snapshotDescription]
+ */
+
+/**
+ * @typedef {object} StartXSnapInitFromSnapStoreDetails
+ * @property {'snapStore'} from
+ * @property {string} vatID
+ *
+ * TODO: transition to direct snapshot stream, and remove this option
+ */
+
+/** @typedef {StartXSnapInitFromBundlesDetails | StartXSnapInitFromSnapshotStreamDetails | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails */
+
+/** @typedef {ReturnType<typeof makeStartXSnap>} StartXSnap */
+
+/**
  * @param {{
  *   bundleHandler: import('./bundle-handler.js').BundleHandler,
  *   snapStore?: import('@agoric/swing-store').SnapStore,
@@ -62,32 +88,62 @@ export function makeStartXSnap(options) {
     netstringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
   };
 
+  /** @param {StartXSnapInitDetails} initDetails */
+  function getSnapshotLoadOptions(initDetails) {
+    switch (initDetails.from) {
+      case 'bundles':
+        return undefined;
+
+      case 'snapStore': {
+        if (!snapStore) {
+          // Fallback to load from bundles
+          return undefined;
+        }
+
+        const { vatID } = initDetails;
+        const { hash: snapshotID, snapPos } = snapStore.getSnapshotInfo(vatID);
+        // console.log('startXSnap from', { snapshotID });
+        const snapshotStream = snapStore.loadSnapshot(vatID);
+        const snapshotDescription = `${vatID}-${snapPos}-${snapshotID}`;
+        return { snapshotStream, snapshotDescription };
+      }
+
+      case 'snapshotStream': {
+        const { snapshotStream, snapshotDescription } = initDetails;
+        return { snapshotStream, snapshotDescription };
+      }
+
+      default:
+        // @ts-expect-error exhaustive check
+        throw Fail`Unexpected xsnap init type ${initDetails.type}`;
+    }
+  }
+
   /**
-   * @param {string} vatID
    * @param {string} name
    * @param {object} details
    * @param {import('../types-external.js').BundleID[]} details.bundleIDs
    * @param {(request: Uint8Array) => Promise<Uint8Array>} details.handleCommand
    * @param {boolean} [details.metered]
-   * @param {boolean} [details.reload]
+   * @param {StartXSnapInitDetails} [details.init]
    */
   async function startXSnap(
-    vatID,
     name,
-    { bundleIDs, handleCommand, metered, reload = false },
+    {
+      bundleIDs,
+      handleCommand,
+      metered,
+      init: initDetails = { from: 'bundles' },
+    },
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
-    if (snapStore && reload) {
-      const { hash: snapshotID, snapPos } = snapStore.getSnapshotInfo(vatID);
-      // console.log('startXSnap from', { snapshotID });
-      const snapshotStream = snapStore.loadSnapshot(vatID);
+    const snapshotLoadOpts = getSnapshotLoadOptions(initDetails);
+    if (snapshotLoadOpts) {
       // eslint-disable-next-line @jessie.js/no-nested-await
       const xs = await doXSnap({
-        snapshotStream,
-        // TODO
-        snapshotDescription: `${vatID}-${snapPos}-${snapshotID}`,
         name,
         handleCommand,
+        ...snapshotLoadOpts,
         ...meterOpts,
         ...xsnapOpts,
       });

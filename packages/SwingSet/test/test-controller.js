@@ -255,6 +255,9 @@ test('static vats are unmetered on XS', async t => {
         limited.push(args.includes('-l'));
         return spawn(command, args, options);
       },
+      warehousePolicy: {
+        restartWorkerOnSnapshot: false,
+      },
     },
   );
   t.teardown(c.shutdown);
