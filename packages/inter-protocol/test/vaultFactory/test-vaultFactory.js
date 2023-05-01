@@ -821,12 +821,7 @@ test('adjust balances', async t => {
   );
 
   await t.throwsAsync(() => E(aliceReduceCollateralSeat2).getOfferResult(), {
-    // Double-disclosure bug endojs/endo#640
-    // wildcards were:
-    // "brand":"[Alleged: IST brand]","value":"[5829n]"
-    // "value":"[3750n]","brand":"[Alleged: IST brand]"
-    message: / is more than the collateralization ratio allows:/,
-    // message: /The requested debt {.*} is more than the collateralization ratio allows: {.*}/,
+    message: /Proposed debt.*exceeds max/,
   });
 
   // try to trade zero for zero

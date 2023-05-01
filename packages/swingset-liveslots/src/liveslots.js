@@ -19,6 +19,8 @@ import { makeWatchedPromiseManager } from './watchedPromises.js';
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
 
+const { details: X } = assert;
+
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
 // beyond the runtime of the javascript environment, so this mechanism is not
@@ -791,7 +793,13 @@ function build(
     let result;
     if (virtual || durable) {
       assert.equal(type, 'object');
-      val = vrm.reanimate(baseRef);
+      try {
+        val = vrm.reanimate(baseRef);
+      } catch (err) {
+        const wrappedError = assert.error(X`failed to reanimate ${iface}`);
+        assert.note(wrappedError, X`Original error: ${err}`);
+        throw wrappedError;
+      }
       if (facet !== undefined) {
         result = vrm.getFacet(id, val, facet);
       }

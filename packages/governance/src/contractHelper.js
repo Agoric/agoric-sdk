@@ -31,19 +31,12 @@ const publicMixinAPI = harden({
 });
 
 /**
- * Utility function for `makeParamGovernance`.
- *
- * @template T
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
+ * @param {import('./contractGovernance/typedParamManager').TypedParamManager<unknown>} paramManager
  */
-const facetHelpers = (zcf, paramManager) => {
-  const terms = zcf.getTerms();
-  const { governedParams } = terms;
-
-  // validate async to wait for params to be finished
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  void E.when(paramManager.getParams(), finishedParams => {
+export const validateElectorate = (zcf, paramManager) => {
+  const { governedParams } = zcf.getTerms();
+  return E.when(paramManager.getParams(), finishedParams => {
     try {
       keyEQ(governedParams, finishedParams) ||
         Fail`The 'governedParams' term must be an object like ${q(
@@ -54,6 +47,20 @@ const facetHelpers = (zcf, paramManager) => {
       zcf.shutdownWithFailure(err);
     }
   });
+};
+harden(validateElectorate);
+
+/**
+ * Utility function for `makeParamGovernance`.
+ *
+ * @template T
+ * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
+ * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
+ */
+const facetHelpers = (zcf, paramManager) => {
+  // validate async to wait for params to be finished
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  void validateElectorate(zcf, paramManager);
 
   const typedAccessors = {
     getAmount: paramManager.getAmount,

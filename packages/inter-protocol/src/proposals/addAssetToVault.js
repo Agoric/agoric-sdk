@@ -211,6 +211,7 @@ export const registerScaledPriceAuthority = async (
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  * @param {bigint} config.options.debtLimitValue
+ * @param {bigint} config.options.interestRateValue
  */
 export const addAssetToVault = async (
   {
@@ -223,6 +224,9 @@ export const addAssetToVault = async (
     options: {
       // Default to 1000 IST to simplify testing. A production proposal will set this.
       debtLimitValue = 1_000n * 1_000_000n,
+      // Default to a safe value. Production will likely set this through governance.
+      // Allow setting through bootstrap to simplify testing.
+      interestRateValue = 1n,
       interchainAssetOptions,
     },
   },
@@ -239,6 +243,7 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, debtLimitValue),
+    interestRate: makeRatio(interestRateValue, stable),
     // The rest of these we use safe defaults.
     // In production they will be governed by the Econ Committee.
     // Product deployments are also expected to have a low debtLimitValue at the outset,
@@ -247,7 +252,6 @@ export const addAssetToVault = async (
     liquidationMargin: makeRatio(150n, stable),
     mintFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
-    interestRate: makeRatio(1n, stable),
   });
   const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
   await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
@@ -255,7 +259,12 @@ export const addAssetToVault = async (
 
 export const getManifestForAddAssetToVault = (
   { restoreRef },
-  { interchainAssetOptions, scaledPriceAuthorityRef },
+  {
+    debtLimitValue,
+    interestRateValue,
+    interchainAssetOptions,
+    scaledPriceAuthorityRef,
+  },
 ) => {
   const publishIssuerFromBoardId =
     typeof interchainAssetOptions.issuerBoardId === 'string';
@@ -313,7 +322,9 @@ export const getManifestForAddAssetToVault = (
       scaledPriceAuthority: restoreRef(scaledPriceAuthorityRef),
     },
     options: {
+      debtLimitValue,
       interchainAssetOptions,
+      interestRateValue,
     },
   };
 };

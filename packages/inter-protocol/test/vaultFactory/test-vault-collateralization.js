@@ -56,7 +56,7 @@ test('add debt to vault under LiquidationMarging + LiquidationPadding', async t 
   // ...so we can't take the same loan out
   await t.throwsAsync(
     vd.giveCollateral(100n, aeth, MARGIN_HOP),
-    { message: /is more than the collateralization ratio allows/ },
+    { message: /Proposed debt.*exceeds max/ },
     'adjustment still under water',
   );
 
@@ -70,15 +70,6 @@ test('add debt to vault under LiquidationMargin', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
-  // TODO revisit after the new liquidation system https://github.com/Agoric/agoric-sdk/issues/5843
-  // XXX make a worst collateralized vault for the head of the liquidation queue.
-  // Without this, the test times out because adjusting a single vault triggers
-  // `onHigherHighest` which calls `reschedulePriceCheck` which fires off a promise
-  // for updating the quote, which never resolves. This isn't a problem in the
-  // MinimumCollateralization test above so I think it's something to do with the assumptions
-  // of the liquidation engine.
-  await md.makeVaultDriver(aeth.make(1000n), run.make(4501n));
-
   // take debt that comes just shy of max
   const vd = await md.makeVaultDriver(aeth.make(1000n), run.make(4500n));
   t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(4725n));
@@ -88,9 +79,10 @@ test('add debt to vault under LiquidationMargin', async t => {
     key: { collateralBrand: aeth.brand },
   });
 
+  // taking with the give fails
   await t.throwsAsync(
     vd.giveCollateral(100n, aeth, 10n),
-    { message: /is more than the collateralization ratio allows/ },
+    { message: /Proposed debt.*exceeds max/ },
     'adjustment still under water',
   );
 

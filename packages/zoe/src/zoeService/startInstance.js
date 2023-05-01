@@ -191,10 +191,14 @@ export const makeStartInstance = (
 
         return E(state.adminNode).done();
       },
-      restartContract(_newPrivateArgs = undefined) {
+      restartContract(newPrivateArgs = undefined) {
         const { state } = this;
 
-        const vatParameters = { contractBundleCap: state.contractBundleCap };
+        const vatParameters = {
+          contractBundleCap: state.contractBundleCap,
+          privateArgs: newPrivateArgs,
+        };
+
         return E(state.adminNode).upgrade(state.zcfBundleCap, {
           vatParameters,
         });

@@ -1,11 +1,7 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import {
-  atomicTransfer,
-  floorMultiplyBy,
-  makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   addSubtract,
@@ -114,49 +110,6 @@ const validTransitions = {
  *   outerUpdater: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification> | null,
  * }} MutableState
  */
-
-/**
- * Check whether we can proceed with an `adjustBalances`.
- *
- * @param {Amount<'nat'>} newCollateralPre
- * @param {Amount<'nat'>} maxDebtPre
- * @param {Amount<'nat'>} newCollateral
- * @param {Amount<'nat'>} newDebt
- * @returns {boolean}
- */
-const allocationsChangedSinceQuote = (
-  newCollateralPre,
-  maxDebtPre,
-  newCollateral,
-  newDebt,
-) => {
-  trace('allocationsChangedSinceQuote', {
-    newCollateralPre,
-    maxDebtPre,
-    newCollateral,
-    newDebt,
-  });
-  if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
-    // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
-    // We can pro-rate maxDebt because the quote is either linear (price is
-    // unchanging) or super-linear (also called "convex").
-    const debtPerCollateral = makeRatioFromAmounts(
-      maxDebtPre,
-      newCollateralPre,
-    );
-    // `floorMultiply` because the debt ceiling should be tight
-    const maxDebtAfter = floorMultiplyBy(newCollateral, debtPerCollateral);
-    AmountMath.isGTE(maxDebtAfter, newDebt) ||
-      Fail`The requested debt ${q(
-        newDebt,
-      )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`;
-    // The `collateralAfter` can still cover the `newDebt`, so don't restart.
-    return false;
-  }
-  // The collateral went up. Restart if the debt *also* went up because
-  // the price quote might not apply at the higher numbers.
-  return !AmountMath.isGTE(maxDebtPre, newDebt);
-};
 
 export const VaultI = M.interface('Vault', {
   getCollateralAmount: M.call().returns(AmountShape),
@@ -358,9 +311,9 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * @param {Amount<'nat'>} collateralAmount
          * @param {Amount<'nat'>} proposedDebt
          */
-        async assertSufficientCollateral(collateralAmount, proposedDebt) {
+        assertSufficientCollateral(collateralAmount, proposedDebt) {
           const { state, facets } = this;
-          const maxDebt = await state.manager.maxDebtFor(collateralAmount);
+          const maxDebt = state.manager.maxDebtFor(collateralAmount);
           AmountMath.isGTE(maxDebt, proposedDebt, facets.helper.debtBrand()) ||
             Fail`Proposed debt ${q(proposedDebt)} exceeds max ${q(
               maxDebt,
@@ -511,13 +464,12 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * Adjust principal and collateral (atomically for offer safety)
          *
          * @param {ZCFSeat} clientSeat
-         * @returns {Promise<string>} success message
+         * @returns {string} success message
          */
-        async adjustBalancesHook(clientSeat) {
+        adjustBalancesHook(clientSeat) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
-          const { outerUpdater: updaterPre } = state;
           const { vaultSeat } = state;
           const fp = helper.fullProposal(clientSeat.getProposal());
 
@@ -544,60 +496,15 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
           const normalizedDebtPre = self.getNormalizedDebt();
           const collateralPre = helper.getCollateralAllocated(vaultSeat);
+
           const hasWants = !allEmpty([fp.want.Collateral, fp.want.Minted]);
-
-          if (!hasWants) {
-            // allow deposits regardless of max debt allowed
-            return helper.commitBalanceAdjustment(
-              clientSeat,
-              fp,
-              {
-                newDebt,
-                fee,
-                surplus,
-                toMint,
-              },
-              { normalizedDebtPre, collateralPre },
+          if (hasWants) {
+            const newCollateral = addSubtract(
+              collateralPre,
+              fp.give.Collateral,
+              fp.want.Collateral,
             );
-          }
-
-          const newCollateralPre = addSubtract(
-            collateralPre,
-            fp.give.Collateral,
-            fp.want.Collateral,
-          );
-          // max debt supported by the vault Collateral implied by the proposal
-          const maxDebtPre = state.manager.maxDebtFor(newCollateralPre);
-          updaterPre === state.outerUpdater ||
-            Fail`Transfer during vault adjustment`;
-          helper.assertActive();
-
-          trace('adjustBalancesHook after quote', state.idInManager, {
-            newCollateralPre,
-            fee,
-            toMint,
-            maxDebtPre,
-            newDebt,
-          });
-
-          // While awaiting maxDebtFor, the allocations may have changed.
-          // After the `await`, we retrieve the vault's allocations again,
-          // so we can compare to the debt limit based on the new values.
-          const collateral = helper.getCollateralAllocated(vaultSeat);
-          const newCollateral = addSubtract(
-            collateral,
-            fp.give.Collateral,
-            fp.want.Collateral,
-          );
-          if (
-            allocationsChangedSinceQuote(
-              newCollateralPre,
-              maxDebtPre,
-              newCollateral,
-              newDebt,
-            )
-          ) {
-            return helper.adjustBalancesHook(clientSeat);
+            helper.assertSufficientCollateral(newCollateral, newDebt);
           }
 
           return helper.commitBalanceAdjustment(
@@ -621,9 +528,9 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * @param {object} accounting
          * @param {NormalizedDebt} accounting.normalizedDebtPre
          * @param {Amount<'nat'>} accounting.collateralPre
-         * @returns {Promise<string>} success message
+         * @returns {string} success message
          */
-        async commitBalanceAdjustment(
+        commitBalanceAdjustment(
           clientSeat,
           fp,
           { newDebt, fee, surplus, toMint },
@@ -736,7 +643,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             self.getCollateralAmount(),
           );
 
-          await helper.assertSufficientCollateral(giveCollateral, newDebtPre);
+          helper.assertSufficientCollateral(giveCollateral, newDebtPre);
 
           const { vaultSeat } = state;
           state.manager.mintAndTransfer(

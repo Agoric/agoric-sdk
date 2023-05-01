@@ -67,10 +67,12 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   mutex.put(controller.run());
 
-  const runMethod = async (method, args = []) => {
-    log('runMethod', method, args, 'at', cranksRun);
-    assert(Array.isArray(args));
-
+  /**
+   * @template {() => any} T
+   * @param {T} thunk
+   * @returns {Promise<ReturnType<T>>}
+   */
+  const runThunk = async thunk => {
     try {
       // this promise for the last lock may fail
       await mutex.get();
@@ -78,29 +80,36 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
       // noop because the result will resolve for the previous runMethod return
     }
 
-    const kpid = controller.queueToVatRoot('bootstrap', method, args);
-
-    const getResult = () => {
-      const status = controller.kpStatus(kpid);
-      switch (status) {
-        case 'fulfilled':
-          return kunser(controller.kpResolution(kpid));
-        case 'rejected':
-          throw kunser(controller.kpResolution(kpid));
-        case 'unresolved':
-          throw Error(`unresolved for method ${method}`);
-        default:
-          throw Fail`unknown status ${status}`;
-      }
-    };
+    const thunkResult = await thunk();
 
     const result = controller.run().then(cranks => {
       cranksRun += cranks;
       log(`kernel ran ${cranks} cranks`);
-      return getResult();
+      return thunkResult;
     });
     mutex.put(result.then(sink, sink));
     return result;
+  };
+
+  const runMethod = async (method, args = []) => {
+    log('runMethod', method, args, 'at', cranksRun);
+    assert(Array.isArray(args));
+
+    const kpid = await runThunk(() =>
+      controller.queueToVatRoot('bootstrap', method, args),
+    );
+
+    const status = controller.kpStatus(kpid);
+    switch (status) {
+      case 'fulfilled':
+        return kunser(controller.kpResolution(kpid));
+      case 'rejected':
+        throw kunser(controller.kpResolution(kpid));
+      case 'unresolved':
+        throw Error(`unresolved for method ${method}`);
+      default:
+        throw Fail`unknown status ${status}`;
+    }
   };
 
   /**
@@ -152,7 +161,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
         runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
     });
 
-  return harden({ EV });
+  return harden({ runThunk, EV });
 };
 
 /**
@@ -365,7 +374,7 @@ export const makeSwingsetTestKit = async (
     }
   };
 
-  const { controller } = await buildSwingset(
+  const { controller, timer } = await buildSwingset(
     new Map(),
     bridgeOutbound,
     kernelStorage,
@@ -383,5 +392,5 @@ export const makeSwingsetTestKit = async (
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
-  return { controller, runUtils, storage, shutdown };
+  return { controller, runUtils, storage, shutdown, timer };
 };

@@ -17,17 +17,13 @@ import '@agoric/zoe/src/contracts/exported.js';
 // to satisfy contractGovernor. It needs to return a creatorFacet with
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
-import {
-  assertElectorateMatches,
-  CONTRACT_ELECTORATE,
-} from '@agoric/governance';
+import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { assertAllDefined } from '@agoric/internal';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { keyEQ } from '@agoric/store';
-import { Fail, q } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { prepareVaultDirector } from './vaultDirector.js';
 
@@ -100,24 +96,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     vaultDirectorParamTypes,
   );
 
-  // validate async to wait for params to be finished
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  void E.when(vaultDirectorParamManager.getParams(), finishedParams => {
-    const { governedParams } = zcf.getTerms();
-    try {
-      keyEQ(governedParams, finishedParams) ||
-        Fail`The 'governedParams' term must be an object like ${q(
-          finishedParams,
-        )}, but was ${q(governedParams)}`;
-      assertElectorateMatches(
-        vaultDirectorParamManager,
-        zcf.getTerms().governedParams,
-      );
-    } catch (err) {
-      zcf.shutdownWithFailure(err);
-    }
-  });
-
   const makeVaultDirector = prepareVaultDirector(
     baggage,
     zcf,
@@ -133,6 +111,10 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   const factory = makeVaultDirector();
+
+  // validate async to wait for params to be finished
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  void validateElectorate(zcf, vaultDirectorParamManager);
 
   return harden({
     creatorFacet: factory.creator,

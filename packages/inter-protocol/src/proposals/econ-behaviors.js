@@ -171,41 +171,15 @@ export const setupReserve = async ({
 };
 
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers['consume']} consume
  * @param {object} config
  * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
  * @param {string} [config.options.endorsedUi]
- * @param {bigint} minInitialDebt
+ * @param {Amount<'nat'>} minInitialDebt
  */
-export const startVaultFactory = async (
-  {
-    consume: {
-      board,
-      chainStorage,
-      chainTimerService,
-      priceAuthority,
-      zoe,
-      feeMintAccess: feeMintAccessP,
-      economicCommitteeCreatorFacet: electorateCreatorFacet,
-      reserveKit,
-      auctioneerKit,
-    },
-    produce: { vaultFactoryKit },
-    brand: {
-      consume: { [Stable.symbol]: centralBrandP },
-    },
-    instance: {
-      produce: instanceProduce,
-      consume: { reserve: reserveInstance },
-    },
-    installation: {
-      consume: {
-        VaultFactory: vaultFactoryInstallation,
-        contractGovernor: contractGovernorInstallation,
-      },
-    },
-  },
+export const setupVaultFactoryArguments = async (
+  consume,
   {
     interestTiming = {
       chargingPeriod: SECONDS_PER_HOUR,
@@ -213,10 +187,22 @@ export const startVaultFactory = async (
     },
     options: { endorsedUi } = {},
   } = {},
-  minInitialDebt = 5_000_000n,
+  minInitialDebt,
 ) => {
   const STORAGE_PATH = 'vaultFactory';
-  trace('startVaultFactory');
+  trace('setupVaultFactory');
+
+  const {
+    board,
+    chainStorage,
+    chainTimerService,
+    priceAuthority,
+    zoe,
+    feeMintAccess: feeMintAccessP,
+    economicCommitteeCreatorFacet: electorateCreatorFacet,
+    reserveKit,
+    auctioneerKit,
+  } = consume;
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
   const shortfallInvitationP = E(
@@ -239,9 +225,7 @@ export const startVaultFactory = async (
     E.get(auctioneerKit).publicFacet,
   ]);
 
-  const centralBrand = await centralBrandP;
-
-  const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
+  const reservePublicFacet = await E.get(reserveKit).publicFacet;
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
@@ -252,15 +236,63 @@ export const startVaultFactory = async (
     interestTiming,
     timer: chainTimerService,
     electorateInvitationAmount: poserInvitationAmount,
-    minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
+    minInitialDebt,
     bootstrapPaymentValue: 0n,
     shortfallInvitationAmount,
     endorsedUi,
   });
 
+  const vaultFactoryPrivateArgs = {
+    feeMintAccess,
+    initialPoserInvitation,
+    initialShortfallInvitation,
+    marshaller,
+    storageNode,
+  };
+
+  return { vaultFactoryTerms, vaultFactoryPrivateArgs };
+};
+
+/**
+ * @param {EconomyBootstrapPowers} powers
+ * @param {object} config
+ * @param {InterestTiming} [config.interestTiming]
+ * @param {object} [config.options]
+ * @param {string} [config.options.endorsedUi]
+ * @param {bigint} minInitialDebt
+ */
+export const startVaultFactory = async (
+  {
+    consume,
+    produce: { vaultFactoryKit },
+    brand: {
+      consume: { [Stable.symbol]: centralBrandP },
+    },
+    instance: { produce: instanceProduce },
+    installation: {
+      consume: {
+        VaultFactory: vaultFactoryInstallation,
+        contractGovernor: contractGovernorInstallation,
+      },
+    },
+  },
+  config,
+  minInitialDebt = 5_000_000n,
+) => {
+  trace('startVaultFactory');
+
+  const centralBrand = await centralBrandP;
+
+  const { vaultFactoryTerms, vaultFactoryPrivateArgs } =
+    await setupVaultFactoryArguments(
+      consume,
+      config,
+      AmountMath.make(centralBrand, minInitialDebt),
+    );
+
   const governorTerms = await deeplyFulfilledObject(
     harden({
-      timer: chainTimerService,
+      timer: consume.chainTimerService,
       governedContractInstallation: vaultFactoryInstallation,
       governed: {
         terms: vaultFactoryTerms,
@@ -275,19 +307,13 @@ export const startVaultFactory = async (
     creatorFacet: governorCreatorFacet,
     instance: governorInstance,
     adminFacet,
-  } = await E(zoe).startInstance(
+  } = await E(consume.zoe).startInstance(
     contractGovernorInstallation,
     undefined,
     governorTerms,
     harden({
-      electorateCreatorFacet,
-      governed: {
-        feeMintAccess,
-        initialPoserInvitation,
-        initialShortfallInvitation,
-        marshaller,
-        storageNode,
-      },
+      electorateCreatorFacet: consume.economicCommitteeCreatorFacet,
+      governed: vaultFactoryPrivateArgs,
     }),
     'vaultFactory.governor',
   );
