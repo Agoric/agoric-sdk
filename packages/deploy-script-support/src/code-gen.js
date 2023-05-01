@@ -36,7 +36,7 @@ export const defangAndTrim = code => {
   return trimmed;
 };
 
-const { serialize } = makeMarshal();
+const { serialize } = makeMarshal(undefined, undefined, { serializeBodyFormat: 'smallcaps' });
 export const stringify = (x, pretty = false) =>
   decodeToJustin(JSON.parse(serialize(harden(x)).body), pretty);
 

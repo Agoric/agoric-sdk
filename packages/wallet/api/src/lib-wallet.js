@@ -239,6 +239,7 @@ export function makeWalletRoot({
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 40000,
+    serializeBodyFormat: 'smallcaps',
   });
 
   /** @type {NotifierRecord<OfferState[]>} */

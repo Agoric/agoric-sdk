@@ -24,7 +24,7 @@ const makeKeyToString = (sanitize = obj => obj) => {
     return slot;
   };
 
-  const { serialize: keyToJsonable } = makeMarshal(valToSlot);
+  const { serialize: keyToJsonable } = makeMarshal(valToSlot, undefined, { serializeBodyFormat: 'smallcaps' });
   const keyToString = async keyP => {
     const key = await sanitize(keyP);
     const obj = keyToJsonable(key);
