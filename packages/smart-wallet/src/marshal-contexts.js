@@ -224,7 +224,7 @@ export const makeExportContext = () => {
       }
       initSlotVal(boardObjects, id, val);
     },
-    ...makeMarshal(valToSlot, slotToVal),
+    ...makeMarshal(valToSlot, slotToVal, { serializeBodyFormat: 'smallcaps' }),
   });
 };
 /** @typedef {ReturnType<typeof makeExportContext>} ExportContext */
@@ -323,9 +323,11 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
   const marshal = {
     fromBoard: makeMarshal(valToSlot.fromBoard, slotToVal.fromBoard, {
       marshalName: 'fromBoard',
+      serializeBodyFormat: 'smallcaps',
     }),
     fromMyWallet: makeMarshal(valToSlot.fromMyWallet, slotToVal.fromMyWallet, {
       marshalName: 'fromMyWallet',
+      serializeBodyFormat: 'smallcaps',
     }),
   };
 

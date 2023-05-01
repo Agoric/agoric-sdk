@@ -6,7 +6,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -1048,9 +1048,6 @@ test('storage', async t => {
   const aggregator = await makeMedianAggregator(1n);
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  // Accommodate the default deserialization of makeMockChainStorageRoot.
-  const remotable = iface => ({ iface: `Alleged: ${iface}` });
-
   const price1000 = await makeFakePriceOracle(1000n);
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
@@ -1061,10 +1058,10 @@ test('storage', async t => {
       'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
     ),
     {
-      amountIn: { brand: remotable('$ATOM brand'), value: 1n },
-      amountOut: { brand: remotable('$USD brand'), value: 1020n },
-      timer: remotable('ManualTimer'),
-      timestamp: { timerBrand: remotable('timerBrand'), absValue: 1n },
+      amountIn: { brand: Far('$ATOM brand'), value: 1n },
+      amountOut: { brand: Far('$USD brand'), value: 1020n },
+      timer: Far('ManualTimer'),
+      timestamp: { timerBrand: Far('timerBrand'), absValue: 1n },
     },
   );
 });

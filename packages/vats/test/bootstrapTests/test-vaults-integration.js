@@ -5,9 +5,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
+import { makeMarshal } from '@endo/marshal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import {
+  makeAgoricNamesRemotesFromFakeStorage,
+  slotToBoardRemote,
+} from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
 /**
@@ -20,14 +24,10 @@ const collateralBrandKey = 'ATOM';
 
 const likePayouts = (collateral, minted) => ({
   Collateral: {
-    value: {
-      digits: String(collateral * 1_000_000),
-    },
+    value: BigInt(collateral * 1_000_000),
   },
   Minted: {
-    value: {
-      digits: String(minted * 1_000_000),
-    },
+    value: BigInt(minted * 1_000_000),
   },
 });
 
@@ -65,7 +65,9 @@ const makeDefaultTestContext = async t => {
 test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
-test.after.always(t => t.context.shutdown());
+test.after.always(t => {
+  t.context.shutdown && t.context.shutdown();
+});
 
 test('metrics path', async t => {
   const { EV } = t.context.runUtils;
@@ -290,7 +292,7 @@ test('exit bid', async t => {
       numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
       payouts: {
         // got back the give
-        Bid: { value: { digits: '100000' } },
+        Bid: { value: 100000n },
       },
     },
   });
@@ -352,8 +354,9 @@ test('propose change to auction governance param', async t => {
 
   const key = `published.committees.Economic_Committee.latestQuestion`;
   const capData = JSON.parse(storage.data.get(key)?.at(-1));
-  const lastQuestion = JSON.parse(capData.body);
+  const { unserialize } = makeMarshal(undefined, slotToBoardRemote);
+  const lastQuestion = unserialize(capData);
   const changes = lastQuestion?.issue?.spec?.changes;
   t.log('check Economic_Committee.latestQuestion against proposal');
-  t.like(changes, { StartFrequency: { relValue: { digits: '300' } } });
+  t.like(changes, { StartFrequency: { relValue: 300n } });
 });

@@ -3,7 +3,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
@@ -599,7 +599,7 @@ test('notifications', async t => {
   const { toTS } = aggregator;
   // mockStorage doesn't preserve identity of the timerBrand, so build
   // an equivalent shape for the t.deepEqual comparison
-  const mockBrand = { iface: 'Alleged: timerBrand' };
+  const mockBrand = Far('timerBrand');
   const toMockTS = val => ({ absValue: val, timerBrand: mockBrand });
 
   const { oracle: oracleA } = await E(aggregator.creator).initOracle(
@@ -631,12 +631,12 @@ test('notifications', async t => {
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
     ),
     {
-      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+      amountIn: { brand: Far('$LINK brand'), value: 1n },
       amountOut: {
-        brand: { iface: 'Alleged: $USD brand' },
+        brand: Far('$USD brand'),
         value: 150n, // AVG(100, 200)
       },
-      timer: { iface: 'Alleged: ManualTimer' },
+      timer: Far('ManualTimer'),
       timestamp: toMockTS(1n),
     },
   );
@@ -678,12 +678,12 @@ test('notifications', async t => {
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
     ),
     {
-      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+      amountIn: { brand: Far('$LINK brand'), value: 1n },
       amountOut: {
-        brand: { iface: 'Alleged: $USD brand' },
+        brand: Far('$USD brand'),
         value: 1000n, // AVG(1000, 1000)
       },
-      timer: { iface: 'Alleged: ManualTimer' },
+      timer: Far('ManualTimer'),
       timestamp: toMockTS(1n),
     },
   );

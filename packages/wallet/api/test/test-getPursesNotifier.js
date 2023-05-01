@@ -66,7 +66,7 @@ test('getPursesNotifier', async t => {
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
-    body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
+    body: '#{"brand":"$0.Alleged: moola brand","value":"+0"}',
     slots: [
       {
         kind: 'brand',
@@ -100,7 +100,7 @@ test('getAttenuatedPursesNotifier', async t => {
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
-    body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
+    body: '#{"brand":"$0.Alleged: moola brand","value":"+0"}',
     slots: [
       {
         kind: 'brand',

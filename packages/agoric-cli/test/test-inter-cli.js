@@ -82,7 +82,7 @@ const makeNet = published => {
   const ctx = makeFromBoard();
   const m = boardSlottingMarshaller(ctx.convertSlotToVal);
   const fmt = obj => {
-    const capData = m.serialize(obj);
+    const capData = m.serialize(harden(obj));
     const values = [JSON.stringify(capData)];
     const specimen = { blockHeight: undefined, values };
     const txt = JSON.stringify({
@@ -583,10 +583,10 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
 
   const txt = out.join('').trim();
   const obj = net.marshaller.unserialize(JSON.parse(txt));
-  obj.offer.result = 'Your bid has been accepted'; // pretend we processed it
+  const offer = { ...obj.offer, result: 'Your bid has been accepted' }; // pretend we processed it
 
   const assets = Object.values(agoricNames.vbankAsset);
-  const bidInfo = fmtBid(obj.offer, assets);
+  const bidInfo = fmtBid(offer, assets);
   t.deepEqual(bidInfo, expected);
 });
 
