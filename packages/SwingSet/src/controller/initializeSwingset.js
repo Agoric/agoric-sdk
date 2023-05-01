@@ -8,7 +8,7 @@ import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { ManagerType } from '../typeGuards.js';
-import { makeNodeBundleCache } from '../../tools/bundleTool.js';
+import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
@@ -421,7 +421,7 @@ export async function initializeSwingset(
   }
 
   const bundleCache = await (config.bundleCachePath
-    ? makeNodeBundleCache(
+    ? provideBundleCache(
         config.bundleCachePath,
         { dev: config.includeDevDependencies, format: config.bundleFormat },
         s => import(s),

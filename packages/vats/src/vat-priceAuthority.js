@@ -1,10 +1,15 @@
-import { Far } from '@endo/far';
-import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
-import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
+import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { Far } from '@endo/marshal';
 
-export function buildRootObject() {
-  return Far('root', {
-    makePriceAuthorityRegistry,
-    makeFakePriceAuthority: async options => makeFakePriceAuthority(options),
-  });
+/**
+ * Vat holding the canonical PriceAuthorityRegistry for looking up prices on any
+ * registered tuple of brands.
+ *
+ * @param {VatPowers} _vatPowers
+ * @param {unknown} _vatParams
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ */
+export function buildRootObject(_vatPowers, _vatParams, baggage) {
+  const registry = providePriceAuthorityRegistry(baggage);
+  return Far('root', { getRegistry: () => registry });
 }

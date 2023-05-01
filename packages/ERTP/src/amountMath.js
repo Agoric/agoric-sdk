@@ -135,7 +135,7 @@ const optionalBrandCheck = (allegedBrand, brand) => {
 };
 
 /**
- * @template {AssetKind} [K=AssetKind]
+ * @template {AssetKind} K
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
  * @param {Brand<K> | undefined} brand
@@ -180,7 +180,7 @@ const coerceLR = (h, leftAmount, rightAmount) => {
  * whether rectangle A is greater than rectangle B depends on whether rectangle
  * A includes rectangle B as defined by the logic in MathHelpers.
  *
- * @template {AssetKind} [K=AssetKind]
+ * @template {AssetKind} K
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
  * @param {Brand<K>} [brand]
@@ -204,7 +204,7 @@ const AmountMath = {
   /**
    * Make an amount from a value by adding the brand.
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Brand<K>} brand
    * @param {AssetValueForKind<K>} allegedValue
    * @returns {Amount<K>}
@@ -220,7 +220,7 @@ const AmountMath = {
    * Make sure this amount is valid enough, and return a corresponding
    * valid amount if so.
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Brand<K>} brand
    * @param {Amount<K>} allegedAmount
    * @returns {Amount<K>}
@@ -237,7 +237,7 @@ const AmountMath = {
   /**
    * Extract and return the value.
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Brand<K>} brand
    * @param {Amount<K>} amount
    * @returns {AssetValueForKind<K>}
@@ -294,7 +294,7 @@ const AmountMath = {
    * Returns true if the leftAmount equals the rightAmount. We assume
    * that if isGTE is true in both directions, isEqual is also true
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
    * @param {Brand<K>} [brand]
@@ -311,7 +311,7 @@ const AmountMath = {
    * amount, it usually means including all of the elements from both
    * left and right.
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
    * @param {Brand<K>} [brand]
@@ -330,7 +330,7 @@ const AmountMath = {
    * left amount must include the right amount, this is NOT equivalent
    * to set subtraction.
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
    * @param {Brand<K>} [brand]
@@ -344,7 +344,7 @@ const AmountMath = {
   /**
    * Returns the min value between x and y using isGTE
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Amount<K>} x
    * @param {Amount<K>} y
    * @param {Brand<K>} [brand]
@@ -360,7 +360,7 @@ const AmountMath = {
   /**
    * Returns the max value between x and y using isGTE
    *
-   * @template {AssetKind} [K=AssetKind]
+   * @template {AssetKind} K
    * @param {Amount<K>} x
    * @param {Amount<K>} y
    * @param {Brand<K>} [brand]

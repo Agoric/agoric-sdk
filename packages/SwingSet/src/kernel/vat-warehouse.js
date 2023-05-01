@@ -683,7 +683,7 @@ export function makeVatWarehouse({
     const work = Array.from(ephemeral.vats.values(), ({ manager }) =>
       manager.shutdown(),
     );
-    return Promise.all(work);
+    return Promise.all(work).then(() => {});
   }
 
   function setSnapshotInterval(interval) {

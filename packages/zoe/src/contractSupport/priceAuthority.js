@@ -4,9 +4,11 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
+import { TimestampShape } from '@agoric/time';
+import { M } from '@agoric/store';
 
 const trace = makeTracer('PA', false);
 
@@ -34,6 +36,28 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
  * @param {PriceQuoteCreate} createInstantQuote
  * @returns {Promise<void>}
  */
+
+const GuardCallAmountTuple = M.call(AmountShape, AmountShape).returns(
+  M.promise(),
+);
+export const PriceAuthorityI = M.interface('PriceAuthority', {
+  getQuoteIssuer: M.call(BrandShape, BrandShape).returns(M.promise()),
+  getTimerService: M.call(BrandShape, BrandShape).returns(M.promise()),
+  quoteGiven: M.call(AmountShape, BrandShape).returns(M.promise()),
+  quoteWanted: M.call(BrandShape, AmountShape).returns(M.promise()),
+  makeQuoteNotifier: M.call(AmountShape, BrandShape).returns(M.promise()),
+  quoteAtTime: M.call(TimestampShape, AmountShape, BrandShape).returns(
+    M.promise(),
+  ),
+  quoteWhenLT: GuardCallAmountTuple,
+  quoteWhenLTE: GuardCallAmountTuple,
+  quoteWhenGTE: GuardCallAmountTuple,
+  quoteWhenGT: GuardCallAmountTuple,
+  mutableQuoteWhenLT: GuardCallAmountTuple,
+  mutableQuoteWhenLTE: GuardCallAmountTuple,
+  mutableQuoteWhenGTE: GuardCallAmountTuple,
+  mutableQuoteWhenGT: GuardCallAmountTuple,
+});
 
 /**
  * @param {object} opts

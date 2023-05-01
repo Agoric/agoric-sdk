@@ -11,7 +11,7 @@ import {
   makeAddressNameHubs,
   makeOracleBrands,
   makeBoard,
-  startPriceAuthority,
+  startPriceAuthorityRegistry,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {
@@ -23,7 +23,7 @@ import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/core
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { TimeMath } from '@agoric/time';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -64,7 +64,7 @@ const voterAddresses = {
 let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
-  const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
+  const bundleCache = await provideBundleCache('bundles/', {}, s => import(s));
   const { zoe, feeMintAccessP, vatAdminSvc, vatAdminState } =
     await setUpZoeForTest();
 
@@ -217,7 +217,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       // @ts-expect-error TODO: align types better
       bridgeCoreEval(space),
       // @ts-expect-error TODO: align types better
-      startPriceAuthority(space),
+      startPriceAuthorityRegistry(space),
     ]);
   };
 

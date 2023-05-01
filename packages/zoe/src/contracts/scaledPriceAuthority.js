@@ -1,14 +1,14 @@
-import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
+import { M, prepareExo } from '@agoric/vat-data';
 import {
   ceilDivideBy,
-  floorDivideBy,
   ceilMultiplyBy,
+  floorDivideBy,
   floorMultiplyBy,
 } from '../contractSupport/index.js';
-import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
 import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.js';
+import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
 
 /**
  * @typedef {object} ScaledPriceAuthorityOpts
@@ -22,13 +22,20 @@ import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.j
  * A contract that scales a source price authority to a target price authority
  * via ratios.
  *
+ * No durable state. Because it only transforms there's nothing important to save.
+ * However that also means that the contract terms cannot be modified and should
+ * a `sourcePriceAuthority` reference sever this contract will break. A future version
+ * could allow changing that term through privateArgs or governance.
+ *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
- * @param {object} [root0]
- * @param {ERef<Mint<'set'>>} [root0.quoteMint]
+ * @param {object} privateArgs
+ * @param {ERef<Mint<'set'>>} [privateArgs.quoteMint]
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const start = async (
+export const prepare = async (
   zcf,
   { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
+  baggage,
 ) => {
   const { sourcePriceAuthority, scaleIn, scaleOut, initialPrice } =
     zcf.getTerms();
@@ -70,8 +77,15 @@ export const start = async (
       )
     : priceAuthority;
 
-  const publicFacet = Far('publicFacet', {
-    getPriceAuthority: () => withInitial,
-  });
+  const publicFacet = prepareExo(
+    baggage,
+    'ScaledPriceAuthority public',
+    M.interface('ScaledPriceAuthority public', {
+      getPriceAuthority: M.call().returns(M.promise()),
+    }),
+    {
+      getPriceAuthority: () => withInitial,
+    },
+  );
   return harden({ publicFacet });
 };

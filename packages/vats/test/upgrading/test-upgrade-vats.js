@@ -1,8 +1,9 @@
+// @ts-check
 /* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { buildVatController } from '@agoric/swingset-vat';
 import { BridgeId } from '@agoric/internal';
+import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -26,7 +27,7 @@ test.before(async t => {
  * @param {any} t
  * @param {Partial<SwingSetConfig>} [kernelConfigOverrides]
  * @param {Record<string, unknown>} [deviceEndowments]
- * @returns {ReturnType<typeof makeRunUtils>}
+ * @returns {Promise<ReturnType<typeof makeRunUtils>>}
  */
 const makeScenario = async (
   t,
@@ -99,6 +100,7 @@ test.skip('upgrade bootstrap vat', async t => {
   const bundles = {
     chain: { sourceSpec: bfile('../src/core/boot-chain.js') },
   };
+  // @ts-expect-error error in skipped test
   const { EV } = await makeScenario(t, bundles);
 
   t.log('create initial version');
@@ -225,4 +227,42 @@ test('upgrade vat-bridge', async t => {
     ],
     'log must show next handler call',
   );
+});
+
+test('upgrade vat-priceAuthority', async t => {
+  const { bfile } = t.context;
+  const bundles = {
+    priceAuthority: {
+      sourceSpec: bfile('../../src/vat-priceAuthority.js'),
+    },
+  };
+
+  const { EV } = await makeScenario(t, { bundles });
+
+  t.log('create initial version');
+  const priceAuthorityVatConfig = {
+    name: 'priceAuthority',
+    bundleCapName: 'priceAuthority',
+  };
+  await EV.vat('bootstrap').createVat(priceAuthorityVatConfig);
+
+  /** @type {import('@agoric/zoe/tools/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
+  const registry = await EV.vat('priceAuthority').getRegistry();
+
+  // Ideally we'd also test registering a PA and verifying the same one comes out the other end.
+  // But we don't have a way to produce one through the kser that EV does here
+  // so we'll have to test that elsewhere.
+
+  t.log('now perform the null upgrade');
+  const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
+    priceAuthorityVatConfig,
+  );
+  t.is(incarnationNumber, 1, 'vat must be reincarnated');
+
+  t.log('get again');
+  const reincarnatedRegistry = await EV.vat('priceAuthority').getRegistry();
+  // facet holder object changes but the members have the same identity
+  t.not(reincarnatedRegistry, registry);
+  t.is(reincarnatedRegistry.priceAuthority, registry.priceAuthority);
+  t.is(reincarnatedRegistry.adminFacet, registry.adminFacet);
 });

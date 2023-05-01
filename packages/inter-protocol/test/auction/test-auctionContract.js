@@ -16,7 +16,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
 
 import {
@@ -108,7 +108,9 @@ export const setupServices = async (t, params = defaultParams) => {
 
   void E(reserveCF).addIssuer(collateral.issuer, 'Collateral');
 
-  const { priceAuthority, adminFacet: registry } = makePriceAuthorityRegistry();
+  const paBaggage = makeScalarMapStore();
+  const { priceAuthority, adminFacet: registry } =
+    providePriceAuthorityRegistry(paBaggage);
   space.produce.priceAuthority.resolve(priceAuthority);
 
   await startAuctioneer(space, { auctionParams: params });
@@ -217,7 +219,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
       initialPrice: makeRatio(100n, bid.brand, 100n, collateralBrand),
     });
     priceAuthorities.init(collateralBrand, pa);
-    registry.registerPriceAuthority(pa, collateralBrand, bid.brand);
+    registry.registerPriceAuthority(pa, collateralBrand, bid.brand, true);
 
     await E(creatorFacet).addBrand(
       issuerKit.issuer,
