@@ -308,6 +308,8 @@ export const startVaultFactory = async (
       governorCreatorFacet,
       adminFacet,
       publicFacet,
+      governor: governorInstance,
+      instance: vaultFactoryInstance,
     }),
   );
 
@@ -604,6 +606,8 @@ export const startAuctioneer = async (
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
+      governor: governorStartResult.instance,
+      instance: governedInstance,
     }),
   );
 
@@ -753,6 +757,8 @@ export const startStakeFactory = async (
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
+      governor: governorStartResult.instance,
+      instance: governedInstance,
     }),
   );
 
