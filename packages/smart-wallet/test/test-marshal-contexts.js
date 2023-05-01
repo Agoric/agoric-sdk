@@ -59,9 +59,7 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
   const ammMetricsCapData = amm.getMetrics();
 
   t.deepEqual(ammMetricsCapData, {
-    body: JSON.stringify([
-      { '@qclass': 'slot', iface: 'Alleged: ATOM brand', index: 0 },
-    ]),
+    body: '#["$0.Alleged: ATOM brand"]',
     slots: ['board011'],
   });
 
@@ -75,16 +73,16 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
   myWallet.suggestIssuer('ATOM', 'board011');
   const walletCapData = myWallet.publish();
   t.deepEqual(walletCapData, {
-    body: JSON.stringify([
+    body: `#${JSON.stringify([
       {
-        brand: { '@qclass': 'slot', iface: 'Alleged: ATOM brand', index: 0 },
+        brand: '$0.Alleged: ATOM brand',
         brandPetname: 'ATOM',
-        currentAmount: { brand: { '@qclass': 'slot', index: 0 }, value: 100 },
+        currentAmount: { brand: '$0', value: 100 },
         meta: { id: 0 },
-        purse: { '@qclass': 'slot', iface: 'Alleged: ATOM purse', index: 1 },
+        purse: '$1.Alleged: ATOM purse',
         pursePetname: 'ATOM purse',
       },
-    ]),
+    ])}`,
     slots: ['board011', 'purse:ATOM'],
   });
 
@@ -129,22 +127,14 @@ test('makeExportContext.serialize handles unregistered identities', t => {
   const actual = context.serialize(invitationAmount);
 
   t.deepEqual(actual, {
-    body: JSON.stringify({
-      brand: {
-        '@qclass': 'slot',
-        iface: 'Alleged: Zoe invitation brand',
-        index: 0,
-      },
+    body: `#${JSON.stringify({
+      brand: '$0.Alleged: Zoe invitation brand',
       value: [
         {
-          instance: {
-            '@qclass': 'slot',
-            iface: 'Alleged: amm instance',
-            index: 1,
-          },
+          instance: '$1.Alleged: amm instance',
         },
       ],
-    }),
+    })}`,
     slots: ['board01', 'unknown:1'],
   });
 
@@ -156,11 +146,7 @@ test('makeExportContext.serialize handles unregistered identities', t => {
   context.savePaymentActions(myPayment);
   const cap2 = context.serialize(myPayment);
   t.deepEqual(cap2, {
-    body: JSON.stringify({
-      '@qclass': 'slot',
-      iface: 'Alleged: payment',
-      index: 0,
-    }),
+    body: '#"$0.Alleged: payment"',
     slots: ['payment:1'],
   });
   t.deepEqual(context.unserialize(cap2), myPayment);
@@ -178,7 +164,7 @@ test('fromBoard.serialize requires board ids', t => {
 
   context.ensureBoardId('board0123', unpassable.instance);
   t.deepEqual(context.fromBoard.serialize(unpassable), {
-    body: '{"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":0}}',
+    body: '#{"instance":"$0.Alleged: InstanceHandle"}',
     slots: ['board0123'],
   });
 });
