@@ -131,7 +131,6 @@ const REWARD_MANIFEST = harden({
       bankManager: true,
       vaultFactoryKit: true,
       periodicFeeCollectors: true,
-      stakeFactoryKit: true,
       reserveKit: true,
       zoe: true,
     },
@@ -211,7 +210,7 @@ export const getManifestForMain = (
   },
 ) => {
   return {
-    manifest: SHARED_MAIN_MANIFEST,
+    manifest: { ...SHARED_MAIN_MANIFEST, ...REWARD_MANIFEST },
     installations: {
       VaultFactory: restoreRef(installKeys.vaultFactory),
       auctioneer: restoreRef(installKeys.auctioneer),

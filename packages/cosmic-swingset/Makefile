@@ -60,11 +60,6 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 
 INTER_PROTO=../inter-protocol
 
-start-stakeFactory: $(INTER_PROTO)/gov-stakeFactory.js
-	make EVAL_CODE=$(INTER_PROTO)/gov-stakeFactory.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-stakeFactory-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
 start-committee: $(INTER_PROTO)/gov-econ-committee.js
 	make EVAL_CODE=$(INTER_PROTO)/gov-econ-committee.js \
 		EVAL_PERMIT=$(INTER_PROTO)/gov-econ-committee-permit.json \

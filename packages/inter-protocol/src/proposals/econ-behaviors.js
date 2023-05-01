@@ -381,7 +381,6 @@ export const startRewardDistributor = async ({
     bankManager,
     vaultFactoryKit,
     periodicFeeCollectors,
-    stakeFactoryKit,
     reserveKit,
     zoe,
   },
@@ -470,7 +469,6 @@ export const startRewardDistributor = async ({
 
   const collectorKit = {
     vaultFactory: E.get(vaultFactoryKit).creatorFacet,
-    runStake: E.get(stakeFactoryKit).creatorFacet,
   };
   await Promise.all(
     Object.entries(collectorKit).map(async ([debugName, collectorFacet]) => {

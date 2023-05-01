@@ -120,7 +120,6 @@ export const mainProposalBuilder = async ({
         vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
         installKeys: {
           ...publishGroup(installKeyGroups.main),
-          ...publishGroup(installKeyGroups.stakeFactory),
         },
       },
     ],
