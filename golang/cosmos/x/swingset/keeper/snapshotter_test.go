@@ -65,8 +65,8 @@ func TestSecondCommit(t *testing.T) {
 	}
 
 	// drain the signaling channel to let goroutine exit
-	_ = <-ch
-	_ = <-ch
+	<-ch
+	<-ch
 	close(ch)
 }
 
@@ -118,7 +118,7 @@ func TestRetrievalFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_ = <-ch
+	<-ch
 	if savedErr == nil {
 		t.Fatal("wanted retrieval error")
 	}
