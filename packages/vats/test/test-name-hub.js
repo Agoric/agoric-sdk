@@ -194,3 +194,17 @@ test('durable NameHubKit', async t => {
     t.is(actual, 'world');
   }
 });
+
+test('durable MyAddressNameAdmin', async t => {
+  const baggage = makeScalarBigMapStore('test baggage', { durable: true });
+  const zone = makeDurableZone(baggage);
+  /** @type {(a: string) => { nameHub: NameHub, nameAdmin: import('../src/types').MyAddressNameAdmin }} */
+  // @ts-expect-error cast
+  const makeKit = prepareNameHubKit(zone);
+
+  const { nameAdmin } = makeKit('agoric123');
+
+  const actual = await nameAdmin.getMyAddress();
+
+  t.is(actual, 'agoric123');
+});

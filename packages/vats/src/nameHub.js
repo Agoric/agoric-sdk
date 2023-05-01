@@ -10,10 +10,16 @@ import { makeLegacyMap, M } from '@agoric/store';
 import './types.js';
 /** @typedef {import('./types').NameAdmin} NameAdmin */
 
+const { keys } = Object;
 const { Fail } = assert;
 
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
+
+// XXX how to extend exo objects?
+const AdminAux = harden({
+  getMyAddress: M.call().returns(M.or(M.string(), M.undefined())),
+});
 
 const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
@@ -23,6 +29,7 @@ const NameHubIKit = harden({
     keys: M.call().returns(M.arrayOf(KeyShape)),
   }),
   nameAdmin: M.interface('NameAdmin', {
+    ...AdminAux,
     reserve: M.call(KeyShape).returns(M.promise()),
     default: M.callWhen(KeyShape)
       .optional(M.await(M.any()), M.await(M.remotable()))
@@ -99,9 +106,10 @@ export const prepareNameHubKit = (zone = heapZone) => {
   const my = me => provideWeak(ephemera, me, init1);
 
   const makeNameHub = zone.exoClassKit(
-    'NameHub',
+    'NameHubKit',
     NameHubIKit,
-    () => ({
+    /** @param {unknown[]} auxProperties */
+    (...auxProperties) => ({
       /** @type {MapStore<string, unknown>} */
       keyToValue: zone.detached().mapStore('nameKey'),
 
@@ -110,6 +118,8 @@ export const prepareNameHubKit = (zone = heapZone) => {
 
       /** @type {undefined | { write: (item: unknown) => void }} */
       updateCallback: undefined,
+
+      auxProperties: harden(auxProperties),
     }),
     {
       /** @type {NameHub} */
@@ -158,6 +168,10 @@ export const prepareNameHubKit = (zone = heapZone) => {
       },
       /** @type {NameAdmin} */
       nameAdmin: {
+        // XXX how to extend exo objects?
+        [keys(AdminAux)[0]]() {
+          return this.state.auxProperties[0];
+        },
         async reserve(key) {
           const { keyToRecord, keyToAdminRecord } = my(this.facets.nameHub);
           const { keyToValue } = this.state;

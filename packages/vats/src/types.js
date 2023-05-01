@@ -30,7 +30,12 @@ export {};
  */
 
 /**
- * @typedef {object} NameAdmin write access to a node in a name hierarchy
+ * @template {{}} [Aux={}]
+ * @typedef {Aux & NameAdminI} NameAdmin
+ */
+
+/**
+ * @typedef {object} NameAdminI write access to a node in a name hierarchy
  *
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
@@ -63,7 +68,7 @@ export {};
  */
 
 /**
- * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
+ * @typedef {NameAdmin<{ getMyAddress(): string }>} MyAddressNameAdmin
  */
 
 /**
