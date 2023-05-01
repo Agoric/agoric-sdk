@@ -278,6 +278,12 @@ test.serial('errors', async t => {
   const wallet = oracleWallets[operatorAddress];
   const adminOfferId = await acceptInvitation(wallet, priceAggregator);
 
+  // TODO move to smart-wallet package when it has sufficient test supports
+  acceptInvitationCounter -= 1; // try again with same id
+  t.throwsAsync(acceptInvitation(wallet, priceAggregator), {
+    message: `cannot re-use offer id "acceptInvitation${acceptInvitationCounter}"`,
+  });
+
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
   const walletPushPrice = async priceRound => {
