@@ -24,11 +24,12 @@ test('makeNameHubKit - lookup paths', async t => {
   t.is(na2.readonly(), nh2);
   t.is(na3.readonly(), nh3);
 
-  na1.update('path1', nh2, na2);
+  await na1.update('path1', nh2, na2);
+  console.log('@@@entries?', nh1.entries());
   t.is(await nh1.lookup('path1'), nh2);
-  na2.update('path2', nh3, na3);
+  await na2.update('path2', nh3, na3);
   t.is(await nh2.lookup('path2'), nh3);
-  na3.update('path3', 'finish');
+  await na3.update('path3', 'finish');
   t.is(await nh3.lookup('path3'), 'finish');
 
   await na1
@@ -68,7 +69,7 @@ test('makeNameHubKit - reserve and update', async t => {
   t.deepEqual(nameHub.entries(), []);
 
   // Try reserving and looking up.
-  nameAdmin.reserve('hello');
+  await nameAdmin.reserve('hello');
 
   let lookedUpHello = false;
   const lookupHelloP = nameHub
@@ -80,14 +81,14 @@ test('makeNameHubKit - reserve and update', async t => {
   t.deepEqual(nameHub.entries(), [['hello', helloP]]);
 
   t.falsy(lookedUpHello);
-  nameAdmin.update('hello', 'foo');
+  await nameAdmin.update('hello', 'foo');
   t.deepEqual(nameHub.keys(), ['hello']);
   t.deepEqual(nameHub.values(), ['foo']);
   t.deepEqual(nameHub.entries(), [['hello', 'foo']]);
   t.is(await lookupHelloP, 'foo');
   t.truthy(lookedUpHello);
 
-  nameAdmin.update('hello', 'foo2');
+  await nameAdmin.update('hello', 'foo2');
   t.is(await nameHub.lookup('hello'), 'foo2');
 });
 
@@ -104,7 +105,7 @@ test('makeNameHubKit - reserve and delete', async t => {
   t.deepEqual(nameHub.values(), []);
   t.deepEqual(nameHub.entries(), []);
 
-  nameAdmin.reserve('goodbye');
+  await nameAdmin.reserve('goodbye');
   let lookedUpGoodbye = false;
   const lookupGoodbyeP = nameHub
     .lookup('goodbye')
@@ -116,7 +117,7 @@ test('makeNameHubKit - reserve and delete', async t => {
   t.assert(goodbyeP instanceof Promise);
   t.deepEqual(nameHub.entries(), [['goodbye', goodbyeP]]);
 
-  nameAdmin.delete('goodbye');
+  await nameAdmin.delete('goodbye');
   t.deepEqual(nameHub.keys(), []);
   t.deepEqual(nameHub.values(), []);
   t.deepEqual(nameHub.entries(), []);
@@ -135,16 +136,14 @@ test('makeNameHubKit - default and set', async t => {
 
   t.is(nameAdmin.readonly(), nameHub);
 
-  t.is(nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
-  nameAdmin.update('already set', 'initial');
+  t.is(await nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
+  await nameAdmin.update('already set', 'initial');
   t.is(await nameAdmin.readonly().lookup('already set'), 'initial');
-  // @ts-expect-error
-  t.is(nameAdmin.default('already set'), 'initial');
-  nameAdmin.set('already set', 'new');
+  t.is(await nameAdmin.default('already set'), 'initial');
+  await nameAdmin.set('already set', 'new');
   t.is(await nameAdmin.readonly().lookup('already set'), 'new');
-  // @ts-expect-error
-  t.is(nameAdmin.default('already set'), 'new');
-  t.throws(() => nameAdmin.set('not set', 'irrelevant'), {
+  t.is(await nameAdmin.default('already set'), 'new');
+  await t.throwsAsync(() => nameAdmin.set('not set', 'irrelevant'), {
     message: 'key "not set" is not already initialized',
   });
 });
@@ -153,7 +152,7 @@ test('makeNameHubKit - listen for updates', async t => {
   const { nameAdmin } = makeNameHubKit();
 
   const brandBLD = harden({ name: 'BLD' });
-  nameAdmin.update('BLD', brandBLD);
+  await nameAdmin.update('BLD', brandBLD);
 
   const capture = [];
   nameAdmin.onUpdate(
@@ -184,7 +183,7 @@ test('durable NameHubKit', async t => {
   // 1st incarnation
   {
     const { nameAdmin } = provide(baggage, 'it', makeKit);
-    nameAdmin.update('hello', 'world');
+    await nameAdmin.update('hello', 'world');
   }
 
   // 2nd incarnation
@@ -198,8 +197,6 @@ test('durable NameHubKit', async t => {
 test('durable MyAddressNameAdmin', async t => {
   const baggage = makeScalarBigMapStore('test baggage', { durable: true });
   const zone = makeDurableZone(baggage);
-  /** @type {(a: string) => { nameHub: NameHub, nameAdmin: import('../src/types').MyAddressNameAdmin }} */
-  // @ts-expect-error cast
   const makeKit = prepareNameHubKit(zone);
 
   const { nameAdmin } = makeKit('agoric123');
@@ -207,4 +204,26 @@ test('durable MyAddressNameAdmin', async t => {
   const actual = await nameAdmin.getMyAddress();
 
   t.is(actual, 'agoric123');
+});
+
+test('nameAdmin provideChild', async t => {
+  const baggage = makeScalarBigMapStore('test baggage', { durable: true });
+  const zone = makeDurableZone(baggage);
+  const makeKit = prepareNameHubKit(zone);
+
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } = makeKit();
+  const child = await namesByAddressAdmin.provideChild(
+    'ag123',
+    ['depositFacet'],
+    'ag123',
+  );
+  await child.nameAdmin.update('depositFacet', 'D1');
+  {
+    const actual = await namesByAddress.lookup('ag123', 'depositFacet');
+    t.is(actual, 'D1');
+  }
+  {
+    const actual = await child.nameAdmin.getMyAddress();
+    t.is(actual, 'ag123');
+  }
 });

@@ -18,10 +18,11 @@ export {};
  * allow passing a remote iterable, there would be an inordinate number of round
  * trips for the contents of even the simplest nameHub.
  *
+ * @property {(key: string) => boolean} has
  * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
- * @property {() => [string, unknown][]} entries get all the entries
+ * @property {() => [string, ERef<unknown>][]} entries get all the entries
  * available in the current NameHub
  * @property {() => string[]} keys get all names available in the
  * current NameHub
@@ -37,17 +38,18 @@ export {};
 /**
  * @typedef {object} NameAdminI write access to a node in a name hierarchy
  *
+ * @property {(key: string, reserved?: string[], ...aux: unknown[]) => Promise<NameHubKit>} provideChild
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
  * @property {<T>( key: string, newValue: T, newAdmin?: unknown) =>
- *   T } default Update if not already updated.  Return
+ *   Promise<T> } default Update if not already updated.  Return
  *   existing value, or newValue if not existing.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ *   key: string, newValue: unknown, newAdmin?: unknown) => Promise<void>
  * } set Update only if already initialized. Reject if not.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ *   key: string, newValue: unknown, newAdmin?: unknown) => Promise<void>
  * } update Fulfill an outstanding reserved promise (if any) to the newValue and
  * set the key to the newValue.  If newAdmin is provided, set that to return via
  * lookupAdmin.

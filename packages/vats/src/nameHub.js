@@ -3,12 +3,10 @@
 import { assert } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { mapIterable } from '@endo/marshal';
 import { heapZone } from '@agoric/zone/heap.js';
 import { makeLegacyMap, M } from '@agoric/store';
 
 import './types.js';
-/** @typedef {import('./types').NameAdmin} NameAdmin */
 
 const { keys } = Object;
 const { Fail } = assert;
@@ -23,6 +21,7 @@ const AdminAux = harden({
 
 const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
+    has: M.call(KeyShape).returns(M.boolean()),
     lookup: M.call().rest(PathShape).returns(M.promise()),
     entries: M.call().returns(M.arrayOf(M.array())),
     values: M.call().returns(M.array()),
@@ -30,6 +29,10 @@ const NameHubIKit = harden({
   }),
   nameAdmin: M.interface('NameAdmin', {
     ...AdminAux,
+    provideChild: M.callWhen(KeyShape)
+      .optional(M.arrayOf(M.string()))
+      .rest(M.any())
+      .returns({ nameHub: M.remotable(), nameAdmin: M.remotable() }),
     reserve: M.call(KeyShape).returns(M.promise()),
     default: M.callWhen(KeyShape)
       .optional(M.await(M.any()), M.await(M.remotable()))
@@ -71,34 +74,20 @@ const provideWeak = (store, key, make) => {
  * @param {import('@agoric/zone').Zone} [zone]
  */
 export const prepareNameHubKit = (zone = heapZone) => {
-  const updated = (updateCallback, keyToRecord) => {
+  const updated = (updateCallback, hub) => {
     if (!updateCallback) {
       return;
     }
-    // XXX use nameToValue.entries() instead?
-    void E(updateCallback).write(
-      harden(
-        [
-          ...mapIterable(keyToRecord.entries(), ([name, record]) =>
-            record.promise
-              ? []
-              : [/** @type {[string, unknown]} */ ([name, record.value])],
-          ),
-        ].flat(),
-      ),
-    );
+    void E(updateCallback).write(hub.entries(false));
   };
 
-  // TODO@@@@ never mind .value here; use the durable store
-  /** @typedef {Partial<PromiseRecord<unknown> & { value: unknown }>} NameRecord */
-
   const init1 = () => ({
-    /** @type {LegacyMap<string, NameRecord>} */
+    /** @type {LegacyMap<string, PromiseKit<unknown>>} */
     // Legacy because a promiseKit is not a passable
-    keyToRecord: makeLegacyMap('nameKey'),
-    /** @type {LegacyMap<string, NameRecord>} */
+    keyToPK: makeLegacyMap('nameKey'),
+    /** @type {LegacyMap<string, PromiseKit<unknown>>} */
     // Legacy because a promiseKit is not a passable
-    keyToAdminRecord: makeLegacyMap('nameKey'),
+    keyToAdminPK: makeLegacyMap('nameKey'),
   });
   /** @type {WeakMap<any, ReturnType<init1>>} */
   const ephemera = new WeakMap();
@@ -113,7 +102,7 @@ export const prepareNameHubKit = (zone = heapZone) => {
       /** @type {MapStore<string, unknown>} */
       keyToValue: zone.detached().mapStore('nameKey'),
 
-      /** @type {MapStore<string, NameAdmin>} */
+      /** @type {MapStore<string, import('./types').NameAdmin>} */
       keyToAdmin: zone.detached().mapStore('nameKey'),
 
       /** @type {undefined | { write: (item: unknown) => void }} */
@@ -124,93 +113,121 @@ export const prepareNameHubKit = (zone = heapZone) => {
     {
       /** @type {NameHub} */
       nameHub: {
+        has(key) {
+          const { keyToValue } = this.state;
+          const { keyToPK } = my(this.facets.nameHub);
+          return keyToValue.has(key) || keyToPK.has(key);
+        },
         async lookup(...path) {
-          const { nameHub } = this.facets;
-          const { keyToRecord } = my(this.facets.nameHub);
           if (path.length === 0) {
+            const { nameHub } = this.facets;
             return nameHub;
           }
+          const { keyToValue } = this.state;
+          const { keyToPK } = my(this.facets.nameHub);
           const [first, ...remaining] = path;
-          const record = keyToRecord.get(first);
           /** @type {any} */
-          const firstValue = record.promise || record.value;
+          const firstValue = keyToValue.has(first)
+            ? keyToValue.get(first)
+            : keyToPK.get(first).promise; // or throw
           if (remaining.length === 0) {
             return firstValue;
           }
           return E(firstValue).lookup(...remaining);
         },
-        entries() {
-          const { keyToRecord } = my(this.facets.nameHub);
-          return harden([
-            ...mapIterable(
-              keyToRecord.entries(),
-              ([key, record]) =>
-                /** @type {[string, ERef<unknown>]} */ ([
-                  key,
-                  record.promise || record.value,
-                ]),
+        entries(includeReserved = true) {
+          const { keyToValue } = this.state;
+          if (!includeReserved) {
+            return harden([...keyToValue.entries()]);
+          }
+          const { keyToPK } = my(this.facets.nameHub);
+          // keys of keyToValue and keyToPK are disjoint
+          const out = harden([
+            ...keyToValue.entries(),
+            ...[...keyToPK.entries()].map(
+              ([k, kit]) =>
+                /** @type {[string, ERef<unknown>]} */ ([k, kit.promise]),
             ),
           ]);
+          return out;
         },
         values() {
-          const { keyToRecord } = my(this.facets.nameHub);
-          return [
-            ...mapIterable(
-              keyToRecord.values(),
-              record => record.promise || record.value,
-            ),
-          ];
+          const { nameHub } = this.facets;
+          return nameHub.entries().map(([_k, v]) => v);
         },
         keys() {
-          const { keyToRecord } = my(this.facets.nameHub);
-          return harden([...keyToRecord.keys()]);
+          const { nameHub } = this.facets;
+          return nameHub.entries().map(([k, _v]) => k);
         },
       },
-      /** @type {NameAdmin} */
+      /** @type {import('./types').NameAdmin} */
       nameAdmin: {
         // XXX how to extend exo objects?
         [keys(AdminAux)[0]]() {
           return this.state.auxProperties[0];
         },
-        async reserve(key) {
-          const { keyToRecord, keyToAdminRecord } = my(this.facets.nameHub);
-          const { keyToValue } = this.state;
-          assert.typeof(key, 'string');
-          if (!keyToAdminRecord.has(key)) {
-            keyToAdminRecord.init(key, makePromiseKit());
+        async provideChild(key, reserved = [], ...aux) {
+          const { nameAdmin } = this.facets;
+          const { keyToAdmin, keyToValue } = this.state;
+          if (keyToAdmin.has(key)) {
+            const childAdmin = keyToAdmin.get(key);
+            /** @type {NameHub} */
+            // @ts-expect-error if an admin is present, it should be a namehub
+            const childHub = keyToValue.get(key);
+            return { nameHub: childHub, nameAdmin: childAdmin };
           }
-          if (!keyToRecord.has(key)) {
+          const child = makeNameHub(...aux);
+          await Promise.all(reserved.map(k => child.nameAdmin.reserve(k)));
+          await nameAdmin.update(key, child.nameHub, child.nameAdmin);
+          return child;
+        },
+        async reserve(key) {
+          const { keyToPK, keyToAdminPK } = my(this.facets.nameHub);
+          const { keyToValue, keyToAdmin } = this.state;
+          if (keyToValue.has(key)) {
+            return;
+          }
+          if (!keyToAdminPK.has(key)) {
             const pk = makePromiseKit();
-            keyToRecord.init(key, pk);
+            keyToAdminPK.init(key, pk);
             pk.promise.then(
-              v => keyToValue.set(key, v),
+              v => {
+                keyToAdmin.init(key, v);
+                keyToAdminPK.delete(key);
+              },
+              () => {}, // ignore rejections
+            );
+          }
+          if (!keyToPK.has(key)) {
+            const pk = makePromiseKit();
+            keyToPK.init(key, pk);
+            pk.promise.then(
+              v => {
+                keyToValue.init(key, v);
+                keyToPK.delete(key);
+              },
               () => {}, // ignore rejections
             );
           }
         },
-        default(key, newValue, adminValue) {
-          const { nameAdmin } = this.facets;
-          const { keyToRecord } = my(this.facets.nameHub);
-          if (keyToRecord.has(key)) {
-            const record = keyToRecord.get(key);
-            if (!record.promise) {
+        async default(key, newValue, adminValue) {
+          const { nameHub, nameAdmin } = this.facets;
+          if (nameHub.has(key)) {
+            const { keyToValue } = this.state;
+
+            if (keyToValue.has(key)) {
               // Already initalized.
-              return /** @type {any} */ (record.value);
+              return /** @type {any} */ (keyToValue.get(key));
             }
           }
-          nameAdmin.update(key, newValue, adminValue);
+          await nameAdmin.update(key, newValue, adminValue);
           return newValue;
         },
-        set(key, newValue, adminValue) {
+        async set(key, newValue, adminValue) {
+          const { keyToValue } = this.state;
+          keyToValue.has(key) || Fail`key ${key} is not already initialized`;
+
           const { nameAdmin } = this.facets;
-          const { keyToRecord } = my(this.facets.nameHub);
-          assert.typeof(key, 'string');
-          let record;
-          if (keyToRecord.has(key)) {
-            record = keyToRecord.get(key);
-          }
-          (record && !record.promise) ||
-            Fail`key ${key} is not already initialized`;
           nameAdmin.update(key, newValue, adminValue);
         },
         onUpdate(fn) {
@@ -220,77 +237,68 @@ export const prepareNameHubKit = (zone = heapZone) => {
           }
           state.updateCallback = fn;
         },
-        update(key, newValue, adminValue) {
-          const { keyToRecord, keyToAdminRecord } = my(this.facets.nameHub);
-          const { keyToValue, updateCallback } = this.state;
+        async update(key, newValue, adminValue) {
+          const { keyToPK, keyToAdminPK } = my(this.facets.nameHub);
+          const { keyToValue, keyToAdmin, updateCallback } = this.state;
 
-          assert.typeof(key, 'string');
-          /** @type {[LegacyMap<string, NameRecord>, unknown][]} */
+          /** @type {[LegacyMap<string, PromiseKit<unknown>>, MapStore<string, unknown>, unknown][]} */
           const valueMapEntries = [
-            [keyToAdminRecord, adminValue], // The optional admin goes in the admin record.
-            [keyToRecord, newValue], // The value goes in the normal record.
+            [keyToAdminPK, keyToAdmin, adminValue],
+            [keyToPK, keyToValue, newValue],
           ];
-          for (const [map, value] of valueMapEntries) {
-            const record = harden({ value });
-            if (map.has(key)) {
-              const old = map.get(key);
-              if (old.resolve) {
-                old.resolve(value);
-              }
-              map.set(key, record);
+          for (const [pmap, vmap, value] of valueMapEntries) {
+            if (pmap.has(key)) {
+              const old = pmap.get(key);
+              old.resolve(value);
+            } else if (vmap.has(key)) {
+              vmap.set(key, value);
             } else {
-              map.init(key, record);
+              vmap.init(key, value);
             }
           }
-          if (keyToValue.has(key)) {
-            keyToValue.set(key, newValue);
-          } else {
-            keyToValue.init(key, newValue);
-          }
-          updated(updateCallback, keyToRecord);
+
+          const { nameHub } = this.facets;
+          updated(updateCallback, nameHub);
         },
         async lookupAdmin(...path) {
           const { nameAdmin } = this.facets;
-          const { keyToAdminRecord } = my(this.facets.nameHub);
-
           if (path.length === 0) {
             return nameAdmin;
           }
+
+          const { keyToAdmin } = this.state;
+          const { keyToAdminPK } = my(this.facets.nameHub);
           const [first, ...remaining] = path;
-          const record = keyToAdminRecord.get(first);
+
           /** @type {any} */
-          const firstValue = record.promise || record.value;
+          const firstValue = keyToAdmin.has(first)
+            ? keyToAdmin.get(first)
+            : keyToAdminPK.get(first).promise;
+
           if (remaining.length === 0) {
             return firstValue;
           }
           return E(firstValue).lookupAdmin(...remaining);
         },
         async delete(key) {
-          const { keyToRecord, keyToAdminRecord } = my(this.facets.nameHub);
-          const { keyToValue, updateCallback } = this.state;
-          for (const map of [keyToAdminRecord, keyToRecord]) {
-            if (map.has(key)) {
+          const { keyToPK, keyToAdminPK } = my(this.facets.nameHub);
+          const { keyToValue, keyToAdmin, updateCallback } = this.state;
+          for (const pmap of [keyToAdminPK, keyToPK]) {
+            if (pmap.has(key)) {
               // Reject only if already exists.
-              const old = map.get(key);
-              if (old.reject) {
-                old.reject(Error(`Value has been deleted`));
-                // Silence unhandled rejections.
-                if (old.promise) {
-                  void old.promise.catch(_ => {});
-                }
-              }
+              const old = pmap.get(key);
+              old.reject(Error(`Value has been deleted`));
+              // Silence unhandled rejections.
+              void old.promise.catch(_ => {});
             }
           }
-          if (keyToValue.has(key)) {
-            keyToValue.delete(key);
+          for (const map of [keyToValue, keyToAdmin, keyToPK, keyToAdminPK]) {
+            if (map.has(key)) {
+              map.delete(key);
+            }
           }
-          try {
-            // This delete may throw.  Reflect it to callers.
-            keyToRecord.delete(key);
-          } finally {
-            keyToAdminRecord.delete(key);
-            updated(updateCallback, keyToRecord);
-          }
+          const { nameHub } = this.facets;
+          updated(updateCallback, nameHub);
         },
         readonly() {
           const { nameHub } = this.facets;
