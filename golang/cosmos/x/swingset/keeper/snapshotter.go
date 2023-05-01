@@ -179,7 +179,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		_, err = snapshotter.blockingSend(action)
 
 		if err != nil {
-			logger.Error("failed to discard of swingset snapshot", "err", err)
+			logger.Error("failed to discard swingset snapshot", "err", err)
 		}
 
 		snapshotter.activeSnapshot = nil
