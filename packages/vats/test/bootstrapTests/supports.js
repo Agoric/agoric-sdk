@@ -388,8 +388,37 @@ export const makeSwingsetTestKit = async (
 
   console.timeEnd('makeSwingsetTestKit');
 
+  let currentTime = 0;
+  const setTime = time => {
+    currentTime = time;
+    return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+  /**
+   *
+   * @param {number} n
+   * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
+   */
+  const advanceTime = (n, unit) => {
+    const multiplier = {
+      seconds: 1,
+      minutes: 60,
+      hours: 60 * 60,
+      days: 60 * 60 * 24,
+    };
+    currentTime += multiplier[unit] * n;
+    return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
-  return { controller, runUtils, storage, shutdown, timer };
+  return {
+    advanceTime,
+    controller,
+    runUtils,
+    setTime,
+    shutdown,
+    storage,
+    timer,
+  };
 };
