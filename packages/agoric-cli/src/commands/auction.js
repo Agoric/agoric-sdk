@@ -46,6 +46,7 @@ export const makeAuctionCommand = (
       'how often to start auctions',
       BigInt,
     )
+    .option('--price-lock-period <seconds>', 'price lock period', BigInt)
     .option('--clock-step <seconds>', 'descending clock frequency', BigInt)
     .option(
       '--starting-rate <basis-points>',
@@ -84,6 +85,7 @@ export const makeAuctionCommand = (
        *   startingRate?: bigint,
        *   lowestRate?: bigint,
        *   discountStep?: bigint,
+       *   priceLockPeriod?: bigint,
        *   offerId: string,
        *   deadline: number,
        * }} opts
@@ -123,6 +125,9 @@ export const makeAuctionCommand = (
           ...(opts.startingRate && { StartingRate: opts.startingRate }),
           ...(opts.lowestRate && { LowestRate: opts.lowestRate }),
           ...(opts.discountStep && { DiscountStep: opts.discountStep }),
+          ...(opts.priceLockPeriod && {
+            PriceLockPeriod: toRel(opts.priceLockPeriod),
+          }),
         };
 
         if (Object.keys(params).length === 0) {
