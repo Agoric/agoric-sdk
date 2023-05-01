@@ -21,6 +21,9 @@ import {
 
 import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
 
+import v8 from 'node:v8';
+import process from 'node:process';
+
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too
  * high cardinality for us unless we can somehow limit the number of active
@@ -294,7 +297,8 @@ export function exportKernelStats({
   attributes = {},
   inboundQueueMetrics,
 }) {
-  const kernelStatsMetrics = new Map();
+  const kernelStatsMetrics = new Set();
+  const kernelStatsCounters = new Map();
   const expectedKernelStats = new Set();
 
   function warnUnexpectedKernelStat(key) {
@@ -319,25 +323,41 @@ export function exportKernelStats({
     return kernelStatsCache;
   };
 
-  KERNEL_STATS_SUM_METRICS.forEach(({ key, name, ...options }) => {
+  KERNEL_STATS_SUM_METRICS.forEach(({ key, name, sub, ...options }) => {
     expectedKernelStats.add(key);
-    const counter = metricMeter.createObservableCounter(name, options);
+    let counter = kernelStatsCounters.get(name);
+    if (!counter) {
+      counter = metricMeter.createObservableCounter(name, options);
+      kernelStatsCounters.set(name, counter);
+    }
+    const reportedAttributes = { ...attributes };
+    if (sub) {
+      reportedAttributes[sub.dimension] = sub.value;
+    }
     counter.addCallback(observableResult => {
-      observableResult.observe(getKernelStats()[key], attributes);
+      observableResult.observe(getKernelStats()[key], reportedAttributes);
     });
-    kernelStatsMetrics.set(key, counter);
+    kernelStatsMetrics.add(key);
   });
 
-  KERNEL_STATS_UPDOWN_METRICS.forEach(({ key, name, ...options }) => {
+  KERNEL_STATS_UPDOWN_METRICS.forEach(({ key, name, sub, ...options }) => {
     expectedKernelStats.add(key);
     expectedKernelStats.add(`${key}Up`);
     expectedKernelStats.add(`${key}Down`);
     expectedKernelStats.add(`${key}Max`);
-    const counter = metricMeter.createObservableUpDownCounter(name, options);
+    let counter = kernelStatsCounters.get(name);
+    if (!counter) {
+      counter = metricMeter.createObservableUpDownCounter(name, options);
+      kernelStatsCounters.set(name, counter);
+    }
+    const reportedAttributes = { ...attributes };
+    if (sub) {
+      reportedAttributes[sub.dimension] = sub.value;
+    }
     counter.addCallback(observableResult => {
-      observableResult.observe(getKernelStats()[key], attributes);
+      observableResult.observe(getKernelStats()[key], reportedAttributes);
     });
-    kernelStatsMetrics.set(key, counter);
+    kernelStatsMetrics.add(key);
   });
 
   if (inboundQueueMetrics) {
@@ -359,6 +379,46 @@ export function exportKernelStats({
         );
       });
     }
+  }
+
+  let heapStatsLast = 0;
+  let heapStatsCache = v8.getHeapStatistics();
+  const getHeapStats = () => {
+    const now = Date.now();
+    if (now - heapStatsLast >= 800) {
+      heapStatsLast = now;
+      heapStatsCache = v8.getHeapStatistics();
+    }
+    return heapStatsCache;
+  };
+
+  for (const key of Object.keys(heapStatsCache)) {
+    const name = `heapStats_${key}`;
+    const options = { description: 'v8 kernel heap statistic' };
+    const counter = metricMeter.createObservableUpDownCounter(name, options);
+    counter.addCallback(observableResult => {
+      observableResult.observe(getHeapStats()[key], attributes);
+    });
+  }
+
+  let memoryUsageLast = 0;
+  let memoryUsageCache = process.memoryUsage();
+  const getMemoryUsage = () => {
+    const now = Date.now();
+    if (now - memoryUsageLast >= 800) {
+      memoryUsageLast = now;
+      memoryUsageCache = process.memoryUsage();
+    }
+    return memoryUsageCache;
+  };
+
+  for (const key of Object.keys(memoryUsageCache)) {
+    const name = `memoryUsage_${key}`;
+    const options = { description: 'kernel process memory statistic' };
+    const counter = metricMeter.createObservableUpDownCounter(name, options);
+    counter.addCallback(observableResult => {
+      observableResult.observe(getMemoryUsage()[key], attributes);
+    });
   }
 
   function checkKernelStats(stats) {
