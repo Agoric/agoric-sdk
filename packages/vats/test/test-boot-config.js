@@ -7,7 +7,7 @@ import path from 'path';
 
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
-import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { ParametersShape as BootParametersShape } from '../src/core/boot-psm.js';
 
@@ -71,7 +71,7 @@ const makeTestContext = async () => {
   const asset = (...ps) => fsPromises.readFile(pathResolve(...ps), 'utf-8');
 
   const cacheDir = pathResolve('..', 'bundles');
-  const bundleCache = await makeNodeBundleCache(cacheDir, {}, s => import(s));
+  const bundleCache = await provideBundleCache(cacheDir, {}, s => import(s));
 
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });

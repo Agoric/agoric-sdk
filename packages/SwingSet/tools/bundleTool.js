@@ -47,6 +47,9 @@ const toBundleName = n => `bundle-${n}.js`;
 /** @type {(n: string) => string} */
 const toBundleMeta = n => `bundle-${n}-meta.json`;
 
+/** @type {Map<string, Promise<*>>} */
+const providedCaches = new Map();
+
 /**
  *
  * @param {ReturnType<typeof makeFileWriter>} wr
@@ -214,6 +217,7 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
 };
 
 /**
+ * Make a new bundle cache for the destination. If there is already one for that destination, error.
  *
  * @param {string} dest
  * @param {{ format?: string, dev?: boolean }} options
@@ -236,6 +240,25 @@ export const makeNodeBundleCache = async (dest, options, loadModule) => {
   const destWr = makeFileWriter(dest, { fs, path });
   return makeBundleCache(destWr, options, cwd, readPowers);
 };
+
+/**
+ * Make a new bundle cache for the destination. If there is already one for that destination, error.
+ *
+ * @param {string} dest
+ * @param {{ format?: string, dev?: boolean }} options
+ * @param {(id: string) => Promise<any>} loadModule
+ */
+export const provideBundleCache = (dest, options, loadModule) => {
+  const uniqueDest = [dest, options.format, options.dev].join('-');
+  if (!providedCaches.has(uniqueDest)) {
+    providedCaches.set(
+      uniqueDest,
+      makeNodeBundleCache(dest, options, loadModule),
+    );
+  }
+  return providedCaches.get(uniqueDest);
+};
+harden(provideBundleCache);
 
 export const unsafeMakeBundleCache = dest =>
   makeNodeBundleCache(dest, {}, s => import(s));
