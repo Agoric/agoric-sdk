@@ -190,7 +190,6 @@
  *       stakeFactory: Promise<Installation<import('@agoric/inter-protocol/src/stakeFactory/stakeFactory.js').start>>,
  *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
- *       provisionPool: Promise<Installation<import('@agoric/vats/src/provisionPool.js').start>>,
  *     },
  *   },
  *   instance:{
