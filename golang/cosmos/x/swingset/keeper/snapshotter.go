@@ -64,11 +64,13 @@ type SwingStoreExporter interface {
 }
 
 type SwingsetSnapshotter struct {
-	app            *baseapp.BaseApp
-	logger         log.Logger
-	exporter       SwingStoreExporter
-	blockingSend   func(action vm.Jsonable) (string, error)
-	activeSnapshot *activeSnapshot
+	isConfigured      func() bool
+	takeSnapshot      func(height int64)
+	newRestoreContext func(height int64) sdk.Context
+	logger            log.Logger
+	exporter          SwingStoreExporter
+	blockingSend      func(action vm.Jsonable) (string, error)
+	activeSnapshot    *activeSnapshot
 }
 
 type snapshotAction struct {
@@ -96,7 +98,11 @@ func NewSwingsetSnapshotter(app *baseapp.BaseApp, exporter SwingStoreExporter, s
 	}
 
 	return SwingsetSnapshotter{
-		app:            app,
+		isConfigured: func() bool { return app.SnapshotManager() != nil },
+		takeSnapshot: app.Snapshot,
+		newRestoreContext: func(height int64) sdk.Context {
+			return app.NewUncachedContext(false, tmproto.Header{Height: height})
+		},
 		logger:         app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "snapshotter"),
 		exporter:       exporter,
 		blockingSend:   blockingSend,
@@ -114,7 +120,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		return fmt.Errorf("snapshot already in progress for height %d", snapshotter.activeSnapshot.height)
 	}
 
-	if snapshotter.app.SnapshotManager() == nil {
+	if !snapshotter.isConfigured() {
 		return fmt.Errorf("snapshot manager not configured")
 	}
 
@@ -156,7 +162,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		// `WaitUntilSnapshotStarted` will no longer block.
 		close(startedResult)
 
-		snapshotter.app.Snapshot(height)
+		snapshotter.takeSnapshot(height)
 
 		// Check whether the cosmos Snapshot() method successfully handled our extension
 		if snapshotter.activeSnapshot.retrieved {
@@ -344,7 +350,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 		return snapshots.ErrUnknownFormat
 	}
 
-	ctx := snapshotter.app.NewUncachedContext(false, tmproto.Header{Height: int64(height)})
+	ctx := snapshotter.newRestoreContext(int64(height))
 
 	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", height))
 	if err != nil {
