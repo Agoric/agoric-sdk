@@ -35,8 +35,10 @@ func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 	for _, msg := range tx.GetMsgs() {
 		if camsg, ok := msg.(vm.ControllerAdmissionMsg); ok {
 			if err := camsg.CheckAdmissibility(ctx, ad.data); err != nil {
-				errors = append(errors, err)
+				// Only let admission errors interrupt the transaction if we're not
+				// simulating, otherwise our gas estimation will be too low.
 				if !simulate {
+					errors = append(errors, err)
 					defer func(msg sdk.Msg) {
 						telemetry.IncrCounterWithLabels(
 							[]string{"tx", "ante", "admission_refused"},

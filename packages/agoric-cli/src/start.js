@@ -60,7 +60,7 @@ const GAS_ADJUSTMENT = '1.2';
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
 export default async function startMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, spawn, process } = powers;
+  const { anylogger, fs, spawn, now, process } = powers;
   const log = anylogger('agoric:start');
 
   const SDK_IMAGE = `ghcr.io/agoric/agoric-sdk:${opts.dockerTag}`;
@@ -374,7 +374,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (exitStatus) {
         return exitStatus;
       }
-      exitStatus = await fs.writeFile(`${genesisFile}.stamp`, `${Date.now()}`);
+      exitStatus = await fs.writeFile(`${genesisFile}.stamp`, `${now()}`);
       if (exitStatus) {
         return exitStatus;
       }

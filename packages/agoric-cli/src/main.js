@@ -10,6 +10,7 @@ import {
 } from '@agoric/casting';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
+import runMain from './run.js';
 import publishMain from './main-publish.js';
 import initMain from './init.js';
 import installMain from './install.js';
@@ -292,16 +293,15 @@ const main = async (progname, rawArgs, powers) => {
         '',
       );
 
-  addRunOptions(
-    program
-      .command('run <script> [script-args...]')
-      .description(
-        'run a script with all your user privileges against the local Agoric VM',
-      ),
-  ).action(async (script, scriptArgs, _options, cmd) => {
-    const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
-    return subMain(deployMain, ['run', script], opts);
-  });
+  program
+    .command('run <script> [script-args...]')
+    .description(
+      'run a script with all your user privileges and some Agoric endowments',
+    )
+    .action(async (script, scriptArgs, _options, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
+      return subMain(runMain, ['run', script], opts);
+    });
 
   addRunOptions(
     program
@@ -319,26 +319,27 @@ const main = async (progname, rawArgs, powers) => {
     return subMain(deployMain, ['deploy', ...scripts], opts);
   });
 
-  addRunOptions(
-    program
-      .command('publish [bundle...]')
-      .option(
-        '-n, --node <rpcAddress>',
-        '[required] A bare IPv4 address or fully qualified URL of an RPC node',
-      )
-      .option(
-        '-h, --home <directory>',
-        "[required] Path to the directory containing ag-solo-mnemonic, for the publisher's wallet mnemonic",
-      )
-      .option(
-        '-c, --chain-id <chainID>',
-        'The ID of the destination chain, if not simply "agoric"',
-      )
-      .description('publish a bundle to a Cosmos chain'),
-  ).action(async (bundles, _options, cmd) => {
-    const opts = { ...program.opts(), ...cmd.opts() };
-    return subMain(publishMain, ['publish', ...bundles], opts);
-  });
+  program
+    .command('publish [bundle...]')
+    .option(
+      '-c, --chain-id <chainID>',
+      'The ID of the destination chain',
+      'agoriclocal',
+    )
+    .option(
+      '-n, --node <rpcAddress>',
+      'A bare IPv4 address or fully qualified URL of an RPC node',
+      'http://localhost:26657',
+    )
+    .option(
+      '-h, --home <directory>',
+      "[required] Path to the directory containing ag-solo-mnemonic, for the publisher's wallet mnemonic",
+    )
+    .description('publish a bundle to a Cosmos chain')
+    .action(async (bundles, _options, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(publishMain, ['publish', ...bundles], opts);
+    });
 
   program.addCommand(await makeWalletCommand());
 

@@ -12,9 +12,12 @@ const computeSha512 = bytes => {
 
 export const installInPieces = async (
   bundle,
-  bundler,
+  bundlerOrGetter,
   { maxBytesInFlight = 800_000, log = console.log, persist = false } = {},
 ) => {
+  const bundler =
+    typeof bundlerOrGetter === 'function' ? bundlerOrGetter() : bundlerOrGetter;
+
   // It would be nice to detect evaluation errors early like this:
   //   await importBundle(bundle, { endowments });
   // but importBundle only works inside SwingSet; checking here
