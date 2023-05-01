@@ -135,6 +135,11 @@
   "vats": {
     "bootstrap": {
       "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
+      "parameters": {
+        "exportStorageSubtrees": [
+          "published.psm.IST"
+        ]
+      },
       "creationOptions": {
         "critical": true
       }
