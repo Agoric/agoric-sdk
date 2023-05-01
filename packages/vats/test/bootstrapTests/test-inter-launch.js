@@ -60,6 +60,8 @@ const makeTestContext = async t => {
     console.warn(pkg, 'running package script:', name);
     return execFileSync('yarn', ['run', name], { cwd: `../${pkg}` });
   };
+  const readPackageFile = (pkg, name) =>
+    fsAmbient.promises.readFile(`../${pkg}/${name}`, 'utf8');
 
   const { resolve: pathResolve } = pathAmbient;
   // TODO: set HOME to a test temp write space
@@ -73,6 +75,7 @@ const makeTestContext = async t => {
     agoricNamesRemotes,
     walletFactoryDriver,
     runPackageScript,
+    readPackageFile,
     cacheDir,
     loadJSON,
   };
@@ -119,16 +122,39 @@ const parseProposalParts = txt => {
 test.serial('make vaults launch proposal', async t => {
   const { runPackageScript, cacheDir } = t.context;
 
+  t.log('building proposal');
   t.log('@@test writes to', cacheDir);
+  // XXX use '@agoric/inter-protocol'?
   const out = await runPackageScript('inter-protocol', 'build:proposal-vaults');
   const built = parseProposalParts(out.toString());
-  t.log(built);
+  t.log('built', built.permit, built.script, built.bundles.length);
   t.true(built.bundles.length > 0);
 
-  const { controller, loadJSON } = t.context;
+  const { controller, loadJSON, readPackageFile } = t.context;
   for await (const bundlef of built.bundles) {
     const bundle = await loadJSON(bundlef);
     await controller.validateAndInstallBundle(bundle);
   }
-  t.fail('todo');
+  t.log('installed', built.bundles.length);
+
+  t.log('launching proposal');
+  const bridgeMessage = {
+    type: 'CORE_EVAL',
+    evals: [
+      {
+        json_permits: await readPackageFile('inter-protocol', built.permit),
+        js_code: await readPackageFile('inter-protocol', built.script),
+      },
+    ],
+  };
+  t.log({ bridgeMessage });
+  const { EV } = t.context.runUtils;
+  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+    'coreEvalBridgeHandler',
+  );
+  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  t.log('proposal executed');
+
+  t.log('check for working vaults system');
+  await EV.vat('bootstrap').consumeItem('reserveKit');
 });
