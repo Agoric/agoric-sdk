@@ -4,9 +4,11 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeMockChainStorageRoot } from '@agoric/inter-protocol/test/supports.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
-  makeAgoricNamesAccess,
   makePromiseSpaceForNameHub,
+  makeWellKnownSpaces,
 } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import {
@@ -16,26 +18,44 @@ import {
 import { makeBoard } from '../src/lib-board.js';
 import { makeAddressNameHubs } from '../src/core/basic-behaviors.js';
 import { makeNameHubKit } from '../src/nameHub.js';
+import { buildRootObject as buildAgoricNamesRoot } from '../src/vat-agoricNames.js';
+import { buildRootObject as buildProvisioningRoot } from '../src/vat-provisioning.js';
 
-test('publishAgoricNames publishes AMM instance', async t => {
-  const space = makePromiseSpace();
+test('publishAgoricNames exports instances to vstorage', async t => {
+  const space = makePromiseSpace({ log: t.log });
   const storageRoot = makeMockChainStorageRoot();
-  const { agoricNames, agoricNamesAdmin } = makeAgoricNamesAccess();
+  const zone = makeDurableZone(makeScalarBigMapStore('Z', { durable: true }));
+  const provider = buildAgoricNamesRoot(
+    undefined,
+    undefined,
+    zone.subZone('A').mapStore('A', { durable: true }),
+  );
+  const { agoricNames, agoricNamesAdmin } = provider.getNameHubKit();
+  await makeWellKnownSpaces(provider);
   const board = makeBoard();
   const marshaller = board.getPublishingMarshaller();
   space.produce.agoricNames.resolve(agoricNames);
   space.produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
   space.produce.chainStorage.resolve(storageRoot);
   space.produce.board.resolve(board);
+  const provisioning = buildProvisioningRoot(
+    undefined,
+    undefined,
+    zone.subZone('P').mapStore('P', { durable: true }),
+  );
+  space.produce.provisioning.resolve(provisioning);
+  const namedVat = { consume: { agoricNames: provider } };
+  /** @type {any} */
+  const powers = { ...space, namedVat };
 
   await Promise.all([
-    setupClientManager(/** @type {any} */ (space)),
-    makeAddressNameHubs(/** @type {any} */ (space)),
-    publishAgoricNames(/** @type {any} */ (space)),
+    setupClientManager(powers),
+    makeAddressNameHubs(powers),
+    publishAgoricNames(powers),
   ]);
   const ammInstance = makeHandle('instance');
   const instanceAdmin = await agoricNamesAdmin.lookupAdmin('instance');
-  instanceAdmin.update('amm', ammInstance);
+  await instanceAdmin.update('amm', ammInstance);
 
   await eventLoopIteration(); // wait for publication to settle
 
@@ -46,11 +66,6 @@ test('publishAgoricNames publishes AMM instance', async t => {
     ),
     [['amm', ammInstance]],
   );
-
-  // @@@@@@@@@
-  // await t.throwsAsync(() =>
-  //   instanceAdmin.update('non-passable', new Promise(() => {})),
-  // );
 });
 
 test('promise space reserves non-well-known names', async t => {

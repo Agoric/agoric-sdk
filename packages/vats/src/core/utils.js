@@ -321,25 +321,6 @@ export const makeAgoricNamesAccess = (
 };
 
 /**
- * @param {string} address
- */
-export const makeMyAddressNameAdminKit = address => {
-  // Create a name hub for this address.
-  const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
-
-  /** @type {import('../types').MyAddressNameAdmin} */
-  const myAddressNameAdmin = Far('myAddressNameAdmin', {
-    ...rawMyAddressNameAdmin,
-    getMyAddress: () => address,
-  });
-  // reserve space for deposit facet
-  // @@@@move to provision vat
-  void E(myAddressNameAdmin).reserve(WalletName.depositFacet);
-
-  return { nameHub, myAddressNameAdmin };
-};
-
-/**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
  * @param {import('@agoric/zone').Zone} [zone]

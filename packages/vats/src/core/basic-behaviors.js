@@ -6,8 +6,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
-import { makeNameHubKit } from '../nameHub.js';
-import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
+import { feeIssuerConfig } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import { PowerFlags } from '../walletFlags.js';
 
@@ -193,27 +192,31 @@ harden(makeBoard);
  * @param {BootstrapSpace} powers
  */
 export const makeAddressNameHubs = async ({
-  consume: { agoricNames: agoricNamesP, client },
+  consume: { agoricNames, client, provisioning: provisioningP },
   produce,
 }) => {
-  const agoricNames = await agoricNamesP;
+  const provisioning = await provisioningP;
+  if (!provisioning) {
+    console.warn('cannot makeAddressNameHubs without provisioning');
+    return;
+  }
 
-  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
-    makeNameHubKit();
+  const { namesByAddress, namesByAddressAdmin } = await E(
+    provisioning,
+  ).getNamesByAddressKit();
   produce.namesByAddress.resolve(namesByAddress);
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
-    const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-    myAddressNameAdmin.reserve(WalletName.depositFacet);
+    const { nameAdmin: myAddressNameAdmin } = E.get(
+      E(namesByAddressAdmin).provideChild(
+        address,
+        [WalletName.depositFacet],
+        address,
+      ),
+    );
 
-    // This may race against walletFactory.js/publishDepositFacet, so we are
-    // careful not to clobber the first nameHub that is used to update
-    // namesByAddressAdmin.
-    namesByAddressAdmin.default(address, nameHub, myAddressNameAdmin);
-
-    const actualAdmin = namesByAddressAdmin.lookupAdmin(address);
-    return { agoricNames, namesByAddress, myAddressNameAdmin: actualAdmin };
+    return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
   return E(client).assignBundle([perAddress]);
@@ -469,6 +472,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     consume: {
       agoricNames: 'agoricNames',
       client: true,
+      provisioning: 'provisioning',
     },
     produce: {
       namesByAddress: 'provisioning',
