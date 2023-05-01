@@ -1,8 +1,6 @@
 // @jessie-check
 
 import { Stable } from '@agoric/vats/src/tokens.js';
-// XXX move to econ-behaviors?
-import { addGovernorsToEconCharter } from './committee-proposal.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
@@ -103,7 +101,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
-  [addGovernorsToEconCharter.name]: {
+  [econBehaviors.addGovernorsToEconCharter.name]: {
     consume: {
       auctioneerKit: t,
       econCharterKit: t,

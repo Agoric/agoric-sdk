@@ -90,46 +90,6 @@ export const startEconCharter = async ({
 harden(startEconCharter);
 
 /**
- * Introduce charter to governed creator facets.
- *
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- */
-export const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
-  instance: {
-    consume: { reserve, VaultFactory, auctioneer },
-  },
-}) => {
-  const { creatorFacet } = E.get(econCharterKit);
-
-  await Promise.all(
-    [
-      {
-        label: 'reserve',
-        instanceP: reserve,
-        facetP: E.get(reserveKit).governorCreatorFacet,
-      },
-      {
-        label: 'VaultFactory',
-        instanceP: VaultFactory,
-        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
-      },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
-      },
-    ].map(async ({ label, instanceP, facetP }) => {
-      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
-
-      return E(creatorFacet).addInstance(instance, govFacet, label);
-    }),
-  );
-};
-
-harden(addGovernorsToEconCharter);
-
-/**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> }}} param1
  */
