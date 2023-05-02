@@ -45,6 +45,10 @@ const test = anyTest;
  * }} Context
  */
 
+/**
+ * @typedef {Awaited<ReturnType<subscriptionTracker<import('../../src/auction/auctionBook.js').BookDataNotification>>>} BookDataTracker
+ */
+
 const trace = makeTracer('Test AuctContract', false);
 
 const defaultParams = {
@@ -204,6 +208,28 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     return seat;
   };
 
+  /** @type {MapStore<Brand,BookDataTracker>} */
+  const bookDataTrackers = makeScalarMapStore('trackers');
+
+  /**
+   * @param {Brand} brand
+   * @returns {Promise<BookDataTracker>}
+   */
+  const getBookDataTracker = async brand => {
+    if (bookDataTrackers.has(brand)) {
+      return bookDataTrackers.get(brand);
+    }
+
+    /** @type {Promise<BookDataTracker>} */
+    const tracker = E.when(
+      E(publicFacet).getBookDataUpdates(brand),
+      subscription => subscriptionTracker(t, subscribeEach(subscription)),
+    );
+    // @ts-expect-error I don't know what it wants.
+    bookDataTrackers.init(brand, tracker);
+    return tracker;
+  };
+
   /**
    * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} issuerKit
    * @param {Amount<'nat'>} collateralAmount
@@ -225,6 +251,19 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
       issuerKit.issuer,
       collateralBrand.getAllegedName(),
     );
+
+    /** @type {BookDataTracker} */
+    const tracker = await getBookDataTracker(collateralBrand);
+    await tracker.assertInitial({
+      collateralAvailable: AmountMath.makeEmpty(collateralBrand),
+      currentPriceLevel: null,
+      proceedsRaised: undefined,
+      remainingProceedsGoal: null,
+      startCollateral: AmountMath.makeEmpty(collateralBrand),
+      startPrice: null,
+      startProceedsGoal: null,
+    });
+
     return depositCollateral(collateralAmount, issuerKit, limit);
   };
 
@@ -276,11 +315,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
         subscriptionTracker(t, subscribeEach(subscription)),
       );
     },
-    getBookDataTracker(brand) {
-      return E.when(E(publicFacet).getBookDataUpdates(brand), subscription =>
-        subscriptionTracker(t, subscribeEach(subscription)),
-      );
-    },
+    getBookDataTracker,
     getReserveBalance(keyword) {
       const reserveCF = E.get(reserveKit).creatorFacet;
       return E.get(E(reserveCF).getAllocations())[keyword];
@@ -881,20 +916,19 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
     collateral,
     collateral.make(100n),
   );
+
+  /** @type {BookDataTracker} */
+  const bookTracker = await driver.getBookDataTracker(collateral.brand);
+
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 100n },
+    startCollateral: { value: 100n },
+  });
+
   await driver.updatePriceAuthority(
     makeRatioFromAmounts(bid.make(11n), collateral.make(10n)),
   );
 
-  const bookTracker = await driver.getBookDataTracker(collateral.brand);
-  await bookTracker.assertInitial({
-    collateralAvailable: collateral.make(100n),
-    currentPriceLevel: null,
-    proceedsRaised: undefined,
-    remainingProceedsGoal: null,
-    startCollateral: collateral.make(100n),
-    startPrice: null,
-    startProceedsGoal: null,
-  });
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
@@ -1023,14 +1057,9 @@ test.serial('add assets to open auction', async t => {
   );
 
   const bookTracker = await driver.getBookDataTracker(collateral.brand);
-  await bookTracker.assertInitial({
-    collateralAvailable: collateral.make(1000n),
-    currentPriceLevel: null,
-    proceedsRaised: undefined,
-    remainingProceedsGoal: null,
-    startCollateral: collateral.make(1000n),
-    startPrice: null,
-    startProceedsGoal: null,
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 1000n },
+    startCollateral: { value: 1000n },
   });
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({

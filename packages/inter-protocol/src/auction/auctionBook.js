@@ -706,7 +706,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       },
     },
     {
-      finish: ({ state }) => {
+      finish: ({ state, facets }) => {
         const { collateralBrand, bidBrand, priceAuthority } = state;
         assertAllDefined({ collateralBrand, bidBrand, priceAuthority });
         void E.when(
@@ -739,6 +739,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             });
           },
         );
+        facets.helper.publishBookData();
       },
       stateShape: AuctionBookStateShape,
     },
