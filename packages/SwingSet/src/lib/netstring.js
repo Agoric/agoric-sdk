@@ -8,7 +8,6 @@ const COLON = 58;
 const COMMA = 44;
 
 /**
- *
  * @param {Buffer} data
  * @returns {Buffer} netstring-wrapped
  */

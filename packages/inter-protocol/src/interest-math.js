@@ -9,7 +9,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 /**
- *
  * @param {Ratio} currentCompoundedInterest as coefficient
  * @param {Ratio} previousCompoundedInterest as coefficient
  * @returns {Ratio} additional compounding since the previous
@@ -26,7 +25,6 @@ const calculateRelativeCompounding = (
 };
 
 /**
- *
  * @param {Amount<'nat'>} debtSnapshot
  * @param {Ratio} interestSnapshot as coefficient
  * @param {Ratio} currentCompoundedInterest as coefficient
@@ -50,7 +48,6 @@ export const calculateCurrentDebt = (
 };
 
 /**
- *
  * @param {Amount<'nat'>} debt
  * @param {Ratio} interestApplied
  * @returns {Amount<'nat'>}

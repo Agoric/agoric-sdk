@@ -152,7 +152,6 @@ export const mockSwingsetVats = mock => {
 };
 
 /**
- *
  * @param {(msg: string) => void} log
  */
 export const mockPsmBootstrapArgs = log => {

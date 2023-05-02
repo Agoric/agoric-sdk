@@ -148,7 +148,6 @@ const { Fail, quote: q } = assert;
  */
 
 /**
- *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {SharedParams} shared
  */

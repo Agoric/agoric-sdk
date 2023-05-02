@@ -21,7 +21,6 @@ import { queryBankBalances } from './queryBankBalances.js';
 const POLL_INTERVAL_MS = 6000;
 
 /**
- *
  * @param {ERef<import('@agoric/casting').Leader>} leader
  * @param {string} address
  * @param {import('@agoric/smart-wallet/src/marshal-contexts.js').ImportContext} context

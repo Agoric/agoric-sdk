@@ -35,7 +35,6 @@ const PUBLIC_TOPICS = {
 };
 
 /**
- *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */

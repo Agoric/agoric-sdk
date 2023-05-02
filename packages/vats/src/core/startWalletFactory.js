@@ -24,7 +24,6 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
 /**
- *
  * @param {{
  *   zoe: ERef<ZoeService>,
  *   governedContractInstallation: ERef<Installation>,

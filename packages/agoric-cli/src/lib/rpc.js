@@ -54,7 +54,6 @@ export const networkConfig = await getNetworkConfig(process.env);
 // console.warn('networkConfig', networkConfig);
 
 /**
- *
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config

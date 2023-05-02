@@ -17,7 +17,6 @@ import {
 /** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
 
 /**
- *
  * @param {import('anylogger').Logger} _logger
  * @param {{
  *   env?: Record<string, string|undefined>,

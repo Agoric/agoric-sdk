@@ -53,7 +53,6 @@ const installKeyGroups = {
 };
 
 /**
- *
  * @param {object} opts
  * @param {(i: I) => R} opts.publishRef
  * @param {(m: string, b: string, opts?: any) => I} opts.install
@@ -90,7 +89,6 @@ export const committeeProposalBuilder = async (
 };
 
 /**
- *
  * @param {object} opts
  * @param {(i: I) => R} opts.publishRef
  * @param {(m: string, b: string, opts?: any) => I} opts.install

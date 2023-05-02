@@ -79,7 +79,6 @@ function unhandledRejectionHandler(e, pr) {
 }
 
 /**
- *
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {Record<string, unknown>} deviceEndowments
  * @param {{

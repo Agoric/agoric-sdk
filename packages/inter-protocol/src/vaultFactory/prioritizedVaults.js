@@ -19,7 +19,6 @@ import {
 const trace = makeTracer('PVaults', false);
 
 /**
- *
  * @param {Amount<'nat'>} debtAmount
  * @param {Amount<'nat'>} collateralAmount
  * @returns {Ratio}
@@ -35,7 +34,6 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
 };
 
 /**
- *
  * @param {Vault} vault
  * @returns {Ratio}
  */

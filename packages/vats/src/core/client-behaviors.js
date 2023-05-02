@@ -23,7 +23,6 @@ function makeVattpFrom(vats) {
 // be in the DApp environment (or only in end-user), but we're not yet
 // making a distinction, so the user also gets them.
 /**
- *
  * @param {SoloVats & SwingsetVats} vats
  * @param {SoloDevices} devices
  * @param {ERef<VatAdminSvc>} vatAdminSvc

@@ -55,7 +55,6 @@ export const makeLookup =
   };
 
 /**
- *
  * @param {string[]} scripts
  * @param {{ allowUnsafePlugins: boolean, progname: string, rawArgs: string[], endowments?: Record<string, any> }} opts
  * @param {{ fs: import('fs/promises'), console: Console }} powers

@@ -77,7 +77,6 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
 };
 
 /**
- *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
  * makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,

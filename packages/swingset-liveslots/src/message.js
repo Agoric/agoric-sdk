@@ -113,7 +113,6 @@ export function insistVatDeliveryResult(vdr) {
 }
 
 /**
- *
  * @param {unknown} vso
  * @returns {asserts vso is VatSyscallObject}
  */

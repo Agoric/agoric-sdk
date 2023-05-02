@@ -56,7 +56,6 @@ import {
 // slots on the inbound (dispatch) path.
 
 /**
- *
  * @typedef { { getManager: (shutdown: () => Promise<void>,
  *                           makeSnapshot?: MakeSnapshot) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
