@@ -1,4 +1,5 @@
 import { M } from '@endo/patterns';
+import { TimestampShape } from '@agoric/time';
 
 // The purpose of this module is to provide snapshotted (and possibly stale)
 // copies of various patterns and guards from packages that this package
@@ -34,7 +35,7 @@ export const FullProposalShape = harden({
       waived: null,
       afterDeadline: {
         timer: M.eref(TimerShape),
-        deadline: M.nat(),
+        deadline: TimestampShape,
       },
     },
     {},

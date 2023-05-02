@@ -101,7 +101,6 @@ export const makeAuctionCommand = (
 
         const {
           AuctionStartDelay: {
-            // @ts-expect-error XXX RelativeTime includes raw bigint
             value: { timerBrand },
           },
         } = current;
