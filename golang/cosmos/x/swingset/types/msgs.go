@@ -31,7 +31,7 @@ var (
 const (
 	// bundleUncompressedSizeLimit is the (exclusive) limit on uncompressed bundle size.
 	// We must ensure there is an exclusive int64 limit in order to detect an underflow.
-	bundleUncompressedSizeLimit int64 = 10 * 1024 * 1024 // 20MB
+	bundleUncompressedSizeLimit int64 = 10 * 1024 * 1024 // 10MB
 )
 
 // Charge an account address for the beans associated with given messages and storage.
