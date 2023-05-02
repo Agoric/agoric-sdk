@@ -45,8 +45,8 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   const config = { ...configMinusGetDebt, getDebt };
 
   const periodObserver = Far('periodObserver', {
+    /** @type {(timestamp: import('@agoric/time/src/types.js').TimestampRecord) => void} */
     updateState: timestamp => {
-      timestamp = TimeMath.toAbs(timestamp);
       let updatedLoan = false;
       // we could calculate the number of required updates and multiply by a power
       // of the interest rate, but this seems easier to read.

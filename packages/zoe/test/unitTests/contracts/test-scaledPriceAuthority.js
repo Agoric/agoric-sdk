@@ -121,6 +121,7 @@ const makeScenario = async (t, initialPriceInCents) => {
 test('scaled price authority', async t => {
   const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
     await makeScenario(t);
+  const timerBrand = timer.getTimerBrand();
 
   const notifier = E(pa).makeQuoteNotifier(
     AmountMath.make(t.context.atom.brand, 10n ** 6n),
@@ -140,7 +141,7 @@ test('scaled price authority', async t => {
       amountIn: { brand: t.context.atom.brand, value: 10n ** 6n },
       amountOut: { brand: t.context.run.brand, value: 35_610_000n },
       timer,
-      timestamp: 0n,
+      timestamp: { timerBrand, absValue: 0n },
     },
   ]);
 
@@ -153,7 +154,7 @@ test('scaled price authority', async t => {
       amountIn: { brand: t.context.atomBrand, value: 10n ** 5n },
       amountOut: { brand: t.context.usdBrand, value: 35_6100n },
       timer,
-      timestamp: 0n,
+      timestamp: { timerBrand, absValue: 0n },
     },
   ]);
 
@@ -167,7 +168,7 @@ test('scaled price authority', async t => {
       amountIn: { brand: t.context.atom.brand, value: 1_000_000n },
       amountOut: { brand: t.context.run.brand, value: 32_430_100n },
       timer,
-      timestamp: 1n,
+      timestamp: { timerBrand, absValue: 1n },
     },
   ]);
 
@@ -179,7 +180,7 @@ test('scaled price authority', async t => {
       amountIn: { brand: t.context.atomBrand, value: 1_00000n },
       amountOut: { brand: t.context.usdBrand, value: 32_4301n },
       timer,
-      timestamp: 1n,
+      timestamp: { timerBrand, absValue: 1n },
     },
   ]);
 });
@@ -187,6 +188,7 @@ test('scaled price authority', async t => {
 test('mutableQuoteWhenLT: brands in/out match', async t => {
   const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
     await makeScenario(t);
+  const timerBrand = timer.getTimerBrand();
 
   const mutableQuote = E(pa).mutableQuoteWhenLT(
     AmountMath.make(t.context.atom.brand, 10n ** 6n),
@@ -206,7 +208,7 @@ test('mutableQuoteWhenLT: brands in/out match', async t => {
       amountIn: { brand: t.context.atomBrand, value: 10n ** 5n },
       amountOut: { brand: t.context.usdBrand, value: 35_6100n },
       timer,
-      timestamp: 0n,
+      timestamp: { timerBrand, absValue: 0n },
     },
   ]);
 
@@ -218,7 +220,7 @@ test('mutableQuoteWhenLT: brands in/out match', async t => {
       amountIn: { brand: t.context.atom.brand, value: 1_000_000n },
       amountOut: { brand: t.context.run.brand, value: 30_430_100n },
       timer,
-      timestamp: 1n,
+      timestamp: { timerBrand, absValue: 1n },
     },
   ]);
 
@@ -231,7 +233,7 @@ test('mutableQuoteWhenLT: brands in/out match', async t => {
       amountIn: { brand: t.context.atomBrand, value: 1_00000n },
       amountOut: { brand: t.context.usdBrand, value: 30_4301n },
       timer,
-      timestamp: 1n,
+      timestamp: { timerBrand, absValue: 1n },
     },
   ]);
 });
@@ -248,6 +250,7 @@ test('initialPrice', async t => {
   const { make } = AmountMath;
   const { atom: collateral, run: debt } = t.context;
   const { timer, pa } = await makeScenario(t, 12_34n);
+  const timerBrand = timer.getTimerBrand();
 
   t.log('vault manager makes unit quote notifier');
   const collateralUnit = await unitAmount(collateral.brand);
@@ -265,7 +268,7 @@ test('initialPrice', async t => {
         amountIn: { brand: collateral.brand, value: 100n },
         amountOut: { brand: debt.brand, value: 12_34n },
         timer,
-        timestamp: 0n,
+        timestamp: { timerBrand, absValue: 0n },
       },
     ],
     'check, for example, manager0.quotes',
@@ -284,7 +287,7 @@ test('initialPrice', async t => {
       amountIn: { brand: collateral.brand, value: 1_000_000n },
       amountOut: { brand: debt.brand, value: 35_610_000n },
       timer,
-      timestamp: 0n,
+      timestamp: { timerBrand, absValue: 0n },
     },
   ]);
 

@@ -11,7 +11,7 @@ import {
 } from '@agoric/ertp';
 import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
-import { TimestampValueShape } from '@agoric/time';
+import { TimestampShape } from '@agoric/time';
 
 // keywords have an initial cap
 export const KeywordShape = M.string();
@@ -81,7 +81,7 @@ export const FullProposalShape = harden({
       waived: null,
       afterDeadline: {
         timer: M.eref(TimerShape),
-        deadline: TimestampValueShape,
+        deadline: TimestampShape,
       },
     },
     {},

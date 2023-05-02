@@ -898,8 +898,8 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
-    nextDescendingStepTime: TimeMath.toAbs(170n, timerBrand),
-    nextStartTime: TimeMath.toAbs(170n, timerBrand),
+    nextDescendingStepTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
+    nextStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
   });
 
   const result = await E(liqSeat).getOfferResult();
@@ -907,7 +907,7 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
 
   await driver.advanceTo(167n);
   await scheduleTracker.assertChange({
-    activeStartTime: TimeMath.toAbs(170n, timerBrand),
+    activeStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
     nextStartTime: { absValue: 210n },
   });
 
@@ -983,7 +983,7 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
 
   await driver.advanceTo(210n, 'wait');
   await scheduleTracker.assertChange({
-    activeStartTime: TimeMath.toAbs(210n, timerBrand),
+    activeStartTime: TimeMath.coerceTimestampRecord(210n, timerBrand),
     nextDescendingStepTime: { absValue: 215n },
     nextStartTime: { absValue: 250n },
   });
@@ -1020,8 +1020,8 @@ test.serial('add assets to open auction', async t => {
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
-    nextDescendingStepTime: TimeMath.toAbs(170n, timerBrand),
-    nextStartTime: TimeMath.toAbs(170n, timerBrand),
+    nextDescendingStepTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
+    nextStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
   });
 
   const result = await E(liqSeat).getOfferResult();
@@ -1040,7 +1040,7 @@ test.serial('add assets to open auction', async t => {
   await bookTracker.assertChange({});
 
   await scheduleTracker.assertChange({
-    activeStartTime: TimeMath.toAbs(170n, timerBrand),
+    activeStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
     nextStartTime: { absValue: 210n },
   });
 

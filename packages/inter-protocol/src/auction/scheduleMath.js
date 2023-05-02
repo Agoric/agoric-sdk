@@ -48,7 +48,7 @@ export const computeRoundTiming = (params, baseTime) => {
   const targetDuration =
     TimeMath.compareRel(requestedDuration, freq) < 0
       ? requestedDuration
-      : TimeMath.subtractRelRel(freq, TimeMath.toRel(1n));
+      : TimeMath.subtractRelRel(freq, 1n);
   const steps = TimeMath.divideRelRel(targetDuration, clockStep);
   const duration = TimeMath.multiplyRelNat(clockStep, steps);
 

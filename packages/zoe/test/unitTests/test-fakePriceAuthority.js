@@ -17,6 +17,8 @@ import {
 } from '../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../zoeTestHelpers.js';
 
+const { coerceTimestampRecord } = TimeMath;
+
 const makeTestPriceAuthority = (brands, priceList, timer) =>
   makeFakePriceAuthority({
     actualBrandIn: brands.get('moola'),
@@ -30,6 +32,7 @@ test('priceAuthority quoteAtTime', async t => {
   const bucksBrand = brands.get('bucks');
   assert(bucksBrand);
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 55],
@@ -37,11 +40,11 @@ test('priceAuthority quoteAtTime', async t => {
   );
 
   const done = E(priceAuthority)
-    .quoteAtTime(2n, moola(5n), bucksBrand)
+    .quoteAtTime(toTS(2n), moola(5n), bucksBrand)
     .then(async quote => {
       assertAmountsEqual(t, moola(5n), getAmountIn(quote));
       assertAmountsEqual(t, bucks(55n * 5n), getAmountOut(quote));
-      t.is(2n, TimeMath.absValue(getTimestamp(quote)));
+      t.deepEqual(toTS(2n), getTimestamp(quote));
     });
 
   await E(manualTimer).tick(); // t 0->1, idx 0->0, p 20->55
@@ -56,6 +59,7 @@ test('priceAuthority quoteGiven', async t => {
   const bucksBrand = brands.get('bucks');
   assert(bucksBrand);
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 55],
@@ -65,7 +69,7 @@ test('priceAuthority quoteGiven', async t => {
   await E(manualTimer).tick();
   const quote = await E(priceAuthority).quoteGiven(moola(37n), bucksBrand);
   const quoteAmount = getPriceDescription(quote);
-  t.is(1n, TimeMath.absValue(quoteAmount.timestamp));
+  t.deepEqual(toTS(1n), quoteAmount.timestamp);
   t.deepEqual(bucks(37n * 20n), quoteAmount.amountOut);
 });
 
@@ -74,6 +78,7 @@ test('priceAuthority quoteWanted', async t => {
   const moolaBrand = brands.get('moola');
   assert(moolaBrand);
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 55],
@@ -83,7 +88,7 @@ test('priceAuthority quoteWanted', async t => {
   await E(manualTimer).tick();
   const quote = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400n));
   const quoteAmount = quote.quoteAmount.value[0];
-  t.is(1n, quoteAmount.timestamp);
+  t.deepEqual(toTS(1n), quoteAmount.timestamp);
   assertAmountsEqual(t, bucks(400n), quoteAmount.amountOut);
   assertAmountsEqual(t, moola(20n), quoteAmount.amountIn);
 });
@@ -95,6 +100,7 @@ test('priceAuthority paired quotes', async t => {
   const bucksBrand = brands.get('bucks');
   assert(bucksBrand);
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 55],
@@ -105,13 +111,13 @@ test('priceAuthority paired quotes', async t => {
 
   const quoteOut = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400n));
   const quoteOutAmount = quoteOut.quoteAmount.value[0];
-  t.is(1n, quoteOutAmount.timestamp);
+  t.deepEqual(toTS(1n), quoteOutAmount.timestamp);
   assertAmountsEqual(t, bucks(400n), quoteOutAmount.amountOut);
   assertAmountsEqual(t, moola(20n), quoteOutAmount.amountIn);
 
   const quoteIn = await E(priceAuthority).quoteGiven(moola(22n), bucksBrand);
   const quoteInAmount = quoteIn.quoteAmount.value[0];
-  t.is(1n, quoteInAmount.timestamp);
+  t.deepEqual(toTS(1n), quoteInAmount.timestamp);
   assertAmountsEqual(t, bucks(20n * 22n), quoteInAmount.amountOut);
   assertAmountsEqual(t, moola(22n), quoteInAmount.amountIn);
 });
@@ -119,6 +125,7 @@ test('priceAuthority paired quotes', async t => {
 test('priceAuthority quoteWhenGTE', async t => {
   const { moola, bucks, brands } = setup();
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 30, 25, 40],
@@ -129,9 +136,8 @@ test('priceAuthority quoteWhenGTE', async t => {
     .quoteWhenGTE(moola(1n), bucks(40n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
-      // @ts-expect-error could be TimestampRecord
-      t.is(4n, manualTimer.getCurrentTimestamp());
-      t.is(4n, quoteInAmount.timestamp);
+      t.deepEqual(toTS(4n), manualTimer.getCurrentTimestamp());
+      t.deepEqual(toTS(4n), quoteInAmount.timestamp);
       assertAmountsEqual(t, bucks(40n), quoteInAmount.amountOut);
       assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
@@ -146,6 +152,7 @@ test('priceAuthority quoteWhenGTE', async t => {
 test('priceAuthority quoteWhenLT', async t => {
   const { moola, bucks, brands } = setup();
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [40, 30, 29],
@@ -156,9 +163,8 @@ test('priceAuthority quoteWhenLT', async t => {
     .quoteWhenLT(moola(1n), bucks(30n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
-      // @ts-expect-error could be TimestampRecord
-      t.is(3n, manualTimer.getCurrentTimestamp());
-      t.is(3n, quoteInAmount.timestamp);
+      t.deepEqual(toTS(3n), manualTimer.getCurrentTimestamp());
+      t.deepEqual(toTS(3n), quoteInAmount.timestamp);
       assertAmountsEqual(t, bucks(29n), quoteInAmount.amountOut);
       assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
@@ -172,6 +178,7 @@ test('priceAuthority quoteWhenLT', async t => {
 test('priceAuthority quoteWhenGT', async t => {
   const { moola, bucks, brands } = setup();
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [40, 30, 41],
@@ -182,9 +189,8 @@ test('priceAuthority quoteWhenGT', async t => {
     .quoteWhenGT(moola(1n), bucks(40n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
-      // @ts-expect-error could be TimestampRecord
-      t.is(3n, manualTimer.getCurrentTimestamp());
-      t.is(3n, quoteInAmount.timestamp);
+      t.deepEqual(toTS(3n), manualTimer.getCurrentTimestamp());
+      t.deepEqual(toTS(3n), quoteInAmount.timestamp);
       assertAmountsEqual(t, bucks(41n), quoteInAmount.amountOut);
       assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
@@ -198,6 +204,7 @@ test('priceAuthority quoteWhenGT', async t => {
 test('priceAuthority quoteWhenLTE', async t => {
   const { moola, bucks, brands } = setup();
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = abs => coerceTimestampRecord(abs, manualTimer.getTimerBrand());
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [40, 26, 50, 25],
@@ -208,9 +215,8 @@ test('priceAuthority quoteWhenLTE', async t => {
     .quoteWhenLTE(moola(1n), bucks(25n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
-      t.is(4n, quoteInAmount.timestamp);
-      // @ts-expect-error could be TimestampRecord
-      t.is(4n, manualTimer.getCurrentTimestamp());
+      t.deepEqual(toTS(4n), quoteInAmount.timestamp);
+      t.deepEqual(toTS(4n), manualTimer.getCurrentTimestamp());
       assertAmountsEqual(t, bucks(25n), quoteInAmount.amountOut);
       assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });

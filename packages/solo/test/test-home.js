@@ -4,6 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import bundleSourceAmbient from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
+import { TimeMath } from '@agoric/time';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -146,7 +147,7 @@ test.serial('home.localTimerService makeNotifier', async t => {
 
   // Tests gets an actual localTimerService, which returns actual times. We
   // can't verify the actual time, so we compare to make sure it's increasing.
-  t.truthy(update2.value > update1.value);
+  t.truthy(TimeMath.compareAbs(update2.value, update1.value) > 0);
 });
 
 function makeHandler() {
@@ -177,7 +178,7 @@ test.serial('home.localTimerService makeRepeater', async t => {
   await E(notifier).getUpdateSince();
 
   t.truthy(handler.getCalls() >= 1);
-  t.truthy(handler.getArgs()[0] > timestamp);
+  t.truthy(TimeMath.compareAbs(handler.getArgs()[0], timestamp) > 0);
 });
 
 // =========================================

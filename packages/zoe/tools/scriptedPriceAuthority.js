@@ -2,6 +2,7 @@ import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { observeNotifier } from '@agoric/notifier';
+import { TimeMath } from '@agoric/time';
 import {
   natSafeMath,
   makeOnewayPriceAuthorityKit,
@@ -81,6 +82,7 @@ export function makeScriptedPriceAuthority(options) {
 
   const priceObserver = Far('priceObserver', {
     updateState: t => {
+      t = TimeMath.absValue(t);
       currentPrice =
         priceList[Number(Number(t / quoteInterval) % priceList.length)];
 

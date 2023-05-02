@@ -9,12 +9,12 @@ import { TimeMath } from '@agoric/time';
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 
 const timerBrand = Far('fake timer brand', {
-  isMyTimer: () => true,
+  isMyTimerService: () => true,
   isMyClock: () => true,
 });
 // const otherTimerBrand = Far('other fake timer brand', {});
 
-const ONE_DAY = TimeMath.toRel(60n * 60n * 24n, timerBrand);
+const ONE_DAY = TimeMath.coerceRelativeTimeRecord(60n * 60n * 24n, timerBrand);
 const ONE_MONTH = TimeMath.multiplyRelNat(ONE_DAY, 30n);
 // const ONE_YEAR = TimeMath.multiplyRelNat(ONE_MONTH, 12n);
 const BASIS_POINTS = 10000n;

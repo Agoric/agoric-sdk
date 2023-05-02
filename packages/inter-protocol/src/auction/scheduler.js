@@ -79,7 +79,7 @@ export const makeScheduler = async (
       now => {
         const nextSchedule = computeRoundTiming(
           params,
-          TimeMath.toAbs(now, timerBrand),
+          TimeMath.coerceTimestampRecord(now, timerBrand),
         );
         return { now, nextSchedule };
       },
@@ -147,7 +147,7 @@ export const makeScheduler = async (
       if (nextLock && TimeMath.compareAbs(now, nextLock) < 0) {
         const afterNow = TimeMath.addAbsRel(
           now,
-          TimeMath.toRel(1n, timerBrand),
+          TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
         );
         nextSchedule = computeRoundTiming(params, afterNow);
       }
@@ -223,7 +223,7 @@ export const makeScheduler = async (
 
     const after = TimeMath.addAbsRel(
       liveSchedule.endTime,
-      TimeMath.toRel(1n, timerBrand),
+      TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
     );
     nextSchedule = computeRoundTiming(params, after);
 
