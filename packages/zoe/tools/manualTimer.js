@@ -57,7 +57,6 @@ const nolog = (..._args) => {};
  * @param {ZoeManualTimerOptions} [options]
  * @returns {ManualTimer}
  */
-
 const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
   const { timeStep = 1n, eventLoopIteration, ...buildOptions } = options;
   assert.typeof(timeStep, 'bigint');
@@ -83,6 +82,7 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
 
   const setWakeup = (when, handler, cancelToken) => {
     const now = timerService.getCurrentTimestamp();
+    assert.typeof(now, 'object', 'manualTimer expects branded time records');
     log(`@@ schedule task for:${when}, currently: ${now} @@`);
     return timerService.setWakeup(when, handler, cancelToken);
   };

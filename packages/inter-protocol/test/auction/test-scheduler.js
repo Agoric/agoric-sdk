@@ -27,7 +27,6 @@ import {
 test('schedule start to finish', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
