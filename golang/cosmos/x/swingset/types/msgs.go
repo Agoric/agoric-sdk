@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
-	"math"
 	"strings"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -27,6 +26,12 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgProvision{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
+)
+
+const (
+	// bundleUncompressedSizeLimit is the (exclusive) limit on uncompressed bundle size.
+	// We must ensure there is an exclusive int64 limit in order to detect an underflow.
+	bundleUncompressedSizeLimit int64 = 10 * 1024 * 1024 // 20MB
 )
 
 // Charge an account address for the beans associated with given messages and storage.
@@ -343,8 +348,8 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 	if len(msg.CompressedBundle) > 0 && !(msg.UncompressedSize > 0) {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be positive")
 	}
-	if msg.UncompressedSize == math.MaxInt64 {
-		// must avoid the limit because we compute its successor in Uncompress()
+	if msg.UncompressedSize >= bundleUncompressedSizeLimit {
+		// must enforce a limit to avoid overflow when computing its successor in Uncompress()
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
 	}
 	// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
@@ -387,6 +392,7 @@ func (msg *MsgInstallBundle) Compress() error {
 // gzip-uncompressing it if necessary.
 // Returns an error (and ends uncompression early) if the uncompressed
 // size does not match the expected uncompressed size.
+// The successor of the uncompressed size must not overflow.
 func (msg *MsgInstallBundle) Uncompress() error {
 	if len(msg.Bundle) > 0 {
 		return nil
