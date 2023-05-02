@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Nat } from '@endo/nat';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
@@ -368,16 +368,13 @@ export const addBankAssets = async ({
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
-  const nameUpdater = Far('AssetHub', {
-    update: (name, val) => E(assetAdmin).update(name, val),
-  });
 
   const bridgeManager = await bridgeManagerP;
   const bankBridgeManager =
     bridgeManager && E(bridgeManager).register(BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bankBridgeManager,
-    nameUpdater,
+    assetAdmin,
   );
   bankManager.resolve(bankMgr);
 
