@@ -79,6 +79,7 @@ export const start = async (zcf, privateArgs) => {
       Fail`${apiMethodName} is not a governed API.`;
 
     const { positive } = makeApiInvocationPositions(apiMethodName, methodArgs);
+    assert.typeof(apiMethodName, 'string');
 
     return E(E(governedCF).getGovernedApis())
       [apiMethodName](...methodArgs)

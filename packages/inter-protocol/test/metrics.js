@@ -1,4 +1,8 @@
-import { makeNotifierFromAsyncIterable, subscribeEach } from '@agoric/notifier';
+import {
+  makeNotifierFromAsyncIterable,
+  makeNotifierFromSubscriber,
+  subscribeEach,
+} from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
 
@@ -11,11 +15,22 @@ const trace = makeTracer('TestMetrics', false);
 
 /**
  * @template {object} N
+ * @param {AsyncIterable<N, N> | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} mixed
+ */
+const asNotifier = mixed => {
+  if ('subscriber' in mixed) {
+    return makeNotifierFromSubscriber(mixed.subscriber);
+  }
+  return makeNotifierFromAsyncIterable(mixed);
+};
+
+/**
+ * @template {object} N
  * @param {import('ava').ExecutionContext} t
- * @param {AsyncIterable<N, N>} subscription
+ * @param {AsyncIterable<N, N> | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} subscription
  */
 export const subscriptionTracker = async (t, subscription) => {
-  const metrics = makeNotifierFromAsyncIterable(subscription);
+  const metrics = asNotifier(subscription);
   /** @type {UpdateRecord<N>} */
   let notif;
   const getLastNotif = () => notif;
