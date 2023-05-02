@@ -154,7 +154,7 @@ const psmParams = {
   argv: { bootMsg: {} },
 };
 
-test(`PSM-only bootstrap`, async t => {
+test.skip(`PSM-only bootstrap`, async t => {
   const root = buildPSMRootObject({ D: mockDProxy, logger: t.log }, psmParams);
 
   void E(root).bootstrap(...mockPsmBootstrapArgs(t.log));

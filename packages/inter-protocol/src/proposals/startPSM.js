@@ -422,18 +422,6 @@ export const PSM_GOV_MANIFEST = {
       },
     },
   },
-  [startEconCharter.name]: {
-    consume: { zoe: 'zoe', agoricNames: true },
-    produce: {
-      econCharterKit: 'econCommitteeCharter',
-    },
-    installation: {
-      consume: { binaryVoteCounter: 'zoe', econCommitteeCharter: 'zoe' },
-    },
-    instance: {
-      produce: { econCommitteeCharter: 'econCommitteeCharter' },
-    },
-  },
 };
 
 export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
