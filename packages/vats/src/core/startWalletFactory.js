@@ -195,9 +195,11 @@ export const startWalletFactory = async (
     harden({
       agoricNames,
       board,
-      assetPublisher: Far('AssetPublisher', {
-        getAssetSubscription: () => E(poolBank).getAssetSubscription(),
-      }),
+      // CAUTION: this provides the walletFactory with
+      // the capability to spend from the provisino pool.
+      // TODO(#5885): vbank should provide a facet attenuated
+      // to only provide getAssetSubscription
+      assetPublisher: poolBank,
     }),
   );
   /** @type {WalletFactoryStartResult} */
