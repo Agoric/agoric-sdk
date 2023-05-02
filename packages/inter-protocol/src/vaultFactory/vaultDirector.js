@@ -137,6 +137,7 @@ export const prepareVaultDirector = (
       wake: timestamp => func(timestamp),
     });
   };
+  const managersNode = E(storageNode).makeChildNode('managers');
 
   const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
 
@@ -296,7 +297,7 @@ export const prepareVaultDirector = (
 
           // counter to be incremented at end of addVaultType
           const managerId = `manager${state.managerCounter}`;
-          const managerStorageNode = await E(storageNode).makeChildNode(
+          const managerStorageNode = await E(managersNode).makeChildNode(
             managerId,
           );
 

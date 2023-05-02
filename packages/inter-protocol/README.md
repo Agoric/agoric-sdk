@@ -45,11 +45,12 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
     - `vaultFactory` - [snapshot of details](./test/vaultFactory/snapshots/test-vaultFactory.js.md)
         - `governance`
         - `metrics`
-        - `manager0`
-            - `metrics`
-            - `governance`
-            - `vaults`
-              - `vault0`
+        - `managers`
+          - `manager0`
+              - `metrics`
+              - `governance`
+              - `vaults`
+                - `vault0`
     - `auction` - [snapshot of details](./test/auction/snapshots/test-auctionContract.js.md)
         - `schedule`
         - `governance`
@@ -84,9 +85,9 @@ Once you see a string like `block 17 commit` then the chain is available. In ano
 # shows keys of the vaultFactory
 agd query vstorage keys 'published.vaultFactory'
 # lists vaults
-agd query vstorage keys 'published.vaultFactory.manager0.vaults'
+agd query vstorage keys 'published.vaultFactory.managers.manager0.vaults'
 # follow metrics
-agoric follow :published.vaultFactory.manager0.metrics
+agoric follow :published.vaultFactory.managers.manager0.metrics
 ```
 
 Start a new terminal to get a prompt.
