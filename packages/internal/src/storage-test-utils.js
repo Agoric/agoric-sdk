@@ -75,9 +75,13 @@ harden(makeFakeStorageKit);
 export const makeMockChainStorageRoot = () => {
   const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
 
-  const defaultMarshaller = makeMarshal(undefined, (_slotId, iface) => ({
-    iface,
-  }));
+  const defaultMarshaller = makeMarshal(
+    undefined,
+    (_slotId, iface = 'unknown') =>
+      Far(iface, {
+        toJSON: () => ({ iface }),
+      }),
+  );
 
   return Far('mockChainStorage', {
     ...bindAllMethods(rootNode),

@@ -18,7 +18,7 @@ import {
   QuorumRule,
   coerceQuestionSpec,
 } from '../../src/index.js';
-import { documentStorageSchema } from '../../tools/storageDoc.js';
+import { documentStorageSchema, encromulate } from '../../tools/storageDoc.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -81,7 +81,7 @@ test('committee-open question:one', async t => {
     maxChoices: 1,
     maxWinners: 1,
     closingRule: {
-      timer: buildManualTimer(t.log),
+      timer: harden(buildManualTimer(t.log)),
       deadline: 2n,
     },
     quorumRule: QuorumRule.MAJORITY,
@@ -95,13 +95,15 @@ test('committee-open question:one', async t => {
   // @ts-expect-error cast
   const issue = questionDetails.issue;
   t.deepEqual(issue.text, 'why');
+  debugger;//
+  const body = encromulate(mockChainStorageRoot.getBody(
+    'mockChainStorageRoot.thisElectorate.latestQuestion',
+  ));
   t.deepEqual(
-    mockChainStorageRoot.getBody(
-      'mockChainStorageRoot.thisElectorate.latestQuestion',
-    ),
+    body,
     {
       closingRule: {
-        deadline: 2n,
+        deadline: 2,
         timer: {
           iface: 'Alleged: ManualTimer',
         },

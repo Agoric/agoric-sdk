@@ -1,5 +1,13 @@
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
+export const encromulate = thing => JSON.parse(JSON.stringify(thing, (_, val) => {
+  if (typeof val === 'bigint') {
+    return Number(val);
+  } else {
+    return val;
+  }
+}));
+
 /**
  * @param {import('ava').ExecutionContext<unknown>} t
  * @param {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} storage
@@ -17,7 +25,7 @@ export const documentStorageSchema = async (t, storage, opts) => {
       : { pattern: 'mockChainStorageRoot.', replacement: 'published.' };
   const illustration = [...storage.keys()].sort().map(
     /** @type {(k: string) => [string, unknown]} */
-    key => [key.replace(pattern, replacement), storage.getBody(key)],
+    key => [key.replace(pattern, replacement), encromulate(storage.getBody(key))],
   );
   const pruned = illustration.filter(
     'node' in opts
