@@ -31,12 +31,7 @@ export {};
  */
 
 /**
- * @template {{}} [Aux={}]
- * @typedef {Aux & NameAdminI} NameAdmin
- */
-
-/**
- * @typedef {object} NameAdminI write access to a node in a name hierarchy
+ * @typedef {object} NameAdmin write access to a node in a name hierarchy
  *
  * @property {(key: string, reserved?: string[], ...aux: unknown[]) => Promise<NameHubKit>} provideChild
  * @property {(key: string) => void} reserve Mark a key as reserved; will
@@ -70,7 +65,7 @@ export {};
  */
 
 /**
- * @typedef {NameAdmin<{ getMyAddress(): string }>} MyAddressNameAdmin
+ * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
  */
 
 /**

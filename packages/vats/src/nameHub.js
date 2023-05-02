@@ -15,9 +15,10 @@ const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
 
 // XXX how to extend exo objects?
-const AdminAux = harden({
+const AdminAux = /** @type {const} */ ({
   getMyAddress: M.call().returns(M.or(M.string(), M.undefined())),
 });
+harden(AdminAux);
 
 const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
@@ -94,6 +95,8 @@ export const prepareNameHubKit = (zone = heapZone) => {
   /** @param {{}} me */
   const my = me => provideWeak(ephemera, me, init1);
 
+  // XXX why did zone.exoClassKit() lose its type?
+  /** @type {(...aux: unknown[]) => import('./types').NameHubKit } */
   const makeNameHub = zone.exoClassKit(
     'NameHubKit',
     NameHubIKit,
@@ -160,11 +163,13 @@ export const prepareNameHubKit = (zone = heapZone) => {
           return nameHub.entries().map(([k, _v]) => k);
         },
       },
-      /** @type {import('./types').NameAdmin} */
+      /** @type {import('./types').MyAddressNameAdmin} */
       nameAdmin: {
         // XXX how to extend exo objects?
-        [keys(AdminAux)[0]]() {
-          return this.state.auxProperties[0];
+        getMyAddress() {
+          const addr = this.state.auxProperties[0];
+          assert.typeof(addr, 'string');
+          return addr;
         },
         async provideChild(key, reserved = [], ...aux) {
           const { nameAdmin } = this.facets;
