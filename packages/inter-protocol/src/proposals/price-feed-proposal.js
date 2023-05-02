@@ -39,7 +39,12 @@ const sanitizePathSegment = name => {
  * @returns {Promise<[Brand<'nat'>, Brand<'nat'>]>}
  */
 export const ensureOracleBrands = async (
-  { consume: { agoricNamesAdmin } },
+  {
+    namedVat: {
+      consume: { agoricNames },
+    },
+    oracleBrand: { produce: oracleBrandProduce },
+  },
   {
     options: {
       priceFeedOptions: {
@@ -54,29 +59,18 @@ export const ensureOracleBrands = async (
   },
 ) => {
   trace('ensureOracleBrands');
-  /** @type {Promise<import('@agoric/vats').NameAdmin>} */
-  const obAdmin = E(agoricNamesAdmin).lookupAdmin('oracleBrand');
 
-  /** @type {(brand: ERef<Brand<'nat'> | undefined>, name: string, decimals: string) => Promise<Brand<'nat'>>} */
   const updateFreshBrand = async (brand, name, decimals) => {
-    const b = await brand;
-    if (b) {
-      // Don't update if it was already set.
-      return b;
+    let b = await brand;
+    if (!b) {
+      // not 1st await
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      b = await E(agoricNames).provideBrandIdentity(
+        name,
+        harden({ decimalPlaces: parseInt(decimals, 10) }),
+      );
     }
-    const freshBrand = makeIssuerKit(
-      name,
-      undefined,
-      harden({ decimalPlaces: parseInt(decimals, 10) }),
-    ).brand;
-
-    if (!name) {
-      // Don't update unnamed brands.
-      return freshBrand;
-    }
-
-    // Atomically update if not already set.
-    return E(obAdmin).default(name, freshBrand);
+    oracleBrandProduce[name].resolve(b);
   };
 
   return Promise.all([
@@ -286,8 +280,11 @@ export const getManifestForPriceFeed = async (
       },
     },
     [ensureOracleBrands.name]: {
-      consume: {
-        agoricNamesAdmin: t,
+      namedVat: {
+        consume: { agoricNames: 'agoricNames' },
+      },
+      oracleBrand: {
+        produce: t,
       },
     },
   },
