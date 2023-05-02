@@ -143,7 +143,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
           ));
           // console.debug('readAt returned', { blockHeight });
         } catch (err) {
-          if ('log' in err && err.log.match(/unknown request/)) {
+          if (err.message.match(/unknown request/)) {
             // console.error(err);
             break;
           }
