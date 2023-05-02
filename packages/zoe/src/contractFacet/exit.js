@@ -1,6 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
 import { M, initEmpty } from '@agoric/store';
+import { TimestampShape } from '@agoric/time';
 
 import {
   isOnDemandExitRule,
@@ -12,7 +13,7 @@ const { Fail, quote: q } = assert;
 
 const ExitObjectI = M.interface('ExitObject', { exit: M.call().returns() });
 const WakerI = M.interface('Waker', {
-  wake: M.call(M.bigint()).returns(),
+  wake: M.call(TimestampShape).returns(),
   schedule: M.call().returns(),
 });
 

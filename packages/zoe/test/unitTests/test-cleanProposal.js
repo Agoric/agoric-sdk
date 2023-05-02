@@ -244,7 +244,7 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer, deadline: 'foo' } } },
     'nat',
-    'proposal: exit: afterDeadline?: deadline: string "foo" - Must be a bigint',
+    /proposal: exit: afterDeadline\?: deadline: "foo" - Must match/,
   );
   proposeBad(
     t,
@@ -268,13 +268,13 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer, deadline: 3 } } },
     'nat',
-    'proposal: exit: afterDeadline?: deadline: number 3 - Must be a bigint',
+    /proposal: exit: afterDeadline\?: deadline: 3 - Must match/,
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: -3n } } },
     'nat',
-    'proposal: exit: afterDeadline?: deadline: "[-3n]" - Must be non-negative',
+    /proposal: exit: afterDeadline\?: deadline: "\[-3n\]" - Must match/,
   );
   proposeBad(t, { exit: {} }, 'nat', /exit {} should only have one key/);
   proposeBad(

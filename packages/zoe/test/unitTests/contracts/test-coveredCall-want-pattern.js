@@ -8,6 +8,7 @@ import { E } from '@endo/eventual-send';
 import { M, mustMatch, keyEQ } from '@agoric/store';
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { TimeMath } from '@agoric/time';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -26,6 +27,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(t.log);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const {
     moolaKit,
     simoleanKit,
@@ -90,7 +92,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     want: { StrikePrice: simoleans(7n) },
     exit: {
       afterDeadline: {
-        deadline: 100n, // we will not reach this
+        deadline: toTS(100n), // we will not reach this
         timer,
       },
     },
@@ -128,7 +130,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.is(optionDesc.description, 'exerciseOption');
   t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.expirationDate, toTS(100n));
   t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
@@ -200,7 +202,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
           underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
           strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
           timeAuthority: timer,
-          expirationDate: M.and(M.gte(50n), M.lte(300n)),
+          expirationDate: {
+            timerBrand: M.remotable('timerBrand'),
+            absValue: M.and(M.gte(50n), M.lte(300n)),
+          },
         },
       }),
     ],
@@ -218,7 +223,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
           underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
           strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
           timeAuthority: timer,
-          expirationDate: M.and(M.gte(50n), M.lte(300n)),
+          expirationDate: {
+            timerBrand: M.remotable('timerBrand'),
+            absValue: M.and(M.gte(50n), M.lte(300n)),
+          },
         },
       }),
     ],

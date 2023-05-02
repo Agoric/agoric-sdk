@@ -9,28 +9,36 @@ export const assertAmountsEqual = (t, amount, expected, label = '') => {
   harden(expected);
   const l = label ? `${label} ` : '';
   const brandsEqual = amount.brand === expected.brand;
-
   const helper = assertValueGetHelpers(expected.value);
-  if (helper !== assertValueGetHelpers(amount.value)) {
-    t.fail(
-      `${l}Must be the same asset kind: ${amount.value} vs ${expected.value}`,
-    );
+  const valueKindsEqual = assertValueGetHelpers(amount.value) === helper;
+  const valuesEqual =
+    valueKindsEqual && helper.doIsEqual(amount.value, expected.value);
+
+  let msg;
+  if (!brandsEqual && !valuesEqual) {
+    // prettier-ignore
+    msg = `${l}Brands and values must match: got ${q(amount)}, expected ${q(expected)}`;
+    t.deepEqual(amount, expected, msg) !== true || t.fail(msg);
+  } else if (!brandsEqual) {
+    // prettier-ignore
+    msg = `${l}Brands must match: got ${amount.brand}, expected ${expected.brand}`;
+    t.is(amount.brand, expected.brand, msg) !== true || t.fail(msg);
+  } else if (!valueKindsEqual) {
+    // prettier-ignore
+    msg = `${l}Asset kinds must match: got ${q(amount.value)}, expected ${q(expected.value)}`;
+    t.deepEqual(amount.value, expected.value, msg) !== true || t.fail(msg);
+  } else if (!valuesEqual) {
+    // prettier-ignore
+    msg = `${l}Values must match: got ${q(amount.value)}, expected ${q(expected.value)}`;
+    t.deepEqual(amount.value, expected.value, msg) !== true || t.fail(msg);
   } else {
-    const valuesEqual = helper.doIsEqual(amount.value, expected.value);
-    if (brandsEqual && valuesEqual) {
-      t.truthy(AmountMath.isEqual(amount, expected), l);
-    } else if (brandsEqual && !valuesEqual) {
-      t.fail(
-        `${l}value (${q(amount.value)}) expected to equal ${q(expected.value)}`,
-      );
-    } else if (!brandsEqual && valuesEqual) {
-      t.fail(`${l}brand (${amount.brand}) expected to equal ${expected.brand}`);
-    } else {
-      t.fail(
-        `${l}Neither brand nor value matched: ${q(amount)}, ${q(expected)}`,
-      );
-    }
+    t.truthy(AmountMath.isEqual(amount, expected), l);
   }
+  const resultP = msg
+    ? Promise.reject(Error(msg))
+    : Promise.resolve(label || true);
+  resultP.catch(() => {});
+  return resultP;
 };
 
 export const assertPayoutAmount = async (
@@ -41,7 +49,7 @@ export const assertPayoutAmount = async (
   label = '',
 ) => {
   const amount = await E(issuer).getAmountOf(payout);
-  assertAmountsEqual(t, amount, expectedAmount, label);
+  return assertAmountsEqual(t, amount, expectedAmount, label);
 };
 
 // Returns a promise that can be awaited in tests to ensure the check completes.

@@ -7,6 +7,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { TimeMath } from '@agoric/time';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
@@ -68,8 +69,9 @@ test.before(
 
 test.serial('pay bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
-  // The timer is not build in test.before(), because each test needs its own.
+  // The timer is not built in test.before(), because each test needs its own.
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const { moolaIssuer, moolaMint, moola } = t.context;
   const script = { 0: 'Nothing', 1: 'Nothing', 2: 'Nothing', 3: 'Succeeded' };
 
@@ -87,7 +89,7 @@ test.serial('pay bounty', async t => {
     { Bounty: moolaIssuer, Fee: moolaIssuer },
     {
       oracle: publicFacet,
-      deadline: 3n,
+      deadline: toTS(3n),
       condition: 'Succeeded',
       timer,
       fee: moola(50n),
@@ -112,12 +114,14 @@ test.serial('pay bounty', async t => {
     moolaIssuer,
     funderSeat.getPayout('Fee'),
     moola(50n),
+    'funder Fee payout',
   );
   const promise2 = assertPayoutAmount(
     t,
     moolaIssuer,
     funderSeat.getPayout('Bounty'),
     moola(0n),
+    'funder Bounty payout',
   );
 
   // Bob buys the bounty invitation
@@ -136,19 +140,27 @@ test.serial('pay bounty', async t => {
     moolaIssuer,
     bountySeat.getPayout('Fee'),
     moola(0n),
+    'beneficiary Fee payout',
   );
   const promise4 = assertPayoutAmount(
     t,
     moolaIssuer,
     bountySeat.getPayout('Bounty'),
     moola(200n),
+    'beneficiary Bounty payout',
   );
 
-  await E(timer).tick();
-  await E(timer).tick();
-  await E(timer).tick();
-  await E(timer).tick();
-  await Promise.all([promise1, promise2, promise3, promise4]);
+  await E(timer).tickN(4);
+  const results = await Promise.allSettled([
+    promise1,
+    promise2,
+    promise3,
+    promise4,
+  ]);
+  if (!results.every(result => result.status === 'fulfilled')) {
+    t.log(results.map(result => result.value || result.reason));
+    t.fail();
+  }
 });
 
 test.serial('pay no bounty', async t => {

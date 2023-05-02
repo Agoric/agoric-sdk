@@ -57,6 +57,7 @@
     "@endo/import-bundle": "^0.3.4",
     "@endo/marshal": "^0.8.5",
     "@endo/nat": "^4.1.27",
+    "@endo/patterns": "^0.2.2",
     "@endo/promise-kit": "^0.2.56"
   },
   "devDependencies": {
