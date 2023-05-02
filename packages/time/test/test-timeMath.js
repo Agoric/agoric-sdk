@@ -35,8 +35,12 @@ test('timeMath different labels', t => {
   const b1 = makeTimerBrand('fake timer brand 1');
   const b2 = makeTimerBrand('fake timer brand 2');
   const t100 = harden({ timerBrand: b1, absValue: 100n });
+  const t101 = harden({ timerBrand: b2, absValue: 101n });
   const r3 = harden({ timerBrand: b2, relValue: 3n });
   t.throws(() => TimeMath.addAbsRel(t100, r3), {
+    message: /TimerBrands must match: .* vs .*/,
+  });
+  t.throws(() => TimeMath.compareAbs(t100, t101), {
     message: /TimerBrands must match: .* vs .*/,
   });
 });
@@ -48,8 +52,11 @@ test('timeMath one label', t => {
   const t103 = harden({ timerBrand, absValue: 103n });
   t.deepEqual(TimeMath.addAbsRel(t100, 3n), t103);
   t.deepEqual(TimeMath.addAbsRel(100n, r3), t103);
+  t.is(TimeMath.compareAbs(t100, 100n), 0);
 });
 
 test('timeMath no labels', t => {
   t.deepEqual(TimeMath.addAbsRel(100n, 3n), 103n);
 });
+
+// TODO: < should fail
