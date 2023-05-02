@@ -64,7 +64,7 @@ const BASIS_POINTS = 10_000n;
  *   econCharterKit: EconCharterStartResult,
  *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['start']>,
  *   stakeFactoryKit: GovernanceFacetKit<import('../stakeFactory/stakeFactory.js')['start']>,
- *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['start']>,
+ *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['prepare']>,
  *   auctioneerKit: AuctioneerKit,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
@@ -331,6 +331,8 @@ export const startVaultFactory = async (
       governorCreatorFacet,
       adminFacet,
       publicFacet,
+      // XXX safe? if this sticks add it to the type
+      privateArgs: vaultFactoryPrivateArgs,
     }),
   );
 

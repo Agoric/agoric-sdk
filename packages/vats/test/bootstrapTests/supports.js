@@ -8,6 +8,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
+import { makeMarshal } from '@endo/marshal';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -288,6 +289,16 @@ export const getNodeTestVaultsConfig = async (
   config.coreProposals = config.coreProposals?.filter(
     v => v !== '@agoric/pegasus/scripts/init-core.js',
   );
+  // set to high interestRateValue to accelerate liquidation
+  for (const addVaultTypeProposal of (config.coreProposals || []).filter(
+    p =>
+      typeof p === 'object' &&
+      p.module === '@agoric/inter-protocol/scripts/add-collateral-core.js' &&
+      p.entrypoint === 'defaultProposalBuilder',
+  )) {
+    const opt = /** @type {any} */ (addVaultTypeProposal).args[0];
+    opt.interestRateValue = 10 * 100; // 10x APR
+  }
 
   const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;
   await fs.writeFile(testConfigPath, JSON.stringify(config), 'utf-8');
@@ -320,6 +331,15 @@ export const makeSwingsetTestKit = async (
   const { kernelStorage, hostStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
+
+  const marshal = makeMarshal();
+
+  const readLatest = path => {
+    const str = storage.data.get(path)?.at(-1);
+    str || Fail`no data at path ${path}`;
+    const capData = JSON.parse(storage.data.get(path)?.at(-1));
+    return marshal.fromCapData(capData);
+  };
 
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
@@ -388,8 +408,38 @@ export const makeSwingsetTestKit = async (
 
   console.timeEnd('makeSwingsetTestKit');
 
+  let currentTime = 0;
+  const setTime = time => {
+    currentTime = time;
+    return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+  /**
+   *
+   * @param {number} n
+   * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
+   */
+  const advanceTime = (n, unit) => {
+    const multiplier = {
+      seconds: 1,
+      minutes: 60,
+      hours: 60 * 60,
+      days: 60 * 60 * 24,
+    };
+    currentTime += multiplier[unit] * n;
+    return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
-  return { controller, runUtils, storage, shutdown, timer };
+  return {
+    advanceTime,
+    controller,
+    readLatest,
+    runUtils,
+    setTime,
+    shutdown,
+    storage,
+    timer,
+  };
 };

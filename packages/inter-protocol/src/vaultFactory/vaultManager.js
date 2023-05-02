@@ -26,12 +26,14 @@ import {
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import {
   M,
+  makeScalarBigMapStore,
+  makeScalarBigSetStore,
   makeScalarMapStore,
   prepareExoClassKit,
-  provideDurableMapStore,
-  provideDurableSetStore,
+  provide,
 } from '@agoric/vat-data';
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
@@ -41,12 +43,12 @@ import {
   floorMultiplyBy,
   getAmountIn,
   getAmountOut,
+  makeEphemeraProvider,
   makeRatio,
   makeRatioFromAmounts,
   makeRecorderTopic,
   multiplyRatios,
   offerTo,
-  provideEmptySeat,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -109,6 +111,29 @@ const trace = makeTracer('VM', false);
  */
 
 /**
+ * @typedef {Readonly<{
+ *   debtMint: ZCFMint<'nat'>,
+ *   collateralBrand: Brand<'nat'>,
+ *   collateralUnit: Amount<'nat'>,
+ *   descriptionScope: string,
+ *   startTimeStamp: Timestamp,
+ *   storageNode: StorageNode,
+ * }>} HeldParams
+ */
+
+/**
+ * @typedef {{
+ *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>,
+ *   debtBrand: Brand<'nat'>,
+ *   liquidatingVaults: SetStore<Vault>,
+ *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>,
+ *   poolIncrementSeat: ZCFSeat,
+ *   retainedCollateralSeat: ZCFSeat,
+ *   unsettledVaults: MapStore<string, Vault>,
+ * }} ImmutableState
+ */
+
+/**
  * @typedef {{
  *   compoundedInterest: Ratio,
  *   latestInterestUpdate: Timestamp,
@@ -132,126 +157,80 @@ const quoteAsRatio = quoteAmount =>
   makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);
 
 /**
+ * @type {(brand: Brand) => {
+ * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>,
+ * storedCollateralQuote: PriceQuote,
+ * }}
+ */
+// any b/c will be filled after start()
+const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
+
+/**
  * @param {import('@agoric/ertp').Baggage} baggage
- * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {ERef<Marshaller>} marshaller
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
- * @param {Readonly<{
- *   debtMint: ZCFMint<'nat'>,
- *   collateralBrand: Brand<'nat'>,
- *   collateralUnit: Amount<'nat'>,
+ * @param {{
+ *   zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ *   marshaller: ERef<Marshaller>,
+ *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
+ *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit,
  *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- *   descriptionScope: string,
- *   startTimeStamp: Timestamp,
- *   storageNode: StorageNode,
- * }>} unique per singleton
+ * }} powers
  */
 export const prepareVaultManagerKit = (
   baggage,
-  zcf,
-  marshaller,
-  makeRecorderKit,
-  makeERecorderKit,
-  {
-    debtMint,
-    collateralBrand,
-    collateralUnit,
-    descriptionScope,
-    factoryPowers,
-    startTimeStamp,
-    storageNode,
-  },
+  { zcf, marshaller, makeRecorderKit, factoryPowers },
 ) => {
-  assert(
-    storageNode && marshaller,
-    'VaultManager missing storageNode or marshaller',
-  );
-
   const { priceAuthority, timerService, reservePublicFacet } = zcf.getTerms();
 
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
-  const periodNotifier = E(timerService).makeNotifier(
-    0n,
-    factoryPowers.getGovernedParams().getChargingPeriod(),
-  );
-
-  const assetKit = makeRecorderKit(
-    storageNode,
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<AssetState>} */ (
-      M.any()
-    ),
-  );
-
-  /** @type {MapStore<string, Vault>} */
-  const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
-
-  const debtBrand = debtMint.getIssuerRecord().brand;
-  const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
-  const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
-
-  const metricsTopicKit = makeERecorderKit(
-    E(storageNode).makeChildNode('metrics'),
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
-      M.any()
-    ),
-  );
-
-  const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-    collateralUnit,
-    debtBrand,
-  );
-  const storedQuotesNotifier = makeStoredNotifier(
-    quoteNotifier,
-    E(storageNode).makeChildNode('quotes'),
-    marshaller,
-  );
-  /** @type {PriceQuote?} */
-  let storedCollateralQuote = null;
-  void observeNotifier(quoteNotifier, {
-    updateState(value) {
-      storedCollateralQuote = value;
-    },
-    fail(reason) {
-      console.error('quoteNotifier failed to iterate', reason);
-    },
-  });
-
-  const prioritizedVaults = makePrioritizedVaults(unsettledVaults);
-
   /**
-   * Vaults that have been sent for liquidation. When we get proceeds (or lack
-   * thereof) back from the liquidator, we will allocate them among the vaults.
-   *
-   * @type {SetStore<Vault>}
+   * @param {HeldParams & { metricsStorageNode: StorageNode }} params
+   * @returns {HeldParams & ImmutableState & MutableState}
    */
-  const liquidatingVaults = provideDurableSetStore(
-    baggage,
-    'liquidatingVaults',
-  );
+  const initState = params => {
+    const {
+      debtMint,
+      collateralBrand,
+      metricsStorageNode,
+      startTimeStamp,
+      storageNode,
+    } = params;
+    const debtBrand = debtMint.getIssuerRecord().brand;
 
-  const poolIncrementSeat = provideEmptySeat(zcf, baggage, 'pool increment');
+    /** @type {ImmutableState} */
+    const immutable = {
+      debtBrand,
+      poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
 
-  // TODO(#7074) not used while liquidation is disabled. Reinstate with #7074
-  const retainedCollateralSeat = provideEmptySeat(
-    zcf,
-    baggage,
-    'retained collateral',
-  );
+      /**
+       * Vaults that have been sent for liquidation. When we get proceeds (or lack
+       * thereof) back from the liquidator, we will allocate them among the vaults.
+       *
+       * @type {SetStore<Vault>}
+       */
+      liquidatingVaults: makeScalarBigSetStore('liquidatingVaults', {
+        durable: true,
+      }),
 
-  const topics = harden({
-    asset: makeRecorderTopic('State of the assets managed', assetKit),
-    metrics: makeRecorderTopic('Vault Factory metrics', metricsTopicKit),
-  });
+      assetTopicKit: makeRecorderKit(storageNode),
 
-  /**
-   * This class is a singleton kind so initState will be called only once per prepare.
-   *
-   * @returns {MutableState}
-   */
-  const initState = () => {
-    return {
+      metricsTopicKit: makeRecorderKit(metricsStorageNode),
+
+      // TODO(#7074) not used while liquidation is disabled. Reinstate with #7074
+      retainedCollateralSeat: zcf.makeEmptySeatKit().zcfSeat,
+
+      unsettledVaults: makeScalarBigMapStore('orderedVaultStore', {
+        durable: true,
+      }),
+    };
+
+    const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
+    const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
+
+    return harden({
+      ...params,
+      ...immutable,
       compoundedInterest: makeRatio(100n, debtBrand), // starts at 1.0, no interest
       latestInterestUpdate: startTimeStamp,
       numLiquidationsCompleted: 0,
@@ -266,11 +245,10 @@ export const prepareVaultManagerKit = (
       totalShortfallReceived: zeroDebt,
       vaultCounter: 0,
       lockedQuote: undefined,
-    };
+    });
   };
 
-  // TODO find a way to not have to indent a level deeper than defineDurableExoClassKit does
-  return prepareExoClassKit(
+  const makeVaultManagerKitInternal = prepareExoClassKit(
     baggage,
     'VaultManagerKit',
     {
@@ -325,6 +303,7 @@ export const prepareVaultManagerKit = (
       collateral: {
         makeVaultInvitation() {
           const { facets } = this;
+          const { collateralBrand, debtBrand } = this.state;
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
             facets.manager.scopeDescription('MakeVault'),
@@ -341,36 +320,108 @@ export const prepareVaultManagerKit = (
         },
         /** @deprecated use getPublicTopics */
         getSubscriber() {
-          return topics.asset.subscriber;
+          return this.state.assetTopicKit.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getMetrics() {
-          return topics.metrics.subscriber;
+          return this.state.metricsTopicKit.subscriber;
         },
         getQuotes() {
-          return storedQuotesNotifier;
+          const ephemera = collateralEphemera(this.state.collateralBrand);
+          return ephemera.storedQuotesNotifier;
         },
         getCompoundedInterest() {
           return this.state.compoundedInterest;
         },
         getPublicTopics() {
-          return topics;
+          const { assetTopicKit, metricsTopicKit } = this.state;
+          return harden({
+            asset: makeRecorderTopic(
+              'State of the assets managed',
+              assetTopicKit,
+            ),
+            metrics: makeRecorderTopic(
+              'Vault Factory metrics',
+              metricsTopicKit,
+            ),
+          });
         },
       },
 
       // Some of these could go in closures but are kept on a facet anticipating future durability options.
       helper: {
         /**
+         * Start non-durable processes (or restart if needed after vat restart)
+         */
+        start() {
+          const { state, facets } = this;
+          const {
+            collateralBrand,
+            collateralUnit,
+            debtBrand,
+            storageNode,
+            unsettledVaults,
+          } = state;
+
+          const ephemera = collateralEphemera(collateralBrand);
+          ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
+
+          const periodNotifier = E(timerService).makeNotifier(
+            0n,
+            factoryPowers
+              .getGovernedParams(collateralBrand)
+              .getChargingPeriod(),
+          );
+
+          void observeNotifier(periodNotifier, {
+            updateState: updateTime =>
+              facets.helper
+                .chargeAllVaults(updateTime)
+                .catch(e =>
+                  console.error('🚨 vaultManager failed to charge interest', e),
+                ),
+            fail: reason => {
+              zcf.shutdownWithFailure(
+                assert.error(X`Unable to continue without a timer: ${reason}`),
+              );
+            },
+            finish: done => {
+              zcf.shutdownWithFailure(
+                assert.error(X`Unable to continue without a timer: ${done}`),
+              );
+            },
+          });
+
+          const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+            collateralUnit,
+            debtBrand,
+          );
+          ephemera.storedQuotesNotifier = makeStoredNotifier(
+            quoteNotifier,
+            E(storageNode).makeChildNode('quotes'),
+            marshaller,
+          );
+          void observeNotifier(quoteNotifier, {
+            updateState(value) {
+              ephemera.storedCollateralQuote = value;
+            },
+            fail(reason) {
+              console.error('quoteNotifier failed to iterate', reason);
+            },
+          });
+        },
+        /**
          * @param {Timestamp} updateTime
          */
         async chargeAllVaults(updateTime) {
           const { state, facets } = this;
+          const { collateralBrand, debtMint, poolIncrementSeat } = state;
           trace('chargeAllVaults', collateralBrand, {
             updateTime,
           });
 
           const interestRate = factoryPowers
-            .getGovernedParams()
+            .getGovernedParams(collateralBrand)
             .getInterestRate();
 
           // Update state with the results of charging interest
@@ -385,10 +436,10 @@ export const prepareVaultManagerKit = (
             {
               interestRate,
               chargingPeriod: factoryPowers
-                .getGovernedParams()
+                .getGovernedParams(collateralBrand)
                 .getChargingPeriod(),
               recordingPeriod: factoryPowers
-                .getGovernedParams()
+                .getGovernedParams(collateralBrand)
                 .getRecordingPeriod(),
             },
             {
@@ -405,11 +456,11 @@ export const prepareVaultManagerKit = (
 
           return facets.helper.assetNotify();
         },
-
         assetNotify() {
           const { state } = this;
+          const { collateralBrand, assetTopicKit } = state;
           const interestRate = factoryPowers
-            .getGovernedParams()
+            .getGovernedParams(collateralBrand)
             .getInterestRate();
           /** @type {AssetState} */
           const payload = harden({
@@ -417,7 +468,7 @@ export const prepareVaultManagerKit = (
             interestRate,
             latestInterestUpdate: state.latestInterestUpdate,
           });
-          return assetKit.recorder.write(payload);
+          return assetTopicKit.recorder.write(payload);
         },
         burnToCoverDebt(debt, proceeds, seat) {
           const { state } = this;
@@ -526,6 +577,9 @@ export const prepareVaultManagerKit = (
         },
         updateMetrics() {
           const { state } = this;
+          const { collateralBrand, retainedCollateralSeat, metricsTopicKit } =
+            state;
+          const { prioritizedVaults } = collateralEphemera(collateralBrand);
 
           const retainedCollateral =
             retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
@@ -534,7 +588,7 @@ export const prepareVaultManagerKit = (
           /** @type {MetricsNotification} */
           const payload = harden({
             numActiveVaults: prioritizedVaults.getCount(),
-            numLiquidatingVaults: liquidatingVaults.getSize(),
+            numLiquidatingVaults: state.liquidatingVaults.getSize(),
             totalCollateral: state.totalCollateral,
             totalDebt: state.totalDebt,
             retainedCollateral,
@@ -549,7 +603,7 @@ export const prepareVaultManagerKit = (
             totalShortfallReceived: state.totalShortfallReceived,
           });
 
-          return E(metricsTopicKit.recorderP).write(payload);
+          return E(metricsTopicKit.recorder).write(payload);
         },
 
         distributeProceeds(
@@ -561,6 +615,7 @@ export const prepareVaultManagerKit = (
           totalCollateral,
         ) {
           const { state, facets } = this;
+          const { collateralBrand, debtBrand, liquidatingVaults } = this.state;
 
           state.totalCollateralSold = AmountMath.add(
             state.totalCollateralSold,
@@ -792,6 +847,7 @@ export const prepareVaultManagerKit = (
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
             }
+            const { prioritizedVaults } = collateralEphemera(collateralBrand);
             for (const [vaultId, vault] of vaultsToReinstate.entries()) {
               prioritizedVaults.addVault(vaultId, vault);
             }
@@ -815,7 +871,8 @@ export const prepareVaultManagerKit = (
 
       manager: {
         getGovernedParams() {
-          return factoryPowers.getGovernedParams();
+          const { collateralBrand } = this.state;
+          return factoryPowers.getGovernedParams(collateralBrand);
         },
 
         /**
@@ -825,6 +882,8 @@ export const prepareVaultManagerKit = (
          * @param {Amount<'nat'>} collateralAmount
          */
         maxDebtFor(collateralAmount) {
+          const { collateralBrand } = this.state;
+          const { storedCollateralQuote } = collateralEphemera(collateralBrand);
           if (!storedCollateralQuote)
             throw Fail`maxDebtFor called before a collateral quote was available`;
           // use the lower price to prevent vault adjustments that put them imminently underwater
@@ -834,8 +893,12 @@ export const prepareVaultManagerKit = (
           );
           const collatlVal = ceilMultiplyBy(collateralAmount, collateralPrice);
           const minimumCollateralization = calculateMinimumCollateralization(
-            factoryPowers.getGovernedParams().getLiquidationMargin(),
-            factoryPowers.getGovernedParams().getLiquidationPadding(),
+            factoryPowers
+              .getGovernedParams(collateralBrand)
+              .getLiquidationMargin(),
+            factoryPowers
+              .getGovernedParams(collateralBrand)
+              .getLiquidationPadding(),
           );
           // floorDivide because we want the debt ceiling lower
           return floorDivideBy(collatlVal, minimumCollateralization);
@@ -843,10 +906,10 @@ export const prepareVaultManagerKit = (
         /** @type {MintAndTransfer} */
         mintAndTransfer(mintReceiver, toMint, fee, transfers) {
           const { state } = this;
-          const { totalDebt } = state;
+          const { collateralBrand, totalDebt } = state;
 
           checkDebtLimit(
-            factoryPowers.getGovernedParams().getDebtLimit(),
+            factoryPowers.getGovernedParams(collateralBrand).getDebtLimit(),
             totalDebt,
             toMint,
           );
@@ -859,6 +922,7 @@ export const prepareVaultManagerKit = (
          */
         burnAndRecord(toBurn, seat) {
           const { state } = this;
+          const { collateralBrand } = this.state;
 
           trace('burnAndRecord', collateralBrand, {
             toBurn,
@@ -868,12 +932,14 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          return assetKit.subscriber;
+          return this.state.assetTopicKit.subscriber;
         },
         getCollateralBrand() {
+          const { collateralBrand } = this.state;
           return collateralBrand;
         },
         getDebtBrand() {
+          const { debtBrand } = this.state;
           return debtBrand;
         },
         /**
@@ -882,6 +948,7 @@ export const prepareVaultManagerKit = (
          * @param {string} base
          */
         scopeDescription(base) {
+          const { descriptionScope } = this.state;
           return `${descriptionScope}: ${base}`;
         },
         /**
@@ -915,6 +982,18 @@ export const prepareVaultManagerKit = (
             AmountMath.isEmpty(oldDebtNormalized) &&
             vaultPhase !== Phase.ACTIVE;
 
+          trace('handleBalanceChange', {
+            oldDebtNormalized,
+            oldCollateral,
+            vaultId,
+            vaultPhase,
+            vault,
+            settled,
+          });
+
+          const { prioritizedVaults } = collateralEphemera(
+            state.collateralBrand,
+          );
           if (settled) {
             assert(
               !prioritizedVaults.hasVaultByAttributes(
@@ -926,6 +1005,7 @@ export const prepareVaultManagerKit = (
             );
           } else {
             const isNew = AmountMath.isEmpty(oldDebtNormalized);
+            trace({ isNew });
             if (!isNew) {
               // its position in the queue is no longer valid
 
@@ -938,6 +1018,7 @@ export const prepareVaultManagerKit = (
                 vault === vaultInStore,
                 'handleBalanceChange for two different vaults',
               );
+              trace('removed', vault, vaultId);
             }
 
             // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
@@ -961,18 +1042,20 @@ export const prepareVaultManagerKit = (
       },
       self: {
         getGovernedParams() {
-          return factoryPowers.getGovernedParams();
+          const { collateralBrand } = this.state;
+          return factoryPowers.getGovernedParams(collateralBrand);
         },
 
         /**
          * @param {ZCFSeat} seat
          */
         async makeVaultKit(seat) {
-          trace('makevaultKit');
+          trace('makeVaultKit');
           const {
             state,
             facets: { manager },
           } = this;
+          const { storageNode } = this.state;
           assert(marshaller, 'makeVaultKit missing marshaller');
           assert(storageNode, 'makeVaultKit missing storageNode');
           assert(zcf, 'makeVaultKit missing zcf');
@@ -985,7 +1068,7 @@ export const prepareVaultManagerKit = (
           ).makeChildNode(`vault${vaultId}`);
 
           const { self: vault } = makeVault(manager, vaultId, vaultStorageNode);
-          trace('makevaultKit made vault', vault);
+          trace('makeVaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed
@@ -1011,8 +1094,11 @@ export const prepareVaultManagerKit = (
             // remove it from the store if it got in
             /** @type {NormalizedDebt} */
             // @ts-expect-error cast
-            const normalizedDebt = AmountMath.makeEmpty(debtBrand);
+            const normalizedDebt = AmountMath.makeEmpty(state.debtBrand);
             const collateralPre = seat.getCurrentAllocation().Collateral;
+            const { prioritizedVaults } = collateralEphemera(
+              state.collateralBrand,
+            );
             try {
               prioritizedVaults.removeVaultByAttributes(
                 normalizedDebt,
@@ -1040,6 +1126,9 @@ export const prepareVaultManagerKit = (
         },
 
         getCollateralQuote() {
+          const { storedCollateralQuote } = collateralEphemera(
+            this.state.collateralBrand,
+          );
           if (!storedCollateralQuote)
             throw Fail`getCollateralQuote called before a collateral quote was available`;
           return storedCollateralQuote;
@@ -1050,9 +1139,12 @@ export const prepareVaultManagerKit = (
         },
 
         lockOraclePrices() {
+          const { state } = this;
+          const { storedCollateralQuote } = collateralEphemera(
+            state.collateralBrand,
+          );
           if (!storedCollateralQuote)
             throw Fail`lockOraclePrices called before a collateral quote was available`;
-          const { state } = this;
           trace(
             `lockPrice`,
             getAmountIn(storedCollateralQuote),
@@ -1068,9 +1160,16 @@ export const prepareVaultManagerKit = (
         async liquidateVaults(auctionPF) {
           const { state, facets } = this;
           const { self, helper } = facets;
-          const { lockedQuote, compoundedInterest } = state;
+          const {
+            collateralBrand,
+            compoundedInterest,
+            debtBrand,
+            liquidatingVaults,
+            lockedQuote,
+          } = state;
           trace('considering liquidation');
 
+          const { prioritizedVaults } = collateralEphemera(collateralBrand);
           assert(factoryPowers && prioritizedVaults && zcf);
           lockedQuote ||
             Fail`Must have locked a quote before liquidating vaults.`;
@@ -1122,6 +1221,10 @@ export const prepareVaultManagerKit = (
           // and the difference between startingRate and lowestRate.
           const [proceeds] = await Promise.all([deposited, userSeatPromise]);
 
+          const { storedCollateralQuote } = collateralEphemera(
+            this.state.collateralBrand,
+          );
+
           trace(`LiqV after long wait`, proceeds);
           helper.distributeProceeds(
             proceeds,
@@ -1137,45 +1240,74 @@ export const prepareVaultManagerKit = (
 
     {
       finish: ({ state, facets: { helper } }) => {
-        void assetKit.recorder.write(
+        helper.start();
+        void state.assetTopicKit.recorder.write(
           harden({
             compoundedInterest: state.compoundedInterest,
-            interestRate: factoryPowers.getGovernedParams().getInterestRate(),
+            interestRate: factoryPowers
+              .getGovernedParams(state.collateralBrand)
+              .getInterestRate(),
             latestInterestUpdate: state.latestInterestUpdate,
           }),
         );
 
         // push initial state of metrics
         helper.updateMetrics();
-
-        void observeNotifier(periodNotifier, {
-          updateState: updateTime =>
-            helper
-              .chargeAllVaults(updateTime)
-              .catch(e =>
-                console.error('🚨 vaultManager failed to charge interest', e),
-              ),
-          fail: reason => {
-            zcf.shutdownWithFailure(
-              assert.error(X`Unable to continue without a timer: ${reason}`),
-            );
-          },
-          finish: done => {
-            zcf.shutdownWithFailure(
-              assert.error(X`Unable to continue without a timer: ${done}`),
-            );
-          },
-        });
       },
     },
   );
+
+  /** @param {Omit<Parameters<typeof makeVaultManagerKitInternal>[0], 'metricsStorageNode'>} externalParams */
+  const makeVaultManagerKit = async externalParams => {
+    const metricsStorageNode = await E(
+      externalParams.storageNode,
+    ).makeChildNode('metrics');
+    return makeVaultManagerKitInternal({
+      ...externalParams,
+      metricsStorageNode,
+    });
+  };
+  return makeVaultManagerKit;
 };
 
 /**
- * @typedef {ReturnType<ReturnType<typeof prepareVaultManagerKit>>['self']} VaultManager
+ * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultManagerKit>>>} VaultManagerKit
+ */
+/**
+ * @typedef {VaultManagerKit['self']} VaultManager
  * Each VaultManager manages a single collateral type.
  *
  * It manages some number of outstanding debt positions, each called a Vault,
  * for which the collateral is provided in exchange for borrowed Minted.
  */
-/** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */
+/** @typedef {VaultManagerKit['collateral']} CollateralManager */
+
+/**
+ * Support restarting kits from baggage and mutating the array holding them
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ */
+export const provideAndStartVaultManagerKits = baggage => {
+  const key = 'vaultManagerKits';
+
+  const noKits = /** @type {VaultManagerKit[]} */ (harden([]));
+
+  for (const kit of provide(baggage, key, () => noKits)) {
+    kit.helper.start();
+  }
+
+  return {
+    /** @type {(kit: VaultManagerKit) => void} */
+    add: kit => {
+      appendToStoredArray(baggage, key, kit);
+    },
+    /** @type {(index: number) => VaultManagerKit} */
+    get: index => {
+      const kits = baggage.get(key);
+      index < kits.length || Fail`no VaultManagerKit at index ${index}`;
+      return kits[index];
+    },
+    length: () => baggage.get(key).length,
+  };
+};
+harden(provideAndStartVaultManagerKits);

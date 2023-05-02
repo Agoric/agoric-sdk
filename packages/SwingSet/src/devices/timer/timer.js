@@ -21,6 +21,7 @@ export function buildTimer() {
   }
 
   // poll() is made available to the host loop so it can provide the time.
+  /** @type {(time: number | bigint) => boolean} */
   function poll(time) {
     try {
       return Boolean(devicePollFunction(Nat(time)));

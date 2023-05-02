@@ -1,11 +1,6 @@
 import { allValues, objectMap } from '@agoric/internal';
-import {
-  makeScalarBigMapStore,
-  provide,
-  provideDurableSetStore,
-} from '@agoric/vat-data';
+import { provide } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 /**
  * SCALE: Only for low cardinality provisioning. Every value from init() will
@@ -49,38 +44,6 @@ export const provideEmptySeat = (zcf, baggage, name) => {
   return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
 };
 harden(provideEmptySeat);
-
-/**
- * For making singletons, so that each baggage carries a separate kind definition (albeit of the definer)
- *
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {string} category diagnostic tag
- */
-export const provideChildBaggage = (baggage, category) => {
-  const baggageSet = provideDurableSetStore(baggage, `${category}Set`);
-  return Far('childBaggageManager', {
-    // TODO(types) infer args
-    /**
-     * @template {Array} R rest of args besides Baggage
-     * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: R) => any} M Maker function
-     * @param {string} childName diagnostic tag
-     * @param {M} makeChild
-     * @param {R} nonBaggageArgs
-     * @returns {ReturnType<M>}
-     */
-    addChild: (childName, makeChild, ...nonBaggageArgs) => {
-      const childStore = makeScalarBigMapStore(`${childName}${category}`, {
-        durable: true,
-      });
-      const result = makeChild(childStore, ...nonBaggageArgs);
-      baggageSet.add(childStore);
-      return result;
-    },
-    children: () => baggageSet.values(),
-  });
-};
-harden(provideChildBaggage);
-/** @typedef {ReturnType<typeof provideChildBaggage>} ChildBaggageManager */
 
 /**
  * For use in contract upgrades to provide values that come from other vats.
