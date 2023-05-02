@@ -2,7 +2,7 @@
 
 import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
@@ -142,15 +142,17 @@ harden(startPriceAuthorityRegistry);
 /**
  * Create inert brands (no mint or issuer) referred to by price oracles.
  *
- * @param {BootstrapPowers} powers
+ * @param {BootstrapPowers & NamedVatPowers} powers
  */
 export const makeOracleBrands = async ({
+  namedVat: {
+    consume: { agoricNames },
+  },
   oracleBrand: { produce: oracleBrandProduce },
 }) => {
-  const { brand } = makeIssuerKit(
+  const brand = await E(agoricNames).provideBrandIdentity(
     'USD',
-    AssetKind.NAT,
-    harden({ decimalPlaces: 6 }),
+    harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   );
   oracleBrandProduce.USD.resolve(brand);
 };
@@ -417,6 +419,7 @@ harden(addBankAssets);
 export const BASIC_BOOTSTRAP_PERMITS = {
   bridgeCoreEval: true, // Needs all the powers.
   [makeOracleBrands.name]: {
+    namedVat: { consume: { agoricNames: 'agoricNames' } },
     oracleBrand: {
       produce: {
         USD: 'agoricNames',

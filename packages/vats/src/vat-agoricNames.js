@@ -5,9 +5,43 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import { BrandI } from '@agoric/ertp';
 import { prepareNameHubKit } from './nameHub.js';
 
 const { Fail } = assert;
+
+const makeBrandStore = zone => {
+  const brandStore = zone.mapStore('Brand', { durable: true });
+
+  // XXX generalize past Nat; move into ERTP
+  const makeNatBrand = zone.exoClass(
+    'Brand',
+    BrandI,
+    (name, displayInfo) => ({ name, displayInfo }),
+    {
+      isMyIssuer(_allegedIssuer) {
+        return false;
+      },
+      getAllegedName() {
+        const { name } = this.state;
+        return name;
+      },
+      // Give information to UI on how to display the amount.
+      getDisplayInfo() {
+        const { displayInfo } = this.state;
+        return displayInfo;
+      },
+      getAmountShape() {
+        return undefined;
+      },
+    },
+  );
+
+  return {
+    provide: (keyword, displayInfo) =>
+      provide(brandStore, keyword, () => makeNatBrand(keyword, displayInfo)),
+  };
+};
 
 /**
  * @param {unknown} _vatPowers
@@ -57,9 +91,21 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
       }),
     );
 
+  const brandStore = makeBrandStore(zone);
+
+  /**
+   * Provide a brand, with no mint nor issuer.
+   *
+   * @param {string} keyword
+   * @param {DisplayInfo} displayInfo
+   */
+  const provideBrandIdentity = (keyword, displayInfo) =>
+    brandStore.provide(keyword, displayInfo);
+
   return Far('vat-agoricNames', {
     getNameHub: () => agoricNames,
     getNameHubKit: () => ({ agoricNames, agoricNamesAdmin }),
     publishNameHubs,
+    provideBrandIdentity,
   });
 }
