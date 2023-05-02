@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 
 // #!/usr/bin/env -S node --inspect-brk
 
@@ -13,4 +14,12 @@ import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import { main } from './main.js';
 
-main();
+process.exitCode = 1;
+main().then(
+  () => {
+    process.exitCode = 0;
+  },
+  error => {
+    console.error(error);
+  },
+);
