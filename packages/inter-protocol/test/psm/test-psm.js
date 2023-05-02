@@ -23,6 +23,7 @@ import { NonNullish } from '@agoric/assert';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { encromulate } from '@agoric/internal/src/storage-test-utils.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E, Far } from '@endo/far';
@@ -563,59 +564,59 @@ test('metrics, with snapshot', async t => {
     'totalAnchorProvided',
     'totalMintedProvided',
   ]);
-  t.like(driver.getStorageChildBody('metrics'), {
-    anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
-    feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+  t.like(encromulate(driver.getStorageChildBody('metrics')), {
+    anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0 },
+    feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0 },
     mintedPoolBalance: {
       brand: { iface: 'Alleged: IST brand' },
-      value: 0n,
+      value: 0,
     },
     totalAnchorProvided: {
       brand: { iface: 'Alleged: aUSD brand' },
-      value: 0n,
+      value: 0,
     },
     totalMintedProvided: {
       brand: { iface: 'Alleged: IST brand' },
-      value: 0n,
+      value: 0,
     },
   });
   const giveAnchor = anchor.make(scale6(200));
 
   // grow the pool
   const mintedPayouts = await driver.swapAnchorForMinted(giveAnchor);
-  t.like(driver.getStorageChildBody('metrics'), {
+  t.like(encromulate(driver.getStorageChildBody('metrics')), {
     anchorPoolBalance: {
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
-    feePoolBalance: { value: 20_000n },
+    feePoolBalance: { value: 20_000 },
     mintedPoolBalance: {
       brand: { iface: 'Alleged: IST brand' },
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
     totalAnchorProvided: {
-      value: 0n,
+      value: 0,
     },
     totalMintedProvided: {
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
   });
 
   // no change
   await driver.swapAnchorForMinted(anchor.make(0n));
-  t.like(driver.getStorageChildBody('metrics'), {
+  t.like(encromulate(driver.getStorageChildBody('metrics')), {
     anchorPoolBalance: {
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
-    feePoolBalance: { value: 20_000n },
+    feePoolBalance: { value: 20_000 },
     mintedPoolBalance: {
       brand: { iface: 'Alleged: IST brand' },
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
     totalAnchorProvided: {
-      value: 0n,
+      value: 0,
     },
     totalMintedProvided: {
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
   });
 
@@ -628,20 +629,20 @@ test('metrics, with snapshot', async t => {
   );
   const fee = 30_000n;
   await driver.swapMintedForAnchor(giveMinted, runPayment);
-  t.like(driver.getStorageChildBody('metrics'), {
+  t.like(encromulate(driver.getStorageChildBody('metrics')), {
     anchorPoolBalance: {
-      value: giveMinted.value + fee,
+      value: Number(giveMinted.value + fee),
     },
-    feePoolBalance: { value: 50_000n },
+    feePoolBalance: { value: 50_000 },
     mintedPoolBalance: {
       brand: { iface: 'Alleged: IST brand' },
-      value: giveAnchor.value - giveMinted.value + fee,
+      value: Number(giveAnchor.value - giveMinted.value + fee),
     },
     totalAnchorProvided: {
-      value: giveMinted.value - fee,
+      value: Number(giveMinted.value - fee),
     },
     totalMintedProvided: {
-      value: giveAnchor.value,
+      value: Number(giveAnchor.value),
     },
   });
 

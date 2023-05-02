@@ -7,6 +7,20 @@ import { bindAllMethods } from './method-tools.js';
 const { Fail, quote: q } = assert;
 
 /**
+ * @param {object} thing
+ */
+export const encromulate = thing =>
+  JSON.parse(
+    JSON.stringify(thing, (_, val) => {
+      if (typeof val === 'bigint') {
+        return Number(val);
+      } else {
+        return val;
+      }
+    }),
+  );
+
+/**
  * For testing, creates a chainStorage root node over an in-memory map
  * and exposes both the map and the sequence of received messages.
  *

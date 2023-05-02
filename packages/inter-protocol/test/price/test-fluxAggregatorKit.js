@@ -5,7 +5,10 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeMockChainStorageRoot,
+  encromulate,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
 import {
   eventLoopIteration,
@@ -627,17 +630,19 @@ test('notifications', async t => {
 
   await eventLoopIteration();
   t.deepEqual(
-    aggregator.mockStorageRoot.getBody(
-      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    encromulate(
+      aggregator.mockStorageRoot.getBody(
+        'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+      ),
     ),
     {
-      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1 },
       amountOut: {
         brand: { iface: 'Alleged: $USD brand' },
-        value: 150n, // AVG(100, 200)
+        value: 150, // AVG(100, 200)
       },
       timer: { iface: 'Alleged: ManualTimer' },
-      timestamp: toMockTS(1n),
+      timestamp: toMockTS(1),
     },
   );
 
@@ -666,25 +671,29 @@ test('notifications', async t => {
   await E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n });
   // writes to storage
   t.deepEqual(
-    aggregator.mockStorageRoot.getBody(
-      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
+    encromulate(
+      aggregator.mockStorageRoot.getBody(
+        'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
+      ),
     ),
-    { roundId: 2n, startedAt: toMockTS(1n), startedBy: 'agorice1priceOracleB' },
+    { roundId: 2, startedAt: toMockTS(1), startedBy: 'agorice1priceOracleB' },
   );
 
   await eventLoopIteration();
   t.deepEqual(
-    aggregator.mockStorageRoot.getBody(
-      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    encromulate(
+      aggregator.mockStorageRoot.getBody(
+        'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+      ),
     ),
     {
-      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1 },
       amountOut: {
         brand: { iface: 'Alleged: $USD brand' },
-        value: 1000n, // AVG(1000, 1000)
+        value: 1000, // AVG(1000, 1000)
       },
       timer: { iface: 'Alleged: ManualTimer' },
-      timestamp: toMockTS(1n),
+      timestamp: toMockTS(1),
     },
   );
 

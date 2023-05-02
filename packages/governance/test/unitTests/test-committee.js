@@ -8,7 +8,10 @@ import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeMockChainStorageRoot,
+  encromulate,
+} from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
@@ -18,7 +21,7 @@ import {
   QuorumRule,
   coerceQuestionSpec,
 } from '../../src/index.js';
-import { documentStorageSchema, encromulate } from '../../tools/storageDoc.js';
+import { documentStorageSchema } from '../../tools/storageDoc.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -95,46 +98,44 @@ test('committee-open question:one', async t => {
   // @ts-expect-error cast
   const issue = questionDetails.issue;
   t.deepEqual(issue.text, 'why');
-  debugger;//
-  const body = encromulate(mockChainStorageRoot.getBody(
-    'mockChainStorageRoot.thisElectorate.latestQuestion',
-  ));
-  t.deepEqual(
-    body,
-    {
-      closingRule: {
-        deadline: 2,
-        timer: {
-          iface: 'Alleged: ManualTimer',
-        },
-      },
-      counterInstance: {
-        iface: 'Alleged: InstanceHandle',
-      },
-      electionType: 'survey',
-      issue: {
-        text: 'why',
-      },
-      maxChoices: 1,
-      maxWinners: 1,
-      method: 'unranked',
-      positions: [
-        {
-          text: 'because',
-        },
-        {
-          text: 'why not?',
-        },
-      ],
-      questionHandle: {
-        iface: 'Alleged: QuestionHandle',
-      },
-      quorumRule: 'majority',
-      tieOutcome: {
-        text: 'why not?',
+  const body = encromulate(
+    mockChainStorageRoot.getBody(
+      'mockChainStorageRoot.thisElectorate.latestQuestion',
+    ),
+  );
+  t.deepEqual(body, {
+    closingRule: {
+      deadline: 2,
+      timer: {
+        iface: 'Alleged: ManualTimer',
       },
     },
-  );
+    counterInstance: {
+      iface: 'Alleged: InstanceHandle',
+    },
+    electionType: 'survey',
+    issue: {
+      text: 'why',
+    },
+    maxChoices: 1,
+    maxWinners: 1,
+    method: 'unranked',
+    positions: [
+      {
+        text: 'because',
+      },
+      {
+        text: 'why not?',
+      },
+    ],
+    questionHandle: {
+      iface: 'Alleged: QuestionHandle',
+    },
+    quorumRule: 'majority',
+    tieOutcome: {
+      text: 'why not?',
+    },
+  });
 });
 
 test('committee-open question:mixed, with snapshot', async t => {
