@@ -14,6 +14,7 @@ import {
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { TimeMath } from '@agoric/time';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { prepareFluxAggregatorKit } from '../../src/price/fluxAggregatorKit.js';
@@ -45,6 +46,8 @@ const makeContext = async () => {
     const storageNode = E(mockStorageRoot).makeChildNode('priceAggregator');
 
     const manualTimer = buildManualTimer(() => {});
+    const timerBrand = manualTimer.getTimerBrand();
+    const toTS = val => TimeMath.coerceTimestampRecord(val, timerBrand);
 
     const baggage = makeScalarBigMapStore('test baggage');
     const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
@@ -66,7 +69,7 @@ const makeContext = async () => {
 
     const aggregator = makeFluxAggregator();
 
-    return { ...aggregator, manualTimer, mockStorageRoot };
+    return { ...aggregator, manualTimer, mockStorageRoot, toTS };
   }
 
   return { makeTestFluxAggregator };
@@ -501,6 +504,7 @@ test('suggest', async t => {
     timeout: 5,
   });
   const oracleTimer = aggregator.manualTimer;
+  const { toTS } = aggregator;
 
   const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
@@ -535,7 +539,7 @@ test('suggest', async t => {
       latestSubmission: 300n,
       queriedRoundId: 1n,
       roundTimeout: 5,
-      startedAt: 1n,
+      startedAt: toTS(1n),
     },
   );
 
@@ -547,7 +551,7 @@ test('suggest', async t => {
       latestSubmission: 1000n,
       queriedRoundId: 2n,
       roundTimeout: 5,
-      startedAt: 3n,
+      startedAt: toTS(3n),
     },
   );
 
@@ -565,6 +569,9 @@ test('suggest', async t => {
       latestSubmission: 2000n,
       queriedRoundId: 3n,
       roundTimeout: 0,
+      // note: 'startedAt' is still a Timestamp (not a
+      // TimestampRecord), so it is allowed to be a plain bigint, and
+      // the not-yet-started sentinel value is 0n, so no toTS(0n) here
       startedAt: 0n, // round 3 hasn't yet started, so it should be zeroed
     },
   );
@@ -589,6 +596,11 @@ test('notifications', async t => {
     restartDelay: 1, // have to alternate to start rounds
   });
   const oracleTimer = aggregator.manualTimer;
+  const { toTS } = aggregator;
+  // mockStorage doesn't preserve identity of the timerBrand, so build
+  // an equivalent shape for the t.deepEqual comparison
+  const mockBrand = { iface: 'Alleged: timerBrand' };
+  const toMockTS = val => ({ absValue: val, timerBrand: mockBrand });
 
   const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
@@ -608,7 +620,7 @@ test('notifications', async t => {
   await E(oracleA).pushPrice({ roundId: 1, unitPrice: 100n });
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 1n,
-    startedAt: 1n,
+    startedAt: toTS(1n),
     startedBy: 'agorice1priceOracleA',
   });
   await E(oracleB).pushPrice({ roundId: 1, unitPrice: 200n });
@@ -625,7 +637,7 @@ test('notifications', async t => {
         value: 150n, // AVG(100, 200)
       },
       timer: { iface: 'Alleged: ManualTimer' },
-      timestamp: 1n,
+      timestamp: toMockTS(1n),
     },
   );
 
@@ -639,7 +651,7 @@ test('notifications', async t => {
     (await latestRoundSubscriber.subscribeAfter()).head.value,
     {
       roundId: 1n,
-      startedAt: 1n,
+      startedAt: toTS(1n),
       startedBy: 'agorice1priceOracleA',
     },
   );
@@ -647,7 +659,7 @@ test('notifications', async t => {
   await E(oracleB).pushPrice({ roundId: 2, unitPrice: 1000n });
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 2n,
-    startedAt: 1n,
+    startedAt: toTS(1n),
     startedBy: 'agorice1priceOracleB',
   });
   // A joins in
@@ -657,7 +669,7 @@ test('notifications', async t => {
     aggregator.mockStorageRoot.getBody(
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
     ),
-    { roundId: 2n, startedAt: 1n, startedBy: 'agorice1priceOracleB' },
+    { roundId: 2n, startedAt: toMockTS(1n), startedBy: 'agorice1priceOracleB' },
   );
 
   await eventLoopIteration();
@@ -672,7 +684,7 @@ test('notifications', async t => {
         value: 1000n, // AVG(1000, 1000)
       },
       timer: { iface: 'Alleged: ManualTimer' },
-      timestamp: 1n,
+      timestamp: toMockTS(1n),
     },
   );
 
@@ -680,7 +692,7 @@ test('notifications', async t => {
   await E(oracleA).pushPrice({ roundId: 3, unitPrice: 1000n });
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 3n,
-    startedAt: 1n,
+    startedAt: toTS(1n),
     startedBy: 'agorice1priceOracleA',
   });
   // no new price yet publishable

@@ -7,6 +7,7 @@ import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { TimeMath } from '@agoric/time';
 import { E } from '@endo/far';
 import { zip } from '@agoric/internal';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
@@ -255,6 +256,8 @@ test.serial('admin price', async t => {
   const manualTimer = /** @type {ManualTimer} */ (
     t.context.consume.chainTimerService
   );
+  const timerBrand = await E(manualTimer).getTimerBrand();
+  const toTS = val => TimeMath.coerceTimestampRecord(val, timerBrand);
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   await E(manualTimer).tickN(1);
 
@@ -264,7 +267,7 @@ test.serial('admin price', async t => {
 
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
     roundId: 1n,
-    startedAt: 0n,
+    startedAt: toTS(0n),
     startedBy: 'adminPriceAddress',
   });
 });
