@@ -49,8 +49,12 @@ export const subscriptionTracker = async (t, subscription) => {
     const actualDelta = diff(prevNotif.value, notif.value);
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
+  const assertLike = async expectedState => {
+    notif = await metrics.getUpdateSince(notif?.updateCount);
+    t.like(notif.value, expectedState, 'Unexpected state');
+  };
   const assertState = async expectedState => {
-    notif = await metrics.getUpdateSince(notif.updateCount);
+    notif = await metrics.getUpdateSince(notif?.updateCount);
     t.deepEqual(notif.value, expectedState, 'Unexpected state');
   };
   const assertNoUpdate = async () => {
@@ -60,6 +64,7 @@ export const subscriptionTracker = async (t, subscription) => {
   return {
     assertChange,
     assertInitial,
+    assertLike,
     assertState,
     getLastNotif,
     assertNoUpdate,
