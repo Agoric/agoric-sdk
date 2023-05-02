@@ -34,12 +34,6 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
     recorderPK.resolve(makeRecorder);
   });
 
-  /** @param {string} kind */
-  const provideNameHubKit = kind => {
-    /[a-zA-z]+/.test(kind) || Fail`invalid kind: ${kind}`;
-    return provide(baggage, kind, makeNameHubKit);
-  };
-
   /**
    * @param {ERef<StorageNode>} nameStorage
    * @param {ERef<Marshaller>} marshaller
@@ -49,7 +43,9 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
     Promise.all(
       kinds.map(async kind => {
         /[a-zA-z]+/.test(kind) || Fail`invalid kind: ${kind}`;
-        const kindAdmin = provideNameHubKit(kind).nameAdmin;
+        const { nameAdmin: kindAdmin } = await agoricNamesAdmin.provideChild(
+          kind,
+        );
         const kindNode = await E(nameStorage).makeChildNode(kind);
 
         marshallerPK.resolve(marshaller);
@@ -64,8 +60,6 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   return Far('vat-agoricNames', {
     getNameHub: () => agoricNames,
     getNameHubKit: () => ({ agoricNames, agoricNamesAdmin }),
-    provideNameHubKit,
-    provideNameHub: kind => provideNameHubKit(kind).nameHub,
     publishNameHubs,
   });
 }

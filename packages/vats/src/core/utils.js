@@ -1,7 +1,5 @@
 // @ts-check
-import { E, Far } from '@endo/far';
-import { assertPassable } from '@endo/marshal';
-import { WalletName } from '@agoric/internal';
+import { E } from '@endo/far';
 import { heapZone } from '@agoric/zone';
 import { provide } from '@agoric/vat-data';
 import { makeNameHubKit } from '../nameHub.js';
@@ -18,6 +16,8 @@ const mapEntries = (obj, f) =>
 
 /**
  * We reserve these keys in name hubs.
+ *
+ * XXX the 2nd level tables are no longer used for reservations.
  *
  * @type {{ [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string } }}
  */
@@ -247,8 +247,7 @@ export const makeWellKnownSpaces = async (
   const { agoricNamesAdmin } = E.get(E(provider).getNameHubKit());
   const spaceEntries = await Promise.all(
     kinds.map(async kind => {
-      const { nameHub, nameAdmin } = await E(provider).provideNameHubKit(kind);
-      await E(agoricNamesAdmin).update(kind, nameHub, nameAdmin);
+      const { nameAdmin } = await E(agoricNamesAdmin).provideChild(kind);
       const subSpaceLog = (...args) => log(kind, ...args);
       return [kind, makePromiseSpaceForNameHub(nameAdmin, subSpaceLog)];
     }),
