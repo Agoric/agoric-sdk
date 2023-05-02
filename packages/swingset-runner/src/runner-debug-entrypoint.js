@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --inspect-brk
+/* eslint-env node */
 
 /**
  * Simple boilerplate program providing linkage to launch an application written using modules within the
@@ -11,4 +12,12 @@ import '@endo/init/pre.js';
 import '@endo/init';
 import { main } from './main.js';
 
-main();
+process.exitCode = 1;
+main().then(
+  () => {
+    process.exitCode = 0;
+  },
+  error => {
+    console.error(error);
+  },
+);

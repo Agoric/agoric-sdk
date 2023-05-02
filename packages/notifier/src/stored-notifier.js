@@ -39,6 +39,8 @@ export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
     fail(reason) {
       console.error('StoredNotifier failed to iterate', reason);
     },
+  }).catch(reason => {
+    console.error('StoredNotifier halted iteration', reason);
   });
 
   /** @type {Unserializer} */
