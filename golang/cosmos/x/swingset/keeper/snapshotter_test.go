@@ -34,7 +34,7 @@ func TestNotConfigured(t *testing.T) {
 	swingsetSnapshotter.isConfigured = func() bool { return false }
 	err := swingsetSnapshotter.InitiateSnapshot(123)
 	if err == nil {
-		t.Error("wanted error for unconfigured snapshot")
+		t.Error("wanted error for unconfigured snapshot manager")
 	}
 }
 
@@ -89,6 +89,11 @@ func TestInitiateFails(t *testing.T) {
 	}
 	if err.Error() != "initiate failed" {
 		t.Errorf(`wanted error "initiate failed", got "%s"`, err.Error())
+	}
+	// another wait should succeed without error
+	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	if err != nil {
+		t.Error(err)
 	}
 }
 
