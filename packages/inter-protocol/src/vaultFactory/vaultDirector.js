@@ -15,9 +15,6 @@ import {
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
   atomicRearrange,
-  getAmountIn,
-  getAmountOut,
-  makeRatioFromAmounts,
   makeRecorderTopic,
   provideEmptySeat,
   SubscriberShape,
@@ -299,7 +296,6 @@ export const prepareVaultDirector = (
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
-        getCollaterals: M.call().returns(M.promise()),
         getMetrics: M.call().returns(SubscriberShape),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
@@ -453,34 +449,6 @@ export const prepareVaultDirector = (
             Fail`Not a supported collateral type ${brandIn}`;
           /** @type {VaultManager} */
           return managerForCollateral(brandIn).getPublicFacet();
-        },
-        /**
-         * @deprecated get `collaterals` list from metrics
-         */
-        async getCollaterals() {
-          // should be collateralManagers.map((vm, brand) => ({
-          return harden(
-            Promise.all(
-              [...collateralManagers.entries()].map(
-                async ([brand, managerIndex]) => {
-                  const vm = vaultManagers.get(managerIndex).self;
-                  const priceQuote = await vm.getCollateralQuote();
-                  return {
-                    brand,
-                    interestRate: vm.getGovernedParams().getInterestRate(),
-                    liquidationMargin: vm
-                      .getGovernedParams()
-                      .getLiquidationMargin(),
-                    stabilityFee: vm.getGovernedParams().getMintFee(),
-                    marketPrice: makeRatioFromAmounts(
-                      getAmountOut(priceQuote),
-                      getAmountIn(priceQuote),
-                    ),
-                  };
-                },
-              ),
-            ),
-          );
         },
         /** @deprecated use getPublicTopics */
         getMetrics() {

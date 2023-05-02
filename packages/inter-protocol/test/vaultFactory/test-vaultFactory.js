@@ -4,6 +4,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
@@ -15,7 +16,6 @@ import {
   assertAmountsEqual,
   assertPayoutAmount,
 } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
@@ -35,7 +35,6 @@ import {
 } from '../metrics.js';
 import { setUpZoeForTest, withAmountUtils } from '../supports.js';
 import {
-  BASIS_POINTS,
   defaultParamValues,
   getRunFromFaucet,
   legacyOfferResult,
@@ -369,36 +368,6 @@ test('first', async t => {
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     Minted: run.make(24n),
-  });
-});
-
-test('vaultFactory display collateral', async t => {
-  const { aeth, run, rates: defaultRates } = t.context;
-  t.context.rates = harden({
-    ...defaultRates,
-    mintFee: makeRatio(530n, run.brand, BASIS_POINTS),
-  });
-
-  const services = await setupServices(
-    t,
-    [500n, 1500n],
-    aeth.make(90n),
-    buildManualTimer(t.log),
-    undefined,
-    500n,
-  );
-
-  // wait for priceAuthority to initialize a quote.
-  await eventLoopIteration();
-
-  const { vfPublic } = services.vaultFactory;
-  const collaterals = await E(vfPublic).getCollaterals();
-  t.deepEqual(collaterals[0], {
-    brand: aeth.brand,
-    liquidationMargin: makeRatio(105n, run.brand),
-    stabilityFee: makeRatio(530n, run.brand, BASIS_POINTS),
-    marketPrice: makeRatio(5_555_555n, run.brand, 1_000_000n, aeth.brand),
-    interestRate: makeRatio(100n, run.brand, 10000n, run.brand),
   });
 });
 
