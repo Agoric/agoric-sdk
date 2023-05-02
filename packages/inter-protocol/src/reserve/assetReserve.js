@@ -68,7 +68,7 @@ const trace = makeTracer('Reserve', false);
  * }} privateArgs
  * @param {Baggage} baggage
  */
-const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   // This contract mixes two styles of access to durable state. durableStores
   // are declared at the top level and referenced lexically. local state is
   // accessed via the `state` object. The latter means updates are made directly
@@ -304,10 +304,7 @@ const start = async (zcf, privateArgs, baggage) => {
     publicFacet: pFacet,
   };
 };
-
-harden(start);
-
-export { start };
+harden(prepare);
 
 /**
  * @typedef {object} ShortfallReporter
@@ -329,7 +326,7 @@ export { start };
  * @property {() => Invitation} makeAddCollateralInvitation
  */
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
-/** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet the creator facet for the governor */
+/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} AssetReservePublicFacet */
+/** @typedef {Awaited<ReturnType<typeof prepare>>['creatorFacet']} AssetReserveCreatorFacet the creator facet for the governor */
 /** @typedef {OriginalAssetReserveCreatorFacet} AssetReserveLimitedCreatorFacet */
-/** @typedef {GovernorCreatorFacet<typeof start>} GovernedAssetReserveFacetAccess */
+/** @typedef {GovernorCreatorFacet<typeof prepare>} GovernedAssetReserveFacetAccess */

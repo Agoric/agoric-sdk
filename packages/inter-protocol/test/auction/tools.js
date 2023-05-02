@@ -18,7 +18,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
  * autoRefund: Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>,
  * auctioneer: Installation<import('../../src/auction/auctioneer').start>,
  * governor: Installation<import('@agoric/governance/src/contractGovernor').start>,
- * reserve: Installation<import('../../src/reserve/assetReserve.js').start>,
+ * reserve: Installation<import('../../src/reserve/assetReserve.js').prepare>,
  * }} AuctionTestInstallations
  */
 

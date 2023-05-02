@@ -63,7 +63,7 @@ const BASIS_POINTS = 10_000n;
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
- *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['start']>,
+ *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['prepare']>,
  *   stakeFactoryKit: GovernanceFacetKit<import('../stakeFactory/stakeFactory.js')['start']>,
  *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['prepare']>,
  *   auctioneerKit: AuctioneerKit,
