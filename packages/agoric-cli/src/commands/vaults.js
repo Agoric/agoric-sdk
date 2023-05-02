@@ -13,7 +13,6 @@ import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
 /**
- *
  * @param {import('anylogger').Logger} logger
  */
 export const makeVaultsCommand = logger => {

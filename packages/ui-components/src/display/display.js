@@ -10,7 +10,6 @@ import { parseAsCopyBag } from './copyBagValue/parseAsCopyBag.js';
 import { stringifyCopyBag } from './copyBagValue/stringifyCopyBag.js';
 
 /**
- *
  * @param {string} str - string to parse as a value
  * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
@@ -50,7 +49,6 @@ export const parseAsAmount = (
 };
 
 /**
- *
  * @param {AmountValue} value - value to stringify
  * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the

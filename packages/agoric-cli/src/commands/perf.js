@@ -23,7 +23,6 @@ import { networkConfig } from '../lib/rpc.js';
 const SLEEP_SECONDS = 0.1;
 
 /**
- *
  * @param {import('anylogger').Logger} logger
  */
 export const makePerfCommand = logger => {

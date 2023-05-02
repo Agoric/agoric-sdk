@@ -20,7 +20,6 @@ export const makeIssuerRecord = (brand, issuer, displayInfo) =>
   });
 
 /**
- *
  * @param {IssuerRecord} issuerRecord
  * @returns {asserts issuerRecord is Required<IssuerRecord>}
  */

@@ -7,7 +7,6 @@ import { makeNotifier } from '@agoric/notifier';
 /** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
 
 /**
- *
  * @param {Brand<'set'>} quoteBrand
  * @param {Amount<'nat'>} amountIn
  * @param {Amount<'nat'>} amountOut

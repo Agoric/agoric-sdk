@@ -22,7 +22,6 @@ const AssetKind = harden({
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /**
- *
  * @param {AssetKind} allegedAK
  */
 const assertAssetKind = allegedAK => {
@@ -110,7 +109,6 @@ const assertValueGetAssetKind = value => {
 };
 
 /**
- *
  * Asserts that value is a valid AmountMath and returns the appropriate helpers.
  *
  * Made available only for testing, but it is harmless for other uses.
@@ -377,7 +375,6 @@ const AmountMath = {
 harden(AmountMath);
 
 /**
- *
  * @param {Amount} amount
  */
 const getAssetKind = amount => {

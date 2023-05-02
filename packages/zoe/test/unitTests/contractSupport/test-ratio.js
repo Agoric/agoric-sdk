@@ -22,7 +22,6 @@ import {
 } from '../../../src/contractSupport/ratio.js';
 
 /**
- *
  * @param {*} t
  * @param {Amount<'nat'>} a1
  * @param {Amount<'nat'>} a2

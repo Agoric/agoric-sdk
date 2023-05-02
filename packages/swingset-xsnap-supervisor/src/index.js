@@ -12,7 +12,6 @@ const read = (name, path) => {
 };
 
 /**
- *
  * @returns { Promise<string> }
  */
 export const getSupervisorBundleSHA256 = async () => {
@@ -21,7 +20,6 @@ export const getSupervisorBundleSHA256 = async () => {
 };
 
 /**
- *
  * @typedef {{ moduleFormat: string, source: string, sourceMap: [string] }} Bundle
  * @returns { Promise<Bundle> }
  */

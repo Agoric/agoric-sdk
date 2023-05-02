@@ -48,7 +48,6 @@ export const withAmountUtils = kit => {
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
 
 /**
- *
  * @param {ERef<StoredFacet>} subscription
  */
 export const subscriptionKey = subscription => {
@@ -100,7 +99,6 @@ const makeFakeBridgeManager = () =>
     },
   });
 /**
- *
  * @param {*} log
  * @returns {Promise<ChainBootstrapSpace>}>}
  */
@@ -191,7 +189,6 @@ export const mintCentralPayment = async (
 };
 
 /**
- *
  * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
  * @param {string} subscriberName
  */

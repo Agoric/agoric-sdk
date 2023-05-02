@@ -111,7 +111,6 @@ export function getTelemetryProviders(powers = {}) {
 }
 
 /**
- *
  * @param {import('@opentelemetry/api-metrics').Meter} metricMeter
  * @param {string} name
  */

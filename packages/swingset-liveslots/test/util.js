@@ -47,7 +47,6 @@ export function buildDispatch(onDispatchCallback) {
 }
 
 /**
- *
  * @param {unknown} target
  * @param {string} method
  * @param {any[]} args

@@ -223,7 +223,6 @@
  */
 
 /**
- *
  * @typedef {Partial<ProposalRecord>} Proposal
  *
  * @typedef {{give: AmountKeywordRecord,

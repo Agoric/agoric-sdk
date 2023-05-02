@@ -52,7 +52,6 @@ export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
 };
 
 /**
- *
  * @param {number} floatPrice
  * @param {Brand<'nat'>} numBrand
  * @param {Brand<'nat'>} denomBrand

@@ -51,7 +51,6 @@ const toBundleMeta = n => `bundle-${n}-meta.json`;
 const providedCaches = new Map();
 
 /**
- *
  * @param {ReturnType<typeof makeFileWriter>} wr
  * @param {*} bundleOptions
  * @param {ReturnType<typeof makeFileReader>} cwd

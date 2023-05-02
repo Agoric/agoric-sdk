@@ -7,7 +7,6 @@ export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
  */
 
 /**
- *
  * @param {DeliverMessages} deliver
  * @param {{ clearTimeout: NodeJS.clearTimeout, setTimeout: NodeJS.setTimeout }} io
  * @param {number} batchTimeoutMs

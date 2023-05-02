@@ -217,7 +217,6 @@ const makeMultiCandidateVoteCounter = (
 };
 
 /**
- *
  * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint }>} zcf
  * @param {{outcomePublisher: Publisher<MultiOutcomeRecord>}} outcomePublisher
  */

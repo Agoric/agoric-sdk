@@ -32,7 +32,6 @@ export const sumAmountKeywordRecord = (amr, issuerRecord) => {
 };
 
 /**
- *
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  * @param {{ (keyword: string, issuerRecord: IssuerRecord): void }} recordIssuer
  * @param {GetAssetKindByBrand} getAssetKindByBrand

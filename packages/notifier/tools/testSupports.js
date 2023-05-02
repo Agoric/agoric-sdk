@@ -6,7 +6,6 @@ import '../src/types-ambient.js';
 export { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 /**
- *
  * @param {string} path
  * @param {IterationObserver<unknown>} [publication]
  */

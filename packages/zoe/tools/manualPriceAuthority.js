@@ -11,7 +11,6 @@ import {
 } from '../src/contractSupport/index.js';
 
 /**
- *
  * @param {object} options
  * @param {Brand<'nat'>} options.actualBrandIn
  * @param {Brand<'nat'>} options.actualBrandOut

@@ -87,7 +87,6 @@ test.before(async t => {
 });
 
 /**
- *
  * @param {import('ava').ExecutionContext<*>} t
  * @param {string[]} oracleAddresses
  */

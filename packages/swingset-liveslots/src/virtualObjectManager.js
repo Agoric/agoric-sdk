@@ -137,7 +137,6 @@ const makeContextCache = (makeState, makeContext) => {
  */
 
 /**
- *
  * @param {*} contextCache
  * @param {*} getSlotForVal
  * @returns {ContextProvider}

@@ -111,7 +111,6 @@ const initState = (
 };
 
 /**
- *
  * @param {MethodContext} context
  */
 const finish = ({ state, facets }) => {

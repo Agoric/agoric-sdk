@@ -175,7 +175,6 @@ test.before(async t => {
 });
 
 /**
- *
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {{}} [customTerms]
  */

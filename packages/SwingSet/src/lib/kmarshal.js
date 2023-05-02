@@ -15,7 +15,6 @@ import { assert } from '@agoric/assert';
 const refMap = new WeakMap();
 
 /**
- *
  * @param {string} kref
  * @param {string} [iface]
  * @returns {import('@endo/eventual-send').ERef<KCap>}
@@ -59,7 +58,6 @@ export const kslot = (kref, iface = 'undefined') => {
 };
 
 /**
- *
  * @param {any} obj
  * @returns {string}
  */

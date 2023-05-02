@@ -40,7 +40,6 @@ const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
   });
 };
 /**
- *
  * @param {*} t
  * @param {Promise<Payment[]>} paymentsP
  * @param {number} count
