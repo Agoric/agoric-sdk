@@ -4,7 +4,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 const DEFAULT_CONTRACT_TERMS = {
   POLL_INTERVAL: 30n,
   maxSubmissionCount: 1000,
-  minSubmissionCount: 1,
+  minSubmissionCount: 2,
   restartDelay: 1, // the number of rounds an Oracle has to wait before they can initiate another round
   timeout: 10, // in seconds according to chainTimerService
   minSubmissionValue: 1n,
