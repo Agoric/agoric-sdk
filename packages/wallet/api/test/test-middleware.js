@@ -9,15 +9,7 @@ import {
 } from '@agoric/smart-wallet/src/marshal-contexts.js';
 
 const capData1 = {
-  body: JSON.stringify([
-    [
-      'applyMethod',
-      { '@qclass': 'slot', iface: 'Alleged: purse.actions', index: 0 },
-      'deposit',
-      [{ '@qclass': 'slot', iface: 'Alleged: payment', index: 1 }],
-    ],
-    ['applyFunction', { '@qclass': 'slot', index: 0 }, [1, 'thing']],
-  ]),
+  body: '#[["applyMethod","$0.Alleged: purse.actions","deposit",["$1.Alleged: payment"]],["applyFunction","$0",[1,"thing"]]]',
   slots: ['purse:1', 'payment:1'],
 };
 
@@ -64,7 +56,7 @@ test('makeImportContext in wallet UI can unserialize messages', async t => {
   const capData = ctx.fromMyWallet.serialize(harden([...msgs]));
 
   t.deepEqual(capData, {
-    body: '[["applyMethod",{"@qclass":"slot","iface":"Alleged: purse.actions","index":0},"transfer",[1]]]',
+    body: '#[["applyMethod","$0.Alleged: purse.actions","transfer",[1]]]',
     slots: ['purse:1'],
   });
 });

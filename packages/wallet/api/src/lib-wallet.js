@@ -229,18 +229,28 @@ export function makeWalletRoot({
   }
 
   const noOp = () => {};
-  const identitySlotToValFn = (slot, _) => slot;
+  const identitySlotToValFn = (slot, _) => Far('unk', { toJSON: () => slot });
 
   // Instead of { body, slots }, fill the slots. This is useful for
   // display but not for data processing, since the special identifier
   // @qclass is lost.
-  const { unserialize: fillInSlots } = makeMarshal(noOp, identitySlotToValFn, {
+  const { unserialize } = makeMarshal(noOp, identitySlotToValFn, {
     marshalName: 'wallet',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 40000,
     serializeBodyFormat: 'smallcaps',
   });
+  const fillInSlots = thing =>
+    JSON.parse(
+      JSON.stringify(unserialize(thing), (_, val) => {
+        if (typeof val === 'bigint') {
+          return Number(val);
+        } else {
+          return val;
+        }
+      }),
+    );
 
   /** @type {NotifierRecord<OfferState[]>} */
   const { notifier: offersNotifier, updater: offersUpdater } = makeNotifierKit(
