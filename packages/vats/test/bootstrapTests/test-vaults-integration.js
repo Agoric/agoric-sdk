@@ -5,9 +5,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
-import { makeMarshal } from '@endo/marshal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Far, makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
@@ -67,6 +67,83 @@ test.before(async t => {
 });
 test.after.always(t => {
   t.context.shutdown && t.context.shutdown();
+});
+
+/** @type {<X>(a: X[], b: X[]) => X[]} */
+const setDiff = (a, b) => a.filter(x => !b.includes(x));
+
+test('audit bootstrap exports', async t => {
+  const expectedIfaces = [
+    // in bridgeCoreEval()
+    // TODO(#7576): support unregister
+    'coreHandler',
+    // in bridgeProvisioner()
+    // TODO(#7576): support unregister
+    'provisioningHandler',
+    // makePrioritySendersManager() TODO(#7576): support unregister
+    'prioritySenders manager',
+    // TODO? move to provisioning vat?
+    'clientCreator',
+    // in registerNetworkProtocols(). TODO: outboard #7044
+    'ProtocolHandler', // in makeLoopbackProtocolHandler()
+    'callbacks',
+    'listener',
+    // TODO(#7563): disable stakeFactory in test-vaults-config
+    'stakeReporter',
+  ];
+
+  const { controller } = t.context;
+  const kState = controller.dump();
+  const bootstrapExports = kState.kernelTable.filter(
+    o => o[1] === 'v1' && o[2].startsWith('o+'),
+  );
+  const v1VatTable = kState.vatTables[0];
+  t.is(v1VatTable.vatID, 'v1');
+  const { transcript } = v1VatTable.state;
+
+  const oids = new Set(bootstrapExports.map(o => o[2]));
+
+  // Map oid to iface by poring over transcript syscalls
+  const toIface = new Map();
+  const anObj = Far('obj', {});
+  const aPromise = harden(new Promise(() => {}));
+  const saveBootstrapIface = (slot, iface) => {
+    if (slot.startsWith('p')) return aPromise;
+    if (oids.has(slot)) {
+      toIface.set(slot, iface);
+    }
+    return anObj;
+  };
+  const m = makeMarshal(undefined, saveBootstrapIface);
+  oids.forEach(oid => {
+    for (const [_ix, ev] of transcript) {
+      for (const sc of ev.sc) {
+        if (sc.s[0] === 'send') {
+          const { methargs } = sc.s[2];
+          if (!methargs.slots.includes(oid)) continue;
+          m.fromCapData(methargs);
+          return;
+        } else if (sc.s[0] === 'resolve') {
+          for (const res of sc.s[1]) {
+            const capdata = res[2];
+            if (!capdata.slots.includes(oid)) continue;
+            m.fromCapData(capdata);
+            return;
+          }
+        }
+      }
+    }
+  });
+
+  const exportedInterfaces = [...toIface.values()].map(iface =>
+    iface.replace(/^Alleged: /, ''),
+  );
+
+  // ava does a poor job of diffing string arrays
+  const extra = setDiff(exportedInterfaces, expectedIfaces);
+  t.deepEqual(extra, [], 'unexpected exported interfaces');
+  const missing = setDiff(expectedIfaces, exportedInterfaces);
+  t.deepEqual(missing, [], 'missing exported interfaces');
 });
 
 test('metrics path', async t => {
