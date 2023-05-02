@@ -64,7 +64,6 @@ function* fmtGraph(nodes, neighbors) {
 }
 
 /**
- *
  * @param {Record<string, Permit>} manifest
  * @typedef { true | {
  *   vatParameters?: Record<string, Permit>,

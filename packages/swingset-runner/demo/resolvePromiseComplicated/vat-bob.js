@@ -24,7 +24,7 @@ export function buildRootObject() {
         r => log(`=> Bob: the parameter to second resolved to '${r}'`),
         e => log(`=> Bob: the parameter to second rejected as '${e}'`),
       );
-      Promise.resolve().then(E(carol).bar(p));
+      void Promise.resolve().then(E(carol).bar(p));
       log('=> Bob: second done');
       return `Bob's second answer`;
     },

@@ -106,7 +106,6 @@ export const makeConnection = (
 };
 
 /**
- *
  * @param {ConnectionHandler} handler0
  * @param {Endpoint} addr0
  * @param {ConnectionHandler} handler1

@@ -14,7 +14,6 @@ const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 
 /**
- *
  * @param {import('anylogger').Logger} logger
  */
 export const makeOracleCommand = logger => {

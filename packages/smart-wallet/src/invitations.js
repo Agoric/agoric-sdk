@@ -25,7 +25,7 @@ const MAX_PIPE_LENGTH = 2;
  * }} AgoricContractInvitationSpec
  * source of invitation is a chain of calls starting with an agoricName
  *   - the start of the pipe is a lookup of instancePath within agoricNames
- *   - each entry in the callPipe executes a call on the preceeding result
+ *   - each entry in the callPipe executes a call on the preceding result
  *   - the end of the pipe is expected to return an Invitation
  *
  * @typedef {{

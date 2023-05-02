@@ -165,7 +165,6 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 };
 
 /**
- *
  * @param {ReturnType<typeof makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
@@ -238,11 +237,11 @@ export const makeWalletFactoryDriver = async (
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]
-     * @returns {void}
+     * @returns {Promise<void>}
      */
     sendOfferMaker(makeOffer, firstArg, secondArg) {
       const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
-      this.sendOffer(offer);
+      return this.sendOffer(offer);
     },
     /**
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}

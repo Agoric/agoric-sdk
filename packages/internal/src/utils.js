@@ -89,7 +89,6 @@ export const objectMap = (original, mapFn) => {
 harden(objectMap);
 
 /**
- *
  * @param {Array<string | symbol>} leftNames
  * @param {Array<string | symbol>} rightNames
  */

@@ -80,8 +80,10 @@ module.exports = {
         // contracts, but it also means kernel components that are used by
         // multiple clients. So we enable it throughout the repo and exceptions
         // are code-reviewed.
-        // TODO upgrade this to 'error'
-        '@jessie.js/no-nested-await': 'warn',
+        '@jessie.js/no-nested-await': 'off', // remove after endojs/Jessie#107
+        // TODO(https://github.com/endojs/Jessie/issues/107): use the following
+        // instead, and upgrade to 'error' when possible
+        // '@jessie.js/safe-await-separator': 'warn',
         // TODO upgrade this (or a subset) to 'error'
         'no-restricted-syntax': ['warn', ...deprecatedTerminology],
       },

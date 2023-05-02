@@ -324,7 +324,7 @@ export function makeVirtualReferenceManager(
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
     kindInfo ||
-      Fail`no kind info for ${kindID} (${baseRef}); check deserialize preceeding kind definitions`;
+      Fail`no kind info for ${kindID} (${baseRef}); check deserialize preceding kind definitions`;
     const { reanimator } = kindInfo;
     if (reanimator) {
       return reanimator(baseRef);

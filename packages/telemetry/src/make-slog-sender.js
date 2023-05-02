@@ -19,7 +19,6 @@ export const DEFAULT_SLOGSENDER_AGENT = 'self';
 const filterTruthy = arr => /** @type {any[]} */ (arr.filter(Boolean));
 
 /**
- *
  * @param {import('./index.js').MakeSlogSenderOptions} opts
  */
 export const makeSlogSender = async (opts = {}) => {

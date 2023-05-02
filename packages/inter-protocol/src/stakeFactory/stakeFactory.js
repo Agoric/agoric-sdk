@@ -78,7 +78,6 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  */
 
 /**
- *
  * @param {ZCF<StakeFactoryTerms>} zcf
  * @param {StakeFactoryPrivateArgs} privateArgs
  */

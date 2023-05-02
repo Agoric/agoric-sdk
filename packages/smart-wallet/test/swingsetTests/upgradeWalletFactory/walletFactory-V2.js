@@ -18,7 +18,6 @@ import {
 } from '../../../src/walletFactory.js';
 
 /**
- *
  * @type {typeof import('../../../src/walletFactory.js').prepare}
  */
 export const prepare = async (zcf, privateArgs, baggage) => {

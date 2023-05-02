@@ -220,7 +220,6 @@ harden(makeStorageNodeChild);
 
 // TODO find a better module for this
 /**
- *
  * @param {import('@endo/far').ERef<StorageNode>} storageNode
  * @param {import('@endo/far').ERef<Marshaller>} marshaller
  * @returns {(value: unknown) => Promise<void>}

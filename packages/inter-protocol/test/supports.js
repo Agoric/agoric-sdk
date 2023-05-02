@@ -69,7 +69,6 @@ export const setUpZoeForTest = async (setJig = () => {}) => {
 harden(setUpZoeForTest);
 
 /**
- *
  * @param {*} t
  * @param {import('@agoric/time/src/types').TimerService} [optTimer]
  */
@@ -214,7 +213,6 @@ export const withAmountUtils = kit => {
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
 
 /**
- *
  * @param {ERef<StoredSubscription<unknown> | StoredSubscriber<unknown>>} subscription
  */
 export const subscriptionKey = subscription => {
@@ -231,7 +229,6 @@ export const subscriptionKey = subscription => {
 };
 
 /**
- *
  * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
  * @param {string} subscriberName
  */

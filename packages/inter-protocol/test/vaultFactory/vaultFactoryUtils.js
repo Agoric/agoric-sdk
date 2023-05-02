@@ -118,7 +118,6 @@ export const setupElectorateReserveAndAuction = async (
 };
 
 /**
- *
  * @param {import('ava').ExecutionContext<any>} t
  * @param {bigint} amount
  */

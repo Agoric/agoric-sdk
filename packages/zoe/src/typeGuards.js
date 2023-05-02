@@ -3,15 +3,15 @@
 import {
   AmountShape,
   AssetKindShape,
-  DisplayInfoShape,
-  IssuerShape,
   BrandShape,
-  PaymentShape,
+  DisplayInfoShape,
   IssuerKitShape,
+  IssuerShape,
+  PaymentShape,
 } from '@agoric/ertp';
+import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/time';
-import { SubscriberShape } from '@agoric/notifier';
 
 // keywords have an initial cap
 export const KeywordShape = M.string();
@@ -140,7 +140,9 @@ export const ZoeMintI = M.interface('ZoeMint', {
 
 export const ZcfMintI = M.interface('ZcfMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
-  mintGains: M.call(AmountKeywordRecordShape, M.remotable('zcfSeat')).returns(),
+  mintGains: M.call(AmountKeywordRecordShape)
+    .optional(M.remotable('zcfSeat'))
+    .returns(M.remotable('zcfSeat')),
   burnLosses: M.call(
     AmountKeywordRecordShape,
     M.remotable('zcfSeat'),
