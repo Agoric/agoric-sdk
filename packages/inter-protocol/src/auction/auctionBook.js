@@ -612,9 +612,11 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           return scaledBidBook.hasOrders() || priceBook.hasOrders();
         },
         lockOraclePriceForRound() {
-          const { updatingOracleQuote } = this.state;
-          trace(`locking `, updatingOracleQuote);
-          this.state.lockedPriceForRound = updatingOracleQuote;
+          const { facets, state } = this;
+
+          trace(`locking `, state.updatingOracleQuote);
+          state.lockedPriceForRound = state.updatingOracleQuote;
+          facets.helper.publishBookData();
         },
 
         setStartingRate(rate) {
@@ -680,7 +682,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           scaledBidBook.exitAllSeats();
         },
         endAuction() {
-          const { state } = this;
+          const { state, facets } = this;
 
           state.startCollateral = AmountMath.makeEmpty(state.collateralBrand);
 
@@ -688,6 +690,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           state.curAuctionPrice = null;
           state.remainingProceedsGoal = null;
           state.startProceedsGoal = null;
+          facets.helper.publishBookData();
         },
         getDataUpdates() {
           return this.state.bookDataKit.subscriber;

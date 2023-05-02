@@ -924,21 +924,23 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   await bookTracker.assertChange({});
 
   await driver.advanceTo(170n, 'wait');
+  await bookTracker.assertChange({
+    startPrice: makeRatioFromAmounts(
+      bid.make(1_100_000_000n),
+      collateral.make(1_000_000_000n),
+    ),
+  });
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 175n },
   });
+
   await bookTracker.assertChange({
     collateralAvailable: { value: 0n },
     currentPriceLevel: makeRatioFromAmounts(
       bid.make(11_550_000_000_000n),
       collateral.make(10_000_000_000_000n),
     ),
-    startPrice: makeRatioFromAmounts(
-      bid.make(1_100_000_000n),
-      collateral.make(1_000_000_000n),
-    ),
   });
-
   await driver.advanceTo(175n, 'wait');
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 180n },
@@ -989,7 +991,20 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   });
   await bookTracker.assertChange({
     startCollateral: { value: 0n },
-    currentPriceLevel: { numerator: { value: 11_550_000_000_000n } },
+    currentPriceLevel: null,
+    startPrice: null,
+  });
+  await bookTracker.assertChange({
+    startPrice: makeRatioFromAmounts(
+      bid.make(1_100_000_000n),
+      collateral.make(1_000_000_000n),
+    ),
+  });
+  await bookTracker.assertChange({
+    currentPriceLevel: makeRatioFromAmounts(
+      bid.make(11_550_000_000_000n),
+      collateral.make(10_000_000_000_000n),
+    ),
   });
 });
 
@@ -1058,11 +1073,6 @@ test.serial('add assets to open auction', async t => {
 
   await driver.advanceTo(180n);
   await bookTracker.assertChange({
-    collateralAvailable: { value: 1500n },
-    currentPriceLevel: makeRatioFromAmounts(
-      bid.make(11_550_000_000_000n),
-      collateral.make(10_000_000_000_000n),
-    ),
     startPrice: makeRatioFromAmounts(
       bid.make(1_100_000_000n),
       collateral.make(1_000_000_000n),
@@ -1076,6 +1086,15 @@ test.serial('add assets to open auction', async t => {
   await assertPayouts(t, bidderSeat1, bid, collateral, 0n, 1500n);
 
   await driver.advanceTo(185n);
+
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 1500n },
+    currentPriceLevel: makeRatioFromAmounts(
+      bid.make(11_550_000_000_000n),
+      collateral.make(10_000_000_000_000n),
+    ),
+  });
+
   await driver.advanceTo(190n);
   await bookTracker.assertChange({
     currentPriceLevel: { numerator: { value: 9_350_000_000_000n } },
@@ -1088,6 +1107,11 @@ test.serial('add assets to open auction', async t => {
   // sellers split proceeds and refund 2:1
   await assertPayouts(t, liqSeat, bid, collateral, 1733n / 3n, 500n);
   await assertPayouts(t, liqSeat2, bid, collateral, (2n * 1733n) / 3n, 1000n);
+  await bookTracker.assertChange({
+    startCollateral: { value: 0n },
+    currentPriceLevel: null,
+    startPrice: null,
+  });
 });
 
 // Collateral quote is 1.1.  Asset quote is .25.  1000 C, and 500 A available.
