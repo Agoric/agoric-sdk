@@ -67,39 +67,46 @@ A single application might have multiple sources of time, which would require th
 The `timerService` object can be distributed to other vats as necessary.
 
 ```js
-  // for this example, assume poll() provides seconds-since-epoch
+  import { TimeMath } from '@agoric/time';
+
+  // for this example, assume timerService provides seconds-since-epoch
+  const timerBrand = await E(timerService).getTimerBrand();
+  const toTS = value => TimeMath.coerceTimestampRecord(value, timerBrand);
+  const fromTS = ts => TimeMath.absValue(ts);
+  const toRT = value => TimeMath.coerceRelativeTimeRecord(value, timerBrand);
 
   const now = await E(timerService).getCurrentTimestamp();
 
   // simple one-shot Promise-based relative delay
-  const p1 = E(timerService).delay(30n); // fires 30 seconds from now
+  const p1 = E(timerService).delay(toRT(30n)); // fires 30 seconds from now
   await p1;
 
   // same, but cancellable
-  const cancel2 = Far('cancel', {}); // any pass-by-reference object
-  // the cancelToken is always optional
-  const p2 = E(timerService).delay(30n, cancel2);
-  // E(timerService).cancel(cancel2) will cancel that
+  const cancelToken = Far('cancel', {}); // any pass-by-reference object
+  // the cancel token is always optional
+  const p2 = E(timerService).delay(toRT(30n), cancelToken);
+  // E(timerService).cancel(cancelToken) will cancel that
 
-  // same, but absolute instead of relative-to-now
-  const monday = 1_660_000_000;
-  const p3 = E(timerService).wakeAt(monday, cancel2);
-  await p3; // fires Mon Aug  8 16:06:40 2022 PDT
+  // same, but absolute seconds-since-epoch instead of relative-to-now
+  const y2k38Overflow = toTS(2_147_483_648n);
+  const p3 = E(timerService).wakeAt(y2k38Overflow, cancelToken);
+  await p3; // fires Tue, 19 Jan 2038 03:14:08 GMT
 
-  // non-Promise API functions needs a handler callback
+  // callback-based API functions need a handler object
   const handler = Far('handler', {
-    wake(t) { console.log(`woken up, scheduled for ${t}`); },
+    // t is a TimestampRecord
+    wake(t) { console.log(`woken up, scheduled for ${fromTS(t)}`); },
   });
 
   // then for one-shot absolute wakeups:
-  await E(timerService).setWakeup(monday, handler, cancel2);
-  // handler.wake(t) will be called shortly after monday
+  await E(timerService).setWakeup(y2k38Overflow, handler, cancelToken);
+  // handler.wake(t) will be called shortly after the Y2K38 overflow
 
   // cancel early:
-  await E(timerService).cancel(cancel2);
+  await E(timerService).cancel(cancelToken);
 
   // wake up at least 60 seconds from now:
-  await E(timerService).setWakeup(now + 60n, handler, cancel2);
+  await E(timerService).setWakeup(TimeMath.addAbsRel(now, 60n), handler, cancelToken);
 
   // repeatAfter() creates a repeating wakeup service: the handler will
   // fire somewhat after 20 seconds from now (now+delay), and again
@@ -110,9 +117,9 @@ The `timerService` object can be distributed to other vats as necessary.
   // accumulate drift. If the handler rejects, the repeater will be
   // cancelled.
 
-  const delay = 20n;
-  const interval = 60n;
-  E(timerService).repeatAfter(delay, interval, handler, cancel2);
+  const delay = toRT(20n);
+  const interval = toRT(60n);
+  E(timerService).repeatAfter(delay, interval, handler, cancelToken);
 
   // repeating wakeup service, Notifier-style . This supports both the
   // native 'E(notifierP).getUpdateSince()' Notifier protocol, and an
@@ -121,12 +128,13 @@ The `timerService` object can be distributed to other vats as necessary.
   // wrap it in a local "front-end" Notifier by calling the `makeNotifier()`
   // you get from the '@agoric/notifier' package.
 
-  const notifierP = E(timerService).makeNotifier(delay, interval, cancel2);
+  const notifierP = E(timerService).makeNotifier(delay, interval, cancelToken);
   // import { makeNotifier } from '@agoric/notifier';
   const notifier = makeNotifier(notifierP);
 
   for await (const scheduled of notifier) {
-    console.log(`woken up, scheduled for ${scheduled}`);
+    // 'scheduled' is a TimestampRecord
+    console.log(`woken up, scheduled for ${fromTS(scheduled)}`);
     // note: runs forever, once per 'interval'
     break; // unless you escape early
   }

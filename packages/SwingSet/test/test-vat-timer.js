@@ -191,25 +191,27 @@ const setup = async (t, allowRefire = false) => {
     );
   };
 
-  const toTS = value => {
-    return TimeMath.toAbs(value); // TODO (when, brand)
-  };
-  const fromTS = when => {
-    return TimeMath.absValue(when); // TODO: brand
-  };
+  // The device/poll() side of the timer deals strictly with
+  // BigInts. The API side deals with branded Timestamp and
+  // RelativeTime records, and tolerates unbranded values. vat-timer
+  // creates the brand internally.
 
-  return { ts, state, fired, makeHandler, thenFire, toTS, fromTS };
+  const timerBrand = ts.getTimerBrand();
+  const toTS = value => TimeMath.coerceTimestampRecord(value, timerBrand);
+  const toRT = value => TimeMath.coerceRelativeTimeRecord(value, timerBrand);
+
+  return { ts, state, fired, makeHandler, thenFire, toTS, toRT };
 };
 
 test('getCurrentTimestamp', async t => {
   // now = ts.getCurrentTimestamp()
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS } = await setup(t);
   t.not(ts, undefined);
   state.now = 10n;
-  t.is(ts.getCurrentTimestamp(), 10n);
-  t.is(ts.getCurrentTimestamp(), 10n);
+  t.deepEqual(ts.getCurrentTimestamp(), toTS(10n));
+  t.deepEqual(ts.getCurrentTimestamp(), toTS(10n));
   state.now = 20n;
-  t.is(ts.getCurrentTimestamp(), 20n);
+  t.deepEqual(ts.getCurrentTimestamp(), toTS(20n));
 });
 
 test('brand', async t => {
@@ -228,18 +230,60 @@ test('brand', async t => {
   t.false(brand.isMyClock({}));
   t.false(brand.isMyClock(brand));
   t.false(brand.isMyClock(ts));
+
+  const handler = Far('handler', { wake: _time => 0 });
+  const right = ts.getTimerBrand();
+  const wrong = Far('wrong', {
+    isMyTimerService: () => false,
+    isMyClock: () => false,
+  });
+  t.not(right, wrong);
+
+  const when = TimeMath.coerceTimestampRecord(1000n, wrong);
+  const delay = TimeMath.coerceRelativeTimeRecord(1000n, wrong);
+  const exp = { message: /TimerBrands must match/ };
+  t.throws(() => ts.setWakeup(when, handler), exp);
+  t.throws(() => ts.wakeAt(when), exp);
+  t.throws(() => ts.delay(delay), exp);
+  t.throws(() => ts.makeRepeater(delay, delay), exp);
+  t.throws(() => ts.repeatAfter(delay, delay, handler), exp);
+  t.throws(() => ts.makeNotifier(delay, delay), exp);
+
+  /*
+  // API no longer accepts old-style TimestampValues (without brand)
+  const whenNobrand = 123n;
+  const delayNobrand = 123n;
+  const expTS = { message: /TimerService takes branded Timestamp/ };
+  const expRT = { message: /TimerService takes branded RelativeTime/ };
+  t.throws(() => ts.setWakeup(whenNobrand, handler), expTS);
+  t.throws(() => ts.wakeAt(whenNobrand), expTS);
+  t.throws(() => ts.delay(delayNobrand), expRT);
+  t.throws(() => ts.makeRepeater(delayNobrand, delayNobrand), expRT);
+  t.throws(() => ts.repeatAfter(delayNobrand, delayNobrand, handler), expRT);
+  t.throws(() => ts.makeNotifier(delayNobrand, delayNobrand), expRT);
+  */
+
+  // API still accepts old-style TimestampValues
+  const whenNobrand = 123n;
+  const delayNobrand = 123n;
+  ts.setWakeup(whenNobrand, handler);
+  ts.wakeAt(whenNobrand);
+  ts.delay(delayNobrand);
+  ts.makeRepeater(delayNobrand, delayNobrand);
+  ts.repeatAfter(delayNobrand, delayNobrand, handler);
+  ts.makeNotifier(delayNobrand, delayNobrand);
 });
 
 test('clock', async t => {
   // clock.getCurrentTimestamp(), clock.getTimerBrand()
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS } = await setup(t);
   const clock = ts.getClock();
 
   state.now = 10n;
-  t.is(clock.getCurrentTimestamp(), 10n);
-  t.is(clock.getCurrentTimestamp(), 10n);
+  t.deepEqual(clock.getCurrentTimestamp(), toTS(10n));
+  t.deepEqual(clock.getCurrentTimestamp(), toTS(10n));
   state.now = 20n;
-  t.is(clock.getCurrentTimestamp(), 20n);
+  t.deepEqual(clock.getCurrentTimestamp(), toTS(20n));
 
   t.is(clock.setWakeup, undefined);
   t.is(clock.wakeAt, undefined);
@@ -253,22 +297,22 @@ test('clock', async t => {
 
 test('setWakeup', async t => {
   // ts.setWakeup(when, handler, cancelToken) -> when
-  const { ts, state, fired, makeHandler } = await setup(t);
+  const { ts, state, fired, makeHandler, toTS } = await setup(t);
 
   t.not(ts, undefined);
   t.is(state.currentWakeup, undefined);
 
-  t.is(ts.getCurrentTimestamp(), state.now);
+  t.deepEqual(ts.getCurrentTimestamp(), toTS(state.now));
 
   // the first setWakeup sets the alarm
-  const t30 = ts.setWakeup(30n, makeHandler(30));
-  t.is(t30, 30n);
+  const t30 = ts.setWakeup(toTS(30n), makeHandler(30));
+  t.deepEqual(t30, toTS(30n));
   t.is(state.currentWakeup, 30n);
   t.not(state.currentHandler, undefined);
 
   // an earlier setWakeup brings the alarm forward
   const cancel20 = Far('cancel token', {});
-  ts.setWakeup(20n, makeHandler(20), cancel20);
+  ts.setWakeup(toTS(20n), makeHandler(20), cancel20);
   t.is(state.currentWakeup, 20n);
 
   // deleting the earlier pushes the alarm back
@@ -276,23 +320,23 @@ test('setWakeup', async t => {
   t.is(state.currentWakeup, 30n);
 
   // later setWakeups do not change the alarm
-  ts.setWakeup(40n, makeHandler(40));
-  ts.setWakeup(50n, makeHandler(50));
-  ts.setWakeup(50n, makeHandler('50x'));
+  ts.setWakeup(toTS(40n), makeHandler(40));
+  ts.setWakeup(toTS(50n), makeHandler(50));
+  ts.setWakeup(toTS(50n), makeHandler('50x'));
   // cancel tokens can be shared
   const cancel6x = Far('cancel token', {});
-  ts.setWakeup(60n, makeHandler(60n), cancel6x);
-  ts.setWakeup(60n, makeHandler('60x'));
-  ts.setWakeup(61n, makeHandler(61n), cancel6x);
+  ts.setWakeup(toTS(60n), makeHandler(60n), cancel6x);
+  ts.setWakeup(toTS(60n), makeHandler('60x'));
+  ts.setWakeup(toTS(61n), makeHandler(61n), cancel6x);
   t.is(state.currentWakeup, 30n);
 
   // wake up exactly on time (30n)
   state.now = 30n;
   state.currentHandler.wake(30n);
   await waitUntilQuiescent();
-  t.is(fired[20], undefined); // was removed
-  t.is(fired[30], 30n); // fired
-  t.is(fired[40], undefined); // not yet fired
+  t.deepEqual(fired[20], undefined); // was removed
+  t.deepEqual(fired[30], toTS(30n)); // fired
+  t.deepEqual(fired[40], undefined); // not yet fired
   // resets wakeup to next alarm
   t.is(state.currentWakeup, 40n);
   t.not(state.currentHandler, undefined);
@@ -301,63 +345,63 @@ test('setWakeup', async t => {
   // (51n), all wakeups before/upto the arrival time are fired, and
   // they all get the most recent timestamp
   state.now = 51n;
-  state.currentHandler.wake(41n);
+  state.currentHandler.wake(toTS(41n));
   await waitUntilQuiescent();
-  t.is(fired[40], 51n);
-  t.is(fired[50], 51n);
-  t.is(fired['50x'], 51n);
-  t.is(fired[60], undefined);
+  t.deepEqual(fired[40], toTS(51n));
+  t.deepEqual(fired[50], toTS(51n));
+  t.deepEqual(fired['50x'], toTS(51n));
+  t.deepEqual(fired[60], undefined);
   t.is(state.currentWakeup, 60n);
   t.not(state.currentHandler, undefined);
 
   // a setWakeup in the past will be fired immediately
-  ts.setWakeup(21n, makeHandler(21));
+  ts.setWakeup(toTS(21n), makeHandler(21));
   await waitUntilQuiescent();
-  t.is(fired[21], 51n);
+  t.deepEqual(fired[21], toTS(51n));
 
   // as will a setWakeup for the exact present
-  ts.setWakeup(51n, makeHandler(51));
+  ts.setWakeup(toTS(51n), makeHandler(51));
   await waitUntilQuiescent();
-  t.is(fired[51], 51n);
+  t.deepEqual(fired[51], toTS(51n));
 
   // the remaining time-entry handler should still be there
   state.now = 65n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired['60x'], 65n);
+  t.deepEqual(fired['60x'], toTS(65n));
 });
 
 test('wakeAt', async t => {
   // p = ts.wakeAt(absolute, cancelToken=undefined)
-  const { ts, state, fired, thenFire } = await setup(t);
+  const { ts, state, fired, thenFire, toTS } = await setup(t);
 
   const cancel10 = Far('cancel token', {});
   const cancel20 = Far('cancel token', {});
-  thenFire(ts.wakeAt(10n, cancel10), '10');
-  thenFire(ts.wakeAt(10n), '10x');
-  thenFire(ts.wakeAt(20n, cancel20), '20');
+  thenFire(ts.wakeAt(toTS(10n), cancel10), '10');
+  thenFire(ts.wakeAt(toTS(10n)), '10x');
+  thenFire(ts.wakeAt(toTS(20n), cancel20), '20');
 
   t.is(state.currentWakeup, 10n);
 
   state.now = 10n;
   state.currentHandler.wake(10n);
   await waitUntilQuiescent();
-  t.deepEqual(fired['10'], ['fulfill', 10n]);
-  t.deepEqual(fired['10x'], ['fulfill', 10n]);
+  t.deepEqual(fired['10'], ['fulfill', toTS(10n)]);
+  t.deepEqual(fired['10x'], ['fulfill', toTS(10n)]);
   t.deepEqual(fired['20'], undefined);
 
   // late cancel is ignored
   ts.cancel(cancel10);
 
   // adding a wakeAt in the past will fire immediately
-  thenFire(ts.wakeAt(5n), '5');
+  thenFire(ts.wakeAt(toTS(5n)), '5');
   await waitUntilQuiescent();
-  t.deepEqual(fired['5'], ['fulfill', 10n]);
+  t.deepEqual(fired['5'], ['fulfill', toTS(10n)]);
 
   // as will a wakeAt for exactly now
-  thenFire(ts.wakeAt(10n), '10y');
+  thenFire(ts.wakeAt(toTS(10n)), '10y');
   await waitUntilQuiescent();
-  t.deepEqual(fired['10y'], ['fulfill', 10n]);
+  t.deepEqual(fired['10y'], ['fulfill', toTS(10n)]);
 
   // cancelling a wakeAt causes the promise to reject
   ts.cancel(cancel20);
@@ -370,35 +414,35 @@ test('wakeAt', async t => {
 
 test('delay', async t => {
   // p = ts.delay(relative, cancelToken=undefined)
-  const { ts, state, fired, thenFire } = await setup(t);
+  const { ts, state, fired, thenFire, toTS, toRT } = await setup(t);
 
   state.now = 100n;
 
   const cancel10 = Far('cancel token', {});
   const cancel20 = Far('cancel token', {});
-  thenFire(ts.delay(10n, cancel10), '10'); // =110
-  thenFire(ts.delay(10n), '10x'); // =110
-  thenFire(ts.delay(20n, cancel20), '20'); // =120
+  thenFire(ts.delay(toRT(10n), cancel10), '10'); // =110
+  thenFire(ts.delay(toRT(10n)), '10x'); // =110
+  thenFire(ts.delay(toRT(20n), cancel20), '20'); // =120
 
   t.is(state.currentWakeup, 110n);
 
   state.now = 110n;
   state.currentHandler.wake(110n);
   await waitUntilQuiescent();
-  t.deepEqual(fired['10'], ['fulfill', 110n]);
-  t.deepEqual(fired['10x'], ['fulfill', 110n]);
+  t.deepEqual(fired['10'], ['fulfill', toTS(110n)]);
+  t.deepEqual(fired['10x'], ['fulfill', toTS(110n)]);
   t.deepEqual(fired['20'], undefined);
 
   // late cancel is ignored
   ts.cancel(cancel10);
 
   // delay=0 fires immediately
-  thenFire(ts.delay(0n), '0');
+  thenFire(ts.delay(toRT(0n)), '0');
   await waitUntilQuiescent();
-  t.deepEqual(fired['0'], ['fulfill', 110n]);
+  t.deepEqual(fired['0'], ['fulfill', toTS(110n)]);
 
   // delay must be non-negative
-  t.throws(() => ts.delay(-1n), { message: '-1 is negative' });
+  t.throws(() => ts.delay(toRT(-1n)), { message: /Must be non-negative/ });
 
   // cancelling a delay causes the promise to reject
   ts.cancel(cancel20);
@@ -411,12 +455,12 @@ test('delay', async t => {
 
 test('makeRepeater', async t => {
   // r=ts.makeRepeater(delay, interval); r.schedule(handler); r.disable();
-  const { ts, state, fired, makeHandler } = await setup(t, true);
+  const { ts, state, fired, makeHandler, toTS, toRT } = await setup(t, true);
 
   state.now = 3n;
 
   // fire at T=25,35,45,..
-  const r1 = ts.makeRepeater(22n, 10n);
+  const r1 = ts.makeRepeater(toRT(22n), toRT(10n));
   t.is(state.currentWakeup, undefined); // not scheduled yet
   // interval starts at now+delay as computed during ts.makeRepeater,
   // not recomputed during r1.schedule()
@@ -434,24 +478,24 @@ test('makeRepeater', async t => {
   state.now = 5n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], undefined); // not yet
+  t.deepEqual(fired[1], undefined); // not yet
 
   state.now = 24n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], undefined); // wait for it
+  t.deepEqual(fired[1], undefined); // wait for it
 
   state.now = 25n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], 25n); // fired
+  t.deepEqual(fired[1], toTS(25n)); // fired
   t.is(state.currentWakeup, 35n); // primed for next time
 
   // if we miss a couple, next wakeup is in the future
   state.now = 50n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], 50n);
+  t.deepEqual(fired[1], toTS(50n));
   t.is(state.currentWakeup, 55n);
 
   // likewise if device-timer message takes a while to reach vat-timer
@@ -459,7 +503,7 @@ test('makeRepeater', async t => {
   // sent at T=50, received by vat-timer at T=60
   state.currentHandler.wake(50n);
   await waitUntilQuiescent();
-  t.is(fired[1], 60n);
+  t.deepEqual(fired[1], toTS(60n));
   t.is(state.currentWakeup, 65n);
 
   r1.disable();
@@ -468,13 +512,13 @@ test('makeRepeater', async t => {
   // duplicate .disable is ignored
   r1.disable();
 
-  ts.setWakeup(70n, makeHandler(70));
+  ts.setWakeup(toTS(70n), makeHandler(70));
   t.is(state.currentWakeup, 70n);
   state.now = 70n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[70], 70n);
-  t.is(fired[1], 60n); // not re-fired
+  t.deepEqual(fired[70], toTS(70n));
+  t.deepEqual(fired[1], toTS(60n)); // not re-fired
   t.is(state.currentWakeup, undefined);
 
   let pk = makePromiseKit();
@@ -495,7 +539,7 @@ test('makeRepeater', async t => {
   await waitUntilQuiescent();
 
   // while the handler is running, the repeater is not scheduled
-  t.is(slowState, 80n);
+  t.deepEqual(slowState, toTS(80n));
   t.is(state.currentWakeup, undefined);
 
   // if time passes while the handler is running..
@@ -542,7 +586,7 @@ test('makeRepeater', async t => {
   state.now = 115n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[115], 115n);
+  t.deepEqual(fired[115], toTS(115n));
 
   r1.disable();
   r1.schedule(brokenHandler);
@@ -563,7 +607,7 @@ test('makeRepeater', async t => {
   state.now = 140n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(slowState, 140n);
+  t.deepEqual(slowState, toTS(140n));
   r1.disable();
   pk.resolve('ignored');
   await waitUntilQuiescent();
@@ -572,50 +616,50 @@ test('makeRepeater', async t => {
 
 test('makeRepeater from now', async t => {
   // r=ts.makeRepeater(delay, interval); r.schedule(handler); r.disable();
-  const { ts, state, fired, makeHandler } = await setup(t);
+  const { ts, state, fired, makeHandler, toTS, toRT } = await setup(t);
 
   state.now = 0n;
   // creating a repeater with delay=0, and doing schedule() right now,
   // will fire immediately
-  const r = ts.makeRepeater(0n, 10n);
+  const r = ts.makeRepeater(toRT(0n), toRT(10n));
   r.schedule(makeHandler(0));
   t.is(state.currentWakeup, undefined);
   await waitUntilQuiescent();
-  t.is(fired[0], 0n);
+  t.deepEqual(fired[0], toTS(0n));
 });
 
 test('repeatAfter', async t => {
   // ts.repeatAfter(delay, interval, handler, cancelToken);
-  const { ts, state, fired, makeHandler } = await setup(t, true);
+  const { ts, state, fired, makeHandler, toTS, toRT } = await setup(t, true);
 
   state.now = 3n;
 
   // fire at T=25,35,45,..
   const cancel1 = Far('cancel', {});
-  ts.repeatAfter(22n, 10n, makeHandler(1), cancel1);
+  ts.repeatAfter(toRT(22n), toRT(10n), makeHandler(1), cancel1);
   t.is(state.currentWakeup, 25n);
 
   state.now = 4n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], undefined); // not yet
+  t.deepEqual(fired[1], undefined); // not yet
 
   state.now = 24n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], undefined); // wait for it
+  t.deepEqual(fired[1], undefined); // wait for it
 
   state.now = 25n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], 25n); // fired
+  t.deepEqual(fired[1], toTS(25n)); // fired
   t.is(state.currentWakeup, 35n); // primed for next time
 
   // if we miss a couple, next wakeup is in the future
   state.now = 50n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], 50n);
+  t.deepEqual(fired[1], toTS(50n));
   t.is(state.currentWakeup, 55n);
 
   // likewise if device-timer message takes a while to reach vat-timer
@@ -623,7 +667,7 @@ test('repeatAfter', async t => {
   // sent at T=50, received by vat-timer at T=60
   state.currentHandler.wake(50n);
   await waitUntilQuiescent();
-  t.is(fired[1], 60n);
+  t.deepEqual(fired[1], toTS(60n));
   t.is(state.currentWakeup, 65n);
 
   // we can cancel the repeater while it is scheduled
@@ -634,13 +678,13 @@ test('repeatAfter', async t => {
   // duplicate cancel is ignored
   ts.cancel(cancel1);
 
-  ts.setWakeup(70n, makeHandler(70));
+  ts.setWakeup(toTS(70n), makeHandler(70));
   t.is(state.currentWakeup, 70n);
   state.now = 70n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[70], 70n);
-  t.is(fired[1], 60n); // not re-fired
+  t.deepEqual(fired[70], toTS(70n));
+  t.deepEqual(fired[1], toTS(60n)); // not re-fired
   t.is(state.currentWakeup, undefined);
 
   let pk = makePromiseKit();
@@ -653,7 +697,7 @@ test('repeatAfter', async t => {
   });
 
   const cancel2 = Far('cancel', {});
-  ts.repeatAfter(5n, 10n, slowHandler, cancel2);
+  ts.repeatAfter(toRT(5n), toRT(10n), slowHandler, cancel2);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 75n);
 
@@ -662,7 +706,7 @@ test('repeatAfter', async t => {
   await waitUntilQuiescent();
 
   // while the handler is running, the repeater is not scheduled
-  t.is(slowState, 80n);
+  t.deepEqual(slowState, toTS(80n));
   t.is(state.currentWakeup, undefined);
 
   // if time passes while the handler is running..
@@ -682,7 +726,7 @@ test('repeatAfter', async t => {
     },
   });
   // we can re-use cancel tokens too
-  ts.repeatAfter(5n, 10n, brokenHandler, cancel1);
+  ts.repeatAfter(toRT(5n), toRT(10n), brokenHandler, cancel1);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 105n);
 
@@ -699,13 +743,13 @@ test('repeatAfter', async t => {
   pk = makePromiseKit();
   slowState = 'uncalled';
   const cancel3 = Far('cancel', {});
-  ts.repeatAfter(5n, 10n, slowHandler, cancel3);
+  ts.repeatAfter(toRT(5n), toRT(10n), slowHandler, cancel3);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 115n);
   state.now = 120n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(slowState, 120n);
+  t.deepEqual(slowState, toTS(120n));
   ts.cancel(cancel3); // while handler is running
   await waitUntilQuiescent();
   pk.resolve('ignored');
@@ -717,15 +761,15 @@ test('repeatAfter', async t => {
 
 test('repeatAfter from now', async t => {
   // ts.repeatAfter(delay, interval, handler, cancelToken);
-  const { ts, state, fired, makeHandler } = await setup(t);
+  const { ts, state, fired, makeHandler, toTS, toRT } = await setup(t);
   state.now = 3n;
 
   // delay=0 fires right away
   const cancel1 = Far('cancel1', {});
-  ts.repeatAfter(0n, 10n, makeHandler(3), cancel1);
+  ts.repeatAfter(toRT(0n), toRT(10n), makeHandler(3), cancel1);
   t.is(state.currentWakeup, undefined);
   await waitUntilQuiescent();
-  t.is(fired[3], 3n);
+  t.deepEqual(fired[3], toTS(3n));
   t.is(state.currentWakeup, 13n);
   // delay=0 doesn't break cancellation
   ts.cancel(cancel1);
@@ -742,9 +786,9 @@ test('repeatAfter from now', async t => {
       return pk2.promise;
     },
   });
-  ts.repeatAfter(0n, 10n, slowHandler2, cancel2); // 3,13,..
+  ts.repeatAfter(toRT(0n), toRT(10n), slowHandler2, cancel2); // 3,13,..
   await waitUntilQuiescent();
-  t.is(slowState2, 3n);
+  t.deepEqual(slowState2, toTS(3n));
   t.is(state.currentWakeup, undefined);
   ts.cancel(cancel2);
   t.is(state.currentWakeup, undefined);
@@ -761,9 +805,9 @@ test('repeatAfter from now', async t => {
       return pk3.promise;
     },
   });
-  ts.repeatAfter(0n, 10n, slowHandler3, cancel3); // 3,13,..
+  ts.repeatAfter(toRT(0n), toRT(10n), slowHandler3, cancel3); // 3,13,..
   await waitUntilQuiescent();
-  t.is(slowState3, 3n);
+  t.deepEqual(slowState3, toTS(3n));
   t.is(state.currentWakeup, undefined);
   ts.cancel(cancel3);
   t.is(state.currentWakeup, undefined);
@@ -773,7 +817,7 @@ test('repeatAfter from now', async t => {
 
 test('repeatAfter shared cancel token', async t => {
   // ts.repeatAfter(delay, interval, handler, cancelToken);
-  const { ts, state, fired, makeHandler } = await setup(t, true);
+  const { ts, state, fired, makeHandler, toTS, toRT } = await setup(t, true);
 
   state.now = 0n;
 
@@ -786,17 +830,17 @@ test('repeatAfter shared cancel token', async t => {
 
   const cancel1 = Far('cancel', {});
   // first repeater fires at T=5,15,25,35
-  ts.repeatAfter(5n, 10n, makeHandler(1), cancel1);
+  ts.repeatAfter(toRT(5n), toRT(10n), makeHandler(1), cancel1);
   // second repeater fires at T=10,20,30,40
-  ts.repeatAfter(10n, 10n, throwingHandler, cancel1);
+  ts.repeatAfter(toRT(10n), toRT(10n), throwingHandler, cancel1);
   t.is(state.currentWakeup, 5n);
 
   // let both fire
   state.now = 12n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], 12n);
-  t.is(fired.thrower, 12n);
+  t.deepEqual(fired[1], toTS(12n));
+  t.deepEqual(fired.thrower, toTS(12n));
 
   // second should be cancelled because the handler threw
   t.is(state.currentWakeup, 15n);
@@ -804,8 +848,8 @@ test('repeatAfter shared cancel token', async t => {
   state.now = 22n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.is(fired[1], 22n);
-  t.is(fired.thrower, 12n); // not re-fired
+  t.deepEqual(fired[1], toTS(22n));
+  t.deepEqual(fired.thrower, toTS(12n)); // not re-fired
   t.is(state.currentWakeup, 25n);
 
   // second should still be cancellable
@@ -818,13 +862,13 @@ test('repeatAfter shared cancel token', async t => {
 
 test('notifier in future', async t => {
   // n = ts.makeNotifier(delay, interval, cancelToken);
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS, toRT } = await setup(t);
 
   state.now = 100n;
 
   // fire at T=125,135,145,..
   const cancel1 = Far('cancel', {});
-  const n = ts.makeNotifier(25n, 10n, cancel1);
+  const n = ts.makeNotifier(toRT(25n), toRT(10n), cancel1);
   t.is(state.currentWakeup, undefined); // not active yet
 
   // getUpdateSince(undefined) before 'start' waits until start
@@ -837,7 +881,7 @@ test('notifier in future', async t => {
   state.now = 130n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.deepEqual(done1, { value: 125n, updateCount: 1n });
+  t.deepEqual(done1, { value: toTS(125n), updateCount: 1n });
   // inactive until polled again
   t.is(state.currentWakeup, undefined);
 
@@ -847,13 +891,13 @@ test('notifier in future', async t => {
   p2.then(res => (done2 = res));
   await waitUntilQuiescent();
   // notifier waits when updateCount matches
-  t.is(done2, undefined);
+  t.deepEqual(done2, undefined);
   t.is(state.currentWakeup, 135n);
 
   state.now = 140n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.deepEqual(done2, { value: 135n, updateCount: 2n });
+  t.deepEqual(done2, { value: toTS(135n), updateCount: 2n });
   t.is(state.currentWakeup, undefined);
 
   // slow turnaround gets the most recent missed event right away
@@ -863,7 +907,7 @@ test('notifier in future', async t => {
   p3.then(res => (done3 = res));
   await waitUntilQuiescent();
   // fires immediately
-  t.deepEqual(done3, { value: 145n, updateCount: 3n });
+  t.deepEqual(done3, { value: toTS(145n), updateCount: 3n });
   t.is(state.currentWakeup, undefined);
 
   // a really slow handler will miss multiple events
@@ -872,30 +916,30 @@ test('notifier in future', async t => {
   let done4;
   p4.then(res => (done4 = res));
   await waitUntilQuiescent();
-  t.deepEqual(done4, { value: 175n, updateCount: 6n });
+  t.deepEqual(done4, { value: toTS(175n), updateCount: 6n });
   t.is(state.currentWakeup, undefined);
 });
 
 test('notifier from now', async t => {
   // n = ts.makeNotifier(delay, interval, cancelToken);
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS, toRT } = await setup(t);
 
   state.now = 100n;
 
   // delay=0 fires right away: T=100,110,120,..
   let done1;
-  const n = ts.makeNotifier(0n, 10n);
+  const n = ts.makeNotifier(toRT(0n), toRT(10n));
   const p1 = n.getUpdateSince(undefined);
   p1.then(res => (done1 = res));
   await waitUntilQuiescent();
-  t.deepEqual(done1, { value: 100n, updateCount: 1n });
+  t.deepEqual(done1, { value: toTS(100n), updateCount: 1n });
 
   // but doesn't fire forever
   const p2 = n.getUpdateSince(done1.updateCount);
   let done2;
   p2.then(res => (done2 = res));
   await waitUntilQuiescent();
-  t.is(done2, undefined);
+  t.deepEqual(done2, undefined);
   t.is(state.currentWakeup, 110n);
 
   // move forward a little bit, not enough to fire
@@ -904,7 +948,7 @@ test('notifier from now', async t => {
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 110n);
-  t.is(done2, undefined);
+  t.deepEqual(done2, undefined);
 
   // a second subscriber who queries elsewhen in the window should get
   // the same update values
@@ -913,25 +957,25 @@ test('notifier from now', async t => {
   let done3;
   p3.then(res => (done3 = res));
   await waitUntilQuiescent();
-  t.is(done3, undefined);
+  t.deepEqual(done3, undefined);
   // still waiting
   t.is(state.currentWakeup, 110n);
 
   state.now = 116n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.deepEqual(done2, { value: 110n, updateCount: 2n });
-  t.deepEqual(done3, { value: 110n, updateCount: 2n });
+  t.deepEqual(done2, { value: toTS(110n), updateCount: 2n });
+  t.deepEqual(done3, { value: toTS(110n), updateCount: 2n });
 });
 
 test('cancel notifier', async t => {
   // n = ts.makeNotifier(delay, interval, cancelToken);
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS, toRT } = await setup(t);
   state.now = 0n;
 
   // cancel n1 while inactive, before it ever fires
   const cancel1 = Far('cancel', {});
-  const n1 = ts.makeNotifier(5n - state.now, 10n, cancel1); // T=5,15,
+  const n1 = ts.makeNotifier(toRT(5n - state.now), toRT(10n), cancel1); // T=5,15,
   t.is(state.currentWakeup, undefined); // not active yet
   const p1a = n1.getUpdateSince(undefined);
   state.now = 1n;
@@ -939,13 +983,13 @@ test('cancel notifier', async t => {
   const p1b = n1.getUpdateSince(undefined);
   state.now = 2n;
   const p1c = n1.getUpdateSince(undefined);
-  t.deepEqual(await p1a, { value: 1n, updateCount: undefined });
-  t.deepEqual(await p1b, { value: 1n, updateCount: undefined });
-  t.deepEqual(await p1c, { value: 1n, updateCount: undefined });
+  t.deepEqual(await p1a, { value: toTS(1n), updateCount: undefined });
+  t.deepEqual(await p1b, { value: toTS(1n), updateCount: undefined });
+  t.deepEqual(await p1c, { value: toTS(1n), updateCount: undefined });
 
   // cancel n2 while active, but before it ever fires
   const cancel2 = Far('cancel', {});
-  const n2 = ts.makeNotifier(5n - state.now, 10n, cancel2); // T=5,15,
+  const n2 = ts.makeNotifier(toRT(5n - state.now), toRT(10n), cancel2); // T=5,15,
   t.is(state.currentWakeup, undefined); // not active yet
   const p2a = n2.getUpdateSince(undefined);
   t.is(state.currentWakeup, 5n); // primed
@@ -956,40 +1000,40 @@ test('cancel notifier', async t => {
   const p2c = n2.getUpdateSince(undefined);
   state.now = 4n;
   const p2d = n2.getUpdateSince(undefined);
-  t.deepEqual(await p2a, { value: 3n, updateCount: undefined });
-  t.deepEqual(await p2b, { value: 3n, updateCount: undefined });
-  t.deepEqual(await p2c, { value: 3n, updateCount: undefined });
-  t.deepEqual(await p2d, { value: 3n, updateCount: undefined });
+  t.deepEqual(await p2a, { value: toTS(3n), updateCount: undefined });
+  t.deepEqual(await p2b, { value: toTS(3n), updateCount: undefined });
+  t.deepEqual(await p2c, { value: toTS(3n), updateCount: undefined });
+  t.deepEqual(await p2d, { value: toTS(3n), updateCount: undefined });
 
   // cancel n3 while idle, immediately after first firing
   const cancel3 = Far('cancel', {});
-  const n3 = ts.makeNotifier(5n - state.now, 10n, cancel3); // T=5,15,
+  const n3 = ts.makeNotifier(toRT(5n - state.now), toRT(10n), cancel3); // T=5,15,
   const p3a = n3.getUpdateSince(undefined);
   t.is(state.currentWakeup, 5n); // primed
   state.now = 5n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
   const res3a = await p3a;
-  t.deepEqual(res3a, { value: 5n, updateCount: 1n });
+  t.deepEqual(res3a, { value: toTS(5n), updateCount: 1n });
   t.is(state.currentWakeup, undefined); // no longer active
   const p3b = n3.getUpdateSince(res3a.updateCount);
   ts.cancel(cancel3); // time of cancellation = 5n
   const p3c = n3.getUpdateSince(res3a.updateCount);
   t.is(state.currentWakeup, undefined); // not reactivated
-  t.deepEqual(await p3b, { value: 5n, updateCount: undefined });
-  t.deepEqual(await p3c, { value: 5n, updateCount: undefined });
+  t.deepEqual(await p3b, { value: toTS(5n), updateCount: undefined });
+  t.deepEqual(await p3c, { value: toTS(5n), updateCount: undefined });
 
   // cancel n4 while idle, slightly after first firing
 
   const cancel4 = Far('cancel', {});
-  const n4 = ts.makeNotifier(10n - state.now, 10n, cancel4); // T=10,20,
+  const n4 = ts.makeNotifier(toRT(10n - state.now), toRT(10n), cancel4); // T=10,20,
   const p4a = n4.getUpdateSince(undefined);
   t.is(state.currentWakeup, 10n); // primed
   state.now = 10n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
   const res4a = await p4a;
-  t.deepEqual(res4a, { value: 10n, updateCount: 1n });
+  t.deepEqual(res4a, { value: toTS(10n), updateCount: 1n });
   t.is(state.currentWakeup, undefined); // no longer active
   const p4b = n4.getUpdateSince(res4a.updateCount);
   state.now = 11n;
@@ -997,20 +1041,20 @@ test('cancel notifier', async t => {
   const p4c = n4.getUpdateSince(res4a.updateCount);
   const p4d = n4.getUpdateSince(undefined);
   t.is(state.currentWakeup, undefined); // not reactivated
-  t.deepEqual(await p4b, { value: 11n, updateCount: undefined });
-  t.deepEqual(await p4c, { value: 11n, updateCount: undefined });
-  t.deepEqual(await p4d, { value: 11n, updateCount: undefined });
+  t.deepEqual(await p4b, { value: toTS(11n), updateCount: undefined });
+  t.deepEqual(await p4c, { value: toTS(11n), updateCount: undefined });
+  t.deepEqual(await p4d, { value: toTS(11n), updateCount: undefined });
 
   // cancel n5 while active, after first firing
   const cancel5 = Far('cancel', {});
-  const n5 = ts.makeNotifier(20n - state.now, 10n, cancel5); // fire at T=20,30,
+  const n5 = ts.makeNotifier(toRT(20n - state.now), toRT(10n), cancel5); // fire at T=20,30,
   const p5a = n5.getUpdateSince(undefined);
   t.is(state.currentWakeup, 20n); // primed
   state.now = 21n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
   const res5a = await p5a;
-  t.deepEqual(res5a, { value: 20n, updateCount: 1n });
+  t.deepEqual(res5a, { value: toTS(20n), updateCount: 1n });
   t.is(state.currentWakeup, undefined); // no longer active
   state.now = 22n;
   const p5b = n5.getUpdateSince(res5a.updateCount);
@@ -1018,18 +1062,18 @@ test('cancel notifier', async t => {
   ts.cancel(cancel5); // time of cancellation = 22n
   t.is(state.currentWakeup, undefined); // no longer active
   const p5c = n5.getUpdateSince(res5a.updateCount);
-  t.deepEqual(await p5b, { value: 22n, updateCount: undefined });
-  t.deepEqual(await p5c, { value: 22n, updateCount: undefined });
+  t.deepEqual(await p5b, { value: toTS(22n), updateCount: undefined });
+  t.deepEqual(await p5c, { value: toTS(22n), updateCount: undefined });
 });
 
 test('iterator', async t => {
   // n = ts.makeNotifier(delay, interval, cancelToken);
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS, toRT } = await setup(t);
 
   state.now = 100n;
 
   // fire at T=125,135,145,..
-  const n = ts.makeNotifier(25n, 10n);
+  const n = ts.makeNotifier(toRT(25n), toRT(10n));
 
   // iterator interface
   const iter = n[Symbol.asyncIterator]();
@@ -1038,7 +1082,7 @@ test('iterator', async t => {
   p1.then(res => (done1 = res));
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 125n);
-  t.is(done1, undefined);
+  t.deepEqual(done1, undefined);
 
   // concurrent next() is rejected
   t.throws(() => iter.next(), {
@@ -1048,7 +1092,7 @@ test('iterator', async t => {
   state.now = 130n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.deepEqual(done1, { value: 125n, done: false });
+  t.deepEqual(done1, { value: toTS(125n), done: false });
   t.is(state.currentWakeup, undefined);
 
   // fast turnaround will wait for next event
@@ -1056,25 +1100,25 @@ test('iterator', async t => {
   let done2;
   p2.then(res => (done2 = res));
   await waitUntilQuiescent();
-  t.is(done2, undefined);
+  t.deepEqual(done2, undefined);
   t.is(state.currentWakeup, 135n);
 
   state.now = 140n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.deepEqual(done2, { value: 135n, done: false });
+  t.deepEqual(done2, { value: toTS(135n), done: false });
   t.is(state.currentWakeup, undefined);
   const p3 = iter.next(); // before state.now changes
   let done3;
   p3.then(res => (done3 = res));
   await waitUntilQuiescent();
-  t.is(done3, undefined);
+  t.deepEqual(done3, undefined);
   t.is(state.currentWakeup, 145n); // waits for next event
 
   state.now = 150n;
   state.currentHandler.wake(state.now);
   await waitUntilQuiescent();
-  t.deepEqual(done3, { value: 145n, done: false });
+  t.deepEqual(done3, { value: toTS(145n), done: false });
   t.is(state.currentWakeup, undefined);
 
   // slow turnaround will get the missed event immediately
@@ -1083,7 +1127,7 @@ test('iterator', async t => {
   let done4;
   p4.then(res => (done4 = res));
   await waitUntilQuiescent();
-  t.deepEqual(done4, { value: 155n, done: false });
+  t.deepEqual(done4, { value: toTS(155n), done: false });
   t.is(state.currentWakeup, undefined);
 
   // very slow turnaround will get the most recent missed event
@@ -1092,7 +1136,7 @@ test('iterator', async t => {
   let done5;
   p5.then(res => (done5 = res));
   await waitUntilQuiescent();
-  t.deepEqual(done5, { value: 175n, done: false });
+  t.deepEqual(done5, { value: toTS(175n), done: false });
   t.is(state.currentWakeup, undefined);
 
   // sample loop, starts when now=180
@@ -1124,8 +1168,20 @@ test('iterator', async t => {
   }
   await p6a;
   await p6b;
-  t.deepEqual(results1, [175n, 185n, 195n, 205n, 215n]);
-  t.deepEqual(results2, [175n, 185n, 195n, 205n, 215n]);
+  t.deepEqual(results1, [
+    toTS(175n),
+    toTS(185n),
+    toTS(195n),
+    toTS(205n),
+    toTS(215n),
+  ]);
+  t.deepEqual(results2, [
+    toTS(175n),
+    toTS(185n),
+    toTS(195n),
+    toTS(205n),
+    toTS(215n),
+  ]);
   t.is(state.now, 300n);
 });
 
@@ -1151,13 +1207,13 @@ const drainManual = async (n, results) => {
 
 test('cancel active iterator', async t => {
   // n = ts.makeNotifier(delay, interval, cancelToken);
-  const { ts, state } = await setup(t);
+  const { ts, state, toTS, toRT } = await setup(t);
 
   state.now = 100n;
 
   // fire at T=125,135,145,..
   const cancel1 = Far('cancel', {});
-  const n = ts.makeNotifier(25n, 10n, cancel1);
+  const n = ts.makeNotifier(toRT(25n), toRT(10n), cancel1);
 
   // Cancellation halts the iterator, and the "return value" is the
   // cancellation time. But note that for..of does not expose the
@@ -1179,19 +1235,19 @@ test('cancel active iterator', async t => {
 
   await p1;
   await p2;
-  t.deepEqual(resultsForOf, [125n]);
-  t.deepEqual(resultsManual, [125n, { returnValue: 131n }]);
+  t.deepEqual(resultsForOf, [toTS(125n)]);
+  t.deepEqual(resultsManual, [toTS(125n), { returnValue: toTS(131n) }]);
 });
 
 test('cancel idle iterator', async t => {
   // n = ts.makeNotifier(delay, interval, cancelToken);
-  const { ts, state } = await setup(t);
+  const { ts, state, toRT, toTS } = await setup(t);
 
   state.now = 100n;
 
   // fire at T=125,135,145,..
   const cancel1 = Far('cancel', {});
-  const n = ts.makeNotifier(25n, 10n, cancel1);
+  const n = ts.makeNotifier(toRT(25), toRT(10), cancel1);
   ts.cancel(cancel1); // before first event
 
   const resultsForOf = [];
@@ -1202,5 +1258,5 @@ test('cancel idle iterator', async t => {
   await p1;
   await p2;
   t.deepEqual(resultsForOf, []);
-  t.deepEqual(resultsManual, [{ returnValue: 100n }]);
+  t.deepEqual(resultsManual, [{ returnValue: toTS(100) }]);
 });
