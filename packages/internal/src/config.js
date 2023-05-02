@@ -25,9 +25,9 @@ export const BridgeId = {
 };
 harden(BridgeId);
 
-export const WalletName = {
+export const WalletName = /** @type {const} */ ({
   depositFacet: 'depositFacet',
-};
+});
 harden(WalletName);
 
 // defined in golang/cosmos/x/vbank
