@@ -84,15 +84,9 @@ export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => {
     }
     Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
   };
-  const m = makeMarshal(valToSlot, slotToVal, {
+  return makeMarshal(valToSlot, slotToVal, {
     serializeBodyFormat: 'smallcaps',
   });
-  return {
-    serialize: m.serialize,
-    toCapData: m.serialize, // alias?
-    unserialize: m.unserialize,
-    fromCapData: m.unserialize,
-  };
 };
 
 /**
