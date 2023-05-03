@@ -2,9 +2,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import * as processAmbient from 'child_process';
-import * as pathAmbient from 'path';
 import * as fsAmbient from 'fs';
-import * as osAmbient from 'os';
 import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
@@ -16,6 +14,77 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 const test = anyTest;
 
 const PLATFORM_CONFIG = '@agoric/vats/decentral-devnet-config.json';
+
+/**
+ * @param {object} powers
+ * @param {Pick<typeof import('node:child_process'), 'execFileSync' >} powers.childProcess
+ * @param {typeof import('node:fs/promises')} powers.fs
+ */
+const makeProposalExtractor = ({ childProcess, fs }) => {
+  const getPkgPath = (pkg, fileName = '') =>
+    new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
+
+  const runPackageScript = async (pkg, name) => {
+    console.warn(pkg, 'running package script:', name);
+    const pkgPath = getPkgPath(pkg);
+    return childProcess.execFileSync('yarn', ['run', name], { cwd: pkgPath });
+  };
+
+  const loadJSON = async filePath =>
+    harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
+
+  // XXX alternatively: just look at output files
+  /** @param {string} txt */
+  const parseProposalParts = txt => {
+    const m = txt.match(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/);
+    if (!m || !m.groups) throw Fail`Invalid proposal output ${txt}`;
+    const { permit, script } = m.groups;
+
+    const bundles = [];
+    for (const mm of txt.matchAll(/swingset install-bundle @([^\n]+)/gm)) {
+      const [, bundle] = mm;
+      bundles.push(bundle);
+    }
+    return { permit, script, bundles };
+  };
+
+  /**
+   * @param {object} options
+   * @param {string} options.package
+   * @param {string} options.packageScriptName
+   */
+  const buildAndExtract = async ({
+    package: packageName,
+    packageScriptName,
+  }) => {
+    // XXX use '@agoric/inter-protocol'?
+    const out = await runPackageScript(packageName, packageScriptName);
+    const built = parseProposalParts(out.toString());
+
+    built.bundles.length > 0 || Fail`No bundles generated`;
+
+    const loadAndRmPkgFile = async fileName => {
+      const filePath = getPkgPath(packageName, fileName);
+      const content = await fs.readFile(filePath, 'utf8');
+      await fs.rm(filePath);
+      return content;
+    };
+
+    const permitsP = loadAndRmPkgFile(built.permit);
+    const codeP = loadAndRmPkgFile(built.script);
+
+    const bundlesP = Promise.all(
+      built.bundles.map(
+        async bundleFile =>
+          /** @type {Promise<EndoZipBase64Bundle>} */ (loadJSON(bundleFile)),
+      ),
+    );
+    return Promise.all([permitsP, codeP, bundlesP]).then(
+      ([permits, code, bundles]) => ({ permits, code, bundles }),
+    );
+  };
+  return buildAndExtract;
+};
 
 const makeTestContext = async t => {
   console.time('DefaultTestContext');
@@ -52,33 +121,16 @@ const makeTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
-  const { execFileSync } = processAmbient;
-  const runPackageScript = (pkg, name) => {
-    console.warn(pkg, 'running package script:', name);
-    const pkgPath = new URL(`../../../${pkg}`, import.meta.url).pathname;
-    return execFileSync('yarn', ['run', name], { cwd: pkgPath });
-  };
-  const readPackageFile = (pkg, name) => {
-    const filePath = new URL(`../../../${pkg}/${name}`, import.meta.url)
-      .pathname;
-    return fsAmbient.promises.readFile(filePath, 'utf8');
-  };
-
-  const { resolve: pathResolve } = pathAmbient;
-  // Using the default cacheDir defined in `@agoric/deploy-script-support`
-  const cacheDir = pathResolve(osAmbient.homedir(), '.agoric/cache');
-
-  const loadJSON = async fname =>
-    harden(JSON.parse(await fsAmbient.promises.readFile(fname, 'utf8')));
+  const buildProposal = makeProposalExtractor({
+    childProcess: processAmbient,
+    fs: fsAmbient.promises,
+  });
 
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
-    runPackageScript,
-    readPackageFile,
-    cacheDir,
-    loadJSON,
+    buildProposal,
   };
 };
 
@@ -106,45 +158,28 @@ test.serial('launch chain without vaults', async t => {
   });
 });
 
-// XXX alternatively: just look at output files
-const parseProposalParts = txt => {
-  const m = txt.match(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/);
-  if (!m) throw Error('@@TODO: handle errors');
-  const { permit, script } = m.groups;
-
-  const bundles = [];
-  for (const mm of txt.matchAll(/swingset install-bundle @([^\n]+)/gm)) {
-    const [_, bundle] = mm;
-    bundles.push(bundle);
-  }
-  return { permit, script, bundles };
-};
-
 test.serial('make vaults launch proposal', async t => {
-  const { runPackageScript, cacheDir } = t.context;
+  const { controller, buildProposal } = t.context;
 
   t.log('building proposal');
-  t.log('@@test writes to', cacheDir);
   // XXX use '@agoric/inter-protocol'?
-  const out = await runPackageScript('inter-protocol', 'build:proposal-vaults');
-  const built = parseProposalParts(out.toString());
-  t.log('built', built.permit, built.script, built.bundles.length);
-  t.true(built.bundles.length > 0);
+  const proposal = await buildProposal({
+    package: 'inter-protocol',
+    packageScriptName: 'build:proposal-vaults',
+  });
 
-  const { controller, loadJSON, readPackageFile } = t.context;
-  for await (const bundlef of built.bundles) {
-    const bundle = await loadJSON(bundlef);
+  for await (const bundle of proposal.bundles) {
     await controller.validateAndInstallBundle(bundle);
   }
-  t.log('installed', built.bundles.length);
+  t.log('installed', proposal.bundles.length, 'bundles');
 
   t.log('launching proposal');
   const bridgeMessage = {
     type: 'CORE_EVAL',
     evals: [
       {
-        json_permits: await readPackageFile('inter-protocol', built.permit),
-        js_code: await readPackageFile('inter-protocol', built.script),
+        json_permits: proposal.permits,
+        js_code: proposal.code,
       },
     ],
   };
@@ -157,5 +192,6 @@ test.serial('make vaults launch proposal', async t => {
   t.log('proposal executed');
 
   t.log('check for working vaults system');
-  await EV.vat('bootstrap').consumeItem('reserveKit');
+  const reserveKit = await EV.vat('bootstrap').consumeItem('reserveKit');
+  t.truthy(reserveKit);
 });
