@@ -4,6 +4,7 @@ import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { StorageNodeShape } from '@agoric/internal';
 import {
   getOpenQuestions,
   getPoserInvitation,
@@ -26,6 +27,12 @@ const { ceilDivide } = natSafeMath;
  * }} CommitteeElectorateCreatorFacet
  */
 
+export const privateArgsShape = {
+  storageNode: StorageNodeShape,
+  marshaller: M.remotable('Marshaller'),
+};
+harden(privateArgsShape);
+
 /**
  * Each Committee (an Electorate) represents a particular set of voters. The
  * number of voters is visible in the terms.
@@ -45,8 +52,6 @@ const { ceilDivide } = natSafeMath;
 const start = (zcf, privateArgs) => {
   /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = makeScalarMapStore('Question');
-  assert(privateArgs?.storageNode, 'Missing storageNode');
-  assert(privateArgs?.marshaller, 'Missing marshaller');
   const questionNode = E(privateArgs.storageNode).makeChildNode(
     'latestQuestion',
   );
