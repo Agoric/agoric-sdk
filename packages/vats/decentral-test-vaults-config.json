@@ -120,7 +120,7 @@
             "restartDelay": 1,
             "timeout": 10,
             "minSubmissionValue": 1,
-            "maxSubmissionValue": 1000000000000000000
+            "maxSubmissionValue": 9007199254740991
           },
           "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
           "oracleAddresses": [
