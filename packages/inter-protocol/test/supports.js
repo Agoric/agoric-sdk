@@ -4,7 +4,8 @@ import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
+import { makePromiseSpace } from '@agoric/vats';
+import { makeAgoricNamesAccess } from '@agoric/vats/test/boot-support.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -72,7 +73,7 @@ harden(setUpZoeForTest);
  * @param {*} t
  * @param {import('@agoric/time/src/types').TimerService} [optTimer]
  */
-export const setupBootstrap = (t, optTimer) => {
+export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
   const space = /** @type {any} */ (makePromiseSpace({ log: trace }));
   const { produce, consume } =
@@ -89,7 +90,8 @@ export const setupBootstrap = (t, optTimer) => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 

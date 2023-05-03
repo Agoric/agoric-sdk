@@ -1,6 +1,42 @@
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
+import * as ERTPmod from '@agoric/ertp';
+// TODO: factor startEconomicCommittee out of econ-behaviors.js
+import { mustMatch, M } from '@agoric/store';
+import { makePromiseSpace } from '@agoric/vats/src/core/promise-space.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+import {
+  addBankAssets,
+  buildZoe,
+  installBootContracts,
+  makeAddressNameHubs,
+  makeBoard,
+  makeVatsFromBundles,
+  mintInitialSupply,
+} from '@agoric/vats/src/core/basic-behaviors.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
+import {
+  bridgeCoreEval,
+  bridgeProvisioner,
+  makeBridgeManager,
+  makeChainStorage,
+  noProvisioner,
+  publishAgoricNames,
+  startTimerService,
+  CHAIN_BOOTSTRAP_MANIFEST,
+} from '@agoric/vats/src/core/chain-behaviors.js';
+import {
+  startWalletFactory,
+  WALLET_FACTORY_MANIFEST,
+} from '@agoric/vats/src/core/startWalletFactory.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { heapZone } from '@agoric/zone';
+import {
+  ECON_COMMITTEE_MANIFEST,
+  startEconomicCommittee,
+} from '../../src/proposals/startEconCommittee.js';
+import * as startPSMmod from '../../src/proposals/startPSM.js';
 import {
   installGovAndPSMContracts,
   makeAnchorAsset,
@@ -11,42 +47,7 @@ import {
   PSM_GOV_MANIFEST,
   startEconCharter,
   INVITE_PSM_COMMITTEE_MANIFEST,
-} from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as ERTPmod from '@agoric/ertp';
-// TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { mustMatch, M } from '@agoric/store';
-import {
-  ECON_COMMITTEE_MANIFEST,
-  startEconomicCommittee,
-} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess } from './utils.js';
-import { makePromiseSpace } from './promise-space.js';
-import { Stable, Stake } from '../tokens.js';
-import {
-  addBankAssets,
-  buildZoe,
-  installBootContracts,
-  makeAddressNameHubs,
-  makeBoard,
-  makeVatsFromBundles,
-  mintInitialSupply,
-} from './basic-behaviors.js';
-import * as utils from './utils.js';
-import {
-  bridgeCoreEval,
-  bridgeProvisioner,
-  makeBridgeManager,
-  makeChainStorage,
-  noProvisioner,
-  publishAgoricNames,
-  startTimerService,
-  CHAIN_BOOTSTRAP_MANIFEST,
-} from './chain-behaviors.js';
-import {
-  startWalletFactory,
-  WALLET_FACTORY_MANIFEST,
-} from './startWalletFactory.js';
+} from '../../src/proposals/startPSM.js';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
@@ -129,21 +130,28 @@ export const ParametersShape = M.splitRecord(
  *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
-export const buildRootObject = (vatPowers, vatParameters) => {
-  const log = vatPowers.logger || console.info;
+export const buildRootObject = async (vatPowers, vatParameters) => {
+  // @@@ const log = vatPowers.logger || console.info;
+  const log = console.info;
+  const zone = heapZone;
 
   mustMatch(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
-
   const { produce, consume } = makePromiseSpace({ log });
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
-    log,
-    agoricNamesReserved,
-  );
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+  let spaces;
+  let namedVat;
 
   const runBootstrapParts = async (vats, devices) => {
+    const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+    namedVat = utils.makeVatSpace(svc, criticalVatKey, zone, console.log);
+
+    const namesVat = namedVat.consume.agoricNames;
+    const { agoricNames, agoricNamesAdmin } = await E(namesVat).getNameHubKit();
+    spaces = await utils.makeWellKnownSpaces(namesVat, log);
+    produce.agoricNames.resolve(agoricNames);
+    produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+
     /** TODO: BootstrapPowers type puzzle */
     /** @type { any } */
     const allPowers = harden({
@@ -153,6 +161,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       devices,
       produce,
       consume,
+      namedVat,
       ...spaces,
       // ISSUE: needed? runBehaviors,
       // These module namespaces might be useful for core eval governance.
@@ -169,6 +178,16 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
       ...INVITE_PSM_COMMITTEE_MANIFEST,
+      [startEconCharter.name]: {
+        consume: { zoe: true },
+        produce: { econCharterKit: true },
+        installation: {
+          consume: { binaryVoteCounter: true, econCommitteeCharter: true },
+        },
+        instance: {
+          produce: { econCommitteeCharter: true },
+        },
+      },
       [noProvisioner.name]: {
         produce: {
           provisioning: 'provisioning',
@@ -268,7 +287,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
     },
     // ??? any more dangerous than produceItem/consumeItem?
     /** @type {() => PromiseSpace} */
-    getPromiseSpace: () => ({ consume, produce, ...spaces }),
+    getPromiseSpace: () => ({ consume, produce, namedVat, ...spaces }),
   });
 };
 

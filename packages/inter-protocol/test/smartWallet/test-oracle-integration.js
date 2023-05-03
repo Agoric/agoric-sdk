@@ -4,12 +4,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
 import { E } from '@endo/far';
 import { zip } from '@agoric/internal';
+import { buildRootObject } from './boot-psm.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregatorKit.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
@@ -44,6 +44,7 @@ const makeTestSpace = async (log, bundleCache) => {
     argv: { bootMsg: {} },
   };
 
+  debugger;
   const psmVatRoot = await buildRootObject(
     {
       logger: log,
@@ -57,11 +58,11 @@ const makeTestSpace = async (log, bundleCache) => {
   // calling ensureOracleBrands and createPriceFeed
   // ensuring a feed for ATOM-USD
 
-  // @ts-expect-error cast
-  const space = /** @type {ChainBootstrapSpace} */ (
-    psmVatRoot.getPromiseSpace()
-  );
   await eventLoopIteration();
+
+  /** @type {ChainBootstrapSpace & NamedVatPowers} */
+  // @ts-expect-error cast
+  const space = psmVatRoot.getPromiseSpace();
 
   const timer = buildManualTimer(log);
   space.produce.chainTimerService.resolve(timer);
