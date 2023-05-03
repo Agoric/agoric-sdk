@@ -3,10 +3,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSourceAmbient from '@endo/bundle-source';
-import { E, passStyleOf } from '@endo/far';
+import { E } from '@endo/far';
 
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { buildRootObject as buildPSMRootObject } from '@agoric/inter-protocol/test/smartWallet/boot-psm.js/index.js';
 import { buildRootObject } from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
 import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
@@ -16,7 +14,6 @@ import { makePromiseSpace } from '../src/core/promise-space.js';
 import {
   makeMock,
   mockDProxy,
-  mockPsmBootstrapArgs,
   mockSwingsetVats,
 } from '../tools/boot-test-utils.js';
 

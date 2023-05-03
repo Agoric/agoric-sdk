@@ -14,12 +14,7 @@ import { ParametersShape as BootParametersShape } from '@agoric/inter-protocol/t
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
-const PROD_CONFIG_FILES = [
-  'decentral-main-psm-config.json',
-  'decentral-psm-config.json',
-  'decentral-test-vaults-config.json',
-  'decentral-test-psm-config.json',
-];
+const PROD_CONFIG_FILES = ['decentral-test-vaults-config.json'];
 
 const CONFIG_FILES = [
   'decentral-core-config.json', // TODO: remove mints from core-config
