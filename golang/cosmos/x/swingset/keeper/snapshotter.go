@@ -138,7 +138,6 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 	// Indicate that a snapshot has been initiated by setting `activeSnapshot`.
 	// This structure is used to synchronize with the goroutine spawned below.
 	// It's nilled-out before exiting (and is the only code that does so).
-	//snapshotter.Lock()
 	active := &activeSnapshot{
 		height:        height,
 		logger:        logger,
