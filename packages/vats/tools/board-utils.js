@@ -37,7 +37,8 @@ export const makeBoardRemote = ({ boardId, iface }) => {
   return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
 };
 
-export const slotToBoardRemote = (boardId, iface) => makeBoardRemote({ boardId, iface });
+export const slotToBoardRemote = (boardId, iface) =>
+  makeBoardRemote({ boardId, iface });
 
 /**
  * @param {import("@agoric/internal/src/storage-test-utils.js").FakeStorageKit} fakeStorageKit
@@ -83,7 +84,9 @@ export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => {
     }
     Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
   };
-  const m = makeMarshal(valToSlot, slotToVal, { serializeBodyFormat: 'smallcaps' });
+  const m = makeMarshal(valToSlot, slotToVal, {
+    serializeBodyFormat: 'smallcaps',
+  });
   return {
     serialize: m.serialize,
     toCapData: m.serialize, // alias?

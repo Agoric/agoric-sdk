@@ -172,7 +172,7 @@ const serialize = (t, specimen, expected) => {
 test('undefined', serialize, undefined, { body: '#"#undefined"', slots: [] });
 test('null', serialize, undefined, { body: '#"#undefined"', slots: [] });
 test('empty string', serialize, '', { body: '#""', slots: [] });
-test('bigint', serialize, 123n, { body: '#"+123"', slots: []});
+test('bigint', serialize, 123n, { body: '#"+123"', slots: [] });
 test(
   'record',
   serialize,
@@ -183,12 +183,10 @@ test(
   },
 );
 
-test(
-  'board ids',
-  serialize,
-  Far('iface', { getBoardId: () => 'board123' }),
-  { body: '#"$0.Alleged: iface"', slots: ['board123'] },
-);
+test('board ids', serialize, Far('iface', { getBoardId: () => 'board123' }), {
+  body: '#"$0.Alleged: iface"',
+  slots: ['board123'],
+});
 
 test(
   'nested board ids',

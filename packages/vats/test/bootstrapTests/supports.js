@@ -4,7 +4,10 @@ import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit, encromulate } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeFakeStorageKit,
+  encromulate,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
@@ -206,10 +209,12 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     executeOffer(offer) {
-      const offerCapData = marshaller.serialize(harden({
-        method: 'executeOffer',
-        offer,
-      }));
+      const offerCapData = marshaller.serialize(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
@@ -217,18 +222,22 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     sendOffer(offer) {
-      const offerCapData = marshaller.serialize(harden({
-        method: 'executeOffer',
-        offer,
-      }));
+      const offerCapData = marshaller.serialize(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
     tryExitOffer(offerId) {
-      const capData = marshaller.serialize(harden({
-        method: 'tryExitOffer',
-        offerId,
-      }));
+      const capData = marshaller.serialize(
+        harden({
+          method: 'tryExitOffer',
+          offerId,
+        }),
+      );
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**

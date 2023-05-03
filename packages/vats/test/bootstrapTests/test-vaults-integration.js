@@ -8,7 +8,10 @@ import { Fail } from '@agoric/assert';
 import { makeMarshal } from '@endo/marshal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeAgoricNamesRemotesFromFakeStorage, slotToBoardRemote } from '../../tools/board-utils.js';
+import {
+  makeAgoricNamesRemotesFromFakeStorage,
+  slotToBoardRemote,
+} from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
 /**
