@@ -13,7 +13,7 @@ import {
   addBankAssets,
   installBootContracts,
 } from '../src/core/basic-behaviors.js';
-import { makeAgoricNamesAccess } from './boot-support';
+import { makeAgoricNamesAccess } from './boot-support.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
@@ -200,7 +200,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     /** @type { BootstrapPowers & { consume: { loadCriticalVat: VatLoader<any> }}} */ (
       space
     );
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, spaces } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
   const { vatAdminService } = makePopulatedFakeVatAdmin();
