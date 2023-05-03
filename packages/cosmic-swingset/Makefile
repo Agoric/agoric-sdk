@@ -65,6 +65,11 @@ start-vaults-etc: $(INTER_PROTO)/gov-vaults-etc.js
 		EVAL_PERMIT=$(INTER_PROTO)/gov-vaults-etc-permit.json \
 		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
 
+add-atom-collateral: $(INTER_PROTO)/gov-add-atom-collateral.js
+	make EVAL_CODE=$(INTER_PROTO)/gov-add-atom-collateral.js \
+		EVAL_PERMIT=$(INTER_PROTO)/gov-add-atom-collateral-permit.json \
+		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
+
 gov-q:
 	$(AGCH) query gov proposals --output json | \
 		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'

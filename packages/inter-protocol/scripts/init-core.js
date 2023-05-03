@@ -5,6 +5,7 @@
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { objectMap } from '@agoric/internal';
+import { defaultProposalBuilder as addCollateralProposalBuilder } from './add-collateral-core.js';
 
 import {
   getManifestForInterProtocol,
@@ -195,6 +196,9 @@ export default async (homeP, endowments) => {
   await Promise.all([
     writeCoreProposal('gov-vaults-etc', opts =>
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+    ),
+    writeCoreProposal('gov-add-atom-collateral', opts =>
+      addCollateralProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
   ]);
   await tool.saveCache();
