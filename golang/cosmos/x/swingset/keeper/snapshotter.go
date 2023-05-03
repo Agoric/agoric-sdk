@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sync"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -49,7 +48,10 @@ type activeSnapshot struct {
 	// Use to synchronize the commit boundary
 	startedResult chan error
 	// Internal flag indicating whether the cosmos driven snapshot process completed
+	// Only read or written by the snapshot worker goroutine.
 	retrieved bool
+	// Closed when this snapshot is complete
+	done chan struct{}
 }
 
 type exportManifest struct {
@@ -65,19 +67,13 @@ type SwingStoreExporter interface {
 }
 
 type SwingsetSnapshotter struct {
-	sync.RWMutex      // must hold to read/write activeSnapshot
 	isConfigured      func() bool
 	takeSnapshot      func(height int64)
 	newRestoreContext func(height int64) sdk.Context
 	logger            log.Logger
 	exporter          SwingStoreExporter
 	blockingSend      func(action vm.Jsonable) (string, error)
-
-	// activeSnapshot points to the active snapshot.
-	// Must hold the snapshotter's RWMutex to read or write it.
-	// The main goroutine moves it from nil to non-nil,
-	// and the goroutine spawned by InitiateSnapshot() moves it from
-	// non-nil back to nil.
+	// Only modified by the main goroutine.
 	activeSnapshot *activeSnapshot
 }
 
@@ -124,12 +120,13 @@ func NewSwingsetSnapshotter(app *baseapp.BaseApp, exporter SwingStoreExporter, s
 // The snapshot operation is performed in a goroutine, and synchronized with the
 // main thread through the `WaitUntilSnapshotStarted` method.
 func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
-	snapshotter.RLock()
-	active := snapshotter.activeSnapshot
-	snapshotter.RUnlock()
-
-	if active != nil {
-		return fmt.Errorf("snapshot already in progress for height %d", active.height)
+	if snapshotter.activeSnapshot != nil {
+		select {
+		case <-snapshotter.activeSnapshot.done:
+			snapshotter.activeSnapshot = nil
+		default:
+			return fmt.Errorf("snapshot already in progress for height %d", snapshotter.activeSnapshot.height)
+		}
 	}
 
 	if !snapshotter.isConfigured() {
@@ -141,17 +138,19 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 	// Indicate that a snapshot has been initiated by setting `activeSnapshot`.
 	// This structure is used to synchronize with the goroutine spawned below.
 	// It's nilled-out before exiting (and is the only code that does so).
-	ch := make(chan error, 1)
-	snapshotter.Lock()
-	snapshotter.activeSnapshot = &activeSnapshot{
+	//snapshotter.Lock()
+	active := &activeSnapshot{
 		height:        height,
 		logger:        logger,
-		startedResult: ch,
+		startedResult: make(chan error, 1),
 		retrieved:     false,
+		done:          make(chan struct{}),
 	}
-	snapshotter.Unlock()
+	snapshotter.activeSnapshot = active
 
-	go func(startedResult chan error) {
+	go func() {
+		defer close(active.done)
+
 		action := &snapshotAction{
 			Type:        "COSMOS_SNAPSHOT",
 			BlockHeight: height,
@@ -164,32 +163,25 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		if err != nil {
 			// First indicate a snapshot is no longer in progress if the call to
 			// `WaitUntilSnapshotStarted` has't happened yet.
-			snapshotter.Lock()
-			snapshotter.activeSnapshot = nil
-			snapshotter.Unlock()
 			// Then signal the current snapshot operation if a call to
 			// `WaitUntilSnapshotStarted` was already waiting.
-			startedResult <- err
-			close(startedResult)
+			active.startedResult <- err
+			close(active.startedResult)
 			logger.Error("failed to initiate swingset snapshot", "err", err)
 			return
 		}
 
 		// Signal that the snapshot operation has started in the goroutine. Calls to
 		// `WaitUntilSnapshotStarted` will no longer block.
-		close(startedResult)
+		close(active.startedResult)
 
 		// In production this should indirectly call SnapshotExtension().
 		snapshotter.takeSnapshot(height)
 
 		// Check whether the cosmos Snapshot() method successfully handled our extension
-		snapshotter.Lock()
-		if snapshotter.activeSnapshot.retrieved {
-			snapshotter.activeSnapshot = nil
-			snapshotter.Unlock()
+		if active.retrieved {
 			return
 		}
-		snapshotter.Unlock()
 
 		logger.Error("failed to make swingset snapshot")
 		action = &snapshotAction{
@@ -202,11 +194,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		if err != nil {
 			logger.Error("failed to discard swingset snapshot", "err", err)
 		}
-
-		snapshotter.Lock()
-		snapshotter.activeSnapshot = nil
-		snapshotter.Unlock()
-	}(ch)
+	}()
 
 	return nil
 }
@@ -220,20 +208,26 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 // already completed), or if we previously checked if the snapshot had started,
 // returns immediately.
 func (snapshotter *SwingsetSnapshotter) WaitUntilSnapshotStarted() error {
-	// First, copy the synchronization structure in case the snapshot operation
-	// completes while we check its status
-	snapshotter.RLock()
 	activeSnapshot := snapshotter.activeSnapshot
-	snapshotter.RUnlock()
-
 	if activeSnapshot == nil {
 		return nil
 	}
-
+	// Block until the active snapshot has started, saving the result.
 	// The snapshot goroutine only produces a value in case of an error,
 	// and closes the channel once the snapshot has started or failed.
 	// Only the first call after a snapshot was initiated will report an error.
-	return <-activeSnapshot.startedResult
+	startErr := <-activeSnapshot.startedResult
+
+	// Check if the active snapshot is done, and if so, nil it out so future
+	// calls are faster.
+	select {
+	case <-activeSnapshot.done:
+		snapshotter.activeSnapshot = nil
+	default:
+		// don't wait for it to finish
+	}
+
+	return startErr
 }
 
 // SnapshotName returns the name of snapshotter, it should be unique in the manager.
@@ -268,23 +262,19 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 		// See https://go.dev/blog/defer-panic-and-recover for details
 		if err != nil {
 			var logger log.Logger
-			snapshotter.RLock()
 			if snapshotter.activeSnapshot != nil {
 				logger = snapshotter.activeSnapshot.logger
 			} else {
 				logger = snapshotter.logger
 			}
-			snapshotter.RUnlock()
 
 			logger.Error("swingset snapshot extension failed", "err", err)
 		}
 	}()
 
-	snapshotter.RLock()
 	activeSnapshot := snapshotter.activeSnapshot
-	snapshotter.RUnlock()
-
 	if activeSnapshot == nil {
+		// shouldn't happen, but return an error if it does
 		return errors.New("no active swingset snapshot")
 	}
 
@@ -366,12 +356,8 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 		}
 	}
 
-	snapshotter.Lock()
-	if snapshotter.activeSnapshot != nil {
-		snapshotter.activeSnapshot.retrieved = true
-		snapshotter.activeSnapshot.logger.Info("retrieved snapshot", "exportDir", exportDir)
-	}
-	snapshotter.Unlock()
+	activeSnapshot.retrieved = true
+	activeSnapshot.logger.Info("retrieved snapshot", "exportDir", exportDir)
 
 	return nil
 }

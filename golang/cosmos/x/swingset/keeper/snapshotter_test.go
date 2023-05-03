@@ -22,10 +22,29 @@ func newTestSnapshotter() SwingsetSnapshotter {
 
 func TestSnapshotInProgress(t *testing.T) {
 	swingsetSnapshotter := newTestSnapshotter()
-	swingsetSnapshotter.activeSnapshot = &activeSnapshot{}
+	ch := make(chan struct{})
+	swingsetSnapshotter.takeSnapshot = func(height int64) {
+		<-ch
+	}
 	err := swingsetSnapshotter.InitiateSnapshot(123)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = swingsetSnapshotter.InitiateSnapshot(456)
 	if err == nil {
 		t.Error("wanted error for snapshot in progress")
+	}
+
+	close(ch)
+	<-swingsetSnapshotter.activeSnapshot.done
+	err = swingsetSnapshotter.InitiateSnapshot(456)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -42,10 +61,9 @@ func TestSecondCommit(t *testing.T) {
 	swingsetSnapshotter := newTestSnapshotter()
 
 	// Use a channel to block the snapshot goroutine after it has started but before it exits.
-	ch := make(chan struct{}, 1)
-	swingsetSnapshotter.blockingSend = func(action vm.Jsonable) (string, error) {
-		ch <- struct{}{}
-		return "", nil
+	ch := make(chan struct{})
+	swingsetSnapshotter.takeSnapshot = func(height int64) {
+		<-ch
 	}
 
 	// First run through app.Commit()
@@ -64,10 +82,9 @@ func TestSecondCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// drain the signaling channel to let goroutine exit
-	<-ch
-	<-ch
+	// close the signaling channel to let goroutine exit
 	close(ch)
+	<-swingsetSnapshotter.activeSnapshot.done
 }
 
 func TestInitiateFails(t *testing.T) {
@@ -130,5 +147,40 @@ func TestRetrievalFails(t *testing.T) {
 	if savedErr.Error() != "retrieve failed" {
 		t.Errorf(`wanted error "retrieve failed", got "%s"`, savedErr.Error())
 	}
-	// goroutine has no remaining visible side-effects, so we can end the test
+	<-swingsetSnapshotter.activeSnapshot.done
+}
+
+func TestDiscard(t *testing.T) {
+	discardCalled := false
+	swingsetSnapshotter := newTestSnapshotter()
+	swingsetSnapshotter.blockingSend = func(action vm.Jsonable) (string, error) {
+		if action.(*snapshotAction).Request == "discard" {
+			discardCalled = true
+		}
+		return "", nil
+	}
+
+	// simulate a normal Snapshot() call which calls SnapshotExtension()
+	swingsetSnapshotter.takeSnapshot = func(height int64) {
+		swingsetSnapshotter.activeSnapshot.retrieved = true
+	}
+	err := swingsetSnapshotter.InitiateSnapshot(123)
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-swingsetSnapshotter.activeSnapshot.done
+	if discardCalled {
+		t.Error("didn't want discard called")
+	}
+
+	// simulate a Snapshot() call which doesn't call SnapshotExtension()
+	swingsetSnapshotter.takeSnapshot = func(height int64) {}
+	err = swingsetSnapshotter.InitiateSnapshot(456)
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-swingsetSnapshotter.activeSnapshot.done
+	if !discardCalled {
+		t.Error("wanted discard called")
+	}
 }
