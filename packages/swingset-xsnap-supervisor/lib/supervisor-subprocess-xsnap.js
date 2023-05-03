@@ -1,7 +1,6 @@
 /* global globalThis WeakRef FinalizationRegistry */
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
-import { makeMarshal } from '@endo/marshal';
 import {
   makeLiveSlots,
   insistVatDeliveryObject,
@@ -208,7 +207,6 @@ function makeWorker(port) {
     const syscall = makeSupervisorSyscall(syscallToManager);
 
     const vatPowers = {
-      makeMarshal,
       testLog: (...args) =>
         port.send([
           'testLog',

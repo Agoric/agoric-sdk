@@ -24,7 +24,6 @@
  *
  * @typedef { import('./types-external.js').VatPowers } VatPowers
  * @typedef { import('./types-external.js').StaticVatPowers } StaticVatPowers
- * @typedef { import('./types-external.js').MarshallingVatPowers } MarshallingVatPowers
  * @typedef { import('./types-external.js').MeteringVatPowers } MeteringVatPowers
  *
  * @typedef { import('./types-external.js').TerminationVatPowers } TerminationVatPowers

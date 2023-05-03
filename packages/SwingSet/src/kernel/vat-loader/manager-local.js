@@ -15,10 +15,7 @@ export function makeLocalVatManagerFactory({
   vatEndowments,
   gcTools,
 }) {
-  const baseVP = {
-    makeMarshal: allVatPowers.makeMarshal,
-  };
-  // testLog is also a vatPower, only for unit tests
+  const { testLog } = allVatPowers; // used by unit tests
 
   function prepare(managerOptions) {
     const { retainSyscall = false } = managerOptions;
@@ -44,10 +41,9 @@ export function makeLocalVatManagerFactory({
     assert.typeof(setup, 'function', 'setup is not an in-realm function');
 
     const { syscall, finish } = prepare(managerOptions);
-    const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
-    const vatPowers = harden({ ...baseVP, testLog });
+    const vatPowers = harden({ testLog });
 
     const dispatch = setup(syscall, state, helpers, vatPowers);
     return finish(dispatch);
@@ -64,10 +60,7 @@ export function makeLocalVatManagerFactory({
 
     const { syscall, finish } = prepare(managerOptions);
 
-    const vatPowers = harden({
-      ...baseVP,
-      testLog: allVatPowers.testLog,
-    });
+    const vatPowers = harden({ testLog });
 
     const makeLogMaker = source => {
       const makeLog = level => {
