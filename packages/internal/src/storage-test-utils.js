@@ -148,7 +148,7 @@ export const makeMockChainStorageRoot = () => {
       }
       assert.typeof(dataStr, 'string');
       const datum = JSON.parse(dataStr);
-      return marshaller.unserialize(datum);
+      return marshaller.fromCapData(datum);
     },
     keys: () => [...data.keys()],
   });

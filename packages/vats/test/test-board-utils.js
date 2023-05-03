@@ -163,19 +163,19 @@ test('makeAgoricNamesRemotesFromFakeStorage', t => {
 });
 
 // XXX ses-ava can't test.macro
-const serialize = (t, specimen, expected) => {
+const toCapData = (t, specimen, expected) => {
   const marshaller = boardSlottingMarshaller();
-  const actual = marshaller.serialize(harden(specimen));
+  const actual = marshaller.toCapData(harden(specimen));
   t.deepEqual(actual, expected);
 };
 
-test('undefined', serialize, undefined, { body: '#"#undefined"', slots: [] });
-test('null', serialize, undefined, { body: '#"#undefined"', slots: [] });
-test('empty string', serialize, '', { body: '#""', slots: [] });
-test('bigint', serialize, 123n, { body: '#"+123"', slots: [] });
+test('undefined', toCapData, undefined, { body: '#"#undefined"', slots: [] });
+test('null', toCapData, undefined, { body: '#"#undefined"', slots: [] });
+test('empty string', toCapData, '', { body: '#""', slots: [] });
+test('bigint', toCapData, 123n, { body: '#"+123"', slots: [] });
 test(
   'record',
-  serialize,
+  toCapData,
   { a: 1, b: 'str' },
   {
     body: '#{"a":1,"b":"str"}',
@@ -183,14 +183,14 @@ test(
   },
 );
 
-test('board ids', serialize, Far('iface', { getBoardId: () => 'board123' }), {
+test('board ids', toCapData, Far('iface', { getBoardId: () => 'board123' }), {
   body: '#"$0.Alleged: iface"',
   slots: ['board123'],
 });
 
 test(
   'nested board ids',
-  serialize,
+  toCapData,
   {
     istBrand: Far('iface', { getBoardId: () => 'board123Ist' }),
     atomBrand: Far('iface', { getBoardId: () => 'board123Atom' }),

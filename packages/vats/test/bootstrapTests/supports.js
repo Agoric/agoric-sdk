@@ -200,7 +200,7 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     executeOffer(offer) {
-      const offerCapData = marshaller.serialize(
+      const offerCapData = marshaller.toCapData(
         harden({
           method: 'executeOffer',
           offer,
@@ -213,7 +213,7 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     sendOffer(offer) {
-      const offerCapData = marshaller.serialize(
+      const offerCapData = marshaller.toCapData(
         harden({
           method: 'executeOffer',
           offer,
@@ -223,7 +223,7 @@ export const makeWalletFactoryDriver = async (
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
     tryExitOffer(offerId) {
-      const capData = marshaller.serialize(
+      const capData = marshaller.toCapData(
         harden({
           method: 'tryExitOffer',
           offerId,
@@ -259,7 +259,7 @@ export const makeWalletFactoryDriver = async (
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
       const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
-      return marshaller.unserialize(lastWalletStatus);
+      return marshaller.fromCapData(lastWalletStatus);
     },
   });
 
