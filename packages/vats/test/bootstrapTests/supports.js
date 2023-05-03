@@ -1,9 +1,10 @@
 // @ts-check
 /* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
+import { Far } from '@endo/far';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeFakeStorageKit, encromulate } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
@@ -185,7 +186,15 @@ export const makeWalletFactoryDriver = async (
     'namesByAddressAdmin',
   );
 
-  const marshaller = boardSlottingMarshaller();
+  // with this slotToVal, you can pass the output of
+  // marshaller.unserialize() through encromulate and get data that is
+  // suitable to use in t.deepEqual or t.snapshot
+
+  const slotToVal = (_slotId, iface = 'unknown') =>
+    Far(iface, {
+      toJSON: () => ({ iface }),
+    });
+  const marshaller = boardSlottingMarshaller(slotToVal);
 
   /**
    * @param {string} walletAddress
@@ -197,10 +206,10 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     executeOffer(offer) {
-      const offerCapData = marshaller.serialize({
+      const offerCapData = marshaller.serialize(harden({
         method: 'executeOffer',
         offer,
-      });
+      }));
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
@@ -208,18 +217,18 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     sendOffer(offer) {
-      const offerCapData = marshaller.serialize({
+      const offerCapData = marshaller.serialize(harden({
         method: 'executeOffer',
         offer,
-      });
+      }));
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
     tryExitOffer(offerId) {
-      const capData = marshaller.serialize({
+      const capData = marshaller.serialize(harden({
         method: 'tryExitOffer',
         offerId,
-      });
+      }));
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
@@ -250,7 +259,8 @@ export const makeWalletFactoryDriver = async (
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
       const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
-      return JSON.parse(lastWalletStatus.body);
+      const data = marshaller.unserialize(lastWalletStatus);
+      return encromulate(data);
     },
   });
 
