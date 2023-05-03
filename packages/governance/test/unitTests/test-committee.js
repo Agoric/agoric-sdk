@@ -74,20 +74,22 @@ test('committee-open question:one', async t => {
   } = await setupContract();
 
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const questionSpec = coerceQuestionSpec({
-    method: ChoiceMethod.UNRANKED,
-    issue: harden({ text: 'why' }),
-    positions,
-    electionType: ElectionType.SURVEY,
-    maxChoices: 1,
-    maxWinners: 1,
-    closingRule: {
-      timer: harden(buildManualTimer(t.log)),
-      deadline: 2n,
-    },
-    quorumRule: QuorumRule.MAJORITY,
-    tieOutcome: positions[1],
-  });
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'why' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: {
+        timer: buildManualTimer(t.log),
+        deadline: 2n,
+      },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
   await E(creatorFacet).addQuestion(counterInstallation, questionSpec);
   const questions = await publicFacet.getOpenQuestions();
   const question = E(publicFacet).getQuestion(questions[0]);
@@ -139,17 +141,19 @@ test('committee-open question:mixed, with snapshot', async t => {
 
   const timer = buildManualTimer(t.log);
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const questionSpec = coerceQuestionSpec({
-    method: ChoiceMethod.UNRANKED,
-    issue: harden({ text: 'why' }),
-    positions,
-    electionType: ElectionType.SURVEY,
-    maxChoices: 1,
-    maxWinners: 1,
-    closingRule: { timer, deadline: 4n },
-    quorumRule: QuorumRule.MAJORITY,
-    tieOutcome: positions[1],
-  });
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'why' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: { timer, deadline: 4n },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
   await E(creatorFacet).addQuestion(counterInstallation, questionSpec);
   // First question writes
   await eventLoopIteration();
