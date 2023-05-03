@@ -5,11 +5,8 @@ import * as processAmbient from 'child_process';
 import * as pathAmbient from 'path';
 import * as fsAmbient from 'fs';
 import * as osAmbient from 'os';
-import { E } from '@endo/far';
 import { Fail } from '@agoric/assert';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -58,13 +55,17 @@ const makeTestContext = async t => {
   const { execFileSync } = processAmbient;
   const runPackageScript = (pkg, name) => {
     console.warn(pkg, 'running package script:', name);
-    return execFileSync('yarn', ['run', name], { cwd: `../${pkg}` });
+    const pkgPath = new URL(`../../../${pkg}`, import.meta.url).pathname;
+    return execFileSync('yarn', ['run', name], { cwd: pkgPath });
   };
-  const readPackageFile = (pkg, name) =>
-    fsAmbient.promises.readFile(`../${pkg}/${name}`, 'utf8');
+  const readPackageFile = (pkg, name) => {
+    const filePath = new URL(`../../../${pkg}/${name}`, import.meta.url)
+      .pathname;
+    return fsAmbient.promises.readFile(filePath, 'utf8');
+  };
 
   const { resolve: pathResolve } = pathAmbient;
-  // TODO: set HOME to a test temp write space
+  // Using the default cacheDir defined in `@agoric/deploy-script-support`
   const cacheDir = pathResolve(osAmbient.homedir(), '.agoric/cache');
 
   const loadJSON = async fname =>
