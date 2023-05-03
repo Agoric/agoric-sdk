@@ -32,8 +32,7 @@ CHAIN_OPTS = --chain-id=$(CHAIN_ID)
 # CHAIN_OPTS = --chain-id=$(CHAIN_ID)
 
 # pairs of permit, code
-# EVALS = gov-econ-committee-permit.json gov-econ-committee.js \
-#   gov-amm-vaults-etc-permit.json gov-amm-vaults-etc.js \
+# EVALS = gov-vaults-etc-permit.json gov-vaults-etc.js \
 #   ./scripts/gov-startPSM-permit.json ./scripts/gov-startPSM.js
 
 # TODO parameterize

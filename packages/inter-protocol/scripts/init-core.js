@@ -193,10 +193,7 @@ export default async (homeP, endowments) => {
     loadBundle: spec => import(spec),
   });
   await Promise.all([
-    writeCoreProposal('gov-econ-committee', opts =>
-      committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
-    ),
-    writeCoreProposal('gov-amm-vaults-etc', opts =>
+    writeCoreProposal('gov-vaults-etc', opts =>
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
   ]);
