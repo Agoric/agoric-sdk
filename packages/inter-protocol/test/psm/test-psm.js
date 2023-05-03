@@ -564,18 +564,18 @@ test('metrics, with snapshot', async t => {
     'totalMintedProvided',
   ]);
   t.like(driver.getStorageChildBody('metrics'), {
-    anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
-    feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+    anchorPoolBalance: { brand: Far('aUSD brand'), value: 0n },
+    feePoolBalance: { brand: Far('IST brand'), value: 0n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: 0n,
     },
     totalAnchorProvided: {
-      brand: { iface: 'Alleged: aUSD brand' },
+      brand: Far('aUSD brand'),
       value: 0n,
     },
     totalMintedProvided: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: 0n,
     },
   });
@@ -589,7 +589,7 @@ test('metrics, with snapshot', async t => {
     },
     feePoolBalance: { value: 20_000n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: giveAnchor.value,
     },
     totalAnchorProvided: {
@@ -608,7 +608,7 @@ test('metrics, with snapshot', async t => {
     },
     feePoolBalance: { value: 20_000n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: giveAnchor.value,
     },
     totalAnchorProvided: {
@@ -634,7 +634,7 @@ test('metrics, with snapshot', async t => {
     },
     feePoolBalance: { value: 50_000n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: giveAnchor.value - giveMinted.value + fee,
     },
     totalAnchorProvided: {

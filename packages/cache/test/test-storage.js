@@ -19,6 +19,7 @@ const makeSimpleMarshaller = () => {
   };
   const toVal = slot => vals[slot];
   return makeMarshal(fromVal, toVal, {
+    serializeBodyFormat: 'smallcaps',
     marshalSaveError: err => {
       throw err;
     },
@@ -47,8 +48,8 @@ test('makeChainStorageCoordinator with non-remote values', async t => {
   t.is(await cache('brandName', 'barbosa'), 'barbosa');
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"brandName\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":"barbosa"}',
+    '{"body":"#\\"brandName\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":"barbosa"}',
       slots: [],
     },
   });
@@ -56,12 +57,12 @@ test('makeChainStorageCoordinator with non-remote values', async t => {
   // One-time initialization (of 'frotz')
   t.is(await cache('frotz', 'default'), 'default');
   const afterFirstFrotz = {
-    '{"body":"\\"brandName\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":"barbosa"}',
+    '{"body":"#\\"brandName\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":"barbosa"}',
       slots: [],
     },
-    '{"body":"\\"frotz\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":"default"}',
+    '{"body":"#\\"frotz\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":"default"}',
       slots: [],
     },
   };
@@ -83,8 +84,8 @@ test('makeChainStorageCoordinator with non-remote values', async t => {
   );
   t.deepEqual(JSON.parse(storageNodeState.cache), {
     ...afterFirstFrotz,
-    '{"body":"[\\"complex\\",\\"passable\\"]","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":{"arr":["hi","there"],"big":{"@qclass":"bigint","digits":"1"},"num":53,"str":"string"}}',
+    '{"body":"#[\\"complex\\",\\"passable\\"]","slots":[]}': {
+      body: '#{"generation":"+1","value":{"arr":["hi","there"],"big":"+1","num":53,"str":"string"}}',
       slots: [],
     },
   });
@@ -98,8 +99,8 @@ test('makeChainStorageCoordinator with remote values', async t => {
   t.is(await cache('brand', farThing), farThing);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"brand\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":{"@qclass":"slot","iface":"Alleged: farThing","index":0}}',
+    '{"body":"#\\"brand\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":"$0.Alleged: farThing"}',
       slots: [0],
     },
   });
@@ -114,8 +115,8 @@ test('makeChainStorageCoordinator with updater', async t => {
   t.is(await cache('counter', increment), 1);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"counter\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":1}',
+    '{"body":"#\\"counter\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":1}',
       slots: [],
     },
   });
@@ -124,8 +125,8 @@ test('makeChainStorageCoordinator with updater', async t => {
   t.is(await cache('counter', increment), 1);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"counter\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":1}',
+    '{"body":"#\\"counter\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":1}',
       slots: [],
     },
   });
@@ -134,8 +135,8 @@ test('makeChainStorageCoordinator with updater', async t => {
   t.is(await cache('counter', increment, M.any()), 2);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"counter\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"2"},"value":2}',
+    '{"body":"#\\"counter\\"","slots":[]}': {
+      body: '#{"generation":"+2","value":2}',
       slots: [],
     },
   });
@@ -155,8 +156,8 @@ test('makeChainStorageCoordinator with remote updater', async t => {
   t.is(await cache('counter', counterObj.increment), 1);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"counter\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":1}',
+    '{"body":"#\\"counter\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":1}',
       slots: [],
     },
   });
@@ -166,8 +167,8 @@ test('makeChainStorageCoordinator with remote updater', async t => {
   t.is(counter, 1);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"counter\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"1"},"value":1}',
+    '{"body":"#\\"counter\\"","slots":[]}': {
+      body: '#{"generation":"+1","value":1}',
       slots: [],
     },
   });
@@ -177,8 +178,8 @@ test('makeChainStorageCoordinator with remote updater', async t => {
   t.is(counter, 2);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
   t.deepEqual(JSON.parse(storageNodeState.cache), {
-    '{"body":"\\"counter\\"","slots":[]}': {
-      body: '{"generation":{"@qclass":"bigint","digits":"2"},"value":2}',
+    '{"body":"#\\"counter\\"","slots":[]}': {
+      body: '#{"generation":"+2","value":2}',
       slots: [],
     },
   });

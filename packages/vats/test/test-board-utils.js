@@ -3,6 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { chainStorageEntries } from '@agoric/inter-protocol/test/psm/psm-storage-fixture.js';
+import { Far } from '@endo/far';
 
 import {
   boardSlottingMarshaller,
@@ -164,44 +165,39 @@ test('makeAgoricNamesRemotesFromFakeStorage', t => {
 // XXX ses-ava can't test.macro
 const serialize = (t, specimen, expected) => {
   const marshaller = boardSlottingMarshaller();
-  const actual = marshaller.serialize(specimen);
+  const actual = marshaller.serialize(harden(specimen));
   t.deepEqual(actual, expected);
 };
 
-test('undefined', serialize, undefined, { body: undefined, slots: [] });
-test('null', serialize, undefined, { body: undefined, slots: [] });
-test('empty string', serialize, '', { body: '""', slots: [] });
-test('bigint', serialize, 123n, {
-  body: '{"@qclass":"bigint","digits":"123"}',
-  slots: [],
-});
+test('undefined', serialize, undefined, { body: '#"#undefined"', slots: [] });
+test('null', serialize, undefined, { body: '#"#undefined"', slots: [] });
+test('empty string', serialize, '', { body: '#""', slots: [] });
+test('bigint', serialize, 123n, { body: '#"+123"', slots: [] });
 test(
   'record',
   serialize,
   { a: 1, b: 'str' },
   {
-    body: '{"a":1,"b":"str"}',
+    body: '#{"a":1,"b":"str"}',
     slots: [],
   },
 );
 
-test(
-  'board ids',
-  serialize,
-  { getBoardId: () => 'board123' },
-  { body: '{"@qclass":"slot","index":0}', slots: ['board123'] },
-);
+test('board ids', serialize, Far('iface', { getBoardId: () => 'board123' }), {
+  body: '#"$0.Alleged: iface"',
+  slots: ['board123'],
+});
 
 test(
   'nested board ids',
   serialize,
   {
-    istBrand: { getBoardId: () => 'board123Ist' },
-    atomBrand: { getBoardId: () => 'board123Atom' },
+    istBrand: Far('iface', { getBoardId: () => 'board123Ist' }),
+    atomBrand: Far('iface', { getBoardId: () => 'board123Atom' }),
   },
   {
-    body: '{"istBrand":{"@qclass":"slot","index":0},"atomBrand":{"@qclass":"slot","index":1}}',
-    slots: ['board123Ist', 'board123Atom'],
+    body: '#{"atomBrand":"$0.Alleged: iface","istBrand":"$1.Alleged: iface"}',
+    slots: ['board123Atom', 'board123Ist'],
   },
 );
 

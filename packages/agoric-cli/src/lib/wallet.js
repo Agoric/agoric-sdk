@@ -37,7 +37,7 @@ export const getLastUpdate = (addr, { readLatestHead }) => {
  * @param {Pick<import('stream').Writable,'write'>} [stdout]
  */
 export const outputAction = (bridgeAction, stdout = process.stdout) => {
-  const capData = marshaller.serialize(bridgeAction);
+  const capData = marshaller.serialize(harden(bridgeAction));
   stdout.write(JSON.stringify(capData));
   stdout.write('\n');
 };

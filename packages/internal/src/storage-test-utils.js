@@ -1,10 +1,66 @@
 // @ts-check
 import { Far } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
+import { makeMarshal, Remotable } from '@endo/marshal';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 
 const { Fail, quote: q } = assert;
+
+/**
+ * A convertSlotToVal function that produces basic Remotables
+ *
+ * @param {string} _slotId
+ * @param {string} iface
+ */
+export const slotToRemotable = (_slotId, iface = 'Alleged: Remotable') =>
+  Remotable(iface);
+
+/**
+ * A basic marshaller whose unserializer produces Remotables. It can
+ * only serialize plain data, not Remotables.
+ */
+export const defaultMarshaller = makeMarshal(undefined, slotToRemotable, {
+  serializeBodyFormat: 'smallcaps',
+});
+
+/**
+ * A deserializer which produces slot strings instead of Remotables,
+ * so if `a = Far('iface')`, and serializing `{ a }` into `capData`
+ * assigned it slot `board123`, then `slotStringUnserialize(capData)`
+ * would produce `{ a: 'board123' }`.
+ *
+ * This may be useful for display purposes.
+ *
+ * One limitation: serialized data that contains a particular unusual
+ * string will be unserialized into a BigInt.
+ */
+const makeSlotStringUnserialize = () => {
+  /** @type { (slot: string, iface: string) => any } */
+  const identitySlotToValFn = (slot, _) => Far('unk', { toJSON: () => slot });
+  const { fromCapData } = makeMarshal(undefined, identitySlotToValFn);
+  /** @type { (capData: any) => any } */
+  const unserialize = capData =>
+    JSON.parse(
+      JSON.stringify(fromCapData(capData), (_, val) => {
+        if (typeof val === 'bigint') {
+          // JSON cannot accept BigInts. This unusual string is a
+          // cheap alternative to a proper Hilbert Hotel.
+          return `@encromulate:${val}`;
+        } else {
+          return val;
+        }
+      }),
+      (_key, val) => {
+        if (typeof val === 'string' && val.startsWith('@encromulate')) {
+          return BigInt(val.split(':')[1]);
+        } else {
+          return val;
+        }
+      },
+    );
+  return harden(unserialize);
+};
+export const slotStringUnserialize = makeSlotStringUnserialize();
 
 /**
  * For testing, creates a chainStorage root node over an in-memory map
@@ -74,17 +130,10 @@ harden(makeFakeStorageKit);
 
 export const makeMockChainStorageRoot = () => {
   const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
-
-  const defaultMarshaller = makeMarshal(undefined, (_slotId, iface) => ({
-    iface,
-  }));
-
   return Far('mockChainStorage', {
     ...bindAllMethods(rootNode),
     /**
-     * Defaults to deserializing pass-by-presence objects into { iface } representations.
-     * Note that this is **not** a null transformation; capdata `@qclass` and `index` properties
-     * are dropped and `iface` is _added_ for repeat references.
+     * Defaults to deserializing pass-by-presence objects into Remotable objects.
      *
      * @param {string} path
      * @param {import('./lib-chainStorage.js').Marshaller} marshaller

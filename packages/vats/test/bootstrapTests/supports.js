@@ -1,14 +1,17 @@
 // @ts-check
 /* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
+import { Far } from '@endo/far';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeFakeStorageKit,
+  slotToRemotable,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
-import { makeMarshal } from '@endo/marshal';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -185,7 +188,7 @@ export const makeWalletFactoryDriver = async (
     'namesByAddressAdmin',
   );
 
-  const marshaller = boardSlottingMarshaller();
+  const marshaller = boardSlottingMarshaller(slotToRemotable);
 
   /**
    * @param {string} walletAddress
@@ -197,10 +200,12 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     executeOffer(offer) {
-      const offerCapData = marshaller.serialize({
-        method: 'executeOffer',
-        offer,
-      });
+      const offerCapData = marshaller.serialize(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
@@ -208,18 +213,22 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     sendOffer(offer) {
-      const offerCapData = marshaller.serialize({
-        method: 'executeOffer',
-        offer,
-      });
+      const offerCapData = marshaller.serialize(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
     tryExitOffer(offerId) {
-      const capData = marshaller.serialize({
-        method: 'tryExitOffer',
-        offerId,
-      });
+      const capData = marshaller.serialize(
+        harden({
+          method: 'tryExitOffer',
+          offerId,
+        }),
+      );
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
@@ -250,7 +259,7 @@ export const makeWalletFactoryDriver = async (
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
       const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
-      return JSON.parse(lastWalletStatus.body);
+      return marshaller.unserialize(lastWalletStatus);
     },
   });
 
@@ -332,7 +341,8 @@ export const makeSwingsetTestKit = async (
 
   const storage = makeFakeStorageKit('bootstrapTests');
 
-  const marshal = makeMarshal();
+  const slotToVal = (_slotId, iface = 'Remotable') => Far(iface);
+  const marshal = boardSlottingMarshaller(slotToVal);
 
   const readLatest = path => {
     const str = storage.data.get(path)?.at(-1);

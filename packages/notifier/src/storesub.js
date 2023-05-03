@@ -94,6 +94,7 @@ export const makeStoredSubscription = (
   storageNode,
   marshaller = makeMarshal(undefined, undefined, {
     marshalSaveError: () => {},
+    serializeBodyFormat: 'smallcaps',
   }),
 ) => {
   /** @type {Unserializer} */

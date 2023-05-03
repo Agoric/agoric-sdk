@@ -14,6 +14,7 @@
 import { assert, q, Fail } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { objectMap, WalletName } from '@agoric/internal';
+import { slotStringUnserialize } from '@agoric/internal/src/storage-test-utils.js';
 import {
   makeLegacyMap,
   makeScalarMapStore,
@@ -23,7 +24,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
-import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
+import { passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@endo/nat';
 import {
   makeNotifierFromSubscriber,
@@ -228,18 +229,10 @@ export function makeWalletRoot({
     return getSortedValues(inboxState);
   }
 
-  const noOp = () => {};
-  const identitySlotToValFn = (slot, _) => slot;
-
   // Instead of { body, slots }, fill the slots. This is useful for
   // display but not for data processing, since the special identifier
   // @qclass is lost.
-  const { unserialize: fillInSlots } = makeMarshal(noOp, identitySlotToValFn, {
-    marshalName: 'wallet',
-    // TODO Temporary hack.
-    // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 40000,
-  });
+  const fillInSlots = slotStringUnserialize;
 
   /** @type {NotifierRecord<OfferState[]>} */
   const { notifier: offersNotifier, updater: offersUpdater } = makeNotifierKit(
@@ -1802,7 +1795,7 @@ export function makeWalletRoot({
 
   const firstPathToLookup = createRootLookups();
 
-  /** @type {ReturnType<typeof makeMarshal>} */
+  /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>} */
   const marshaller = harden({
     fromCapData: context.fromCapData,
     toCapData: context.toCapData,

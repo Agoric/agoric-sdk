@@ -4,6 +4,7 @@ import '@agoric/zoe/exported.js';
 
 import path from 'path';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/far';
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
@@ -81,7 +82,7 @@ test('committee-open question:one', async t => {
     maxChoices: 1,
     maxWinners: 1,
     closingRule: {
-      timer: buildManualTimer(t.log),
+      timer: harden(buildManualTimer(t.log)),
       deadline: 2n,
     },
     quorumRule: QuorumRule.MAJORITY,
@@ -102,13 +103,9 @@ test('committee-open question:one', async t => {
     {
       closingRule: {
         deadline: 2n,
-        timer: {
-          iface: 'Alleged: ManualTimer',
-        },
+        timer: Far('ManualTimer'),
       },
-      counterInstance: {
-        iface: 'Alleged: InstanceHandle',
-      },
+      counterInstance: Far('InstanceHandle'),
       electionType: 'survey',
       issue: {
         text: 'why',
@@ -124,9 +121,7 @@ test('committee-open question:one', async t => {
           text: 'why not?',
         },
       ],
-      questionHandle: {
-        iface: 'Alleged: QuestionHandle',
-      },
+      questionHandle: Far('QuestionHandle'),
       quorumRule: 'majority',
       tieOutcome: {
         text: 'why not?',
