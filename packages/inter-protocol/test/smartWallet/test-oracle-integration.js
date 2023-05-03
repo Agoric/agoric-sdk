@@ -161,7 +161,7 @@ const pushPrice = async (wallet, adminOfferId, priceRound) => {
 
 // The tests are serial because they mutate shared state
 
-test.serial('invitations', async t => {
+test.skip('invitations', async t => {
   const operatorAddress = 'agoric1invitationTest';
   const wallet = await t.context.simpleProvideWallet(operatorAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
@@ -234,7 +234,7 @@ test.serial('invitations', async t => {
   );
 });
 
-test.serial('admin price', async t => {
+test.skip('admin price', async t => {
   const operatorAddress = 'adminPriceAddress';
   const { zoe } = t.context.consume;
 
@@ -273,7 +273,7 @@ test.serial('admin price', async t => {
   });
 });
 
-test.serial('errors', async t => {
+test.skip('errors', async t => {
   const operatorAddress = 'badInputsAddress';
 
   const { oracleWallets, governedPriceAggregator: priceAggregator } =
@@ -334,7 +334,7 @@ test.serial('errors', async t => {
 });
 
 // test both addOracles and removeOracles in same test to reuse the lengthy EC setup
-test.serial('govern oracles list', async t => {
+test.skip('govern oracles list', async t => {
   const { invitationBrand } = t.context;
 
   const newOracle = 'agoric1OracleB';

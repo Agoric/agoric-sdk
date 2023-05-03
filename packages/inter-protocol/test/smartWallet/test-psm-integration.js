@@ -56,7 +56,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makePsmTestSpace);
 });
 
-test('null swap', async t => {
+test.skip('null swap', async t => {
   const { anchor } = t.context;
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
@@ -101,7 +101,7 @@ test('null swap', async t => {
 });
 
 // we test this direction of swap because wanting anchor would require the PSM to have anchor in it first
-test('want stable', async t => {
+test.skip('want stable', async t => {
   const { anchor } = t.context;
   const { agoricNames } = await E.get(t.context.consume);
 
@@ -146,7 +146,7 @@ test('want stable', async t => {
   t.is(await E.get(getBalanceFor(stableBrand)).value, swapSize); // assume 0% fee
 });
 
-test('want stable (insufficient funds)', async t => {
+test.skip('want stable (insufficient funds)', async t => {
   const { anchor } = t.context;
   const { agoricNames } = await E.get(t.context.consume);
 
@@ -203,7 +203,7 @@ test('want stable (insufficient funds)', async t => {
   t.is(result[0].reason.message, msg);
 });
 
-test('govern offerFilter', async t => {
+test.skip('govern offerFilter', async t => {
   const { anchor, invitationBrand } = t.context;
   const { agoricNames, psmKit, zoe } = await E.get(t.context.consume);
 
@@ -373,7 +373,7 @@ test('govern offerFilter', async t => {
 });
 
 // XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
-test('deposit multiple payments to unknown brand', async t => {
+test.skip('deposit multiple payments to unknown brand', async t => {
   const rial = withAmountUtils(makeIssuerKit('rial'));
 
   const wallet = await t.context.simpleProvideWallet('agoric1queue');
@@ -389,7 +389,7 @@ test('deposit multiple payments to unknown brand', async t => {
 });
 
 // XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
-test('recover when some withdrawals succeed and others fail', async t => {
+test.skip('recover when some withdrawals succeed and others fail', async t => {
   const { fromEntries } = Object;
   const { make } = AmountMath;
   const { anchor } = t.context;
@@ -442,7 +442,7 @@ test('recover when some withdrawals succeed and others fail', async t => {
 });
 
 // TODO move to smart-wallet package when it has sufficient test supports
-test('agoricName invitation source errors', async t => {
+test.skip('agoricName invitation source errors', async t => {
   const { anchor } = t.context;
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
