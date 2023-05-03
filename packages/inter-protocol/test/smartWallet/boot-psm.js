@@ -32,6 +32,7 @@ import {
 } from '@agoric/vats/src/core/startWalletFactory.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
+import { makeNameHubKit } from '@agoric/vats';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -138,6 +139,15 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
   mustMatch(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
   const { produce, consume } = makePromiseSpace({ log });
+
+  // mock the provisioning vat
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+  const mockProvisioning = {
+    getNamesByAddressKit: () => ({ namesByAddress, namesByAddressAdmin }),
+  };
+  produce.provisioning.resolve(mockProvisioning);
+
   let spaces;
   let namedVat;
 
