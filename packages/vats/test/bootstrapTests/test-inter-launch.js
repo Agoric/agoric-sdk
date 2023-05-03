@@ -1,3 +1,4 @@
+/* global process */
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -24,10 +25,13 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
 
-  const runPackageScript = async (pkg, name) => {
+  const runPackageScript = async (pkg, name, env) => {
     console.warn(pkg, 'running package script:', name);
     const pkgPath = getPkgPath(pkg);
-    return childProcess.execFileSync('yarn', ['run', name], { cwd: pkgPath });
+    return childProcess.execFileSync('yarn', ['run', name], {
+      cwd: pkgPath,
+      env,
+    });
   };
 
   const loadJSON = async filePath =>
@@ -36,32 +40,43 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
   // XXX alternatively: just look at output files
   /** @param {string} txt */
   const parseProposalParts = txt => {
-    const m = txt.match(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/);
-    if (!m || !m.groups) throw Fail`Invalid proposal output ${txt}`;
-    const { permit, script } = m.groups;
+    const evals = [
+      ...txt.matchAll(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/g),
+    ].map(m => {
+      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
+      const { permit, script } = m.groups;
+      return { permit, script };
+    });
+    evals.length ||
+      Fail`No swingset-core-eval found in proposal output: ${txt}`;
 
-    const bundles = [];
-    for (const mm of txt.matchAll(/swingset install-bundle @([^\n]+)/gm)) {
-      const [, bundle] = mm;
-      bundles.push(bundle);
-    }
-    return { permit, script, bundles };
+    const bundles = [
+      ...txt.matchAll(/swingset install-bundle @([^\n]+)/gm),
+    ].map(([, bundle]) => bundle);
+    bundles.length || Fail`No bundles found in proposal output: ${txt}`;
+
+    return { evals, bundles };
   };
 
   /**
    * @param {object} options
    * @param {string} options.package
    * @param {string} options.packageScriptName
+   * @param {Record<string, string>} [options.env]
    */
   const buildAndExtract = async ({
     package: packageName,
     packageScriptName,
+    env = {},
   }) => {
+    const scriptEnv = Object.assign(Object.create(process.env), env);
     // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(packageName, packageScriptName);
+    const out = await runPackageScript(
+      packageName,
+      packageScriptName,
+      scriptEnv,
+    );
     const built = parseProposalParts(out.toString());
-
-    built.bundles.length > 0 || Fail`No bundles generated`;
 
     const loadAndRmPkgFile = async fileName => {
       const filePath = getPkgPath(packageName, fileName);
@@ -70,8 +85,15 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
       return content;
     };
 
-    const permitsP = loadAndRmPkgFile(built.permit);
-    const codeP = loadAndRmPkgFile(built.script);
+    const evalsP = Promise.all(
+      built.evals.map(async ({ permit, script }) => {
+        const [permits, code] = await Promise.all([
+          loadAndRmPkgFile(permit),
+          loadAndRmPkgFile(script),
+        ]);
+        return { json_permits: permits, js_code: code };
+      }),
+    );
 
     const bundlesP = Promise.all(
       built.bundles.map(
@@ -79,9 +101,10 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
           /** @type {Promise<EndoZipBase64Bundle>} */ (loadJSON(bundleFile)),
       ),
     );
-    return Promise.all([permitsP, codeP, bundlesP]).then(
-      ([permits, code, bundles]) => ({ permits, code, bundles }),
-    );
+    return Promise.all([evalsP, bundlesP]).then(([evals, bundles]) => ({
+      evals,
+      bundles,
+    }));
   };
   return buildAndExtract;
 };
@@ -166,6 +189,9 @@ test.serial('make vaults launch proposal', async t => {
   const proposal = await buildProposal({
     package: 'inter-protocol',
     packageScriptName: 'build:proposal-vaults',
+    env: {
+      INTERCHAIN_DENOM: 'ibc/toyatom',
+    },
   });
 
   for await (const bundle of proposal.bundles) {
@@ -176,12 +202,7 @@ test.serial('make vaults launch proposal', async t => {
   t.log('launching proposal');
   const bridgeMessage = {
     type: 'CORE_EVAL',
-    evals: [
-      {
-        json_permits: proposal.permits,
-        js_code: proposal.code,
-      },
-    ],
+    evals: proposal.evals,
   };
   t.log({ bridgeMessage });
   const { EV } = t.context.runUtils;
