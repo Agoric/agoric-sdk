@@ -213,12 +213,12 @@
  *   privateArgs: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'], 'initialPoserInvitation'>,
  *   label: string,
  *   produceResults: Pick<Producer<GovernanceFacetKit<SF>>, 'resolve'>,
- * }} StartGovernedUpgradeableOpts
+ * }} startGovernedUpgradableOpts
  *
  */
 /**
- * @typedef {<SF extends GovernableStartFn>(opts: StartGovernedUpgradeableOpts<SF>) => Promise<GovernanceFacetKit<SF>>
- * } StartGovernedUpgradeable
+ * @typedef {<SF extends GovernableStartFn>(opts: startGovernedUpgradableOpts<SF>) => Promise<GovernanceFacetKit<SF>>
+ * } startGovernedUpgradable
  */
 
 /**
@@ -230,11 +230,11 @@
  *   privateArgs: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
  *   label: string,
  *   produceResults: Pick<Producer<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>, 'resolve'>,
- * }} StartUpgradeableOpts
+ * }} startUpgradableOpts
  */
 /**
- * @typedef {<SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>(opts: StartUpgradeableOpts<SF>) => Promise<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>
- * } StartUpgradeable
+ * @typedef {<SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>(opts: startUpgradableOpts<SF>) => Promise<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>
+ * } startUpgradable
  */
 
 /**
@@ -269,8 +269,8 @@
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   scaledPriceAuthorityKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   storageBridgeManager: import('../types.js').ScopedBridgeManager?,
- *   startUpgradeable: StartUpgradeable,
- *   startGovernedUpgradeable: StartGovernedUpgradeable,
+ *   startUpgradable: startUpgradable,
+ *   startGovernedUpgradable: startGovernedUpgradable,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,

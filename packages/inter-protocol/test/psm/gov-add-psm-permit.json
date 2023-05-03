@@ -13,7 +13,7 @@
     "psmKit": true,
     "chainTimerService": "timer",
     "anchorKits": true,
-    "startUpgradeable": true
+    "startUpgradable": true
   },
   "produce": {
     "testFirstAnchorKit": true,

@@ -290,7 +290,7 @@ export const makeAnchorAsset = async (
     consume: {
       agoricNamesAdmin,
       bankManager,
-      startUpgradeable: startUpgradeableP,
+      startUpgradable: startUpgradableP,
       anchorBalancePayments,
       anchorKits,
     },
@@ -329,11 +329,11 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  const startUpgradeable = await startUpgradeableP;
+  const startUpgradable = await startUpgradableP;
   produceAnchorKits.resolve([]);
   /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
   // @ts-expect-error cast
-  const { creatorFacet: mint, publicFacet: issuerP } = await startUpgradeable({
+  const { creatorFacet: mint, publicFacet: issuerP } = await startUpgradable({
     installation: mintHolder,
     label: keyword,
     terms,
@@ -477,7 +477,7 @@ export const PSM_MANIFEST = {
     consume: {
       agoricNamesAdmin: true,
       bankManager: 'bank',
-      startUpgradeable: true,
+      startUpgradable: true,
       anchorBalancePayments: true,
       anchorKits: true,
     },

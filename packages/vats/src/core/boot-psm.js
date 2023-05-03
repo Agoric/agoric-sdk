@@ -31,8 +31,8 @@ import {
   makeBoard,
   makeVatsFromBundles,
   mintInitialSupply,
-  produceStartGovernedUpgradeable,
-  produceStartUpgradeable,
+  produceStartGovernedUpgradable,
+  produceStartUpgradable,
 } from './basic-behaviors.js';
 import * as utils from './utils.js';
 import {
@@ -185,9 +185,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
     };
 
     await Promise.all([
-      produceStartUpgradeable(powersFor('produceStartUpgradeable')),
-      produceStartGovernedUpgradeable(
-        powersFor('produceStartGovernedUpgradeable'),
+      produceStartUpgradable(powersFor('produceStartUpgradable')),
+      produceStartGovernedUpgradable(
+        powersFor('produceStartGovernedUpgradable'),
       ),
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),

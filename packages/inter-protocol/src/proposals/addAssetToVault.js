@@ -60,7 +60,7 @@ export const publishInterchainAssetFromBank = async (
       bankMints,
       vBankKits,
       reserveKit,
-      startUpgradeable: startUpgradeableP,
+      startUpgradable: startUpgradableP,
     },
     produce: { bankMints: produceBankMints, vBankKits: produceVBankKits },
     installation: {
@@ -88,9 +88,9 @@ export const publishInterchainAssetFromBank = async (
     },
   };
 
-  const startUpgradeable = await startUpgradeableP;
+  const startUpgradable = await startUpgradableP;
   produceVBankKits.resolve([]);
-  const { creatorFacet: mint, publicFacet: issuer } = await startUpgradeable({
+  const { creatorFacet: mint, publicFacet: issuer } = await startUpgradable({
     installation: mintHolder,
     label: keyword,
     privateArgs: undefined,
@@ -128,7 +128,7 @@ export const registerScaledPriceAuthority = async (
   {
     consume: {
       agoricNamesAdmin,
-      startUpgradeable: startUpgradeableP,
+      startUpgradable: startUpgradableP,
       priceAuthorityAdmin,
       priceAuthority,
       scaledPriceAuthorityKits,
@@ -209,9 +209,9 @@ export const registerScaledPriceAuthority = async (
     }),
   );
 
-  const startUpgradeable = await startUpgradeableP;
+  const startUpgradable = await startUpgradableP;
   produceScaledPriceAuthorityKits.resolve([]);
-  const spaKit = await startUpgradeable({
+  const spaKit = await startUpgradable({
     installation: scaledPriceAuthority,
     label: `scaledPriceAuthority-${keyword}`,
     terms,
@@ -317,7 +317,7 @@ export const getManifestForAddAssetToVault = (
             bankMints: true,
             reserveKit: true,
             vBankKits: true,
-            startUpgradeable: true,
+            startUpgradable: true,
           },
           produce: { bankMints: true, vBankKits: true },
           installation: {
@@ -328,7 +328,7 @@ export const getManifestForAddAssetToVault = (
       [registerScaledPriceAuthority.name]: {
         consume: {
           agoricNamesAdmin: true,
-          startUpgradeable: true,
+          startUpgradable: true,
           priceAuthorityAdmin: true,
           priceAuthority: true,
           scaledPriceAuthorityKits: true,

@@ -109,7 +109,7 @@ test.serial('restart', async t => {
 
   // @ts-expect-error cast XXX missing from type
   const { privateArgs } = vaultFactoryKit;
-  console.log('reused privateArgs', privateArgs);
+  console.log('reused privateArgs', privateArgs, vaultFactoryKit);
 
   const vfAdminFacet = await EV(
     vaultFactoryKit.governorCreatorFacet,

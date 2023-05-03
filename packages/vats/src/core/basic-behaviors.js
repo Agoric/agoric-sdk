@@ -90,12 +90,12 @@ export const makeVatsFromBundles = async ({
 harden(makeVatsFromBundles);
 
 /** @param {BootstrapPowers} powers */
-export const produceStartUpgradeable = async ({
+export const produceStartUpgradable = async ({
   consume: { zoe },
-  produce, // startUpgradeable
+  produce, // startUpgradable
 }) => {
-  /** @type {StartUpgradeable} */
-  const startUpgradeable = async ({
+  /** @type {startUpgradable} */
+  const startUpgradable = async ({
     installation,
     issuerKeywordRecord,
     terms,
@@ -114,9 +114,9 @@ export const produceStartUpgradeable = async ({
     return startResult;
   };
 
-  produce.startUpgradeable.resolve(startUpgradeable);
+  produce.startUpgradable.resolve(startUpgradable);
 };
-harden(produceStartUpgradeable);
+harden(produceStartUpgradable);
 
 /**
  * @template {GovernableStartFn} SF
@@ -208,15 +208,15 @@ const startGovernedInstance = async (
   return facets;
 };
 
-export const produceStartGovernedUpgradeable = async ({
+export const produceStartGovernedUpgradable = async ({
   consume: { chainTimerService, economicCommitteeCreatorFacet, zoe },
-  produce, // startGovernedUpgradeable
+  produce, // startGovernedUpgradable
   installation: {
     consume: { contractGovernor },
   },
 }) => {
-  /** @type {StartGovernedUpgradeable} */
-  const startGovernedUpgradeable = async ({
+  /** @type {startGovernedUpgradable} */
+  const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,
     governedParams,
@@ -245,9 +245,9 @@ export const produceStartGovernedUpgradeable = async ({
     return facetsP;
   };
 
-  produce.startGovernedUpgradeable.resolve(startGovernedUpgradeable);
+  produce.startGovernedUpgradable.resolve(startGovernedUpgradable);
 };
-harden(produceStartGovernedUpgradeable);
+harden(produceStartGovernedUpgradable);
 
 /**
  * @param { BootstrapPowers & {
@@ -696,17 +696,17 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
   },
-  [produceStartUpgradeable.name]: {
+  [produceStartUpgradable.name]: {
     consume: { zoe: 'zoe' },
-    produce: { startUpgradeable: true },
+    produce: { startUpgradable: true },
   },
-  [produceStartGovernedUpgradeable.name]: {
+  [produceStartGovernedUpgradable.name]: {
     consume: {
       chainTimerService: 'timer',
       economicCommitteeCreatorFacet: 'economicCommittee',
       zoe: 'zoe',
     },
-    produce: { startGovernedUpgradeable: true },
+    produce: { startGovernedUpgradable: true },
     installation: {
       consume: { contractGovernor: 'zoe' },
     },

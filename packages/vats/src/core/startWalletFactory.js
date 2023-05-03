@@ -20,90 +20,6 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
 /**
- * @param {{
- *   zoe: ERef<ZoeService>,
- *   governedContractInstallation: ERef<Installation>,
- *   issuerKeywordRecord?: IssuerKeywordRecord,
- *   terms: Record<string, unknown>,
- *   privateArgs: any, // TODO: connect with Installation type
- *   label: string,
- * }} zoeArgs
- * @param {{
- *   governedParams: Record<string, unknown>,
- *   timer: ERef<import('@agoric/time/src/types').TimerService>,
- *   contractGovernor: ERef<Installation>,
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
- * }} govArgs
- */
-const startGovernedInstance = async (
-  {
-    zoe,
-    governedContractInstallation,
-    issuerKeywordRecord,
-    terms,
-    privateArgs,
-    label,
-  },
-  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
-) => {
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
-  const [initialPoserInvitation, electorateInvitationAmount] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-    ]);
-
-  const governorTerms = await deeplyFulfilledObject(
-    harden({
-      timer,
-      governedContractInstallation,
-      governed: {
-        terms: {
-          ...terms,
-          governedParams: {
-            [CONTRACT_ELECTORATE]: {
-              type: ParamTypes.INVITATION,
-              value: electorateInvitationAmount,
-            },
-            ...governedParams,
-          },
-        },
-        issuerKeywordRecord,
-        label,
-      },
-    }),
-  );
-  const governorFacets = await E(zoe).startInstance(
-    contractGovernor,
-    {},
-    governorTerms,
-    harden({
-      economicCommitteeCreatorFacet,
-      governed: {
-        ...privateArgs,
-        initialPoserInvitation,
-      },
-    }),
-    `${label}-governor`,
-  );
-  const [instance, creatorFacet, adminFacet] = await Promise.all([
-    E(governorFacets.creatorFacet).getInstance(),
-    E(governorFacets.creatorFacet).getCreatorFacet(),
-    E(governorFacets.creatorFacet).getAdminFacet(),
-  ]);
-  const facets = {
-    instance,
-    governor: governorFacets.instance,
-    creatorFacet,
-    adminFacet,
-    governorCreatorFacet: governorFacets.creatorFacet,
-  };
-  return facets;
-};
-
-/**
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
@@ -133,8 +49,8 @@ export const startWalletFactory = async (
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
       econCharterKit,
-      startUpgradeable: startUpgradeableP,
-      startGovernedUpgradeable: startGovernedUpgradeableP,
+      startUpgradable: startUpgradableP,
+      startGovernedUpgradable: startGovernedUpgradableP,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
@@ -196,8 +112,8 @@ export const startWalletFactory = async (
     }),
   );
 
-  const startUpgradeable = await startUpgradeableP;
-  const wfFacets = await startUpgradeable({
+  const startUpgradable = await startUpgradableP;
+  const wfFacets = await startUpgradable({
     installation: walletFactory,
     issuerKeywordRecord: { Fee: feeIssuer },
     terms,
@@ -208,12 +124,12 @@ export const startWalletFactory = async (
     label: 'walletFactory',
     produceResults: walletFactoryStartResult,
   });
-  // TODO: push this resolve instance into startUpgradeable too
+  // TODO: push this resolve instance into startUpgradable too
   // but make it optional, since not all instances go in agoricNames
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const startGovernedUpgradeable = await startGovernedUpgradeableP;
-  const ppFacets = await startGovernedUpgradeable({
+  const startGovernedUpgradable = await startGovernedUpgradableP;
+  const ppFacets = await startGovernedUpgradable({
     installation: provisionPool,
     terms: {},
     privateArgs: harden({
@@ -230,7 +146,7 @@ export const startWalletFactory = async (
     },
     produceResults: provisionPoolStartResult,
   });
-  // TODO: push this resolve instance into startGovernedUpgradeable likewise
+  // TODO: push this resolve instance into startGovernedUpgradable likewise
   instanceProduce.provisionPool.resolve(ppFacets.instance);
 
   const handler = await E(ppFacets.creatorFacet).makeHandler({
@@ -272,8 +188,8 @@ export const WALLET_FACTORY_MANIFEST = {
       provisionWalletBridgeManager: true,
       chainStorage: 'bridge',
       namesByAddressAdmin: true,
-      startUpgradeable: true,
-      startGovernedUpgradeable: true,
+      startUpgradable: true,
+      startGovernedUpgradable: true,
       econCharterKit: 'psmCharter',
     },
     produce: {

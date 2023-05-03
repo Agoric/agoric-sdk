@@ -3,8 +3,8 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
-  produceStartUpgradeable,
-  produceStartGovernedUpgradeable,
+  produceStartUpgradable,
+  produceStartGovernedUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E } from '@endo/far';
 import path from 'path';
@@ -43,7 +43,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const { agoricNames, zoe } = consume;
 
   // @ts-expect-error Doesnt actually require all bootstrap powers
-  await produceStartUpgradeable({ consume, produce });
+  await produceStartUpgradable({ consume, produce });
 
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;
@@ -64,7 +64,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const contractGovernor = E(zoe).install(contractGovernorBundle);
   //#endregion
 
-  await produceStartGovernedUpgradeable({
+  await produceStartGovernedUpgradable({
     // @ts-expect-error Doesnt actually require all bootstrap powers
     consume,
     produce,

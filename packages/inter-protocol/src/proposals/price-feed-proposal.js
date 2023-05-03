@@ -101,10 +101,10 @@ export const createPriceFeed = async (
       namesByAddressAdmin,
       priceAuthority,
       priceAuthorityAdmin,
-      startGovernedUpgradeable: startGovernedUpgradeableP,
+      startGovernedUpgradable: startGovernedUpgradableP,
       fluxAggregatorKits,
     },
-    produce: { fluxAggregatorKits: produceFluxAggregatorKits }, // TODO - make a different kit for each asset
+    produce: { fluxAggregatorKits: produceFluxAggregatorKits },
   },
   {
     options: {
@@ -158,9 +158,9 @@ export const createPriceFeed = async (
 
   trace('awaiting startInstance');
   // Create the price feed.
-  const startGovernedUpgradeable = await startGovernedUpgradeableP;
+  const startGovernedUpgradable = await startGovernedUpgradableP;
   produceFluxAggregatorKits.resolve([]);
-  const faKit = await startGovernedUpgradeable({
+  const faKit = await startGovernedUpgradable({
     governedParams: {},
     privateArgs: {
       highPrioritySendersManager,
@@ -245,7 +245,7 @@ export const getManifestForPriceFeed = async (
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
-        startGovernedUpgradeable: t,
+        startGovernedUpgradable: t,
         fluxAggregatorKits: t,
       },
       produce: {

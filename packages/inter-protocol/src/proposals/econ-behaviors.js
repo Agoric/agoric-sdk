@@ -336,6 +336,7 @@ export const startVaultFactory = async (
       publicFacet,
       governor: governorInstance,
       instance: vaultFactoryInstance,
+      privateArgs: vaultFactoryPrivateArgs,
     }),
   );
 
