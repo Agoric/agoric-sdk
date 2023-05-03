@@ -6,7 +6,7 @@ import bundleSourceAmbient from '@endo/bundle-source';
 import { E, passStyleOf } from '@endo/far';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
+import { buildRootObject as buildPSMRootObject } from '@agoric/inter-protocol/test/smartWallet/boot-psm.js/index.js';
 import { buildRootObject } from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
 import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
@@ -144,36 +144,6 @@ test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
     }),
     {},
   );
-
-  await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
-  t.deepEqual(await E(root).consumeItem('swissArmyKnife'), [1, 2, 3]);
-  await E(root).resetItem('swissArmyKnife');
-  await E(root).produceItem('swissArmyKnife', 4);
-  t.deepEqual(await E(root).consumeItem('swissArmyKnife'), 4);
-});
-
-const psmParams = {
-  anchorAssets: [{ denom: 'ibc/toyusdc' }],
-  economicCommitteeAddresses: {},
-  argv: { bootMsg: {} },
-};
-
-test.skip(`PSM-only bootstrap`, async t => {
-  const root = buildPSMRootObject({ D: mockDProxy, logger: t.log }, psmParams);
-
-  void E(root).bootstrap(...mockPsmBootstrapArgs(t.log));
-  await eventLoopIteration();
-
-  const agoricNames =
-    /** @type {Promise<import('../src/types.js').NameHub>} */ (
-      E(root).consumeItem('agoricNames')
-    );
-  const instance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
-  t.is(passStyleOf(instance), 'remotable');
-});
-
-test('PSM-only bootstrap provides a way to pass items to CORE_EVAL', async t => {
-  const root = buildPSMRootObject({ D: mockDProxy, logger: t.log }, psmParams);
 
   await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
   t.deepEqual(await E(root).consumeItem('swissArmyKnife'), [1, 2, 3]);

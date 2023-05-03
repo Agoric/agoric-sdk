@@ -2,7 +2,6 @@
 import { E } from '@endo/far';
 import { heapZone } from '@agoric/zone';
 import { provide } from '@agoric/vat-data';
-import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
@@ -260,66 +259,6 @@ export const makeWellKnownSpaces = async (
 };
 
 /**
- * Make the well-known agoricNames namespace so that we can
- * E(home.agoricNames).lookup('issuer', 'IST') and likewise
- * for brand, installation, instance, etc.
- *
- * @param {typeof console.log} [log]
- * @param {Record<string, Record<string, unknown>>} reserved a property
- *   for each of issuer, brand, etc. with a value whose keys are names
- *   to reserve.
- *
- * For static typing and integrating with the bootstrap permit system,
- * return { produce, consume } spaces rather than NameAdmins.
- *
- * @deprecated in favor of makeWellKnownSpaces
- *
- * @returns {{
- *   agoricNames: import('../types.js').NameHub,
- *   agoricNamesAdmin: import('../types.js').NameAdmin,
- *   spaces: WellKnownSpaces,
- * }}
- */
-export const makeAgoricNamesAccess = (
-  log = noop, // console.debug
-  reserved = agoricNamesReserved,
-) => {
-  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-    makeNameHubKit();
-
-  const hubs = mapEntries(reserved, (key, _d) => {
-    const { nameHub, nameAdmin } = makeNameHubKit();
-    // const passableAdmin = {
-    //   ...nameAdmin,
-    //   update: (nameKey, val) => {
-    //     assertPassable(val); // else we can't publish
-    //     return nameAdmin.update(nameKey, val);
-    //   },
-    // };
-    agoricNamesAdmin.update(key, nameHub, nameAdmin);
-    return [key, { nameHub, nameAdmin }];
-  });
-  const spaces = mapEntries(reserved, (key, detail) => {
-    const { nameAdmin } = hubs[key];
-    const subSpaceLog = (...args) => log(key, ...args);
-    const { produce, consume } = makePromiseSpace({ log: subSpaceLog });
-    for (const k of keys(detail)) {
-      nameAdmin.reserve(k);
-      void consume[k].then(v => nameAdmin.update(k, v));
-    }
-    return [key, { produce, consume }];
-  });
-  const typedSpaces = /** @type { WellKnownSpaces } */ (
-    /** @type {any} */ (spaces)
-  );
-  return {
-    agoricNames,
-    agoricNamesAdmin,
-    spaces: typedSpaces,
-  };
-};
-
-/**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
  * @param {import('@agoric/zone').Zone} [zone]
@@ -338,6 +277,7 @@ export const makeVatSpace = (
 ) => {
   const subSpaceLog = (...args) => log(label, ...args);
 
+  // @@@TODO until this subsumes loadCriticalVat, share stores
   /** @type {VatStore} */
   const store = zone.mapStore('vatStore');
 

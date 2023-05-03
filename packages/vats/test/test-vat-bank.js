@@ -13,7 +13,7 @@ import {
   addBankAssets,
   installBootContracts,
 } from '../src/core/basic-behaviors.js';
-import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { makeAgoricNamesAccess } from './boot-support';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 

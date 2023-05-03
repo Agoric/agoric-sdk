@@ -9,7 +9,7 @@ import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { ParametersShape as BootParametersShape } from '../src/core/boot-psm.js';
+import { ParametersShape as BootParametersShape } from '@agoric/inter-protocol/test/smartWallet/boot-psm.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;

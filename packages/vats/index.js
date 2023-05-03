@@ -7,4 +7,4 @@ export * from './src/types.js';
 export * from './src/nameHub.js';
 export * from './src/bridge.js';
 export { makePromiseSpace } from './src/core/promise-space.js';
-export { makeAgoricNamesAccess } from './src/core/utils.js';
+export { makeWellKnownSpaces } from './src/core/utils.js';

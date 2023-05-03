@@ -10,7 +10,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
-import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { makeAgoricNamesAccess } from './boot-support';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
