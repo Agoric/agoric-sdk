@@ -70,7 +70,7 @@ const BASIS_POINTS = 10_000n;
  * }>} EconomyBootstrapSpace
  */
 
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter').start>} EconCharterStartResult */
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter')['prepare']>} EconCharterStartResult */
 /** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee').start>} CommitteeStartResult */
 
 /**
