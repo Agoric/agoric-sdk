@@ -12,7 +12,6 @@ import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
-import { makeMarshal } from '@endo/marshal';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -351,7 +350,11 @@ export const makeSwingsetTestKit = async (
 
   const storage = makeFakeStorageKit('bootstrapTests');
 
-  const marshal = makeMarshal();
+  const slotToVal = (_slotId, iface = 'unknown') =>
+    Far(iface, {
+      toJSON: () => ({ iface }),
+    });
+  const marshal = boardSlottingMarshaller(slotToVal);
 
   const readLatest = path => {
     const str = storage.data.get(path)?.at(-1);
