@@ -14,7 +14,10 @@ import { TimeMath } from '@agoric/time';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 // eslint-disable-next-line import/no-extraneous-dependencies -- XXX refactor
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  encromulate,
+  makeMockChainStorageRoot,
+} from '@agoric/internal/src/storage-test-utils.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
@@ -1057,14 +1060,16 @@ test('storage', async t => {
   });
   await E(oracleTimer).tick();
   t.deepEqual(
-    aggregator.mockStorageRoot.getBody(
-      'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+    encromulate(
+      aggregator.mockStorageRoot.getBody(
+        'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+      ),
     ),
     {
-      amountIn: { brand: remotable('$ATOM brand'), value: 1n },
-      amountOut: { brand: remotable('$USD brand'), value: 1020n },
+      amountIn: { brand: remotable('$ATOM brand'), value: 1 },
+      amountOut: { brand: remotable('$USD brand'), value: 1020 },
       timer: remotable('ManualTimer'),
-      timestamp: { timerBrand: remotable('timerBrand'), absValue: 1n },
+      timestamp: { timerBrand: remotable('timerBrand'), absValue: 1 },
     },
   );
 });
