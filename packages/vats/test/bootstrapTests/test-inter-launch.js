@@ -215,4 +215,24 @@ test.serial('make vaults launch proposal', async t => {
   t.log('check for working vaults system');
   const reserveKit = await EV.vat('bootstrap').consumeItem('reserveKit');
   t.truthy(reserveKit);
+
+  /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
+  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
+    'vaultFactoryKit',
+  );
+
+  const vaultPublicTopics = await EV(
+    vaultFactoryKit.publicFacet,
+  ).getPublicTopics();
+
+  const metricsUpdate = await EV(
+    vaultPublicTopics.metrics.subscriber,
+  ).getUpdateSince();
+
+  const collateralNames = await Promise.all(
+    metricsUpdate.value.collaterals.map(collateral =>
+      EV(collateral).getAllegedName(),
+    ),
+  );
+  t.deepEqual(collateralNames, ['ATOM']);
 });
