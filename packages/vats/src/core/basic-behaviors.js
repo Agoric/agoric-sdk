@@ -199,7 +199,12 @@ export const makeAddressNameHubs = async ({
 }) => {
   const provisioning = await provisioningP;
   if (!provisioning) {
-    console.warn('cannot makeAddressNameHubs without provisioning');
+    produce.namesByAddress.reject(
+      'cannot makeAddressNameHubs without provisioning',
+    );
+    produce.namesByAddressAdmin.reject(
+      'cannot makeAddressNameHubs without provisioning',
+    );
     return;
   }
 
