@@ -173,6 +173,10 @@ type installBundleAction struct {
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	err := msg.Uncompress()
+	if err != nil {
+		return nil, err
+	}
 	action := &installBundleAction{
 		MsgInstallBundle: msg,
 		Type:             "INSTALL_BUNDLE",
@@ -180,7 +184,7 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 		BlockTime:        ctx.BlockTime().Unix(),
 	}
 
-	err := keeper.routeAction(ctx, msg, action)
+	err = keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
