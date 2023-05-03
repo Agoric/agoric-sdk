@@ -259,7 +259,7 @@ export async function connectToChain(
    */
   const getMailboxNotifier = () => {
     const { notifier, updater } = makeNotifierKit();
-    retryRpcHref(async rpcHref => {
+    void retryRpcHref(async rpcHref => {
       // Every time we enter this function, we are establishing a
       // new websocket to a potentially different RPC server.
       //
@@ -487,7 +487,7 @@ export async function connectToChain(
 
         waitForTxHash = subscribeAndWaitForTxHash;
         if (postponedTxHash) {
-          subscribeAndWaitForTxHash(postponedTxHash);
+          void subscribeAndWaitForTxHash(postponedTxHash);
         }
 
         subscribeToStorage(`mailbox.${clientAddr}`, (err, storageValue) => {
@@ -702,7 +702,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
                 assert.error(`Error in tx processing: ${txResult.log}`),
               );
             }
-          });
+            // eslint-disable-next-line no-use-before-define
+          }, failedSend);
 
           // We submitted the transaction to the mempool successfully.
           // Preemptively increment our sequence number to avoid needing to
@@ -780,11 +781,11 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     updateCount || Fail`Sending unexpectedly finished!`;
 
     await sendFromMessagePool().then(successfulSend, failedSend);
-    recurseEachSend(updateCount);
+    void recurseEachSend(updateCount);
   };
 
   // Begin the sender when we get the first (empty) mailbox update.
-  mbNotifier.getUpdateSince().then(() => recurseEachSend());
+  void mbNotifier.getUpdateSince().then(() => recurseEachSend());
 
   async function deliver(newMessages, acknum) {
     let doSend = false;

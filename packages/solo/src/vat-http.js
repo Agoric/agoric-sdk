@@ -66,7 +66,19 @@ export function buildRootObject(vatPowers) {
     }
   }
 
-  const send = (obj, channelHandles) => {
+  const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
+  const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
+  const walletInitializedP = Promise.all([walletP, attMakerP]).then(
+    async ([wallet, attMaker]) => {
+      const walletAdmin = await E(wallet).getAdminFacet();
+      // console.debug('introduce', { wallet, walletAdmin, attMaker });
+      return E(walletAdmin).resolveAttMaker(attMaker);
+    },
+  );
+
+  const send = async (obj, channelHandles) => {
+    await walletInitializedP;
+
     // TODO: Make this sane by adding support for multicast to the commandDevice.
     for (const channelHandle of channelHandles) {
       const channelID = channelHandleToId.get(channelHandle);
@@ -102,20 +114,12 @@ export function buildRootObject(vatPowers) {
     urlToHandler.set(url, commandHandler);
   }
 
-  const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
-  const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
-  Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
-    const walletAdmin = await E(wallet).getAdminFacet();
-    // console.debug('introduce', { wallet, walletAdmin, attMaker });
-    E(walletAdmin).resolveAttMaker(attMaker);
-  });
-
   return Far('root', {
-    setCommandDevice(d) {
+    async setCommandDevice(d) {
       commandDevice = d;
 
       const replHandler = getReplHandler(replObjects, send, vatPowers);
-      registerURLHandler(replHandler, '/private/repl');
+      await registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
       const captpHandler = Far('captpHandler', {
@@ -134,7 +138,7 @@ export function buildRootObject(vatPowers) {
           return harden(exported);
         },
       });
-      registerURLHandler(captpHandler, '/private/captp');
+      await registerURLHandler(captpHandler, '/private/captp');
     },
 
     registerURLHandler,
@@ -142,7 +146,7 @@ export function buildRootObject(vatPowers) {
     send,
     doneLoading,
 
-    setWallet(wallet) {
+    async setWallet(wallet) {
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
       resolveCacheCooordinator(E(E(wallet).getBridge()).getCacheCoordinator());

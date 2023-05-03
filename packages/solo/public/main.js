@@ -265,7 +265,9 @@ function run() {
     commands[commands.length - 1] = inp.value;
     commands[commands.length] = '';
     inp.value = '';
-    call({ type: 'doEval', number, body: command });
+    call({ type: 'doEval', number, body: command }).catch(reason => {
+      console.error('submitEval failed', reason);
+    });
   }
 
   function inputKeyup(ev) {

@@ -9,10 +9,11 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
     if (!fallback) {
       return false;
     }
-    return E(fallback)[method](...args);
+    await E(fallback)[method](...args);
+    return true;
   };
   const handler = Far('capTpHandler', {
-    onOpen(obj, meta) {
+    async onOpen(obj, meta) {
       const { channelHandle, origin = 'unknown' } = meta || {};
       lastEpoch += 1;
       const epoch = lastEpoch;
@@ -42,9 +43,9 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         dispatch,
         abort,
       });
-      doFallback('onOpen', obj, meta);
+      await doFallback('onOpen', obj, meta);
     },
-    onClose(obj, meta) {
+    async onClose(obj, meta) {
       console.debug(`Finishing CapTP`, meta);
       const chan = chans.get(meta.channelHandle);
       if (chan) {
@@ -52,16 +53,16 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         abort();
       }
       chans.delete(meta.channelHandle);
-      doFallback('onClose', obj, meta);
+      await doFallback('onClose', obj, meta);
     },
-    onError(obj, meta) {
+    async onError(obj, meta) {
       console.debug(`Error in CapTP`, meta, obj.error);
       const chan = chans.get(meta.channelHandle);
       if (chan) {
         const { abort } = chan;
         abort(obj.error);
       }
-      doFallback('onError', obj, meta);
+      await doFallback('onError', obj, meta);
     },
     async onMessage(obj, meta) {
       console.debug('processing inbound', obj);
