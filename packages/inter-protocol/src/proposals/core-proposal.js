@@ -10,8 +10,6 @@ export * from './econ-behaviors.js';
 export * from './startPSM.js'; // eslint-disable-line import/export
 export * from './startEconCommittee.js'; // eslint-disable-line import/export
 
-const t = true;
-
 /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
   /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
@@ -48,6 +46,8 @@ const SHARED_MAIN_MANIFEST = harden({
       },
     },
   },
+
+  /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
   [econBehaviors.grantVaultFactoryControl.name]: {
     consume: {
       client: 'provisioning',
@@ -56,6 +56,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
+  /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
   [econBehaviors.setupReserve.name]: {
     consume: {
       board: 'board',
@@ -79,6 +80,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
+  /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
   [econBehaviors.startAuctioneer.name]: {
     consume: {
       zoe: 'zoe',
@@ -101,22 +103,23 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
+  /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
   [econBehaviors.addGovernorsToEconCharter.name]: {
     consume: {
-      auctioneerKit: t,
-      econCharterKit: t,
-      zoe: t,
-      agoricNames: t,
-      namesByAddressAdmin: t,
-      economicCommitteeCreatorFacet: t,
-      reserveKit: t,
-      vaultFactoryKit: t,
+      auctioneerKit: true,
+      econCharterKit: true,
+      zoe: true,
+      agoricNames: true,
+      namesByAddressAdmin: true,
+      economicCommitteeCreatorFacet: true,
+      reserveKit: true,
+      vaultFactoryKit: true,
     },
     installation: {
-      consume: { binaryVoteCounter: t },
+      consume: { binaryVoteCounter: true },
     },
     instance: {
-      consume: { auctioneer: t, reserve: t, VaultFactory: t },
+      consume: { auctioneer: true, reserve: true, VaultFactory: true },
     },
   },
 });
