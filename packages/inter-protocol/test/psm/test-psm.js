@@ -23,10 +23,11 @@ import { NonNullish } from '@agoric/assert';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { makePromiseSpace } from '@agoric/vats';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
+import { makeAgoricNamesAccess } from '@agoric/vats/test/boot-support.js';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,
@@ -744,7 +745,8 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
   /** @type { import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers } */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   const { zoe } = t.context;
 
   // Prep bootstrap space

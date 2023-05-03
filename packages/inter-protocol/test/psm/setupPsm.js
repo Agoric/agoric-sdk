@@ -1,7 +1,7 @@
 import { Far, makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
@@ -12,6 +12,7 @@ import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 
+import { makeAgoricNamesAccess } from '@agoric/vats/test/boot-support.js';
 import {
   installGovernance,
   provideBundle,
@@ -65,7 +66,8 @@ export const setupPsmBootstrap = async (
   const zoe = space.consume.zoe;
   produce.feeMintAccess.resolve(feeMintAccessP);
 
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 

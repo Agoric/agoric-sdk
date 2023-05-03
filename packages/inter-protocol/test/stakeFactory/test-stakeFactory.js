@@ -9,13 +9,14 @@ import { makeCopyBag } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
+import { makeAgoricNamesAccess } from '@agoric/vats/test/boot-support.js';
 import { startStakeFactory } from '../../src/proposals/econ-behaviors.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import { ManagerKW as KW } from '../../src/stakeFactory/constants.js';
@@ -130,7 +131,7 @@ export const setupBootstrap = async (t, timer = buildManualTimer(t.log)) => {
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
 
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, spaces } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
   for (const contract of [

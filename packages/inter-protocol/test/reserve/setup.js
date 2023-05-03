@@ -1,7 +1,8 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeAgoricNamesAccess } from '@agoric/vats/test/boot-support.js';
 import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 
 import {
@@ -38,7 +39,8 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   // @ts-expect-error could be undefined
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
   produce.feeMintAccess.resolve(feeMintAccessP);

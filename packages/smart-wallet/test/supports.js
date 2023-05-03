@@ -8,7 +8,7 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import '@agoric/vats/src/core/types.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { makePromiseSpace } from '@agoric/vats';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -21,6 +21,7 @@ import { E, Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { Fail } from '@agoric/assert';
+import { makeAgoricNamesAccess } from '@agoric/vats/test/boot-support.js';
 
 export { ActionType };
 
@@ -108,7 +109,7 @@ export const makeMockTestSpace = async log => {
     /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
       space
     );
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, spaces } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
   const { zoe, feeMintAccess } = await setUpZoeForTest();
