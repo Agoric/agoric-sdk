@@ -33,7 +33,7 @@ const sanitizePathSegment = name => {
 /**
  * Create inert brands (no mint or issuer) referred to by price oracles.
  *
- * @param {ChainBootstrapSpace} space
+ * @param {ChainBootstrapSpace & NamedVatPowers} space
  * @param {{options: {priceFeedOptions: PriceFeedOptions}}} opt
  * @returns {Promise<[Brand<'nat'>, Brand<'nat'>]>}
  */

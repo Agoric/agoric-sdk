@@ -1,28 +1,9 @@
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
-import { Far } from '@endo/far';
-import {
-  installGovAndPSMContracts,
-  makeAnchorAsset,
-  startPSM,
-  inviteToEconCharter,
-  inviteCommitteeMembers,
-  PSM_MANIFEST,
-  PSM_GOV_MANIFEST,
-  startEconCharter,
-  INVITE_PSM_COMMITTEE_MANIFEST,
-} from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
+import { Far } from '@endo/far';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { mustMatch, M } from '@agoric/store';
-import {
-  ECON_COMMITTEE_MANIFEST,
-  startEconomicCommittee,
-} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess } from './utils.js';
-import { makePromiseSpace } from './promise-space.js';
-import { Stable, Stake } from '../tokens.js';
+import { M, mustMatch } from '@agoric/store';
 import {
   addBankAssets,
   buildZoe,
@@ -33,22 +14,41 @@ import {
   mintInitialSupply,
   produceStartGovernedUpgradable,
   produceStartUpgradable,
-} from './basic-behaviors.js';
-import * as utils from './utils.js';
+} from '@agoric/vats/src/core/basic-behaviors.js';
 import {
   bridgeCoreEval,
   bridgeProvisioner,
+  CHAIN_BOOTSTRAP_MANIFEST,
   makeBridgeManager,
   makeChainStorage,
   noProvisioner,
   publishAgoricNames,
   startTimerService,
-  CHAIN_BOOTSTRAP_MANIFEST,
-} from './chain-behaviors.js';
+} from '@agoric/vats/src/core/chain-behaviors.js';
+import { makePromiseSpace } from '@agoric/vats/src/core/promise-space.js';
 import {
   startWalletFactory,
   WALLET_FACTORY_MANIFEST,
-} from './startWalletFactory.js';
+} from '@agoric/vats/src/core/startWalletFactory.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import {
+  ECON_COMMITTEE_MANIFEST,
+  startEconomicCommittee,
+} from '../../src/proposals/startEconCommittee.js';
+import * as startPSMmod from '../../src/proposals/startPSM.js';
+import {
+  installGovAndPSMContracts,
+  inviteCommitteeMembers,
+  inviteToEconCharter,
+  INVITE_PSM_COMMITTEE_MANIFEST,
+  makeAnchorAsset,
+  PSM_GOV_MANIFEST,
+  PSM_MANIFEST,
+  startEconCharter,
+  startPSM,
+} from '../../src/proposals/startPSM.js';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
@@ -138,7 +138,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
+  const { agoricNames, agoricNamesAdmin, spaces } = utils.makeAgoricNamesAccess(
     log,
     agoricNamesReserved,
   );
