@@ -147,7 +147,6 @@ func TestRetrievalFails(t *testing.T) {
 	if savedErr.Error() != "retrieve failed" {
 		t.Errorf(`wanted error "retrieve failed", got "%s"`, savedErr.Error())
 	}
-	<-swingsetSnapshotter.activeSnapshot.done
 }
 
 func TestDiscard(t *testing.T) {
