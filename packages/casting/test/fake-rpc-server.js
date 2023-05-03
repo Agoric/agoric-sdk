@@ -165,7 +165,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
           if (batchSize > 0) {
             // Return a JSON stream cell.
             const serializedValues = values.map(val =>
-              JSON.stringify(marshaller.serialize(val)),
+              JSON.stringify(marshaller.toCapData(val)),
             );
             responseValue = {
               blockHeight: String(desiredHeight - 1),
@@ -173,7 +173,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
             };
           } else {
             // Return a single naked value.
-            responseValue = marshaller.serialize(values[0]);
+            responseValue = marshaller.toCapData(values[0]);
           }
           const responseValueBase64 = encode(responseValue);
           const result = {

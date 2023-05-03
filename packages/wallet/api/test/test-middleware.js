@@ -32,7 +32,7 @@ test('makeLoggingPresence logs calls on purse/payment actions', async t => {
   const ctx = makeExportContext();
   ctx.savePurseActions(purse.actions);
   ctx.savePaymentActions(myPayment);
-  const capData = ctx.serialize(harden([...msgs]));
+  const capData = ctx.toCapData(harden([...msgs]));
   t.deepEqual(capData, capData1);
 });
 
@@ -43,17 +43,17 @@ test('makeImportContext in wallet UI can unserialize messages', async t => {
 
   const ctx = makeImportContext(mkp);
 
-  const stuff = ctx.fromMyWallet.unserialize(capData1);
+  const stuff = ctx.fromMyWallet.fromCapData(capData1);
   t.is(stuff.length, 2);
   const [[_tag, purse, method, _args]] = stuff;
   t.is(method, 'deposit');
   await E(purse).transfer(1);
 
   // unserialization is consistent
-  const stuff2 = ctx.fromMyWallet.unserialize(capData1);
+  const stuff2 = ctx.fromMyWallet.fromCapData(capData1);
   t.deepEqual(stuff, stuff2);
 
-  const capData = ctx.fromMyWallet.serialize(harden([...msgs]));
+  const capData = ctx.fromMyWallet.toCapData(harden([...msgs]));
 
   t.deepEqual(capData, {
     body: '#[["applyMethod","$0.Alleged: purse.actions","transfer",[1]]]',

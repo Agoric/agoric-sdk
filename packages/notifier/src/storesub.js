@@ -124,7 +124,7 @@ export const makeStoredSubscription = (
 
     // Publish the value, capturing any error.
     E(marshaller)
-      .serialize(obj)
+      .toCapData(obj)
       .then(serialized => {
         const encoded = JSON.stringify(serialized);
         return E(storageNode).setValue(encoded);
