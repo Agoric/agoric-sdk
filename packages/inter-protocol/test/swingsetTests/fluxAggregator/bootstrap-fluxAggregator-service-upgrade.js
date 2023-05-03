@@ -39,7 +39,7 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   * committee?: Installation<import('@agoric/governance/src/committee').start>,
+   * committee?: Installation<import('@agoric/governance/src/committee.js')['prepare']>,
    * fluxAggregatorV1?: Installation<import('../../../src/price/fluxAggregatorContract').prepare>,
    * puppetContractGovernor?: Installation<import('@agoric/governance/tools/puppetContractGovernor').start>,
    * }}

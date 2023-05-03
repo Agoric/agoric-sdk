@@ -47,9 +47,10 @@ harden(privateArgsShape);
  *   committeeSize: number,
  * }>} zcf
  * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
-const start = (zcf, privateArgs) => {
+export const prepare = (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = makeScalarMapStore('Question');
   const questionNode = E(privateArgs.storageNode).makeChildNode(
@@ -191,5 +192,4 @@ const start = (zcf, privateArgs) => {
   return { publicFacet, creatorFacet };
 };
 
-harden(start);
-export { start };
+harden(prepare);

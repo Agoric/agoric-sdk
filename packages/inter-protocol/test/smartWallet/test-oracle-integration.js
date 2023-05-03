@@ -349,7 +349,7 @@ test.serial('govern oracles list', async t => {
     'instance',
     'econCommitteeCharter',
   );
-  /** @type {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/committee').start> } */
+  /** @type {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/committee.js')['prepare']> } */
   const economicCommittee = await E(agoricNames).lookup(
     'instance',
     'economicCommittee',
