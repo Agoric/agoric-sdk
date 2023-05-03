@@ -235,7 +235,7 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {AgoricNamesVat} provider
+ * @param {ERef<Pick<Awaited<AgoricNamesVat>, 'getNameHubKit'>>} provider
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
  */
