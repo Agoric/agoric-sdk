@@ -88,12 +88,13 @@ test('schedule start to finish', async t => {
 
   t.false(fakeAuctioneer.getState().final);
   t.is(fakeAuctioneer.getState().step, 0);
-  t.false(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
 
   now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
@@ -123,6 +124,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 1);
   t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   // xxx I shouldn't have to tick twice.
   now = await timer.advanceTo(now + 1n);
@@ -134,6 +136,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 2);
   t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   // final step
   now = await timer.advanceTo(now + 1n);
@@ -145,6 +148,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
 
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
@@ -156,6 +160,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
 
@@ -202,6 +207,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 4);
   t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   // xxx I shouldn't have to tick twice.
   now = await timer.advanceTo(now + 1n);
@@ -212,6 +218,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 5);
   t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   // final step
   now = await timer.advanceTo(now + 1n);
@@ -219,6 +226,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
 
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
@@ -231,6 +239,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 });

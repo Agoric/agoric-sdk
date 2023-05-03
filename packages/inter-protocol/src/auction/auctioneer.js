@@ -561,11 +561,15 @@ export const start = async (zcf, privateArgs, baggage) => {
 
       currentDiscountRateBP = params.getStartingRate();
       for (const book of books.values()) {
-        book.lockOraclePriceForRound();
         book.setStartingRate(makeBPRatio(currentDiscountRateBP, brands.Bid));
       }
 
       tradeEveryBook();
+    },
+    lockPrices() {
+      for (const book of books.values()) {
+        book.lockOraclePriceForRound();
+      }
     },
   });
 

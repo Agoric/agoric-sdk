@@ -38,6 +38,7 @@ const makeCancelToken = () => {
  * @property {() => void} reducePriceAndTrade
  * @property {() => void} finalize
  * @property {() => void} startRound
+ * @property {() => void} lockPrices
  */
 
 /**
@@ -176,7 +177,7 @@ export const makeScheduler = async (
     void E(timer).repeatAfter(
       delayFromNow,
       liveSchedule.clockStep,
-      Far('SchedulerWaker', {
+      Far('PriceStepWaker', {
         wake(time) {
           setTimeMonotonically(time);
           trace('wake step', now);
@@ -201,6 +202,20 @@ export const makeScheduler = async (
       }),
     );
     publishSchedule();
+  };
+
+  // schedule a wakeup to lock prices
+  const schedulePriceLock = lockTime => {
+    trace(`priceLock`, lockTime);
+    void E(timer).setWakeup(
+      lockTime,
+      Far('PriceLockWaker', {
+        wake(time) {
+          setTimeMonotonically(time);
+          auctionDriver.lockPrices();
+        },
+      }),
+    );
   };
 
   const startAuction = async () => {
@@ -231,6 +246,7 @@ export const makeScheduler = async (
     scheduleNextRound(
       TimeMath.subtractAbsRel(nextSchedule.startTime, nextSchedule.startDelay),
     );
+    schedulePriceLock(nextSchedule.lockTime);
   };
 
   const firstStart = TimeMath.subtractAbsRel(
@@ -238,6 +254,7 @@ export const makeScheduler = async (
     nextSchedule.startDelay,
   );
   scheduleNextRound(firstStart);
+  schedulePriceLock(nextSchedule.lockTime);
 
   return Far('scheduler', {
     getSchedule: () =>
