@@ -54,7 +54,7 @@ export {};
  * outstanding reserved promise (if any).
  * @property {() => NameHub} readonly get the NameHub corresponding to the
  * current NameAdmin
- * @property {(fn: undefined | ((entries: [string, unknown][]) => void)) => ERef<void>} onUpdate
+ * @property {(fn: undefined | ({ publish: (entries: [string, unknown][]) => void })) => void} onUpdate
  */
 
 /**
