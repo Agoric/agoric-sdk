@@ -354,8 +354,8 @@ test('propose change to auction governance param', async t => {
 
   const key = `published.committees.Economic_Committee.latestQuestion`;
   const capData = JSON.parse(storage.data.get(key)?.at(-1));
-  const { unserialize } = makeMarshal(undefined, slotToBoardRemote);
-  const lastQuestion = unserialize(capData);
+  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
+  const lastQuestion = fromCapData(capData);
   const changes = lastQuestion?.issue?.spec?.changes;
   t.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });

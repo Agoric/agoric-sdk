@@ -82,7 +82,7 @@ const makeNet = published => {
   const ctx = makeFromBoard();
   const m = boardSlottingMarshaller(ctx.convertSlotToVal);
   const fmt = obj => {
-    const capData = m.serialize(harden(obj));
+    const capData = m.toCapData(harden(obj));
     const values = [JSON.stringify(capData)];
     const specimen = { blockHeight: undefined, values };
     const txt = JSON.stringify({
@@ -582,7 +582,7 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
   await cmd.parseAsync(argv);
 
   const txt = out.join('').trim();
-  const obj = net.marshaller.unserialize(JSON.parse(txt));
+  const obj = net.marshaller.fromCapData(JSON.parse(txt));
   const offer = { ...obj.offer, result: 'Your bid has been accepted' }; // pretend we processed it
 
   const assets = Object.values(agoricNames.vbankAsset);

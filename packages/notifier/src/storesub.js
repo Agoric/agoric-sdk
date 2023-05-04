@@ -59,7 +59,7 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
 
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
-    unserialize: data => E(marshaller).unserialize(data),
+    unserialize: data => E(marshaller).fromCapData(data),
   });
 
   /** @type {StoredSubscriber<T>} */
@@ -99,7 +99,7 @@ export const makeStoredSubscription = (
 ) => {
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
-    unserialize: data => E(marshaller).unserialize(data),
+    unserialize: data => E(marshaller).fromCapData(data),
   });
 
   // Abort the iteration on the next observation if the publisher ever fails.
