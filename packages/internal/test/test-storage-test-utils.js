@@ -244,7 +244,11 @@ test('makeFakeStorageKit sequence data', async t => {
   );
 });
 
-test('marshallers', t => {
+const testUnmarshaller = test.macro((t, serializeBodyFormat) => {
+  /** @type {(val: SlottedRemotable) => string} */
+  const convertValToSlot = val => val.getBoardId();
+  const m = makeMarshal(convertValToSlot, undefined, { serializeBodyFormat });
+
   // create capdata with specific slots
   /** @typedef { { getBoardId: () => string } } SlottedRemotable */
   const foo = Far('foo');
@@ -252,18 +256,14 @@ test('marshallers', t => {
   const foo2 = Far('foo', { getBoardId: () => 'board2' });
   const bar = Far('bar');
   const bar1 = Far('bar', { getBoardId: () => 'board1' });
-  /** @type {(val: SlottedRemotable) => string} */
-  const convertValToSlot = val => val.getBoardId();
-  const m = makeMarshal(convertValToSlot, undefined, {
-    serializeBodyFormat: 'smallcaps',
-  });
   const foo1CD = m.toCapData(harden({ o: foo1 }));
   const foo2CD = m.toCapData(harden({ o: foo2 }));
   const bar1CD = m.toCapData(harden({ o: bar1 }));
 
   // the default marshaller will produce Remotables with a matching
-  // iface, and t.deepEqual knows how to compare them
+  // iface but no methods, and t.deepEqual knows how to compare them
   t.deepEqual(defaultMarshaller.fromCapData(foo1CD), { o: foo });
+  t.notDeepEqual(defaultMarshaller.fromCapData(foo1CD), { o: foo1 });
   t.notDeepEqual(defaultMarshaller.fromCapData(foo1CD), { o: bar });
 
   // the display unserializer reports the slot values, but not ifaces
@@ -271,3 +271,6 @@ test('marshallers', t => {
   t.deepEqual(slotStringUnserialize(foo2CD), { o: 'board2' });
   t.deepEqual(slotStringUnserialize(bar1CD), { o: 'board1' });
 });
+
+test('unmarshal @qclass', testUnmarshaller, 'capdata');
+test('unmarshal smallcaps', testUnmarshaller, 'smallcaps');
