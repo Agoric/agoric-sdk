@@ -190,14 +190,14 @@ export const ParametersShape = M.splitRecord(
  *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
-export const buildRootObject = (vatPowers, vatParameters) => {
+export const buildRootObject = async (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
   mustMatch(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = utils.makeAgoricNamesAccess(
+  const { agoricNames, agoricNamesAdmin, spaces } = await utils.makeAgoricNamesAccess(
     log,
     agoricNamesReserved,
   );
