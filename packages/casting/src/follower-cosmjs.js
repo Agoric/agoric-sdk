@@ -153,17 +153,6 @@ export const makeCosmjsFollower = (
     return clientP;
   };
 
-  const getBlockHeight = async () => {
-    const values = await E(leader).mapEndpoints(where, async endpoint => {
-      const client = await provideTendermintClient(endpoint);
-      const info = await client.abciInfo();
-      const { lastBlockHeight } = info;
-      assert.typeof(lastBlockHeight, 'number');
-      return lastBlockHeight;
-    });
-    return collectSingle(values);
-  };
-
   /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
   const endpointToQueryClient = new Map();
 
@@ -185,8 +174,8 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<QueryAbciResponse>} tryGetPrefixedData
-   * @returns {Promise<QueryAbciResponse>}
+   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<QueryStoreResponse>} tryGetPrefixedData
+   * @returns {Promise<QueryStoreResponse>}
    */
   const retryGetPrefixedData = async tryGetPrefixedData => {
     const {
@@ -240,11 +229,7 @@ export const makeCosmjsFollower = (
   const getProvenDataAtHeight = async height => {
     return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
       const queryClient = await provideQueryClient(endpoint);
-      return E(queryClient).queryStoreVerified(
-        storeName,
-        storeSubkey,
-        height,
-      );
+      return E(queryClient).queryStoreVerified(storeName, storeSubkey, height);
     });
   };
 
@@ -265,15 +250,10 @@ export const makeCosmjsFollower = (
 
   /**
    * @param {number} [blockHeight] desired height, or the latest height if not set
-   * @returns {Promise<QueryAbciResponse>}
+   * @returns {Promise<QueryStoreResponse>}
    */
   const tryGetDataAtHeight = async blockHeight => {
     if (proof === 'strict') {
-      // we have to know this in order to construct a valid return
-      if (blockHeight === undefined) {
-        // TODO eliminate this extra fetch once https://github.com/cosmos/cosmjs/pull/1278 is sorted out
-        blockHeight = await getBlockHeight();
-      }
       // Crash hard if we can't prove.
       return getProvenDataAtHeight(blockHeight).catch(crash);
     } else if (proof === 'none') {
@@ -494,15 +474,6 @@ export const makeCosmjsFollower = (
     // For each subsequent iteration, yield every value that has been
     // published since the last iteration and advance the cursor.
     for (;;) {
-      const currentBlockHeight = await getBlockHeight();
-      // Wait until the chain has added at least one block.
-      if (currentBlockHeight <= cursorBlockHeight) {
-        // TODO Long-poll for next block
-        // https://github.com/Agoric/agoric-sdk/issues/6154
-        await E(leader).jitter(where);
-        continue;
-      }
-
       // Scan backward for all changes since the last observed block and yield
       // them in forward order.
       // Stream cells allow us to skip blocks that did not change.
@@ -510,19 +481,22 @@ export const makeCosmjsFollower = (
       // the value for cells that changed.
       // This does imply accumulating a potentially large number of values if
       // the eachIterable gets sampled infrequently.
-      let rightBlockHeight = currentBlockHeight;
-      let rightData = (await getDataAtHeight(rightBlockHeight)).value;
-      if (rightData.length === 0) {
+      let { value: rightData, height: rightBlockHeight } =
+        await getDataAtHeight();
+      if (rightBlockHeight <= cursorBlockHeight || rightData.length === 0) {
         // TODO Long-poll for next block
         // https://github.com/Agoric/agoric-sdk/issues/6154
         await E(leader).jitter(where);
         continue;
       }
+
       let rightStreamCell = streamCellForData(rightBlockHeight, rightData);
 
       // Compare block cell data pairwise (left, right) and accumulate
       // a stack of each cell we encounter.
       const currentData = rightData;
+      const currentBlockHeight = rightBlockHeight;
+
       const cells = [];
       while (rightBlockHeight > cursorBlockHeight) {
         if (rightStreamCell.blockHeight > rightBlockHeight) {
