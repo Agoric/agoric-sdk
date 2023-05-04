@@ -10,6 +10,7 @@ import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
 export const privateArgsShape = harden({
@@ -80,11 +81,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     'Provisioning Pool public',
     M.interface('ProvisionPool', {
       getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+      getPublicTopics: M.call().returns(TopicsRecordShape),
       ...publicMixinAPI,
     }),
     {
       getMetrics() {
         return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
+      },
+      getPublicTopics() {
+        return provisionPoolKit.public.getPublicTopics();
       },
       ...publicMixin,
     },
