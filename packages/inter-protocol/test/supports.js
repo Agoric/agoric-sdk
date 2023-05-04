@@ -72,7 +72,7 @@ harden(setUpZoeForTest);
  * @param {*} t
  * @param {import('@agoric/time/src/types').TimerService} [optTimer]
  */
-export const setupBootstrap = (t, optTimer) => {
+export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
   const space = /** @type {any} */ (makePromiseSpace(trace));
   const { produce, consume } =
@@ -89,7 +89,8 @@ export const setupBootstrap = (t, optTimer) => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 

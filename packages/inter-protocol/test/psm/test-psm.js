@@ -745,7 +745,8 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
   /** @type { import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers } */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   const { zoe } = t.context;
 
   // Prep bootstrap space

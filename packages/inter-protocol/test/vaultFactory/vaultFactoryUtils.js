@@ -75,7 +75,7 @@ export const setupElectorateReserveAndAuction = async (
     timer,
   } = t.context;
 
-  const space = setupBootstrap(t, timer);
+  const space = await setupBootstrap(t, timer);
   installPuppetGovernance(zoe, space.installation.produce);
   produceInstallations(space, t.context.installation);
 
