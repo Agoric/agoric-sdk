@@ -380,77 +380,6 @@ harden(makeAnchorAsset);
 
 /** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
-/** @param {BootstrapSpace & EconomyBootstrapSpace} powers */
-export const installGovAndPSMContracts = async ({
-  consume: { vatAdminSvc, zoe },
-  produce: { psmKit },
-  installation: {
-    produce: {
-      contractGovernor,
-      committee,
-      binaryVoteCounter,
-      psm,
-      econCommitteeCharter,
-    },
-  },
-}) => {
-  // In order to support multiple instances of the PSM, we store all the facets
-  // indexed by the brand. Since each name in the BootstrapSpace can only be
-  // produced  once, we produce an empty store here, and each time a PSM is
-  // started up, the details are added to the store.
-  psmKit.resolve(makeScalarMapStore());
-
-  return Promise.all(
-    Object.entries({
-      contractGovernor,
-      committee,
-      binaryVoteCounter,
-      psm,
-      econCommitteeCharter,
-    }).map(async ([name, producer]) => {
-      const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
-      const installation = await E(zoe).installBundleID(bundleID, name);
-
-      producer.resolve(installation);
-    }),
-  );
-};
-
-/**
- * PSM and gov contracts are available as
- * named swingset bundles only in
- * decentral-psm-config.json
- *
- * @type {BootstrapManifest}
- */
-export const PSM_GOV_MANIFEST = {
-  [installGovAndPSMContracts.name]: {
-    consume: { vatAdminSvc: 'true', zoe: 'zoe' },
-    produce: { psmKit: 'true' },
-    installation: {
-      produce: {
-        contractGovernor: 'zoe',
-        committee: 'zoe',
-        binaryVoteCounter: 'zoe',
-        psm: 'zoe',
-        econCommitteeCharter: 'zoe',
-      },
-    },
-  },
-  [startEconCharter.name]: {
-    consume: { zoe: 'zoe', agoricNames: true },
-    produce: {
-      econCharterKit: 'econCommitteeCharter',
-    },
-    installation: {
-      consume: { binaryVoteCounter: 'zoe', econCommitteeCharter: 'zoe' },
-    },
-    instance: {
-      produce: { econCommitteeCharter: 'econCommitteeCharter' },
-    },
-  },
-};
-
 export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
   /** @type {BootstrapManifest} */ ({
     [inviteCommitteeMembers.name]: {
@@ -521,9 +450,8 @@ export const getManifestForPsmGovernance = (
   { restoreRef },
   { installKeys },
 ) => {
-  const { [installGovAndPSMContracts.name]: _, ...manifest } = PSM_GOV_MANIFEST;
   return {
-    manifest,
+    manifest: {},
     installations: {
       econCommitteeCharter: restoreRef(installKeys.econCommitteeCharter),
       contractGovernor: restoreRef(installKeys.contractGovernor),
