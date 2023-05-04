@@ -291,7 +291,6 @@ export const makeCosmosBundlePublisher = ({
       // AWAIT
       // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
       const stargateClient = await connectWithSigner(endpoint, wallet, {
-        prefix: Agoric.Bech32MainPrefix,
         gasPrice: Agoric.gasPrice,
         registry,
       });
