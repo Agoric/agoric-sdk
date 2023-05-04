@@ -611,10 +611,10 @@ test('adjust balances', async t => {
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
-  let runDebtLevel = AmountMath.add(aliceWantMinted, fee);
+  let debtLevel = AmountMath.add(aliceWantMinted, fee);
   let collateralLevel = aeth.make(1000n);
 
-  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
+  t.deepEqual(debtAmount, debtLevel, 'vault lent 5000 Minted + fees');
   const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
   const proceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(lentAmount, aliceWantMinted, 'received 5000 Minted');
@@ -628,7 +628,7 @@ test('adjust balances', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(5250n),
     interest: makeRatio(100n, run.brand),
@@ -639,7 +639,7 @@ test('adjust balances', async t => {
   // Alice increase collateral by 100, paying in 50 Minted against debt
   const collateralIncrement = aeth.make(100n);
   const depositRunAmount = run.make(50n);
-  runDebtLevel = AmountMath.subtract(runDebtLevel, depositRunAmount);
+  debtLevel = AmountMath.subtract(debtLevel, depositRunAmount);
   collateralLevel = AmountMath.add(collateralLevel, collateralIncrement);
 
   const [paybackPayment, _remainingPayment] = await split(
@@ -661,7 +661,7 @@ test('adjust balances', async t => {
 
   await E(aliceAddCollateralSeat1).getOfferResult();
   debtAmount = await E(aliceVault).getCurrentDebt();
-  t.deepEqual(debtAmount, runDebtLevel);
+  t.deepEqual(debtAmount, debtLevel);
 
   const { Minted: lentAmount2 } = await E(
     aliceAddCollateralSeat1,
@@ -678,7 +678,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
 
   // increase collateral 2 ////////////////////////////////// (want:s, give:c)
 
@@ -689,8 +689,8 @@ test('adjust balances', async t => {
     withdrawRunAmount,
     rates.mintFee,
   );
-  runDebtLevel = AmountMath.add(
-    runDebtLevel,
+  debtLevel = AmountMath.add(
+    debtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRunAmountWithFees),
   );
   collateralLevel = AmountMath.add(collateralLevel, collateralIncrement2);
@@ -714,7 +714,7 @@ test('adjust balances', async t => {
   t.deepEqual(lentAmount3, run.make(50n));
 
   debtAmount = await E(aliceVault).getCurrentDebt();
-  t.deepEqual(debtAmount, runDebtLevel);
+  t.deepEqual(debtAmount, debtLevel);
 
   const runLent3 = await proceeds3.Minted;
   t.truthy(
@@ -725,7 +725,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(5253n),
     interest: run.makeRatio(100n),
@@ -737,8 +737,8 @@ test('adjust balances', async t => {
   const collateralDecrement = aeth.make(100n);
   const withdrawRun2 = run.make(50n);
   const withdrawRun2WithFees = ceilMultiplyBy(withdrawRun2, rates.mintFee);
-  runDebtLevel = AmountMath.add(
-    runDebtLevel,
+  debtLevel = AmountMath.add(
+    debtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRun2WithFees),
   );
   collateralLevel = AmountMath.subtract(collateralLevel, collateralDecrement);
@@ -753,7 +753,7 @@ test('adjust balances', async t => {
   await E(aliceReduceCollateralSeat).getOfferResult();
 
   debtAmount = await E(aliceVault).getCurrentDebt();
-  t.deepEqual(debtAmount, runDebtLevel);
+  t.deepEqual(debtAmount, debtLevel);
   t.deepEqual(collateralLevel, await E(aliceVault).getCollateralAmount());
 
   const { Minted: lentAmount4 } = await E(
@@ -778,7 +778,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
 
   // NSF  ///////////////////////////////////// (want too much of both)
 
@@ -786,8 +786,8 @@ test('adjust balances', async t => {
   const collateralDecr2 = aeth.make(800n);
   const withdrawRun3 = run.make(500n);
   const withdrawRun3WithFees = ceilMultiplyBy(withdrawRun3, rates.mintFee);
-  runDebtLevel = AmountMath.add(
-    runDebtLevel,
+  debtLevel = AmountMath.add(
+    debtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRun3WithFees),
   );
   const aliceReduceCollateralSeat2 = await E(zoe).offer(
@@ -855,7 +855,7 @@ test('adjust balances - withdraw RUN', async t => {
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
-  let runDebtLevel = AmountMath.add(aliceWantMinted, fee);
+  let debtLevel = AmountMath.add(aliceWantMinted, fee);
 
   // Withdraw add'l RUN /////////////////////////////////////
   // Alice deposits nothing; requests more RUN
@@ -870,11 +870,11 @@ test('adjust balances - withdraw RUN', async t => {
 
   await E(aliceWithdrawRunSeat).getOfferResult();
   debtAmount = await E(aliceVault).getCurrentDebt();
-  runDebtLevel = AmountMath.add(
-    runDebtLevel,
+  debtLevel = AmountMath.add(
+    debtLevel,
     AmountMath.add(additionalMinted, run.make(5n)),
   );
-  t.deepEqual(debtAmount, runDebtLevel);
+  t.deepEqual(debtAmount, debtLevel);
 
   const { Minted: lentAmount2 } = await E(
     aliceWithdrawRunSeat,
@@ -886,7 +886,7 @@ test('adjust balances - withdraw RUN', async t => {
   t.deepEqual(await E(run.issuer).getAmountOf(runLent2), additionalMinted);
 
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
 });
 
 test('adjust balances after interest charges', async t => {
@@ -1121,9 +1121,9 @@ test('overdeposit', async t => {
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
-  const runDebt = AmountMath.add(aliceWantMinted, fee);
+  const debt = AmountMath.add(aliceWantMinted, fee);
 
-  t.deepEqual(debtAmount, runDebt, 'vault lent 5000 Minted + fees');
+  t.deepEqual(debtAmount, debt, 'vault lent 5000 Minted + fees');
   const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(lentAmount, aliceWantMinted, 'received 5000 Minted');
@@ -1137,7 +1137,7 @@ test('overdeposit', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebt);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debt);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Bob's loan /////////////////////////////////////
@@ -1403,9 +1403,9 @@ test('close vault', async t => {
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceWantMinted, rates.mintFee);
-  const runDebtLevel = AmountMath.add(aliceWantMinted, fee);
+  const debtLevel = AmountMath.add(aliceWantMinted, fee);
 
-  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
+  t.deepEqual(debtAmount, debtLevel, 'vault lent 5000 Minted + fees');
   const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
   const proceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(lentAmount, aliceWantMinted, 'received 5000 Minted');
@@ -1419,7 +1419,7 @@ test('close vault', async t => {
   );
 
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Create a loan for Bob for 1000 Minted with 200 aeth collateral
