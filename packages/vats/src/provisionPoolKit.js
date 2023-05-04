@@ -2,7 +2,12 @@
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { UnguardedHelperI } from '@agoric/inter-protocol/src/typeGuards.js';
 import { observeIteration, observeNotifier } from '@agoric/notifier';
-import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
+import {
+  M,
+  makeScalarBigMapStore,
+  makeScalarBigSetStore,
+  prepareExoClassKit,
+} from '@agoric/vat-data';
 import {
   makeRecorderTopic,
   PublicTopicShape,
@@ -95,12 +100,22 @@ export const prepareProvisionPoolKit = (
     'ProvisionPoolKit',
     {
       machine: M.interface('ProvisionPoolKit machine', {
-        makeBridgeHandler: M.call({
+        addRevivableAddresses: M.call(M.arrayOf(M.string())).returns(),
+        getWalletReviver: M.call().returns(
+          M.remotable('ProvisionPoolKit wallet reviver'),
+        ),
+        setReferences: M.call({
           bankManager: M.any(),
           namesByAddressAdmin: M.any(),
           walletFactory: M.any(),
-        }).returns(M.remotable('BridgeHandler')),
+        }).returns(),
+        makeBridgeHandler: M.call().returns(M.remotable('BridgeHandler')),
         initPSM: M.call(BrandShape, InstanceHandleShape).returns(),
+      }),
+      walletReviver: M.interface('ProvisionPoolKit wallet reviver', {
+        reviveWallet: M.callWhen(M.string()).returns(
+          M.remotable('SmartWallet'),
+        ),
       }),
       helper: UnguardedHelperI,
       public: M.interface('ProvisionPoolKit public', {
@@ -119,6 +134,10 @@ export const prepareProvisionPoolKit = (
 
       /** @type {MapStore<Brand, PsmInstance>} */
       const brandToPSM = makeScalarBigMapStore('brandToPSM', { durable: true });
+      const revivableAddresses = makeScalarBigSetStore('revivableAddresses', {
+        durable: true,
+        keyShape: M.string(),
+      });
 
       return {
         brandToPSM,
@@ -128,11 +147,25 @@ export const prepareProvisionPoolKit = (
         walletsProvisioned: 0n,
         totalMintedProvided: AmountMath.makeEmpty(poolBrand),
         totalMintedConverted: AmountMath.makeEmpty(poolBrand),
+        revivableAddresses,
+        // to be set by `setReferences`
+        bankManager: undefined,
+        namesByAddressAdmin: undefined,
+        walletFactory: undefined,
       };
     },
     {
       // aka "limitedCreatorFacet"
       machine: {
+        /**
+         * @param {string[]} oldAddresses
+         */
+        addRevivableAddresses(oldAddresses) {
+          this.state.revivableAddresses.addAll(oldAddresses);
+        },
+        getWalletReviver() {
+          return this.facets.walletReviver;
+        },
         /**
          * @param {{
          *   bankManager: *,
@@ -140,9 +173,20 @@ export const prepareProvisionPoolKit = (
          *   walletFactory: *,
          * }} opts
          */
-        makeBridgeHandler(opts) {
-          const { helper } = this.facets;
+        setReferences(opts) {
           const { bankManager, namesByAddressAdmin, walletFactory } = opts;
+          Object.assign(this.state, {
+            bankManager,
+            namesByAddressAdmin,
+            walletFactory,
+          });
+        },
+        makeBridgeHandler() {
+          const { bankManager, namesByAddressAdmin, walletFactory } =
+            /** @type {Record<string, any>} */ (this.state);
+          (bankManager && namesByAddressAdmin && walletFactory) ||
+            Fail`must set references before handling requests`;
+          const { helper } = this.facets;
           // a bit obtuse but leave for backwards compatibility with tests
           const innerMaker = makeBridgeProvisionTool(
             bank => helper.sendInitialPayment(bank),
@@ -161,6 +205,28 @@ export const prepareProvisionPoolKit = (
         initPSM(brand, instance) {
           const { brandToPSM } = this.state;
           brandToPSM.init(brand, instance);
+        },
+      },
+      walletReviver: {
+        async reviveWallet(address) {
+          const {
+            revivableAddresses,
+            bankManager,
+            namesByAddressAdmin,
+            walletFactory,
+          } = /** @type {Record<string, any>} */ (this.state);
+          (bankManager && namesByAddressAdmin && walletFactory) ||
+            Fail`must set references before handling requests`;
+          revivableAddresses.has(address) ||
+            Fail`non-revivable address ${address}`;
+          revivableAddresses.delete(address);
+          const bank = E(bankManager).getBankForAddress(address);
+          const [wallet, _created] = await E(walletFactory).provideSmartWallet(
+            address,
+            bank,
+            namesByAddressAdmin,
+          );
+          return wallet;
         },
       },
       helper: {
