@@ -80,6 +80,19 @@ export const makeWalletCommand = async () => {
     });
 
   wallet
+    .command('print')
+    .description('print out a marshalled message on disk')
+    .requiredOption('--file [filename]', 'path to file with prepared message')
+    .action(async function (opts) {
+      const offerStr = fs.readFileSync(opts.file).toString();
+
+      const { unserializer } = await makeRpcUtils({ fetch });
+
+      const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
+      console.log(offerObj);
+    });
+
+  wallet
     .command('send')
     .description('send a prepared offer')
     .requiredOption(
