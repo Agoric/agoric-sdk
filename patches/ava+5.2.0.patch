@@ -22,7 +22,7 @@ index afe5528..f748fec 100644
  		extensions: globs.extensions,
  		projectDir,
 diff --git a/node_modules/ava/lib/fork.js b/node_modules/ava/lib/fork.js
-index 7630baa..5754d77 100644
+index 7630baa..78ced77 100644
 --- a/node_modules/ava/lib/fork.js
 +++ b/node_modules/ava/lib/fork.js
 @@ -7,6 +7,7 @@ import Emittery from 'emittery';
@@ -51,14 +51,14 @@ index 7630baa..5754d77 100644
  
 +				case 'exiting': {
 +					exitCode = message.ava.code;
-+					setCappedTimeout(() => finished || exit(), 120_000).unref();
++					setCappedTimeout(() => finished || exit(), 10_000).unref();
 +					break;
 +				}
 +
  				default: {
  					emitStateChange(message.ava);
  				}
-@@ -145,9 +157,15 @@ export default function loadFork(file, options, execArgv = process.execArgv) {
+@@ -145,9 +157,20 @@ export default function loadFork(file, options, execArgv = process.execArgv) {
  
  		worker.on('exit', (code, signal) => {
  			if (forcedExit) {
@@ -68,7 +68,12 @@ index 7630baa..5754d77 100644
 +				if (exitCode === null) {
 +					emitStateChange({type: 'worker-finished', forcedExit});
 +				} else if (!exitCode) {
-+					emitStateChange({type: 'worker-failed', err: Error('Test did not cleanup'), signal: 'exit timeout'});
++					if (!process.env.NODE_V8_COVERAGE) {
++						emitStateChange({type: 'worker-failed', err: Error('Test did not cleanup'), signal: 'exit timeout'});
++					} else {
++						emitStateChange({type: 'worker-stderr', chunk: `Test did not cleanup, ignoring because NODE_V8_COVERAGE is set.\n`});
++						emitStateChange({type: 'worker-finished', forcedExit: false});
++					}
 +				} else {
 +					emitStateChange({type: 'worker-failed', nonZeroExitCode: exitCode});
 +				}
@@ -77,7 +82,7 @@ index 7630baa..5754d77 100644
  			} else if (code === null && signal) {
  				emitStateChange({type: 'worker-failed', signal});
  			} else {
-@@ -163,10 +181,7 @@ export default function loadFork(file, options, execArgv = process.execArgv) {
+@@ -163,10 +186,7 @@ export default function loadFork(file, options, execArgv = process.execArgv) {
  		threadId: worker.threadId,
  		promise,
  
@@ -122,13 +127,23 @@ index b1989a4..fa1617f 100644
  			error: evt.err ? dumpError(evt.err) : null,
  			index: ++this.i,
 diff --git a/node_modules/ava/lib/worker/base.js b/node_modules/ava/lib/worker/base.js
-index cdd3c4a..3e2942c 100644
+index cdd3c4a..4302a4a 100644
 --- a/node_modules/ava/lib/worker/base.js
 +++ b/node_modules/ava/lib/worker/base.js
-@@ -28,12 +28,14 @@ const realExit = process.exit;
+@@ -1,5 +1,6 @@
+ import {createRequire} from 'node:module';
+ import process from 'node:process';
++import v8 from 'node:v8';
+ import {pathToFileURL} from 'node:url';
+ import {workerData} from 'node:worker_threads';
+ 
+@@ -28,12 +29,17 @@ const realExit = process.exit;
  
  async function exit(code, forceSync = false) {
  	dependencyTracking.flush();
++	if (process.env.NODE_V8_COVERAGE) try {
++		v8.takeCoverage();
++	} catch(err) {}
 +	channel.send({type: 'exiting', code});
  	const flushing = channel.flush();
  	if (!forceSync) {
