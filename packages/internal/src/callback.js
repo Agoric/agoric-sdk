@@ -245,8 +245,6 @@ export const prepareAttenuator = (
     )
   );
 
-  const methodKeys = /** @type {(keyof Methods)[]} */ (ownKeys(methods));
-
   /**
    * Create an exo object whose behavior is composed from a default target
    * and/or individual method override callbacks.
@@ -277,17 +275,16 @@ export const prepareAttenuator = (
     }) => {
       const cbs = /** @type {Overrides} */ ({});
 
-      const remaining = new Set(methodKeys);
+      const remaining = new Set(methodNames);
       for (const key of ownKeys(overrides)) {
         remaining.has(key) ||
           Fail`${q(tag)} overrides[${q(key)}] not allowed by methodNames`;
 
         remaining.delete(key);
         const cb = overrides[key];
-        if (cb != null) {
+        cb == null ||
           isCallback(cb) ||
-            Fail`${q(tag)} overrides[${q(key)}] is not a callback; got ${cb}`;
-        }
+          Fail`${q(tag)} overrides[${q(key)}] is not a callback; got ${cb}`;
         cbs[key] = cb;
       }
       for (const key of remaining) {
