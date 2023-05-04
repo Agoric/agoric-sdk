@@ -106,7 +106,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  * }} opts
  */
 export const sendAction = async (bridgeAction, opts) => {
-  const offerBody = JSON.stringify(marshaller.toCapData(bridgeAction));
+  const offerBody = JSON.stringify(marshaller.toCapData(harden(bridgeAction)));
 
   // tryExit should not require --allow-spend
   // https://github.com/Agoric/agoric-sdk/issues/7291
