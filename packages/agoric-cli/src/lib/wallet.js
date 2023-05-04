@@ -17,9 +17,15 @@ const marshaller = boardSlottingMarshaller();
  * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>}
  */
-export const getCurrent = (addr, { readLatestHead }) => {
-  // @ts-expect-error cast
-  return readLatestHead(`published.wallet.${addr}.current`);
+export const getCurrent = async (addr, { readLatestHead }) => {
+  const current =
+    /** @type {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined} */ (
+      await readLatestHead(`published.wallet.${addr}.current`)
+    );
+  if (current === undefined) {
+    throw new Error(`undefined current node for ${addr}`);
+  }
+  return current;
 };
 
 /**
