@@ -19,7 +19,7 @@ const trace = makeTracer('TestVault', false);
  *
  * @typedef {object} TestContext
  * @property {ZCF} zcf
- * @property {ZCFMint} runMint
+ * @property {ZCFMint} stableMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
  * @property {Function} advanceRecordingPeriod
@@ -55,10 +55,10 @@ async function launch(zoeP, sourceRoot) {
     harden({ feeMintAccess }),
   );
   const {
-    runMint,
+    stableMint,
     collateralKit: { mint: collateralMint, brand: collateralBrand },
   } = testJig;
-  const { brand: stableBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = stableMint.getIssuerRecord();
 
   const collateral50 = AmountMath.make(collateralBrand, 50n);
   const proposal = harden({
@@ -85,8 +85,8 @@ test('first', async t => {
   // Minted (charging 3 Minted fee), which uses an automatic market maker that
   // presents a fixed price of 4 Minted per Collateral.
   await E(creatorSeat).getOfferResult();
-  const { runMint, collateralKit, vault } = testJig;
-  const { brand: stableBrand } = runMint.getIssuerRecord();
+  const { stableMint, collateralKit, vault } = testJig;
+  const { brand: stableBrand } = stableMint.getIssuerRecord();
 
   const { issuer: cIssuer, mint: cMint, brand: cBrand } = collateralKit;
 
@@ -164,14 +164,14 @@ test('first', async t => {
 test('bad collateral', async t => {
   const { creatorSeat: offerKit } = await helperContract;
 
-  const { runMint, collateralKit, vault } = testJig;
+  const { stableMint, collateralKit, vault } = testJig;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
   // Minted (charging 3 Minted fee), which uses an automatic market maker that
   // presents a fixed price of 4 Minted per Collateral.
   await E(offerKit).getOfferResult();
   const { brand: collateralBrand } = collateralKit;
-  const { brand: stableBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = stableMint.getIssuerRecord();
 
   t.deepEqual(
     vault.getCollateralAmount(),

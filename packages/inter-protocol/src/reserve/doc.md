@@ -90,7 +90,7 @@ sequenceDiagram
 participant caller
 participant reserveContract
 participant collateralSeat
-participant runMint
+participant stableMint
 participant runSeat
 participant zcf
 participant ammPublicFacet
@@ -103,7 +103,7 @@ reserveContract ->> reserveContract: ensure  current allocation for collateralKe
 
 
 note right of reserveContract: create the IST
-reserveContract ->> runMint: mintGains of runAmount, and get runSeat
+reserveContract ->> stableMint: mintGains of runAmount, and get runSeat
 reserveContract ->> runSeat: increment collateralKeyword: collateralAmount
 reserveContract ->> collateralSeat: decrement collateralKeyword: collateralAmount
 reserveContract ->> zcf: reallocate(runSeat, collateralSeat)

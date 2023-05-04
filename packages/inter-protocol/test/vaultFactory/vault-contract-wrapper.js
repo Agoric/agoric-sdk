@@ -46,11 +46,11 @@ export async function start(zcf, privateArgs, baggage) {
   const { brand: collateralBrand } = collateralKit;
   await zcf.saveIssuer(collateralKit.issuer, 'Collateral'); // todo: CollateralETH, etc
 
-  const runMint = await zcf.registerFeeMint(
+  const stableMint = await zcf.registerFeeMint(
     'Minted',
     privateArgs.feeMintAccess,
   );
-  const { brand: stableBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = stableMint.getIssuerRecord();
 
   const LIQUIDATION_MARGIN = makeRatio(105n, stableBrand);
 
@@ -100,7 +100,7 @@ export async function start(zcf, privateArgs, baggage) {
   /** @type {MintAndTransfer} */
   const mintAndTransfer = (mintReceiver, toMint, fee, nonMintTransfers) => {
     const kept = AmountMath.subtract(toMint, fee);
-    runMint.mintGains(harden({ Minted: toMint }), mintSeat);
+    stableMint.mintGains(harden({ Minted: toMint }), mintSeat);
     /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
     const transfers = [
       ...nonMintTransfers,
@@ -111,13 +111,13 @@ export async function start(zcf, privateArgs, baggage) {
       atomicRearrange(zcf, harden(transfers));
     } catch (e) {
       console.error('mintAndTransfer caught', e);
-      runMint.burnLosses(harden({ Minted: toMint }), mintSeat);
+      stableMint.burnLosses(harden({ Minted: toMint }), mintSeat);
       throw e;
     }
   };
 
   const burn = (toBurn, seat) => {
-    runMint.burnLosses(harden({ Minted: toBurn }), seat);
+    stableMint.burnLosses(harden({ Minted: toBurn }), seat);
   };
 
   /** @type {Parameters<typeof makeVault>[0]} */
@@ -172,7 +172,7 @@ export async function start(zcf, privateArgs, baggage) {
       console.warn('mock handleBalanceChange does nothing');
     },
     mintforVault: async amount => {
-      runMint.mintGains({ Minted: amount });
+      stableMint.mintGains({ Minted: amount });
     },
   });
 
@@ -208,7 +208,7 @@ export async function start(zcf, privateArgs, baggage) {
   zcf.setTestJig(() => ({
     advanceRecordingPeriod,
     collateralKit,
-    runMint,
+    stableMint,
     setInterestRate,
     vault,
   }));
@@ -217,7 +217,7 @@ export async function start(zcf, privateArgs, baggage) {
     const vaultKit = await vault.initVaultKit(seat, makeFakeStorage('test'));
     return {
       vault,
-      runMint,
+      stableMint,
       collateralKit,
       actions: Far('vault actions', {
         add() {
@@ -234,7 +234,7 @@ export async function start(zcf, privateArgs, baggage) {
       return vault.makeAdjustBalancesInvitation();
     },
     mintRun(amount) {
-      return paymentFromZCFMint(zcf, runMint, amount);
+      return paymentFromZCFMint(zcf, stableMint, amount);
     },
   });
 
