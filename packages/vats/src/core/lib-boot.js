@@ -45,7 +45,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {Record<string, BootBehavior>} behaviors
  * @param {BootModules} modules
  */
-export const makeBootstrap = (
+export const makeBootstrap = async (
   vatPowers,
   vatParameters,
   bootManifest,
@@ -58,7 +58,9 @@ export const makeBootstrap = (
 
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
+  const { agoricNames, agoricNamesAdmin, spaces } = await makeAgoricNamesAccess(
+    log,
+  );
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 

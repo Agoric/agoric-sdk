@@ -22,7 +22,7 @@ test('coreProposalBehavior', async t => {
     getManifestCall,
     log: t.log,
   });
-  const { agoricNamesAdmin } = makeAgoricNamesAccess(t.log);
+  const { agoricNamesAdmin } = await makeAgoricNamesAccess(t.log);
   const bundleID = 'the-bundleID';
   const bundleCap = {};
   const vatAdminSvc = {
