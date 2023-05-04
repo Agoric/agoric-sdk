@@ -93,6 +93,16 @@ export const prepareScaledBidBook = baggage =>
         const { records } = this.state;
         return [...records.entries(M.gte(toBidScalingComparator(bidScaling)))];
       },
+      publishOffers() {
+        const { records } = this.state;
+        return [...records.values()].map(r => {
+          return harden({
+            bidScaling: r.bidScaling,
+            wanted: r.wanted,
+            exitAfterBuy: r.exitAfterBuy,
+          });
+        });
+      },
       hasOrders() {
         const { records } = this.state;
         return records.getSize() > 0;
@@ -185,6 +195,16 @@ export const preparePriceBook = baggage =>
       offersAbove(price) {
         const { records } = this.state;
         return [...records.entries(M.gte(toPartialOfferKey(price)))];
+      },
+      publishOffers() {
+        const { records } = this.state;
+        return [...records.values()].map(r => {
+          return harden({
+            price: r.price,
+            wanted: r.wanted,
+            exitAfterBuy: r.exitAfterBuy,
+          });
+        });
       },
       hasOrders() {
         const { records } = this.state;
