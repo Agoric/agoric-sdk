@@ -153,9 +153,15 @@ export const prepareProvisionPoolKit = (
         totalMintedConverted: AmountMath.makeEmpty(poolBrand),
         revivableAddresses,
         // to be set by `setReferences`
-        bankManager: undefined,
-        namesByAddressAdmin: undefined,
-        walletFactory: undefined,
+        bankManager: /** @type {undefined | ERef<BankManager>} */ (undefined),
+        namesByAddressAdmin:
+          /** @type {undefined | ERef<import('@agoric/vats').NameAdmin>} */ (
+            undefined
+          ),
+        walletFactory:
+          /** @type {undefined | ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>} */ (
+            undefined
+          ),
       };
     },
     {
@@ -214,15 +220,17 @@ export const prepareProvisionPoolKit = (
         },
       },
       walletReviver: {
+        /** @param {string} address */
         async reviveWallet(address) {
           const {
             revivableAddresses,
             bankManager,
             namesByAddressAdmin,
             walletFactory,
-          } = /** @type {Record<string, any>} */ (this.state);
-          (bankManager && namesByAddressAdmin && walletFactory) ||
-            Fail`must set references before handling requests`;
+          } = this.state;
+          if (!(bankManager && namesByAddressAdmin && walletFactory)) {
+            throw Fail`must set references before handling requests`;
+          }
           revivableAddresses.has(address) ||
             Fail`non-revivable address ${address}`;
           revivableAddresses.delete(address);

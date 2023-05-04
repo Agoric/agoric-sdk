@@ -5,6 +5,7 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeHistoryReviver } from '../../tools/board-utils.js';
 import { Stable } from '../tokens.js';
 
 const trace = makeTracer('StartWF');
@@ -102,7 +103,11 @@ export const startWalletFactory = async (
     feeIssuerP,
   ]);
 
-  const oldAddresses = harden(chainStorageEntries.map(entry => entry[0]));
+  // Carry forward wallets with an address already in chain storage.
+  const dataReviver = makeHistoryReviver(chainStorageEntries);
+  const walletStoragePath = await E(walletStorageNode).getPath();
+  const oldAddresses = harden(dataReviver.children(`${walletStoragePath}.`));
+
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
