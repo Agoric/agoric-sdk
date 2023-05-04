@@ -237,7 +237,7 @@ export const main = async (
     `${processValue.getFlag(
       'home',
       `${homedir}/.ag-chain-cosmos`,
-    )}/data/ag-cosmos-chain-state`;
+    )}/data/agoric`;
 
   const stateDirStat = await fs.stat(stateDir);
   if (!stateDirStat.isDirectory()) {
