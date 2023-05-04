@@ -1,3 +1,4 @@
+/* global process */
 // @ts-check
 /* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
@@ -10,6 +11,7 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
+import { performance } from 'node:perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
@@ -67,10 +69,12 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   mutex.put(controller.run());
 
+  /** @typedef {Record<string, number | bigint>} RunStats */
+
   /**
    * @template {() => any} T
    * @param {T} thunk
-   * @returns {Promise<ReturnType<T>>}
+   * @returns {Promise<{result: Awaited<ReturnType<T>>, stats: RunStats}>}
    */
   const runThunk = async thunk => {
     try {
@@ -82,27 +86,68 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
     const thunkResult = await thunk();
 
-    const result = controller.run().then(cranks => {
-      cranksRun += cranks;
-      log(`kernel ran ${cranks} cranks`);
-      return thunkResult;
+    let computrons = 0n;
+    let maxComputronsPerCrank = 0n;
+    let cranks = 0;
+    let vatCreated = 0;
+    /** @type {import('@agoric/swingset-vat').RunPolicy} */
+    const runPolicy = {
+      crankComplete({ computrons: crankComputrons = 0n }) {
+        computrons += crankComputrons;
+        if (crankComputrons > maxComputronsPerCrank) {
+          maxComputronsPerCrank = crankComputrons;
+        }
+        cranks += 1;
+        return true;
+      },
+      crankFailed(details) {
+        console.error('crank failed', details);
+        cranks += 1;
+        return true;
+      },
+      emptyCrank() {
+        return true;
+      },
+      vatCreated(details) {
+        console.log('vat created', details);
+        vatCreated += 1;
+        return true;
+      },
+    };
+
+    const start = performance.now();
+    const result = controller.run(runPolicy).then(runCranks => {
+      const elapsed = (performance.now() - start) / 1000;
+      cranksRun += runCranks;
+      log(`kernel ran ${runCranks} cranks`);
+      return elapsed;
     });
     mutex.put(result.then(sink, sink));
-    return result;
+    const elapsed = await result;
+    return {
+      result: thunkResult,
+      stats: {
+        computrons,
+        maxComputronsPerCrank,
+        cranks,
+        vatCreated,
+        elapsed,
+      },
+    };
   };
 
-  const runMethod = async (method, args = []) => {
+  const runMethodWithStats = async (method, args = []) => {
     log('runMethod', method, args, 'at', cranksRun);
     assert(Array.isArray(args));
 
-    const kpid = await runThunk(() =>
+    const { result: kpid, stats } = await runThunk(() =>
       controller.queueToVatRoot('bootstrap', method, args),
     );
 
     const status = controller.kpStatus(kpid);
     switch (status) {
       case 'fulfilled':
-        return kunser(controller.kpResolution(kpid));
+        return { result: kunser(controller.kpResolution(kpid)), stats };
       case 'rejected':
         throw kunser(controller.kpResolution(kpid));
       case 'unresolved':
@@ -112,11 +157,17 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     }
   };
 
+  const runMethod = async (method, args) => {
+    const { result } = await runMethodWithStats(method, args);
+    return result;
+  };
+
   /**
    * @type {typeof E & {
    *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>,
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
    *   rawBoot: Record<string, (...args: any) => Promise<any>>,
+   *   stats: (presence: unknown) => Record<string, (...args: any) => Promise<{result: any, stats: RunStats}>>,
    * }}
    */
   // @ts-expect-error cast, approximate
@@ -159,6 +210,15 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
         runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+    });
+  EV.stats = presence =>
+    new Proxy(harden({}), {
+      get: (_t, methodName, _rx) =>
+        harden((...args) =>
+          runMethodWithStats('messageVatObject', [
+            { presence, methodName, args },
+          ]),
+        ),
     });
 
   return harden({ runThunk, EV });
@@ -271,6 +331,7 @@ export const makeWalletFactoryDriver = async (
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vats/decentral-test-vaults-config.json',
+  workerType,
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -279,7 +340,10 @@ export const getNodeTestVaultsConfig = async (
   assert(config);
 
   // speed up (e.g. 80s vs 133s with xs-worker in production config)
-  config.defaultManagerType = 'local';
+  config.defaultManagerType =
+    workerType ||
+    /** @type {ManagerType | undefined} */ (process.env.SWINGSET_WORKER_TYPE) ||
+    'local';
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
   await fs.mkdir(bundleDir, { recursive: true });
@@ -309,14 +373,20 @@ export const getNodeTestVaultsConfig = async (
  * @param {import('ava').ExecutionContext} t
  * @param {string} bundleDir directory to write bundles and config to
  * @param {string} [specifier] bootstrap config specifier
+ * @param {ManagerType} [workerType]
  */
 export const makeSwingsetTestKit = async (
   t,
   bundleDir = 'bundles',
   specifier,
+  workerType,
 ) => {
   console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
+  const configPath = await getNodeTestVaultsConfig(
+    bundleDir,
+    specifier,
+    workerType,
+  );
   const { kernelStorage, hostStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
