@@ -1,6 +1,6 @@
 module github.com/Agoric/agoric-sdk
 
-go 1.18
+go 1.20
 
 require (
 	github.com/armon/go-metrics v0.4.0
