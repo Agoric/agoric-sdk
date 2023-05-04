@@ -113,6 +113,15 @@
       "entrypoint": "defaultProposalBuilder",
       "args": [
         {
+          "contractTerms": {
+            "POLL_INTERVAL": 30,
+            "maxSubmissionCount": 1000,
+            "minSubmissionCount": 1,
+            "restartDelay": 1,
+            "timeout": 10,
+            "minSubmissionValue": 1,
+            "maxSubmissionValue": 9007199254740991
+          },
           "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
           "oracleAddresses": [
             "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
