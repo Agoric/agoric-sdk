@@ -32,9 +32,10 @@ export {};
 /**
  * @typedef {object} NameAdmin write access to a node in a name hierarchy
  *
- * @property {(key: string) => void} reserve Mark a key as reserved; will
+ * @property {(key: string, reserved?: string[]) => NameHubKit} provideChild
+ * @property {(key: string) => Promise<void>} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
- * deleted).
+ * deleted). If the key was already set it does nothing.
  * @property {<T>( key: string, newValue: T, newAdmin?: unknown) =>
  *   T } default Update if not already updated.  Return
  *   existing value, or newValue if not existing.

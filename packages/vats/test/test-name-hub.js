@@ -170,3 +170,25 @@ test('makeNameHubKit - listen for updates', t => {
     [['IST', brandIST]],
   ]);
 });
+
+test('nameAdmin provideChild', async t => {
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+  const child = namesByAddressAdmin.provideChild('ag123', [
+    'depositFacet',
+    'otherReserved',
+  ]);
+  t.deepEqual(child.nameHub.keys(), ['depositFacet', 'otherReserved']);
+  child.nameAdmin.update('depositFacet', 'D1');
+  const actual = await namesByAddress.lookup('ag123', 'depositFacet');
+  t.is(actual, 'D1');
+
+  t.truthy(
+    namesByAddress.lookup('ag123', 'otherReserved').then,
+    'reserved keys should have a promise',
+  );
+
+  await t.throwsAsync(() => namesByAddress.lookup('ag123', 'never'), {
+    message: '"nameKey" not found: "never"',
+  });
+});
