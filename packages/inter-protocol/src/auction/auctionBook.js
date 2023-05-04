@@ -64,7 +64,6 @@ const trace = makeTracer('AucBook', false);
  * })} OfferSpec
  */
 /**
- *
  * @param {Brand<'nat'>} bidBrand
  * @param {Brand<'nat'>} collateralBrand
  */

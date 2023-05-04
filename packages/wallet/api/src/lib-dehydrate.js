@@ -333,7 +333,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     return petnameToVal.get(petname);
   };
 
-  const { serialize: dehydrate, unserialize: hydrate } = makeMarshal(
+  const { toCapData: dehydrate, fromCapData: hydrate } = makeMarshal(
     convertValToName,
     convertNameToVal,
     {
@@ -341,6 +341,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       // TODO Temporary hack.
       // See https://github.com/Agoric/agoric-sdk/issues/2780
       errorIdNum: 30000,
+      serializeBodyFormat: 'smallcaps',
     },
   );
   return harden({

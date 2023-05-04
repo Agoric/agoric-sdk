@@ -1,6 +1,7 @@
 import { E } from '@endo/eventual-send';
+import { mustMatch } from '@endo/patterns';
 import { Far } from '@endo/marshal';
-import { TimeMath } from '@agoric/time';
+import { TimeMath, RelativeTimeShape } from '@agoric/time';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -47,7 +48,7 @@ const start = zcf => {
     bidDuration,
   } = zcf.getTerms();
 
-  assert.typeof(bidDuration, 'bigint');
+  mustMatch(bidDuration, RelativeTimeShape);
   winnerPriceOption === FIRST_PRICE ||
     winnerPriceOption === SECOND_PRICE ||
     Fail`Only first and second price auctions are supported`;

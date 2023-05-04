@@ -122,6 +122,16 @@ message MsgInstallBundle {
         (gogoproto.jsontag)    = "submitter",
         (gogoproto.moretags)   = "yaml:\"submitter\""
     ];
+    // Either bundle or compressed_bundle will be set.
+    // Default compression algorithm is gzip.
+    bytes compressed_bundle = 3 [
+        (gogoproto.jsontag)    = "compressedBundle",
+        (gogoproto.moretags)   = "yaml:\"compressedBundle\""
+    ];
+    // Size in bytes of uncompression of compressed_bundle.
+    int64 uncompressed_size = 4 [
+        (gogoproto.jsontag) = "uncompressedSize"
+    ];
 }
 
 // MsgInstallBundleResponse is an empty acknowledgement that an install bundle

@@ -148,7 +148,6 @@ const { Fail, quote: q } = assert;
  */
 
 /**
- *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {SharedParams} shared
  */
@@ -244,6 +243,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const behaviorGuards = {
     helper: M.interface('helperFacetI', {
+      assertUniqueOfferId: M.call(M.string()).returns(),
       updateBalance: M.call(PurseShape, AmountShape).optional('init').returns(),
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
@@ -279,6 +279,29 @@ export const prepareSmartWallet = (baggage, shared) => {
     initState,
     {
       helper: {
+        /**
+         * Assert this ID is unique with respect to what has been stored. The
+         * wallet doesn't store every offer ID but the offers for which it
+         * doesn't are unlikely to be impacted by re-use.
+         *
+         * @type {(id: string) => void}
+         */
+        assertUniqueOfferId(id) {
+          const {
+            liveOffers,
+            liveOfferSeats,
+            offerToInvitationMakers,
+            offerToPublicSubscriberPaths,
+            offerToUsedInvitation,
+          } = this.state;
+          const used =
+            liveOffers.has(id) ||
+            liveOfferSeats.has(id) ||
+            offerToInvitationMakers.has(id) ||
+            offerToPublicSubscriberPaths.has(id) ||
+            offerToUsedInvitation.has(id);
+          !used || Fail`cannot re-use offer id ${id}`;
+        },
         /**
          * @param {RemotePurse} purse
          * @param {Amount<any>} balance
@@ -400,6 +423,8 @@ export const prepareSmartWallet = (baggage, shared) => {
             updateRecorderKit,
           } = this.state;
           const { invitationBrand, zoe, invitationIssuer, registry } = shared;
+
+          facets.helper.assertUniqueOfferId(String(offerSpec.id));
 
           const logger = {
             info: (...args) => console.info('wallet', address, ...args),

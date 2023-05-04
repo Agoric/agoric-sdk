@@ -28,6 +28,10 @@ test('timer vat', async t => {
   timer.poll(1n); // initial time
   await c.run();
 
+  // this driver program exchanges bigints with bootstrap-timer.js,
+  // which converts them to (branded) Timestamp and RelativeTime
+  // records for us
+
   const run = async (method, args = []) => {
     await c.run(); // allow timer device/vat messages to settle
     assert(Array.isArray(args));

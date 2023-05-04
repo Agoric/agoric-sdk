@@ -327,7 +327,6 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return quote;
     },
     async quoteAtTime(deadline, amountIn, brandOut) {
-      assert.typeof(deadline, 'bigint');
       AmountMath.coerce(actualBrandIn, amountIn);
       assertBrands(amountIn.brand, brandOut);
 

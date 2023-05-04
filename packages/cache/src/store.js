@@ -24,7 +24,9 @@ const makeKeyToString = (sanitize = obj => obj) => {
     return slot;
   };
 
-  const { serialize: keyToJsonable } = makeMarshal(valToSlot);
+  const { toCapData: keyToJsonable } = makeMarshal(valToSlot, undefined, {
+    serializeBodyFormat: 'smallcaps',
+  });
   const keyToString = async keyP => {
     const key = await sanitize(keyP);
     const obj = keyToJsonable(key);
@@ -113,7 +115,7 @@ const applyCacheTransaction = async (
 const stringifyStateStore = async (stateStore, marshaller) => {
   const obj = {};
   for (const [key, value] of stateStore.entries()) {
-    obj[key] = E(marshaller).serialize(value);
+    obj[key] = E(marshaller).toCapData(value);
   }
   return deeplyFulfilled(harden(obj)).then(fulfilledObj =>
     JSON.stringify(fulfilledObj),

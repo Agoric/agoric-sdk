@@ -62,7 +62,7 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
   const unpublished = Far('unpublished', {});
 
   const published1id = board.getId(published);
-  const ser = marshaller.serialize(
+  const ser = marshaller.toCapData(
     harden({
       published1: published,
       unpublished1: unpublished,
@@ -70,13 +70,13 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
       unpublished2: unpublished,
     }),
   );
-  const pub1ser = `{"@qclass":"slot","iface":"Alleged: published","index":0}`;
-  const pub2ser = `{"@qclass":"slot","index":0}`;
-  const unpub1ser = `{"@qclass":"slot","iface":"Alleged: unpublished","index":1}`;
-  const unpub2ser = `{"@qclass":"slot","index":1}`;
+  const pub1ser = `"$0.Alleged: published"`;
+  const pub2ser = `"$0"`;
+  const unpub1ser = `"$1.Alleged: unpublished"`;
+  const unpub2ser = `"$1"`;
   t.is(
     ser.body,
-    `{"published1":${pub1ser},"published2":${pub2ser},"unpublished1":${unpub1ser},"unpublished2":${unpub2ser}}`,
+    `#{"published1":${pub1ser},"published2":${pub2ser},"unpublished1":${unpub1ser},"unpublished2":${unpub2ser}}`,
   );
   t.is(ser.slots.length, 2);
   t.is(ser.slots[0], published1id);
@@ -87,7 +87,7 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
   }
 
   const { published1, unpublished1, published2, unpublished2 } =
-    marshaller.unserialize(ser);
+    marshaller.fromCapData(ser);
   t.is(published1, published);
   t.is(published2, published);
   t.is(published1.toString(), '[object Alleged: published]');
@@ -105,8 +105,8 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
     t.is(unpublished2.toString(), '[object Alleged: SEVERED: unpublished]');
 
     // Separate marshals do not compare.
-    const unpublished3 = marshaller.unserialize(
-      marshaller.serialize(unpublished),
+    const unpublished3 = marshaller.fromCapData(
+      marshaller.toCapData(unpublished),
     );
     t.not(unpublished3, unpublished);
     t.not(unpublished3, unpublished1);

@@ -1,9 +1,13 @@
 // @ts-check
 /* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
+import { Far } from '@endo/far';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeFakeStorageKit,
+  slotToRemotable,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
@@ -165,7 +169,6 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 };
 
 /**
- *
  * @param {ReturnType<typeof makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
@@ -185,7 +188,7 @@ export const makeWalletFactoryDriver = async (
     'namesByAddressAdmin',
   );
 
-  const marshaller = boardSlottingMarshaller();
+  const marshaller = boardSlottingMarshaller(slotToRemotable);
 
   /**
    * @param {string} walletAddress
@@ -197,10 +200,12 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     executeOffer(offer) {
-      const offerCapData = marshaller.serialize({
-        method: 'executeOffer',
-        offer,
-      });
+      const offerCapData = marshaller.toCapData(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
@@ -208,18 +213,22 @@ export const makeWalletFactoryDriver = async (
      * @returns {Promise<void>}
      */
     sendOffer(offer) {
-      const offerCapData = marshaller.serialize({
-        method: 'executeOffer',
-        offer,
-      });
+      const offerCapData = marshaller.toCapData(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
     tryExitOffer(offerId) {
-      const capData = marshaller.serialize({
-        method: 'tryExitOffer',
-        offerId,
-      });
+      const capData = marshaller.toCapData(
+        harden({
+          method: 'tryExitOffer',
+          offerId,
+        }),
+      );
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
@@ -250,7 +259,7 @@ export const makeWalletFactoryDriver = async (
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
       const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
-      return JSON.parse(lastWalletStatus.body);
+      return marshaller.fromCapData(lastWalletStatus);
     },
   });
 
@@ -289,6 +298,16 @@ export const getNodeTestVaultsConfig = async (
   config.coreProposals = config.coreProposals?.filter(
     v => v !== '@agoric/pegasus/scripts/init-core.js',
   );
+  // set to high interestRateValue to accelerate liquidation
+  for (const addVaultTypeProposal of (config.coreProposals || []).filter(
+    p =>
+      typeof p === 'object' &&
+      p.module === '@agoric/inter-protocol/scripts/add-collateral-core.js' &&
+      p.entrypoint === 'defaultProposalBuilder',
+  )) {
+    const opt = /** @type {any} */ (addVaultTypeProposal).args[0];
+    opt.interestRateValue = 10 * 100; // 10x APR
+  }
 
   const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;
   await fs.writeFile(testConfigPath, JSON.stringify(config), 'utf-8');
@@ -321,6 +340,16 @@ export const makeSwingsetTestKit = async (
   const { kernelStorage, hostStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
+
+  const slotToVal = (_slotId, iface = 'Remotable') => Far(iface);
+  const marshal = boardSlottingMarshaller(slotToVal);
+
+  const readLatest = path => {
+    const str = storage.data.get(path)?.at(-1);
+    str || Fail`no data at path ${path}`;
+    const capData = JSON.parse(storage.data.get(path)?.at(-1));
+    return marshal.fromCapData(capData);
+  };
 
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
@@ -389,8 +418,38 @@ export const makeSwingsetTestKit = async (
 
   console.timeEnd('makeSwingsetTestKit');
 
+  let currentTime = 0;
+  const setTime = time => {
+    currentTime = time;
+    return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+  /**
+   *
+   * @param {number} n
+   * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
+   */
+  const advanceTime = (n, unit) => {
+    const multiplier = {
+      seconds: 1,
+      minutes: 60,
+      hours: 60 * 60,
+      days: 60 * 60 * 24,
+    };
+    currentTime += multiplier[unit] * n;
+    return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
-  return { controller, runUtils, storage, shutdown, timer };
+  return {
+    advanceTime,
+    controller,
+    readLatest,
+    runUtils,
+    setTime,
+    shutdown,
+    storage,
+    timer,
+  };
 };

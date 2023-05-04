@@ -9,6 +9,7 @@ import {
   observeNotifier,
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
+import { TimeMath } from '@agoric/time';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -133,6 +134,7 @@ const start = async (zcf, privateArgs) => {
   const instanceToRecords = makeLegacyMap('oracleInstance');
 
   let publishedTimestamp = await E(timer).getCurrentTimestamp();
+  const { timerBrand } = publishedTimestamp;
 
   // Wake every POLL_INTERVAL and run the queriers.
   const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
@@ -254,6 +256,8 @@ const start = async (zcf, privateArgs) => {
    * @param {import('@agoric/time/src/types').Timestamp} timestamp
    */
   const updateQuote = async timestamp => {
+    timestamp = TimeMath.coerceTimestampRecord(timestamp, timerBrand);
+
     const submitted = [...oracleRecords.values()].map(
       ({ oracleKey, lastSample }) =>
         /** @type {[OracleKey, Ratio]} */ ([oracleKey, lastSample]),
@@ -294,8 +298,8 @@ const start = async (zcf, privateArgs) => {
       makeCreateQuote({ overridePrice: median, timestamp }),
     );
 
-    if (timestamp < publishedTimestamp) {
-      // A more recent timestamp has been published already, so we are too late.
+    // If a more recent timestamp has already been published, we are too late.
+    if (TimeMath.compareAbs(timestamp, publishedTimestamp) < 0) {
       return;
     }
 
@@ -305,7 +309,7 @@ const start = async (zcf, privateArgs) => {
     }
 
     // Publish a new authenticated quote.
-    publishedTimestamp = timestamp;
+    publishedTimestamp = TimeMath.coerceTimestampRecord(timestamp, timerBrand);
     lastPrice = median;
     medianUpdater.updateState(authenticatedQuote);
   };

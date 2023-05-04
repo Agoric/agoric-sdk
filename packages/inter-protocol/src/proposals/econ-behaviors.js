@@ -27,7 +27,6 @@ const BASIS_POINTS = 10_000n;
 /**
  * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
  * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
- * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
  * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
@@ -59,19 +58,20 @@ const BASIS_POINTS = 10_000n;
  *   },
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
+ *   vBankKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
- *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['start']>,
+ *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['prepare']>,
  *   stakeFactoryKit: GovernanceFacetKit<import('../stakeFactory/stakeFactory.js')['start']>,
- *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['start']>,
+ *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['prepare']>,
  *   auctioneerKit: AuctioneerKit,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  */
 
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter').start>} EconCharterStartResult */
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee').start>} CommitteeStartResult */
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter')['prepare']>} EconCharterStartResult */
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee.js')['prepare']>} CommitteeStartResult */
 
 /**
  * @file A collection of productions, each of which declares inputs and outputs.
@@ -157,6 +157,8 @@ export const setupReserve = async ({
 
   reserveKit.resolve(
     harden({
+      instance,
+      governor: g.instance,
       publicFacet,
       creatorFacet,
       governorCreatorFacet: g.creatorFacet,
@@ -331,6 +333,9 @@ export const startVaultFactory = async (
       governorCreatorFacet,
       adminFacet,
       publicFacet,
+      governor: governorInstance,
+      instance: vaultFactoryInstance,
+      privateArgs: vaultFactoryPrivateArgs,
     }),
   );
 
@@ -627,6 +632,8 @@ export const startAuctioneer = async (
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
+      governor: governorStartResult.instance,
+      instance: governedInstance,
     }),
   );
 
@@ -776,6 +783,8 @@ export const startStakeFactory = async (
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
+      governor: governorStartResult.instance,
+      instance: governedInstance,
     }),
   );
 

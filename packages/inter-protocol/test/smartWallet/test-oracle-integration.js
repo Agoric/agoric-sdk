@@ -7,6 +7,7 @@ import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { TimeMath } from '@agoric/time';
 import { E } from '@endo/far';
 import { zip } from '@agoric/internal';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
@@ -87,7 +88,6 @@ test.before(async t => {
 });
 
 /**
- *
  * @param {import('ava').ExecutionContext<*>} t
  * @param {string[]} oracleAddresses
  */
@@ -256,6 +256,8 @@ test.serial('admin price', async t => {
   const manualTimer = /** @type {ManualTimer} */ (
     t.context.consume.chainTimerService
   );
+  const timerBrand = await E(manualTimer).getTimerBrand();
+  const toTS = val => TimeMath.coerceTimestampRecord(val, timerBrand);
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   await E(manualTimer).tickN(1);
 
@@ -265,7 +267,7 @@ test.serial('admin price', async t => {
 
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
     roundId: 1n,
-    startedAt: 0n,
+    startedAt: toTS(0n),
     startedBy: 'adminPriceAddress',
   });
 });
@@ -277,6 +279,12 @@ test.serial('errors', async t => {
     await setupFeedWithWallets(t, [operatorAddress]);
   const wallet = oracleWallets[operatorAddress];
   const adminOfferId = await acceptInvitation(wallet, priceAggregator);
+
+  // TODO move to smart-wallet package when it has sufficient test supports
+  acceptInvitationCounter -= 1; // try again with same id
+  t.throwsAsync(acceptInvitation(wallet, priceAggregator), {
+    message: `cannot re-use offer id "acceptInvitation${acceptInvitationCounter}"`,
+  });
 
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
@@ -341,7 +349,7 @@ test.serial('govern oracles list', async t => {
     'instance',
     'econCommitteeCharter',
   );
-  /** @type {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/committee').start> } */
+  /** @type {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/committee.js')['prepare']> } */
   const economicCommittee = await E(agoricNames).lookup(
     'instance',
     'economicCommittee',

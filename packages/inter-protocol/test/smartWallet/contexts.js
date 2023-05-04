@@ -2,6 +2,10 @@ import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import {
+  produceStartUpgradable,
+  produceStartGovernedUpgradable,
+} from '@agoric/vats/src/core/basic-behaviors.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
@@ -38,6 +42,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const { consume, produce } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
+  // @ts-expect-error Doesnt actually require all bootstrap powers
+  await produceStartUpgradable({ consume, produce });
+
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
@@ -48,7 +55,23 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   /** @type {Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>} */
   const installation = E(zoe).install(bundle);
+
+  const contractGovernorBundle = await bundleCache.load(
+    `${dirname}/../../../governance/src/contractGovernor.js`,
+    'contractGovernor',
+  );
+
+  const contractGovernor = E(zoe).install(contractGovernorBundle);
   //#endregion
+
+  await produceStartGovernedUpgradable({
+    // @ts-expect-error Doesnt actually require all bootstrap powers
+    consume,
+    produce,
+    installation: {
+      consume: { contractGovernor },
+    },
+  });
 
   // copied from makeClientBanks()
   const storageNode = await makeStorageNodeChild(

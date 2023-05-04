@@ -1,7 +1,6 @@
-import { Nat } from '@endo/nat';
 import { mustMatch } from '@agoric/store';
-
-import { RelativeTimeShape, TimestampShape } from './typeGuards.js';
+import { Nat } from '@endo/nat';
+import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
 const { Fail, quote: q } = assert;
 /**
@@ -104,50 +103,53 @@ const relLike = (left, right, relValue) => {
 // the `TimeMathType`, since that is the documentation that shows up
 // in the IDE. Well, at least the vscode IDE.
 
-const absValue = abs =>
-  typeof abs === 'bigint' ? Nat(abs) : Nat(abs.absValue);
+const absValue = abs => {
+  if (typeof abs === 'bigint') {
+    return Nat(abs);
+  }
+  mustMatch(abs, TimestampRecordShape, 'timestamp');
+  return Nat(abs.absValue);
+};
 
-const relValue = rel =>
-  typeof rel === 'bigint' ? Nat(rel) : Nat(rel.relValue);
+const relValue = rel => {
+  if (typeof rel === 'bigint') {
+    return Nat(rel);
+  }
+  mustMatch(rel, RelativeTimeRecordShape, 'relative');
+  return Nat(rel.relValue);
+};
 
-const toAbs = (ts, brand = undefined) => {
+const makeTimestampRecord = (abs, timerBrand) =>
+  harden({ absValue: abs, timerBrand });
+const makeRelativeTimeRecord = (rel, timerBrand) =>
+  harden({ relValue: rel, timerBrand });
+
+const coerceTimestampRecord = (ts, brand) => {
+  brand || Fail`must have a brand`;
   if (typeof ts === 'number') {
     ts = Nat(ts);
   }
   if (typeof ts === 'bigint') {
-    if (brand === undefined) {
-      return ts;
-    } else {
-      return harden({
-        timerBrand: brand,
-        absValue: ts,
-      });
-    }
+    return makeTimestampRecord(ts, brand);
   } else {
     const { timerBrand } = ts;
+    mustMatch(ts, TimestampRecordShape, 'timestamp');
     agreedTimerBrand(timerBrand, brand);
-    mustMatch(ts, TimestampShape, 'timestamp');
     return ts;
   }
 };
 
-const toRel = (rt, brand = undefined) => {
+const coerceRelativeTimeRecord = (rt, brand) => {
+  brand || Fail`must have a brand`;
   if (typeof rt === 'number') {
     rt = Nat(rt);
   }
   if (typeof rt === 'bigint') {
-    if (brand === undefined) {
-      return rt;
-    } else {
-      return harden({
-        timerBrand: brand,
-        relValue: rt,
-      });
-    }
+    return makeRelativeTimeRecord(rt, brand);
   } else {
     const { timerBrand } = rt;
+    mustMatch(rt, RelativeTimeRecordShape, 'relativeTime');
     agreedTimerBrand(timerBrand, brand);
-    mustMatch(rt, RelativeTimeShape, 'relativeTime');
     return rt;
   }
 };
@@ -194,11 +196,14 @@ const modRelRel = (rel, step) =>
  * `compareValues` is internal to this module, and used to implement
  * the time comparison operators.
  *
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
  * @param {bigint} v1
  * @param {bigint} v2
  * @returns {RankComparison}
  */
-const compareValues = (v1, v2) => {
+const compareValues = (left, right, v1, v2) => {
+  sharedTimerBrand(left, right);
   if (v1 < v2) {
     return -1;
   } else if (v1 === v2) {
@@ -246,8 +251,8 @@ const compareValues = (v1, v2) => {
 export const TimeMath = harden({
   absValue,
   relValue,
-  toAbs,
-  toRel,
+  coerceTimestampRecord,
+  coerceRelativeTimeRecord,
   addAbsRel,
   addRelRel,
   subtractAbsAbs,
@@ -260,6 +265,8 @@ export const TimeMath = harden({
   divideRelRel,
   modAbsRel,
   modRelRel,
-  compareAbs: (abs1, abs2) => compareValues(absValue(abs1), absValue(abs2)),
-  compareRel: (rel1, rel2) => compareValues(relValue(rel1), relValue(rel2)),
+  compareAbs: (abs1, abs2) =>
+    compareValues(abs1, abs2, absValue(abs1), absValue(abs2)),
+  compareRel: (rel1, rel2) =>
+    compareValues(rel1, rel2, relValue(rel1), relValue(rel2)),
 });

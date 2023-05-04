@@ -60,7 +60,7 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   * committee?: Installation<import('@agoric/governance/src/committee').start>,
+   * committee?: Installation<import('@agoric/governance/src/committee.js')['prepare']>,
    * psmV1?: Installation<PsmSF>,
    * puppetContractGovernor?: Installation<import('@agoric/governance/tools/puppetContractGovernor').start>,
    * }}

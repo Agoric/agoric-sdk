@@ -76,13 +76,13 @@ test('schedule start to finish', async t => {
   const schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
   const firstSchedule = {
-    startTime: TimeMath.toAbs(131n, timerBrand),
-    endTime: TimeMath.toAbs(135n, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(135n, timerBrand),
     steps: 2n,
     endRate: 6500n,
-    startDelay: TimeMath.toRel(1n, timerBrand),
-    clockStep: TimeMath.toRel(2n, timerBrand),
-    lockTime: TimeMath.toAbs(126n, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(126n, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
@@ -98,28 +98,28 @@ test('schedule start to finish', async t => {
 
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
-    nextDescendingStepTime: TimeMath.toAbs(131n, timerBrand),
-    nextStartTime: TimeMath.toAbs(131n, timerBrand),
+    nextDescendingStepTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+    nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
   });
 
   now = await timer.advanceTo(130n);
   await eventLoopIteration();
   now = await timer.advanceTo(now + 1n);
   await scheduleTracker.assertChange({
-    activeStartTime: TimeMath.toAbs(131n, timerBrand),
+    activeStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     nextStartTime: { absValue: 141n },
   });
 
   const schedule2 = scheduler.getSchedule();
   t.deepEqual(schedule2.liveAuctionSchedule, firstSchedule);
   t.deepEqual(schedule2.nextAuctionSchedule, {
-    startTime: TimeMath.toAbs(141n, timerBrand),
-    endTime: TimeMath.toAbs(145n, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
     steps: 2n,
     endRate: 6500n,
-    startDelay: TimeMath.toRel(1n, timerBrand),
-    clockStep: TimeMath.toRel(2n, timerBrand),
-    lockTime: TimeMath.toAbs(136, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(136, timerBrand),
   });
 
   t.is(fakeAuctioneer.getState().step, 1);
@@ -167,19 +167,19 @@ test('schedule start to finish', async t => {
   const finalSchedule = scheduler.getSchedule();
   t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
   const secondSchedule = {
-    startTime: TimeMath.toAbs(141n, timerBrand),
-    endTime: TimeMath.toAbs(145n, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
     steps: 2n,
     endRate: 6500n,
-    startDelay: TimeMath.toRel(1n, timerBrand),
-    clockStep: TimeMath.toRel(2n, timerBrand),
-    lockTime: TimeMath.toAbs(136n, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(136n, timerBrand),
   };
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
   now = await timer.advanceTo(140n);
   await scheduleTracker.assertChange({
-    activeStartTime: TimeMath.toAbs(141n, timerBrand),
+    activeStartTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
     nextStartTime: { absValue: 151n },
   });
 
@@ -192,13 +192,13 @@ test('schedule start to finish', async t => {
   const schedule3 = scheduler.getSchedule();
   t.deepEqual(schedule3.liveAuctionSchedule, secondSchedule);
   t.deepEqual(schedule3.nextAuctionSchedule, {
-    startTime: TimeMath.toAbs(151n, timerBrand),
-    endTime: TimeMath.toAbs(155n, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(151n, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(155n, timerBrand),
     steps: 2n,
     endRate: 6500n,
-    startDelay: TimeMath.toRel(1n, timerBrand),
-    clockStep: TimeMath.toRel(2n, timerBrand),
-    lockTime: TimeMath.toAbs(146n, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(146n, timerBrand),
   });
 
   await scheduleTracker.assertChange({
@@ -632,13 +632,13 @@ test('duration = freq', async t => {
   let schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
   const firstSchedule = {
-    startTime: TimeMath.toAbs(365n, timerBrand),
-    endTime: TimeMath.toAbs(665n, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(365n, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(665n, timerBrand),
     steps: 5n,
     endRate: 50n,
-    startDelay: TimeMath.toRel(5n, timerBrand),
-    clockStep: TimeMath.toRel(60n, timerBrand),
-    lockTime: TimeMath.toAbs(345n, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(345n, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
@@ -648,13 +648,13 @@ test('duration = freq', async t => {
   schedule = scheduler.getSchedule();
 
   const secondSchedule = {
-    startTime: TimeMath.toAbs(725n, timerBrand),
-    endTime: TimeMath.toAbs(1025n, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(725n, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(1025n, timerBrand),
     steps: 5n,
     endRate: 50n,
-    startDelay: TimeMath.toRel(5n, timerBrand),
-    clockStep: TimeMath.toRel(60n, timerBrand),
-    lockTime: TimeMath.toAbs(705n, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(705n, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, secondSchedule);
 });
@@ -725,13 +725,13 @@ test('change Schedule', async t => {
   const endTime = 665n;
 
   const firstSchedule = {
-    startTime: TimeMath.toAbs(startTime, timerBrand),
-    endTime: TimeMath.toAbs(endTime, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(startTime, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(endTime, timerBrand),
     steps: 5n,
     endRate: 50n,
-    startDelay: TimeMath.toRel(5n, timerBrand),
-    clockStep: TimeMath.toRel(60n, timerBrand),
-    lockTime: TimeMath.toAbs(lockTime, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(lockTime, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
@@ -743,21 +743,24 @@ test('change Schedule', async t => {
   const secondStart = startTime + startFreq;
   const secondEnd = endTime + startFreq;
   const expected2ndSchedule = {
-    startTime: TimeMath.toAbs(secondStart, timerBrand),
-    endTime: TimeMath.toAbs(secondEnd, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(secondStart, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(secondEnd, timerBrand),
     steps: 5n,
     endRate: 50n,
-    startDelay: TimeMath.toRel(5n, timerBrand),
-    clockStep: TimeMath.toRel(60n, timerBrand),
-    lockTime: TimeMath.toAbs(secondStart - lockPeriod, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(
+      secondStart - lockPeriod,
+      timerBrand,
+    ),
   };
   t.deepEqual(schedule.nextAuctionSchedule, expected2ndSchedule);
 
   const newFreq = 100n;
   const newStep = 40n;
   paramManager.updateParams({
-    StartFrequency: TimeMath.toRel(newFreq, timerBrand),
-    ClockStep: TimeMath.toRel(newStep, timerBrand),
+    StartFrequency: TimeMath.coerceRelativeTimeRecord(newFreq, timerBrand),
+    ClockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
   });
   // XXX let the value be set async. A concession to upgradability
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
@@ -771,12 +774,18 @@ test('change Schedule', async t => {
   schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
   t.deepEqual(schedule.nextAuctionSchedule, {
-    startTime: TimeMath.toAbs(thirdStart, timerBrand),
-    endTime: TimeMath.toAbs(thirdStart + 2n * newStep, timerBrand),
+    startTime: TimeMath.coerceTimestampRecord(thirdStart, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(
+      thirdStart + 2n * newStep,
+      timerBrand,
+    ),
     steps: 2n,
     endRate: 80n,
-    startDelay: TimeMath.toRel(5n, timerBrand),
-    clockStep: TimeMath.toRel(newStep, timerBrand),
-    lockTime: TimeMath.toAbs(thirdStart - lockPeriod, timerBrand),
+    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    clockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(
+      thirdStart - lockPeriod,
+      timerBrand,
+    ),
   });
 });

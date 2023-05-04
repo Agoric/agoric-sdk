@@ -4,12 +4,12 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
+import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
 import {
-  defineDurableExoClassKit,
-  makeKindHandle,
+  prepareExoClassKit,
+  provide,
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
@@ -17,25 +17,26 @@ import {
   atomicRearrange,
   getAmountIn,
   getAmountOut,
-  makeRecorderTopic,
   makeRatioFromAmounts,
-  provideChildBaggage,
+  makeRecorderTopic,
   provideEmptySeat,
-  unitAmount,
   SubscriberShape,
   TopicsRecordShape,
+  unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { scheduleLiquidationWakeups } from './liquidation.js';
 import {
-  makeVaultParamManager,
+  provideVaultParamManagers,
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
-import { prepareVaultManagerKit } from './vaultManager.js';
+import {
+  prepareVaultManagerKit,
+  provideAndStartVaultManagerKits,
+} from './vaultManager.js';
 
 const { Fail, quote: q } = assert;
 
@@ -51,14 +52,13 @@ const trace = makeTracer('VD', false);
  * }>} ImmutableState
  *
  * @typedef {{
- * managerCounter: number,
  * }} MutableState
  *
  * @typedef {ImmutableState & MutableState} State
  *
  * @typedef {{
  *  burnDebt: BurnDebt,
- *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
+ *  getGovernedParams: (collateralBrand: Brand) => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndTransfer: MintAndTransfer,
  *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
  * }} FactoryPowersFacet
@@ -69,7 +69,6 @@ const trace = makeTracer('VD', false);
  *
  * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} VaultDirectorParamManager
  */
-// TODO find a way to type 'finish' with the context (state and facets)
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
@@ -97,20 +96,24 @@ export const prepareVaultDirector = (
   makeRecorderKit,
   makeERecorderKit,
 ) => {
+  /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
+  let shortfallReporter;
+
   /** For holding newly minted tokens until transferred */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
   const rewardPoolSeat = provideEmptySeat(zcf, baggage, 'rewardPoolSeat');
 
-  /** @type {MapStore<Brand, VaultManager>} */
-  const collateralTypes = provideDurableMapStore(baggage, 'collateralTypes');
+  /** @type {MapStore<Brand, number>} index of manager for the given collateral */
+  const collateralManagers = provideDurableMapStore(
+    baggage,
+    'collateralManagers',
+  );
 
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
-  /**
-   * @type {MapStore<Brand, ReturnType<typeof makeVaultParamManager>>}
-   */
-  const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
+  /** a powerful object; can modify parameters */
+  const vaultParamManagers = provideVaultParamManagers(baggage, marshaller);
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
 
@@ -121,46 +124,18 @@ export const prepareVaultDirector = (
     ),
   );
 
-  // TODO helper to make all the topics at once
-  const topics = harden({
-    metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
-  });
-
-  const allManagersDo = fn => {
-    for (const vm of collateralTypes.values()) {
-      fn(vm);
-    }
-  };
-
-  const makeWaker = (name, func) => {
-    return Far(name, {
-      wake: timestamp => func(timestamp),
-    });
-  };
-
-  const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
-
-  /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
-  let shortfallReporter;
-
-  /**
-   * @returns {State}
-   */
-  const initState = () => {
-    return {
-      managerCounter: 0,
-    };
-  };
+  const managersNode = E(storageNode).makeChildNode('managers');
 
   /**
    * @returns {MetricsNotification}
    */
   const sampleMetrics = () => {
     return harden({
-      collaterals: Array.from(collateralTypes.keys()),
+      collaterals: Array.from(collateralManagers.keys()),
       rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
     });
   };
+  const updateMetrics = () => E(metricsKit.recorderP).write(sampleMetrics());
 
   const updateShortfallReporter = async () => {
     const oldInvitation = baggage.has(shortfallInvitationKey)
@@ -187,6 +162,114 @@ export const prepareVaultDirector = (
     }
   };
 
+  const factoryPowers = Far('vault factory powers', {
+    /**
+     * Get read-only params for this manager and its director. This grants all
+     * managers access to params from all managers. It's not POLA but it's a
+     * public authority and it reduces the number of distinct power objects to
+     * create.
+     *
+     * @param {Brand} brand
+     */
+    getGovernedParams: brand => {
+      const vaultParamManager = vaultParamManagers.get(brand);
+      return Far('vault manager param manager', {
+        // merge director and manager params
+        ...directorParamManager.readonly(),
+        ...vaultParamManager.readonly(),
+        // redeclare these getters as to specify the kind of the Amount
+        getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
+          directorParamManager.readonly().getMinInitialDebt
+        ),
+        getDebtLimit: /** @type {() => Amount<'nat'>} */ (
+          vaultParamManager.readonly().getDebtLimit
+        ),
+      });
+    },
+
+    /**
+     * Let the manager add rewards to the rewardPoolSeat without
+     * exposing the rewardPoolSeat to them.
+     *
+     * @type {MintAndTransfer}
+     */
+    mintAndTransfer: (mintReceiver, toMint, fee, nonMintTransfers) => {
+      const kept = AmountMath.subtract(toMint, fee);
+      debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
+      /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+      const transfers = [
+        ...nonMintTransfers,
+        [mintSeat, rewardPoolSeat, { Minted: fee }],
+        [mintSeat, mintReceiver, { Minted: kept }],
+      ];
+      try {
+        atomicRearrange(zcf, harden(transfers));
+      } catch (e) {
+        console.error('mintAndTransfer failed to rearrange', e);
+        // If the rearrange fails, burn the newly minted tokens.
+        // Assume this won't fail because it relies on the internal mint.
+        // (Failure would imply much larger problems.)
+        debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
+        throw e;
+      }
+      void updateMetrics();
+    },
+    getShortfallReporter: async () => {
+      await updateShortfallReporter();
+      return shortfallReporter;
+    },
+    /**
+     * @param {Amount<'nat'>} toBurn
+     * @param {ZCFSeat} seat
+     */
+    burnDebt: (toBurn, seat) => {
+      debtMint.burnLosses(harden({ Minted: toBurn }), seat);
+    },
+  });
+
+  const makeVaultManagerKit = prepareVaultManagerKit(baggage, {
+    makeERecorderKit,
+    makeRecorderKit,
+    marshaller,
+    factoryPowers,
+    zcf,
+  });
+
+  const vaultManagers = provideAndStartVaultManagerKits(baggage);
+
+  /** @type {(brand: Brand) => VaultManager} */
+  const managerForCollateral = brand => {
+    const managerIndex = collateralManagers.get(brand);
+    const manager = vaultManagers.get(managerIndex).self;
+    manager || Fail`no manager ${managerIndex} for collateral ${brand}`;
+    return manager;
+  };
+
+  // TODO helper to make all the topics at once
+  const topics = harden({
+    metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
+  });
+
+  const allManagersDo = fn => {
+    for (const managerIndex of collateralManagers.values()) {
+      const vm = vaultManagers.get(managerIndex).self;
+      fn(vm);
+    }
+  };
+
+  const makeWaker = (name, func) => {
+    return Far(name, {
+      wake: timestamp => func(timestamp),
+    });
+  };
+
+  /**
+   * @returns {State}
+   */
+  const initState = () => {
+    return {};
+  };
+
   /**
    * "Director" of the vault factory, overseeing "vault managers".
    *
@@ -194,8 +277,9 @@ export const prepareVaultDirector = (
    * @param {VaultDirectorParamManager} directorParamManager
    * @param {ZCFMint<"nat">} debtMint
    */
-  const makeVaultDirector = defineDurableExoClassKit(
-    makeKindHandle('VaultDirector'),
+  const makeVaultDirector = prepareExoClassKit(
+    baggage,
+    'VaultDirector',
     {
       creator: M.interface('creator', {
         ...GovernorFacetShape,
@@ -205,7 +289,6 @@ export const prepareVaultDirector = (
           M.promise(),
         ),
         makeCollectFeesInvitation: M.call().returns(M.promise()),
-        updateMetrics: M.call().returns(M.promise()),
         getRewardAllocation: M.call().returns({ Minted: AmountShape }),
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
@@ -227,7 +310,8 @@ export const prepareVaultDirector = (
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
       helper: M.interface('helper', {
-        rescheduleLiquidationWakeups: M.call().returns(),
+        rescheduleLiquidationWakeups: M.call().returns(M.promise()),
+        start: M.call().returns(M.promise()),
       }),
     },
     initState,
@@ -280,7 +364,6 @@ export const prepareVaultDirector = (
           initialParamValues,
         ) {
           trace('addVaultType', collateralKeyword, initialParamValues);
-          const { state, facets } = this;
           mustMatch(collateralIssuer, M.remotable(), 'collateralIssuer');
           assertKeywordName(collateralKeyword);
           mustMatch(
@@ -291,120 +374,41 @@ export const prepareVaultDirector = (
           await zcf.saveIssuer(collateralIssuer, collateralKeyword);
           const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
           // We create only one vault per collateralType.
-          !collateralTypes.has(collateralBrand) ||
+          !collateralManagers.has(collateralBrand) ||
             Fail`Collateral brand ${q(collateralBrand)} has already been added`;
 
-          // counter to be incremented at end of addVaultType
-          const managerId = `manager${state.managerCounter}`;
-          const managerStorageNode = await E(storageNode).makeChildNode(
+          // zero-based index of the manager being made
+          const managerIndex = vaultManagers.length();
+          const managerId = `manager${managerIndex}`;
+          const managerStorageNode = await E(managersNode).makeChildNode(
             managerId,
           );
 
-          /** a powerful object; can modify parameters */
-          const vaultParamManager = makeVaultParamManager(
-            makeStoredPublisherKit(
-              managerStorageNode,
-              marshaller,
-              'governance',
-            ),
+          vaultParamManagers.addParamManager(
+            collateralBrand,
+            managerStorageNode,
             initialParamValues,
           );
-          vaultParamManagers.init(collateralBrand, vaultParamManager);
 
           const startTimeStamp = await E(timer).getCurrentTimestamp();
 
-          /**
-           * Let the manager add rewards to the rewardPoolSeat without
-           * exposing the rewardPoolSeat to them.
-           *
-           * @type {MintAndTransfer}
-           */
-          const mintAndTransfer = (
-            mintReceiver,
-            toMint,
-            fee,
-            nonMintTransfers,
-          ) => {
-            const kept = AmountMath.subtract(toMint, fee);
-            debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
-            /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
-            const transfers = [
-              ...nonMintTransfers,
-              [mintSeat, rewardPoolSeat, { Minted: fee }],
-              [mintSeat, mintReceiver, { Minted: kept }],
-            ];
-            try {
-              atomicRearrange(zcf, harden(transfers));
-            } catch (e) {
-              console.error('mintAndTransfer failed to rearrange', e);
-              // If the rearrange fails, burn the newly minted tokens.
-              // Assume this won't fail because it relies on the internal mint.
-              // (Failure would imply much larger problems.)
-              debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
-              throw e;
-            }
-            void facets.machine.updateMetrics();
-          };
-
-          /**
-           * @param {Amount<'nat'>} toBurn
-           * @param {ZCFSeat} seat
-           */
-          const burnDebt = (toBurn, seat) => {
-            debtMint.burnLosses(harden({ Minted: toBurn }), seat);
-          };
-
-          const factoryPowers = Far('vault factory powers', {
-            /**
-             * @returns read-only params for this manager and its director
-             */
-            getGovernedParams: () =>
-              Far('vault manager param manager', {
-                // merge direction and manager params
-                ...directorParamManager.readonly(),
-                ...vaultParamManager.readonly(),
-                // redeclare these getters as to specify the kind of the Amount
-                getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
-                  directorParamManager.readonly().getMinInitialDebt
-                ),
-                getDebtLimit: /** @type {() => Amount<'nat'>} */ (
-                  vaultParamManager.readonly().getDebtLimit
-                ),
-              }),
-            mintAndTransfer,
-            getShortfallReporter: async () => {
-              await updateShortfallReporter();
-              return shortfallReporter;
-            },
-            burnDebt,
-          });
-
-          // alleged okay because used only as a diagnostic tag
-          const brandName = await E(collateralBrand).getAllegedName();
           const collateralUnit = await unitAmount(collateralBrand);
 
-          const makeVaultManager = managerBaggages.addChild(
-            brandName,
-            prepareVaultManagerKit,
-            zcf,
-            marshaller,
-            makeRecorderKit,
-            makeERecorderKit,
-            {
-              debtMint,
-              collateralBrand,
-              collateralUnit,
-              descriptionScope: managerId,
-              factoryPowers,
-              startTimeStamp,
-              storageNode: managerStorageNode,
-            },
-          );
-
-          const { self: vm } = makeVaultManager();
-          collateralTypes.init(collateralBrand, vm);
-          void facets.machine.updateMetrics();
-          state.managerCounter += 1;
+          const kit = await makeVaultManagerKit({
+            debtMint,
+            collateralBrand,
+            collateralUnit,
+            descriptionScope: managerId,
+            startTimeStamp,
+            storageNode: managerStorageNode,
+          });
+          vaultManagers.add(kit);
+          vaultManagers.length() - 1 === managerIndex ||
+            Fail`mismatch VaultManagerKit count`;
+          const { self: vm } = kit;
+          vm || Fail`no vault`;
+          collateralManagers.init(collateralBrand, managerIndex);
+          void updateMetrics();
           return vm;
         },
         makeCollectFeesInvitation() {
@@ -414,9 +418,6 @@ export const prepareVaultDirector = (
             debtMint.getIssuerRecord().brand,
             'Minted',
           );
-        },
-        updateMetrics() {
-          return E(metricsKit.recorderP).write(sampleMetrics());
         },
         // XXX accessors for tests
         getRewardAllocation() {
@@ -431,7 +432,7 @@ export const prepareVaultDirector = (
         makeReschedulerWaker() {
           const { facets } = this;
           return makeWaker('reschedulerWaker', () => {
-            facets.helper.rescheduleLiquidationWakeups();
+            void facets.helper.rescheduleLiquidationWakeups();
           });
         },
         makePriceLockWaker() {
@@ -445,33 +446,36 @@ export const prepareVaultDirector = (
          * @param {Brand} brandIn
          */
         getCollateralManager(brandIn) {
-          collateralTypes.has(brandIn) ||
+          collateralManagers.has(brandIn) ||
             Fail`Not a supported collateral type ${brandIn}`;
           /** @type {VaultManager} */
-          return collateralTypes.get(brandIn).getPublicFacet();
+          return managerForCollateral(brandIn).getPublicFacet();
         },
         /**
          * @deprecated get `collaterals` list from metrics
          */
         async getCollaterals() {
-          // should be collateralTypes.map((vm, brand) => ({
+          // should be collateralManagers.map((vm, brand) => ({
           return harden(
             Promise.all(
-              [...collateralTypes.entries()].map(async ([brand, vm]) => {
-                const priceQuote = await vm.getCollateralQuote();
-                return {
-                  brand,
-                  interestRate: vm.getGovernedParams().getInterestRate(),
-                  liquidationMargin: vm
-                    .getGovernedParams()
-                    .getLiquidationMargin(),
-                  stabilityFee: vm.getGovernedParams().getMintFee(),
-                  marketPrice: makeRatioFromAmounts(
-                    getAmountOut(priceQuote),
-                    getAmountIn(priceQuote),
-                  ),
-                };
-              }),
+              [...collateralManagers.entries()].map(
+                async ([brand, managerIndex]) => {
+                  const vm = vaultManagers.get(managerIndex).self;
+                  const priceQuote = await vm.getCollateralQuote();
+                  return {
+                    brand,
+                    interestRate: vm.getGovernedParams().getInterestRate(),
+                    liquidationMargin: vm
+                      .getGovernedParams()
+                      .getLiquidationMargin(),
+                    stabilityFee: vm.getGovernedParams().getMintFee(),
+                    marketPrice: makeRatioFromAmounts(
+                      getAmountOut(priceQuote),
+                      getAmountIn(priceQuote),
+                    ),
+                  };
+                },
+              ),
             ),
           );
         },
@@ -522,7 +526,7 @@ export const prepareVaultDirector = (
           const priceLockWaker = facets.machine.makePriceLockWaker();
           const liquidationWaker = facets.machine.makeLiquidationWaker();
           const rescheduleWaker = facets.machine.makeReschedulerWaker();
-          void scheduleLiquidationWakeups(
+          return scheduleLiquidationWakeups(
             auctioneer,
             timer,
             priceLockWaker,
@@ -530,15 +534,33 @@ export const prepareVaultDirector = (
             rescheduleWaker,
           );
         },
-      },
-    },
-    {
-      finish: ({ facets }) => {
-        facets.helper.rescheduleLiquidationWakeups();
-        void updateShortfallReporter();
+        /**
+         * Start non-durable processes (or restart if needed after vat restart)
+         */
+        async start() {
+          const { helper } = this.facets;
+          helper.rescheduleLiquidationWakeups();
+          await updateShortfallReporter();
+        },
       },
     },
   );
   return makeVaultDirector;
 };
 harden(prepareVaultDirector);
+
+/**
+ * Prepare the VaultDirector kind, get or make the singleton, and call .start() to kick off processes.
+ *
+ * @type {(...pvdArgs: Parameters<typeof prepareVaultDirector>) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
+ */
+export const provideAndStartDirector = (...args) => {
+  const makeVaultDirector = prepareVaultDirector(...args);
+
+  const [baggage] = args;
+
+  const director = provide(baggage, 'director', makeVaultDirector);
+  director.helper.start();
+  return director;
+};
+harden(provideAndStartDirector);

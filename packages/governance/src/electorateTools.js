@@ -58,7 +58,7 @@ const startCounter = async (
 
   const voteCounterFacets = { voteCap: creatorFacet, publicFacet, deadline };
 
-  questionStore.init(questionHandle, voteCounterFacets);
+  questionStore.init(questionHandle, harden(voteCounterFacets));
 
   return { creatorFacet, publicFacet, instance, deadline, questionHandle };
 };

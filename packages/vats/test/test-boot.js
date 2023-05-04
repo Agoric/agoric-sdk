@@ -47,7 +47,6 @@ test.before(t => {
  */
 
 /**
- *
  * @param {string} label
  * @param {BuildRootObject} entryPoint
  * @param {boolean} doCoreProposals

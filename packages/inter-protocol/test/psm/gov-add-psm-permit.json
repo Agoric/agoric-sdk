@@ -11,10 +11,13 @@
     "highPrioritySendersManager": true,
     "provisionPoolStartResult": true,
     "psmKit": true,
-    "chainTimerService": "timer"
+    "chainTimerService": "timer",
+    "anchorKits": true,
+    "startUpgradable": true
   },
   "produce": {
-    "testFirstAnchorKit": true
+    "testFirstAnchorKit": true,
+    "anchorKits": true
   },
   "installation": {
     "consume": {

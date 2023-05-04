@@ -158,7 +158,6 @@ const setupReserveAndElectorate = async t => {
 };
 
 /**
- *
  * @param {import('ava').ExecutionContext<DriverContext>} t
  * @param {Amount<'nat'>} amt
  */

@@ -31,7 +31,6 @@ function collectValues(val, memo) {
 }
 
 /**
- *
  * @param {import('anylogger').Logger} logger
  */
 export const makePsmCommand = logger => {

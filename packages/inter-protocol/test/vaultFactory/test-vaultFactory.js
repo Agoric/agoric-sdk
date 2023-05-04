@@ -201,7 +201,8 @@ const setupServices = async (
   /** @type {Promise<VaultFactoryCreatorFacet>} */
   const vaultFactoryCreatorFacetP = E.get(consume.vaultFactoryKit).creatorFacet;
   const reserveCreatorFacet = E.get(consume.reserveKit).creatorFacet;
-  const reserveKit = { reserveCreatorFacet };
+  const reservePublicFacet = E.get(consume.reserveKit).publicFacet;
+  const reserveKit = { reserveCreatorFacet, reservePublicFacet };
 
   // Add a vault that will lend on aeth collateral
   /** @type {Promise<VaultManager>} */
@@ -1256,11 +1257,12 @@ test('collect fees from vault', async t => {
 
   const {
     vaultFactory: { lender },
-    reserveKit: { reserveCreatorFacet },
+    reserveKit: { reservePublicFacet },
   } = services;
 
-  const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  const m = await subscriptionTracker(t, metricsSub);
+  const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
+    .metrics;
+  const m = await subscriptionTracker(t, metricsTopic);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
 
   // initial loans /////////////////////////////////////

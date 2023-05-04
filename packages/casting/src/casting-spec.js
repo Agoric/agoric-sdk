@@ -42,7 +42,6 @@ const vstoragePathToCastingSpec = (storagePath, storeName = 'vstorage') => {
 // TODO make a similar castingSpecToPath.
 // This one uses VStorageKey which has storeSubkey:string, not UInt8Array
 /**
- *
  * @param {VStorageKey} vstorageKey
  * @returns {string}
  */

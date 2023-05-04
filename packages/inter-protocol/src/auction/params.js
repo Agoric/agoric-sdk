@@ -94,19 +94,19 @@ export const makeAuctioneerParams = ({
     },
     [START_FREQUENCY]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(StartFreq, TimerBrand),
+      value: TimeMath.coerceRelativeTimeRecord(StartFreq, TimerBrand),
     },
     [CLOCK_STEP]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(ClockStep, TimerBrand),
+      value: TimeMath.coerceRelativeTimeRecord(ClockStep, TimerBrand),
     },
     [AUCTION_START_DELAY]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(AuctionStartDelay, TimerBrand),
+      value: TimeMath.coerceRelativeTimeRecord(AuctionStartDelay, TimerBrand),
     },
     [PRICE_LOCK_PERIOD]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(PriceLockPeriod, TimerBrand),
+      value: TimeMath.coerceRelativeTimeRecord(PriceLockPeriod, TimerBrand),
     },
     [STARTING_RATE_BP]: { type: ParamTypes.NAT, value: StartingRate },
     [LOWEST_RATE_BP]: { type: ParamTypes.NAT, value: LowestRate },

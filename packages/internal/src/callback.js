@@ -2,7 +2,15 @@
 import { E } from '@endo/far';
 import { isObject, isPassableSymbol } from '@endo/marshal';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
+
+const { fromEntries } = Object;
+
+const { ownKeys: rawOwnKeys } = Reflect;
+const ownKeys =
+  /** @type {<T extends PropertyKey>(obj: {[K in T]?: unknown}) => T[]} */ (
+    rawOwnKeys
+  );
 
 /**
  * @template {(...args: unknown[]) => any} I
@@ -13,6 +21,24 @@ const { Fail } = assert;
  * @template {(...args: unknown[]) => any} I
  * @typedef {import('./types').SyncCallback<I>} SyncCallback
  */
+
+/** @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> & T} Farable */
+
+/**
+ * @param {unknown} key
+ * @returns {key is PropertyKey} FIXME: should be just `PropertyKey` but TS
+ * complains it can't be used as an index type.
+ */
+const isPropertyKey = key => {
+  switch (typeof key) {
+    case 'string':
+    case 'number':
+    case 'symbol':
+      return true;
+    default:
+      return false;
+  }
+};
 
 /**
  * Synchronously call a callback.
@@ -29,6 +55,7 @@ export const callSync = (callback, ...args) => {
   }
   return target[methodName](...bound, ...args);
 };
+harden(callSync);
 
 /**
  * Eventual send to a callback.
@@ -45,6 +72,7 @@ export const callE = (callback, ...args) => {
   }
   return E(target)[methodName](...bound, ...args);
 };
+harden(callE);
 
 /**
  * Create a callback from a near function.
@@ -60,7 +88,7 @@ export const makeSyncFunctionCallback = (target, ...bound) => {
   typeof target === 'function' ||
     Fail`sync function callback target must be a function: ${target}`;
   /** @type {unknown} */
-  const cb = harden({ target, bound });
+  const cb = harden({ target, bound, isSync: true });
   return /** @type {SyncCallback<I>} */ (cb);
 };
 harden(makeSyncFunctionCallback);
@@ -107,7 +135,7 @@ export const makeSyncMethodCallback = (target, methodName, ...bound) => {
     isPassableSymbol(methodName) ||
     Fail`method name must be a string or passable symbol: ${methodName}`;
   /** @type {unknown} */
-  const cb = harden({ target, methodName, bound });
+  const cb = harden({ target, methodName, bound, isSync: true });
   return /** @type {SyncCallback<I>} */ (cb);
 };
 harden(makeSyncMethodCallback);
@@ -139,7 +167,7 @@ harden(makeMethodCallback);
 
 /**
  * @param {any} callback
- * @returns {callback is Callback}
+ * @returns {callback is Callback<any>}
  */
 export const isCallback = callback => {
   if (!isObject(callback)) {
@@ -155,3 +183,132 @@ export const isCallback = callback => {
   );
 };
 harden(isCallback);
+
+/**
+ * Prepare an attenuator class whose methods can be redirected via callbacks.
+ *
+ * @template {PropertyKey} M
+ * @param {import('@agoric/zone').Zone} zone The zone in which to allocate attenuators.
+ * @param {M[]} methodNames Methods to forward.
+ * @param {object} opts
+ * @param {InterfaceGuard} [opts.interfaceGuard] An interface guard for the
+ * new attenuator.
+ * @param {string} [opts.tag] A tag for the new attenuator exoClass.
+ */
+export const prepareAttenuator = (
+  zone,
+  methodNames,
+  { interfaceGuard, tag = 'Attenuator' } = {},
+) => {
+  /**
+   * @typedef {(this: any, ...args: unknown[]) => any} Method
+   * @typedef {{ [K in M]: Method }} Methods
+   * @typedef {{ [K in M]?: Callback<any> | null}} Overrides
+   */
+  const methods = fromEntries(
+    methodNames.map(key => {
+      // Only allow the `PropertyKey` type for the target method key.
+      if (!isPropertyKey(key)) {
+        throw Fail`key ${q(key)} is not a PropertyKey`;
+      }
+
+      const m = /** @type {Methods} */ ({
+        // Explicitly use concise method syntax to preserve `this` but prevent
+        // constructor behavior.
+        /** @type {Method} */
+        [key](...args) {
+          // Support both synchronous and async callbacks.
+          const cb = this.state.cbs[key];
+          if (!cb) {
+            const err = assert.error(
+              `unimplemented ${q(tag)} method ${q(key)}`,
+            );
+            if (this.state.isSync) {
+              throw err;
+            }
+            return Promise.reject(err);
+          }
+          if (cb.isSync) {
+            return callSync(cb, ...args);
+          }
+          return callE(cb, ...args);
+        },
+      })[key];
+      return /** @type {const} */ ([key, m]);
+    }),
+  );
+
+  const methodKeys = /** @type {M[]} */ (ownKeys(methods));
+
+  /**
+   * Create an exo object whose behavior is composed from a default target
+   * and/or individual method override callbacks.
+   *
+   * @param {object} opts
+   * @param {unknown} [opts.target] The target for any methods that
+   * weren't specified in `opts.overrides`.
+   * @param {boolean} [opts.isSync=false] Whether the target should be treated
+   * as synchronously available.
+   * @param {Overrides} [opts.overrides] Set individual
+   * callbacks for methods (whose names must be defined in the
+   * `prepareAttenuator` or `prepareGuardedAttenuator` call).  Nullish overrides
+   * mean to throw.
+   */
+  const makeAttenuator = zone.exoClass(
+    tag,
+    interfaceGuard,
+    /**
+     * @param {object} opts
+     * @param {any} [opts.target]
+     * @param {boolean} [opts.isSync=false]
+     * @param {Overrides} [opts.overrides]
+     */
+    ({
+      target = null,
+      isSync = false,
+      overrides = /** @type {Overrides} */ ({}),
+    }) => {
+      const cbs = /** @type {Overrides} */ ({});
+
+      const remaining = new Set(methodKeys);
+      for (const key of ownKeys(overrides)) {
+        remaining.has(key) ||
+          Fail`${q(tag)} overrides[${q(key)}] not allowed by methodNames`;
+
+        remaining.delete(key);
+        const cb = overrides[key];
+        if (cb != null) {
+          isCallback(cb) ||
+            Fail`${q(tag)} overrides[${q(key)}] is not a callback; got ${cb}`;
+        }
+        cbs[key] = cb;
+      }
+      for (const key of remaining) {
+        if (isSync) {
+          cbs[key] = makeSyncMethodCallback(target, key);
+        } else {
+          cbs[key] = makeMethodCallback(target, key);
+        }
+      }
+      return harden({ cbs, isSync });
+    },
+    /** @type {Methods} */ (methods),
+  );
+  return makeAttenuator;
+};
+harden(prepareAttenuator);
+
+/**
+ * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
+ *
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {InterfaceGuard} interfaceGuard
+ * @param {object} [opts]
+ * @param {string} [opts.tag]
+ */
+export const prepareGuardedAttenuator = (zone, interfaceGuard, opts = {}) => {
+  const { methodGuards } = interfaceGuard;
+  const methodNames = ownKeys(methodGuards);
+  return prepareAttenuator(zone, methodNames, { ...opts, interfaceGuard });
+};
+harden(prepareGuardedAttenuator);

@@ -57,7 +57,7 @@ const scheduleLiquidationWakeups = async (
     nominalStart,
     priceLockPeriod,
   );
-  const afterStart = TimeMath.addAbsRel(startTime, TimeMath.toRel(1n));
+  const afterStart = TimeMath.addAbsRel(startTime, 1n);
   const a = t => TimeMath.absValue(t);
   trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
   void E(timer).setWakeup(priceLockWakeTime, priceLockWaker);

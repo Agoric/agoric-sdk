@@ -338,7 +338,7 @@ export const prepareRoundsManagerKit = baggage =>
           // TODO Better would be to make `roundTimeout` a `RelativeTime`
           // everywhere, and to rename it to a name that does not
           // mistakenly imply that it is an absolute time.
-          const roundTimeoutDuration = TimeMath.toRel(roundTimeout);
+          const roundTimeoutDuration = TimeMath.relValue(BigInt(roundTimeout));
           const roundTimedOut =
             TimeMath.absValue(startedAt) > 0n &&
             TimeMath.relValue(roundTimeoutDuration) > 0n &&

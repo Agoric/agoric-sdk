@@ -20,12 +20,15 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
+import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
-import { prepareVaultDirector } from './vaultDirector.js';
+import { provideAndStartDirector } from './vaultDirector.js';
+
+const trace = makeTracer('VF', false);
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
@@ -47,7 +50,8 @@ import { prepareVaultDirector } from './vaultDirector.js';
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
+  trace('prepare start', privateArgs, [...baggage.keys()]);
   const {
     feeMintAccess,
     initialPoserInvitation,
@@ -62,7 +66,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
     storageNode,
   });
-  const debtMint = await zcf.registerFeeMint('Minted', feeMintAccess);
+
+  trace('awaiting debtMint');
+  const { debtMint } = await provideAll(baggage, {
+    debtMint: () => zcf.registerFeeMint('Minted', privateArgs.feeMintAccess),
+  });
+
   zcf.setTestJig(() => ({
     mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
@@ -74,7 +83,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
 
-  // XXX non-durable
+  trace('making non-durable publishers');
+  // XXX non-durable, will sever upon vat restart
   const governanceSubscriptionKit = makeSubscriptionKit();
   const governanceNode = E(storageNode).makeChildNode('governance');
   const governanceSubscriber = makeStoredSubscription(
@@ -83,6 +93,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
   /** a powerful object; can modify the invitation */
+  trace('awaiting makeParamManagerFromTerms');
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
     {
       publisher: governanceSubscriptionKit.publication,
@@ -96,7 +107,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     vaultDirectorParamTypes,
   );
 
-  const makeVaultDirector = prepareVaultDirector(
+  const director = provideAndStartDirector(
     baggage,
     zcf,
     vaultDirectorParamManager,
@@ -110,16 +121,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeERecorderKit,
   );
 
-  const factory = makeVaultDirector();
-
   // validate async to wait for params to be finished
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   void validateElectorate(zcf, vaultDirectorParamManager);
 
   return harden({
-    creatorFacet: factory.creator,
-    publicFacet: factory.public,
+    creatorFacet: director.creator,
+    publicFacet: director.public,
   });
 };
 
-/** @typedef {ContractOf<typeof start>} VaultFactoryContract */
+/** @typedef {ContractOf<typeof prepare>} VaultFactoryContract */

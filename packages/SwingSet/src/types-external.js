@@ -34,14 +34,9 @@ export {};
 /**
  * See ../docs/static-vats.md#vatpowers
  *
- * @typedef { MarshallingVatPowers & TerminationVatPowers } VatPowers
+ * @typedef { TerminationVatPowers } VatPowers
  *
  * @typedef { (VatPowers & MeteringVatPowers) } StaticVatPowers
- *
- * @typedef {{
- *   Remotable: unknown,
- *   getInterfaceOf: unknown,
- * }} MarshallingVatPowers
  *
  * @typedef {{
  *   makeGetMeter: unknown,

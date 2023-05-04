@@ -1,11 +1,15 @@
 // @jessie-check
 
 import '@agoric/governance/exported.js';
-import { makeScalarMapStore, M, makeExo, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
+import { TimestampShape } from '@agoric/time';
+import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { TimestampShape } from '@agoric/time';
+import {
+  InstallationShape,
+  InstanceHandleShape,
+} from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 
 /**
@@ -38,12 +42,24 @@ const ParamChangesOfferArgsShape = M.splitRecord(
 );
 
 /**
- * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
+ * A pattern for Zoe to check custom terms before `start()`ing the contract.
  */
-export const start = async zcf => {
+export const customTermsShape = harden({
+  binaryVoteCounterInstallation: InstallationShape,
+});
+
+/**
+ * @param {ZCF<{binaryVoteCounterInstallation: Installation}>} zcf
+ * @param {undefined} privateArgs
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ */
+export const prepare = async (zcf, privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
   /** @type {MapStore<Instance, GovernorCreatorFacet<any>>} */
-  const instanceToGovernor = makeScalarMapStore();
+  const instanceToGovernor = provideDurableMapStore(
+    baggage,
+    'instanceToGovernor',
+  );
 
   const makeParamInvitation = () => {
     /**
@@ -121,11 +137,19 @@ export const start = async zcf => {
       TimestampShape,
     ).returns(M.promise()),
   });
-  const invitationMakers = makeExo('Charter Invitation Makers', MakerI, {
-    VoteOnParamChange: makeParamInvitation,
-    VoteOnPauseOffers: makeOfferFilterInvitation,
-    VoteOnApiCall: makeApiInvocationInvitation,
-  });
+
+  // durable so that when this contract is upgraded this ocap held
+  // by committee members (from their invitations) stay capable
+  const invitationMakers = prepareExo(
+    baggage,
+    'Charter Invitation Makers',
+    MakerI,
+    {
+      VoteOnParamChange: makeParamInvitation,
+      VoteOnPauseOffers: makeOfferFilterInvitation,
+      VoteOnApiCall: makeApiInvocationInvitation,
+    },
+  );
 
   const charterMemberHandler = seat => {
     seat.exit();
@@ -139,19 +163,24 @@ export const start = async zcf => {
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
-  const creatorFacet = makeExo('Charter creatorFacet', charterCreatorI, {
-    /**
-     * @param {Instance} governedInstance
-     * @param {GovernorCreatorFacet<any>} governorFacet
-     * @param {string} [label] for diagnostic use only
-     */
-    addInstance: (governedInstance, governorFacet, label) => {
-      console.log('charter: adding instance', label);
-      instanceToGovernor.init(governedInstance, governorFacet);
+  const creatorFacet = prepareExo(
+    baggage,
+    'Charter creatorFacet',
+    charterCreatorI,
+    {
+      /**
+       * @param {Instance} governedInstance
+       * @param {GovernorCreatorFacet<any>} governorFacet
+       * @param {string} [label] for diagnostic use only
+       */
+      addInstance: (governedInstance, governorFacet, label) => {
+        console.log('charter: adding instance', label);
+        instanceToGovernor.init(governedInstance, governorFacet);
+      },
+      makeCharterMemberInvitation: () =>
+        zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
     },
-    makeCharterMemberInvitation: () =>
-      zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
-  });
+  );
 
   return harden({ creatorFacet });
 };

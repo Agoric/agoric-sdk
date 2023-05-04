@@ -131,7 +131,6 @@ export const calculateCompoundedInterest = (
 };
 
 /**
- *
  * @template {AssetKind} K
  * @param {ZCFMint<K>} mint
  * @param {Amount<K>} debt

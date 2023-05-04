@@ -1,5 +1,8 @@
 // @jessie-check
 
+// Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
+import './types.js';
+
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import {

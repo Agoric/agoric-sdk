@@ -24,6 +24,7 @@ import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { produceStartUpgradable } from '@agoric/vats/src/core/basic-behaviors.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
@@ -175,7 +176,6 @@ test.before(async t => {
 });
 
 /**
- *
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {{}} [customTerms]
  */
@@ -565,18 +565,18 @@ test('metrics, with snapshot', async t => {
     'totalMintedProvided',
   ]);
   t.like(driver.getStorageChildBody('metrics'), {
-    anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
-    feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+    anchorPoolBalance: { brand: Far('aUSD brand'), value: 0n },
+    feePoolBalance: { brand: Far('IST brand'), value: 0n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: 0n,
     },
     totalAnchorProvided: {
-      brand: { iface: 'Alleged: aUSD brand' },
+      brand: Far('aUSD brand'),
       value: 0n,
     },
     totalMintedProvided: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: 0n,
     },
   });
@@ -590,7 +590,7 @@ test('metrics, with snapshot', async t => {
     },
     feePoolBalance: { value: 20_000n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: giveAnchor.value,
     },
     totalAnchorProvided: {
@@ -609,7 +609,7 @@ test('metrics, with snapshot', async t => {
     },
     feePoolBalance: { value: 20_000n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: giveAnchor.value,
     },
     totalAnchorProvided: {
@@ -635,7 +635,7 @@ test('metrics, with snapshot', async t => {
     },
     feePoolBalance: { value: 50_000n },
     mintedPoolBalance: {
-      brand: { iface: 'Alleged: IST brand' },
+      brand: Far('IST brand'),
       value: giveAnchor.value - giveMinted.value + fee,
     },
     totalAnchorProvided: {
@@ -750,6 +750,9 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
 
   // Prep bootstrap space
   {
+    // @ts-expect-error Doesnt actually require all bootstrap powers
+    await produceStartUpgradable({ consume, produce });
+
     const {
       installs,
       board,

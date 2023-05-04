@@ -1,5 +1,5 @@
 /**
- * @typedef {Notifier<import('@agoric/time/src/types').Timestamp>} PeriodNotifier
+ * @typedef {Notifier<import('@agoric/time/src/types').TimestampRecord>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.
  *  Since notifiers can't be relied on to produce an output every time

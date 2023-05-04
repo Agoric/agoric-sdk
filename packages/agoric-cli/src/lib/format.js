@@ -176,7 +176,6 @@ export const offerStatusTuples = (state, agoricNames) => {
 };
 
 /**
- *
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
  * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames

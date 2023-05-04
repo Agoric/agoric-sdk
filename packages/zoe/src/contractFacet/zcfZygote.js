@@ -22,13 +22,13 @@ import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
-import { makeZCFMintFactory } from './zcfMint.js';
 
 import '../internal-types.js';
 import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
+import { prepareZcMint } from './zcfMint.js';
 
 /** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
 
@@ -90,10 +90,11 @@ export const makeZCFZygote = async (
   // Make the instanceRecord
   const makeInstanceRecord = makeInstanceRecordStorage(zcfBaggage);
 
-  const recordIssuer = (
-    /** @type {string} */ keyword,
-    /** @type {IssuerRecord} */ issuerRecord,
-  ) => {
+  /**
+   * @param {string} keyword
+   * @param {IssuerRecord} issuerRecord
+   */
+  const recordIssuer = (keyword, issuerRecord) => {
     getInstanceRecHolder().addIssuer(keyword, issuerRecord);
     storeIssuerRecord(issuerRecord);
   };
@@ -120,7 +121,8 @@ export const makeZCFZygote = async (
     return { zcfSeat, userSeat: userSeatPromiseKit.promise };
   };
 
-  let zcfMintFactory;
+  /** @type {ReturnType<typeof prepareZcMint>} */
+  let makeZcMint;
 
   /**
    * @template {AssetKind} [K='nat']
@@ -139,24 +141,23 @@ export const makeZCFZygote = async (
   ) => {
     getInstanceRecHolder().assertUniqueKeyword(keyword);
 
-    const zoeMint = await E(zoeInstanceAdmin).makeZoeMint(
+    /** @type {Promise<ZoeMint<K>>} */
+    // @ts-expect-error cast, XXX AssetKind generic
+    const zoeMint = E(zoeInstanceAdmin).makeZoeMint(
       keyword,
       assetKind,
       displayInfo,
       options,
     );
-    return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
+    return makeZcMint(keyword, zoeMint);
   };
 
   /** @type {ZCFRegisterFeeMint} */
   const registerFeeMint = async (keyword, feeMintAccess) => {
     getInstanceRecHolder().assertUniqueKeyword(keyword);
 
-    const zoeMint = await E(zoeInstanceAdmin).registerFeeMint(
-      keyword,
-      feeMintAccess,
-    );
-    return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
+    const zoeMint = E(zoeInstanceAdmin).registerFeeMint(keyword, feeMintAccess);
+    return makeZcMint(keyword, zoeMint);
   };
 
   const HandleOfferShape = M.remotable('HandleOffer');
@@ -326,7 +327,7 @@ export const makeZCFZygote = async (
 
   const contractBaggage = provideDurableMapStore(zcfBaggage, 'contractBaggage');
 
-  const initSeatMgrAndMintFactory = async () => {
+  const initSeatMgrAndMintKind = () => {
     let zcfMintReallocator;
     ({ seatManager, zcfMintReallocator } = createSeatManager(
       zoeInstanceAdmin,
@@ -335,7 +336,7 @@ export const makeZCFZygote = async (
       zcfBaggage,
     ));
 
-    zcfMintFactory = makeZCFMintFactory(
+    makeZcMint = prepareZcMint(
       zcfBaggage,
       recordIssuer,
       getAssetKindByBrand,
@@ -364,7 +365,7 @@ export const makeZCFZygote = async (
       privateArgs = undefined,
     ) => {
       zoeInstanceAdmin = instanceAdminFromZoe;
-      await initSeatMgrAndMintFactory();
+      initSeatMgrAndMintKind();
 
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
       instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
@@ -420,7 +421,7 @@ export const makeZCFZygote = async (
       prepare || Fail`prepare must be defined to upgrade a contract`;
       zoeInstanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
-      await initSeatMgrAndMintFactory();
+      initSeatMgrAndMintKind();
 
       // restart an upgradeable contract
       return E.when(

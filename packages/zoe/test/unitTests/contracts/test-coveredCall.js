@@ -9,6 +9,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { keyEQ } from '@agoric/store';
+import { TimeMath } from '@agoric/time';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -33,8 +34,11 @@ test('zoe - coveredCall', async t => {
     zoe,
     vatAdminState,
   } = setup();
+  const timer = buildManualTimer(t.log);
+  const timerBrand = timer.getTimerBrand();
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timerBrand);
 
-  const makeAlice = async (timer, moolaPayment) => {
+  const makeAlice = async moolaPayment => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
     const simoleanPurse = await E(simoleanKit.issuer).makeEmptyPurse();
     const bucksPurse = await E(bucksKit.issuer).makeEmptyPurse();
@@ -60,7 +64,7 @@ test('zoe - coveredCall', async t => {
         const proposal = harden({
           give: { Moola: moola(3n) },
           want: { Simoleans: simoleans(7n), Bucks: bucks(2n) },
-          exit: { afterDeadline: { deadline: 1n, timer } },
+          exit: { afterDeadline: { deadline: toTS(1n), timer } },
         });
         const payments = { Moola: moolaPayment };
 
@@ -113,7 +117,7 @@ test('zoe - coveredCall', async t => {
     };
   };
 
-  const makeBob = (timer, installation, simoleanPayment, bucksPayment) => {
+  const makeBob = (installation, simoleanPayment, bucksPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     const bucksPurse = bucksKit.issuer.makeEmptyPurse();
@@ -148,7 +152,7 @@ test('zoe - coveredCall', async t => {
           `strike price is 7 simoleans and 2 bucks, so bob must give that`,
         );
 
-        t.is(invitationValue.customDetails?.expirationDate, 1n);
+        t.deepEqual(invitationValue.customDetails?.expirationDate, toTS(1n));
         t.deepEqual(invitationValue.customDetails?.timeAuthority, timer);
 
         const proposal = harden({
@@ -202,11 +206,9 @@ test('zoe - coveredCall', async t => {
     });
   };
 
-  const timer = buildManualTimer(t.log);
-
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
-  const alice = await makeAlice(timer, aliceMoolaPayment);
+  const alice = await makeAlice(aliceMoolaPayment);
 
   // Alice makes an instance and makes her offer.
   const installation = await alice.installCode();
@@ -214,7 +216,7 @@ test('zoe - coveredCall', async t => {
   // Setup Bob
   const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
   const bobBucksPayment = bucksKit.mint.mintPayment(bucks(2n));
-  const bob = makeBob(timer, installation, bobSimoleanPayment, bobBucksPayment);
+  const bob = makeBob(installation, bobSimoleanPayment, bobBucksPayment);
 
   const { creatorInvitation } = await alice.startInstance(installation);
   const { seat: aliceSeat, invitationP } = await alice.offer(creatorInvitation);
@@ -239,6 +241,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     'b1-coveredcall',
   );
   const timer = buildManualTimer(t.log);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
@@ -266,7 +269,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     want: { StrikePrice: simoleans(7n) },
     exit: {
       afterDeadline: {
-        deadline: 1n,
+        deadline: toTS(1n),
         timer,
       },
     },
@@ -302,7 +305,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   t.is(optionValue.description, 'exerciseOption');
   t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(customDetails.expirationDate, 1n);
+  t.deepEqual(customDetails.expirationDate, toTS(1n));
   t.deepEqual(customDetails.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
@@ -361,6 +364,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(t.log);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const {
     moolaKit,
     simoleanKit,
@@ -425,7 +429,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     want: { StrikePrice: simoleans(7n) },
     exit: {
       afterDeadline: {
-        deadline: 100n, // we will not reach this
+        deadline: toTS(100n), // we will not reach this
         timer,
       },
     },
@@ -463,7 +467,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.is(optionDesc.description, 'exerciseOption');
   t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.expirationDate, toTS(100n));
   t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
@@ -632,6 +636,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.plan(31);
   // Setup the environment
   const timer = buildManualTimer(t.log);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const {
     moolaKit,
     simoleanKit,
@@ -692,7 +697,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     want: { StrikePrice: simoleans(7n) },
     exit: {
       afterDeadline: {
-        deadline: 100n, // we will not reach this
+        deadline: toTS(100n), // we will not reach this
         timer,
       },
     },
@@ -729,7 +734,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.is(optionValue.description, 'exerciseOption');
   t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.expirationDate, toTS(100n));
   t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create another coveredCall, but
@@ -751,7 +756,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     want: { StrikePrice: bucks(1n) },
     exit: {
       afterDeadline: {
-        deadline: 100n, // we will not reach this
+        deadline: toTS(100n), // we will not reach this
         timer,
       },
     },
@@ -785,7 +790,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
   assertAmountsEqual(t, daveCustomDetails.strikePrice.StrikePrice, bucks(1n));
-  t.is(daveCustomDetails.expirationDate, 100n);
+  t.deepEqual(daveCustomDetails.expirationDate, toTS(100n));
   t.deepEqual(daveCustomDetails.timeAuthority, timer);
 
   // What about the underlying asset (the other option)?
@@ -793,10 +798,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].description,
     'exerciseOption',
   );
-  t.is(
+  t.deepEqual(
     daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
       .expirationDate,
-    100n,
+    toTS(100n),
   );
   assertAmountsEqual(
     t,
@@ -942,6 +947,7 @@ test('zoe - coveredCall non-fungible', async t => {
     'b1-coveredcall',
   );
   const timer = buildManualTimer(t.log);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 
   // Setup Alice
   const growlTiger = harden(['GrowlTiger']);
@@ -976,7 +982,7 @@ test('zoe - coveredCall non-fungible', async t => {
   const aliceProposal = harden({
     give: { UnderlyingAsset: growlTigerAmount },
     want: { StrikePrice: aGloriousShieldAmount },
-    exit: { afterDeadline: { deadline: 1n, timer } },
+    exit: { afterDeadline: { deadline: toTS(1n), timer } },
   });
   const alicePayments = { UnderlyingAsset: aliceCcPayment };
   // Alice creates a call option
@@ -1016,7 +1022,7 @@ test('zoe - coveredCall non-fungible', async t => {
     customDetails.strikePrice.StrikePrice,
     aGloriousShieldAmount,
   );
-  t.is(customDetails.expirationDate, 1n);
+  t.deepEqual(customDetails.expirationDate, toTS(1n));
   t.deepEqual(customDetails.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };

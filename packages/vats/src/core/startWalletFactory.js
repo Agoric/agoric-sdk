@@ -1,13 +1,9 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import {
-  deeplyFulfilledObject,
-  makeTracer,
-  VBankAccount,
-} from '@agoric/internal';
+import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '../tokens.js';
 
@@ -24,98 +20,13 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
 /**
- *
- * @param {{
- *   zoe: ERef<ZoeService>,
- *   governedContractInstallation: ERef<Installation>,
- *   issuerKeywordRecord?: IssuerKeywordRecord,
- *   terms: Record<string, unknown>,
- *   privateArgs: any, // TODO: connect with Installation type
- *   label: string,
- * }} zoeArgs
- * @param {{
- *   governedParams: Record<string, unknown>,
- *   timer: ERef<import('@agoric/time/src/types').TimerService>,
- *   contractGovernor: ERef<Installation>,
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
- * }} govArgs
- */
-const startGovernedInstance = async (
-  {
-    zoe,
-    governedContractInstallation,
-    issuerKeywordRecord,
-    terms,
-    privateArgs,
-    label,
-  },
-  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
-) => {
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
-  const [initialPoserInvitation, electorateInvitationAmount] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-    ]);
-
-  const governorTerms = await deeplyFulfilledObject(
-    harden({
-      timer,
-      governedContractInstallation,
-      governed: {
-        terms: {
-          ...terms,
-          governedParams: {
-            [CONTRACT_ELECTORATE]: {
-              type: ParamTypes.INVITATION,
-              value: electorateInvitationAmount,
-            },
-            ...governedParams,
-          },
-        },
-        issuerKeywordRecord,
-        label,
-      },
-    }),
-  );
-  const governorFacets = await E(zoe).startInstance(
-    contractGovernor,
-    {},
-    governorTerms,
-    harden({
-      economicCommitteeCreatorFacet,
-      governed: {
-        ...privateArgs,
-        initialPoserInvitation,
-      },
-    }),
-    `${label}-governor`,
-  );
-  const [instance, creatorFacet, adminFacet] = await Promise.all([
-    E(governorFacets.creatorFacet).getInstance(),
-    E(governorFacets.creatorFacet).getCreatorFacet(),
-    E(governorFacets.creatorFacet).getAdminFacet(),
-  ]);
-  const facets = {
-    instance,
-    governor: governorFacets.instance,
-    creatorFacet,
-    adminFacet,
-    governorCreatorFacet: governorFacets.creatorFacet,
-  };
-  return facets;
-};
-
-/**
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
  * @param {BootstrapPowers & PromiseSpaceOf<{
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
  *   econCharterKit: {
- *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>['creatorFacet'],
+ *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']>>['creatorFacet'],
  *     adminFacet: AdminFacet,
  *   } ,
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager;
@@ -137,14 +48,13 @@ export const startWalletFactory = async (
       provisionWalletBridgeManager: provisionWalletBridgeManagerP,
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
-      zoe,
-      chainTimerService,
-      economicCommitteeCreatorFacet,
       econCharterKit,
+      startUpgradable: startUpgradableP,
+      startGovernedUpgradable: startGovernedUpgradableP,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
-      consume: { walletFactory, provisionPool, contractGovernor },
+      consume: { walletFactory, provisionPool },
     },
     instance: { produce: instanceProduce },
     brand: {
@@ -201,47 +111,43 @@ export const startWalletFactory = async (
       }),
     }),
   );
-  /** @type {WalletFactoryStartResult} */
-  const wfFacets = await E(zoe).startInstance(
-    walletFactory,
-    { Fee: feeIssuer },
+
+  const startUpgradable = await startUpgradableP;
+  const wfFacets = await startUpgradable({
+    installation: walletFactory,
+    issuerKeywordRecord: { Fee: feeIssuer },
     terms,
-    {
+    privateArgs: {
       storageNode: walletStorageNode,
       walletBridgeManager,
     },
-    'walletFactory',
-  );
-  walletFactoryStartResult.resolve(wfFacets);
+    label: 'walletFactory',
+    produceResults: walletFactoryStartResult,
+  });
+  // TODO: push this resolve instance into startUpgradable too
+  // but make it optional, since not all instances go in agoricNames
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const ppFacets = await startGovernedInstance(
-    {
-      zoe,
-      governedContractInstallation: provisionPool,
-      terms: {},
-      privateArgs: harden({
-        poolBank,
-        storageNode: poolStorageNode,
-        marshaller: E(board).getPublishingMarshaller(),
-      }),
-      label: 'provisionPool',
-    },
-    {
-      governedParams: {
-        PerAccountInitialAmount: {
-          type: ParamTypes.AMOUNT,
-          value: AmountMath.make(feeBrand, perAccountInitialValue),
-        },
+  const startGovernedUpgradable = await startGovernedUpgradableP;
+  const ppFacets = await startGovernedUpgradable({
+    installation: provisionPool,
+    terms: {},
+    privateArgs: harden({
+      poolBank,
+      storageNode: poolStorageNode,
+      marshaller: await E(board).getPublishingMarshaller(),
+    }),
+    label: 'provisionPool',
+    governedParams: {
+      PerAccountInitialAmount: {
+        type: ParamTypes.AMOUNT,
+        value: AmountMath.make(feeBrand, perAccountInitialValue),
       },
-      timer: chainTimerService,
-      contractGovernor,
-      economicCommitteeCreatorFacet,
     },
-  );
+    produceResults: provisionPoolStartResult,
+  });
+  // TODO: push this resolve instance into startGovernedUpgradable likewise
   instanceProduce.provisionPool.resolve(ppFacets.instance);
-
-  provisionPoolStartResult.resolve(ppFacets);
 
   const handler = await E(ppFacets.creatorFacet).makeHandler({
     bankManager,
@@ -253,7 +159,7 @@ export const startWalletFactory = async (
     E(provisionWalletBridgeManager).setHandler(handler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
-      ppFacets.creatorFacet,
+      ppFacets.governorCreatorFacet,
       'provisionPool',
     ),
   ]);
@@ -282,9 +188,8 @@ export const WALLET_FACTORY_MANIFEST = {
       provisionWalletBridgeManager: true,
       chainStorage: 'bridge',
       namesByAddressAdmin: true,
-      zoe: 'zoe',
-      chainTimerService: 'timer',
-      economicCommitteeCreatorFacet: 'economicCommittee',
+      startUpgradable: true,
+      startGovernedUpgradable: true,
       econCharterKit: 'psmCharter',
     },
     produce: {
@@ -296,7 +201,6 @@ export const WALLET_FACTORY_MANIFEST = {
       consume: {
         walletFactory: 'zoe',
         provisionPool: 'zoe',
-        contractGovernor: 'zoe',
       },
     },
     brand: {

@@ -129,7 +129,6 @@ export const makeAssetRegistry = assetPublisher => {
 // 1. they should not rely on that; they may be partitioned later
 // 2. they should never be able to detect behaviors from another wallet
 /**
- *
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,

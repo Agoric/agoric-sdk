@@ -4,6 +4,7 @@ import '@agoric/zoe/exported.js';
 
 import path from 'path';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/far';
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
@@ -37,7 +38,7 @@ const setupContract = async () => {
     bundleSource(counterRoot),
   ]);
   // install the contract
-  /** @typedef {Installation<import('../../src/committee.js').start>} CommitteInstallation */
+  /** @typedef {Installation<import('../../src/committee.js')['prepare']>} CommitteInstallation */
   /** @typedef {Installation<import('../../src/binaryVoteCounter.js').start>} CounterInstallation */
   /** @type {[CommitteInstallation, CounterInstallation] } */
   const [electorateInstallation, counterInstallation] = await Promise.all([
@@ -73,20 +74,22 @@ test('committee-open question:one', async t => {
   } = await setupContract();
 
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const questionSpec = coerceQuestionSpec({
-    method: ChoiceMethod.UNRANKED,
-    issue: harden({ text: 'why' }),
-    positions,
-    electionType: ElectionType.SURVEY,
-    maxChoices: 1,
-    maxWinners: 1,
-    closingRule: {
-      timer: buildManualTimer(t.log),
-      deadline: 2n,
-    },
-    quorumRule: QuorumRule.MAJORITY,
-    tieOutcome: positions[1],
-  });
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'why' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: {
+        timer: buildManualTimer(t.log),
+        deadline: 2n,
+      },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
   await E(creatorFacet).addQuestion(counterInstallation, questionSpec);
   const questions = await publicFacet.getOpenQuestions();
   const question = E(publicFacet).getQuestion(questions[0]);
@@ -102,13 +105,9 @@ test('committee-open question:one', async t => {
     {
       closingRule: {
         deadline: 2n,
-        timer: {
-          iface: 'Alleged: ManualTimer',
-        },
+        timer: Far('ManualTimer'),
       },
-      counterInstance: {
-        iface: 'Alleged: InstanceHandle',
-      },
+      counterInstance: Far('InstanceHandle'),
       electionType: 'survey',
       issue: {
         text: 'why',
@@ -124,9 +123,7 @@ test('committee-open question:one', async t => {
           text: 'why not?',
         },
       ],
-      questionHandle: {
-        iface: 'Alleged: QuestionHandle',
-      },
+      questionHandle: Far('QuestionHandle'),
       quorumRule: 'majority',
       tieOutcome: {
         text: 'why not?',
@@ -144,17 +141,19 @@ test('committee-open question:mixed, with snapshot', async t => {
 
   const timer = buildManualTimer(t.log);
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const questionSpec = coerceQuestionSpec({
-    method: ChoiceMethod.UNRANKED,
-    issue: harden({ text: 'why' }),
-    positions,
-    electionType: ElectionType.SURVEY,
-    maxChoices: 1,
-    maxWinners: 1,
-    closingRule: { timer, deadline: 4n },
-    quorumRule: QuorumRule.MAJORITY,
-    tieOutcome: positions[1],
-  });
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'why' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: { timer, deadline: 4n },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
   await E(creatorFacet).addQuestion(counterInstallation, questionSpec);
   // First question writes
   await eventLoopIteration();

@@ -54,8 +54,15 @@ export const publishInterchainAssetFromBoardId = async (
  */
 export const publishInterchainAssetFromBank = async (
   {
-    consume: { zoe, bankManager, agoricNamesAdmin, bankMints, reserveKit },
-    produce: { bankMints: produceBankMints },
+    consume: {
+      bankManager,
+      agoricNamesAdmin,
+      bankMints,
+      vBankKits,
+      reserveKit,
+      startUpgradable: startUpgradableP,
+    },
+    produce: { bankMints: produceBankMints, vBankKits: produceVBankKits },
     installation: {
       consume: { mintHolder },
     },
@@ -80,12 +87,21 @@ export const publishInterchainAssetFromBank = async (
       assetKind: AssetKind.NAT,
     },
   };
-  const { creatorFacet: mintP, publicFacet: issuerP } = E.get(
-    E(zoe).startInstance(mintHolder, {}, terms, undefined, keyword),
-  );
 
-  const [issuer, brand] = await Promise.all([issuerP, E(issuerP).getBrand()]);
-  const kit = { mint: mintP, issuer, brand };
+  const startUpgradable = await startUpgradableP;
+  produceVBankKits.resolve([]);
+  const { creatorFacet: mint, publicFacet: issuer } = await startUpgradable({
+    installation: mintHolder,
+    label: keyword,
+    privateArgs: undefined,
+    terms,
+    produceResults: {
+      resolve: kit => Promise.resolve(vBankKits).then(kits => kits.push(kit)),
+    },
+  });
+
+  const brand = await E(issuer).getBrand();
+  const kit = { mint, issuer, brand };
 
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
@@ -93,8 +109,7 @@ export const publishInterchainAssetFromBank = async (
   produceBankMints.resolve([]);
   await Promise.all([
     Promise.resolve(bankMints).then(
-      // @ts-expect-error pushing a promise to a presence array
-      mints => mints.push(mintP),
+      mints => mints.push(mint),
       () => {}, // If the bankMints list was rejected, ignore the error.
     ),
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
@@ -110,7 +125,16 @@ export const publishInterchainAssetFromBank = async (
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const registerScaledPriceAuthority = async (
-  { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
+  {
+    consume: {
+      agoricNamesAdmin,
+      startUpgradable: startUpgradableP,
+      priceAuthorityAdmin,
+      priceAuthority,
+      scaledPriceAuthorityKits,
+    },
+    produce: { scaledPriceAuthorityKits: produceScaledPriceAuthorityKits },
+  },
   { options: { interchainAssetOptions } },
 ) => {
   const {
@@ -184,19 +208,23 @@ export const registerScaledPriceAuthority = async (
       initialPrice,
     }),
   );
-  const { publicFacet } = E.get(
-    E(zoe).startInstance(
-      /** @type {Installation<import('@agoric/zoe/src/contracts/scaledPriceAuthority.js').prepare>} */ (
-        scaledPriceAuthority
-      ),
-      undefined,
-      terms,
-      undefined,
-      `scaledPriceAuthority-${keyword}`,
-    ),
-  );
+
+  const startUpgradable = await startUpgradableP;
+  produceScaledPriceAuthorityKits.resolve([]);
+  const spaKit = await startUpgradable({
+    installation: scaledPriceAuthority,
+    label: `scaledPriceAuthority-${keyword}`,
+    terms,
+    produceResults: {
+      resolve: kit =>
+        Promise.resolve(scaledPriceAuthorityKits).then(kits => kits.push(kit)),
+    },
+    privateArgs: undefined,
+  });
+
   await E(priceAuthorityAdmin).registerPriceAuthority(
-    E(publicFacet).getPriceAuthority(),
+    // @ts-expect-error The public facet should have getPriceAuthority
+    E(spaKit.publicFacet).getPriceAuthority(),
     interchainBrand,
     runBrand,
     true, // force
@@ -284,13 +312,14 @@ export const getManifestForAddAssetToVault = (
       ...(publishIssuerFromBank && {
         [publishInterchainAssetFromBank.name]: {
           consume: {
-            zoe: true,
             bankManager: true,
             agoricNamesAdmin: true,
             bankMints: true,
             reserveKit: true,
+            vBankKits: true,
+            startUpgradable: true,
           },
-          produce: { bankMints: true },
+          produce: { bankMints: true, vBankKits: true },
           installation: {
             consume: { mintHolder: true },
           },
@@ -299,9 +328,13 @@ export const getManifestForAddAssetToVault = (
       [registerScaledPriceAuthority.name]: {
         consume: {
           agoricNamesAdmin: true,
-          zoe: true,
+          startUpgradable: true,
           priceAuthorityAdmin: true,
           priceAuthority: true,
+          scaledPriceAuthorityKits: true,
+        },
+        produce: {
+          scaledPriceAuthorityKits: true,
         },
         installation: {
           consume: { scaledPriceAuthority: true },

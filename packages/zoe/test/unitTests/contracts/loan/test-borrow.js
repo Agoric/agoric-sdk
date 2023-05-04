@@ -6,6 +6,7 @@ import '../../../../exported.js';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
+import { TimeMath } from '@agoric/time';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
@@ -194,6 +195,7 @@ test('borrow getRecentCollateralAmount', async t => {
 test('borrow getLiquidationPromise', async t => {
   const { borrowFacet, collateralKit, loanKit, priceAuthority, timer } =
     await setupBorrowFacet(100n);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
   const collateralGiven = AmountMath.make(collateralKit.brand, 100n);
@@ -222,7 +224,7 @@ test('borrow getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: AmountMath.make(loanKit.brand, 100n),
           timer,
-          timestamp: 2n,
+          timestamp: toTS(2n),
         },
       ]),
     ),
@@ -242,6 +244,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
     timer,
     zcf,
   } = await setupBorrowFacet(100n);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
   const addCollateralInvitation = await E(
@@ -286,7 +289,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: AmountMath.make(loanKit.brand, 103n),
           timer,
-          timestamp: 3n,
+          timestamp: toTS(3n),
         },
       ]),
     ),
@@ -386,8 +389,9 @@ test('borrow collateral just too low', async t => {
 });
 
 test('aperiodic interest', async t => {
-  const { borrowFacet, maxLoan, periodUpdater, loanKit } =
+  const { borrowFacet, maxLoan, periodUpdater, loanKit, timer } =
     await setupBorrowFacet(100000n, 40000n);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   periodUpdater.updateState(0n);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -415,7 +419,7 @@ test('aperiodic interest', async t => {
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount1);
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(16n));
   assertAmountsEqual(
     t,
     debtCompounded2,
@@ -440,6 +444,7 @@ test('interest starting from non-zero time', async t => {
   const maxLoanValue = 40000n;
   // The fakePriceAuthority pays attention to the fakeTimer
   const timer = buildManualTimer(t.log);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   await timer.tick();
   await timer.tick();
   await timer.tick();
@@ -479,16 +484,17 @@ test('interest starting from non-zero time', async t => {
     updateCount,
   );
   t.deepEqual(debtCompounded2, AmountMath.make(loanKit.brand, 40020n));
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 9n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(9n));
 });
 
 // In this test, the updates are expected at multiples of 5, but they show up at
 // multiples of 4 instead. The starting time is 1. We should charge interest
 // after 9, 13, 17, 21, 29
 test('short periods', async t => {
-  const { borrowFacet, maxLoan, periodUpdater, loanKit } =
+  const { borrowFacet, maxLoan, periodUpdater, loanKit, timer } =
     await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0n);
+  const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
@@ -498,7 +504,7 @@ test('short periods', async t => {
   assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(5n);
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 1n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(1n));
 
   periodUpdater.updateState(9n);
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
@@ -509,7 +515,7 @@ test('short periods', async t => {
     debtCompounded1,
     AmountMath.make(loanKit.brand, 40020n),
   );
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 6n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(6n));
 
   periodUpdater.updateState(14n);
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
@@ -520,7 +526,7 @@ test('short periods', async t => {
     debtCompounded2,
     AmountMath.make(loanKit.brand, 40041n),
   );
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 11n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(11n));
 
   periodUpdater.updateState(17n);
   const { value: debtCompounded3, updateCount: updateCount3 } = await E(
@@ -531,7 +537,7 @@ test('short periods', async t => {
     debtCompounded3,
     AmountMath.make(loanKit.brand, 40062n),
   );
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(16n));
 
   periodUpdater.updateState(21n);
   const { value: debtCompounded4, updateCount: updateCount4 } = await E(
@@ -542,10 +548,10 @@ test('short periods', async t => {
     debtCompounded4,
     AmountMath.make(loanKit.brand, 40083n),
   );
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(21n));
 
   periodUpdater.updateState(25n);
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(21n));
 
   periodUpdater.updateState(29n);
   const { value: debtCompounded5 } = await E(debtNotifier).getUpdateSince(
@@ -556,7 +562,7 @@ test('short periods', async t => {
     debtCompounded5,
     AmountMath.make(loanKit.brand, 40104n),
   );
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 26n);
+  t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(26n));
 });
 
 test.todo('borrow bad proposal');

@@ -3,7 +3,6 @@
 let debugInstance = 1;
 
 /**
- *
  * @param {string} name
  * @param {boolean | 'verbose'} enable
  */

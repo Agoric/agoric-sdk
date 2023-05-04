@@ -1,3 +1,4 @@
+import { TimeMath } from '@agoric/time';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -27,7 +28,8 @@ export async function makeScriptedOracle(
   /** @type {OracleHandler} */
   const oracleHandler = Far('oracleHandler', {
     async onQuery(query) {
-      const time = await E(timer).getCurrentTimestamp();
+      const timeRecord = await E(timer).getCurrentTimestamp();
+      const time = TimeMath.absValue(timeRecord);
       const event = script[`${time}`] || 'Nothing to report';
       const reply = { event, time, query };
       return harden({ reply });

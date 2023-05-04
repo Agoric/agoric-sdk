@@ -144,7 +144,7 @@
  * @param {Keyword} keyword - the keyword to use for the issuer
  * @param {FeeMintAccess} allegedFeeMintAccess - an object that
  * purports to be the object that allows access to the feeMint
- * @returns {ZoeMint}
+ * @returns {ZoeMint<'nat'>}
  */
 
 /**
@@ -184,10 +184,11 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {object} ZoeMint
- * @property {() => IssuerRecord} getIssuerRecord
- * @property {(totalToMint: Amount) => void} mintAndEscrow
- * @property {(totalToBurn: Amount) => void} withdrawAndBurn
+ * @property {() => IssuerRecord<K>} getIssuerRecord
+ * @property {(totalToMint: Amount<K>) => void} mintAndEscrow
+ * @property {(totalToBurn: Amount<K>) => void} withdrawAndBurn
  * Note that the burning is asynchronous, and so may not have happened by
  * the time withdrawAndBurn returns. We rely on our other bookkeeping so that
  * these assets are assumed burned elsewhere, so no one will try to access

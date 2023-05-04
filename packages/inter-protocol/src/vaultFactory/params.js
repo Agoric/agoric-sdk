@@ -7,8 +7,10 @@ import {
   makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
-import { M } from '@agoric/store';
+import { makeStoredPublisherKit } from '@agoric/notifier';
+import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { provideDurableMapStore } from '@agoric/vat-data';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
@@ -160,3 +162,56 @@ export const makeGovernedTerms = ({
   });
 };
 harden(makeGovernedTerms);
+/**
+ * Stop-gap which restores initial param values
+ * UNTIL https://github.com/Agoric/agoric-sdk/issues/5200
+ *
+ * NB: changes from initial values will be lost upon restart
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
+ */
+export const provideVaultParamManagers = (baggage, marshaller) => {
+  /** @type {MapStore<Brand, VaultParamManager>} */
+  const managers = makeScalarMapStore();
+
+  // the managers aren't durable but their arguments are
+  /** @type {MapStore<Brand, {storageNode: StorageNode, initialParamValues: VaultManagerParamValues}>} */
+  const managerArgs = provideDurableMapStore(
+    baggage,
+    'vault param manager parts',
+  );
+
+  const makeManager = (brand, { storageNode, initialParamValues }) => {
+    const manager = makeVaultParamManager(
+      makeStoredPublisherKit(storageNode, marshaller, 'governance'),
+      initialParamValues,
+    );
+    managers.init(brand, manager);
+    return manager;
+  };
+
+  // restore from baggage
+  [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+
+  return {
+    /**
+     *
+     * @param {Brand} brand
+     * @param {StorageNode} storageNode
+     * @param {VaultManagerParamValues} initialParamValues
+     */
+    addParamManager(brand, storageNode, initialParamValues) {
+      const args = harden({ storageNode, initialParamValues });
+      managerArgs.init(brand, args);
+      return makeManager(brand, args);
+    },
+    /**
+     * @param {Brand} brand
+     */
+    get(brand) {
+      return managers.get(brand);
+    },
+  };
+};
+harden(provideVaultParamManagers);
