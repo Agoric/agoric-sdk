@@ -4,7 +4,7 @@ import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
-import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
   BridgeId,
   deeplyFulfilledObject,
@@ -54,7 +54,7 @@ const bootMsgEx = {
  * }} powers
  *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
- * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
@@ -67,11 +67,12 @@ export const makeVatsFromBundles = async ({
   /** @type {VatStore} */
   const store = makeScalarMapStore();
   vatStore.resolve(store);
+  const { provideAsync } = makeAtomicProvider(store);
 
   const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
     return async (vatName, bundleRef = { bundleName: vatName }) => {
       const { bundleID, bundleName } = bundleRef;
-      const vatInfoP = provideLazy(store, vatName, async _k => {
+      const vatInfoP = provideAsync(vatName, async _k => {
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
           /** @type { Promise<CreateVatResults> } */
