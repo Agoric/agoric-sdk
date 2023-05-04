@@ -81,9 +81,9 @@ export const Phase = /** @type {const} */ ({
 test.before(async t => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const stableBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
-  const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
+  const run = withAmountUtils({ issuer: runIssuer, brand: stableBrand });
   const aeth = withAmountUtils(
     makeIssuerKit('aEth', AssetKind.NAT, { decimalPlaces: 6 }),
   );

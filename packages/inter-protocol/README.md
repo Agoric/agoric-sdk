@@ -108,7 +108,7 @@ vaultFactoryInstance = E(home.agoricNames).lookup('instance', 'VaultFactory')
 vaultFactoryPublicFacet = E(home.zoe).getPublicFacet(vaultFactoryInstance)
 # get a reference to the minted brand (soon to be IST)
 E(home.agoricNames).lookup('brand', 'IST');
-runBrand=history[-1]
+stableBrand=history[-1]
 # get a reference to the collateral brand
 E(home.agoricNames).lookup('brand', 'ATOM')
 atomBrand=history[-1]
@@ -117,7 +117,7 @@ collateralManager = E(vaultFactoryPublicFacet).getCollateralManager(atomBrand)
 # proposal
 proposal = ({
   give: { Collateral: { brand: atomBrand, value: 1000n } },
-  want: { IST: { brand: runBrand, value: 1n } },
+  want: { IST: { brand: stableBrand, value: 1n } },
 })
 # get the ATOM purse
 E(home.wallet).getPurses()
