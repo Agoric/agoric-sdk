@@ -110,7 +110,7 @@ func TestGetAndHas(t *testing.T) {
 				t.Errorf("%s: got unexpected error %v", desc.label, err)
 			}
 
-			// Verify that has returns false iff get returns null.
+			// Verify that `has` returns false iff `get` returns null.
 			noData := desc.want == `null`
 			if (noData && has != `false`) || (!noData && has != `true`) {
 				t.Errorf("%s: got has %v; want %v", desc.label, has, !noData)
@@ -274,13 +274,13 @@ func TestEntries(t *testing.T) {
 		want string
 	}
 	cases := []testCase{
-		{path: "key1", want: `[["child1",null]]`},
+		{path: "key1", want: `[["child1"]]`},
 		{path: "key1.child1",
 			// Empty non-terminals are included, empty leaves are not.
-			want: `[["empty-non-terminal",null],["grandchild1","value1grandchild"]]`},
+			want: `[["empty-non-terminal"],["grandchild1","value1grandchild"]]`},
 		{path: "key1.child1.grandchild1", want: `[]`},
 		{path: "key1.child1.empty-non-terminal", want: `[["leaf",""]]`},
-		{path: "key2", want: `[["child2",null]]`},
+		{path: "key2", want: `[["child2"]]`},
 		{path: "key2.child2",
 			want: `[["grandchild2","value2grandchild"],["grandchild2a","value2grandchilda"]]`},
 		{path: "nosuchkey", want: `[]`},

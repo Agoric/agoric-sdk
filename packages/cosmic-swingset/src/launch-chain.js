@@ -124,7 +124,7 @@ export async function buildSwingset(
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
 
-    // Extract data from chain storage.
+    // Extract data from chain storage as [path, value?] pairs.
     if (exportStorageSubtrees) {
       // Disallow exporting internal details like bundle contents and the action queue.
       const exportRoot = STORAGE_PATH.CUSTOM;
@@ -137,19 +137,22 @@ export async function buildSwingset(
 
       const callChainStorage = (method, path) =>
         bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
+      const makeExportEntry = (path, value) =>
+        value == null ? [path] : [path, value];
+
       const chainStorageEntries = [];
       // Preserve the ordering of each subtree via depth-first traversal.
       let pendingEntries = exportStorageSubtrees.map(path => {
         const value = callChainStorage('get', path);
-        return [path, value];
+        return makeExportEntry(path, value);
       });
       while (pendingEntries.length > 0) {
-        const entry = /** @type {[string, string]} */ (pendingEntries.shift());
+        const entry = /** @type {[string, string?]} */ (pendingEntries.shift());
         chainStorageEntries.push(entry);
         const [path, _value] = entry;
         const childEntryData = callChainStorage('entries', path);
         const childEntries = childEntryData.map(([pathSegment, value]) => {
-          return [`${path}.${pathSegment}`, value];
+          return makeExportEntry(`${path}.${pathSegment}`, value);
         });
         pendingEntries = [...childEntries, ...pendingEntries];
       }
