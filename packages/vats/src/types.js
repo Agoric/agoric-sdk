@@ -75,7 +75,7 @@ export {};
  * @typedef {object} ScopedBridgeManager An object which handles messages for a specific bridge
  * @property {(obj: any) => Promise<any>} toBridge
  * @property {(obj: any) => Promise<void>} fromBridge
- * @property {(handler: ERef<BridgeHandler>) => void} setHandler
+ * @property {(handler: ERef<BridgeHandler> | undefined) => void} setHandler
  */
 
 /**

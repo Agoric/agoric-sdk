@@ -14,7 +14,9 @@ export const BridgeHandlerI = M.interface('BridgeHandler', {
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
   fromBridge: M.call(M.any()).returns(M.promise()),
   toBridge: M.call(M.any()).returns(M.promise()),
-  setHandler: M.call(M.remotable('BridgeHandler')).returns(),
+  setHandler: M.call(
+    M.or(M.remotable('BridgeHandler'), M.undefined()),
+  ).returns(),
 });
 
 export const BridgeManagerI = M.interface('BridgeManager', {
@@ -64,9 +66,11 @@ const prepareScopedManager = zone => {
       setHandler(newHandler) {
         // setHandler could probably be on a separate facet to separate it
         // from the toBridge and fromBridge powers, but it's easier to
-        // implement a set once check for the handler and pass a single
+        // implement an already set check for the handler and pass a single
         // object around.
-        !this.state.inboundHandler ||
+        // We do allow unsetting to support explicit transfer to a new handler
+        !newHandler ||
+          !this.state.inboundHandler ||
           Fail`Bridge handler already set for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
