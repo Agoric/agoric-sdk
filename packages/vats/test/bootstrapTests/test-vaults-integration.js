@@ -5,9 +5,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
-import { makeMarshal } from '@endo/marshal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Far, makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
@@ -67,6 +67,119 @@ test.before(async t => {
 });
 test.after.always(t => {
   t.context.shutdown && t.context.shutdown();
+});
+
+test('audit bootstrap exports', async t => {
+  const expected = {
+    maxExports: 15,
+    maxNonDurable: 13,
+    ifaces: {
+      // in bridgeCoreEval()
+      // TODO(#7576): support unregister
+      coreHandler: true,
+      // in bridgeProvisioner()
+      // TODO(#7576): support unregister
+      provisioningHandler: true,
+      // makePrioritySendersManager() TODO(#7576): support unregister
+      'prioritySenders manager': true,
+      // TODO? move to provisioning vat?
+      clientCreator: true,
+      // in registerNetworkProtocols(). TODO: outboard #7044
+      ProtocolHandler: true, // in makeLoopbackProtocolHandler()
+      callbacks: true,
+      listener: true,
+      // TODO(#7563): disable stakeFactory in test-vaults-config
+      stakeReporter: true,
+      // in startWalletFactory()
+      // TODO(#5885): vbank should provide a facet attenuated
+      // to only provide getAssetSubscription
+      // meanwhile, expose the whole poolBank rather than
+      // export this Far object from bootstrap?
+      AssetPublisher: true,
+      // in addBankAssets()
+      // XXX is attenuation needed here?
+      AssetHub: true,
+      // XXX price-feed-proposal uses makeIssuerKit
+      'USD brand': true,
+      'ATOM brand': true,
+      // from makeAddressNameHubs(),
+      // makeMyAddressNameAdminKit(),
+      // makeAgoricNamesAccess()
+      nameHub: true,
+      nameAdmin: true,
+    },
+  };
+
+  const { controller } = t.context;
+  const kState = controller.dump();
+
+  const myVatID = 'v1';
+
+  const myPromises = kState.promises.filter(
+    // @ts-expect-error kernel.dump() .promises type is wrong
+    p => p.decider === myVatID,
+  );
+  t.deepEqual(myPromises, [], 'no promises where bootstrap is the decider');
+
+  const myExports = kState.kernelTable.filter(
+    o => o[1] === myVatID && o[2].startsWith('o+'),
+  );
+  const v1VatTable =
+    kState.vatTables.find(vt => vt.vatID === myVatID) || assert.fail();
+  const { transcript } = v1VatTable.state;
+
+  const oids = new Set(myExports.map(o => o[2]));
+  const oidsDurable = [...oids].filter(o => o.startsWith('o+d'));
+  t.log(
+    'bootstrap exports:',
+    oidsDurable.length,
+    'durable',
+    oids.size,
+    'total',
+  );
+  t.true(oids.size <= expected.maxExports, 'too many exports');
+  t.true(
+    oids.size - oidsDurable.length <= expected.maxNonDurable,
+    'too many non-durable',
+  );
+
+  // Map oid to iface by poring over transcript syscalls
+  const toIface = new Map();
+  const anObj = Far('obj', {});
+  const aPromise = harden(new Promise(() => {}));
+  const saveBootstrapIface = (slot, iface) => {
+    if (slot.startsWith('p')) return aPromise;
+    if (oids.has(slot)) {
+      toIface.set(slot, iface);
+    }
+    return anObj;
+  };
+  const m = makeMarshal(undefined, saveBootstrapIface);
+  oids.forEach(oid => {
+    for (const [_ix, ev] of transcript) {
+      for (const sc of ev.sc) {
+        if (sc.s[0] === 'send') {
+          const { methargs } = sc.s[2];
+          if (!methargs.slots.includes(oid)) continue;
+          m.fromCapData(methargs);
+          return;
+        } else if (sc.s[0] === 'resolve') {
+          for (const res of sc.s[1]) {
+            const capdata = res[2];
+            if (!capdata.slots.includes(oid)) continue;
+            m.fromCapData(capdata);
+            return;
+          }
+        }
+      }
+    }
+  });
+
+  const exportedInterfaces = Object.fromEntries(
+    [...toIface.values()].map(iface => [iface.replace(/^Alleged: /, ''), true]),
+  );
+
+  t.deepEqual(exportedInterfaces, expected.ifaces, 'expected interfaces');
 });
 
 test('metrics path', async t => {
