@@ -267,8 +267,8 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       noProvisioner(powersFor('noProvisioner')),
       bridgeProvisioner(powersFor('bridgeProvisioner')),
       makeChainStorage(powersFor('makeChainStorage')),
-      makeAddressNameHubs(powersFor('makeAddressNameHubs')),
-      publishAgoricNames(powersFor('publishAgoricNames'), {
+      makeAddressNameHubs(allPowers),
+      publishAgoricNames(allPowers, {
         options: {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },

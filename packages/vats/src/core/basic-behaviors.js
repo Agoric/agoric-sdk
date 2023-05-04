@@ -357,10 +357,7 @@ export const makeBoard = async ({
 harden(makeBoard);
 
 /**
- * Make the agoricNames, namesByAddress name hierarchies.
- *
- * agoricNames are well-known items such as the IST issuer,
- * available as E(home.agoricNames).lookup('issuer', 'IST')
+ * Produce the remote namesByAddress hierarchy.
  *
  * namesByAddress is a NameHub for each provisioned client,
  * available, for example, as `E(home.namesByAddress).lookup('agoric1...')`.
@@ -369,6 +366,27 @@ harden(makeBoard);
  * is given `home.myAddressNameAdmin`, which they can use to
  * assign (update / reserve) any other names they choose.
  *
+ * @param {BootstrapPowers} powers
+ */
+export const produceNamesByAddress = async ({
+  consume: { provisioning: provisioningOptP },
+  produce: { namesByAddress, namesByAddressAdmin },
+}) => {
+  const provisioning = await provisioningOptP;
+  if (!provisioning) {
+    namesByAddress.reject('no provisioning vat');
+    namesByAddressAdmin.reject('no provisioning vat');
+    return;
+  }
+  const kit = await E(provisioning).getNamesByAddressKit();
+  namesByAddress.resolve(kit.namesByAddress);
+  namesByAddressAdmin.resolve(kit.namesByAddressAdmin);
+};
+
+/**
+ * Make the namesByAddress name hierarchy in the heap.
+ *
+ * @deprecated use produceNamesByAddress to avoid Far objects in bootstrap
  * @param {BootstrapSpace} powers
  */
 export const makeAddressNameHubs = async ({
@@ -645,18 +663,11 @@ export const BASIC_BOOTSTRAP_PERMITS = {
       board: 'board',
     },
   },
-
-  [makeAddressNameHubs.name]: {
-    consume: {
-      agoricNames: true,
-      client: true,
-    },
+  [produceNamesByAddress.name]: {
+    consume: { provisioning: 'provisioning' },
     produce: {
-      namesByAddress: true,
-      namesByAddressAdmin: true,
-    },
-    home: {
-      produce: { myAddressNameAdmin: true },
+      namesByAddress: 'provisioning',
+      namesByAddressAdmin: 'provisioning',
     },
   },
   [makeClientBanks.name]: {
