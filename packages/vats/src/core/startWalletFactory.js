@@ -102,6 +102,25 @@ export const startWalletFactory = async (
   ]);
 
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
+  const ppFacets = await E(startGovernedUpgradable)({
+    installation: provisionPool,
+    terms: {},
+    privateArgs: harden({
+      poolBank,
+      storageNode: poolStorageNode,
+      marshaller: await E(board).getPublishingMarshaller(),
+    }),
+    label: 'provisionPool',
+    governedParams: {
+      PerAccountInitialAmount: {
+        type: ParamTypes.AMOUNT,
+        value: AmountMath.make(feeBrand, perAccountInitialValue),
+      },
+    },
+  });
+  provisionPoolStartResult.resolve(ppFacets);
+  instanceProduce.provisionPool.resolve(ppFacets.instance);
+
   const terms = await deeplyFulfilled(
     harden({
       agoricNames,
@@ -127,33 +146,14 @@ export const startWalletFactory = async (
   walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const ppFacets = await E(startGovernedUpgradable)({
-    installation: provisionPool,
-    terms: {},
-    privateArgs: harden({
-      poolBank,
-      storageNode: poolStorageNode,
-      marshaller: await E(board).getPublishingMarshaller(),
-    }),
-    label: 'provisionPool',
-    governedParams: {
-      PerAccountInitialAmount: {
-        type: ParamTypes.AMOUNT,
-        value: AmountMath.make(feeBrand, perAccountInitialValue),
-      },
-    },
-  });
-  provisionPoolStartResult.resolve(ppFacets);
-  instanceProduce.provisionPool.resolve(ppFacets.instance);
-
-  const handler = await E(ppFacets.creatorFacet).makeHandler({
+  const bridgeHandler = await E(ppFacets.creatorFacet).makeBridgeHandler({
     bankManager,
     namesByAddressAdmin,
     walletFactory: wfFacets.creatorFacet,
   });
 
   await Promise.all([
-    E(provisionWalletBridgeManager).initHandler(handler),
+    E(provisionWalletBridgeManager).initHandler(bridgeHandler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.governorCreatorFacet,

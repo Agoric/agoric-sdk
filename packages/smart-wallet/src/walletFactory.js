@@ -237,7 +237,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
        * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[import('./smartWallet').SmartWallet, boolean]>} wallet
+       * @returns {Promise<[wallet: import('./smartWallet').SmartWallet, isNew: boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
