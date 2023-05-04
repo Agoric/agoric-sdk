@@ -257,10 +257,10 @@ export const connectFaucet = async ({
     zoe,
   });
   const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const stableBrand = await E(runIssuer).getBrand();
   const runIssuerKit = {
     issuer: runIssuer,
-    brand: runBrand,
+    brand: stableBrand,
     mint: {
       mintPayment: async amount => {
         // TODO: what happens if faucetRunSupply doesn't have enough

@@ -75,7 +75,7 @@ test('bootstrap payment', async (/** @type {CentralSupplyTestContext} */ t) => {
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
   const {
     issuer: { IST: runIssuer },
-    brand: { IST: runBrand },
+    brand: { IST: stableBrand },
   } = t.context;
 
   const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
@@ -87,7 +87,7 @@ test('bootstrap payment', async (/** @type {CentralSupplyTestContext} */ t) => {
   t.true(
     AmountMath.isEqual(
       bootstrapAmount,
-      AmountMath.make(runBrand, bootstrapPaymentValue),
+      AmountMath.make(stableBrand, bootstrapPaymentValue),
     ),
   );
 });
@@ -134,7 +134,7 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
 test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyTestContext} */ t) => {
   const {
     issuer: { IST: runIssuer },
-    brand: { IST: runBrand },
+    brand: { IST: stableBrand },
   } = t.context;
   const { creatorFacet } = await startContract(t, 0n);
 
@@ -144,7 +144,7 @@ test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyT
 
   const bootstrapAmount = await E(issuers.IST).getAmountOf(bootstrapPayment);
 
-  t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
+  t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(stableBrand, 0n)));
 });
 
 test('bootstrap payment - contract exits', async (/** @type {CentralSupplyTestContext} */ t) => {

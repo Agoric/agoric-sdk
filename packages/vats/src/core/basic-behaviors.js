@@ -624,11 +624,11 @@ export const addBankAssets = async ({
   brand: { produce: produceBrand },
 }) => {
   const runIssuer = await E(zoe).getFeeIssuer();
-  const [runBrand, payment] = await Promise.all([
+  const [stableBrand, payment] = await Promise.all([
     E(runIssuer).getBrand(),
     initialSupply,
   ]);
-  const runKit = { issuer: runIssuer, brand: runBrand, payment };
+  const runKit = { issuer: runIssuer, brand: stableBrand, payment };
   const terms = harden({
     keyword: Stake.symbol,
     assetKind: Stake.assetKind,
