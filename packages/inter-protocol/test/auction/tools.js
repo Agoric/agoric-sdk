@@ -58,14 +58,17 @@ export const makeDefaultParams = (invitation, timerBrand) =>
   });
 
 export const makeFakeAuctioneer = () => {
-  const state = { step: 0, final: false };
+  const state = { step: 0, final: false, lockedPrices: false };
   const startRounds = [];
 
   return Far('FakeAuctioneer', {
     reducePriceAndTrade: () => {
       state.step += 1;
     },
-    finalize: () => (state.final = true),
+    finalize: () => {
+      state.final = true;
+      state.lockedPrices = false;
+    },
     getState: () => state,
     startRound: () => {
       startRounds.push(state.step);
@@ -73,6 +76,7 @@ export const makeFakeAuctioneer = () => {
       state.final = false;
     },
     getStartRounds: () => startRounds,
+    lockPrices: () => (state.lockedPrices = true),
   });
 };
 
