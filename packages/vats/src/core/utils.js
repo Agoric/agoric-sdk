@@ -288,6 +288,9 @@ export const makeAgoricNamesAccess = async (
 
 /**
  * @param {string} address
+ *
+ * @deprecated use nameAdmin.provideChild() instead
+ * TODO: add getMyAddress to NameAdmin... or something
  */
 export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.

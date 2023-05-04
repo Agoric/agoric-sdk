@@ -1,11 +1,21 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
+import { makeNameHubKit } from './nameHub.js';
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
 
-export function buildRootObject() {
+/**
+ * @param {unknown} _vatPowers
+ * @param {unknown} _vatParameters
+ * @param {import('@agoric/vat-data').Baggage} _baggage
+ */
+export function buildRootObject(_vatPowers, _vatParameters, _baggage) {
+  // TODO: make NameHubKit durable
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+
   let bundler;
   let comms;
   let vattp;
@@ -62,5 +72,9 @@ export function buildRootObject() {
     return { ingressIndex: INDEX };
   }
 
-  return Far('root', { register, pleaseProvision });
+  return Far('root', {
+    register,
+    pleaseProvision,
+    getNamesByAddressKit: () => harden({ namesByAddress, namesByAddressAdmin }),
+  });
 }
