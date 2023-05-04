@@ -262,10 +262,15 @@ const testUnmarshaller = test.macro((t, format) => {
   const bar1CD = m.toCapData(harden({ o: bar1 }));
 
   // the default marshaller will produce Remotables with a matching
-  // iface but no methods, and t.deepEqual knows how to compare them
+  // iface, and t.deepEqual knows how to compare them
   t.deepEqual(defaultMarshaller.fromCapData(foo1CD), { o: foo });
-  t.notDeepEqual(defaultMarshaller.fromCapData(foo1CD), { o: foo1 });
   t.notDeepEqual(defaultMarshaller.fromCapData(foo1CD), { o: bar });
+
+  // t.deepEqual pays attention to presence/identity of methods,
+  // but they are always absent in deserialized values
+  t.notDeepEqual(foo, foo1);
+  t.notDeepEqual(foo1, foo2);
+  t.notDeepEqual(defaultMarshaller.fromCapData(foo1CD), { o: foo1 });
 
   // the display unserializer reports the slot values, but not ifaces
   t.deepEqual(slotStringUnserialize(foo1CD), { o: 'board1' });
