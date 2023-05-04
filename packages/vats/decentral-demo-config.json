@@ -18,11 +18,6 @@
     },
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
-      "entrypoint": "psmGovernanceBuilder",
-      "args": []
-    },
-    {
-      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
         {
