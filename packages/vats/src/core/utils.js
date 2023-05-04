@@ -1,6 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { WalletName } from '@agoric/internal';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
@@ -305,4 +306,48 @@ export const makeMyAddressNameAdminKit = address => {
   myAddressNameAdmin.reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };
+};
+
+/**
+ * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
+ * @param {unknown} criticalVatKey
+ * @param {MapStore<string, CreateVatResults>} store
+ * @param {(...args: any) => void} [log]
+ * @param {string} [label]
+ *
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ */
+export const makeVatSpace = (
+  svc,
+  criticalVatKey,
+  store,
+  log = noop,
+  label = 'namedVat',
+) => {
+  const subSpaceLog = (...args) => log(label, ...args);
+
+  const createVatByName = async bundleName => {
+    subSpaceLog(`vatSpace: createVatByName(${bundleName})`);
+
+    const vatInfo = await E(svc).createVatByName(bundleName, {
+      critical: criticalVatKey,
+      name: bundleName,
+    });
+    return vatInfo;
+  };
+
+  const { provideAsync } = makeAtomicProvider(store);
+  /** @type {NamedVatPowers['namedVat']['consume']} */
+  // @ts-expect-error cast
+  const consume = new Proxy(
+    {},
+    {
+      get: (_target, name, _rx) => {
+        assert.typeof(name, 'string');
+        return provideAsync(name, createVatByName).then(vat => vat.root);
+      },
+    },
+  );
+  return { consume };
 };
