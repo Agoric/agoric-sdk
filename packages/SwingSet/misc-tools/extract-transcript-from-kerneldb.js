@@ -18,7 +18,9 @@ if (!dirPath) {
 }
 
 if (!isSwingStore(dirPath)) {
-  throw Error(`${dirPath} does not appear to be a swingstore (no ./data.mdb)`);
+  throw Error(
+    `${dirPath} does not appear to be a swingstore (no ./swingstore.sqlite)`,
+  );
 }
 
 const {

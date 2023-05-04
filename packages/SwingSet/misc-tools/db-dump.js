@@ -17,7 +17,7 @@ Command line:
   db-dump.js STATEDIR
 
 where STATEDIR is e.g. ~/.ag-chain-cosmos/data/ag-cosmos-chain-state
-and contains data.mdb
+and contains swingstore.sqlite
 
 Dumps the entire kerneldb to stdout, in the form of JSON lines [key, value]
 `);
