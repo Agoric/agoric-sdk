@@ -111,11 +111,11 @@ export const prepareProvisionPoolKit = (
      * @param {object} opts
      * @param {Purse<'nat'>} opts.fundPurse
      * @param {Brand} opts.poolBrand
-     * @param {StorageNode} opts.storageNode
+     * @param {StorageNode} opts.metricsNode
      */
-    ({ fundPurse, poolBrand, storageNode }) => {
+    ({ fundPurse, poolBrand, metricsNode }) => {
       /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>} */
-      const metricsRecorderKit = makeRecorderKit(storageNode);
+      const metricsRecorderKit = makeRecorderKit(metricsNode);
 
       /** @type {MapStore<Brand, PsmInstance>} */
       const brandToPSM = makeScalarBigMapStore('brandToPSM', { durable: true });
@@ -328,11 +328,12 @@ export const prepareProvisionPoolKit = (
     /** @type {Purse<'nat'>} */
     // @ts-expect-error vbank purse is close enough for our use.
     const fundPurse = await E(poolBank).getPurse(poolBrand);
+    const metricsNode = await E(storageNode).makeChildNode('metrics');
 
     return makeProvisionPoolKitInternal({
       fundPurse,
       poolBrand,
-      storageNode: await storageNode,
+      metricsNode,
     });
   };
 

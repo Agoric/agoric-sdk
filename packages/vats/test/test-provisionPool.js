@@ -219,6 +219,14 @@ test('provisionPool trades provided assets for IST', async t => {
     walletsProvisioned: 0n,
   });
 
+  // storage paths
+  const publicTopics = await E(facets.publicFacet).getPublicTopics();
+  t.like(publicTopics, { metrics: { description: 'Provision Pool metrics' } });
+  t.is(
+    await publicTopics.metrics.storagePath,
+    'mockChainStorageRoot.provisionPool.metrics',
+  );
+
   t.log('introduce PSM instance to provisionPool');
   const psm = await startPSM('IST-AUSD');
   await E(E(facets.creatorFacet).getLimitedCreatorFacet()).initPSM(
