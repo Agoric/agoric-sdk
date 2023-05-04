@@ -18,7 +18,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 import { PowerFlags } from './walletFlags.js';
 
 const { details: X, quote: q, Fail } = assert;
@@ -50,7 +50,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
    *   bankManager: ERef<BankManager>,
    *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
    *   walletFactory: ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>
-   * }} io
+   * }} refs
    */
   const makeBridgeHandler = ({
     bankManager,
@@ -108,10 +108,10 @@ export const prepareProvisionPoolKit = (
         getWalletReviver: M.call().returns(
           M.remotable('ProvisionPoolKit wallet reviver'),
         ),
-        setReferences: M.call({
-          bankManager: M.any(),
-          namesByAddressAdmin: M.any(),
-          walletFactory: M.any(),
+        setReferences: M.callWhen({
+          bankManager: M.eref(M.remotable('bankManager')),
+          namesByAddressAdmin: M.eref(M.remotable('nameAdmin')),
+          walletFactory: M.eref(M.remotable('walletFactory')),
         }).returns(),
         makeBridgeHandler: M.call().returns(M.remotable('BridgeHandler')),
         initPSM: M.call(BrandShape, InstanceHandleShape).returns(),
@@ -172,18 +172,20 @@ export const prepareProvisionPoolKit = (
         },
         /**
          * @param {{
-         *   bankManager: *,
-         *   namesByAddressAdmin: *,
-         *   walletFactory: *,
-         * }} opts
+         *   bankManager: ERef<BankManager>,
+         *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
+         *   walletFactory: ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>
+         * }} erefs
          */
-        setReferences(opts) {
-          const { bankManager, namesByAddressAdmin, walletFactory } = opts;
-          Object.assign(this.state, {
+        async setReferences(erefs) {
+          const { bankManager, namesByAddressAdmin, walletFactory } = erefs;
+          const obj = harden({
             bankManager,
             namesByAddressAdmin,
             walletFactory,
           });
+          const refs = await deeplyFulfilled(obj);
+          Object.assign(this.state, refs);
         },
         makeBridgeHandler() {
           const { bankManager, namesByAddressAdmin, walletFactory } =

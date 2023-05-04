@@ -142,7 +142,7 @@ export const startWalletFactory = async (
     privateArgs: {
       storageNode: walletStorageNode,
       walletBridgeManager,
-      walletReviver: ppFacets.walletReviver,
+      walletReviver: E(ppFacets.creatorFacet).getWalletReviver(),
     },
     label: 'walletFactory',
   });
