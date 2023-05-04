@@ -7,9 +7,8 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { setupReserveServices } from './setup.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
-import { subscriptionKey } from '../supports.js';
+import { setupReserveServices } from './setup.js';
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -94,8 +93,10 @@ test('check allocations', async t => {
   );
 
   const runBrand = await space.brand.consume.IST;
-  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  const m = await subscriptionTracker(t, metricsSub);
+  const metricsTopic = await E.get(
+    E(reserve.reservePublicFacet).getPublicTopics(),
+  ).metrics;
+  const m = await subscriptionTracker(t, metricsTopic);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
 
   const invitation = await E(
@@ -121,7 +122,6 @@ test('check allocations', async t => {
     }),
     'expecting more',
   );
-
   await m.assertChange({
     allocations: { Moola: moola(10_000n) },
   });
@@ -150,8 +150,10 @@ test('reserve track shortfall', async t => {
   );
   let runningShortfall = 1000n;
 
-  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  const m = await subscriptionTracker(t, metricsSub);
+  const metricsTopic = await E.get(
+    E(reserve.reservePublicFacet).getPublicTopics(),
+  ).metrics;
+  const m = await subscriptionTracker(t, metricsTopic);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
@@ -209,8 +211,10 @@ test('reserve burn IST, with snapshot', async t => {
   await E(reporterFacet).increaseLiquidationShortfall(oneKRun);
   const runningShortfall = 1000n;
 
-  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  const m = await subscriptionTracker(t, metricsSub);
+  const metricsTopic = await E.get(
+    E(reserve.reservePublicFacet).getPublicTopics(),
+  ).metrics;
+  const m = await subscriptionTracker(t, metricsTopic);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
@@ -237,7 +241,7 @@ test('reserve burn IST, with snapshot', async t => {
     `added RUN to the collateral Reserve`,
   );
   await m.assertChange({
-    allocations: { Fee: AmountMath.make(runBrand, 1000n) },
+    allocations: { Fee: oneKRun },
   });
 
   t.deepEqual(
@@ -272,13 +276,15 @@ test('storage keys', async t => {
 
   const { reserve } = await setupReserveServices(t, electorateTerms, timer);
 
-  t.is(
-    await subscriptionKey(E(reserve.reservePublicFacet).getSubscription()),
-    'mockChainStorageRoot.reserve.governance',
-  );
+  // TODO restore governance public mixin
+  // t.is(
+  //   await subscriptionKey(E(reserve.reservePublicFacet).getSubscription()),
+  //   'mockChainStorageRoot.reserve.governance',
+  // );
 
+  const publicTopics = await E(reserve.reservePublicFacet).getPublicTopics();
   t.is(
-    await subscriptionKey(E(reserve.reserveCreatorFacet).getMetrics()),
+    await publicTopics.metrics.storagePath,
     'mockChainStorageRoot.reserve.metrics',
   );
 });

@@ -27,7 +27,6 @@ const BASIS_POINTS = 10_000n;
 /**
  * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
  * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
- * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
  * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
@@ -63,7 +62,7 @@ const BASIS_POINTS = 10_000n;
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
- *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['start']>,
+ *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['prepare']>,
  *   stakeFactoryKit: GovernanceFacetKit<import('../stakeFactory/stakeFactory.js')['start']>,
  *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['prepare']>,
  *   auctioneerKit: AuctioneerKit,

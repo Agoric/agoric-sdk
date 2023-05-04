@@ -489,6 +489,7 @@ export const prepareVaultManagerKit = (
 
         /** @type {(accounting: { overage: Amount<'nat'>, shortfall: Amount<'nat'> }) => void} */
         recordShortfallAndProceeds(accounting) {
+          trace('recordShortfallAndProceeds', accounting);
           const { state } = this;
 
           const { overage, shortfall } = accounting;
