@@ -191,29 +191,6 @@ export const startWalletFactory = async (
   ]);
 
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
-  const terms = await deeplyFulfilled(
-    harden({
-      agoricNames,
-      board,
-      assetPublisher: Far('AssetPublisher', {
-        getAssetSubscription: () => E(poolBank).getAssetSubscription(),
-      }),
-    }),
-  );
-  /** @type {WalletFactoryStartResult} */
-  const wfFacets = await E(zoe).startInstance(
-    walletFactory,
-    { Fee: feeIssuer },
-    terms,
-    {
-      storageNode: walletStorageNode,
-      walletBridgeManager,
-    },
-    'walletFactory',
-  );
-  walletFactoryStartResult.resolve(wfFacets);
-  instanceProduce.walletFactory.resolve(wfFacets.instance);
-
   const ppFacets = await startGovernedInstance(
     {
       zoe,
@@ -238,18 +215,40 @@ export const startWalletFactory = async (
       economicCommitteeCreatorFacet,
     },
   );
+  provisionPoolStartResult.resolve(ppFacets);
   instanceProduce.provisionPool.resolve(ppFacets.instance);
 
-  provisionPoolStartResult.resolve(ppFacets);
+  const terms = await deeplyFulfilled(
+    harden({
+      agoricNames,
+      board,
+      assetPublisher: Far('AssetPublisher', {
+        getAssetSubscription: () => E(poolBank).getAssetSubscription(),
+      }),
+    }),
+  );
+  /** @type {WalletFactoryStartResult} */
+  const wfFacets = await E(zoe).startInstance(
+    walletFactory,
+    { Fee: feeIssuer },
+    terms,
+    {
+      storageNode: walletStorageNode,
+      walletBridgeManager,
+    },
+    'walletFactory',
+  );
+  walletFactoryStartResult.resolve(wfFacets);
+  instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const handler = await E(ppFacets.creatorFacet).makeHandler({
+  const bridgeHandler = await E(ppFacets.creatorFacet).makeBridgeHandler({
     bankManager,
     namesByAddressAdmin,
     walletFactory: wfFacets.creatorFacet,
   });
 
   await Promise.all([
-    E(provisionWalletBridgeManager).setHandler(handler),
+    E(provisionWalletBridgeManager).setHandler(bridgeHandler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.creatorFacet,

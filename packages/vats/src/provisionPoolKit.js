@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 import { PowerFlags } from './walletFlags.js';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 /** @typedef {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/inter-protocol/src/psm/psm.js').prepare>} PsmInstance */
 
@@ -43,24 +43,23 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
    *   walletFactory: ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>
    * }} io
    */
-  const makeHandler = ({ bankManager, namesByAddressAdmin, walletFactory }) =>
+  const makeBridgeHandler = ({
+    bankManager,
+    namesByAddressAdmin,
+    walletFactory,
+  }) =>
     Far('provisioningHandler', {
       fromBridge: async obj => {
-        assert.equal(
-          obj.type,
-          'PLEASE_PROVISION',
-          X`Unrecognized request ${obj.type}`,
-        );
+        obj.type === 'PLEASE_PROVISION' ||
+          Fail`Unrecognized request ${obj.type}`;
         console.info('PLEASE_PROVISION', obj);
         const { address, powerFlags } = obj;
-        assert(
-          powerFlags.includes(PowerFlags.SMART_WALLET),
-          'missing SMART_WALLET in powerFlags',
-        );
+        powerFlags.includes(PowerFlags.SMART_WALLET) ||
+          Fail`missing SMART_WALLET in powerFlags`;
 
         const bank = E(bankManager).getBankForAddress(address);
+        // only proceed if we can provide funds
         await sendInitialPayment(bank);
-        // only proceed  if we can provide funds
 
         const [_, created] = await E(walletFactory).provideSmartWallet(
           address,
@@ -73,16 +72,17 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
         console.info(created ? 'provisioned' : 're-provisioned', address);
       },
     });
-  return makeHandler;
+  return makeBridgeHandler;
 };
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
- * makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
- * params: *,
- * poolBank: import('@endo/far').ERef<Bank>,
- * zcf: ZCF}} powers
+ *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
+ *   params: *,
+ *   poolBank: import('@endo/far').ERef<Bank>,
+ *   zcf: ZCF,
+ * }} powers
  */
 export const prepareProvisionPoolKit = (
   baggage,
@@ -95,7 +95,7 @@ export const prepareProvisionPoolKit = (
     'ProvisionPoolKit',
     {
       machine: M.interface('ProvisionPoolKit machine', {
-        makeHandler: M.call({
+        makeBridgeHandler: M.call({
           bankManager: M.any(),
           namesByAddressAdmin: M.any(),
           walletFactory: M.any(),
@@ -140,19 +140,21 @@ export const prepareProvisionPoolKit = (
          *   walletFactory: *,
          * }} opts
          */
-        makeHandler(opts) {
-          const {
-            facets: { helper },
-          } = this;
+        makeBridgeHandler(opts) {
+          const { helper } = this.facets;
+          const { bankManager, namesByAddressAdmin, walletFactory } = opts;
           // a bit obtuse but leave for backwards compatibility with tests
-          const innerMake = makeBridgeProvisionTool(
+          const innerMaker = makeBridgeProvisionTool(
             bank => helper.sendInitialPayment(bank),
             () => helper.onProvisioned(),
           );
-          return innerMake(opts);
+          return innerMaker({
+            bankManager,
+            namesByAddressAdmin,
+            walletFactory,
+          });
         },
         /**
-         *
          * @param {Brand} brand
          * @param {PsmInstance} instance
          */

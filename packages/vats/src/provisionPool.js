@@ -30,8 +30,8 @@ export const privateArgsShape = harden({
  * @param {{
  *   poolBank: import('@endo/far').ERef<import('./vat-bank.js').Bank>,
  *   initialPoserInvitation: Invitation,
- *  storageNode: StorageNode,
- *  marshaller: Marshaller
+ *   storageNode: StorageNode,
+ *   marshaller: Marshaller,
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
