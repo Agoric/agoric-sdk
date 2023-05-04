@@ -244,9 +244,10 @@ test('makeFakeStorageKit sequence data', async t => {
   );
 });
 
-const testUnmarshaller = test.macro((t, serializeBodyFormat) => {
+const testUnmarshaller = test.macro((t, format) => {
   /** @type {(val: SlottedRemotable) => string} */
   const convertValToSlot = val => val.getBoardId();
+  const serializeBodyFormat = /** @type {any} */ (format);
   const m = makeMarshal(convertValToSlot, undefined, { serializeBodyFormat });
 
   // create capdata with specific slots
