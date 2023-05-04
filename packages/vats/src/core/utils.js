@@ -259,6 +259,8 @@ export const makeWellKnownSpaces = async (
  * For static typing and integrating with the bootstrap permit system,
  * return { produce, consume } spaces rather than NameAdmins.
  *
+ * @deprecated use vat-agoricNames, makeWellKnownSpaces
+ *
  * @returns {Promise<{
  *   agoricNames: import('../types.js').NameHub,
  *   agoricNamesAdmin: import('../types.js').NameAdmin,
