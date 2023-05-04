@@ -2,6 +2,7 @@
 
 // Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/governance/src/types-ambient.js';
 
 export { AgoricWalletConnection } from './src/AgoricWalletConnection.js';
 export { makeAgoricKeplrConnection } from './src/keplr-connection/KeplrConnection.js';

@@ -59,6 +59,7 @@ const BASIS_POINTS = 10_000n;
  *   },
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
+ *   vBankKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
@@ -157,6 +158,8 @@ export const setupReserve = async ({
 
   reserveKit.resolve(
     harden({
+      instance,
+      governor: g.instance,
       publicFacet,
       creatorFacet,
       governorCreatorFacet: g.creatorFacet,
@@ -331,7 +334,8 @@ export const startVaultFactory = async (
       governorCreatorFacet,
       adminFacet,
       publicFacet,
-      // XXX safe? if this sticks add it to the type
+      governor: governorInstance,
+      instance: vaultFactoryInstance,
       privateArgs: vaultFactoryPrivateArgs,
     }),
   );
@@ -629,6 +633,8 @@ export const startAuctioneer = async (
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
+      governor: governorStartResult.instance,
+      instance: governedInstance,
     }),
   );
 
@@ -778,6 +784,8 @@ export const startStakeFactory = async (
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
+      governor: governorStartResult.instance,
+      instance: governedInstance,
     }),
   );
 

@@ -204,9 +204,44 @@
  */
 
 /**
+ * @template {GovernableStartFn} SF
+ * @typedef {{
+ *   installation: ERef<Installation<SF>>,
+ *   issuerKeywordRecord?: IssuerKeywordRecord,
+ *   governedParams: Record<string, unknown>,
+ *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers' | 'governedParams' | 'electionManager'>,
+ *   privateArgs: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'], 'initialPoserInvitation'>,
+ *   label: string,
+ *   produceResults: Pick<Producer<GovernanceFacetKit<SF>>, 'resolve'>,
+ * }} startGovernedUpgradableOpts
+ *
+ */
+/**
+ * @typedef {<SF extends GovernableStartFn>(opts: startGovernedUpgradableOpts<SF>) => Promise<GovernanceFacetKit<SF>>
+ * } startGovernedUpgradable
+ */
+
+/**
+ * @template {import('@agoric/zoe/src/zoeService/utils').ContractStartFunction} SF
+ * @typedef {{
+ *   installation: ERef<Installation<SF>>,
+ *   issuerKeywordRecord?: IssuerKeywordRecord,
+ *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers'>,
+ *   privateArgs: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
+ *   label: string,
+ *   produceResults: Pick<Producer<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>, 'resolve'>,
+ * }} startUpgradableOpts
+ */
+/**
+ * @typedef {<SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>(opts: startUpgradableOpts<SF>) => Promise<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>
+ * } startUpgradable
+ */
+
+/**
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
+ *   anchorKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: import('@agoric/vats').Board,
@@ -217,6 +252,7 @@
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: import('../types.js').BridgeHandler,
  *   feeMintAccess: FeeMintAccess,
+ *   fluxAggregatorKits: ERef<GovernanceFacetKit<GovernableStartFn>>[],
  *   highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager?,
  *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,
@@ -231,7 +267,10 @@
  *   provisioning: Awaited<ProvisioningVat> | undefined,
  *   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
+ *   scaledPriceAuthorityKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   storageBridgeManager: import('../types.js').ScopedBridgeManager?,
+ *   startUpgradable: startUpgradable,
+ *   startGovernedUpgradable: startGovernedUpgradable,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,

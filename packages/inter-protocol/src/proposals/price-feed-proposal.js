@@ -5,10 +5,9 @@ import {
   makeStorageNodeChild,
   assertPathSegment,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
 
 const trace = makeTracer('RunPriceFeed', false);
@@ -98,13 +97,14 @@ export const createPriceFeed = async (
       chainTimerService,
       client,
       econCharterKit,
-      economicCommitteeCreatorFacet,
       highPrioritySendersManager,
       namesByAddressAdmin,
       priceAuthority,
       priceAuthorityAdmin,
-      zoe,
+      startGovernedUpgradable: startGovernedUpgradableP,
+      fluxAggregatorKits,
     },
+    produce: { fluxAggregatorKits: produceFluxAggregatorKits },
   },
   {
     options: {
@@ -128,30 +128,17 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/governance/src/contractGovernor.js').start>, Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>]]}
    */
-  const [[brandIn, brandOut], [contractGovernor, priceAggregator]] =
-    await Promise.all([
-      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
-        IN_BRAND_NAME,
-        OUT_BRAND_NAME,
-      ]),
-      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
-        'contractGovernor',
-        'priceAggregator',
-      ]),
-    ]);
-
-  trace('getPoserInvitation');
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
-  const [initialPoserInvitation, electorateInvitationAmount] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-    ]);
-  trace('got initialPoserInvitation');
+  const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
+    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
+      IN_BRAND_NAME,
+      OUT_BRAND_NAME,
+    ]),
+    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
+      'priceAggregator',
+    ]),
+  ]);
 
   const unitAmountIn = await unitAmount(brandIn);
   const terms = harden({
@@ -161,75 +148,51 @@ export const createPriceFeed = async (
     brandOut,
     timer,
     unitAmountIn,
-    governedParams: {
-      [CONTRACT_ELECTORATE]: {
-        type: ParamTypes.INVITATION,
-        value: electorateInvitationAmount,
-      },
-    },
   });
   trace('got terms');
 
   const label = sanitizePathSegment(AGORIC_INSTANCE_NAME);
-  const governorTerms = await deeplyFulfilledObject(
-    harden({
-      timer: chainTimerService,
-      governedContractInstallation: priceAggregator,
-      governed: {
-        terms,
-        label,
-      },
-    }),
-  );
-  trace('got governorTerms', governorTerms);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
-  trace('got contractGovernor', contractGovernor);
-
   trace('awaiting startInstance');
   // Create the price feed.
-  const aggregatorGovernor = await E(zoe).startInstance(
-    contractGovernor,
-    undefined,
-    governorTerms,
-    {
-      governed: {
-        highPrioritySendersManager,
-        initialPoserInvitation,
-        marshaller,
-        namesByAddressAdmin,
-        storageNode: await E(storageNode).makeChildNode(label),
-      },
+  const startGovernedUpgradable = await startGovernedUpgradableP;
+  produceFluxAggregatorKits.resolve([]);
+  const faKit = await startGovernedUpgradable({
+    governedParams: {},
+    privateArgs: {
+      highPrioritySendersManager,
+      marshaller,
+      namesByAddressAdmin,
+      storageNode: await E(storageNode).makeChildNode(label),
     },
+    terms,
     label,
-  );
-  const faCreatorFacet = await E(
-    aggregatorGovernor.creatorFacet,
-  ).getCreatorFacet();
-  trace('got aggregator', faCreatorFacet);
-
-  const faPublic = await E(aggregatorGovernor.creatorFacet).getPublicFacet();
-  const faInstance = await E(aggregatorGovernor.creatorFacet).getInstance();
-  trace('got', { faInstance, faPublic });
+    installation: priceAggregator,
+    produceResults: {
+      resolve: kit =>
+        Promise.resolve(fluxAggregatorKits).then(kits => kits.push(kit)),
+    },
+  });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
     AGORIC_INSTANCE_NAME,
-    faInstance,
+    faKit.instance,
   );
 
   E(E.get(econCharterKit).creatorFacet).addInstance(
-    faInstance,
-    aggregatorGovernor.creatorFacet,
+    faKit.instance,
+    faKit.governorCreatorFacet,
     AGORIC_INSTANCE_NAME,
   );
-  trace('registered', AGORIC_INSTANCE_NAME, faInstance);
+  trace('registered', AGORIC_INSTANCE_NAME, faKit.instance);
 
   // Publish price feed in home.priceAuthority.
   const forceReplace = true;
   void E(priceAuthorityAdmin).registerPriceAuthority(
-    E(faPublic).getPriceAuthority(),
+    E(faKit.publicFacet).getPriceAuthority(),
     brandIn,
     brandOut,
     forceReplace,
@@ -241,7 +204,7 @@ export const createPriceFeed = async (
    * @param {string} addr
    */
   const addOracle = async addr => {
-    const invitation = await E(faCreatorFacet).makeOracleInvitation(addr);
+    const invitation = await E(faKit.creatorFacet).makeOracleInvitation(addr);
     await reserveThenDeposit(
       `${AGORIC_INSTANCE_NAME} member ${addr}`,
       namesByAddressAdmin,
@@ -282,7 +245,11 @@ export const getManifestForPriceFeed = async (
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
-        zoe: t,
+        startGovernedUpgradable: t,
+        fluxAggregatorKits: t,
+      },
+      produce: {
+        fluxAggregatorKits: t,
       },
     },
     [ensureOracleBrands.name]: {
