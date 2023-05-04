@@ -8,6 +8,7 @@ import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { bundles, devices } from '../test/devices.js';
 
+import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import { buildRootObject as ibcRoot } from '../src/vat-ibc.js';
@@ -18,6 +19,7 @@ import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js'
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 
 export const vatRoots = {
+  agoricNames: agoricNamesRoot,
   bank: bankRoot,
   board: boardRoot,
   ibc: ibcRoot,

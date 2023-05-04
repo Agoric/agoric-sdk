@@ -419,7 +419,30 @@ export const produceHighPrioritySendersManager = async ({
   managerP.resolve(manager);
 };
 
+/** @param {BootstrapPowers & NamedVatPowers} powers */
+export const reflectAgoricNamesToChainStorage = async ({
+  consume: { board, chainStorage: rootP },
+  namedVat: {
+    consume: { agoricNames },
+  },
+}) => {
+  const root = await rootP;
+  if (!root) {
+    console.warn('cannot publish agoricNames without chainStorage');
+    return;
+  }
+  const nameStorage = E(root).makeChildNode('agoricNames');
+  const marshaller = E(board).getPublishingMarshaller();
+  await E(agoricNames).publishNameHubs(
+    nameStorage,
+    marshaller,
+    keys(agoricNamesReserved),
+  );
+};
+
 /**
+ * @deprecated use reflectAgoricNamesToChainStorage
+ *
  * @param {BootstrapPowers} powers
  * @param {{ options?: {agoricNamesOptions?: {
  *   topLevel?: string[]
@@ -511,11 +534,10 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
       highPrioritySendersManager: 'bridge',
     },
   },
-  [publishAgoricNames.name]: {
-    consume: {
-      agoricNamesAdmin: true,
-      board: 'board',
-      chainStorage: 'bridge',
+  [reflectAgoricNamesToChainStorage.name]: {
+    consume: { board: 'board', chainStorage: 'chainStorage' },
+    namedVat: {
+      consume: { agoricNames: 'agoricNames' },
     },
   },
   [makeProvisioner.name]: {

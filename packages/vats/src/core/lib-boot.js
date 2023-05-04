@@ -1,7 +1,11 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import { makeAgoricNamesAccess, runModuleBehaviors } from './utils.js';
+import {
+  makeVatSpace,
+  makeWellKnownSpaces,
+  runModuleBehaviors,
+} from './utils.js';
 import { makePromiseSpace } from './promise-space.js';
 
 const { Fail, quote: q } = assert;
@@ -45,7 +49,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {Record<string, BootBehavior>} behaviors
  * @param {BootModules} modules
  */
-export const makeBootstrap = async (
+export const makeBootstrap = (
   vatPowers,
   vatParameters,
   bootManifest,
@@ -58,11 +62,6 @@ export const makeBootstrap = async (
 
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = await makeAgoricNamesAccess(
-    log,
-  );
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   /**
    * Bootstrap vats and devices.
@@ -79,6 +78,19 @@ export const makeBootstrap = async (
     await (devices.mailbox &&
       (D(devices.mailbox).registerInboundHandler(vats.vattp),
       E(vats.vattp).registerMailboxDevice(devices.mailbox)));
+
+    const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+    const store = zone.mapStore('vatInfo by name');
+    const namedVat = makeVatSpace(svc, criticalVatKey, store, console.info);
+
+    const namesVat = namedVat.consume.agoricNames;
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
+      namesVat,
+    ).getNameHubKit();
+    const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
+    produce.agoricNames.resolve(agoricNames);
+    produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
@@ -101,6 +113,7 @@ export const makeBootstrap = async (
       devices,
       produce,
       consume,
+      namedVat,
       ...spaces,
       runBehaviors,
       // These module namespaces might be useful for core eval governance.

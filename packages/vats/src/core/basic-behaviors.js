@@ -61,6 +61,7 @@ export const makeVatsFromBundles = async ({
   devices,
   produce: { vatAdminSvc, loadVat, loadCriticalVat, vatStore },
 }) => {
+  // TODO: ok to call this more than once?
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
 
