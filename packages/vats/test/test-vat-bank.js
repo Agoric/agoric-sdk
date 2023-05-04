@@ -4,11 +4,12 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E, Far } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { heapZone } from '@agoric/zone/heap.js';
 import { buildRootObject } from '../src/vat-bank.js';
 
 test('communication', async t => {
   t.plan(29);
-  const bankVat = E(buildRootObject)();
+  const bankVat = E(buildRootObject)(null, null, heapZone.mapStore('baggage'));
 
   /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
   let bankHandler;

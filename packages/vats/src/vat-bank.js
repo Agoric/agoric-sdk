@@ -4,14 +4,14 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeScalarMapStore, makeScalarWeakMapStore } from '@agoric/store';
-import { whileTrue } from '@agoric/internal';
-import { makeVirtualPurse } from './virtual-purse.js';
+import { prepareVirtualPurse } from './virtual-purse.js';
 
 import '@agoric/notifier/exported.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
- * @typedef {ReturnType<typeof makeVirtualPurse>} VirtualPurse
+ * @typedef {ReturnType<ReturnType<typeof prepareVirtualPurse>>} VirtualPurse
  */
 
 /**
@@ -37,18 +37,10 @@ const makePurseController = (
   balanceNotifier,
   updateBalances,
 ) => {
-  return harden({
-    async *getBalances(b) {
+  return Far('BankPurseController', {
+    getBalances(b) {
       assert.equal(b, brand);
-      let updateRecord = await balanceNotifier.getUpdateSince();
-      for await (const _ of whileTrue(() => updateRecord.updateCount)) {
-        yield updateRecord.value;
-        // eslint-disable-next-line no-await-in-loop
-        updateRecord = await balanceNotifier.getUpdateSince(
-          updateRecord.updateCount,
-        );
-      }
-      return updateRecord.value;
+      return balanceNotifier;
     },
     async pushAmount(amt) {
       const value = AmountMath.getValue(brand, amt);
@@ -109,7 +101,10 @@ const makePurseController = (
  * (keyed by address and brand) or create a new one.
  */
 
-export function buildRootObject() {
+export function buildRootObject(_vatPowers, _args, baggage) {
+  const bankZone = makeDurableZone(baggage);
+  const makeVirtualPurse = prepareVirtualPurse(bankZone);
+
   return Far('bankMaker', {
     /**
      * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP] a bridge
@@ -290,10 +285,10 @@ export function buildRootObject() {
           }
 
           /** @type {VirtualPurseController} */
-          const feeVpc = harden({
-            async *getBalances(_brand) {
+          const feeVpc = Far('RewardDistributorBankPurseController', {
+            getBalances(_brand) {
               // Never resolve!
-              yield new Promise(_ => {});
+              return makeNotifierKit().notifier;
             },
             async pullAmount(_amount) {
               throw Error(`Cannot pull from reward distributor`);
