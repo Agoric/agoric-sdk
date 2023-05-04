@@ -13,7 +13,7 @@ import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
 import { defaultRegistryTypes } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 import { Decimal } from '@cosmjs/math';
-import { Bech32 } from '@cosmjs/encoding';
+import { fromBech32 } from '@cosmjs/encoding';
 
 import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
 
@@ -269,7 +269,7 @@ export const makeCosmosBundlePublisher = ({
 
     const installBundleMsg = {
       bundle: JSON.stringify(bundle),
-      submitter: Bech32.decode(from.address).data,
+      submitter: fromBech32(from.address).data,
     };
 
     /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
