@@ -23,9 +23,9 @@ set -x
 # Accept invitation to admin an oracle
 ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
-jq ".body | fromjson" <"$ORACLE_OFFER"
+agoric wallet print --file "$ORACLE_OFFER"
 agoric wallet send --offer "$ORACLE_OFFER" --from gov1 --keyring-backend="test"
-ORACLE_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
+ORACLE_OFFER_ID=$(agoric wallet extract-id --offer "$ORACLE_OFFER")
 
 # verify the offerId is readable from chain history
 agoric wallet show --from gov1 --keyring-backend="test"
@@ -33,22 +33,22 @@ agoric wallet show --from gov1 --keyring-backend="test"
 # repeat for oracle2
 ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
-jq ".body | fromjson" <"$ORACLE_OFFER"
+agoric wallet print --file "$ORACLE_OFFER"
 agoric wallet send --offer "$ORACLE_OFFER" --from gov2 --keyring-backend="test"
-ORACLE2_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
+ORACLE2_OFFER_ID=$(agoric wallet extract-id --offer "$ORACLE_OFFER")
 
 ### Now we have the continuing invitationMakers saved in the wallets
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle pushPriceRound --price 0.101 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
-jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # submit another price in the round from the second oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle pushPriceRound --price 0.201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
-jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov2 --keyring-backend="test"
 
 ## Additional validation
