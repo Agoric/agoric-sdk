@@ -91,6 +91,9 @@ test('communication', async t => {
       }
       return ret;
     },
+    initHandler(newHandler) {
+      bankHandler = newHandler;
+    },
     setHandler(newHandler) {
       bankHandler = newHandler;
     },

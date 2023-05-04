@@ -14,9 +14,8 @@ export const BridgeHandlerI = M.interface('BridgeHandler', {
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
   fromBridge: M.call(M.any()).returns(M.promise()),
   toBridge: M.call(M.any()).returns(M.promise()),
-  setHandler: M.call(M.remotable('BridgeHandler'))
-    .optional(M.remotable('BridgeHandler'))
-    .returns(),
+  initHandler: M.call(M.remotable('BridgeHandler')).returns(),
+  setHandler: M.call(M.remotable('BridgeHandler')).returns(),
 });
 
 export const BridgeManagerI = M.interface('BridgeManager', {
@@ -63,15 +62,22 @@ const prepareScopedManager = zone => {
         assert(inboundHandler, X`No inbound handler for ${bridgeId}`);
         return E(inboundHandler).fromBridge(obj);
       },
-      setHandler(newHandler, oldHandler) {
-        // setHandler could probably be on a separate facet to separate it
-        // from the toBridge and fromBridge powers, but it's easier to
-        // implement an already set check for the handler and pass a single
-        // object around.
-        // We do allow explicitly replacing the handler by requiring the old
-        // handler to also be provided.
-        this.state.inboundHandler === oldHandler ||
-          Fail`Bridge handler already set for ${this.state.bridgeId}`;
+      // initHandler and setHandler could probably be on a separate facet to
+      // separate it from the toBridge and fromBridge powers, but in most cases
+      // the holder will also be the implementer of the handler. If needed,
+      // the holder can always attenuate the object.
+      // We implement separate init and set methods to require the holder to be
+      // explicit about intent.
+      initHandler(newHandler) {
+        newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
+        !this.state.inboundHandler ||
+          Fail`Bridge handler already initialized for ${this.state.bridgeId}`;
+        this.state.inboundHandler = newHandler;
+      },
+      setHandler(newHandler) {
+        newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
+        this.state.inboundHandler ||
+          Fail`Bridge handler not yet initialized for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
     },

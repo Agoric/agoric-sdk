@@ -156,7 +156,7 @@ export const startWalletFactory = async (
   });
 
   await Promise.all([
-    E(provisionWalletBridgeManager).setHandler(handler),
+    E(provisionWalletBridgeManager).initHandler(handler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.governorCreatorFacet,
