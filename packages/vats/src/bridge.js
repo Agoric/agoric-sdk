@@ -14,7 +14,9 @@ export const BridgeHandlerI = M.interface('BridgeHandler', {
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
   fromBridge: M.call(M.any()).returns(M.promise()),
   toBridge: M.call(M.any()).returns(M.promise()),
-  setHandler: M.call(M.remotable('BridgeHandler')).returns(),
+  setHandler: M.call(M.remotable('BridgeHandler'))
+    .optional(M.remotable('BridgeHandler'))
+    .returns(),
 });
 
 export const BridgeManagerI = M.interface('BridgeManager', {
@@ -61,12 +63,14 @@ const prepareScopedManager = zone => {
         assert(inboundHandler, X`No inbound handler for ${bridgeId}`);
         return E(inboundHandler).fromBridge(obj);
       },
-      setHandler(newHandler) {
+      setHandler(newHandler, oldHandler) {
         // setHandler could probably be on a separate facet to separate it
         // from the toBridge and fromBridge powers, but it's easier to
-        // implement a set once check for the handler and pass a single
+        // implement an already set check for the handler and pass a single
         // object around.
-        !this.state.inboundHandler ||
+        // We do allow explicitly replacing the handler by requiring the old
+        // handler to also be provided.
+        this.state.inboundHandler === oldHandler ||
           Fail`Bridge handler already set for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
