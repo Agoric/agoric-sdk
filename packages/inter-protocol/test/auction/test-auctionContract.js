@@ -325,7 +325,16 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
         subscriptionTracker(t, subscribeEach(subscription)),
       );
     },
-    getBookDataTracker,
+    getBookDataTracker(brand) {
+      return E.when(E(publicFacet).getBookDataUpdates(brand), subscription =>
+        subscriptionTracker(t, subscribeEach(subscription)),
+      );
+    },
+    getBidTracker(brand) {
+      return E.when(E(publicFacet).getBidDataUpdates(brand), subscription =>
+        subscriptionTracker(t, subscribeEach(subscription)),
+      );
+    },
     getReserveBalance(keyword) {
       const reserveCF = E.get(reserveKit).creatorFacet;
       return E.get(E(reserveCF).getAllocations())[keyword];
@@ -1187,6 +1196,10 @@ test.serial('multiple collaterals', async t => {
     asset,
     asset.make(500n),
   );
+  const collatBidTracker = await driver.getBidTracker(collateral.brand);
+  await collatBidTracker.assertInitial({ pricedBids: [], scaledBids: [] });
+  const assetBidTracker = await driver.getBidTracker(asset.brand);
+  await assetBidTracker.assertInitial({ pricedBids: [], scaledBids: [] });
 
   t.is(await E(collatLiqSeat).getOfferResult(), 'deposited');
   t.is(await E(assetLiqSeat).getOfferResult(), 'deposited');
@@ -1199,36 +1212,76 @@ test.serial('multiple collaterals', async t => {
   );
 
   // offers 290 for up to 300 at 1.1 * .875, so will trigger at the first discount
+  const price = makeRatioFromAmounts(bid.make(950n), collateral.make(1000n));
   const bidderSeat1C = await driver.bidForCollateralSeat(
     bid.make(265n),
     collateral.make(300n),
-    makeRatioFromAmounts(bid.make(950n), collateral.make(1000n)),
+    price,
   );
   t.is(await E(bidderSeat1C).getOfferResult(), 'Your bid has been accepted');
+  collatBidTracker.assertChange({
+    pricedBids: {
+      0: {
+        exitAfterBuy: false,
+        wanted: collateral.make(300n),
+        price,
+      },
+    },
+  });
 
   // offers up to 500 for 2000 at 1.1 * 75%, so will trigger at second discount step
+  const scale2C = makeRatioFromAmounts(bid.make(75n), bid.make(100n));
   const bidderSeat2C = await driver.bidForCollateralSeat(
     bid.make(500n),
     collateral.make(2000n),
-    makeRatioFromAmounts(bid.make(75n), bid.make(100n)),
+    scale2C,
   );
   t.is(await E(bidderSeat2C).getOfferResult(), 'Your bid has been accepted');
+  collatBidTracker.assertChange({
+    scaledBids: {
+      0: {
+        exitAfterBuy: false,
+        wanted: collateral.make(2000n),
+        bidScaling: scale2C,
+      },
+    },
+  });
 
   // offers 50 for 200 at .25 * 50% discount, so triggered at third step
+  const scale1A = makeRatioFromAmounts(bid.make(50n), bid.make(100n));
   const bidderSeat1A = await driver.bidForCollateralSeat(
     bid.make(23n),
     asset.make(200n),
-    makeRatioFromAmounts(bid.make(50n), bid.make(100n)),
+    scale1A,
   );
   t.is(await E(bidderSeat1A).getOfferResult(), 'Your bid has been accepted');
+  assetBidTracker.assertChange({
+    scaledBids: {
+      0: {
+        exitAfterBuy: false,
+        wanted: asset.make(200n),
+        bidScaling: scale1A,
+      },
+    },
+  });
 
   // offers 100 for 300 at .25 * 33%, so triggered at fourth step
+  const price2A = makeRatioFromAmounts(bid.make(100n), asset.make(1000n));
   const bidderSeat2A = await driver.bidForCollateralSeat(
     bid.make(19n),
     asset.make(300n),
-    makeRatioFromAmounts(bid.make(100n), asset.make(1000n)),
+    price2A,
   );
   t.is(await E(bidderSeat2A).getOfferResult(), 'Your bid has been accepted');
+  assetBidTracker.assertChange({
+    pricedBids: {
+      0: {
+        exitAfterBuy: false,
+        wanted: asset.make(300n),
+        price: price2A,
+      },
+    },
+  });
 
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
@@ -1236,6 +1289,8 @@ test.serial('multiple collaterals', async t => {
   await driver.advanceTo(150n);
   await driver.advanceTo(170n, 'wait');
   await driver.advanceTo(175n);
+  assetBidTracker.assertChange({});
+  collatBidTracker.assertChange({});
 
   t.true(await E(bidderSeat1C).hasExited());
 

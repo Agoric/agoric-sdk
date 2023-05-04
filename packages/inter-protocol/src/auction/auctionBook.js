@@ -108,6 +108,29 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  */
 
 /**
+ * @typedef {object} ScaledBidData
+ *
+ * @property {Ratio} bidScaling
+ * @property {Amount<'nat'>} wanted
+ * @property {Boolean} exitAfterBuy
+ */
+
+/**
+ * @typedef {object} PricedBidData
+ *
+ * @property {Ratio} price
+ * @property {Amount<'nat'>} wanted
+ * @property {Boolean} exitAfterBuy
+ */
+
+/**
+ * @typedef {object} BidDataNotification
+ *
+ * @property {Array<ScaledBidData>} scaledBids
+ * @property {Array<PricedBidData>} pricedBids
+ */
+
+/**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
@@ -126,6 +149,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     priceAuthority: M.any(),
     updatingOracleQuote: M.any(),
     bookDataKit: M.any(),
+    bidDataKit: M.any(),
     priceBook: M.any(),
     scaledBidBook: M.any(),
     startCollateral: M.any(),
@@ -143,9 +167,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      * @param {Brand<'nat'>} bidBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {StorageNode} node
+     * @param {Array<StorageNode>} nodes
      */
-    (bidBrand, collateralBrand, pAuthority, node) => {
+    (bidBrand, collateralBrand, pAuthority, nodes) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
       const zeroBid = makeEmpty(bidBrand);
       const zeroRatio = makeRatioFromAmounts(
@@ -172,9 +196,16 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         collateralBrand,
       );
 
+      const [scheduleNode, bidsNode] = nodes;
       const bookDataKit = makeRecorderKit(
-        node,
+        scheduleNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
+          M.any()
+        ),
+      );
+      const bidDataKit = makeRecorderKit(
+        bidsNode,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */ (
           M.any()
         ),
       );
@@ -191,6 +222,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         updatingOracleQuote: zeroRatio,
 
         bookDataKit,
+        bidDataKit,
 
         priceBook,
         scaledBidBook,
@@ -390,6 +422,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           } else {
             trace('added Offer ', price, stillWant.value);
             priceBook.add(seat, price, stillWant, exitAfterBuy);
+            helper.publishBidData();
           }
 
           void helper.publishBookData();
@@ -444,9 +477,19 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             seat.exit();
           } else {
             scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
+            helper.publishBidData();
           }
 
           void helper.publishBookData();
+        },
+        publishBidData() {
+          const { state } = this;
+          // XXX should this be compressed somewhat? lots of redundant brands.
+          state.bidDataKit.recorder.write({
+            scaledBids: state.scaledBidBook.publishOffers(),
+            // @ts-expect-error how to convince TS these ratios are non-null?
+            pricedBids: state.priceBook.publishOffers(),
+          });
         },
         publishBookData() {
           const { state } = this;
@@ -615,6 +658,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           }
 
           void facets.helper.publishBookData();
+          void facets.helper.publishBidData();
         },
         getCurrentPrice() {
           return this.state.curAuctionPrice;
@@ -712,12 +756,16 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         getDataUpdates() {
           return this.state.bookDataKit.subscriber;
         },
+        getBidDataUpdates() {
+          return this.state.bidDataKit.subscriber;
+        },
         getPublicTopics() {
           return {
             bookData: makeRecorderTopic(
               'Auction schedule',
               this.state.bookDataKit,
             ),
+            bids: makeRecorderTopic('Auction Bids', this.state.bidDataKit),
           };
         },
       },
@@ -757,6 +805,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           },
         );
         void facets.helper.publishBookData();
+        void facets.helper.publishBidData();
       },
       stateShape: AuctionBookStateShape,
     },

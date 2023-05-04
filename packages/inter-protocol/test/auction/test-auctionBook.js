@@ -14,9 +14,11 @@ import { makeOffer } from '@agoric/zoe/test/unitTests/makeOffer.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import { makeMockChainStorageRoot } from '../supports.js';
+import { subscribeEach } from '@agoric/notifier';
 
+import { makeMockChainStorageRoot } from '../supports.js';
 import { prepareAuctionBook } from '../../src/auction/auctionBook.js';
+import { subscriptionTracker } from '../metrics.js';
 
 const buildManualPriceAuthority = initialPrice =>
   makeManualPriceAuthority({
@@ -69,12 +71,10 @@ const assembleAuctionBook = async basics => {
   const makeAuctionBook = prepareAuctionBook(baggage, zcf, makeRecorderKit);
   const mockChainStorage = makeMockChainStorageRoot();
 
-  const book = await makeAuctionBook(
-    moolaKit.brand,
-    simoleanKit.brand,
-    pa,
-    mockChainStorage.makeChildNode('thisBook'),
-  );
+  const book = await makeAuctionBook(moolaKit.brand, simoleanKit.brand, pa, [
+    mockChainStorage.makeChildNode('schedule'),
+    mockChainStorage.makeChildNode('bids'),
+  ]);
   return { pa, book };
 };
 
@@ -126,15 +126,24 @@ test('simple addOffer', async t => {
   );
   const { pa, book } = await assembleAuctionBook(basics);
   pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
+  const bidTracker = await subscriptionTracker(
+    t,
+    subscribeEach(book.getBidDataUpdates()),
+  );
+  await bidTracker.assertInitial({
+    pricedBids: [],
+    scaledBids: [],
+  });
   await eventLoopIteration();
 
   book.addAssets(AmountMath.make(simoleanKit.brand, 123n), donorSeat);
   book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
 
+  const tenFor100 = makeRatioFromAmounts(moola(10n), simoleans(100n));
   book.addOffer(
     harden({
-      offerPrice: makeRatioFromAmounts(moola(10n), simoleans(100n)),
+      offerPrice: tenFor100,
       maxBuy: simoleans(50n),
     }),
     zcfSeat,
@@ -143,6 +152,15 @@ test('simple addOffer', async t => {
 
   t.true(book.hasOrders());
   book.exitAllSeats();
+  await bidTracker.assertChange({
+    pricedBids: {
+      0: {
+        price: tenFor100,
+        exitAfterBuy: false,
+        wanted: simoleans(50n),
+      },
+    },
+  });
 
   t.false(book.hasOrders());
 });
@@ -151,6 +169,14 @@ test('getOffers to a price limit', async t => {
   const basics = await setupBasics();
   const { moolaKit, moola, simoleanKit, simoleans, zcf, zoe } = basics;
   const { pa, book } = await assembleAuctionBook(basics);
+  const bidTracker = await subscriptionTracker(
+    t,
+    subscribeEach(book.getBidDataUpdates()),
+  );
+  await bidTracker.assertInitial({
+    pricedBids: [],
+    scaledBids: [],
+  });
 
   const donorSeat = await makeSeatWithAssets(
     zoe,
@@ -174,9 +200,10 @@ test('getOffers to a price limit', async t => {
   book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
 
+  const tenPercent = makeRatioFromAmounts(moola(10n), moola(100n));
   book.addOffer(
     harden({
-      offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
+      offerBidScaling: tenPercent,
       maxBuy: simoleans(50n),
     }),
     zcfSeat,
@@ -184,6 +211,15 @@ test('getOffers to a price limit', async t => {
   );
 
   t.true(book.hasOrders());
+  await bidTracker.assertChange({
+    scaledBids: {
+      0: {
+        bidScaling: tenPercent,
+        exitAfterBuy: false,
+        wanted: simoleans(50n),
+      },
+    },
+  });
   book.exitAllSeats();
 
   t.false(book.hasOrders());
@@ -250,6 +286,14 @@ test('getOffers w/discount', async t => {
 
   book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
+  const bidTracker = await subscriptionTracker(
+    t,
+    subscribeEach(book.getBidDataUpdates()),
+  );
+  await bidTracker.assertInitial({
+    pricedBids: [],
+    scaledBids: [],
+  });
 
   const zcfSeat = await makeSeatWithAssets(
     zoe,
@@ -259,14 +303,24 @@ test('getOffers w/discount', async t => {
     moolaKit,
   );
 
+  const tenPercent = makeRatioFromAmounts(moola(10n), moola(100n));
   book.addOffer(
     harden({
-      offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
+      offerBidScaling: tenPercent,
       maxBuy: simoleans(50n),
     }),
     zcfSeat,
     true,
   );
 
+  await bidTracker.assertChange({
+    scaledBids: {
+      0: {
+        bidScaling: tenPercent,
+        exitAfterBuy: false,
+        wanted: simoleans(50n),
+      },
+    },
+  });
   t.true(book.hasOrders());
 });
