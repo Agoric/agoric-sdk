@@ -62,7 +62,7 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
   const unpublished = Far('unpublished', {});
 
   const published1id = board.getId(published);
-  const ser = marshaller.serialize(
+  const ser = marshaller.toCapData(
     harden({
       published1: published,
       unpublished1: unpublished,
@@ -87,7 +87,7 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
   }
 
   const { published1, unpublished1, published2, unpublished2 } =
-    marshaller.unserialize(ser);
+    marshaller.fromCapData(ser);
   t.is(published1, published);
   t.is(published2, published);
   t.is(published1.toString(), '[object Alleged: published]');
@@ -105,8 +105,8 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
     t.is(unpublished2.toString(), '[object Alleged: SEVERED: unpublished]');
 
     // Separate marshals do not compare.
-    const unpublished3 = marshaller.unserialize(
-      marshaller.serialize(unpublished),
+    const unpublished3 = marshaller.fromCapData(
+      marshaller.toCapData(unpublished),
     );
     t.not(unpublished3, unpublished);
     t.not(unpublished3, unpublished1);

@@ -37,7 +37,7 @@ export const getLastUpdate = (addr, { readLatestHead }) => {
  * @param {Pick<import('stream').Writable,'write'>} [stdout]
  */
 export const outputAction = (bridgeAction, stdout = process.stdout) => {
-  const capData = marshaller.serialize(harden(bridgeAction));
+  const capData = marshaller.toCapData(harden(bridgeAction));
   stdout.write(JSON.stringify(capData));
   stdout.write('\n');
 };
@@ -106,7 +106,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  * }} opts
  */
 export const sendAction = async (bridgeAction, opts) => {
-  const offerBody = JSON.stringify(marshaller.serialize(bridgeAction));
+  const offerBody = JSON.stringify(marshaller.toCapData(bridgeAction));
 
   // tryExit should not require --allow-spend
   // https://github.com/Agoric/agoric-sdk/issues/7291
@@ -185,7 +185,7 @@ export const makeWalletUtils = async (
     // update with oldest first
     for (const txt of history.reverse()) {
       const { body, slots } = JSON.parse(txt);
-      const record = m.unserialize({ body, slots });
+      const record = m.fromCapData({ body, slots });
       coalescer.update(record);
     }
     const coalesced = coalescer.state;

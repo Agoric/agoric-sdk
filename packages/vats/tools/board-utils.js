@@ -57,7 +57,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   // this produces Remotables that can roundtrip through a
   // boardValToSlot-using marshaller
 
-  const { unserialize } = makeMarshal(undefined, slotToBoardRemote);
+  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const reverse = {};
   // TODO support vbankAsset which must recur
   const entries = ['brand', 'instance'].map(kind => {
@@ -68,7 +68,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
     /** @type {import("@endo/marshal").CapData<string>} */
     const latestCapData = JSON.parse(values.at(-1));
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
-    const parts = unserialize(latestCapData);
+    const parts = fromCapData(latestCapData);
     for (const [name, remote] of parts) {
       reverse[remote.getBoardId()] = name;
     }

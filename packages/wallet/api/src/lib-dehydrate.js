@@ -333,7 +333,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     return petnameToVal.get(petname);
   };
 
-  const { serialize: dehydrate, unserialize: hydrate } = makeMarshal(
+  const { toCapData: dehydrate, fromCapData: hydrate } = makeMarshal(
     convertValToName,
     convertNameToVal,
     {

@@ -7,12 +7,13 @@ import { bindAllMethods } from './method-tools.js';
 const { Fail, quote: q } = assert;
 
 /**
- * A convertSlotToVal function that produces basic Remotables
+ * A convertSlotToVal function that produces basic Remotables. Assumes
+ * that all slots are Remotables (i.e. none are Promises).
  *
  * @param {string} _slotId
  * @param {string} iface
  */
-export const slotToRemotable = (_slotId, iface = 'Alleged: Remotable') =>
+export const slotToRemotable = (_slotId, iface = 'Remotable') =>
   Remotable(iface);
 
 /**
@@ -31,8 +32,13 @@ export const defaultMarshaller = makeMarshal(undefined, slotToRemotable, {
  *
  * This may be useful for display purposes.
  *
- * One limitation: serialized data that contains a particular unusual
- * string will be unserialized into a BigInt.
+ * Limitations:
+ *  * it cannot handle Symbols (registered or well-known)
+ *  * it can handle BigInts, but serialized data that contains a
+ *     particular unusual string will be unserialized into a BigInt by
+ *     mistake
+ *  * it cannot handle Promises, NaN, +/- Infinity, undefined, or
+ *    other non-JSONable JavaScript values
  */
 const makeSlotStringUnserialize = () => {
   /** @type { (slot: string, iface: string) => any } */
@@ -133,7 +139,10 @@ export const makeMockChainStorageRoot = () => {
   return Far('mockChainStorage', {
     ...bindAllMethods(rootNode),
     /**
-     * Defaults to deserializing pass-by-presence objects into Remotable objects.
+     * Defaults to deserializing slot references into plain Remotable
+     * objects, but if supplied with a different marshaller, it could
+     * produce Remotables with e.g. the slog string embedded in the
+     * iface.
      *
      * @param {string} path
      * @param {import('./lib-chainStorage.js').Marshaller} marshaller
@@ -148,7 +157,7 @@ export const makeMockChainStorageRoot = () => {
       }
       assert.typeof(dataStr, 'string');
       const datum = JSON.parse(dataStr);
-      return marshaller.unserialize(datum);
+      return marshaller.fromCapData(datum);
     },
     keys: () => [...data.keys()],
   });
