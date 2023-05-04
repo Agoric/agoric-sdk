@@ -70,8 +70,8 @@ const BASIS_POINTS = 10_000n;
  * }>} EconomyBootstrapSpace
  */
 
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter').start>} EconCharterStartResult */
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee').start>} CommitteeStartResult */
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter')['prepare']>} EconCharterStartResult */
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee.js')['prepare']>} CommitteeStartResult */
 
 /**
  * @file A collection of productions, each of which declares inputs and outputs.

@@ -62,6 +62,7 @@ export const setupPsmBootstrap = async (
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(wrappedZoe);
+  /** @type {Promise<ZoeService>} */
   const zoe = space.consume.zoe;
   produce.feeMintAccess.resolve(feeMintAccessP);
 

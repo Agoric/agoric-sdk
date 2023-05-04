@@ -114,7 +114,7 @@ const startGovernedInstance = async (
  * @param {BootstrapPowers & PromiseSpaceOf<{
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
  *   econCharterKit: {
- *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>['creatorFacet'],
+ *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']>>['creatorFacet'],
  *     adminFacet: AdminFacet,
  *   } ,
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager;
