@@ -519,7 +519,7 @@ export const startAuctioneer = async (
       },
     },
     issuer: {
-      consume: { [Stable.symbol]: runIssuerP },
+      consume: { [Stable.symbol]: stableIssuerP },
     },
   },
   {
@@ -539,11 +539,11 @@ export const startAuctioneer = async (
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
 
-  const [initialPoserInvitation, electorateInvitationAmount, runIssuer] =
+  const [initialPoserInvitation, electorateInvitationAmount, stableIssuer] =
     await Promise.all([
       poserInvitationP,
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-      runIssuerP,
+      stableIssuerP,
     ]);
 
   const timerBrand = await E(chainTimerService).getTimerBrand();
@@ -571,7 +571,7 @@ export const startAuctioneer = async (
       governedContractInstallation: auctionInstallation,
       governed: {
         terms: auctionTerms,
-        issuerKeywordRecord: { Bid: runIssuer },
+        issuerKeywordRecord: { Bid: stableIssuer },
         storageNode,
         marshaller,
         label: 'auctioneer',

@@ -256,10 +256,10 @@ export const connectFaucet = async ({
     feeMintAccess,
     zoe,
   });
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const stableBrand = await E(runIssuer).getBrand();
-  const runIssuerKit = {
-    issuer: runIssuer,
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
+  const stableIssuerKit = {
+    issuer: stableIssuer,
     brand: stableBrand,
     mint: {
       mintPayment: async amount => {
@@ -267,7 +267,7 @@ export const connectFaucet = async ({
         // remaining?
         let fragment;
         [fragment, faucetRunSupply] = await split(
-          E(runIssuer).makeEmptyPurse(),
+          E(stableIssuer).makeEmptyPurse(),
           faucetRunSupply,
           amount,
         );
@@ -286,7 +286,7 @@ export const connectFaucet = async ({
         const provideIssuerKit = async name => {
           switch (name) {
             case Stable.symbol:
-              return runIssuerKit;
+              return stableIssuerKit;
             case Stake.symbol:
               return bldIssuerKit;
             default: {

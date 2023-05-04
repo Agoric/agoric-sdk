@@ -44,9 +44,9 @@ const build = async (log, zoe, installations, feeMintAccess) => {
       const payment2 = await E(cf2).mintRun();
       log('second payment minted');
 
-      const runIssuer = E(zoe).getFeeIssuer();
-      const amount1 = await E(runIssuer).getAmountOf(payment1);
-      const amount2 = await E(runIssuer).getAmountOf(payment2);
+      const stableIssuer = E(zoe).getFeeIssuer();
+      const amount1 = await E(stableIssuer).getAmountOf(payment1);
+      const amount2 = await E(stableIssuer).getAmountOf(payment2);
       log(amount1);
       log(amount2);
     },
