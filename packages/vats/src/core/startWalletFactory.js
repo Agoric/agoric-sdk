@@ -23,7 +23,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
- * @param {BootstrapPowers & PromiseSpaceOf<{
+ * @param {BootstrapPowers & ChainStorageVatParams & PromiseSpaceOf<{
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
  *   econCharterKit: {
  *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']>>['creatorFacet'],
@@ -40,6 +40,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  */
 export const startWalletFactory = async (
   {
+    vatParameters: { chainStorageEntries = [] },
     consume: {
       agoricNames,
       bankManager,
@@ -101,6 +102,7 @@ export const startWalletFactory = async (
     feeIssuerP,
   ]);
 
+  const oldAddresses = harden(chainStorageEntries.map(entry => entry[0]));
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
@@ -140,17 +142,22 @@ export const startWalletFactory = async (
     privateArgs: {
       storageNode: walletStorageNode,
       walletBridgeManager,
+      walletReviver: ppFacets.walletReviver,
     },
     label: 'walletFactory',
   });
   walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const bridgeHandler = await E(ppFacets.creatorFacet).makeBridgeHandler({
-    bankManager,
-    namesByAddressAdmin,
-    walletFactory: wfFacets.creatorFacet,
-  });
+  await Promise.all([
+    E(ppFacets.creatorFacet).addRevivableAddresses(oldAddresses),
+    E(ppFacets.creatorFacet).setReferences({
+      bankManager,
+      namesByAddressAdmin,
+      walletFactory: wfFacets.creatorFacet,
+    }),
+  ]);
+  const bridgeHandler = await E(ppFacets.creatorFacet).makeBridgeHandler();
 
   await Promise.all([
     E(provisionWalletBridgeManager).initHandler(bridgeHandler),
@@ -177,6 +184,7 @@ export const startWalletFactory = async (
 
 export const WALLET_FACTORY_MANIFEST = {
   [startWalletFactory.name]: {
+    vatParameters: { chainStorageEntries: true },
     consume: {
       agoricNames: true,
       bankManager: 'bank',

@@ -132,6 +132,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {{
  *   storageNode: ERef<StorageNode>,
  *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
+ *   walletReviver?: ERef<{reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>}>,
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -139,7 +140,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, walletBridgeManager } = privateArgs;
+  const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
@@ -179,7 +180,14 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         );
         mustMatch(harden(actionCapData), shape.StringCapData);
 
-        const wallet = walletsByAddress.get(obj.owner); // or throw
+        // Revive an old wallet if necessary, but otherwise
+        // insist that it is already in the store.
+        const address = obj.owner;
+        const walletP =
+          !walletsByAddress.has(address) && walletReviver
+            ? E(walletReviver).reviveWallet(address)
+            : walletsByAddress.get(address); // or throw
+        const wallet = await walletP;
 
         console.log('walletFactory:', { wallet, actionCapData });
         return E(wallet).handleBridgeAction(actionCapData, canSpend);
