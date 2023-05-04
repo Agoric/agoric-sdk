@@ -146,6 +146,7 @@ test('makeAgoricNamesRemotesFromFakeStorage', t => {
   assert(agoricNamesRemotes.reverse);
   t.deepEqual(Object.keys(agoricNamesRemotes), [
     'brand',
+    'oracleBrand',
     'instance',
     'reverse',
   ]);
