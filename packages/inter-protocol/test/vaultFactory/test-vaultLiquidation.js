@@ -128,7 +128,7 @@ test.before(async t => {
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
- * @param {bigint} runInitialLiquidity
+ * @param {bigint} stableInitialLiquidity
  * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [auctionParams]
  */
 const setupServices = async (
@@ -137,7 +137,7 @@ const setupServices = async (
   unitAmountIn,
   timer = buildManualTimer(),
   quoteInterval = 1n,
-  runInitialLiquidity,
+  stableInitialLiquidity,
   auctionParams = {},
 ) => {
   const {

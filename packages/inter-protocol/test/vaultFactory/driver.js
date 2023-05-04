@@ -86,7 +86,7 @@ const defaultParamValues = debt =>
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
  * run: IssuerKit & import('../supports.js').AmountUtils,
- * runInitialLiquidity: Amount<'nat'>,
+ * stableInitialLiquidity: Amount<'nat'>,
  * timer: ReturnType<typeof buildManualTimer>,
  * zoe: ZoeService,
  * }} DriverContext
@@ -129,7 +129,7 @@ export const makeDriverContext = async ({
     interestTiming,
     minInitialDebt: 50n,
     rates: defaultParamValues(run),
-    runInitialLiquidity: run.make(1_500_000_000n),
+    stableInitialLiquidity: run.make(1_500_000_000n),
     aethInitialLiquidity: AmountMath.make(aeth.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));

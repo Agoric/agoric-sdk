@@ -130,7 +130,7 @@ test.before(async t => {
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
- * @param {bigint} runInitialLiquidity
+ * @param {bigint} stableInitialLiquidity
  * @param {bigint} [startFrequency]
  */
 const setupServices = async (
@@ -139,7 +139,7 @@ const setupServices = async (
   unitAmountIn,
   timer = buildManualTimer(t.log, 0n, { eventLoopIteration }),
   quoteInterval = 1n,
-  runInitialLiquidity,
+  stableInitialLiquidity,
   startFrequency = undefined,
 ) => {
   const {
@@ -153,8 +153,8 @@ const setupServices = async (
   } = t.context;
   t.context.timer = timer;
 
-  const runPayment = await getRunFromFaucet(t, runInitialLiquidity);
-  trace(t, 'faucet', { runInitialLiquidity, runPayment });
+  const runPayment = await getRunFromFaucet(t, stableInitialLiquidity);
+  trace(t, 'faucet', { stableInitialLiquidity, runPayment });
 
   const { space } = await setupElectorateReserveAndAuction(
     t,
