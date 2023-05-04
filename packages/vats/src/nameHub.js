@@ -65,12 +65,12 @@ export const makeNameHubKit = () => {
   /** @type {LegacyMap<string, NameRecord>} */
   // Legacy because a promiseKit is not a passable
   const keyToAdminRecord = makeLegacyMap('nameKey');
-  /** @type {undefined | ((entries: [string, unknown][]) => ERef<void>)} */
+  /** @type {undefined | ({ publish: (entries: [string, unknown][]) => void})} */
   let updateCallback;
   const updated = () => {
     let result;
     if (updateCallback) {
-      result = updateCallback(
+      E(updateCallback).publish(
         harden(
           [
             ...mapIterable(keyToRecord.entries(), ([name, record]) =>
