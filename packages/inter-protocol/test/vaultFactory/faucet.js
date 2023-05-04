@@ -17,11 +17,11 @@ export async function start(zcf, { feeMintAccess }) {
       assertProposalShape(seat, { want: { RUN: null } });
 
       const {
-        want: { RUN: runAmount },
+        want: { RUN: stableAmount },
       } = seat.getProposal();
-      stableMint.mintGains(harden({ RUN: runAmount }), seat);
+      stableMint.mintGains(harden({ RUN: stableAmount }), seat);
       seat.exit();
-      return `success ${runAmount.value}`;
+      return `success ${stableAmount.value}`;
     }
 
     return zcf.makeInvitation(faucetHook, 'provide RUN');
