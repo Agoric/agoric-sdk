@@ -38,7 +38,8 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   // @ts-expect-error could be undefined
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
   produce.feeMintAccess.resolve(feeMintAccessP);
