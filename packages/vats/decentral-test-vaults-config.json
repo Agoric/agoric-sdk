@@ -160,6 +160,9 @@
     }
   },
   "bundles": {
+    "agoricNames": {
+      "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    },
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
