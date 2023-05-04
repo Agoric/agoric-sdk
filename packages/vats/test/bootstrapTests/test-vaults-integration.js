@@ -96,9 +96,6 @@ test('audit bootstrap exports', async t => {
       // XXX price-feed-proposal uses makeIssuerKit
       'USD brand': true,
       'ATOM brand': true,
-      // makeMyAddressNameAdminKit(),
-      // makeAgoricNamesAccess()
-      nameHub: true,
     },
   };
 
