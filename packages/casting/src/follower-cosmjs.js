@@ -21,7 +21,7 @@ const textDecoder = new TextDecoder();
  * @typedef {{
  *   readonly value: Uint8Array;
  *   readonly height: number;
- * }} QueryAbciResponse
+ * }} QueryStoreResponse
  * The response of an ABCI query to Tendermint.
  * This is a subset of `tendermint34.AbciQueryResponse` in order
  * to abstract away Tendermint versions.
@@ -234,44 +234,32 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {number} height
-   * @returns {Promise<QueryAbciResponse>}
+   * @param {number} [height]
+   * @returns {Promise<QueryStoreResponse>}
    */
   const getProvenDataAtHeight = async height => {
     return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
       const queryClient = await provideQueryClient(endpoint);
-      const value = await E(queryClient).queryVerified(
+      return E(queryClient).queryStoreVerified(
         storeName,
         storeSubkey,
         height,
       );
-      return { value, height };
     });
   };
 
   /**
    * @param {number} [height] desired height, or the latest height if not set
-   * @returns {Promise<QueryAbciResponse>}
+   * @returns {Promise<QueryStoreResponse>}
    */
   const getUnprovenDataAtHeight = async height => {
     return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
-      const client = await provideTendermintClient(endpoint);
-      const response = await client.abciQuery({
-        path: `store/${storeName}/key`,
-        data: storeSubkey,
+      const queryClient = await provideQueryClient(endpoint);
+      return E(queryClient).queryAbci(
+        `store/${storeName}/key`,
+        storeSubkey,
         height,
-        prove: false,
-      });
-      if (response.code !== 0) {
-        throw Error(`Tendermint ABCI query failed: ${response.log}`);
-      }
-      if (!response.height) {
-        throw Error('No query height returned');
-      }
-      return {
-        value: response.value,
-        height: response.height,
-      };
+      );
     });
   };
 
