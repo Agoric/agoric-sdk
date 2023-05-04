@@ -3,6 +3,7 @@ import '@endo/init';
 import test from 'ava';
 
 import { Far } from '@endo/far';
+import { heapZone } from '@agoric/zone';
 import * as cb from '../src/callback.js';
 
 test('near function callbacks', t => {
@@ -16,19 +17,19 @@ test('near function callbacks', t => {
 
   /** @type {import('../src/callback').SyncCallback<typeof f>} */
   const cb0 = cb.makeSyncFunctionCallback(f);
-  t.deepEqual(cb0, { target: f, bound: [] });
+  t.deepEqual(cb0, { target: f, bound: [], isSync: true });
 
   /** @type {import('../src/callback').SyncCallback<(b: number, c: string) => string>} */
   const cb1 = cb.makeSyncFunctionCallback(f, 9);
-  t.deepEqual(cb1, { target: f, bound: [9] });
+  t.deepEqual(cb1, { target: f, bound: [9], isSync: true });
 
   /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
   const cb2 = cb.makeSyncFunctionCallback(f, 9, 10);
-  t.deepEqual(cb2, { target: f, bound: [9, 10] });
+  t.deepEqual(cb2, { target: f, bound: [9, 10], isSync: true });
 
   // @ts-expect-error deliberate: boolean is not assignable to string
   const cb3 = cb.makeSyncFunctionCallback(f, 9, 10, true);
-  t.deepEqual(cb3, { target: f, bound: [9, 10, true] });
+  t.deepEqual(cb3, { target: f, bound: [9, 10, true], isSync: true });
 
   // @ts-expect-error deliberate: Expected 4 arguments but got 5
   t.is(cb.callSync(cb0, 2, 3, 'go', 'bad'), '5go');
@@ -74,23 +75,33 @@ test('near method callbacks', t => {
 
   /** @type {import('../src/callback').SyncCallback<typeof o.m1>} */
   const cb0 = cb.makeSyncMethodCallback(o, 'm1');
-  t.deepEqual(cb0, { target: o, methodName: 'm1', bound: [] });
+  t.deepEqual(cb0, { target: o, methodName: 'm1', bound: [], isSync: true });
 
   /** @type {import('../src/callback').SyncCallback<(b: number, c: string) => string>} */
   const cb1 = cb.makeSyncMethodCallback(o, 'm1', 9);
-  t.deepEqual(cb1, { target: o, methodName: 'm1', bound: [9] });
+  t.deepEqual(cb1, { target: o, methodName: 'm1', bound: [9], isSync: true });
 
   /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
   const cb2 = cb.makeSyncMethodCallback(o, 'm1', 9, 10);
-  t.deepEqual(cb2, { target: o, methodName: 'm1', bound: [9, 10] });
+  t.deepEqual(cb2, {
+    target: o,
+    methodName: 'm1',
+    bound: [9, 10],
+    isSync: true,
+  });
 
   // @ts-expect-error deliberate: boolean is not assignable to string
   const cb3 = cb.makeSyncMethodCallback(o, 'm1', 9, 10, true);
-  t.deepEqual(cb3, { target: o, methodName: 'm1', bound: [9, 10, true] });
+  t.deepEqual(cb3, {
+    target: o,
+    methodName: 'm1',
+    bound: [9, 10, true],
+    isSync: true,
+  });
 
   /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
   const cb4 = cb.makeSyncMethodCallback(o, m2, 9, 10);
-  t.deepEqual(cb4, { target: o, methodName: m2, bound: [9, 10] });
+  t.deepEqual(cb4, { target: o, methodName: m2, bound: [9, 10], isSync: true });
 
   // @ts-expect-error deliberate: Expected 4 arguments but got 5
   t.is(cb.callSync(cb0, 2, 3, 'go', 'bad'), '5go');
@@ -104,7 +115,7 @@ test('near method callbacks', t => {
 
   // @ts-expect-error deliberate: Promise provides no match for the signature
   const cbp2 = cb.makeSyncMethodCallback(Promise.resolve(o), 'm1', 9, 10);
-  t.like(cbp2, { methodName: 'm1', bound: [9, 10] });
+  t.like(cbp2, { methodName: 'm1', bound: [9, 10], isSync: true });
   t.assert(cbp2.target instanceof Promise);
   t.throws(() => cb.callSync(cbp2, 'go'), { message: /not a function/ });
 });
@@ -252,4 +263,74 @@ test('isCallback', t => {
     cb.isCallback({ target: {}, methodName: 'foo' }),
     'missing bound args',
   );
+});
+
+test('makeAttenuator', async t => {
+  const makeAttenuator = cb.prepareAttenuator(heapZone, [
+    'm0',
+    'm1',
+    'm2',
+    'm4',
+  ]);
+  const target = Far('original', {
+    m0() {
+      return 'return original.m0';
+    },
+    m1() {
+      return 'return original.m1';
+    },
+    m2() {
+      throw Error('unexpected original.m2');
+    },
+    m3() {
+      throw Error('unexpected original.m3');
+    },
+  });
+  t.throws(
+    // @ts-expect-error deliberate: m3 is not on the yeslist
+    () => makeAttenuator({ target, overrides: { m3: null } }),
+    {
+      message: `"Attenuator" overrides["m3"] not allowed by methodNames`,
+    },
+  );
+
+  // Null out a method.
+  const atE = makeAttenuator({ target, overrides: { m1: null } });
+  const p1 = atE.m0();
+  t.assert(p1 instanceof Promise);
+  t.is(await p1, 'return original.m0');
+  await t.throwsAsync(() => atE.m1(), {
+    message: `unimplemented "Attenuator" method "m1"`,
+  });
+  await t.throwsAsync(() => atE.m2(), { message: `unexpected original.m2` });
+  // @ts-expect-error deliberately attenuated out of existence
+  t.throws(() => atE.m3(), { message: /not a function/ });
+  await t.throwsAsync(() => atE.m4(), { message: /target has no method "m4"/ });
+
+  const atSync = makeAttenuator({
+    target,
+    isSync: true,
+    overrides: {
+      m1: null,
+      m2: cb.makeMethodCallback(
+        {
+          abc() {
+            return 'return abc';
+          },
+        },
+        'abc',
+      ),
+    },
+  });
+
+  t.is(atSync.m0(), 'return original.m0');
+  t.throws(() => atSync.m1(), {
+    message: `unimplemented "Attenuator" method "m1"`,
+  });
+  const p2 = atSync.m2();
+  t.assert(p2 instanceof Promise);
+  t.is(await p2, 'return abc');
+  // @ts-expect-error deliberately attenuated out of existence
+  t.throws(() => atSync.m3(), { message: /not a function/ });
+  t.throws(() => atSync.m4(), { message: /not a function/ });
 });

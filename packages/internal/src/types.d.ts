@@ -7,10 +7,14 @@ export declare class Callback<I extends (...args: unknown[]) => any> {
   public methodName?: PropertyKey;
 
   public bound: unknown[];
+
+  public isSync: boolean;
 }
 
 export declare class SyncCallback<
   I extends (...args: unknown[]) => any,
 > extends Callback<I> {
   private syncIface: I;
+
+  public isSync: true;
 }
