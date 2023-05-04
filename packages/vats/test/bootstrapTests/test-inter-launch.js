@@ -115,6 +115,8 @@ const makeTestContext = async t => {
     t,
     'bundles/vaults',
     PLATFORM_CONFIG,
+    // Gather computrons usage
+    'xsnap',
   );
 
   const { runUtils, storage } = swingsetTestKit;
@@ -209,8 +211,15 @@ test.serial('make vaults launch proposal', async t => {
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-  t.log('proposal executed');
+  const { stats } = await EV.stats(coreEvalBridgeHandler).fromBridge(
+    bridgeMessage,
+  );
+  t.log('proposal executed', stats);
+  t.truthy(stats.computrons, 'Computrons usage not reported');
+  t.true(
+    stats.maxComputronsPerCrank <= 6_500_000_000n / 100n,
+    `Max computrons per crank higher than prod block limit`,
+  );
 
   t.log('check for working vaults system');
   const reserveKit = await EV.vat('bootstrap').consumeItem('reserveKit');
