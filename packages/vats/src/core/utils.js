@@ -223,7 +223,7 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {import('../types').NameAdmin} parentAdmin
+ * @param {ERef<import('../types').NameAdmin>} parentAdmin
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
  */
@@ -232,14 +232,15 @@ export const makeWellKnownSpaces = async (
   log = noop,
   kinds = Object.keys(agoricNamesReserved),
 ) => {
-  const spaces = Object.fromEntries(
-    kinds.map(kind => {
-      const { nameAdmin } = parentAdmin.provideChild(kind);
+  const spaceEntries = await Promise.all(
+    kinds.map(async kind => {
+      const { nameAdmin } = await E(parentAdmin).provideChild(kind);
       const subSpaceLog = (...args) => log(kind, ...args);
       const entry = [kind, makePromiseSpaceForNameHub(nameAdmin, subSpaceLog)];
       return entry;
     }),
   );
+  const spaces = Object.fromEntries(spaceEntries);
   const typedSpaces = /** @type { WellKnownSpaces } */ (
     /** @type {any} */ (spaces)
   );
