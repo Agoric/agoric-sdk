@@ -4,10 +4,10 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeScalarMapStore, makeScalarWeakMapStore } from '@agoric/store';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareVirtualPurse } from './virtual-purse.js';
 
 import '@agoric/notifier/exported.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
@@ -25,7 +25,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
  * @param {string} denom
  * @param {Brand} brand
  * @param {string} address
- * @param {Notifier<Amount>} balanceNotifier
+ * @param {LatestTopic<Amount>} balanceNotifier
  * @param {(obj: any) => boolean} updateBalances
  * @returns {VirtualPurseController}
  */

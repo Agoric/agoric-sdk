@@ -132,7 +132,7 @@ async function setupTest(
 /**
  * Run a thunk and wait for the notifier to fire.
  *
- * @param {ERef<Notifier<any>>} notifier
+ * @param {ERef<LatestTopic<any>>} notifier
  * @param {() => Promise<any>} thunk
  */
 const waitForUpdate = async (notifier, thunk) => {

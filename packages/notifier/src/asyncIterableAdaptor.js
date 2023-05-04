@@ -97,7 +97,7 @@ export const observeIteration = (asyncIterableP, iterationObserver) => {
  * states are assumed irrelevant and dropped.
  *
  * @template T
- * @param {ERef<Notifier<T>>} notifierP
+ * @param {ERef<LatestTopic<T>>} notifierP
  * @param {Partial<IterationObserver<T>>} iterationObserver
  * @returns {Promise<undefined>}
  */
