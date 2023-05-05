@@ -71,8 +71,8 @@ test.after.always(t => {
 
 test('audit bootstrap exports', async t => {
   const expected = {
-    maxExports: 12,
-    maxNonDurable: 10,
+    maxExports: 8,
+    maxNonDurable: 5,
     ifaces: {
       // in bridgeCoreEval()
       // TODO(#7576): support unregister
@@ -85,11 +85,6 @@ test('audit bootstrap exports', async t => {
       // TODO? move to provisioning vat?
       clientCreator: true,
       // in startWalletFactory()
-      // TODO(#5885): vbank should provide a facet attenuated
-      // to only provide getAssetSubscription
-      // meanwhile, expose the whole poolBank rather than
-      // export this Far object from bootstrap?
-      AssetPublisher: true,
       // XXX price-feed-proposal uses makeIssuerKit
       'USD brand': true,
       'ATOM brand': true,
