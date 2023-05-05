@@ -1,15 +1,16 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
-import { heapZone } from '@agoric/zone';
 import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { provide } from '@agoric/vat-data';
 import {
-  makeNameHubKit,
   NameHubIKit,
   prepareMixinMyAddress,
+  prepareNameHubKit,
 } from './nameHub.js';
 
 // This vat contains the controller-side provisioning service. To enable local
@@ -77,28 +78,43 @@ const prepareSpecializedNameAdmin = zone => {
 /**
  * @param {unknown} _vatPowers
  * @param {unknown} _vatParameters
- * @param {import('@agoric/vat-data').Baggage} _baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export function buildRootObject(_vatPowers, _vatParameters, _baggage) {
-  // TODO: make NameHubKit durable
-  const { nameHub: namesByAddress, nameAdmin } = makeNameHubKit();
-
-  // TODO: const zone = makeDurableZone(_baggage);
-  const zone = heapZone;
+export function buildRootObject(_vatPowers, _vatParameters, baggage) {
+  const zone = makeDurableZone(baggage);
+  const makeNameHubKit = prepareNameHubKit(zone);
   const makeNamesByAddressAdmin = prepareSpecializedNameAdmin(zone);
-  const namesByAddressAdmin = makeNamesByAddressAdmin(nameAdmin);
 
+  const nameHubKit = provide(baggage, 'nameHubKit', () => makeNameHubKit());
+  const { nameHub: namesByAddress } = makeNameHubKit();
+  const namesByAddressAdmin = makeNamesByAddressAdmin(nameHubKit.nameAdmin);
+
+  // xxx end-user ag-solo provisioning stuff (devnet only)
+  /** @type {ERef<ClientCreator>} */
   let bundler;
+  /** @type {CommsVatRoot} */
   let comms;
+  /** @type {VattpVat} */
   let vattp;
 
+  /**
+   * @param {ERef<ClientCreator>} b
+   * @param {CommsVatRoot} c
+   * @param {VattpVat} v
+   */
   async function register(b, c, v) {
     bundler = b;
     comms = c;
     vattp = v;
   }
 
+  /**
+   * @param {string} nickname
+   * @param {string} address
+   * @param {string[]} powerFlags
+   */
   async function pleaseProvision(nickname, address, powerFlags) {
+    /** @type {ERef<ClientFacet>} */
     let clientFacet;
     const fetch = Far('fetch', {
       async getChainBundle() {

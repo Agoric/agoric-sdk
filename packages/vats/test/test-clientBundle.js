@@ -172,7 +172,8 @@ test('myAddressNameAdmin mixin', async t => {
 
 test('namesByAddressAdmin provideChild', async t => {
   const addr = 'agoric123';
-  const provisioning = buildProvisioningRoot(undefined, undefined, undefined);
+  const baggage = makeScalarBigMapStore('fake baggage', { durable: true });
+  const provisioning = buildProvisioningRoot(undefined, undefined, baggage);
   const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
   /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin}} */
   // @ts-expect-error XXX why doesn't the provideChild override work?
