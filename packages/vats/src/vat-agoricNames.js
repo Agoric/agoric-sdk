@@ -4,11 +4,11 @@ import { E, Far } from '@endo/far';
 import { BrandI } from '@agoric/ertp';
 import { provide } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { makeNameHubKit } from './nameHub.js';
+import { prepareNameHubKit } from './nameHub.js';
 
 /** @param {import('@agoric/zone').Zone} zone */
 const makeBrandStore = zone => {
-  const brandStore = zone.mapStore('Brand', { durable: true });
+  const brandStore = zone.mapStore('Brand');
 
   // XXX generalize past Nat; move into ERTP
   /** @type {(name: string, d: DisplayInfo) => Brand} */
@@ -48,7 +48,8 @@ const makeBrandStore = zone => {
  */
 export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const zone = makeDurableZone(baggage);
-  const kit = makeNameHubKit(); // TODO: durable
+  const makeNameHubKit = prepareNameHubKit(zone);
+  const kit = provide(baggage, 'agoricNamesKit', makeNameHubKit);
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = kit;
 
   /**
