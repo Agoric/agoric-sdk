@@ -106,9 +106,11 @@ export const startWalletFactory = async (
     harden({
       agoricNames,
       board,
-      assetPublisher: Far('AssetPublisher', {
-        getAssetSubscription: () => E(poolBank).getAssetSubscription(),
-      }),
+      // TODO(#5885): vbank should provide a facet attenuated
+      // to only provide getAssetSubscription
+      // meanwhile, expose the whole poolBank rather than
+      // adding a bootstrap export.
+      assetPublisher: poolBank,
     }),
   );
 
