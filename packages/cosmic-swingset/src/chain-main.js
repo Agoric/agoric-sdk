@@ -131,7 +131,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     'home',
     `${homedir}/.ag-chain-cosmos`,
   );
-  const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
+  const stateDBDir = `${cosmosHome}/data/agoric`;
   fs.mkdirSync(stateDBDir, { recursive: true });
 
   // console.log('Have AG_COSMOS', agcc);

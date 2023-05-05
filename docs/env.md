@@ -97,20 +97,6 @@ Description: When nonempty, create pretend prepopulated tokens like "moola" and
 
 Lifetime: until chain is mature enough not to need any pretend tokens
 
-## LMDB_MAP_SIZE
-
-Affects: cosmic-swingset
-
-Purpose: set the minimum size limit for swing-store's LMDB key-value store
-
-Description: default is `2147483648` (2GB), and you need to set higher if you
-receive `Error: MDB_MAP_FULL: Environment mapsize limit reached`
-
-Can always be increased, and does not decrease once a transaction has been
-written with the new mapSize.
-
-Lifetime: until we no longer use LMDB in swing-store
-
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
 Affects: cosmic-swingset
@@ -133,12 +119,6 @@ BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
 ```
 
 Lifetime: smart wallet transition period
-
-## SOLO_LMDB_MAP_SIZE
-
-Affects: solo
-
-Same as `LMDB_MAP_SIZE`, but for solo instead of chain.
 
 ## SOLO_MNEMONIC
 
