@@ -71,7 +71,7 @@ test.after.always(t => {
 
 test('audit bootstrap exports', async t => {
   const expected = {
-    maxExports: 8,
+    maxExports: 5,
     maxNonDurable: 5,
     ifaces: {
       // in bridgeCoreEval()
@@ -84,10 +84,6 @@ test('audit bootstrap exports', async t => {
       'prioritySenders manager': true,
       // TODO? move to provisioning vat?
       clientCreator: true,
-      // in startWalletFactory()
-      // XXX price-feed-proposal uses makeIssuerKit
-      'USD brand': true,
-      'ATOM brand': true,
     },
   };
 
