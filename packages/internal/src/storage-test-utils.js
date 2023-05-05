@@ -141,7 +141,7 @@ export const makeMockChainStorageRoot = () => {
     /**
      * Defaults to deserializing slot references into plain Remotable
      * objects, but if supplied with a different marshaller, it could
-     * produce Remotables with e.g. the slog string embedded in the
+     * produce Remotables with e.g. the slot string embedded in the
      * iface.
      *
      * @param {string} path
