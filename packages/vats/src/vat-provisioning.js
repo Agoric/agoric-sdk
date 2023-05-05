@@ -25,10 +25,10 @@ export function buildRootObject(_vatPowers, _vatParameters, _baggage) {
     /**
      * @param {string} address
      * @param {string[]} [reserved]
-     * @returns {{ nameHub: NameHub, nameAdmin: import('./types.js').MyAddressNameAdmin}}
+     * @returns {Promise<{ nameHub: NameHub, nameAdmin: import('./types.js').MyAddressNameAdmin}>}
      */
-    provideChild(address, reserved) {
-      const child = nameAdmin.provideChild(address, reserved);
+    async provideChild(address, reserved) {
+      const child = await nameAdmin.provideChild(address, reserved);
       return {
         nameHub: child.nameHub,
         nameAdmin: mixinMyAddress(child.nameAdmin, address),

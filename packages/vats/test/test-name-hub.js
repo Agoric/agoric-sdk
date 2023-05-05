@@ -1,5 +1,6 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { Far } from '@endo/far';
 
 import { makeNameHubKit } from '../src/nameHub.js';
 
@@ -79,6 +80,7 @@ test('makeNameHubKit - reserve and update', async t => {
 
   t.falsy(lookedUpHello);
   nameAdmin.update('hello', 'foo');
+  await null; // wait for reservation to settle
   t.deepEqual(nameHub.keys(), ['hello']);
   t.deepEqual(nameHub.values(), ['foo']);
   t.deepEqual(nameHub.entries(), [['hello', 'foo']]);
@@ -154,7 +156,9 @@ test('makeNameHubKit - listen for updates', async t => {
   nameAdmin.update('BLD', brandBLD);
 
   const capture = [];
-  nameAdmin.onUpdate({ write: entries => capture.push(entries) });
+  nameAdmin.onUpdate(
+    Far('Recorder', { write: entries => capture.push(entries) }),
+  );
 
   const brandIST = harden({ name: 'IST' });
   nameAdmin.update('IST', brandIST);
@@ -175,7 +179,7 @@ test('makeNameHubKit - listen for updates', async t => {
 test('nameAdmin provideChild', async t => {
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
-  const child = namesByAddressAdmin.provideChild('ag123', [
+  const child = await namesByAddressAdmin.provideChild('ag123', [
     'depositFacet',
     'otherReserved',
   ]);
