@@ -68,13 +68,25 @@ export const makeVatsFromBundles = async ({
   vatStore.resolve(store);
 
   const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
-    return bundleName => {
-      const vatInfoP = provideLazy(store, bundleName, _k => {
-        console.info(`createVatByName(${bundleName})`);
+    return async (vatName, bundleRef = { bundleName: vatName }) => {
+      const { bundleID, bundleName } = bundleRef;
+      const vatInfoP = provideLazy(store, vatName, async _k => {
+        if (bundleName) {
+          console.info(`createVatByName(${bundleName})`);
+          /** @type { Promise<CreateVatResults> } */
+          const vatInfo = E(svc).createVatByName(bundleName, {
+            ...defaultVatCreationOptions,
+            name: vatName,
+          });
+          return vatInfo;
+        }
+        console.info(`createVat(${bundleID})`);
+        assert(bundleID);
+        const bcap = await E(svc).getBundleCap(bundleID);
         /** @type { Promise<CreateVatResults> } */
-        const vatInfo = E(svc).createVatByName(bundleName, {
+        const vatInfo = E(svc).createVat(bcap, {
           ...defaultVatCreationOptions,
-          name: bundleName,
+          name: vatName,
         });
         return vatInfo;
       });

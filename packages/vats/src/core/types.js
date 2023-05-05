@@ -83,7 +83,10 @@
  * @template T
  */
 /**
- * @typedef {(name: string) => T} VatLoader<T>
+ * @typedef {{ bundleName?: string, bundleID?: string }} VatSourceRef
+ */
+/**
+ * @typedef {(name: string, sourceRef?: VatSourceRef) => T} VatLoader<T>
  * @template T
  */
 /**
