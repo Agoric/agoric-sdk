@@ -57,7 +57,8 @@ const makeTestSpace = async (log, bundleCache) => {
   // calling ensureOracleBrands and createPriceFeed
   // ensuring a feed for ATOM-USD
 
-  /** @type {ChainBootstrapSpace} */
+  /** @type {ChainBootstrapSpace & NamedVatPowers} */
+  // @ts-expect-error cast
   const space = psmVatRoot.getPromiseSpace();
   await eventLoopIteration();
 
