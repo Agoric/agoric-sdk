@@ -90,9 +90,6 @@ test('audit bootstrap exports', async t => {
       // meanwhile, expose the whole poolBank rather than
       // export this Far object from bootstrap?
       AssetPublisher: true,
-      // in addBankAssets()
-      // XXX is attenuation needed here?
-      AssetHub: true,
       // XXX price-feed-proposal uses makeIssuerKit
       'USD brand': true,
       'ATOM brand': true,
