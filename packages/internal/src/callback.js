@@ -13,6 +13,11 @@ const ownKeys =
   );
 
 /**
+ * @template T
+ * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => Farable<T>} AttenuatorMaker
+ */
+
+/**
  * @template {(...args: unknown[]) => any} I
  * @typedef {import('./types').Callback<I>} Callback
  */
@@ -187,9 +192,9 @@ harden(isCallback);
 /**
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
- * @template {PropertyKey} M
+ * @template {{ [K in PropertyKey]: (this: any, ...args: unknown[]) => any}} Methods
  * @param {import('@agoric/zone').Zone} zone The zone in which to allocate attenuators.
- * @param {M[]} methodNames Methods to forward.
+ * @param {(keyof Methods)[]} methodNames Methods to forward.
  * @param {object} opts
  * @param {InterfaceGuard} [opts.interfaceGuard] An interface guard for the
  * new attenuator.
@@ -202,43 +207,44 @@ export const prepareAttenuator = (
 ) => {
   /**
    * @typedef {(this: any, ...args: unknown[]) => any} Method
-   * @typedef {{ [K in M]: Method }} Methods
-   * @typedef {{ [K in M]?: Callback<any> | null}} Overrides
+   * @typedef {{ [K in keyof Methods]?: Callback<any> | null}} Overrides
    */
-  const methods = fromEntries(
-    methodNames.map(key => {
-      // Only allow the `PropertyKey` type for the target method key.
-      if (!isPropertyKey(key)) {
-        throw Fail`key ${q(key)} is not a PropertyKey`;
-      }
+  const methods = /** @type {Methods} */ (
+    fromEntries(
+      methodNames.map(key => {
+        // Only allow the `PropertyKey` type for the target method key.
+        if (!isPropertyKey(key)) {
+          throw Fail`key ${q(key)} is not a PropertyKey`;
+        }
 
-      const m = /** @type {Methods} */ ({
-        // Explicitly use concise method syntax to preserve `this` but prevent
-        // constructor behavior.
-        /** @type {Method} */
-        [key](...args) {
-          // Support both synchronous and async callbacks.
-          const cb = this.state.cbs[key];
-          if (!cb) {
-            const err = assert.error(
-              `unimplemented ${q(tag)} method ${q(key)}`,
-            );
-            if (this.state.isSync) {
-              throw err;
+        const m = /** @type {Methods} */ ({
+          // Explicitly use concise method syntax to preserve `this` but prevent
+          // constructor behavior.
+          /** @type {Method} */
+          [key](...args) {
+            // Support both synchronous and async callbacks.
+            const cb = this.state.cbs[key];
+            if (!cb) {
+              const err = assert.error(
+                `unimplemented ${q(tag)} method ${q(key)}`,
+              );
+              if (this.state.isSync) {
+                throw err;
+              }
+              return Promise.reject(err);
             }
-            return Promise.reject(err);
-          }
-          if (cb.isSync) {
-            return callSync(cb, ...args);
-          }
-          return callE(cb, ...args);
-        },
-      })[key];
-      return /** @type {const} */ ([key, m]);
-    }),
+            if (cb.isSync) {
+              return callSync(cb, ...args);
+            }
+            return callE(cb, ...args);
+          },
+        })[key];
+        return /** @type {const} */ ([key, m]);
+      }),
+    )
   );
 
-  const methodKeys = /** @type {M[]} */ (ownKeys(methods));
+  const methodKeys = /** @type {(keyof Methods)[]} */ (ownKeys(methods));
 
   /**
    * Create an exo object whose behavior is composed from a default target
@@ -301,6 +307,7 @@ harden(prepareAttenuator);
 /**
  * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
  *
+ * @template {{ [K in PropertyKey]: (this: any, ...args: unknown[]) => any}} Methods
  * @param {import('@agoric/zone').Zone} zone
  * @param {InterfaceGuard} interfaceGuard
  * @param {object} [opts]
@@ -309,6 +316,8 @@ harden(prepareAttenuator);
 export const prepareGuardedAttenuator = (zone, interfaceGuard, opts = {}) => {
   const { methodGuards } = interfaceGuard;
   const methodNames = ownKeys(methodGuards);
-  return prepareAttenuator(zone, methodNames, { ...opts, interfaceGuard });
+  return /** @type {AttenuatorMaker<Methods>} */ (
+    prepareAttenuator(zone, methodNames, { ...opts, interfaceGuard })
+  );
 };
 harden(prepareGuardedAttenuator);
