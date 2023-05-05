@@ -36,18 +36,18 @@ export {};
  * @property {(key: string) => Promise<void>} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted). If the key was already set it does nothing.
- * @property {<T>( key: string, newValue: T, newAdmin?: unknown) =>
+ * @property {<T>( key: string, newValue: T, newAdmin?: NameAdmin) =>
  *   T } default Update if not already updated.  Return
  *   existing value, or newValue if not existing.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ *   key: string, newValue: unknown, newAdmin?: NameAdmin) => void
  * } set Update only if already initialized. Reject if not.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ *   key: string, newValue: unknown, newAdmin?: NameAdmin) => void
  * } update Fulfill an outstanding reserved promise (if any) to the newValue and
  * set the key to the newValue.  If newAdmin is provided, set that to return via
  * lookupAdmin.
- * @property {(...path: Array<string>) => Promise<any>} lookupAdmin Look up the
+ * @property {(...path: Array<string>) => Promise<NameAdmin>} lookupAdmin Look up the
  * `newAdmin` from the path of keys starting from the current NameAdmin.  Wait
  * on any reserved promises.
  * @property {(key: string) => void} delete Delete a value and reject an
