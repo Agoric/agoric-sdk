@@ -23,11 +23,9 @@ const CONFIG_FILES = [
 ];
 
 const NON_UPGRADEABLE_VATS = [
-  // TODO(#6687): enforce vat-network
-  // IDEA: move vat-network to a CoreEval proposal?
-  // 'vat-network',
-  // 'vat-ibc',
-  // 'pegasus',
+  'vat-network',
+  'vat-ibc',
+  'pegasus',
   // TODO(#6687): prune centralSupply from prod config
   // 'centralSupply',
   'mints',

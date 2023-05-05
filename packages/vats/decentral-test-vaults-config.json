@@ -172,14 +172,8 @@
     "centralSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
-    "ibc": {
-      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
-    },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
-    },
-    "network": {
-      "sourceSpec": "@agoric/vats/src/vat-network.js"
     },
     "priceAuthority": {
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
