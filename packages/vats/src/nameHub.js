@@ -4,11 +4,89 @@ import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { mapIterable } from '@endo/marshal';
-import { makeLegacyMap } from '@agoric/store';
+import { M, makeLegacyMap } from '@agoric/store';
 
 import './types.js';
+import {
+  makeSyncMethodCallback,
+  prepareGuardedAttenuator,
+} from '@agoric/internal/src/callback.js';
 
 const { Fail } = assert;
+
+const KeyShape = M.string();
+const PathShape = M.arrayOf(KeyShape);
+
+const NameHubIKit = harden({
+  nameHub: M.interface('NameHub', {
+    has: M.call(KeyShape).returns(M.boolean()),
+    lookup: M.call().rest(PathShape).returns(M.promise()),
+    entries: M.call().returns(M.arrayOf(M.array())),
+    values: M.call().returns(M.array()),
+    keys: M.call().returns(M.arrayOf(KeyShape)),
+  }),
+  nameAdmin: M.interface('NameAdmin', {
+    provideChild: M.callWhen(KeyShape)
+      .optional(M.arrayOf(M.string()))
+      .rest(M.any())
+      .returns({ nameHub: M.remotable(), nameAdmin: M.remotable() }),
+    reserve: M.call(KeyShape).returns(M.promise()),
+    default: M.callWhen(KeyShape)
+      .optional(M.await(M.any()), M.await(M.remotable()))
+      .returns(M.any()),
+    set: M.callWhen(KeyShape, M.await(M.any()))
+      .optional(M.await(M.remotable()))
+      .returns(M.undefined()),
+    onUpdate: M.call(M.remotable()).returns(M.undefined()),
+    update: M.callWhen(KeyShape, M.await(M.any()))
+      .optional(M.await(M.remotable('newAdminValue')))
+      .returns(M.undefined()),
+    lookupAdmin: M.call(KeyShape).returns(M.promise()),
+    delete: M.call(KeyShape).returns(M.promise()),
+    readonly: M.call().returns(M.remotable()),
+  }),
+});
+
+/** @param {import('@agoric/zone').Zone} zone */
+export const prepareMixinMyAddress = zone => {
+  const MixinI = M.interface('MyAddressNameAdmin', {
+    ...NameHubIKit.nameAdmin.methodGuards,
+    getMyAddress: M.call().returns(M.string()),
+  });
+  /** @type {import('@agoric/internal/src/callback.js').AttenuatorMaker<import('./types.js').MyAddressNameAdmin>} */
+  const mixin = prepareGuardedAttenuator(zone, MixinI, {
+    tag: 'MyAddressNameAdmin',
+  });
+
+  // XXX: wish: constant callback
+  const makeConstantFacet = zone.exoClass(
+    'Konst',
+    undefined,
+    value => ({ value }),
+    {
+      getValue() {
+        return this.state.value;
+      },
+    },
+  );
+
+  /**
+   * @param {import('./types.js').NameAdmin} nameAdmin
+   * @param {string} address
+   */
+  const mixinMyAddress = (nameAdmin, address) => {
+    // TODO: exo
+    const myAddressFacet = makeConstantFacet(address);
+    return mixin({
+      target: nameAdmin,
+      overrides: {
+        getMyAddress: makeSyncMethodCallback(myAddressFacet, 'getValue'),
+      },
+    });
+  };
+
+  return mixinMyAddress;
+};
 
 /**
  * Make two facets of a node in a name hierarchy: the nameHub

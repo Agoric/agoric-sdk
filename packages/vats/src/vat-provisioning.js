@@ -1,7 +1,8 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeNameHubKit } from './nameHub.js';
+import { heapZone } from '@agoric/zone';
+import { makeNameHubKit, prepareMixinMyAddress } from './nameHub.js';
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
@@ -13,8 +14,36 @@ import { makeNameHubKit } from './nameHub.js';
  */
 export function buildRootObject(_vatPowers, _vatParameters, _baggage) {
   // TODO: make NameHubKit durable
-  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
-    makeNameHubKit();
+  const { nameHub: namesByAddress, nameAdmin } = makeNameHubKit();
+
+  // TODO: const zone = makeDurableZone(_baggage);
+  const zone = heapZone;
+  const mixinMyAddress = prepareMixinMyAddress(zone);
+  /** @type {import('./types.js').NamesByAddressAdmin} */
+  const namesByAddressAdmin = Far('namesByAddressAdmin', {
+    ...nameAdmin,
+    /**
+     * @param {string} address
+     * @param {string[]} [reserved]
+     * @returns {{ nameHub: NameHub, nameAdmin: import('./types.js').MyAddressNameAdmin}}
+     */
+    provideChild(address, reserved) {
+      const child = nameAdmin.provideChild(address, reserved);
+      return {
+        nameHub: child.nameHub,
+        nameAdmin: mixinMyAddress(child.nameAdmin, address),
+      };
+    },
+    async lookupAdmin(address) {
+      // XXX relies on callers not to provide other admins via update()
+      // TODO: enforce?
+
+      /** @type { import('./types').MyAddressNameAdmin } */
+      // @ts-expect-error cast
+      const myAdmin = nameAdmin.lookupAdmin(address);
+      return myAdmin;
+    },
+  });
 
   let bundler;
   let comms;

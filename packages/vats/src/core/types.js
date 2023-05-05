@@ -256,7 +256,7 @@
  *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,
- *   namesByAddressAdmin: import('@agoric/vats').NameAdmin,
+ *   namesByAddressAdmin: import('../types').NamesByAddressAdmin,
  *   pegasusConnections: import('@agoric/vats').NameHubKit,
  *   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin,
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,

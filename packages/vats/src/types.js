@@ -66,6 +66,15 @@ export {};
 /**
  * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
  */
+/**
+ * @typedef {NameAdmin & {
+ *   provideChild(addr: string, reserved?: string[]): {
+ *     nameHub: NameHub,
+ *     nameAdmin: MyAddressNameAdmin,
+ *   },
+ *   lookupAdmin(addr: string): Promise<MyAddressNameAdmin>,
+ * }} NamesByAddressAdmin
+ */
 
 /**
  * @typedef {object} BridgeHandler An object that can receive messages from the bridge device

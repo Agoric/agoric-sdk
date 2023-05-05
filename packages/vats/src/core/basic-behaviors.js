@@ -390,7 +390,7 @@ harden(makeBoard);
  * @param {BootstrapPowers} powers
  */
 export const produceNamesByAddress = async ({
-  consume: { provisioning: provisioningOptP },
+  consume: { agoricNames, provisioning: provisioningOptP, client },
   produce: { namesByAddress, namesByAddressAdmin },
 }) => {
   const provisioning = await provisioningOptP;
@@ -402,6 +402,15 @@ export const produceNamesByAddress = async ({
   const kit = await E(provisioning).getNamesByAddressKit();
   namesByAddress.resolve(kit.namesByAddress);
   namesByAddressAdmin.resolve(kit.namesByAddressAdmin);
+  const agoricNamesR = await agoricNames;
+  return E(client).assignBundle([
+    _a => ({ agoricNames: agoricNamesR, namesByAddress: kit.namesByAddress }),
+    addr => ({
+      myAddressNameAdmin: E(kit.namesByAddressAdmin)
+        .provideChild(addr, [WalletName.depositFacet])
+        .then(myKit => myKit.nameAdmin),
+    }),
+  ]);
 };
 
 /**
@@ -419,6 +428,7 @@ export const makeAddressNameHubs = async ({
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
   produce.namesByAddress.resolve(namesByAddress);
+  // @ts-expect-error deprecated type structure
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
@@ -679,7 +689,11 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     namedVat: { consume: { board: 'board' } },
   },
   [produceNamesByAddress.name]: {
-    consume: { provisioning: 'provisioning' },
+    consume: {
+      agoricNames: 'agoricNames',
+      client: true,
+      provisioning: 'provisioning',
+    },
     produce: {
       namesByAddress: 'provisioning',
       namesByAddressAdmin: 'provisioning',
