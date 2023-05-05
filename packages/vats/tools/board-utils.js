@@ -85,7 +85,7 @@ harden(makeAgoricNamesRemotesFromFakeStorage);
  * Remotable-bearing data.
  *
  * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {import('@endo/marshal').Marshal<string>}
+ * @returns {Omit<import('@endo/marshal').Marshal<string>, 'serialize' | 'unserialize'>}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
   return makeMarshal(boardValToSlot, slotToVal, {

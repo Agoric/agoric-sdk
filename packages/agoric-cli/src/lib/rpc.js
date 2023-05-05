@@ -193,7 +193,7 @@ export const storageHelper = {
   unserializeTxt: (txt, ctx) => {
     const { capDatas } = storageHelper.parseCapData(txt);
     return capDatas.map(capData =>
-      boardSlottingMarshaller(ctx.convertSlotToVal).unserialize(capData),
+      boardSlottingMarshaller(ctx.convertSlotToVal).fromCapData(capData),
     );
   },
   /** @param {string[]} capDataStrings array of stringified capData */
