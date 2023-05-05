@@ -269,8 +269,7 @@ test.serial('admin price', async t => {
 
   // Verify price result
 
-  // @ts-expect-error cast
-  const manualTimer = /** @type {ManualTimer} */ (
+  const manualTimer = /** @type {Promise<ManualTimer>} */ (
     t.context.consume.chainTimerService
   );
   const timerBrand = await E(manualTimer).getTimerBrand();
