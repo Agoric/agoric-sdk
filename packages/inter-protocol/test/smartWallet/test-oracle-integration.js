@@ -9,6 +9,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
 import { E } from '@endo/far';
 import { zip } from '@agoric/internal';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { buildRootObject } from './boot-psm.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregatorKit.js';
@@ -71,10 +72,27 @@ const makeTestSpace = async (log, bundleCache) => {
     OUT_BRAND_NAME: 'USD',
     OUT_BRAND_DECIMALS: '6',
   };
+  /**
+   *
+   * @param {string} name
+   * @param {number|string} decimals
+   */
+  const ensureOracleBrand = (name, decimals) => {
+    const { brand } = makeIssuerKit(name, AssetKind.NAT, {
+      decimalPlaces: Number(decimals),
+    });
+    // @ts-expect-error XXX space lacks oracleBrand
+    space.oracleBrand.produce[name].resolve(brand);
+  };
+  ensureOracleBrand(
+    priceFeedOptions.IN_BRAND_NAME,
+    priceFeedOptions.IN_BRAND_DECIMALS,
+  );
+  ensureOracleBrand(
+    priceFeedOptions.OUT_BRAND_NAME,
+    priceFeedOptions.OUT_BRAND_DECIMALS,
+  );
 
-  await ensureOracleBrands(space, {
-    options: { priceFeedOptions },
-  });
   await eventLoopIteration();
 
   return space;
