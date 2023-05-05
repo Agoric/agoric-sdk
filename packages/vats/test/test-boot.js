@@ -1,6 +1,7 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSourceAmbient from '@endo/bundle-source';
 import { E } from '@endo/far';
@@ -137,12 +138,14 @@ test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t
 });
 
 test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
+  const baggage = makeScalarBigMapStore('Test Baggage');
   const root = buildRootObject(
     /** @type {VatPowers} */ /** @type {any} */ ({
       D: mockDProxy,
       logger: t.log,
     }),
     {},
+    baggage,
   );
 
   await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
