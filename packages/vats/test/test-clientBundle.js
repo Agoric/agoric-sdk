@@ -8,7 +8,11 @@ import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
+import {
+  installCentralSupplyContract,
+  connectFaucet,
+  showAmount,
+} from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
@@ -128,6 +132,7 @@ test('connectFaucet produces payments', async t => {
     makeAddressNameHubs({ consume, produce, ...spaces }),
     installBootContracts({ consume, produce, ...spaces }),
     setupClientManager({ consume, produce, ...spaces }),
+    installCentralSupplyContract({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
     makeClientBanks({ consume, produce, ...spaces }),
     stubProps({ consume, produce, ...spaces }),

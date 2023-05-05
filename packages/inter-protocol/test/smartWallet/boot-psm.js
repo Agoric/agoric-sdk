@@ -11,7 +11,6 @@ import {
   makeAddressNameHubs,
   makeBoard,
   makeVatsFromBundles,
-  mintInitialSupply,
   produceStartGovernedUpgradable,
   produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
@@ -274,7 +273,6 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         },
       }),
       startWalletFactory(powersFor('startWalletFactory')),
-      mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),
       installBootContracts(powersFor('installBootContracts')),

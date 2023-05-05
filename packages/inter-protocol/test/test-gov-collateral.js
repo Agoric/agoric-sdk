@@ -203,6 +203,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       t.context.installation.mintHolder,
     );
 
+    // @ts-expect-error ChainBootstrapSpace intentionally omits initialSupply, prod shouldn't have one
     space.produce.initialSupply.resolve(emptyRunPayment());
 
     return Promise.all([

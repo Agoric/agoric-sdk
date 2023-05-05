@@ -255,7 +255,6 @@
  *   feeMintAccess: FeeMintAccess,
  *   fluxAggregatorKits: ERef<GovernanceFacetKit<GovernableStartFn>>[],
  *   highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager?,
- *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,

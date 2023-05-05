@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
@@ -440,11 +439,10 @@ harden(makeClientBanks);
 export const installBootContracts = async ({
   consume: { vatAdminSvc, zoe },
   installation: {
-    produce: { centralSupply, mintHolder },
+    produce: { mintHolder },
   },
 }) => {
   for (const [name, producer] of Object.entries({
-    centralSupply,
     mintHolder,
   })) {
     const idP = E(vatAdminSvc).getBundleIDByName(name);
@@ -456,46 +454,7 @@ export const installBootContracts = async ({
 };
 
 /**
- * Mint IST genesis supply.
- *
- * @param { BootstrapPowers & {
- *   vatParameters: { argv: { bootMsg?: typeof bootMsgEx }},
- * }} powers
- */
-export const mintInitialSupply = async ({
-  vatParameters: {
-    argv: { bootMsg },
-  },
-  consume: { feeMintAccess: feeMintAccessP, zoe },
-  produce: { initialSupply },
-  installation: {
-    consume: { centralSupply },
-  },
-}) => {
-  const feeMintAccess = await feeMintAccessP;
-
-  const { supplyCoins = [] } = bootMsg || {};
-  const centralBootstrapSupply = supplyCoins.find(
-    ({ denom }) => denom === Stable.denom,
-  ) || { amount: '0' };
-  const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
-
-  /** @type {Awaited<ReturnType<typeof import('../centralSupply.js').start>>} */
-  const { creatorFacet } = await E(zoe).startInstance(
-    centralSupply,
-    {},
-    { bootstrapPaymentValue },
-    { feeMintAccess },
-    'centralSupply',
-  );
-  const payment = E(creatorFacet).getBootstrapPayment();
-  // TODO: shut down the centralSupply contract, now that we have the payment?
-  initialSupply.resolve(payment);
-};
-harden(mintInitialSupply);
-
-/**
- * Add IST (with initialSupply payment), BLD (with mint) to BankManager.
+ * Add IST (without a payment), BLD (with mint) to BankManager.
  *
  * @param { BootstrapSpace & {
  *   consume: { loadCriticalVat: ERef<VatLoader<BankVat>> },
@@ -504,7 +463,6 @@ harden(mintInitialSupply);
 export const addBankAssets = async ({
   consume: {
     agoricNamesAdmin,
-    initialSupply,
     bridgeManager: bridgeManagerP,
     loadCriticalVat,
     zoe,
@@ -517,11 +475,8 @@ export const addBankAssets = async ({
   brand: { produce: produceBrand },
 }) => {
   const runIssuer = await E(zoe).getFeeIssuer();
-  const [runBrand, payment] = await Promise.all([
-    E(runIssuer).getBrand(),
-    initialSupply,
-  ]);
-  const runKit = { issuer: runIssuer, brand: runBrand, payment };
+  const [runBrand] = await Promise.all([E(runIssuer).getBrand()]);
+  const runKit = { issuer: runIssuer, brand: runBrand };
 
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
@@ -669,30 +624,13 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     consume: { zoe: 'zoe', vatAdminSvc: true },
     installation: {
       produce: {
-        centralSupply: 'zoe',
         mintHolder: 'zoe',
       },
-    },
-  },
-  [mintInitialSupply.name]: {
-    vatParameters: {
-      argv: { bootMsg: true },
-    },
-    consume: {
-      feeMintAccess: true,
-      zoe: true,
-    },
-    produce: {
-      initialSupply: true,
-    },
-    installation: {
-      consume: { centralSupply: 'zoe' },
     },
   },
   [addBankAssets.name]: {
     consume: {
       agoricNamesAdmin: true,
-      initialSupply: true,
       bridgeManager: 'bridge',
       // TODO: re-org loadCriticalVat to be subject to permits
       loadCriticalVat: true,
@@ -703,7 +641,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
       bldIssuerKit: true,
     },
     installation: {
-      consume: { centralSupply: 'zoe', mintHolder: 'zoe' },
+      consume: { mintHolder: 'zoe' },
     },
     issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },

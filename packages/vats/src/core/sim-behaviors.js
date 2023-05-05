@@ -1,8 +1,8 @@
 import { E, Far } from '@endo/far';
-import { connectFaucet } from './demoIssuers.js';
+import { installCentralSupplyContract, connectFaucet } from './demoIssuers.js';
 import { addRemote } from './utils.js';
 
-export { connectFaucet };
+export { installCentralSupplyContract, connectFaucet };
 
 /** @param {BootstrapPowers} powers */
 export const installSimEgress = async ({
@@ -48,6 +48,14 @@ export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
       comms: true,
     },
     consume: { clientCreator: true },
+  },
+  [installCentralSupplyContract.name]: {
+    consume: { zoe: 'zoe', vatAdminSvc: true },
+    installation: {
+      produce: {
+        centralSupply: 'zoe',
+      },
+    },
   },
   [connectFaucet.name]: {
     consume: {

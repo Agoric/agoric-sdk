@@ -216,6 +216,24 @@ const provideCoin = async (name, mints) => {
   });
 };
 
+/** @param {BootstrapSpace} powers */
+export const installCentralSupplyContract = async ({
+  consume: { vatAdminSvc, zoe },
+  installation: {
+    produce: { centralSupply },
+  },
+}) => {
+  for (const [name, producer] of Object.entries({
+    centralSupply,
+  })) {
+    const idP = E(vatAdminSvc).getBundleIDByName(name);
+    const installationP = idP.then(bundleID =>
+      E(zoe).installBundleID(bundleID, name),
+    );
+    producer.resolve(installationP);
+  }
+};
+
 /**
  * @param { BootstrapSpace &
  *   { consume: {loadVat: VatLoader<MintsVat>} }

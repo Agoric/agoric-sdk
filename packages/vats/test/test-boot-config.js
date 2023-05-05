@@ -22,12 +22,13 @@ const CONFIG_FILES = [
   ...PROD_CONFIG_FILES,
 ];
 
+// these vats must not appear in the config, because we know they are
+// not upgradable
 const NON_UPGRADEABLE_VATS = [
   'vat-network',
   'vat-ibc',
   'pegasus',
-  // TODO(#6687): prune centralSupply from prod config
-  // 'centralSupply',
+  'centralSupply',
   'mints',
   'sharing',
 ];
