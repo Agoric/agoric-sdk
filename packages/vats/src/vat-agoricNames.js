@@ -1,7 +1,5 @@
 // @ts-check
 // @jessy-check
-
-import { makeStoredPublishKit } from '@agoric/notifier';
 import { E, Far } from '@endo/far';
 import { makeNameHubKit } from './nameHub.js';
 
@@ -16,18 +14,20 @@ export const buildRootObject = (_vatPowers, _vatParameters, _baggage) => {
 
   /**
    * @param {ERef<StorageNode>} nameStorage
-   * @param {ERef<Marshaller>} marshaller
+   * @param {ERef<BoardVat>} vatBoard
    * @param {string[]} kinds brand, issuer, ...
    */
-  const publishNameHubs = async (nameStorage, marshaller, kinds) => {
+  const publishNameHubs = async (nameStorage, vatBoard, kinds) => {
     await Promise.all(
       kinds.map(async kind => {
+        /** @type {import('./types.js').NameAdmin} */
         const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
 
         const kindNode = await E(nameStorage).makeChildNode(kind);
-        const { publisher } = makeStoredPublishKit(kindNode, marshaller);
-        publisher.publish([]);
-        kindAdmin.onUpdate(publisher);
+        const recorderKit = await E(vatBoard).makePublishingRecorderKit(
+          kindNode,
+        );
+        kindAdmin.onUpdate(recorderKit.recorder);
       }),
     );
   };

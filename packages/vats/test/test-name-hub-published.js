@@ -46,11 +46,6 @@ test('publishAgoricNames publishes AMM instance', async t => {
     ),
     [['amm', ammInstance]],
   );
-
-  await t.throwsAsync(instanceAdmin.update('non-passable', Promise.resolve()), {
-    message:
-      'invalid key type for collection "valToId": A "promise" cannot be a scalar key: "[Promise]"',
-  });
 });
 
 test('promise space reserves non-well-known names', async t => {

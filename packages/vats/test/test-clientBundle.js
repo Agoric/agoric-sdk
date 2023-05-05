@@ -44,7 +44,7 @@ harden(setUpZoeForTest);
 
 /**
  * @typedef {{
- *   (n: 'board'): import('../src/core/basic-behaviors.js').BoardVat
+ *   (n: 'board'): BoardVat
  *   (n: 'mint'): MintsVat
  * }} LoadVat
  */
