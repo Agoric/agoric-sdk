@@ -258,7 +258,7 @@ export {};
 // /////////////////////////////////////////////////////////////////////////////
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
-/** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
+/** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
  * Defined by vstorageStoreKey in vstorage.go

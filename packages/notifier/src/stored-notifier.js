@@ -45,7 +45,8 @@ export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
 
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
-    unserialize: data => E(marshaller).unserialize(data),
+    fromCapData: data => E(marshaller).fromCapData(data),
+    unserialize: data => E(marshaller).fromCapData(data),
   });
 
   /** @type {StoredNotifier<T>} */

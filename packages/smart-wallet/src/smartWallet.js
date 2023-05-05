@@ -540,7 +540,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           // use E.when to retain distributed stack trace
           return E.when(
-            E(publicMarshaller).unserialize(actionCapData),
+            E(publicMarshaller).fromCapData(actionCapData),
             /** @param {BridgeAction} action */
             action => {
               try {

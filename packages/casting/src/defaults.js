@@ -114,6 +114,10 @@ export const MAKE_DEFAULT_UNSERIALIZER = () => {
     return obj;
   };
   return Far('marshal unserializer', {
+    fromCapData: makeMarshal(undefined, slotToVal, {
+      serializeBodyFormat: 'smallcaps',
+    }).fromCapData,
+    /** @deprecated use fromCapData */
     unserialize: makeMarshal(undefined, slotToVal, {
       serializeBodyFormat: 'smallcaps',
     }).fromCapData,

@@ -44,7 +44,7 @@ The `followerOpts` argument in `makeFollower(leader, key, followerOpts)` provide
 - the `unserializer` option can be
   - (default) - release unserialized objects using `@agoric/marshal`'s `makeMarshal()`
   - `null` - don't additionally unserialize data before releasing it
-  - any unserializer object supporting `E(unserializer).unserialize(data)`
+  - any unserializer object supporting `E(unserializer).fromCapData(data)`
 - the `crasher` option can be
   - `null` (default) follower failures only propagate an exception/rejection
   - any crasher object supporting `E(crasher).crash(reason)`

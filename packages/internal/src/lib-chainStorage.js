@@ -7,7 +7,7 @@ import * as cb from './callback.js';
 const { Fail } = assert;
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
-/** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
+/** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
  * Defined by vstorageStoreKey in vstorage.go
@@ -226,7 +226,7 @@ harden(makeStorageNodeChild);
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {
-    const marshalled = await E(marshaller).serialize(value);
+    const marshalled = await E(marshaller).toCapData(value);
     const serialized = JSON.stringify(marshalled);
     return E(storageNode).setValue(serialized);
   };

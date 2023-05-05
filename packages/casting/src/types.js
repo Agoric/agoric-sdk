@@ -49,8 +49,7 @@ export {};
  */
 
 /**
- * @typedef {object} Unserializer
- * @property {(data: import('@endo/marshal').CapData<unknown>) => any} unserialize
+ * @typedef {Pick<import('@endo/marshal').Marshal<unknown>, 'fromCapData' | 'unserialize'>} Unserializer
  */
 
 /**

@@ -1,7 +1,6 @@
 // @ts-check
 /* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
-import { Far } from '@endo/far';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
 import {
@@ -341,8 +340,7 @@ export const makeSwingsetTestKit = async (
 
   const storage = makeFakeStorageKit('bootstrapTests');
 
-  const slotToVal = (_slotId, iface = 'Remotable') => Far(iface);
-  const marshal = boardSlottingMarshaller(slotToVal);
+  const marshal = boardSlottingMarshaller(slotToRemotable);
 
   const readLatest = path => {
     const str = storage.data.get(path)?.at(-1);

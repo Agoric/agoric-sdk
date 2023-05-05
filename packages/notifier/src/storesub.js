@@ -59,6 +59,7 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
 
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
+    fromCapData: data => E(marshaller).fromCapData(data),
     unserialize: data => E(marshaller).fromCapData(data),
   });
 
@@ -99,6 +100,7 @@ export const makeStoredSubscription = (
 ) => {
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
+    fromCapData: data => E(marshaller).fromCapData(data),
     unserialize: data => E(marshaller).fromCapData(data),
   });
 
@@ -122,7 +124,7 @@ export const makeStoredSubscription = (
 
     // Publish the value, capturing any error.
     E(marshaller)
-      .serialize(obj)
+      .toCapData(obj)
       .then(serialized => {
         const encoded = JSON.stringify(serialized);
         return E(storageNode).setValue(encoded);

@@ -60,7 +60,7 @@ test('bridge handler', async t => {
     owner: mockAddress1,
     // consider a helper for each action type
     spendAction: JSON.stringify(
-      ctx.fromBoard.serialize(
+      ctx.fromBoard.toCapData(
         harden({ method: 'executeOffer', offer: offerSpec }),
       ),
     ),
@@ -107,7 +107,7 @@ test('bridge with offerId string', async t => {
     owner: mockAddress2,
     // consider a helper for each action type
     spendAction: JSON.stringify(
-      ctx.fromBoard.serialize(
+      ctx.fromBoard.toCapData(
         harden({ method: 'executeOffer', offer: offerSpec }),
       ),
     ),
@@ -142,7 +142,7 @@ test('missing spend authority', async t => {
     type: ActionType.WALLET_ACTION, // not SPEND
     owner,
     action: JSON.stringify(
-      ctx.fromBoard.serialize(
+      ctx.fromBoard.toCapData(
         harden({ method: 'tryExitOffer', offerId: 'irrelevant' }),
       ),
     ),
