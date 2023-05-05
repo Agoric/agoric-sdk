@@ -197,7 +197,7 @@ export const bridgeProvisioner = async ({
         },
       })
     : provisionWalletBridgeManager;
-  await E(provisionBridgeManager).setHandler(handler);
+  await E(provisionBridgeManager).initHandler(handler);
 };
 harden(bridgeProvisioner);
 
@@ -500,7 +500,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
         .createInstance(callbacks)
         .then(ibcHandler =>
           E(dibcBridgeManager)
-            .setHandler(ibcHandler)
+            .initHandler(ibcHandler)
             .then(() =>
               E(vats.network).registerProtocolHandler(
                 ['/ibc-port', '/ibc-hop'],

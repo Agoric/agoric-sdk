@@ -189,7 +189,7 @@ test('upgrade vat-bridge', async t => {
       fromBridge: undefined,
     },
   );
-  await EV(storageBridge).setHandler(storageHandler);
+  await EV(storageBridge).initHandler(storageHandler);
   t.deepEqual(
     await EV.rawBoot.getLogForRemotable(storageHandler),
     [],

@@ -92,6 +92,9 @@ const makeFakeBridgeManager = () =>
           // @ts-expect-error handler possibly undefined
           return E(handler).fromBridge(obj);
         },
+        initHandler(newHandler) {
+          handler = newHandler;
+        },
         setHandler(newHandler) {
           handler = newHandler;
         },

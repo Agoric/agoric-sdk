@@ -170,7 +170,7 @@ export function buildRootObject() {
           },
         });
 
-        await E(bankBridgeMgr).setHandler(handler);
+        await E(bankBridgeMgr).initHandler(handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
         return obj => E(bankBridgeMgr).toBridge(obj);
