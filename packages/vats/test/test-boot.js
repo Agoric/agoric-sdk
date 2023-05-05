@@ -58,7 +58,14 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
 
   test(`test manifest permits: ${label} gov: ${doCoreProposals}`, async t => {
     const mock = makeMock(t.log);
-    const vatPowers = { D: mockDProxy, logger: t.log };
+    const vatPowers = {
+      D: mockDProxy,
+      logger: t.log,
+      exitVatWithFailure: err => {
+        console.error(err);
+        throw err;
+      },
+    };
     const root = entryPoint(vatPowers, vatParameters);
     const vats = mockSwingsetVats(mock);
     await t.notThrowsAsync(E(root).bootstrap(vats, mock.devices));
