@@ -92,12 +92,12 @@ test('check allocations', async t => {
     timer,
   );
 
-  const runBrand = await space.brand.consume.IST;
+  const stableBrand = await space.brand.consume.IST;
   const metricsTopic = await E.get(
     E(reserve.reservePublicFacet).getPublicTopics(),
   ).metrics;
   const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(stableBrand)));
 
   const invitation = await E(
     reserve.reservePublicFacet,
@@ -138,7 +138,7 @@ test('reserve track shortfall', async t => {
     timer,
   );
 
-  const runBrand = await space.brand.consume.IST;
+  const stableBrand = await space.brand.consume.IST;
 
   const shortfallReporterSeat = await E(zoe).offer(
     E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
@@ -146,7 +146,7 @@ test('reserve track shortfall', async t => {
   const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
 
   await E(reporterFacet).increaseLiquidationShortfall(
-    AmountMath.make(runBrand, 1000n),
+    AmountMath.make(stableBrand, 1000n),
   );
   let runningShortfall = 1000n;
 
@@ -154,13 +154,13 @@ test('reserve track shortfall', async t => {
     E(reserve.reservePublicFacet).getPublicTopics(),
   ).metrics;
   const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(stableBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
   });
 
   await E(reporterFacet).increaseLiquidationShortfall(
-    AmountMath.make(runBrand, 500n),
+    AmountMath.make(stableBrand, 500n),
   );
   runningShortfall += 500n;
 
@@ -169,7 +169,7 @@ test('reserve track shortfall', async t => {
   });
 
   await E(reporterFacet).reduceLiquidationShortfall(
-    AmountMath.make(runBrand, 200n),
+    AmountMath.make(stableBrand, 200n),
   );
   runningShortfall -= 200n;
   await m.assertChange({
@@ -177,7 +177,7 @@ test('reserve track shortfall', async t => {
   });
 
   await E(reporterFacet).reduceLiquidationShortfall(
-    AmountMath.make(runBrand, 2000n),
+    AmountMath.make(stableBrand, 2000n),
   );
   runningShortfall = 0n;
   await m.assertChange({
@@ -200,38 +200,37 @@ test('reserve burn IST, with snapshot', async t => {
     mockChainStorage,
   } = await setupReserveServices(t, electorateTerms, timer);
 
-  const runBrand = await space.brand.consume.IST;
+  const stableBrand = await space.brand.consume.IST;
 
   const shortfallReporterSeat = await E(zoe).offer(
     E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
   );
   const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
 
-  const oneKRun = AmountMath.make(runBrand, 1000n);
-  await E(reporterFacet).increaseLiquidationShortfall(oneKRun);
-  const runningShortfall = 1000n;
+  const oneK = AmountMath.make(stableBrand, 1000n);
+  await E(reporterFacet).increaseLiquidationShortfall(oneK);
 
   const metricsTopic = await E.get(
     E(reserve.reservePublicFacet).getPublicTopics(),
   ).metrics;
   const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(stableBrand)));
   await m.assertChange({
-    shortfallBalance: { value: runningShortfall },
+    shortfallBalance: { value: oneK.value },
   });
 
   const runPayment = getRunFromFaucet(
     zoe,
     feeMintAccess,
     faucetInstallation,
-    oneKRun,
+    oneK,
   );
 
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
 
-  const proposal = { give: { Collateral: oneKRun } };
+  const proposal = { give: { Collateral: oneK } };
   const payments = { Collateral: runPayment };
   const collateralSeat = E(zoe).offer(invitation, proposal, payments);
 
@@ -241,16 +240,16 @@ test('reserve burn IST, with snapshot', async t => {
     `added RUN to the collateral Reserve`,
   );
   await m.assertChange({
-    allocations: { Fee: oneKRun },
+    allocations: { Fee: oneK },
   });
 
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
-    harden({ Fee: oneKRun }),
+    harden({ Fee: oneK }),
     'expecting more',
   );
 
-  const params = harden([oneKRun]);
+  const params = harden([oneK]);
   // @ts-expect-error puppet governor
   await E(governor.governorCreatorFacet).invokeAPI(
     'burnFeesToReduceShortfall',

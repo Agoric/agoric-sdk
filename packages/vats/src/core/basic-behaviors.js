@@ -12,6 +12,7 @@ import {
   WalletName,
 } from '@agoric/internal';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -420,7 +421,6 @@ export const makeClientBanks = async ({
         !powerFlags.includes(PowerFlags.REMOTE_WALLET),
         `REMOTE and SMART_WALLET are exclusive`,
       );
-      /** @type {ERef<import('../types').MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
 
       const smartWallet = E(walletFactoryCreatorFacet).provideSmartWallet(
@@ -507,9 +507,10 @@ export const addBankAssets = async ({
     initialSupply,
     bridgeManager: bridgeManagerP,
     loadCriticalVat,
+    startUpgradable: startUpgradableP,
     zoe,
   },
-  produce: { bankManager, bldIssuerKit },
+  produce: { bankManager, bldIssuerKit, bldMintHolderKit },
   installation: {
     consume: { mintHolder },
   },
@@ -517,25 +518,27 @@ export const addBankAssets = async ({
   brand: { produce: produceBrand },
 }) => {
   const runIssuer = await E(zoe).getFeeIssuer();
-  const [runBrand, payment] = await Promise.all([
+  const [runBrand, payment, startUpgradable] = await Promise.all([
     E(runIssuer).getBrand(),
     initialSupply,
+    startUpgradableP,
   ]);
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
+  const terms = harden({
+    keyword: Stake.symbol,
+    assetKind: Stake.assetKind,
+    displayInfo: Stake.displayInfo,
+  });
 
-  const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
-    E(zoe).startInstance(
-      mintHolder,
-      harden({}),
-      harden({
-        keyword: Stake.symbol,
-        assetKind: Stake.assetKind,
-        displayInfo: Stake.displayInfo,
-      }),
-      undefined,
-      Stake.symbol,
-    ),
-  );
+  const { creatorFacet: bldMint, publicFacet: bldIssuer } =
+    await startUpgradable({
+      installation: mintHolder,
+      label: Stake.symbol,
+      terms,
+      produceResults: bldMintHolderKit,
+      privateArgs: undefined,
+    });
+
   const bldBrand = await E(bldIssuer).getBrand();
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
   bldIssuerKit.resolve(bldKit);
@@ -696,11 +699,13 @@ export const BASIC_BOOTSTRAP_PERMITS = {
       bridgeManager: 'bridge',
       // TODO: re-org loadCriticalVat to be subject to permits
       loadCriticalVat: true,
+      startUpgradable: true,
       zoe: true,
     },
     produce: {
       bankManager: 'bank',
       bldIssuerKit: true,
+      bldMintHolderKit: true,
     },
     installation: {
       consume: { centralSupply: 'zoe', mintHolder: 'zoe' },

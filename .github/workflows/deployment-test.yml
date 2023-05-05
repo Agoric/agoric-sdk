@@ -12,21 +12,14 @@ on:
     tags:
       - '@agoric/sdk@*'
   pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
-      - labeled
-      - auto_merge_enabled
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  pre_check:
-    uses: ./.github/workflows/pre-check-integration.yml
-
   deployment-test:
-    needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
       - uses: actions/checkout@v3

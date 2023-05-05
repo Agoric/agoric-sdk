@@ -79,7 +79,7 @@
  * @typedef {object} Producer<T>
  * @property {(v: ERef<T>) => void} resolve
  * @property {(r: unknown) => void} reject
- * @property {() => void} reset
+ * @property {(reason?: unknown) => void} reset
  * @template T
  */
 /**
@@ -89,12 +89,8 @@
  * @typedef {(name: string, sourceRef?: VatSourceRef) => T} VatLoader<T>
  * @template T
  */
+
 /**
- * @typedef {{
- *   consume: Record<string, Promise<unknown>>,
- *   produce: Record<string, Producer<unknown>>,
- * }} PromiseSpace
- *
  * @typedef {{
  *   assignBundle: (ps: PropertyMaker[]) => void
  * }} ClientManager tool to put properties onto the `home` object of the client
@@ -107,7 +103,7 @@
  * @template [C={}] Consume only
  * @template [P={}] Produce only
  * @typedef {{
- *   consume: { [K in keyof (B & C)]: ERef<(B & C)[K]> },
+ *   consume: { [K in keyof (B & C)]: Promise<(B & C)[K]> },
  *   produce: { [K in keyof (B & P)]: Producer<(B & P)[K]> },
  * }} PromiseSpaceOf
  */
@@ -245,6 +241,7 @@
  *   anchorKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
+ *   bldMintHolderKit: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>,
  *   board: import('@agoric/vats').Board,
  *   bridgeManager: import('../types.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
