@@ -35,13 +35,21 @@ export const makeLogHooks = log =>
  */
 export const makeStoreHooks = (store, log = noop) => {
   const logHooks = makeLogHooks(log);
+
+  const tryInit = (name, value) => {
+    try {
+      store.init(name, value);
+    } catch (err) {
+      console.warn('!!🚨!! store.init(', name, value, ')', err);
+    }
+  };
   return harden({
     ...logHooks,
     onResolve: (name, valueP) => {
       if (isPromise(valueP)) {
-        void valueP.then(value => store.init(name, value));
+        void valueP.then(value => tryInit(name, value));
       } else {
-        store.init(name, valueP);
+        tryInit(name, valueP);
       }
     },
     onReset: name => {
