@@ -1,5 +1,5 @@
 {
-  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. Pending #5819, it includes vaults in coreProposals; once #5819 is done, vaults are expected to be added by devnet governance.",
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is intended for use with mailbox/ag-solo access.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [
@@ -172,9 +172,6 @@
     },
     "bridge": {
       "sourceSpec": "@agoric/vats/src/vat-bridge.js"
-    },
-    "centralSupply": {
-      "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
