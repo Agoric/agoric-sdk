@@ -1,28 +1,9 @@
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
-import { Far } from '@endo/far';
-import {
-  installGovAndPSMContracts,
-  makeAnchorAsset,
-  startPSM,
-  inviteToEconCharter,
-  inviteCommitteeMembers,
-  PSM_MANIFEST,
-  PSM_GOV_MANIFEST,
-  startEconCharter,
-  INVITE_PSM_COMMITTEE_MANIFEST,
-} from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
+import { E, Far } from '@endo/far';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { mustMatch, M } from '@agoric/store';
-import {
-  ECON_COMMITTEE_MANIFEST,
-  startEconomicCommittee,
-} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess } from './utils.js';
-import { makePromiseSpace } from './promise-space.js';
-import { Stable, Stake } from '../tokens.js';
+import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   addBankAssets,
   buildZoe,
@@ -33,24 +14,102 @@ import {
   mintInitialSupply,
   produceStartGovernedUpgradable,
   produceStartUpgradable,
-} from './basic-behaviors.js';
-import * as utils from './utils.js';
+} from '@agoric/vats/src/core/basic-behaviors.js';
 import {
   bridgeCoreEval,
   bridgeProvisioner,
+  CHAIN_BOOTSTRAP_MANIFEST,
   makeBridgeManager,
   makeChainStorage,
   noProvisioner,
   publishAgoricNames,
   startTimerService,
-  CHAIN_BOOTSTRAP_MANIFEST,
-} from './chain-behaviors.js';
+} from '@agoric/vats/src/core/chain-behaviors.js';
+import { makePromiseSpace } from '@agoric/vats/src/core/promise-space.js';
 import {
   startWalletFactory,
   WALLET_FACTORY_MANIFEST,
-} from './startWalletFactory.js';
+} from '@agoric/vats/src/core/startWalletFactory.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import {
+  ECON_COMMITTEE_MANIFEST,
+  startEconomicCommittee,
+} from '../../src/proposals/startEconCommittee.js';
+import * as startPSMmod from '../../src/proposals/startPSM.js';
+import {
+  INVITE_PSM_COMMITTEE_MANIFEST,
+  makeAnchorAsset,
+  PSM_MANIFEST,
+  startPSM,
+} from '../../src/proposals/startPSM.js';
+import {
+  inviteCommitteeMembers,
+  inviteToEconCharter,
+  startEconCharter,
+} from '../../src/proposals/committee-proposal.js';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
+
+/** @param {BootstrapSpace & EconomyBootstrapSpace} powers */
+export const installGovAndPSMContracts = async ({
+  consume: { vatAdminSvc, zoe },
+  produce: { psmKit },
+  installation: {
+    produce: {
+      contractGovernor,
+      committee,
+      binaryVoteCounter,
+      psm,
+      econCommitteeCharter,
+    },
+  },
+}) => {
+  // In order to support multiple instances of the PSM, we store all the facets
+  // indexed by the brand. Since each name in the BootstrapSpace can only be
+  // produced  once, we produce an empty store here, and each time a PSM is
+  // started up, the details are added to the store.
+  psmKit.resolve(makeScalarMapStore());
+
+  return Promise.all(
+    Object.entries({
+      contractGovernor,
+      committee,
+      binaryVoteCounter,
+      psm,
+      econCommitteeCharter,
+    }).map(async ([name, producer]) => {
+      const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
+      const installation = await E(zoe).installBundleID(bundleID, name);
+
+      producer.resolve(installation);
+    }),
+  );
+};
+
+/**
+ * PSM and gov contracts are available as
+ * named swingset bundles only in
+ * decentral-psm-config.json
+ *
+ * @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest}
+ */
+export const PSM_GOV_MANIFEST = {
+  [installGovAndPSMContracts.name]: {
+    consume: { vatAdminSvc: 'true', zoe: 'zoe' },
+    produce: { psmKit: 'true' },
+    installation: {
+      produce: {
+        contractGovernor: 'zoe',
+        committee: 'zoe',
+        binaryVoteCounter: 'zoe',
+        psm: 'zoe',
+        econCommitteeCharter: 'zoe',
+      },
+    },
+  },
+};
 
 /**
  * We reserve these keys in name hubs.
@@ -138,7 +197,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
+  const { agoricNames, agoricNamesAdmin, spaces } = utils.makeAgoricNamesAccess(
     log,
     agoricNamesReserved,
   );
@@ -171,6 +230,18 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
       ...INVITE_PSM_COMMITTEE_MANIFEST,
+      [startEconCharter.name]: {
+        consume: { zoe: 'zoe', agoricNames: true },
+        produce: {
+          econCharterKit: 'econCommitteeCharter',
+        },
+        installation: {
+          consume: { binaryVoteCounter: 'zoe', econCommitteeCharter: 'zoe' },
+        },
+        instance: {
+          produce: { econCommitteeCharter: 'econCommitteeCharter' },
+        },
+      },
       [noProvisioner.name]: {
         produce: {
           provisioning: 'provisioning',
@@ -231,7 +302,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           options: { anchorOptions },
         }),
       ),
-      startEconCharter(powersFor('startEconCharter')),
+      startEconCharter(powersFor(startEconCharter.name)),
       // Allow bootstrap powers to be granted by governance
       // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),

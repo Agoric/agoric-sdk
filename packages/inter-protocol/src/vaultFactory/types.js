@@ -11,6 +11,7 @@
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
  */
 

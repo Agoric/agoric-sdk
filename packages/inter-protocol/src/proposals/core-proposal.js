@@ -107,7 +107,6 @@ const REWARD_MANIFEST = harden({
       bankManager: true,
       vaultFactoryKit: true,
       periodicFeeCollectors: true,
-      stakeFactoryKit: true,
       reserveKit: true,
       zoe: true,
     },
@@ -116,45 +115,6 @@ const REWARD_MANIFEST = harden({
     installation: { consume: { feeDistributor: true } },
     issuer: { consume: { [Stable.symbol]: 'zoe' } },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
-  },
-});
-
-const STAKE_FACTORY_MANIFEST = harden({
-  [econBehaviors.startLienBridge.name]: {
-    consume: { bridgeManager: true },
-    produce: { lienBridge: true },
-    brand: {
-      consume: { BLD: 'BLD' },
-    },
-  },
-  [econBehaviors.startStakeFactory.name]: {
-    consume: {
-      board: 'board',
-      chainStorage: true,
-      zoe: 'zoe',
-      feeMintAccess: 'zoe',
-      lienBridge: true,
-      client: 'provisioning',
-      chainTimerService: 'timer',
-      economicCommitteeCreatorFacet: 'economicCommittee',
-    },
-    produce: {
-      stakeFactoryKit: 'stakeFactory',
-    },
-    installation: {
-      consume: { contractGovernor: 'zoe', stakeFactory: 'zoe' },
-    },
-    instance: {
-      produce: { stakeFactory: 'stakeFactory' },
-    },
-    brand: {
-      consume: { BLD: 'BLD', [Stable.symbol]: 'zoe' },
-      produce: { Attestation: 'stakeFactory' },
-    },
-    issuer: {
-      consume: { BLD: 'BLD' },
-      produce: { Attestation: 'stakeFactory' },
-    },
   },
 });
 
@@ -230,12 +190,10 @@ export const getManifestForInterProtocol = (
       ...econCommitteeManifest.manifest,
       ...mainManifest.manifest,
       ...REWARD_MANIFEST,
-      ...STAKE_FACTORY_MANIFEST,
     },
     installations: {
       ...econCommitteeManifest.installations,
       ...mainManifest.installations,
-      stakeFactory: restoreRef(installKeys.stakeFactory),
     },
     options: {
       ...econCommitteeManifest.options,

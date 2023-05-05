@@ -20,35 +20,23 @@ set -x
 # NB: fee percentages must be at least the governed param values
 
 # Accept invitation to economic committee
-COMMITTEE_OFFER=$(mktemp -t agops.XXX)
-bin/agops ec committee >|"$COMMITTEE_OFFER"
-jq ".body | fromjson" <"$COMMITTEE_OFFER"
-agoric wallet send --offer "$COMMITTEE_OFFER" --from gov1 --keyring-backend="test"
-# verify the offerId is readable from chain history
-agoric wallet show --from gov1
-COMMITTEE_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$COMMITTEE_OFFER")
+bin/agops ec committee --send-from gov1
 
 # Accept invitation to be a charter member
-CHARTER_OFFER=$(mktemp -t agops.XXX)
-bin/agops ec charter >|"$CHARTER_OFFER"
-jq ".body | fromjson" <"$CHARTER_OFFER"
-agoric wallet send --offer "$CHARTER_OFFER" --from gov1 --keyring-backend="test"
-# verify the offerId is readable from chain history
-agoric wallet show --from gov1
-CHARTER_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$CHARTER_OFFER")
+bin/agops ec charter --send-from gov1
 
 ### Now we have the continuing invitationMakers saved in the wallet
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops psm proposePauseOffers --substring wantMinted --charterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
-jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
 bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
-jq ".body | fromjson" <"$VOTE_OFFER"
+agoric wallet print --file "$VOTE_OFFER"
 agoric wallet send --offer "$VOTE_OFFER" --from gov1 --keyring-backend="test"
 ## wait for the election to be resolved (1m in commands/psm.js)
 
@@ -70,7 +58,7 @@ agoric wallet send --offer "$SWAP_OFFER" --from gov1 --keyring-backend="test"
 # Propose a vote to raise the mint limit
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
-jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # to verify that the question was proposed, you can use
@@ -81,7 +69,7 @@ agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
 bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
-jq ".body | fromjson" <"$VOTE_OFFER"
+agoric wallet print --file "$VOTE_OFFER"
 agoric wallet send --offer "$VOTE_OFFER" --from gov1 --keyring-backend="test"
 ## wait for the election to be resolved (1m default in commands/psm.js)
 
@@ -91,11 +79,11 @@ bin/agops psm info
 # Propose to burn fees
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops reserve proposeBurn --value 1000 --charterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
-jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # Vote for the API call
 VOTE_OFFER=$(mktemp -t agops.XXX)
 bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
-jq ".body | fromjson" <"$VOTE_OFFER"
+agoric wallet print --file "$VOTE_OFFER"
 agoric wallet send --offer "$VOTE_OFFER" --from gov1 --keyring-backend="test"

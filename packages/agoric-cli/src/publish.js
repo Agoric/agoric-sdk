@@ -13,7 +13,7 @@ import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
 import { defaultRegistryTypes } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 import { Decimal } from '@cosmjs/math';
-import { Bech32 } from '@cosmjs/encoding';
+import { fromBech32 } from '@cosmjs/encoding';
 
 import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
 
@@ -269,7 +269,7 @@ export const makeCosmosBundlePublisher = ({
 
     const installBundleMsg = {
       bundle: JSON.stringify(bundle),
-      submitter: Bech32.decode(from.address).data,
+      submitter: fromBech32(from.address).data,
     };
 
     /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
@@ -291,7 +291,6 @@ export const makeCosmosBundlePublisher = ({
       // AWAIT
       // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
       const stargateClient = await connectWithSigner(endpoint, wallet, {
-        prefix: Agoric.Bech32MainPrefix,
         gasPrice: Agoric.gasPrice,
         registry,
       });

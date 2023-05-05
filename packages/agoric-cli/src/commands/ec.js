@@ -62,7 +62,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
    * given a sendFrom address; else print it.
    *
    * @param {{
-   *   toOffer: (agoricNames: *, current: *) => OfferSpec,
+   *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined) => OfferSpec,
    *   sendFrom: string,
    *   instanceName?: string,
    * }} detail
@@ -141,13 +141,15 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      /** @type {(a: *, c: *) => OfferSpec} */
+      /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
       const toOffer = (agoricNames, current) => {
         const instance = agoricNames.instance.economicCommittee;
         assert(instance, `missing economicCommittee`);
 
-        const found = findContinuingIds(current, agoricNames);
-        abortIfSeen('economicCommittee', found);
+        if (current) {
+          const found = findContinuingIds(current, agoricNames);
+          abortIfSeen('economicCommittee', found);
+        }
 
         return {
           id: opts.offerId,
@@ -176,13 +178,15 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      /** @type {(a: *, c: *) => OfferSpec} */
+      /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
       const toOffer = (agoricNames, current) => {
         const instance = agoricNames.instance.econCommitteeCharter;
         assert(instance, `missing econCommitteeCharter`);
 
-        const found = findContinuingIds(current, agoricNames);
-        abortIfSeen('econCommitteeCharter', found);
+        if (current) {
+          const found = findContinuingIds(current, agoricNames);
+          abortIfSeen('econCommitteeCharter', found);
+        }
 
         return {
           id: opts.offerId,
@@ -246,9 +250,9 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       const chosenPositions = [questionDesc.positions[opts.forPosition]];
       assert(chosenPositions, `undefined position index ${opts.forPosition}`);
 
-      /** @type {(a: *, c: *) => OfferSpec} */
+      /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
       const toOffer = (agoricNames, current) => {
-        const cont = findContinuingIds(current, agoricNames);
+        const cont = current ? findContinuingIds(current, agoricNames) : [];
         const votingRight = cont.find(
           it => it.instance === agoricNames.instance.economicCommittee,
         );

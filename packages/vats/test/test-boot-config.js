@@ -9,17 +9,11 @@ import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { ParametersShape as BootParametersShape } from '../src/core/boot-psm.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
-const PROD_CONFIG_FILES = [
-  'decentral-main-psm-config.json',
-  'decentral-psm-config.json',
-  'decentral-test-vaults-config.json',
-  'decentral-test-psm-config.json',
-];
+const PROD_CONFIG_FILES = ['decentral-test-vaults-config.json'];
 
 const CONFIG_FILES = [
   'decentral-core-config.json', // TODO: remove mints from core-config
@@ -99,10 +93,6 @@ test('Bootstrap SwingSet config file syntax', async t => {
       const txt = await asset('..', f);
       const config = harden(JSON.parse(txt));
       t.notThrows(() => mustMatch(config, ssShape.SwingSetConfig), f);
-      const parameters = config?.vats?.bootstrap?.parameters;
-      t.log('syntax check:', f, parameters ? 'and parameters' : '');
-      parameters &&
-        t.notThrows(() => mustMatch(parameters, BootParametersShape), f);
     }),
   );
 });

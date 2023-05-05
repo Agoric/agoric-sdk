@@ -66,8 +66,6 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
         - `<anchor>`
           - `governance`
           - `metrics`
-    - `stakeFactory`
-        - `governance`
     - `committees` - [snapshot of details](../governance/test/unitTests/snapshots/test-committee.js.md)
         - `Economic_Committee`
           - `latestQuestion`

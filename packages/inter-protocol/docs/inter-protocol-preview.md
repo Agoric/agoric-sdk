@@ -3,7 +3,6 @@
 We propose to launch a preview of the Inter Protocol on Devnet,
 comprising the following contracts:
 
-  - stakeFactory - borrow Minted against staked BLD
   - VaultFactory - collateralized debt positions
     - liquidateMinimum
   - PSM - Parity Stability Module

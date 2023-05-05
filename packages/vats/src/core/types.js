@@ -136,18 +136,17 @@
  *
  * @typedef {{
  *   issuer: |
- *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
+ *     TokenKeyword | 'Invitation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
  *     'walletFactory' | 'provisionPool' | 'auctioneer' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'VaultFactory' | 'liquidate' | 'stakeFactory' |
+ *     'VaultFactory' | 'liquidate' |
  *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'priceAggregator',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' | 'auctioneer' |
  *     'VaultFactory' | 'VaultFactoryGovernor' |
- *     'stakeFactory' | 'stakeFactoryGovernor' |
  *     'econCommitteeCharter' |
  *     'walletFactory' | 'provisionPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
@@ -186,8 +185,7 @@
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
  *       psm: Promise<Installation<import('@agoric/inter-protocol/src/psm/psm.js')['prepare']>>,
  *       provisionPool: Promise<Installation<import('@agoric/vats/src/provisionPool.js')['prepare']>>,
- *       reserve: Promise<Installation<import('@agoric/inter-protocol/src/reserve/assetReserve.js').prepare>>,
- *       stakeFactory: Promise<Installation<import('@agoric/inter-protocol/src/stakeFactory/stakeFactory.js').start>>,
+ *       reserve: Promise<Installation<import('@agoric/inter-protocol/src/reserve/assetReserve.js')['prepare']>>,
  *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js')['prepare']>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
  *     },

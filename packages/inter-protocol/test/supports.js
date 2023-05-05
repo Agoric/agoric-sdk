@@ -122,41 +122,6 @@ export const installPuppetGovernance = (zoe, produce) => {
 };
 
 /**
- * @deprecated use the puppet governor
- *
- * Economic Committee of one.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet>} electorateCreator
- * @param {ERef<GovernorCreatorFacet<import('../src/stakeFactory/stakeFactory.js')['start']>>} stakeFactoryGovernorCreatorFacet
- * @param {Installation} counter
- */
-export const makeVoterTool = async (
-  zoe,
-  electorateCreator,
-  stakeFactoryGovernorCreatorFacet,
-  counter,
-) => {
-  const [invitation] = await E(electorateCreator).getVoterInvitations();
-  await stakeFactoryGovernorCreatorFacet;
-  const seat = E(zoe).offer(invitation);
-  const { voter } = E.get(E(seat).getOfferResult());
-  return harden({
-    changeParam: async (paramsSpec, deadline) => {
-      /** @type { ContractGovernanceVoteResult } */
-      const { details, instance } = await E(
-        stakeFactoryGovernorCreatorFacet,
-      ).voteOnParamChanges(counter, deadline, paramsSpec);
-      const { questionHandle, positions } = await details;
-      const cast = E(voter).castBallotFor(questionHandle, [positions[0]]);
-      const count = E(zoe).getPublicFacet(instance);
-      const outcome = E(count).getOutcome();
-      return { cast, outcome };
-    },
-  });
-};
-
-/**
  * @param {bigint} value
  * @param {{
  *   centralSupply: ERef<Installation<import('@agoric/vats/src/centralSupply.js').start>>,

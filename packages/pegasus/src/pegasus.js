@@ -39,8 +39,8 @@ const TRANSFER_PROPOSAL_SHAPE = {
 const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * @typedef {object} LocalDenomState
-   * @property {Address} localAddr
-   * @property {Address} remoteAddr
+   * @property {string} localAddr
+   * @property {string} remoteAddr
    * @property {LegacyMap<Denom, PromiseRecord<Courier>>} receiveDenomToCourierPK
    * @property {IterationObserver<Denom>} receiveDenomPublication
    * @property {Subscription<Denom>} remoteDenomSubscription

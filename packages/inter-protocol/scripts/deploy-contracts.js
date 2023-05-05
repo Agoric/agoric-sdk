@@ -9,7 +9,6 @@ const contractRefs = [
   '../../governance/bundles/bundle-contractGovernor.js',
   '../../governance/bundles/bundle-committee.js',
   '../../governance/bundles/bundle-binaryVoteCounter.js',
-  '../bundles/bundle-stakeFactory.js',
   '../bundles/bundle-vaultFactory.js',
   '../bundles/bundle-reserve.js',
   '../bundles/bundle-psm.js',
