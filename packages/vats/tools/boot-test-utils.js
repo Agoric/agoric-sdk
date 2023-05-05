@@ -18,6 +18,8 @@ import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 
+const { Fail } = assert;
+
 export const vatRoots = {
   agoricNames: agoricNamesRoot,
   bank: bankRoot,
@@ -106,6 +108,7 @@ export const makePopulatedFakeVatAdmin = () => {
   }
 
   const createVat = (bundleCap, options) => {
+    assert(bundleCap);
     if (bundleCap === zcfBundleCap) {
       return fakeVatAdmin.createVat(zcfBundleCap, options);
     }
@@ -127,8 +130,8 @@ export const makePopulatedFakeVatAdmin = () => {
       /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
     return { root: buildRoot({}, vatParameters, baggage), adminNode };
   };
-  const createVatByName = name => {
-    return createVat(fakeNameToCap.get(name));
+  const createVatByName = async name => {
+    return createVat(fakeNameToCap.get(name) || Fail`unknown vat ${name}`);
   };
 
   const vatAdminService = Far('vatAdminSvc', {
