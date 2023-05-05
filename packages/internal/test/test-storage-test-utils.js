@@ -12,7 +12,8 @@ import {
 
 test('makeFakeStorageKit', async t => {
   const rootPath = 'root';
-  const { rootNode, messages } = makeFakeStorageKit(rootPath);
+  const opts = { sequence: false };
+  const { rootNode, messages } = makeFakeStorageKit(rootPath, opts);
   t.is(rootNode.getPath(), rootPath);
   const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
