@@ -734,7 +734,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
   },
   [addBankAssets.name]: {
     consume: {
-      agoricNamesAdmin: true,
+      agoricNamesAdmin: 'agoricNames',
       initialSupply: true,
       bridgeManager: 'bridge',
       // TODO: re-org loadCriticalVat to be subject to permits
