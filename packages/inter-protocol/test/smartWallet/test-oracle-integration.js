@@ -58,7 +58,6 @@ const makeTestSpace = async (log, bundleCache) => {
   // ensuring a feed for ATOM-USD
 
   /** @type {ChainBootstrapSpace} */
-  // @ts-expect-error cast
   const space = psmVatRoot.getPromiseSpace();
   await eventLoopIteration();
 
@@ -252,6 +251,7 @@ test.serial('admin price', async t => {
 
   // Verify price result
 
+  // @ts-expect-error cast
   const manualTimer = /** @type {ManualTimer} */ (
     t.context.consume.chainTimerService
   );

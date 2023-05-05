@@ -200,7 +200,7 @@ const noop = harden(() => {});
 export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
   const logHooks = makeLogHooks(log);
 
-  /** @type {PromiseSpace<unknown>} */
+  /** @type {PromiseSpaceOf<any>} */
   const space = makePromiseSpace({
     hooks: harden({
       ...logHooks,

@@ -79,7 +79,7 @@
  * @typedef {object} Producer<T>
  * @property {(v: ERef<T>) => void} resolve
  * @property {(r: unknown) => void} reject
- * @property {() => void} reset
+ * @property {(reason?: unknown) => void} reset
  * @template T
  */
 /**
@@ -91,12 +91,6 @@
  */
 
 /**
- * @template [V=unknown]
- * @typedef {{
- *   consume: Record<string, Promise<V>>,
- *   produce: Record<string, Producer<V>>,
- * }} PromiseSpace
- *
  * @typedef {{
  *   assignBundle: (ps: PropertyMaker[]) => void
  * }} ClientManager tool to put properties onto the `home` object of the client
@@ -109,7 +103,7 @@
  * @template [C={}] Consume only
  * @template [P={}] Produce only
  * @typedef {{
- *   consume: { [K in keyof (B & C)]: ERef<(B & C)[K]> },
+ *   consume: { [K in keyof (B & C)]: Promise<(B & C)[K]> },
  *   produce: { [K in keyof (B & P)]: Producer<(B & P)[K]> },
  * }} PromiseSpaceOf
  */
