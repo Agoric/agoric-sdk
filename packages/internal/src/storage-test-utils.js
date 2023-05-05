@@ -7,6 +7,18 @@ import { bindAllMethods } from './method-tools.js';
 const { Fail, quote: q } = assert;
 
 /**
+ * A map corresponding with a total function such that `get(key)`
+ * is assumed to always succeed.
+ *
+ * @template K, V
+ * @typedef {{[k in Exclude<keyof Map<K, V>, 'get'>]: Map<K, V>[k]} & {get: (key: K) => V}} TotalMap
+*/
+/**
+ * @template T
+ * @typedef {T extends Map<infer K, infer V> ? TotalMap<K, V> : never} TotalMapFrom
+*/
+
+/**
  * A convertSlotToVal function that produces basic Remotables
  *
  * @param {string} _slotId
@@ -72,7 +84,7 @@ export const slotStringUnserialize = makeSlotStringUnserialize();
  */
 export const makeFakeStorageKit = (rootPath, rootOptions) => {
   const resolvedOptions = { sequence: true, ...rootOptions };
-  /** @type {Map<string, any[]>} */
+  /** @type {TotalMap<string, string | string[]>} */
   const data = new Map();
   /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
   const messages = [];
@@ -82,14 +94,35 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     messages.push(message);
     switch (message.method) {
       case 'getStoreKey': {
-        return {
-          storeName: 'swingset',
-          storeSubkey: `fake:${message.args[0]}`,
-        };
+        const [key] = message.args;
+        return { storeName: 'swingset', storeSubkey: `fake:${key}` };
+      }
+      case 'get': {
+        const [key] = message.args;
+        return data.has(key) ? data.get(key) : null;
+      }
+      case 'entries': {
+        const [key] = message.args;
+        const prefix = `${key}.`;
+        const childData = new Map();
+        for (const [path, value] of data.entries()) {
+          if (!path.startsWith(prefix)) {
+            continue;
+          }
+          const [segment, ...suffix] = path.slice(prefix.length).split('.');
+          if (suffix.length === 0) {
+            childData.set(segment, value);
+          } else if (!childData.has(segment)) {
+            childData.set(segment, null);
+          }
+        }
+        return [...childData.entries()].map(entry =>
+          entry[1] != null ? entry : [entry[0]],
+        );
       }
       case 'set':
         for (const [key, value] of message.args) {
-          if (value !== undefined) {
+          if (value != null) {
             data.set(key, value);
           } else {
             data.delete(key);
@@ -98,12 +131,12 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         break;
       case 'append':
         for (const [key, value] of message.args) {
-          if (value === undefined) {
+          if (value == null) {
             throw Error(`attempt to append with no value`);
           }
           let sequence = data.get(key);
           if (!Array.isArray(sequence)) {
-            if (sequence === undefined) {
+            if (sequence == null) {
               // Initialize an empty collection.
               sequence = [];
             } else {
