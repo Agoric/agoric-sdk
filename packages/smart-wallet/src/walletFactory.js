@@ -186,7 +186,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         const address = obj.owner;
         const walletP =
           !walletsByAddress.has(address) && walletReviver
-            ? E(walletReviver).reviveWallet(address)
+            ? // this will call provideSmartWallet which will update `walletsByAddress` for next time
+              E(walletReviver).reviveWallet(address)
             : walletsByAddress.get(address); // or throw
         const wallet = await walletP;
 
