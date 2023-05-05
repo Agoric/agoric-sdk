@@ -32,9 +32,9 @@ import { isObject, makeMarshal } from '@endo/marshal';
  * @returns {BoardRemote}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
-  const nonalleged =
-    iface && iface.length ? iface.slice('Alleged: '.length) : '';
-  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
+  return Far(`BoardRemote ${iface} ${boardId}`, {
+    getBoardId: () => boardId,
+  });
 };
 
 export const slotToBoardRemote = (boardId, iface) =>

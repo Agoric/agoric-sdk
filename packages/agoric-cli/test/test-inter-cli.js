@@ -2,9 +2,9 @@
 /* global Buffer */
 import '@endo/init';
 import test from 'ava';
-import { createCommand, CommanderError } from 'commander';
+import { CommanderError, createCommand } from 'commander';
 
-import { Far } from '@endo/far';
+import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 import { boardSlottingMarshaller, makeFromBoard } from '../src/lib/rpc.js';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
@@ -14,13 +14,6 @@ const { entries } = Object;
 
 /** @typedef {import('commander').Command} Command */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
-
-/**
- * @param {{ boardId: string, iface: string }} detail
- * @returns {BoardRemote}
- */
-const makeBoardRemote = ({ boardId, iface }) =>
-  Far(iface, { getBoardId: () => boardId });
 
 /** @type {Record<string, (Brand<'nat'> & BoardRemote)>} */
 // @ts-expect-error mock
