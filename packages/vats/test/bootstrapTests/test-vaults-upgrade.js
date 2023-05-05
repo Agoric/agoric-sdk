@@ -67,7 +67,7 @@ const makeDefaultTestContext = async t => {
 test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
-test.after.always(t => t.context.shutdown());
+test.after.always(t => t.context.shutdown?.());
 
 test.serial('open vault', async t => {
   console.time('open vault');
