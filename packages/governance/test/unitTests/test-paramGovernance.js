@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';

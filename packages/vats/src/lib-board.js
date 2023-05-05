@@ -364,14 +364,3 @@ export const prepareBoardKit = baggage => {
     },
   );
 };
-
-/**
- * @param {bigint | number} [initSequence]
- * @param {object} [options]
- * @param {string} [options.prefix]
- * @param {number} [options.crcDigits]
- */
-export const makeBoard = (initSequence = 0, options = {}) => {
-  const make = prepareBoardKit(makeScalarBigMapStore('baggage'));
-  return make(initSequence, options).board;
-};

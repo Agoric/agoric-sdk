@@ -5,7 +5,7 @@ import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGo
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';

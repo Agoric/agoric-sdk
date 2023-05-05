@@ -5,7 +5,7 @@ import { makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

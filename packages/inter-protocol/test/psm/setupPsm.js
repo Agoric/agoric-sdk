@@ -2,7 +2,7 @@ import { Far, makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';

@@ -11,7 +11,7 @@ import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGo
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   floorDivideBy,
   floorMultiplyBy,

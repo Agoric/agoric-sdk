@@ -14,7 +14,7 @@ import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { Far } from '@endo/marshal';

@@ -4,7 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard as makeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   makeRatio,
   makeRatioFromAmounts,

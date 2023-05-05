@@ -24,8 +24,10 @@
  */
 
 import { Fail } from '@agoric/assert';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Far } from '@endo/far';
 import { isObject, makeMarshal } from '@endo/marshal';
+import { prepareBoardKit } from '../src/lib-board.js';
 
 /**
  * @param {*} slotInfo
@@ -169,4 +171,18 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
     ];
   };
   return harden({ getItem, children, has: k => vsMap.has(k) });
+};
+
+/**
+ * Make a board that uses durable storage, but with fake baggage which will fail upgrade.
+ * Suitable only for use in tests.
+ *
+ * @param {bigint | number} [initSequence]
+ * @param {object} [options]
+ * @param {string} [options.prefix]
+ * @param {number} [options.crcDigits]
+ */
+export const makeFakeBoard = (initSequence = 0, options = {}) => {
+  const make = prepareBoardKit(makeScalarBigMapStore('baggage'));
+  return make(initSequence, options).board;
 };
