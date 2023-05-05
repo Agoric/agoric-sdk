@@ -75,12 +75,9 @@ test('audit bootstrap exports', async t => {
     maxNonDurable: 5,
     ifaces: {
       // in bridgeCoreEval()
-      // TODO(#7576): support unregister
       coreHandler: true,
       // in bridgeProvisioner()
-      // TODO(#7576): support unregister
       provisioningHandler: true,
-      // makePrioritySendersManager() TODO(#7576): support unregister
       'prioritySenders manager': true,
       // TODO? move to provisioning vat?
       clientCreator: true,
