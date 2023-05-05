@@ -286,13 +286,9 @@ test('makeAttenuator', async t => {
       throw Error('unexpected original.m3');
     },
   });
-  t.throws(
-    // @ts-expect-error deliberate: m3 is not on the yeslist
-    () => makeAttenuator({ target, overrides: { m3: null } }),
-    {
-      message: `"Attenuator" overrides["m3"] not allowed by methodNames`,
-    },
-  );
+  t.throws(() => makeAttenuator({ target, overrides: { m3: null } }), {
+    message: `"Attenuator" overrides["m3"] not allowed by methodNames`,
+  });
 
   // Null out a method.
   const atE = makeAttenuator({ target, overrides: { m1: null } });
@@ -303,7 +299,6 @@ test('makeAttenuator', async t => {
     message: `unimplemented "Attenuator" method "m1"`,
   });
   await t.throwsAsync(() => atE.m2(), { message: `unexpected original.m2` });
-  // @ts-expect-error deliberately attenuated out of existence
   t.throws(() => atE.m3(), { message: /not a function/ });
   await t.throwsAsync(() => atE.m4(), { message: /target has no method "m4"/ });
 
@@ -330,7 +325,6 @@ test('makeAttenuator', async t => {
   const p2 = atSync.m2();
   t.assert(p2 instanceof Promise);
   t.is(await p2, 'return abc');
-  // @ts-expect-error deliberately attenuated out of existence
   t.throws(() => atSync.m3(), { message: /not a function/ });
   t.throws(() => atSync.m4(), { message: /not a function/ });
 });
