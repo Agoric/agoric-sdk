@@ -420,7 +420,6 @@ export const makeClientBanks = async ({
         !powerFlags.includes(PowerFlags.REMOTE_WALLET),
         `REMOTE and SMART_WALLET are exclusive`,
       );
-      /** @type {ERef<import('../types').MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
 
       const smartWallet = E(walletFactoryCreatorFacet).provideSmartWallet(

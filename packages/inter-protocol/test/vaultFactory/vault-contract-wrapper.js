@@ -50,16 +50,16 @@ export async function start(zcf, privateArgs, baggage) {
     'Minted',
     privateArgs.feeMintAccess,
   );
-  const { brand: runBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = runMint.getIssuerRecord();
 
-  const LIQUIDATION_MARGIN = makeRatio(105n, runBrand);
+  const LIQUIDATION_MARGIN = makeRatio(105n, stableBrand);
 
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
 
   let vaultCounter = 0;
 
-  let currentInterest = makeRatio(5n, runBrand); // 5%
-  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
+  let currentInterest = makeRatio(5n, stableBrand); // 5%
+  let compoundedInterest = makeRatio(100n, stableBrand); // starts at 1.0, no interest
 
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
@@ -68,7 +68,7 @@ export async function start(zcf, privateArgs, baggage) {
   const timer = buildManualTimer(console.log, 0n, { timeStep: DAY });
   const options = {
     actualBrandIn: collateralBrand,
-    actualBrandOut: runBrand,
+    actualBrandOut: stableBrand,
     priceList: [80],
     tradeList: undefined,
     timer,
@@ -77,7 +77,7 @@ export async function start(zcf, privateArgs, baggage) {
   const collateralUnit = await unitAmount(collateralBrand);
   const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
     collateralUnit,
-    runBrand,
+    stableBrand,
   );
   let storedCollateralQuote;
   observeNotifier(quoteNotifier, {
@@ -134,7 +134,7 @@ export async function start(zcf, privateArgs, baggage) {
           throw Error('not implemented');
         },
         getMintFee() {
-          return makeRatio(500n, runBrand, BASIS_POINTS);
+          return makeRatio(500n, stableBrand, BASIS_POINTS);
         },
         getInterestRate() {
           return currentInterest;
@@ -147,7 +147,7 @@ export async function start(zcf, privateArgs, baggage) {
           return LIQUIDATION_MARGIN;
         },
         getMinInitialDebt() {
-          return AmountMath.makeEmpty(runBrand);
+          return AmountMath.makeEmpty(stableBrand);
         },
         getRecordingPeriod() {
           return DAY;
@@ -157,7 +157,7 @@ export async function start(zcf, privateArgs, baggage) {
     getCollateralBrand() {
       return collateralBrand;
     },
-    getDebtBrand: () => runBrand,
+    getDebtBrand: () => stableBrand,
 
     getAssetSubscriber: () => assetSubscriber,
     maxDebtFor,
@@ -202,7 +202,7 @@ export async function start(zcf, privateArgs, baggage) {
   };
 
   const setInterestRate = percent => {
-    currentInterest = makeRatio(percent, runBrand);
+    currentInterest = makeRatio(percent, stableBrand);
   };
 
   zcf.setTestJig(() => ({

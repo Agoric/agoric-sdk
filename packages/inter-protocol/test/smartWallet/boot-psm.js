@@ -343,8 +343,8 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       assert.typeof(name, 'string');
       return consume[name];
     },
-    // ??? any more dangerous than produceItem/consumeItem?
-    /** @type {() => PromiseSpace} */
+    /** @type {() => ChainBootstrapSpace} */
+    // @ts-expect-error cast
     getPromiseSpace: () => ({ consume, produce, ...spaces }),
   });
 };

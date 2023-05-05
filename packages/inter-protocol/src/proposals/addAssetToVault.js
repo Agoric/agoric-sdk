@@ -147,7 +147,7 @@ export const registerScaledPriceAuthority = async (
 
   const [
     sourcePriceAuthority,
-    [interchainBrand, runBrand],
+    [interchainBrand, stableBrand],
     [interchainOracleBrand, usdBrand],
     [scaledPriceAuthority],
   ] = await Promise.all([
@@ -181,7 +181,7 @@ export const registerScaledPriceAuthority = async (
     getDecimalP(interchainOracleBrand),
     getDecimalP(interchainBrand),
     getDecimalP(usdBrand),
-    getDecimalP(runBrand),
+    getDecimalP(stableBrand),
   ]);
 
   const scaleIn = makeRatio(
@@ -194,10 +194,10 @@ export const registerScaledPriceAuthority = async (
     10n ** BigInt(decimalPlacesUsd),
     usdBrand,
     10n ** BigInt(decimalPlacesRun),
-    runBrand,
+    stableBrand,
   );
   const initialPrice = initialPriceRaw
-    ? parseRatio(initialPriceRaw, runBrand, interchainBrand)
+    ? parseRatio(initialPriceRaw, stableBrand, interchainBrand)
     : undefined;
 
   const terms = await deeplyFulfilledObject(
@@ -226,7 +226,7 @@ export const registerScaledPriceAuthority = async (
     // @ts-expect-error The public facet should have getPriceAuthority
     E(spaKit.publicFacet).getPriceAuthority(),
     interchainBrand,
-    runBrand,
+    stableBrand,
     true, // force
   );
 };

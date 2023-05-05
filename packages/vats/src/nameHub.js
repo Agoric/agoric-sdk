@@ -65,11 +65,12 @@ export const makeNameHubKit = () => {
   /** @type {LegacyMap<string, NameRecord>} */
   // Legacy because a promiseKit is not a passable
   const keyToAdminRecord = makeLegacyMap('nameKey');
-  /** @type {undefined | ((entries: [string, unknown][]) => void)} */
+  /** @type {undefined | ((entries: [string, unknown][]) => ERef<void>)} */
   let updateCallback;
   const updated = () => {
+    let result;
     if (updateCallback) {
-      updateCallback(
+      result = updateCallback(
         harden(
           [
             ...mapIterable(keyToRecord.entries(), ([name, record]) =>
@@ -81,10 +82,36 @@ export const makeNameHubKit = () => {
         ),
       );
     }
+    // return Promise regardless of result type
+    return Promise.resolve(result);
   };
 
   /** @type {import('./types.js').NameAdmin} */
   const nameAdmin = Far('nameAdmin', {
+    provideChild(key, reserved = []) {
+      if (
+        keyToAdminRecord.has(key) &&
+        'value' in keyToAdminRecord.get(key) &&
+        keyToRecord.has(key) &&
+        'value' in keyToRecord.get(key)
+      ) {
+        /** @type {import('./types.js').NameAdmin} */
+        // @ts-expect-error XXX relies on callers
+        // to supply NameAdmin in newAdminValue param
+        // and when they do, NameHub in newValue param.
+        const childAdmin = keyToAdminRecord.get(key).value;
+        /** @type {import('./types.js').NameHub} */
+        // @ts-expect-error XXX not quite guaranteed, is it?
+        const childHub = keyToRecord.get(key).value;
+        return harden({ nameHub: childHub, nameAdmin: childAdmin });
+      }
+      const child = makeNameHubKit();
+      for (const r of reserved) {
+        child.nameAdmin.reserve(r);
+      }
+      nameAdmin.update(key, child.nameHub, child.nameAdmin);
+      return child;
+    },
     reserve: async key => {
       assert.typeof(key, 'string');
       for (const map of [keyToAdminRecord, keyToRecord]) {
@@ -140,7 +167,7 @@ export const makeNameHubKit = () => {
           map.init(key, record);
         }
       }
-      updated();
+      return updated();
     },
     lookupAdmin: async (...path) => {
       if (path.length === 0) {
@@ -174,7 +201,7 @@ export const makeNameHubKit = () => {
         keyToRecord.delete(key);
       } finally {
         keyToAdminRecord.delete(key);
-        updated();
+        void updated();
       }
     },
     readonly: () => nameHub,

@@ -47,8 +47,7 @@ const makePsmTestSpace = async (log, bundleCache) => {
   );
   void psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
 
-  // @ts-expect-error cast
-  return /** @type {ChainBootstrapSpace} */ (psmVatRoot.getPromiseSpace());
+  return psmVatRoot.getPromiseSpace();
 };
 
 test.before(async t => {

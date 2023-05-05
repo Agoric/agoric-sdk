@@ -60,12 +60,12 @@ async function launch(zoeP, sourceRoot) {
     runMint,
     collateralKit: { mint: collateralMint, brand: collaterlBrand },
   } = testJig;
-  const { brand: runBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = runMint.getIssuerRecord();
 
   const collateral50 = AmountMath.make(collaterlBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { Minted: AmountMath.make(runBrand, 70n) },
+    want: { Minted: AmountMath.make(stableBrand, 70n) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -86,14 +86,14 @@ test('charges', async t => {
   // presents a fixed price of 4 Minted per Collateral.
   await E(creatorSeat).getOfferResult();
   const { runMint, collateralKit, vault } = testJig;
-  const { brand: runBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = runMint.getIssuerRecord();
 
   const { brand: cBrand } = collateralKit;
 
   const startingDebt = 74n;
   t.deepEqual(
     vault.getCurrentDebt(),
-    AmountMath.make(runBrand, startingDebt),
+    AmountMath.make(stableBrand, startingDebt),
     'borrower owes 74 Minted',
   );
   t.deepEqual(
@@ -120,7 +120,7 @@ test('charges', async t => {
   trace('partially payback');
   const paybackValue = 3n;
   const collateralWanted = AmountMath.make(cBrand, 1n);
-  const paybackAmount = AmountMath.make(runBrand, paybackValue);
+  const paybackAmount = AmountMath.make(stableBrand, paybackValue);
   const payback = await E(creatorFacet).mintRun(paybackAmount);
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
@@ -133,12 +133,12 @@ test('charges', async t => {
   await E(paybackSeat).getOfferResult();
   t.deepEqual(
     vault.getCurrentDebt(),
-    AmountMath.make(runBrand, startingDebt + interest - paybackValue),
+    AmountMath.make(stableBrand, startingDebt + interest - paybackValue),
   );
   const normalizedPaybackValue = paybackValue - 1n;
   t.deepEqual(
     vault.getNormalizedDebt(),
-    AmountMath.make(runBrand, startingDebt - normalizedPaybackValue),
+    AmountMath.make(stableBrand, startingDebt - normalizedPaybackValue),
   );
 
   testJig.setInterestRate(25n);

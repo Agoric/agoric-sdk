@@ -95,9 +95,9 @@ const defaultParamValues = debt =>
 export const makeDriverContext = async () => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const stableBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
-  const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
+  const run = withAmountUtils({ issuer: runIssuer, brand: stableBrand });
   const aeth = withAmountUtils(makeIssuerKit('aEth'));
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 

@@ -1,18 +1,12 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { assertPassable } from '@endo/marshal';
 import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
-import { makePromiseSpace } from './promise-space.js';
+import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 const { entries, fromEntries, keys } = Object;
 const { Fail, quote: q } = assert;
-
-/** @type { <K extends string, T, U>(obj: Record<K, T>, f: (k: K, v: T) => [K, U]) => Record<K, U>} */
-const mapEntries = (obj, f) =>
-  // @ts-expect-error entries() loses key type
-  fromEntries(entries(obj).map(([p, v]) => f(p, v)));
 
 /**
  * We reserve these keys in name hubs.
@@ -196,6 +190,61 @@ export const runModuleBehaviors = ({
 };
 harden(runModuleBehaviors);
 
+const noop = harden(() => {});
+
+/**
+ *
+ * @param {ERef<import('../types').NameAdmin>} nameAdmin
+ * @param {typeof console.log} [log]
+ */
+export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
+  const logHooks = makeLogHooks(log);
+
+  /** @type {PromiseSpaceOf<any>} */
+  const space = makePromiseSpace({
+    hooks: harden({
+      ...logHooks,
+      onAddKey: name => {
+        void E(nameAdmin).reserve(name);
+        logHooks.onAddKey(name);
+      },
+      onResolve: (name, valueP) => {
+        void E.when(valueP, value => E(nameAdmin).update(name, value));
+      },
+      onReset: name => {
+        void E(nameAdmin).delete(name);
+      },
+    }),
+    log,
+  });
+
+  return space;
+};
+
+/**
+ * @param {import('../types').NameAdmin} parentAdmin
+ * @param {typeof console.log} [log]
+ * @param {string[]} [kinds]
+ */
+export const makeWellKnownSpaces = (
+  parentAdmin,
+  log = noop,
+  kinds = Object.keys(agoricNamesReserved),
+) => {
+  const spaces = Object.fromEntries(
+    kinds.map(kind => {
+      const { nameAdmin } = parentAdmin.provideChild(kind);
+      const subSpaceLog = (...args) => log(kind, ...args);
+      const entry = [kind, makePromiseSpaceForNameHub(nameAdmin, subSpaceLog)];
+      return entry;
+    }),
+  );
+  const typedSpaces = /** @type { WellKnownSpaces } */ (
+    /** @type {any} */ (spaces)
+  );
+  return typedSpaces;
+};
+
 /**
  * Make the well-known agoricNames namespace so that we can
  * E(home.agoricNames).lookup('issuer', 'IST') and likewise
@@ -221,29 +270,12 @@ export const makeAgoricNamesAccess = (
 ) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
+  const spaces = makeWellKnownSpaces(
+    agoricNamesAdmin,
+    log,
+    Object.keys(reserved),
+  );
 
-  const hubs = mapEntries(reserved, (key, _d) => {
-    const { nameHub, nameAdmin } = makeNameHubKit();
-    const passableAdmin = {
-      ...nameAdmin,
-      update: (nameKey, val) => {
-        assertPassable(val); // else we can't publish
-        return nameAdmin.update(nameKey, val);
-      },
-    };
-    agoricNamesAdmin.update(key, nameHub, passableAdmin);
-    return [key, { nameHub, nameAdmin }];
-  });
-  const spaces = mapEntries(reserved, (key, detail) => {
-    const { nameAdmin } = hubs[key];
-    const subSpaceLog = (...args) => log(key, ...args);
-    const { produce, consume } = makePromiseSpace(subSpaceLog);
-    for (const k of keys(detail)) {
-      nameAdmin.reserve(k);
-      void consume[k].then(v => nameAdmin.update(k, v));
-    }
-    return [key, { produce, consume }];
-  });
   const typedSpaces = /** @type { WellKnownSpaces } */ (
     /** @type {any} */ (spaces)
   );
