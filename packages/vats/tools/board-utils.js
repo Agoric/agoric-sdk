@@ -25,8 +25,9 @@
 
 import { Fail } from '@agoric/assert';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import { Far } from '@endo/far';
-import { isObject, makeMarshal } from '@endo/marshal';
+import { makeMarshal } from '@endo/marshal';
 import { prepareBoardKit } from '../src/lib-board.js';
 
 /**
@@ -65,8 +66,12 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   const entries = ['brand', 'instance'].map(kind => {
     const key = `published.agoricNames.${kind}`;
 
-    const values = data.get(key);
-    if (!(values && values.length > 0)) throw Fail`no data for ${key}`;
+    const streamCellText = data.get(key);
+    streamCellText || Fail`no data for ${key}`;
+    const streamCell = JSON.parse(streamCellText);
+    isStreamCell(streamCell) || Fail`not a stream cell: ${streamCell}`;
+    const { values } = streamCell;
+    values.length > 0 || Fail`no values for ${key}`;
     /** @type {import("@endo/marshal").CapData<string>} */
     const latestCapData = JSON.parse(values.at(-1));
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
@@ -104,13 +109,8 @@ export const parsedValuesFromStreamCellText = cellText => {
   const cell = /** @type {{blockHeight: string, values: string[]}} */ (
     JSON.parse(cellText)
   );
-
-  assert(isObject(cell));
-  const { values } = cell;
-
-  assert(Array.isArray(values));
-  const parsedValues = values.map(value => JSON.parse(value));
-
+  isStreamCell(cell) || Fail`not a StreamCell: ${cell}`;
+  const parsedValues = cell.values.map(value => JSON.parse(value));
   return harden(parsedValues);
 };
 harden(parsedValuesFromStreamCellText);

@@ -20,6 +20,13 @@ const { Fail } = assert;
  */
 
 /**
+ * @template [T=unknown]
+ * @typedef StreamCell
+ * @property {string} blockHeight decimal representation of a natural number
+ * @property {T[]} values
+ */
+
+/**
  * This represents a node in an IAVL tree.
  *
  * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
@@ -43,6 +50,23 @@ const ChainStorageNodeI = M.interface('StorageNode', {
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
     .returns(M.remotable('StorageNode')),
 });
+
+/**
+ * This is an imperfect heuristic to navigate the migration from value cells to
+ * stream cells.
+ * At time of writing, no legacy cells have the same shape as a stream cell,
+ * and we do not intend to create any more legacy value cells.
+ *
+ * @param {any} cell
+ * @returns {cell is StreamCell}
+ */
+export const isStreamCell = cell =>
+  cell &&
+  typeof cell === 'object' &&
+  Array.isArray(cell.values) &&
+  typeof cell.blockHeight === 'string' &&
+  /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
+harden(isStreamCell);
 
 /**
  * @typedef {object} StoredFacet
