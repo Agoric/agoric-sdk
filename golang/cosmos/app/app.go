@@ -774,8 +774,23 @@ func NewAgoricApp(
 func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
+		migrateProvisionAccount(ctx, app.AccountKeeper)
 		return fromVm, nil
 	}
+}
+
+// migrateProvisionAccount ensures that the vbank/provision account is a module account.
+func migrateProvisionAccount(ctx sdk.Context, ak authkeeper.AccountKeeper) {
+	provisionAddr := ak.GetModuleAddress(vbanktypes.ProvisionPoolName)
+	provisionAcct := ak.GetAccount(ctx, provisionAddr)
+	if _, ok := provisionAcct.(authtypes.ModuleAccountI); ok {
+		return
+	}
+	perms := maccPerms[vbanktypes.ProvisionPoolName]
+	newAcct := authtypes.NewEmptyModuleAccount(vbanktypes.ProvisionPoolName, perms...)
+	newAcct.AccountNumber = provisionAcct.GetAccountNumber()
+	newAcct.Sequence = provisionAcct.GetSequence()
+	ak.SetModuleAccount(ctx, newAcct)
 }
 
 type cosmosInitAction struct {
