@@ -255,7 +255,7 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 /** @template [Slot=unknown] @typedef {import('@endo/marshal').Marshal<Slot>} Marshaller */
-/** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
+/** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
  * Defined by vstorageStoreKey in vstorage.go

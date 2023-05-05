@@ -48,7 +48,7 @@ test('stored subscription', async t => {
       `storage iterator should not report done for ${description}`,
     );
     const storedDecoded = JSON.parse(storedEncoded);
-    const storedValue = await E(unserializer).unserialize(storedDecoded);
+    const storedValue = await E(unserializer).fromCapData(storedDecoded);
     t.deepEqual(
       storedValue,
       origValue,
@@ -111,7 +111,7 @@ test('stored subscriber', async t => {
       `storage iterator should not report done for ${description}`,
     );
     const storedDecoded = JSON.parse(storedEncoded);
-    const storedValue = await E(unserializer).unserialize(storedDecoded);
+    const storedValue = await E(unserializer).fromCapData(storedDecoded);
     t.deepEqual(
       storedValue,
       origValue,
