@@ -197,10 +197,8 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = await utils.makeAgoricNamesAccess(
-    log,
-    agoricNamesReserved,
-  );
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await utils.makeAgoricNamesAccess(log, agoricNamesReserved);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
