@@ -64,7 +64,8 @@ export const makeBootstrap = (
   extra.length === 0 || Fail`missing behavior for manifest keys: ${extra}`;
 
   const log = vatPowers.logger || console.info;
-  const { produce, consume } = makePromiseSpace(log);
+  const powerStore = zone.mapStore('BootstrapPowers');
+  const { produce, consume } = makePromiseSpace({ log, store: powerStore });
 
   /**
    * Bootstrap vats and devices.
@@ -84,8 +85,13 @@ export const makeBootstrap = (
 
     const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-    const store = zone.mapStore('vatInfo by name');
-    const namedVat = makeVatSpace(svc, criticalVatKey, store, console.info);
+    const vatInfoStore = zone.mapStore('vatInfo by name');
+    const namedVat = makeVatSpace(
+      svc,
+      criticalVatKey,
+      vatInfoStore,
+      console.info,
+    );
 
     const namesVat = namedVat.consume.agoricNames;
     const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
