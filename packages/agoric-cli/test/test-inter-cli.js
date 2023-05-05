@@ -557,20 +557,11 @@ test('README: inter vbank list', async t => {
 
 test('README ex1: inter bid place by-price: printed offer is correct', async t => {
   // The README example shows "bid is broadcast" but we test only bid format.
-  const noNet = '--generate-only';
+  const noNet = '--dry-run';
   const argv =
     `node inter bid by-price --give 85IST --price 8.55 --from test-acct ${noNet}`
       .trim()
       .split(' ');
-  // TODO: txhash, height stuff
-  const expected = {
-    id: 'bid-1680241587424',
-    maxBuy: '1000000 ATOM',
-    price: '8.55 IST/ATOM',
-    give: { Bid: '85 IST' },
-    result: 'Your bid has been accepted',
-  };
-
   const out = [];
   const net = makeNet({ ...publishedNames, wallet: govWallets });
   const cmd = await makeInterCommand(
@@ -580,14 +571,14 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
   cmd.exitOverride(() => t.fail('exited'));
 
   await cmd.parseAsync(argv);
-
   const txt = out.join('').trim();
-  const obj = net.marshaller.fromCapData(JSON.parse(txt));
-  const offer = { ...obj.offer, result: 'Your bid has been accepted' }; // pretend we processed it
 
-  const assets = Object.values(agoricNames.vbankAsset);
-  const bidInfo = fmtBid(offer, assets);
-  t.deepEqual(bidInfo, expected);
+  const expected = [
+    'Run this interactive command in shell:\n\n',
+    'agd ',
+    '--node=http://0.0.0.0:26657 --chain-id=agoriclocal --from=agoric18jr9nlvp300feu726y3v4n07ykfjwup3twnlyn tx swingset wallet-action --allow-spend {"body":"#{\\"method\\":\\"executeOffer\\",\\"offer\\":{\\"id\\":\\"bid-1680241587424\\",\\"invitationSpec\\":{\\"callPipe\\":[[\\"makeBidInvitation\\",[\\"$0.Alleged: BoardRemoteBrand\\"]]],\\"instancePath\\":[\\"auctioneer\\"],\\"source\\":\\"agoricContract\\"},\\"offerArgs\\":{\\"maxBuy\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+1000000000000\\"},\\"offerPrice\\":{\\"denominator\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+100\\"},\\"numerator\\":{\\"brand\\":\\"$1.Alleged: BoardRemoteBrand\\",\\"value\\":\\"+855\\"}}},\\"proposal\\":{\\"give\\":{\\"Bid\\":{\\"brand\\":\\"$1\\",\\"value\\":\\"+85000000\\"}}}}}","slots":["board03446","board0566"]} --output json',
+  ].join('');
+  t.deepEqual(txt, expected);
 });
 
 test.todo('inter bid by-price shows tx, wallet status');

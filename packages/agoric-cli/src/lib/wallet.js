@@ -109,6 +109,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  *   stdout: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
+ *   dryRun?: boolean,
  * }} opts
  */
 export const sendAction = async (bridgeAction, opts) => {
@@ -123,6 +124,10 @@ export const sendAction = async (bridgeAction, opts) => {
 
   const act = ['wallet-action', ...spendArg, offerBody];
   const out = execSwingsetTransaction([...act, '--output', 'json'], opts);
+  if (opts.dryRun) {
+    return;
+  }
+
   assert(out); // not dry run
   const tx = JSON.parse(out);
   if (tx.code !== 0) {
