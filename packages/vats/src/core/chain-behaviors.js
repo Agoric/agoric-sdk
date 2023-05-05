@@ -1,21 +1,22 @@
 /* global globalThis */
 // @ts-check
-import { E, Far } from '@endo/far';
-import * as farExports from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import {
-  makeNotifierKit,
-  makeStoredPublishKit,
-  makeSubscriptionKit,
-  observeIteration,
-} from '@agoric/notifier';
-import { importBundle } from '@endo/import-bundle';
 import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '@agoric/internal/src/priority-senders.js';
-import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
-import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
+import {
+  makeNotifierKit,
+  makeSubscriptionKit,
+  observeIteration,
+} from '@agoric/notifier';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
+import * as farExports from '@endo/far';
+import { E, Far } from '@endo/far';
+import { importBundle } from '@endo/import-bundle';
+import { makePromiseKit } from '@endo/promise-kit';
 import { PowerFlags } from '../walletFlags.js';
+import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
+import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 
 const { Fail } = assert;
 const { keys } = Object;
@@ -436,6 +437,12 @@ export const publishAgoricNames = async (
   const nameStorage = E(root).makeChildNode('agoricNames');
   const marshaller = E(board).getPublishingMarshaller();
 
+  // XXX will fail upon restart, but so would the makeStoredPublishKit this is replacing
+  const fakeBaggage = makeScalarBigMapStore(
+    'fake baggage for AgoricNames kinds',
+  );
+  const makeRecorderKit = prepareRecorderKit(fakeBaggage, marshaller);
+
   // brand, issuer, ...
   const { topLevel = keys(agoricNamesReserved) } = agoricNamesOptions || {};
   await Promise.all(
@@ -443,9 +450,9 @@ export const publishAgoricNames = async (
       const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
 
       const kindNode = await E(nameStorage).makeChildNode(kind);
-      const { publisher } = makeStoredPublishKit(kindNode, marshaller);
-      publisher.publish([]);
-      kindAdmin.onUpdate(v => publisher.publish(v));
+      const { recorder } = makeRecorderKit(kindNode);
+      kindAdmin.onUpdate(v => recorder.write(v));
+      return recorder.write([]);
     }),
   );
 };

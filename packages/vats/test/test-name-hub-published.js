@@ -1,6 +1,6 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { makeMockChainStorageRoot } from '@agoric/inter-protocol/test/supports.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -47,8 +47,10 @@ test('publishAgoricNames publishes AMM instance', async t => {
     [['amm', ammInstance]],
   );
 
-  // XXX throws in a way that ava doesn't catch???
-  // t.throws(() => instanceAdmin.update('non-passable', new Promise(() => {})));
+  await t.throwsAsync(instanceAdmin.update('non-passable', Promise.resolve()), {
+    message:
+      'invalid key type for collection "valToId": A "promise" cannot be a scalar key: "[Promise]"',
+  });
 });
 
 test('promise space reserves non-well-known names', async t => {

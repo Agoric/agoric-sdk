@@ -43,7 +43,7 @@ export {};
  *   key: string, newValue: unknown, newAdmin?: NameAdmin) => void
  * } set Update only if already initialized. Reject if not.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: NameAdmin) => void
+ *   key: string, newValue: unknown, newAdmin?: NameAdmin) => Promise<void>
  * } update Fulfill an outstanding reserved promise (if any) to the newValue and
  * set the key to the newValue.  If newAdmin is provided, set that to return via
  * lookupAdmin.
@@ -54,7 +54,7 @@ export {};
  * outstanding reserved promise (if any).
  * @property {() => NameHub} readonly get the NameHub corresponding to the
  * current NameAdmin
- * @property {(fn: undefined | ((entries: [string, unknown][]) => void)) => void} onUpdate
+ * @property {(fn: undefined | ((entries: [string, unknown][]) => void)) => ERef<void>} onUpdate
  */
 
 /**

@@ -65,11 +65,12 @@ export const makeNameHubKit = () => {
   /** @type {LegacyMap<string, NameRecord>} */
   // Legacy because a promiseKit is not a passable
   const keyToAdminRecord = makeLegacyMap('nameKey');
-  /** @type {undefined | ((entries: [string, unknown][]) => void)} */
+  /** @type {undefined | ((entries: [string, unknown][]) => ERef<void>)} */
   let updateCallback;
   const updated = () => {
+    let result;
     if (updateCallback) {
-      updateCallback(
+      result = updateCallback(
         harden(
           [
             ...mapIterable(keyToRecord.entries(), ([name, record]) =>
@@ -81,6 +82,8 @@ export const makeNameHubKit = () => {
         ),
       );
     }
+    // return Promise regardless of result type
+    return Promise.resolve(result);
   };
 
   /** @type {import('./types.js').NameAdmin} */
@@ -164,7 +167,7 @@ export const makeNameHubKit = () => {
           map.init(key, record);
         }
       }
-      updated();
+      return updated();
     },
     lookupAdmin: async (...path) => {
       if (path.length === 0) {
@@ -198,7 +201,7 @@ export const makeNameHubKit = () => {
         keyToRecord.delete(key);
       } finally {
         keyToAdminRecord.delete(key);
-        updated();
+        void updated();
       }
     },
     readonly: () => nameHub,
