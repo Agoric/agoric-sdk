@@ -29,12 +29,6 @@ const installKeyGroups = {
       '../../governance/bundles/bundle-binaryVoteCounter.js',
     ],
   },
-  stakeFactory: {
-    stakeFactory: [
-      '../src/stakeFactory/stakeFactory.js',
-      '../bundles/bundle-stakeFactory.js',
-    ],
-  },
   main: {
     auctioneer: [
       '../src/auction/auctioneer.js',
@@ -120,7 +114,6 @@ export const mainProposalBuilder = async ({
         vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
         installKeys: {
           ...publishGroup(installKeyGroups.main),
-          ...publishGroup(installKeyGroups.stakeFactory),
         },
       },
     ],
@@ -179,7 +172,6 @@ export const defaultProposalBuilder = async (
         econCommitteeOptions,
         installKeys: {
           ...publishGroup(installKeyGroups.econCommittee),
-          ...publishGroup(installKeyGroups.stakeFactory),
           ...publishGroup(installKeyGroups.main),
         },
       },

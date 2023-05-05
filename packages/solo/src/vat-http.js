@@ -102,14 +102,6 @@ export function buildRootObject(vatPowers) {
     urlToHandler.set(url, commandHandler);
   }
 
-  const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
-  const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
-  Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
-    const walletAdmin = await E(wallet).getAdminFacet();
-    // console.debug('introduce', { wallet, walletAdmin, attMaker });
-    E(walletAdmin).resolveAttMaker(attMaker);
-  });
-
   return Far('root', {
     setCommandDevice(d) {
       commandDevice = d;
@@ -146,8 +138,6 @@ export function buildRootObject(vatPowers) {
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
       resolveCacheCooordinator(E(E(wallet).getBridge()).getCacheCoordinator());
-
-      resolveWallet(wallet);
     },
 
     /**
@@ -178,10 +168,6 @@ export function buildRootObject(vatPowers) {
           ...rest
         } = decentralObjects;
         decentralObjects = rest;
-
-        if (decentralObjects.attMaker) {
-          resolveAttMaker(decentralObjects.attMaker);
-        }
       }
 
       // TODO: Maybe remove sometime; home object is deprecated.

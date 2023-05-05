@@ -49,7 +49,6 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   // TODO: cross-check these with docs and/or deploy-script-support
   const homeKeys = [
     'agoricNames',
-    'attMaker',
     'bank',
     'board',
     'ibcport',

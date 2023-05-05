@@ -88,8 +88,6 @@ test('audit bootstrap exports', async t => {
       ProtocolHandler: true, // in makeLoopbackProtocolHandler()
       callbacks: true,
       listener: true,
-      // TODO(#7563): disable stakeFactory in test-vaults-config
-      stakeReporter: true,
       // in startWalletFactory()
       // TODO(#5885): vbank should provide a facet attenuated
       // to only provide getAssetSubscription

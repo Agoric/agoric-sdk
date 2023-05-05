@@ -24,10 +24,10 @@
 
 /**
  * @typedef {object} DenomTransformer
- * @property {(remoteDenom: Denom, localAddr: Address, remoteAddr: Address)
+ * @property {(remoteDenom: Denom, localAddr: string, remoteAddr: string)
  *   => Promise<{ sendDenom: Denom, receiveDenom: Denom }>
  * } getDenomsForLocalPeg
- * @property {(remoteDenom: Denom, localAddr: Address, remoteAddr: Address)
+ * @property {(remoteDenom: Denom, localAddr: string, remoteAddr: string)
  *   => Promise<{ sendDenom: Denom, receiveDenom: Denom }>
  * } getDenomsForRemotePeg
  */
@@ -100,8 +100,8 @@
 /**
  * @typedef {object} PegasusConnection
  * @property {PegasusConnectionActions} [actions]
- * @property {Address} localAddr
- * @property {Address} remoteAddr
+ * @property {string} localAddr
+ * @property {string} remoteAddr
  * @property {Subscription<Denom>} [remoteDenomSubscription]
  */
 

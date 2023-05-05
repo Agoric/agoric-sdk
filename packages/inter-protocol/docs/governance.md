@@ -62,20 +62,6 @@ From Inter Protocol Whitepaper, v0.8:
 
 Note that the "stability fee" described in the Whitepaper comprises both InterestRate and LoanFee.
 
-### stakeFactory (unreleased)
-
-In `packages/inter-protocol/src/stakeFactory/stakeFactory.js`:
-
-| Governance Key     | Type                | WP? |
-| ------------------ | :------------------ | --- |
-| DebtLimit          | Amount              | Yes |
-| InterestRate       | Ratio               | Yes |
-| LoanFee            | Ratio               | Yes |
-| MintingRatio       | Ratio               | Yes |
-
-From Inter Protocol Whitepaper, v0.8:  
->Governance through the BLDer DAO determines the parameters for stakeFactory. These include the total debt limit, the minting limit per account, and minting fees and interest rates. 
-
 ### Parity Stability Mechanism (PSM)
 
 In `packages/inter-protocol/src/psm/psm.js`:

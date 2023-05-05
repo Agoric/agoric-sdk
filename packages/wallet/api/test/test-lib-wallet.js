@@ -43,13 +43,12 @@ const test = anyTest;
  *   zoe: ZoeService,
  *   automaticRefundInstallation: Installation,
  *   autoswapInstallation: Installation,
- *   attestationInstallation: Installation,
  * }} LibWalletTestContext
  */
 
 async function setupTest(
   /** @type {import('ava').ExecutionContext<LibWalletTestContext>} */ t,
-  { autoswap = false, automaticRefund = false, attestation = false } = {},
+  { autoswap = false, automaticRefund = false } = {},
 ) {
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
@@ -97,71 +96,24 @@ async function setupTest(
     instance: null,
   };
 
-  const attestationP = (attestation &&
-    (async () => {
-      const { publicFacet, instance } = await E(t.context.zoe).startInstance(
-        t.context.attestationInstallation,
-      );
-      const {
-        issuers: { Attestation: issuer },
-        brands: { Attestation: brand },
-      } = await E(t.context.zoe).getTerms(instance);
-
-      const names = {
-        lookup: (/** @type {string[]} */ ...namePath) => {
-          if (namePath[0] === 'issuer' && namePath[1] === 'Attestation') {
-            return issuer;
-          }
-          return null;
-        },
-      };
-      return { names, issuer, brand, publicFacet };
-    })()) || {
-    names: null,
-    issuer: null,
-    brand: null,
-    publicFacet: null,
-  };
-
   const [
     {
       creatorInvitation: automaticRefundInvitation,
       instance: automaticRefundInstance,
     },
     { invite: addLiquidityInvite, instance: autoswapInstanceHandle },
-    {
-      names: fakeAgoricNames,
-      issuer: attestationIssuer,
-      brand: attestationBrand,
-      publicFacet: attestationPublicFacet,
-    },
-  ] = await Promise.all([automaticRefundP, autoswapP, attestationP]);
+  ] = await Promise.all([automaticRefundP, autoswapP]);
 
   const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
-    // @ts-expect-error
-    agoricNames: fakeAgoricNames,
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
   await initialized;
 
-  if (attestation) {
-    assert(attestationBrand);
-    wallet.resolveAttMaker({
-      makeReturnAttInvitation: attestationPublicFacet.makeReturnAttInvitation,
-      makeAttestation: (/** @type {any} */ value) =>
-        attestationPublicFacet.mintAttestation(value),
-      wrapLienedAmount: ({ value }) => AmountMath.make(attestationBrand, value),
-    });
-  }
-
   return {
-    attestationIssuer,
-    attestationPublicFacet,
-    attestationBrand,
     moolaBundle,
     simoleanBundle,
     rpgBundle,
@@ -212,20 +164,10 @@ test.before(async t => {
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallation = await E(zoe).install(autoswapBundle);
 
-  // Create attestationExample instance
-  const url = await importMetaResolve(
-    './attestationExample.js',
-    import.meta.url,
-  );
-  const path = new URL(url).pathname;
-  const attestationBundle = await bundleSource(path);
-  const attestationInstallation = await E(zoe).install(attestationBundle);
-
   t.context = {
     zoe,
     automaticRefundInstallation,
     autoswapInstallation,
-    attestationInstallation,
   };
 });
 
@@ -1301,157 +1243,6 @@ test('lib-wallet performAction acceptOffer', async t => {
     AmountMath.make(simoleanBundle.brand, 516n),
     `simolean purse balance`,
   );
-});
-
-test('lib-wallet can give attestations in offers', async t => {
-  const {
-    wallet,
-    attestationPublicFacet,
-    attestationBrand,
-    attestationIssuer,
-  } = await setupTest(t, { attestation: true });
-
-  assert(attestationIssuer);
-  assert(attestationBrand);
-  const issuerManager = wallet.getIssuerManager();
-  await issuerManager.add('Attestation', attestationIssuer);
-  await wallet.makeEmptyPurse('Attestation', 'staking purse');
-
-  const invitation = await attestationPublicFacet.makeReturnAttInvitation();
-
-  const rawId = '123-arbitrary';
-  const id = `unknown#${rawId}`;
-  const offer = {
-    id: rawId,
-    invitation,
-    proposalTemplate: {
-      give: {
-        Attestation: {
-          pursePetname: 'staking purse',
-          value: 30n,
-          type: 'Attestation',
-        },
-      },
-      exit: {
-        onDemand: null,
-      },
-    },
-  };
-
-  await wallet.addOffer(offer);
-  const accepted = await wallet.acceptOffer(id);
-  assert(accepted);
-  const { depositedP } = accepted;
-  await depositedP;
-
-  // There should be two calls. The first is call to give the attestation
-  // as proposed. The second call is to return the unallocated attestation
-  // back to the attMaker (which in this test uses the same method).
-  const callHistory = await attestationPublicFacet.getCallHistory();
-  t.deepEqual(callHistory.returnProposals, [
-    {
-      exit: {
-        onDemand: null,
-      },
-      give: {
-        Attestation: AmountMath.make(attestationBrand, 30n),
-      },
-      want: {},
-    },
-    {
-      exit: {
-        onDemand: null,
-      },
-      give: {
-        Attestation: AmountMath.make(attestationBrand, 30n),
-      },
-      want: {},
-    },
-  ]);
-  t.deepEqual(callHistory.returnAllocations, [
-    {
-      Attestation: AmountMath.make(attestationBrand, 30n),
-    },
-    {
-      Attestation: AmountMath.make(attestationBrand, 30n),
-    },
-  ]);
-});
-
-test('lib-wallet can want attestations in offers', async t => {
-  const {
-    wallet,
-    attestationPublicFacet,
-    attestationBrand,
-    attestationIssuer,
-  } = await setupTest(t, { attestation: true });
-
-  assert(attestationIssuer);
-  assert(attestationBrand);
-  const issuerManager = wallet.getIssuerManager();
-  await issuerManager.add('Attestation', attestationIssuer);
-  await wallet.makeEmptyPurse('Attestation', 'staking purse');
-
-  const invitation = await attestationPublicFacet.makeWantAttInvitation();
-
-  const rawId = '123-arbitrary';
-  const id = `unknown#${rawId}`;
-  const offer = {
-    id: rawId,
-    invitation,
-    proposalTemplate: {
-      want: {
-        Attestation: {
-          pursePetname: 'staking purse',
-          value: 65n,
-          type: 'Attestation',
-        },
-      },
-      exit: {
-        onDemand: null,
-      },
-    },
-  };
-
-  await wallet.addOffer(offer);
-  const accepted = await wallet.acceptOffer(id);
-  assert(accepted);
-  const { depositedP } = accepted;
-  await depositedP;
-
-  const callHistory = await attestationPublicFacet.getCallHistory();
-  t.deepEqual(callHistory.wantProposals, [
-    {
-      exit: {
-        onDemand: null,
-      },
-      want: {
-        Attestation: AmountMath.make(attestationBrand, 65n),
-      },
-      give: {},
-    },
-  ]);
-  t.deepEqual(callHistory.wantAllocations, [
-    { Attestation: AmountMath.make(attestationBrand, 0n) },
-  ]);
-  // When an attestation payout is recieved, the wallet should return it to the
-  // attMaker:
-  t.deepEqual(callHistory.returnProposals, [
-    {
-      exit: {
-        onDemand: null,
-      },
-      give: {
-        Attestation: AmountMath.make(attestationBrand, 65n),
-      },
-      want: {},
-    },
-  ]);
-  t.deepEqual(callHistory.returnAllocations, [
-    {
-      Attestation: AmountMath.make(attestationBrand, 65n),
-    },
-  ]);
 });
 
 test('addOffer invitationQuery', async t => {

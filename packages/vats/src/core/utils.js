@@ -23,14 +23,12 @@ export const agoricNamesReserved = harden({
   issuer: {
     [Stake.symbol]: Stake.proposedName,
     [Stable.symbol]: Stable.proposedName,
-    Attestation: 'Agoric lien attestation',
     Invitation: 'Zoe invitation',
     AUSD: 'Agoric bridged USDC',
   },
   brand: {
     [Stake.symbol]: Stake.proposedName,
     [Stable.symbol]: Stable.proposedName,
-    Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
     Invitation: 'Zoe invitation',
     timer: 'timer service',
@@ -52,7 +50,6 @@ export const agoricNamesReserved = harden({
     auctioneer: 'auctioneer',
     feeDistributor: 'fee distributor',
     liquidate: 'liquidate',
-    stakeFactory: 'stakeFactory',
     Pegasus: 'pegasus',
     reserve: 'collateral reserve',
     psm: 'Parity Stability Module',
@@ -66,8 +63,6 @@ export const agoricNamesReserved = harden({
     Treasury: 'Treasury', // for compatibility
     auctioneer: 'auctioneer',
     VaultFactoryGovernor: 'vault factory governor',
-    stakeFactory: 'stakeFactory',
-    stakeFactoryGovernor: 'stakeFactory governor',
     Pegasus: 'remote peg',
     reserve: 'collateral reserve',
     reserveGovernor: 'ReserveGovernor',
