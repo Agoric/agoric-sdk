@@ -15,6 +15,8 @@ import {
 
 import { Far } from '@endo/far';
 
+const { Fail } = assert;
+
 /**
  * @param {() => import('@agoric/vat-data').Baggage} getBaggage
  */
@@ -56,6 +58,7 @@ export const detachedDurableStores = attachDurableStores(() =>
  * @returns {import('.').Zone}
  */
 export const makeDurableZone = baggage => {
+  baggage || Fail`baggage required`;
   /** @type {import('.').Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {import('.').Zone['exoClassKit']} */
