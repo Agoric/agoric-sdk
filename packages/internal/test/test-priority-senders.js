@@ -23,21 +23,21 @@ test('basic', async t => {
   };
 
   await manager.add('oracles', 'agoric1a');
-  await nodeEquals('agoric1a', ['oracles']);
+  await nodeEquals('agoric1a', 'oracles');
 
   await manager.remove('oracles', 'agoric1a');
   await nodeEquals('agoric1a', undefined);
 
   await manager.add('oracles', 'agoric1a');
-  await nodeEquals('agoric1a', ['oracles']);
+  await nodeEquals('agoric1a', 'oracles');
   await manager.add('ec', 'agoric1a');
-  await nodeEquals('agoric1a', ['ec,oracles']);
+  await nodeEquals('agoric1a', 'ec,oracles');
 
   await manager.add('oracles', 'agoric1b');
-  await nodeEquals('agoric1b', ['oracles']);
+  await nodeEquals('agoric1b', 'oracles');
 
   await manager.remove('oracles', 'agoric1a');
-  await nodeEquals('agoric1a', ['ec']);
+  await nodeEquals('agoric1a', 'ec');
 });
 
 test('errors', async t => {
@@ -71,7 +71,8 @@ test('normalization', async t => {
   await manager.add('this,has,commas,', 'addr');
 
   await writesSettled();
-  t.deepEqual(storage.data.get(`${HIGH_PRIORITY_SENDERS}.addr`), [
+  t.deepEqual(
+    storage.data.get(`${HIGH_PRIORITY_SENDERS}.addr`),
     'something_with_spaces,something_with_spaces_and___,this_has_commas_',
-  ]);
+  );
 });

@@ -65,11 +65,13 @@ export const slotStringUnserialize = makeSlotStringUnserialize();
 /**
  * For testing, creates a chainStorage root node over an in-memory map
  * and exposes both the map and the sequence of received messages.
+ * The `sequence` option defaults to true.
  *
  * @param {string} rootPath
  * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
  */
 export const makeFakeStorageKit = (rootPath, rootOptions) => {
+  const resolvedOptions = { sequence: true, ...rootOptions };
   /** @type {Map<string, any[]>} */
   const data = new Map();
   /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
@@ -88,7 +90,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'set':
         for (const [key, value] of message.args) {
           if (value !== undefined) {
-            data.set(key, [value]);
+            data.set(key, value);
           } else {
             data.delete(key);
           }
@@ -122,7 +124,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         throw Error(`unsupported method: ${message.method}`);
     }
   };
-  const rootNode = makeChainStorageRoot(toStorage, rootPath, rootOptions);
+  const rootNode = makeChainStorageRoot(toStorage, rootPath, resolvedOptions);
   return { rootNode, data, messages, toStorage };
 };
 harden(makeFakeStorageKit);
