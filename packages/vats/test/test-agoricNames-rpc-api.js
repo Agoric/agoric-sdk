@@ -1,20 +1,23 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 
-import { E, Far } from '@endo/far';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { E, Far } from '@endo/far';
+import { publishAgoricNames } from '../src/core/chain-behaviors.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 import {
   agoricNamesReserved,
   makeAgoricNamesAccess,
 } from '../src/core/utils.js';
-import { makePromiseSpace } from '../src/core/promise-space.js';
-import { publishAgoricNames } from '../src/core/chain-behaviors.js';
 import { makeBoard } from '../src/lib-board.js';
-import { boardSlottingMarshaller } from '../tools/board-utils.js';
+import {
+  boardSlottingMarshaller,
+  makeBoardRemote,
+} from '../tools/board-utils.js';
 
 function* mapIterator(iterator, mapping) {
-  for (let i of iterator) {
+  for (const i of iterator) {
     yield mapping(i);
   }
 }
@@ -30,18 +33,16 @@ test('agoricNames chainStorage RPC API', async t => {
   const board = makeBoard();
   produce.board.resolve(board);
 
-  const x = agoricNamesReserved;
   /** @type {BootstrapPowers} */
   // @ts-expect-error mock
   const powers = { produce, consume, ...spaces };
   await publishAgoricNames(powers);
 
   const { entries } = Object;
-  const makeBoardRemote = ({ boardId, iface }) => Far(iface, {}); //getBoardId: () => boardId
   const cap = s => s.slice(0, 1).toUpperCase() + s.slice(1);
   await Promise.all(
     entries(agoricNamesReserved).flatMap(([kind, record]) =>
-      entries(record).map(([name, label]) =>
+      Object.keys(record).map(name =>
         E(E(agoricNamesAdmin).lookupAdmin(kind)).update(
           name,
           makeBoardRemote({
@@ -56,11 +57,16 @@ test('agoricNames chainStorage RPC API', async t => {
   // chainStorage publication is unsynchronized
   await eventLoopIteration();
 
-  const m = boardSlottingMarshaller((slot, _iface) => board.getValue(slot));
+  const leadingChars = 'Alleged: BoardRemote '.length;
+  const m = boardSlottingMarshaller((slot, iface) => {
+    const short = iface.slice(leadingChars);
+    return Far(short, {});
+  });
+
   const live = [
     ...mapIterator(storage.data.entries(), ([key, val]) => [
       key,
-      m.unserialize(JSON.parse(val)),
+      m.fromCapData(JSON.parse(val)),
     ]),
   ];
 
