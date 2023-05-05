@@ -17,7 +17,7 @@ const { Fail } = assert;
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
 
-const NameHubIKit = harden({
+export const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
     has: M.call(KeyShape).returns(M.boolean()),
     lookup: M.call().rest(PathShape).returns(M.promise()),
@@ -58,7 +58,7 @@ export const prepareMixinMyAddress = zone => {
   // XXX: wish: constant callback
   const makeConstantFacet = zone.exoClass(
     'Konst',
-    undefined,
+    undefined, // TODO: interface guard
     value => ({ value }),
     {
       getValue() {
@@ -72,7 +72,6 @@ export const prepareMixinMyAddress = zone => {
    * @param {string} address
    */
   const mixinMyAddress = (nameAdmin, address) => {
-    // TODO: exo
     const myAddressFacet = makeConstantFacet(address);
     return mixin({
       target: nameAdmin,

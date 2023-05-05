@@ -2,10 +2,77 @@
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
 import { heapZone } from '@agoric/zone';
-import { makeNameHubKit, prepareMixinMyAddress } from './nameHub.js';
+import {
+  makeSyncMethodCallback,
+  prepareGuardedAttenuator,
+} from '@agoric/internal/src/callback.js';
+import {
+  makeNameHubKit,
+  NameHubIKit,
+  prepareMixinMyAddress,
+} from './nameHub.js';
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
+
+/** @param {import('@agoric/zone').Zone} zone */
+const prepareSpecializedNameAdmin = zone => {
+  const mixinMyAddress = prepareMixinMyAddress(zone);
+
+  /** @type {import('@agoric/internal/src/callback.js').AttenuatorMaker<import('./types.js').NamesByAddressAdmin>} */
+  const specialize = prepareGuardedAttenuator(zone, NameHubIKit.nameAdmin, {
+    tag: 'NamesByAddressAdmin',
+  });
+
+  const makeOverrideFacet = zone.exoClass(
+    'NamesByAddressAdminFacet',
+    undefined, // TODO: interface guard. same as nameAdmin?
+    /** @param {import('./types.js').NameAdmin} nameAdmin */
+    nameAdmin => ({ nameAdmin }),
+    {
+      /**
+       * @param {string} address
+       * @param {string[]} [reserved]
+       * @returns {Promise<{ nameHub: NameHub, nameAdmin: import('./types.js').MyAddressNameAdmin}>}
+       */
+      async provideChild(address, reserved) {
+        const { nameAdmin } = this.state;
+        const child = await nameAdmin.provideChild(address, reserved);
+        return {
+          nameHub: child.nameHub,
+          nameAdmin: mixinMyAddress(child.nameAdmin, address),
+        };
+      },
+      /** @param {string} address */
+      async lookupAdmin(address) {
+        const { nameAdmin } = this.state;
+        // XXX relies on callers not to provide other admins via update()
+        // TODO: enforce?
+
+        /** @type { import('./types').MyAddressNameAdmin } */
+        // @ts-expect-error cast
+        const myAdmin = nameAdmin.lookupAdmin(address);
+        return myAdmin;
+      },
+    },
+  );
+
+  /**
+   * @param {import('./types.js').NameAdmin} nameAdmin
+   */
+  const makeMyAddressNameAdmin = nameAdmin => {
+    const overrideFacet = makeOverrideFacet(nameAdmin);
+    return specialize({
+      target: nameAdmin,
+      overrides: {
+        provideChild: makeSyncMethodCallback(overrideFacet, 'provideChild'),
+        lookupAdmin: makeSyncMethodCallback(overrideFacet, 'lookupAdmin'),
+      },
+    });
+  };
+
+  return makeMyAddressNameAdmin;
+};
 
 /**
  * @param {unknown} _vatPowers
@@ -18,32 +85,8 @@ export function buildRootObject(_vatPowers, _vatParameters, _baggage) {
 
   // TODO: const zone = makeDurableZone(_baggage);
   const zone = heapZone;
-  const mixinMyAddress = prepareMixinMyAddress(zone);
-  /** @type {import('./types.js').NamesByAddressAdmin} */
-  const namesByAddressAdmin = Far('namesByAddressAdmin', {
-    ...nameAdmin,
-    /**
-     * @param {string} address
-     * @param {string[]} [reserved]
-     * @returns {Promise<{ nameHub: NameHub, nameAdmin: import('./types.js').MyAddressNameAdmin}>}
-     */
-    async provideChild(address, reserved) {
-      const child = await nameAdmin.provideChild(address, reserved);
-      return {
-        nameHub: child.nameHub,
-        nameAdmin: mixinMyAddress(child.nameAdmin, address),
-      };
-    },
-    async lookupAdmin(address) {
-      // XXX relies on callers not to provide other admins via update()
-      // TODO: enforce?
-
-      /** @type { import('./types').MyAddressNameAdmin } */
-      // @ts-expect-error cast
-      const myAdmin = nameAdmin.lookupAdmin(address);
-      return myAdmin;
-    },
-  });
+  const makeNamesByAddressAdmin = prepareSpecializedNameAdmin(zone);
+  const namesByAddressAdmin = makeNamesByAddressAdmin(nameAdmin);
 
   let bundler;
   let comms;

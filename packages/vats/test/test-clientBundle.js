@@ -174,6 +174,8 @@ test('namesByAddressAdmin provideChild', async t => {
   const addr = 'agoric123';
   const provisioning = buildProvisioningRoot(undefined, undefined, undefined);
   const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
+  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin}} */
+  // @ts-expect-error XXX why doesn't the provideChild override work?
   const { nameAdmin } = E.get(E(namesByAddressAdmin).provideChild(addr));
   t.is(await E(nameAdmin).getMyAddress(), addr);
 });
