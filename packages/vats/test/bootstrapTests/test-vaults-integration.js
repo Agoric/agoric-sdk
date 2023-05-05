@@ -71,8 +71,8 @@ test.after.always(t => {
 
 test('audit bootstrap exports', async t => {
   const expected = {
-    maxExports: 15,
-    maxNonDurable: 13,
+    maxExports: 12,
+    maxNonDurable: 10,
     ifaces: {
       // in bridgeCoreEval()
       // TODO(#7576): support unregister
@@ -84,10 +84,6 @@ test('audit bootstrap exports', async t => {
       'prioritySenders manager': true,
       // TODO? move to provisioning vat?
       clientCreator: true,
-      // in registerNetworkProtocols(). TODO: outboard #7044
-      ProtocolHandler: true, // in makeLoopbackProtocolHandler()
-      callbacks: true,
-      listener: true,
       // in startWalletFactory()
       // TODO(#5885): vbank should provide a facet attenuated
       // to only provide getAssetSubscription
@@ -132,6 +128,8 @@ test('audit bootstrap exports', async t => {
     'bootstrap exports:',
     oidsDurable.length,
     'durable',
+    oids.size - oidsDurable.length,
+    'non-durable',
     oids.size,
     'total',
   );
