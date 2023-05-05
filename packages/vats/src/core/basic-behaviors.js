@@ -339,12 +339,27 @@ export const makeOracleBrands = async ({
 harden(makeOracleBrands);
 
 /**
- * TODO: rename this to getBoard?
+ * @param {BootstrapPowers & NamedVatPowers} powers
+ */
+export const produceBoard = async ({
+  consume: { client },
+  produce: { board: pBoard },
+  namedVat: {
+    consume: { board: vatBoard },
+  },
+}) => {
+  const board = await E(vatBoard).getBoard();
+  pBoard.resolve(board);
+  return E(client).assignBundle([_addr => ({ board })]);
+};
+harden(produceBoard);
+
+/**
+ * @deprecated use produceBoard
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>>
  * }}} powers
- * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
  */
 export const makeBoard = async ({
   consume: { loadCriticalVat, client },
@@ -656,14 +671,14 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     issuer: { produce: { Invitation: 'zoe' } },
     brand: { produce: { Invitation: 'zoe' } },
   },
-  [makeBoard.name]: {
+  [produceBoard.name]: {
     consume: {
-      loadCriticalVat: true,
       client: true,
     },
     produce: {
       board: 'board',
     },
+    namedVat: { consume: { board: 'board' } },
   },
   [produceNamesByAddress.name]: {
     consume: { provisioning: 'provisioning' },

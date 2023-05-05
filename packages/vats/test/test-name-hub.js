@@ -147,14 +147,14 @@ test('makeNameHubKit - default and set', async t => {
   });
 });
 
-test('makeNameHubKit - listen for updates', t => {
+test('makeNameHubKit - listen for updates', async t => {
   const { nameAdmin } = makeNameHubKit();
 
   const brandBLD = harden({ name: 'BLD' });
   nameAdmin.update('BLD', brandBLD);
 
   const capture = [];
-  nameAdmin.onUpdate(entries => capture.push(entries));
+  nameAdmin.onUpdate({ write: entries => capture.push(entries) });
 
   const brandIST = harden({ name: 'IST' });
   nameAdmin.update('IST', brandIST);
@@ -162,6 +162,7 @@ test('makeNameHubKit - listen for updates', t => {
 
   nameAdmin.delete('BLD');
 
+  await null;
   t.deepEqual(capture, [
     [
       ['BLD', brandBLD],

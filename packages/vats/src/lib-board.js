@@ -6,7 +6,12 @@
  */
 
 import { assert, Fail, q } from '@agoric/assert';
+import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
+import {
+  defineRecorderKit,
+  prepareRecorder,
+} from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
@@ -374,4 +379,30 @@ export const prepareBoardKit = baggage => {
 export const makeBoard = (initSequence = 0, options = {}) => {
   const make = prepareBoardKit(makeScalarBigMapStore('baggage'));
   return make(initSequence, options).board;
+};
+
+/**
+ * @param {import('@agoric/zone').Zone} zone
+ */
+export const makeRecorderFactory = zone => {
+  const baggage = zone.mapStore(`Recorder Baggage`);
+  const makeDurablePublishKit = prepareDurablePublishKit(
+    baggage,
+    'DurablePublishKit',
+  );
+
+  /**
+   * @param {string} label
+   * @param {Marshaller} marshaller
+   */
+  const recorderFactory = (label, marshaller) => {
+    const myZone = zone.subZone(label);
+    const makeRecorder = prepareRecorder(
+      myZone.mapStore(`Recorder Baggage: ${label}`),
+      marshaller,
+    );
+    return defineRecorderKit({ makeRecorder, makeDurablePublishKit });
+  };
+
+  return recorderFactory;
 };

@@ -262,7 +262,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       ),
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
-      makeBoard(powersFor('makeBoard')),
+      makeBoard(allPowers),
       makeBridgeManager(powersFor('makeBridgeManager')),
       noProvisioner(powersFor('noProvisioner')),
       bridgeProvisioner(powersFor('bridgeProvisioner')),
