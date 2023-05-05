@@ -37,9 +37,9 @@ export const NameHubIKit = harden({
     onUpdate: M.call(M.remotable()).returns(M.undefined()),
     update: M.call(KeyShape, M.any())
       .optional(M.remotable('newAdminValue'))
-      .returns(M.undefined()),
+      .returns(M.any()),
     lookupAdmin: M.call(KeyShape).returns(M.promise()),
-    delete: M.call(KeyShape).returns(M.undefined()),
+    delete: M.call(KeyShape).returns(M.any()),
     readonly: M.call().returns(M.remotable()),
   }),
 });
@@ -102,23 +102,28 @@ const provideWeak = (store, key, make) => {
 };
 
 /**
+ * @param {import('./types.js').NameHubUpdateHandler | undefined} updateCallback
+ * @param {NameHub} hub
+ * @param {unknown} [_newValue]
+ */
+const updated = (updateCallback, hub, _newValue = undefined) => {
+  if (!updateCallback) {
+    return;
+  }
+
+  // wait for values to settle before writing
+  return E.when(Promise.allSettled(hub.values()), () =>
+    E(updateCallback).write(hub.entries()),
+  );
+};
+
+/**
  * Make two facets of a node in a name hierarchy: the nameHub
  * is read access and the nameAdmin is write access.
  *
  * @param {import('@agoric/zone').Zone} [zone]
  */
 export const prepareNameHubKit = (zone = heapZone) => {
-  /**
-   * @param {import('./types.js').NameHubUpdateHandler | undefined} updateCallback
-   * @param {NameHub} hub
-   */
-  const updated = (updateCallback, hub) => {
-    if (!updateCallback) {
-      return;
-    }
-    void E(updateCallback).write(hub.entries(false));
-  };
-
   const init1 = () => ({
     /** @type {LegacyMap<string, PromiseKit<unknown>>} */
     // Legacy because a promiseKit is not a passable
@@ -292,7 +297,7 @@ export const prepareNameHubKit = (zone = heapZone) => {
           }
 
           const { nameHub } = this.facets;
-          updated(updateCallback, nameHub);
+          return updated(updateCallback, nameHub, newValue);
         },
         async lookupAdmin(...path) {
           const { nameAdmin } = this.facets;
@@ -332,7 +337,7 @@ export const prepareNameHubKit = (zone = heapZone) => {
             }
           }
           const { nameHub } = this.facets;
-          updated(updateCallback, nameHub);
+          return updated(updateCallback, nameHub);
         },
         readonly() {
           const { nameHub } = this.facets;
