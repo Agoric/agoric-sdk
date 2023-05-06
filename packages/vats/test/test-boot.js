@@ -41,7 +41,7 @@ test.before(t => {
  * @callback BuildRootObject
  * @param {{}} vatPowers
  * @param {{}} vatParameters
- * @param {import('@agoric/vat-data').Baggage} [baggage]
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 
 /**
@@ -67,7 +67,8 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
         throw err;
       },
     };
-    const root = entryPoint(vatPowers, vatParameters);
+    const baggage = makeScalarBigMapStore('Test Baggage');
+    const root = entryPoint(vatPowers, vatParameters, baggage);
     const vats = mockSwingsetVats(mock);
     await t.notThrowsAsync(E(root).bootstrap(vats, mock.devices));
   });
