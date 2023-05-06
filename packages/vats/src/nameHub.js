@@ -155,7 +155,6 @@ export const prepareNameHubKit = (zone = heapZone) => {
       auxProperties: harden(auxProperties),
     }),
     {
-      /** @type {NameHub} */
       nameHub: {
         has(key) {
           const { keyToValue } = this.state;
@@ -210,8 +209,10 @@ export const prepareNameHubKit = (zone = heapZone) => {
           const { keyToAdmin, keyToValue } = this.state;
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
+            // XXX ts-ignore because @agoric/web-components lint fails
             /** @type {NameHub} */
-            // @ts-expect-error if an admin is present, it should be a namehub
+            // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+            // @ts-ignore if an admin is present, it should be a namehub
             const childHub = keyToValue.get(key);
             return { nameHub: childHub, nameAdmin: childAdmin };
           }
