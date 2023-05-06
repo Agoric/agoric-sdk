@@ -124,9 +124,9 @@ const updated = (updateCallback, hub, _newValue = undefined) => {
  * Make two facets of a node in a name hierarchy: the nameHub
  * is read access and the nameAdmin is write access.
  *
- * @param {import('@agoric/zone').Zone} [zone]
+ * @param {import('@agoric/zone').Zone} zone
  */
-export const prepareNameHubKit = (zone = heapZone) => {
+export const prepareNameHubKit = zone => {
   const init1 = () => ({
     /** @type {LegacyMap<string, PromiseKit<unknown>>} */
     // Legacy because a promiseKit is not a passable
@@ -360,4 +360,4 @@ export const prepareNameHubKit = (zone = heapZone) => {
  *
  * @returns {import('./types.js').NameHubKit}
  */
-export const makeNameHubKit = prepareNameHubKit();
+export const makeNameHubKit = prepareNameHubKit(heapZone);
