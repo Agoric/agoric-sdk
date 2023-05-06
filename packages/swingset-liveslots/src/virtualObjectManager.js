@@ -306,7 +306,13 @@ const insistSameCapData = (oldCD, newCD) => {
  * @param {import('@endo/marshal').FromCapData<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
- * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
+ * @param {import('./types').LiveSlotsOptions} [liveSlotsOptions]
+ * @param {{ WeakMap: typeof WeakMap, WeakSet: typeof WeakSet }} [powers]
+ * Specifying the underlying WeakMap/WeakSet objects to wrap with
+ * VirtualObjectAwareWeakMap/Set.  By default, capture the ones currently
+ * defined on `globalThis` when the maker is invoked, to avoid infinite
+ * recursion if our returned WeakMap/WeakSet wrappers are subsequently installed
+ * on globalThis.
  *
  * @returns {object} a new virtual object manager.
  *
@@ -348,6 +354,7 @@ export const makeVirtualObjectManager = (
   unserialize,
   assertAcceptableSyscallCapdataSize,
   liveSlotsOptions = {},
+  { WeakMap, WeakSet } = globalThis,
 ) => {
   const { allowStateShapeChanges = false } = liveSlotsOptions;
 
