@@ -104,7 +104,7 @@ export const makeVatsFromBundles = async ({
 };
 harden(makeVatsFromBundles);
 
-/** @param {BootstrapPowers} powers */
+/** @param {BootstrapSpace} powers */
 export const produceStartUpgradable = async ({
   consume: { zoe },
   produce, // startUpgradable
