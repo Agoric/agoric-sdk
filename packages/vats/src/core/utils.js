@@ -2,6 +2,7 @@
 import { E, Far } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
+import { makeScalarWeakMapStore } from '@agoric/vat-data';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
@@ -313,7 +314,6 @@ export const makeMyAddressNameAdminKit = address => {
 /**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
- * @param {MapStore<string, CreateVatResults>} store
  * @param {(...args: any) => void} [log]
  * @param {string} [label]
  *
@@ -323,11 +323,12 @@ export const makeMyAddressNameAdminKit = address => {
 export const makeVatSpace = (
   svc,
   criticalVatKey,
-  store,
   log = noop,
   label = 'namedVat',
 ) => {
   const subSpaceLog = (...args) => log(label, ...args);
+  /** @type {WeakMapStore<string, CreateVatResults>} */
+  const store = makeScalarWeakMapStore();
 
   const createVatByName = async bundleName => {
     subSpaceLog(`vatSpace: createVatByName(${bundleName})`);

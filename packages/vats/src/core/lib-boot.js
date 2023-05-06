@@ -81,8 +81,7 @@ export const makeBootstrap = (
 
     const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-    const store = zone.mapStore('vatInfo by name');
-    const namedVat = makeVatSpace(svc, criticalVatKey, store, console.info);
+    const namedVat = makeVatSpace(svc, criticalVatKey, console.info);
 
     const namesVat = namedVat.consume.agoricNames;
     const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
