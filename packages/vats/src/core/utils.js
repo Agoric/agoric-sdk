@@ -2,7 +2,7 @@
 import { E, Far } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
-import { makeScalarWeakMapStore } from '@agoric/vat-data';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
@@ -327,8 +327,9 @@ export const makeVatSpace = (
   label = 'namedVat',
 ) => {
   const subSpaceLog = (...args) => log(label, ...args);
-  /** @type {WeakMapStore<string, CreateVatResults>} */
-  const store = makeScalarWeakMapStore();
+  // XXX Only remotables can be keys of scalar WeakMapStores
+  /** @type {MapStore<string, CreateVatResults>} */
+  const store = makeScalarMapStore();
 
   const createVatByName = async bundleName => {
     subSpaceLog(`vatSpace: createVatByName(${bundleName})`);
