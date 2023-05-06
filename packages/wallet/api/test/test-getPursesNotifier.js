@@ -7,20 +7,20 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { Far } from '@endo/marshal';
+import { heapZone } from '@agoric/zone';
+import {
+  makeNameHubKit,
+  prepareMixinMyAddress,
+} from '@agoric/vats/src/nameHub.js';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
+const mixinMyAddress = prepareMixinMyAddress(heapZone);
+
 function makeFakeMyAddressNameAdmin() {
-  const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
-  return Far('fakeMyAddressNameAdmin', {
-    ...rawMyAddressNameAdmin,
-    getMyAddress() {
-      return 'agoric1test1';
-    },
-  });
+  const { nameAdmin } = makeNameHubKit();
+  return mixinMyAddress(nameAdmin, 'agoric1test1');
 }
 
 const setup = async () => {
