@@ -286,7 +286,7 @@ export const prepareVirtualPurse = zone => {
    * escrow doesn't support the case where the "other side" is also minting
    * assets... our escrow purse may not have enough assets in it to redeem the
    * ones that are sent from the "other side".
-   * @returns {Promise<EOnly<Purse>>} This is not just a Purse because it plays
+   * @returns {Promise<Awaited<EOnly<Purse>>>} This is not just a Purse because it plays
    * fast-and-loose with the synchronous Purse interface.  So, the consumer of
    * this result must only interact with the virtual purse via eventual-send (to
    * conceal the methods that are returning promises instead of synchronously).
