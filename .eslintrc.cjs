@@ -4,21 +4,31 @@ const process = require('process');
 
 const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
-const deprecatedTerminology = [
+const notLoanDeprecated = [
   ['currency', 'brand, asset or another descriptor'],
-  ['loan', 'debt'],
   ['blacklist', 'denylist'],
   ['whitelist', 'allowlist'],
   ['RUN', 'IST', '/RUN/'],
-].flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
-  [
-    ['Literal', 'value'],
-    ['TemplateElement', 'value.raw'],
-    ['Identifier', 'name'],
-  ].map(([selectorType, field]) => ({
-    selector: `${selectorType}[${field}=${badRgx}]`,
-    message: `Use '${good}' instead of deprecated '${bad}'`,
-  })),
+];
+const allDeprecated = [...notLoanDeprecated, ['loan', 'debt']];
+
+const deprecatedTerminology = Object.fromEntries(
+  Object.entries({
+    all: allDeprecated,
+    notLoan: notLoanDeprecated,
+  }).map(([category, deprecated]) => [
+    category,
+    deprecated.flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
+      [
+        ['Literal', 'value'],
+        ['TemplateElement', 'value.raw'],
+        ['Identifier', 'name'],
+      ].map(([selectorType, field]) => ({
+        selector: `${selectorType}[${field}=${badRgx}]`,
+        message: `Use '${good}' instead of deprecated '${bad}'`,
+      })),
+    ),
+  ]),
 );
 
 module.exports = {
@@ -85,7 +95,14 @@ module.exports = {
         // instead, and upgrade to 'error' when possible
         // '@jessie.js/safe-await-separator': 'warn',
         // TODO upgrade this (or a subset) to 'error'
-        'no-restricted-syntax': ['warn', ...deprecatedTerminology],
+        'no-restricted-syntax': ['warn', ...deprecatedTerminology.all],
+      },
+    },
+    {
+      // Allow "loan" contracts to mention the word "loan".
+      files: ['packages/zoe/src/contracts/loan/*.js'],
+      rules: {
+        'no-restricted-syntax': ['warn', ...deprecatedTerminology.notLoan],
       },
     },
     {
