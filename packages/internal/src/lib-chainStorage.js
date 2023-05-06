@@ -36,7 +36,7 @@ const { Fail } = assert;
  */
 
 const ChainStorageNodeI = M.interface('StorageNode', {
-  setValue: M.callWhen(M.string()).returns(),
+  setValue: M.callWhen(M.await(M.string())).returns(),
   getPath: M.call().returns(M.string()),
   getStoreKey: M.callWhen().returns(M.record()),
   makeChildNode: M.call(M.string())
@@ -228,8 +228,7 @@ harden(makeStorageNodeChild);
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {
-    const serializedP = E(marshaller).serializeAndStringify(value);
-    // @ts-expect-error M.callWhen
-    return E(storageNode).setValue(serializedP);
+    const serialized = await E(marshaller).serializeAndStringify(value);
+    return E(storageNode).setValue(serialized);
   };
 };
