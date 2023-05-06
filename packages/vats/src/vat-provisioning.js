@@ -20,7 +20,7 @@ import {
 const prepareSpecializedNameAdmin = zone => {
   const mixinMyAddress = prepareMixinMyAddress(zone);
 
-  /** @type {import('@agoric/internal/src/callback.js').AttenuatorMaker<import('./types.js').NamesByAddressAdmin>} */
+  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<import('./types.js').NamesByAddressAdmin>} */
   const specialize = prepareGuardedAttenuator(zone, NameHubIKit.nameAdmin, {
     tag: 'NamesByAddressAdmin',
   });

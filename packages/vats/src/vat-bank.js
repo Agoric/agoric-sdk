@@ -196,7 +196,7 @@ const prepareBankChannelHandler = zone =>
             break;
           }
           default: {
-            Fail`Unrecognized request ${obj && obj.type}`;
+            Fail`Unrecognized request ${obj}`;
           }
         }
       },

@@ -106,7 +106,6 @@ test('connectFaucet produces payments', async t => {
                 return amt;
               },
             }),
-            // @ts-expect-error mock
             getAssetSubscription: () => null,
           }),
       }),

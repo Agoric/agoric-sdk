@@ -1,7 +1,6 @@
 // @ts-check
 import { M } from '@agoric/store';
 import { E } from '@endo/far';
-import { makeNotifier } from '@agoric/notifier';
 import { isPromise } from '@endo/promise-kit';
 
 import {

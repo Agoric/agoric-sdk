@@ -115,7 +115,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @typedef {import('@agoric/vats').NameHub} NameHub
  *
  * @typedef {{
- *   getAssetSubscription: () => ERef<Subscription<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ *   getAssetSubscription: () => ERef<AsyncIterable<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
  */
 
