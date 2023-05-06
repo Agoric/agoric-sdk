@@ -14,6 +14,11 @@
 # the SDK.
 set -ueo pipefail
 
+function fatal() {
+  echo ${1+"$@"} 1>&2
+  exit 1
+}
+
 GVM_URL=${GVM_URL-https://github.com/devnw/gvm/releases/download/latest/gvm}
 NVM_GIT_REPO=${NVM_GIT_REPO-https://github.com/nvm-sh/nvm.git}
 
@@ -167,6 +172,11 @@ fi
         }
         ;;
       esac
+      # Ensure minimum patch versions of Go environment
+      goversion=$(go version 2>/dev/null)
+      goregexp='go version go([0-9]+).([0-9]+).([0-9]+) '
+      [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
+      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
       # Build the daemon.
       cd "$GOLANG_DIR"
       make
