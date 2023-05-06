@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeDefaultTestContext } from './contexts.js';
 import { makeMockTestSpace } from './supports.js';
 
@@ -13,7 +14,10 @@ const test = anyTest;
 test.before(async t => {
   const withBankManager = async () => {
     const noBridge = undefined;
-    const bankManager = E(buildBankVatRoot()).makeBankManager(noBridge);
+    const baggage = makeScalarMapStore('baggage');
+    const bankManager = E(
+      buildBankVatRoot(undefined, undefined, baggage),
+    ).makeBankManager(noBridge);
     const noop = () => {};
     const space0 = await makeMockTestSpace(noop);
     space0.produce.bankManager.reset();
