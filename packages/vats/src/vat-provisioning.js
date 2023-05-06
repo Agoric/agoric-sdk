@@ -50,8 +50,10 @@ const prepareSpecializedNameAdmin = zone => {
         // XXX relies on callers not to provide other admins via update()
         // TODO: enforce?
 
+        // XXX ts-ignore because @agoric/web-components lint:tyeps fails
         /** @type { import('./types').MyAddressNameAdmin } */
-        // @ts-expect-error cast
+        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+        // @ts-ignore cast
         const myAdmin = nameAdmin.lookupAdmin(address);
         return myAdmin;
       },
