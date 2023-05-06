@@ -1,23 +1,35 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E, Far } from '@endo/far';
+// eslint-disable-next-line import/order
+import { fakeVomKit } from './setup-vat-data.js';
+
+import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { heapZone } from '@agoric/zone/heap.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
+const provideBaggage = key => {
+  const root = fakeVomKit.cm.provideBaggage();
+  const zone = makeDurableZone(root);
+  return zone.mapStore(`${key} baggage`);
+};
+
 test('communication', async t => {
-  t.plan(29);
-  const bankVat = E(buildRootObject)(null, null, heapZone.mapStore('baggage'));
+  t.plan(32);
+  const baggage = provideBaggage('communication');
+  const bankVat = E(buildRootObject)(null, null, baggage);
+
+  const zone = makeDurableZone(baggage);
 
   /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
   let bankHandler;
 
   /** @type {import('../src/types.js').ScopedBridgeManager} */
-  const bankBridgeMgr = Far('fakeBankBridgeManager', {
-    async fromBridge(_obj) {
-      t.fail('unexpected fromBridge');
+  const bankBridgeMgr = zone.exo('fakeBankBridgeManager', undefined, {
+    async fromBridge(obj) {
+      t.is(typeof obj, 'string');
     },
     async toBridge(obj) {
       let ret;
@@ -94,11 +106,11 @@ test('communication', async t => {
   const bank = E(bankMgr).getBankForAddress('agoricfoo');
 
   const sub = await E(bank).getAssetSubscription();
-  const it = sub[Symbol.asyncIterator]();
+  const it = subscribeEach(sub)[Symbol.asyncIterator]();
 
   const kit = makeIssuerKit('BLD', AssetKind.NAT, harden({ decimalPlaces: 6 }));
   await t.throwsAsync(() => E(bank).getPurse(kit.brand), {
-    message: /"brand" not found/,
+    message: /not found/,
   });
 
   /** @type {undefined | IteratorResult<{brand: Brand, issuer: ERef<Issuer>, proposedName: string}>} */
