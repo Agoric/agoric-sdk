@@ -93,7 +93,7 @@ test('audit bootstrap exports', async t => {
     // @ts-expect-error kernel.dump() .promises type is wrong
     p => p.decider === myVatID,
   );
-  t.deepEqual(myPromises, [], 'no promises where bootstrap is the decider');
+  t.true(myPromises.length <= 1, 'bootstrap is the decider of only its return');
 
   const myExports = kState.kernelTable.filter(
     o => o[1] === myVatID && o[2].startsWith('o+'),

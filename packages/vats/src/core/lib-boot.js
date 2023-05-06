@@ -160,7 +160,7 @@ export const makeBootstrap = (
           vatData.set(name, { root });
         }
       }
-      void rawBootstrap(vats, devices).catch(e => {
+      return rawBootstrap(vats, devices).catch(e => {
         // Terminate because the vat is in an irrecoverable state.
         vatPowers.exitVatWithFailure(e);
         // Throw the error to reject this promise but it will be unhandled because rawBoostrap() isn't returned.
