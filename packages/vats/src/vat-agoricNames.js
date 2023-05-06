@@ -7,9 +7,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareNameHubKit } from './nameHub.js';
 
 /** @param {import('@agoric/zone').Zone} zone */
-const makeBrandStore = zone => {
-  const brandStore = zone.mapStore('Brand');
-
+const prepareNatBrand = zone => {
   // XXX generalize past Nat; move into ERTP
   /** @type {(name: string, d: DisplayInfo) => Brand} */
   const makeNatBrand = zone.exoClass(
@@ -34,11 +32,7 @@ const makeBrandStore = zone => {
       },
     },
   );
-
-  return {
-    provide: (keyword, displayInfo) =>
-      provide(brandStore, keyword, () => makeNatBrand(keyword, displayInfo)),
-  };
+  return makeNatBrand;
 };
 
 /**
@@ -49,6 +43,9 @@ const makeBrandStore = zone => {
 export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const zone = makeDurableZone(baggage);
   const makeNameHubKit = prepareNameHubKit(zone);
+  const makeNatBrand = prepareNatBrand(zone);
+
+  const brandStore = zone.mapStore('Brand');
   const kit = provide(baggage, 'agoricNamesKit', makeNameHubKit);
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = kit;
 
@@ -72,21 +69,17 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
     );
   };
 
-  const brandStore = makeBrandStore(zone);
-
-  /**
-   * Provide a brand, with no mint nor issuer.
-   *
-   * @param {string} keyword
-   * @param {DisplayInfo} displayInfo
-   */
-  const provideInertBrand = (keyword, displayInfo) =>
-    brandStore.provide(keyword, displayInfo);
-
   return Far('vat-agoricNames', {
     getNameHub: () => agoricNames,
     getNameHubKit: () => kit,
     publishNameHubs,
-    provideInertBrand,
+    /**
+     * Provide a brand, with no associated mint nor issuer.
+     *
+     * @param {string} keyword
+     * @param {DisplayInfo} displayInfo
+     */
+    provideInertBrand: (keyword, displayInfo) =>
+      provide(brandStore, keyword, () => makeNatBrand(keyword, displayInfo)),
   });
 };
