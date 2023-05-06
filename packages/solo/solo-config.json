@@ -2,6 +2,11 @@
   "bootstrap": "bootstrap",
   "defaultManagerType": "xs-worker",
   "defaultReapInterval": 1000,
+  "bundles":{
+    "agoricNames": {
+      "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    }
+  },
   "vats": {
     "spawner": {
       "sourceSpec": "./src/vat-spawner.js"
