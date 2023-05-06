@@ -1,9 +1,9 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+import { assert, NonNullish } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { M, makeLegacyMap } from '@agoric/store';
+import { M } from '@agoric/store';
 
 import './types.js';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@agoric/internal/src/callback.js';
 import { heapZone } from '@agoric/zone';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
@@ -128,12 +128,10 @@ const updated = (updateCallback, hub, _newValue = undefined) => {
  */
 export const prepareNameHubKit = zone => {
   const init1 = () => ({
-    /** @type {LegacyMap<string, PromiseKit<unknown>>} */
-    // Legacy because a promiseKit is not a passable
-    keyToPK: makeLegacyMap('nameKey'),
-    /** @type {LegacyMap<string, PromiseKit<unknown>>} */
-    // Legacy because a promiseKit is not a passable
-    keyToAdminPK: makeLegacyMap('nameKey'),
+    /** @type {Map<string, PromiseKit<unknown>>} */
+    keyToPK: new Map(),
+    /** @type {Map<string, PromiseKit<unknown>>} */
+    keyToAdminPK: new Map(),
   });
   /** @type {WeakMap<any, ReturnType<init1>>} */
   const ephemera = new WeakMap();
@@ -175,7 +173,8 @@ export const prepareNameHubKit = zone => {
           /** @type {any} */
           const firstValue = keyToValue.has(first)
             ? keyToValue.get(first)
-            : keyToPK.get(first).promise; // or throw
+            : NonNullish(keyToPK.get(first), `"nameKey" not found: ${q(first)}`)
+                .promise;
           if (remaining.length === 0) {
             return firstValue;
           }
@@ -232,7 +231,7 @@ export const prepareNameHubKit = zone => {
           }
           if (!keyToAdminPK.has(key)) {
             const pk = makePromiseKit();
-            keyToAdminPK.init(key, pk);
+            keyToAdminPK.set(key, pk);
             pk.promise.then(
               v => {
                 keyToAdmin.init(key, v);
@@ -243,7 +242,7 @@ export const prepareNameHubKit = zone => {
           }
           if (!keyToPK.has(key)) {
             const pk = makePromiseKit();
-            keyToPK.init(key, pk);
+            keyToPK.set(key, pk);
             pk.promise.then(
               v => {
                 keyToValue.init(key, v);
@@ -284,14 +283,14 @@ export const prepareNameHubKit = zone => {
           const { keyToPK, keyToAdminPK } = my(this.facets.nameHub);
           const { keyToValue, keyToAdmin, updateCallback } = this.state;
 
-          /** @type {[LegacyMap<string, PromiseKit<unknown>>, MapStore<string, unknown>, unknown][]} */
+          /** @type {[Map<string, PromiseKit<unknown>>, MapStore<string, unknown>, unknown][]} */
           const valueMapEntries = [
             [keyToAdminPK, keyToAdmin, adminValue],
             [keyToPK, keyToValue, newValue],
           ];
           for (const [pmap, vmap, value] of valueMapEntries) {
             if (pmap.has(key)) {
-              const old = pmap.get(key);
+              const old = NonNullish(pmap.get(key));
               old.resolve(value);
             } else if (vmap.has(key)) {
               vmap.set(key, value);
@@ -316,7 +315,7 @@ export const prepareNameHubKit = zone => {
           /** @type {any} */
           const firstValue = keyToAdmin.has(first)
             ? keyToAdmin.get(first)
-            : keyToAdminPK.get(first).promise;
+            : NonNullish(keyToAdminPK.get(first)).promise;
 
           if (remaining.length === 0) {
             return firstValue;
@@ -329,7 +328,7 @@ export const prepareNameHubKit = zone => {
           for (const pmap of [keyToAdminPK, keyToPK]) {
             if (pmap.has(key)) {
               // Reject only if already exists.
-              const old = pmap.get(key);
+              const old = NonNullish(pmap.get(key));
               old.reject(Error(`Value has been deleted`));
               // Silence unhandled rejections.
               void old.promise.catch(_ => {});
