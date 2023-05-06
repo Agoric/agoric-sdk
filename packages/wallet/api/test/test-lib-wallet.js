@@ -16,23 +16,24 @@ import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { Far } from '@endo/marshal';
+import {
+  makeNameHubKit,
+  prepareMixinMyAddress,
+} from '@agoric/vats/src/nameHub.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { heapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
+const mixinMyAddress = prepareMixinMyAddress(heapZone);
+
 function makeFakeMyAddressNameAdmin() {
-  const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
-  return Far('fakeMyAddressNameAdmin', {
-    ...rawMyAddressNameAdmin,
-    getMyAddress() {
-      return 'agoric1test1';
-    },
-  });
+  const { nameAdmin } = makeNameHubKit();
+  return mixinMyAddress(nameAdmin, 'agoric1test1');
 }
 
 /** @type {import('ava').TestFn<Awaited<LibWalletTestContext>>} */
