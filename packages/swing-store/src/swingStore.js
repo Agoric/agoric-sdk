@@ -797,6 +797,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       sqlReleaseSavepoints.run();
       savepoints.length = 0;
     }
+    await snapStore.flushSaves(false);
     flushPendingExports();
     inCrank = false;
   }
@@ -807,6 +808,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   async function commit() {
     db || Fail`db not initialized`;
     if (db.inTransaction) {
+      await snapStore.flushSaves(true);
       flushPendingExports();
       sqlCommit.run();
     }
@@ -837,6 +839,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     if (filePath !== ':memory:') {
       throw Error('on-disk DBs with WAL mode enabled do not serialize well');
     }
+    await snapStore.flushSaves(true);
     return db.serialize();
   }
 
