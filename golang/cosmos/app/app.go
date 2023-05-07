@@ -774,8 +774,26 @@ func NewAgoricApp(
 func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
+		normalizeProvisionAccount(ctx, app.AccountKeeper)
 		return fromVm, nil
 	}
+}
+
+// normalizeProvisionAccount ensures that the vbank/provision account is a module account,
+// initializing or updating it if necessary.
+func normalizeProvisionAccount(ctx sdk.Context, ak authkeeper.AccountKeeper) {
+	provisionAddr := ak.GetModuleAddress(vbanktypes.ProvisionPoolName)
+	provisionAcct := ak.GetAccount(ctx, provisionAddr)
+	if _, ok := provisionAcct.(authtypes.ModuleAccountI); ok {
+		return
+	}
+	perms := maccPerms[vbanktypes.ProvisionPoolName]
+	newAcct := authtypes.NewEmptyModuleAccount(vbanktypes.ProvisionPoolName, perms...)
+	if provisionAcct != nil {
+		newAcct.AccountNumber = provisionAcct.GetAccountNumber()
+		newAcct.Sequence = provisionAcct.GetSequence()
+	}
+	ak.SetModuleAccount(ctx, newAcct)
 }
 
 type cosmosInitAction struct {
@@ -855,6 +873,10 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 		stdlog.Printf("Genesis time %s is in %s\n", genTime, d)
 	}
 
+	// initialize the provision module account, to avoid its implicit creation
+	// as a default account upon receiving a transfer. See BockedAddrs().
+	normalizeProvisionAccount(ctx, app.AccountKeeper)
+
 	return res
 }
 
@@ -911,6 +933,9 @@ func (app *GaiaApp) BlockedAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		// The provision pool is not blocked from receiving funds.
+		// NOTE: because of this, the provision pool must be explicitly
+		// initialized as a module account during bootstrap to avoid
+		// implicit creation as a default accunt when funds are received.
 		if acc == vbanktypes.ProvisionPoolName {
 			continue
 		}
