@@ -7,6 +7,7 @@ import { fakeVomKit } from './setup-vat-data.js';
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { heapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
@@ -15,6 +16,40 @@ const provideBaggage = key => {
   const zone = makeDurableZone(root);
   return zone.mapStore(`${key} baggage`);
 };
+
+test('provideAssetSubscription - MapStore insertion order preserved', async t => {
+  const zones = {
+    durableZone: makeDurableZone(provideBaggage('key order')),
+    heapZone,
+  };
+  for (const [name, zone] of Object.entries(zones)) {
+    const ids = harden(['a', 'b', 'c', 'd', 'e']);
+    const handleToId = new Map(
+      ids.map(id => [zone.exo(`${name} ${id} handle`, undefined, {}), id]),
+    );
+
+    const forwardMap = zone.mapStore(`${name} forward map`);
+    handleToId.forEach((id, h) => forwardMap.init(h, id));
+    const forwardMapIds = [...forwardMap.values()];
+
+    const reverseMap = zone.mapStore(`${name} reverse map`);
+    [...handleToId.entries()]
+      .reverse()
+      .forEach(([h, id]) => reverseMap.init(h, id));
+    const reverseMapIds = [...reverseMap.values()];
+
+    t.deepEqual(
+      forwardMapIds,
+      ids,
+      `${name} forward map insertion order preserved`,
+    );
+    t.deepEqual(
+      reverseMapIds,
+      [...ids].reverse(),
+      `${name} reverse map insertion order preserved`,
+    );
+  }
+});
 
 test('communication', async t => {
   t.plan(32);
