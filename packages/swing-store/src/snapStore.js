@@ -11,9 +11,7 @@ import { buffer } from './util.js';
  * @typedef {object} SnapshotResult
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number} uncompressedSize size of (uncompressed) snapshot
- * @property {number} dbSaveSeconds time to write snapshot in DB
- * @property {number} compressedSize size of (compressed) snapshot
- * @property {number} compressSeconds time to generate and compress the snapshot
+ * @property {number} saveSeconds time to generate and hash the snapshot
  */
 
 /**
@@ -82,8 +80,7 @@ export function makeSnapStore(
       compressedSize INTEGER,
       compressedSnapshot BLOB,
       PRIMARY KEY (vatID, snapPos),
-      UNIQUE (vatID, inUse),
-      CHECK(compressedSnapshot is not null or inUse is null)
+      UNIQUE (vatID, inUse)
     )
   `);
 
@@ -100,6 +97,15 @@ export function makeSnapStore(
    * @param {number} snapPos
    */
   const getPendingKey = (vatID, snapPos) => JSON.stringify([vatID, snapPos]);
+
+  /**
+   * @param {string} key
+   * @returns {{vatID: string, snapPos: number}}
+   */
+  const parsePendingKey = key => {
+    const [vatID, snapPos] = JSON.parse(key);
+    return { vatID, snapPos };
+  };
 
   /**
    * Delete all extant snapshots from the snapstore that are not currently in
@@ -166,8 +172,8 @@ export function makeSnapStore(
 
   const sqlInsertSnapshot = db.prepare(`
   INSERT INTO snapshots
-    (vatID, snapPos, inUse, hash, uncompressedSize, compressedSize, compressedSnapshot)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
+    (vatID, snapPos, inUse, hash, uncompressedSize)
+  VALUES (?, ?, ?, ?, ?)
 `);
 
   /**
@@ -186,10 +192,9 @@ export function makeSnapStore(
       async () => {
         const hashStream = createHash('sha256');
         const gzip = createGzip();
-        let compressedSize = 0;
         let uncompressedSize = 0;
 
-        const { duration: compressSeconds, result: compressedSnapshot } =
+        const { duration: saveSeconds, result: compressedSnapshot } =
           await measureSeconds(async () => {
             const snapReader = Readable.from(snapshotStream);
             cleanup.push(
@@ -207,24 +212,22 @@ export function makeSnapStore(
               uncompressedSize += chunk.length;
             });
             snapReader.pipe(hashStream);
-            const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
+            const compressedSnapshotP = buffer(snapReader.pipe(gzip));
             await finished(snapReader);
-            return compressedSnapshotData;
+            return compressedSnapshotP;
           });
         const hash = hashStream.digest('hex');
 
         const { duration: dbSaveSeconds } = await measureSeconds(async () => {
           ensureTxn();
           stopUsingLastSnapshot(vatID);
-          compressedSize = compressedSnapshot.length;
-          sqlInsertSnapshot.run(
-            vatID,
-            snapPos,
-            1,
-            hash,
-            uncompressedSize,
-            compressedSize,
-            compressedSnapshot,
+          sqlInsertSnapshot.run(vatID, snapPos, 1, hash, uncompressedSize);
+          pendingSaves.set(
+            getPendingKey(vatID, snapPos),
+            Promise.resolve({
+              compressedSnapshot,
+              hash,
+            }),
           );
           const rec = snapshotRec(vatID, snapPos, hash, 1);
           const exportKey = snapshotMetadataKey(rec);
@@ -238,9 +241,7 @@ export function makeSnapStore(
         return harden({
           hash,
           uncompressedSize,
-          compressSeconds,
-          dbSaveSeconds,
-          compressedSize,
+          saveSeconds: saveSeconds + dbSaveSeconds,
         });
       },
       async () => {
@@ -251,8 +252,47 @@ export function makeSnapStore(
     );
   }
 
-  async function flushSaves() {
-    // XXX
+  const sqlGetSnapshotInfo = db.prepare(`
+    SELECT inUse, hash, compressedSize
+    FROM snapshots
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
+  const sqlSaveSnapshot = db.prepare(`
+    UPDATE snapshots
+    SET compressedSize = ?, compressedSnapshot = ?
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
+  async function flushSaves(finalize) {
+    // debugger;
+    const saved = await Promise.all(
+      [...pendingSaves.entries()].map(async ([key, pending]) => {
+        const snapshotInfo = await (finalize
+          ? pending
+          : Promise.race([pending, undefined]));
+        return /** @type {const} */ ([key, snapshotInfo]);
+      }),
+    );
+
+    for (const [key, snapshotInfo] of saved) {
+      if (!snapshotInfo) continue;
+      pendingSaves.delete(key);
+      const { vatID, snapPos } = parsePendingKey(key);
+      const storedInfo = sqlGetSnapshotInfo.get(vatID, snapPos);
+      // In case the previous crank where we initiated the snapshot save was
+      // rolled back, it's possible the snapshot row disappeared by the time
+      // the snapshot got compressed and we attempt writing it.
+      if (!storedInfo || storedInfo.hash !== snapshotInfo.hash) continue;
+
+      const compressedSnapshot =
+        storedInfo.inUse || keepSnapshots
+          ? snapshotInfo.compressedSnapshot
+          : // The snapshot is already outdated
+            null;
+      const compressedSize = snapshotInfo.compressedSnapshot.length;
+      sqlSaveSnapshot.run(compressedSize, compressedSnapshot, vatID, snapPos);
+    }
   }
 
   const sqlGetSnapshot = db.prepare(`

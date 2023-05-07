@@ -233,9 +233,7 @@ async function replay(transcriptFile) {
 
         const filePath = `${vatID}-${hash}.xss`;
         await fs.promises.rename(snapFile, filePath);
-        // We use `compressSeconds` since that's where the save time
-        // would be included in for the real snapstore
-        return { hash, compressSeconds: saveSeconds };
+        return { hash, saveSeconds };
       },
       async *loadSnapshot(_vatID) {
         const snapFile = `${vatID}-${loadSnapshotID}.xss`;
@@ -540,7 +538,7 @@ async function replay(transcriptFile) {
     async workerData => {
       const { manager, xsnapPID, firstTranscriptNum } = workerData;
       if (!manager.makeSnapshot) return null;
-      const { hash, compressSeconds: saveSeconds } = await manager.makeSnapshot(
+      const { hash, saveSeconds } = await manager.makeSnapshot(
         lastTranscriptNum,
         snapStore,
         false, // Do not restart, we'll do that ourselves if needed

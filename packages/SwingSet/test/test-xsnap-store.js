@@ -65,11 +65,9 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   const db = sqlite3(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
-  const { compressedSize } = await store.saveSnapshot(
-    'vat0',
-    1,
-    vat.makeSnapshotStream(),
-  );
+  await store.saveSnapshot('vat0', 1, vat.makeSnapshotStream());
+  await store.flushSaves(true);
+  const { compressedSize } = store.getSnapshotInfo('vat0');
 
   t.true(
     relativeSize(compressedSize, snapSize.raw) < 0.5,
@@ -86,11 +84,9 @@ test('SES bootstrap, save, compress', async t => {
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
-  const { compressedSize } = await store.saveSnapshot(
-    'vat0',
-    1,
-    vat.makeSnapshotStream(),
-  );
+  await store.saveSnapshot('vat0', 1, vat.makeSnapshotStream());
+  await store.flushSaves(true);
+  const { compressedSize } = store.getSnapshotInfo('vat0');
 
   t.true(
     relativeSize(compressedSize, snapSize.SESboot) < 0.5,
@@ -136,32 +132,39 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
+  await store.saveSnapshot('vat0', 1, vat.makeSnapshotStream());
+  await store.flushSaves(true);
   const {
-    filePath: _path1,
+    snapPos: _snapPos1,
     compressedSize: _csize1,
     ...info1
-  } = await store.saveSnapshot('vat0', 1, vat.makeSnapshotStream());
+  } = store.getSnapshotInfo('vat0');
   t.snapshot(info1, 'initial snapshot');
 
   const bootScript = await getBootScript();
   await vat.evaluate(bootScript);
 
+  await store.saveSnapshot('vat0', 2, vat.makeSnapshotStream());
+  await store.flushSaves(true);
   const {
-    filePath: _path2,
+    snapPos: _snapPos2,
     compressedSize: _csize2,
     ...info2
-  } = await store.saveSnapshot('vat0', 2, vat.makeSnapshotStream());
+  } = store.getSnapshotInfo('vat0');
   t.snapshot(
     info2,
     'after SES boot - sensitive to SES-shim, XS, and supervisor',
   );
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
+  await store.saveSnapshot('vat0', 3, vat.makeSnapshotStream());
+  await store.flushSaves(true);
   const {
-    filePath: _path3,
+    snapPos: _snapPos3,
     compressedSize: _csize3,
     ...info3
-  } = await store.saveSnapshot('vat0', 3, vat.makeSnapshotStream());
+  } = store.getSnapshotInfo('vat0');
+
   t.snapshot(
     info3,
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
