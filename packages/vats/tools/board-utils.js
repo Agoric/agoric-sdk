@@ -73,7 +73,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
     const { values } = streamCell;
     values.length > 0 || Fail`no values for ${key}`;
     /** @type {import("@endo/marshal").CapData<string>} */
-    const latestCapData = JSON.parse(values.at(-1));
+    const latestCapData = JSON.parse(/** @type {string} */ (values.at(-1)));
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
     const parts = fromCapData(latestCapData);
     for (const [name, remote] of parts) {

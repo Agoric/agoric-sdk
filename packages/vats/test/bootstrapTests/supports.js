@@ -258,7 +258,9 @@ export const makeWalletFactoryDriver = async (
      */
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
-      const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
+      const lastWalletStatus = JSON.parse(
+        /** @type {string} */ (storage.data.get(key)?.at(-1)),
+      );
       return marshaller.fromCapData(lastWalletStatus);
     },
   });
@@ -346,8 +348,10 @@ export const makeSwingsetTestKit = async (
 
   const readLatest = path => {
     const str = storage.data.get(path)?.at(-1);
-    str || Fail`no data at path ${path}`;
-    const capData = JSON.parse(storage.data.get(path)?.at(-1));
+    if (!str) {
+      throw Fail`no data at path ${path}`;
+    }
+    const capData = JSON.parse(str);
     return marshal.fromCapData(capData);
   };
 

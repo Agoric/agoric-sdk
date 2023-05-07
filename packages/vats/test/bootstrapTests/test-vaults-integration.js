@@ -353,7 +353,9 @@ test('propose change to auction governance param', async t => {
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
   const key = `published.committees.Economic_Committee.latestQuestion`;
-  const capData = JSON.parse(storage.data.get(key)?.at(-1));
+  const capData = JSON.parse(
+    /** @type {string} */ (storage.data.get(key)?.at(-1)),
+  );
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const lastQuestion = fromCapData(capData);
   const changes = lastQuestion?.issue?.spec?.changes;
