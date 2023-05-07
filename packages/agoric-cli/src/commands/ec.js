@@ -99,6 +99,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
         delay,
       },
     );
+    assert(result); // not dry-run
     const { timestamp, txhash, height } = result;
     console.error('wallet action is broadcast:');
     show({ timestamp, height, offerId: offer.id, txhash });

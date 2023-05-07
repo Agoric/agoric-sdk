@@ -323,16 +323,22 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
+   * @param {boolean?} dryRun
    */
-  const placeBid = async (from, offer, tools) => {
+  const placeBid = async (from, offer, tools, dryRun = false) => {
     const { networkConfig, agoricNames, pollOffer } = tools;
     const io = { ...networkConfig, execFileSync, delay, stdout };
 
     const { home, keyringBackend: backend } = interCmd.opts();
     const result = await sendAction(
       { method: 'executeOffer', offer },
-      { keyring: { home, backend }, from, verbose: false, ...io },
+      { keyring: { home, backend }, from, verbose: false, dryRun, ...io },
     );
+    if (dryRun) {
+      return;
+    }
+
+    assert(result); // Not dry-run
     const { timestamp, txhash, height } = result;
     console.error('bid is broadcast:');
     show({ timestamp, height, offerId: offer.id, txhash });
@@ -361,6 +367,7 @@ inter auction status
    *   offerId: string,
    *   from: string,
    *   generateOnly?: boolean,
+   *   dryRun?: boolean,
    * }} SharedBidOpts
    */
 
@@ -384,7 +391,8 @@ inter auction status
         'only transact a bid that supplies this much collateral',
       )
       .option('--offer-id <string>', 'Offer id', String, `bid-${now()}`)
-      .option('--generate-only', 'print wallet action only');
+      .option('--generate-only', 'print wallet action only')
+      .option('--dry-run', 'dry run only');
 
   withSharedBidOptions(bidCmd.command('by-price'))
     .description('Place a bid on collateral by price.')
@@ -395,7 +403,7 @@ inter auction status
        *   price: number,
        * }} opts
        */
-      async ({ generateOnly, ...opts }) => {
+      async ({ generateOnly, dryRun, ...opts }) => {
         const tools = await tryMakeUtils();
 
         const parseAmount = makeParseAmount(
@@ -414,7 +422,8 @@ inter auction status
           );
           return;
         }
-        await placeBid(opts.from, offer, tools);
+
+        await placeBid(opts.from, offer, tools, dryRun);
       },
     );
 
@@ -510,6 +519,7 @@ inter auction status
           verbose: false,
           ...io,
         });
+        assert(result); // not dry-run
         const { timestamp, txhash, height } = result;
         console.error('cancel action is broadcast:');
         show({ timestamp, height, offerId: id, txhash });
