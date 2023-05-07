@@ -140,7 +140,7 @@ const setupReserveAndElectorate = async t => {
     timer,
   } = t.context;
 
-  const space = setupBootstrap(t, timer);
+  const space = await setupBootstrap(t, timer);
   installPuppetGovernance(zoe, space.installation.produce);
   // TODO consider using produceInstallations()
   space.installation.produce.reserve.resolve(t.context.installation.reserve);

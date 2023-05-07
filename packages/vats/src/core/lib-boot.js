@@ -1,7 +1,11 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import { makeAgoricNamesAccess, runModuleBehaviors } from './utils.js';
+import {
+  makeVatSpace,
+  makeWellKnownSpaces,
+  runModuleBehaviors,
+} from './utils.js';
 import { makePromiseSpace } from './promise-space.js';
 
 const { Fail, quote: q } = assert;
@@ -58,9 +62,6 @@ export const makeBootstrap = (
 
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   /**
    * Bootstrap vats and devices.
@@ -77,6 +78,18 @@ export const makeBootstrap = (
     await (devices.mailbox &&
       (D(devices.mailbox).registerInboundHandler(vats.vattp),
       E(vats.vattp).registerMailboxDevice(devices.mailbox)));
+
+    const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+    const namedVat = makeVatSpace(svc, criticalVatKey, console.info);
+
+    const namesVat = namedVat.consume.agoricNames;
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
+      namesVat,
+    ).getNameHubKit();
+    const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
+    produce.agoricNames.resolve(agoricNames);
+    produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
@@ -99,6 +112,7 @@ export const makeBootstrap = (
       devices,
       produce,
       consume,
+      namedVat,
       ...spaces,
       runBehaviors,
       // These module namespaces might be useful for core eval governance.
@@ -145,7 +159,7 @@ export const makeBootstrap = (
           vatData.set(name, { root });
         }
       }
-      void rawBootstrap(vats, devices).catch(e => {
+      return rawBootstrap(vats, devices).catch(e => {
         // Terminate because the vat is in an irrecoverable state.
         vatPowers.exitVatWithFailure(e);
         // Throw the error to reject this promise but it will be unhandled because rawBoostrap() isn't returned.

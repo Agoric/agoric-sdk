@@ -8,6 +8,7 @@ import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { heapZone } from '@agoric/zone';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess } from '../src/core/utils.js';
@@ -21,8 +22,10 @@ import {
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
 import { Stable, Stake } from '../src/tokens.js';
+import { buildRootObject as buildProvisioningRoot } from '../src/vat-provisioning.js';
 
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
+import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -44,7 +47,7 @@ harden(setUpZoeForTest);
 
 /**
  * @typedef {{
- *   (n: 'board'): import('../src/core/basic-behaviors.js').BoardVat
+ *   (n: 'board'): BoardVat
  *   (n: 'mint'): MintsVat
  * }} LoadVat
  */
@@ -54,7 +57,7 @@ test('connectFaucet produces payments', async t => {
     /** @type { BootstrapPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
       space
     );
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, spaces } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
   const { zoe, feeMintAccessP, vatAdminService } = await setUpZoeForTest();
@@ -157,4 +160,23 @@ test('connectFaucet produces payments', async t => {
     ['Oracle fee', '51 LINK'],
     ['DAI', '1_323 DAI'],
   ]);
+});
+
+test('myAddressNameAdmin mixin', async t => {
+  const addr = 'agoric123';
+  const kit = makeNameHubKit();
+  const mixinMyAddress = prepareMixinMyAddress(heapZone);
+  const my = mixinMyAddress(kit.nameAdmin, addr);
+  t.is(my.getMyAddress(), addr);
+});
+
+test('namesByAddressAdmin provideChild', async t => {
+  const addr = 'agoric123';
+  const baggage = makeScalarBigMapStore('fake baggage', { durable: true });
+  const provisioning = buildProvisioningRoot(undefined, undefined, baggage);
+  const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
+  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin}} */
+  // @ts-expect-error XXX why doesn't the provideChild override work?
+  const { nameAdmin } = E.get(E(namesByAddressAdmin).provideChild(addr));
+  t.is(await E(nameAdmin).getMyAddress(), addr);
 });

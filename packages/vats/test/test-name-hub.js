@@ -1,5 +1,6 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { Far } from '@endo/far';
 
 import { makeNameHubKit } from '../src/nameHub.js';
 
@@ -79,6 +80,7 @@ test('makeNameHubKit - reserve and update', async t => {
 
   t.falsy(lookedUpHello);
   nameAdmin.update('hello', 'foo');
+  await null; // wait for reservation to settle
   t.deepEqual(nameHub.keys(), ['hello']);
   t.deepEqual(nameHub.values(), ['foo']);
   t.deepEqual(nameHub.entries(), [['hello', 'foo']]);
@@ -147,20 +149,26 @@ test('makeNameHubKit - default and set', async t => {
   });
 });
 
-test('makeNameHubKit - listen for updates', t => {
+test('makeNameHubKit - listen for updates', async t => {
   const { nameAdmin } = makeNameHubKit();
 
   const brandBLD = harden({ name: 'BLD' });
   nameAdmin.update('BLD', brandBLD);
 
   const capture = [];
-  nameAdmin.onUpdate(entries => capture.push(entries));
+  nameAdmin.onUpdate(
+    Far('Recorder', { write: entries => capture.push(entries) }),
+  );
 
   const brandIST = harden({ name: 'IST' });
-  nameAdmin.update('IST', brandIST);
-  nameAdmin.reserve('AUSD');
+  await nameAdmin.update('IST', brandIST);
 
-  nameAdmin.delete('BLD');
+  // XXX how to make this work in the durable design?
+  // Currently, the onUpdate callback waits for
+  // all values to be settled.
+  // nameAdmin.reserve('AUSD');
+
+  await nameAdmin.delete('BLD');
 
   t.deepEqual(capture, [
     [
@@ -174,7 +182,7 @@ test('makeNameHubKit - listen for updates', t => {
 test('nameAdmin provideChild', async t => {
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
-  const child = namesByAddressAdmin.provideChild('ag123', [
+  const child = await namesByAddressAdmin.provideChild('ag123', [
     'depositFacet',
     'otherReserved',
   ]);

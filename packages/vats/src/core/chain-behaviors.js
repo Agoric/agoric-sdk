@@ -419,7 +419,29 @@ export const produceHighPrioritySendersManager = async ({
   managerP.resolve(manager);
 };
 
+/** @param {BootstrapPowers & NamedVatPowers} powers */
+export const publishAgoricNamesToChainStorage = async ({
+  consume: { chainStorage: rootP },
+  namedVat: {
+    consume: { agoricNames, board: vatBoard },
+  },
+}) => {
+  const root = await rootP;
+  if (!root) {
+    console.warn('no chainStorage: not publishing agoricNames');
+    return;
+  }
+  const nameStorage = E(root).makeChildNode('agoricNames');
+  await E(agoricNames).publishNameHubs(
+    nameStorage,
+    vatBoard,
+    keys(agoricNamesReserved),
+  );
+};
+
 /**
+ * @deprecated use reflectAgoricNamesToChainStorage
+ *
  * @param {BootstrapPowers} powers
  * @param {{ options?: {agoricNamesOptions?: {
  *   topLevel?: string[]
@@ -451,7 +473,7 @@ export const publishAgoricNames = async (
 
       const kindNode = await E(nameStorage).makeChildNode(kind);
       const { recorder } = makeRecorderKit(kindNode);
-      kindAdmin.onUpdate(v => recorder.write(v));
+      kindAdmin.onUpdate(recorder);
       return recorder.write([]);
     }),
   );
@@ -511,11 +533,10 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
       highPrioritySendersManager: 'bridge',
     },
   },
-  [publishAgoricNames.name]: {
-    consume: {
-      agoricNamesAdmin: true,
-      board: 'board',
-      chainStorage: 'bridge',
+  [publishAgoricNamesToChainStorage.name]: {
+    consume: { chainStorage: 'chainStorage' },
+    namedVat: {
+      consume: { agoricNames: 'agoricNames', board: 'board' },
     },
   },
   [makeProvisioner.name]: {

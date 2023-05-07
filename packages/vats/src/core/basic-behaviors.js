@@ -1,8 +1,8 @@
 // @ts-check
 
 import { Nat } from '@endo/nat';
-import { E, Far } from '@endo/far';
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { E } from '@endo/far';
+import { AssetKind } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import {
@@ -61,6 +61,8 @@ export const makeVatsFromBundles = async ({
   devices,
   produce: { vatAdminSvc, loadVat, loadCriticalVat, vatStore },
 }) => {
+  // NOTE: we rely on multiple createVatAdminService calls
+  // to return cooperating services.
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
 
@@ -322,27 +324,46 @@ harden(startPriceAuthorityRegistry);
 /**
  * Create inert brands (no mint or issuer) referred to by price oracles.
  *
- * @param {BootstrapPowers} powers
+ * @param {BootstrapPowers & NamedVatPowers} powers
  */
 export const makeOracleBrands = async ({
-  oracleBrand: { produce: oracleBrandProduce },
+  namedVat: {
+    consume: { agoricNames },
+  },
+  oracleBrand: {
+    produce: { USD },
+  },
 }) => {
-  const { brand } = makeIssuerKit(
+  const brand = await E(agoricNames).provideInertBrand(
     'USD',
-    AssetKind.NAT,
-    harden({ decimalPlaces: 6 }),
+    harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   );
-  oracleBrandProduce.USD.resolve(brand);
+  USD.resolve(brand);
 };
 harden(makeOracleBrands);
 
 /**
- * TODO: rename this to getBoard?
+ * @param {BootstrapPowers & NamedVatPowers} powers
+ */
+export const produceBoard = async ({
+  consume: { client },
+  produce: { board: pBoard },
+  namedVat: {
+    consume: { board: vatBoard },
+  },
+}) => {
+  const board = await E(vatBoard).getBoard();
+  pBoard.resolve(board);
+  return E(client).assignBundle([_addr => ({ board })]);
+};
+harden(produceBoard);
+
+/**
+ * @deprecated use produceBoard
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>>
  * }}} powers
- * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
  */
 export const makeBoard = async ({
   consume: { loadCriticalVat, client },
@@ -357,10 +378,7 @@ export const makeBoard = async ({
 harden(makeBoard);
 
 /**
- * Make the agoricNames, namesByAddress name hierarchies.
- *
- * agoricNames are well-known items such as the IST issuer,
- * available as E(home.agoricNames).lookup('issuer', 'IST')
+ * Produce the remote namesByAddress hierarchy.
  *
  * namesByAddress is a NameHub for each provisioned client,
  * available, for example, as `E(home.namesByAddress).lookup('agoric1...')`.
@@ -369,6 +387,36 @@ harden(makeBoard);
  * is given `home.myAddressNameAdmin`, which they can use to
  * assign (update / reserve) any other names they choose.
  *
+ * @param {BootstrapPowers} powers
+ */
+export const produceNamesByAddress = async ({
+  consume: { agoricNames, provisioning: provisioningOptP, client },
+  produce: { namesByAddress, namesByAddressAdmin },
+}) => {
+  const provisioning = await provisioningOptP;
+  if (!provisioning) {
+    namesByAddress.reject('no provisioning vat');
+    namesByAddressAdmin.reject('no provisioning vat');
+    return;
+  }
+  const kit = await E(provisioning).getNamesByAddressKit();
+  namesByAddress.resolve(kit.namesByAddress);
+  namesByAddressAdmin.resolve(kit.namesByAddressAdmin);
+  const agoricNamesR = await agoricNames;
+  return E(client).assignBundle([
+    _a => ({ agoricNames: agoricNamesR, namesByAddress: kit.namesByAddress }),
+    addr => ({
+      myAddressNameAdmin: E(kit.namesByAddressAdmin)
+        .provideChild(addr, [WalletName.depositFacet])
+        .then(myKit => myKit.nameAdmin),
+    }),
+  ]);
+};
+
+/**
+ * Make the namesByAddress name hierarchy in the heap.
+ *
+ * @deprecated use produceNamesByAddress to avoid Far objects in bootstrap
  * @param {BootstrapSpace} powers
  */
 export const makeAddressNameHubs = async ({
@@ -380,6 +428,7 @@ export const makeAddressNameHubs = async ({
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
   produce.namesByAddress.resolve(namesByAddress);
+  // @ts-expect-error deprecated type structure
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
@@ -544,16 +593,13 @@ export const addBankAssets = async ({
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
-  const nameUpdater = Far('AssetHub', {
-    update: (name, val) => E(assetAdmin).update(name, val),
-  });
 
   const bridgeManager = await bridgeManagerP;
   const bankBridgeManager =
     bridgeManager && E(bridgeManager).register(BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bankBridgeManager,
-    nameUpdater,
+    assetAdmin,
   );
   bankManager.resolve(bankMgr);
 
@@ -595,11 +641,8 @@ harden(addBankAssets);
 export const BASIC_BOOTSTRAP_PERMITS = {
   bridgeCoreEval: true, // Needs all the powers.
   [makeOracleBrands.name]: {
-    oracleBrand: {
-      produce: {
-        USD: true,
-      },
-    },
+    oracleBrand: { produce: { USD: 'agoricNames' } },
+    namedVat: { consume: { agoricNames: 'agoricNames' } },
   },
   [startPriceAuthorityRegistry.name]: {
     consume: { loadCriticalVat: true, client: true },
@@ -636,27 +679,24 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     issuer: { produce: { Invitation: 'zoe' } },
     brand: { produce: { Invitation: 'zoe' } },
   },
-  [makeBoard.name]: {
+  [produceBoard.name]: {
     consume: {
-      loadCriticalVat: true,
       client: true,
     },
     produce: {
       board: 'board',
     },
+    namedVat: { consume: { board: 'board' } },
   },
-
-  [makeAddressNameHubs.name]: {
+  [produceNamesByAddress.name]: {
     consume: {
-      agoricNames: true,
+      agoricNames: 'agoricNames',
       client: true,
+      provisioning: 'provisioning',
     },
     produce: {
-      namesByAddress: true,
-      namesByAddressAdmin: true,
-    },
-    home: {
-      produce: { myAddressNameAdmin: true },
+      namesByAddress: 'provisioning',
+      namesByAddressAdmin: 'provisioning',
     },
   },
   [makeClientBanks.name]: {
@@ -694,7 +734,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
   },
   [addBankAssets.name]: {
     consume: {
-      agoricNamesAdmin: true,
+      agoricNamesAdmin: 'agoricNames',
       initialSupply: true,
       bridgeManager: 'bridge',
       // TODO: re-org loadCriticalVat to be subject to permits

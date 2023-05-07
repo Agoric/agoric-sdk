@@ -1,6 +1,8 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { WalletName } from '@agoric/internal';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
@@ -222,23 +224,24 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {import('../types').NameAdmin} parentAdmin
+ * @param {ERef<import('../types').NameAdmin>} parentAdmin
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
  */
-export const makeWellKnownSpaces = (
+export const makeWellKnownSpaces = async (
   parentAdmin,
   log = noop,
   kinds = Object.keys(agoricNamesReserved),
 ) => {
-  const spaces = Object.fromEntries(
-    kinds.map(kind => {
-      const { nameAdmin } = parentAdmin.provideChild(kind);
+  const spaceEntries = await Promise.all(
+    kinds.map(async kind => {
+      const { nameAdmin } = await E(parentAdmin).provideChild(kind);
       const subSpaceLog = (...args) => log(kind, ...args);
       const entry = [kind, makePromiseSpaceForNameHub(nameAdmin, subSpaceLog)];
       return entry;
     }),
   );
+  const spaces = Object.fromEntries(spaceEntries);
   const typedSpaces = /** @type { WellKnownSpaces } */ (
     /** @type {any} */ (spaces)
   );
@@ -258,19 +261,21 @@ export const makeWellKnownSpaces = (
  * For static typing and integrating with the bootstrap permit system,
  * return { produce, consume } spaces rather than NameAdmins.
  *
- * @returns {{
+ * @deprecated use vat-agoricNames, makeWellKnownSpaces
+ *
+ * @returns {Promise<{
  *   agoricNames: import('../types.js').NameHub,
  *   agoricNamesAdmin: import('../types.js').NameAdmin,
  *   spaces: WellKnownSpaces,
- * }}
+ * }>}
  */
-export const makeAgoricNamesAccess = (
+export const makeAgoricNamesAccess = async (
   log = () => {}, // console.debug
   reserved = agoricNamesReserved,
 ) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
-  const spaces = makeWellKnownSpaces(
+  const spaces = await makeWellKnownSpaces(
     agoricNamesAdmin,
     log,
     Object.keys(reserved),
@@ -288,6 +293,8 @@ export const makeAgoricNamesAccess = (
 
 /**
  * @param {string} address
+ *
+ * @deprecated use nameAdmin.provideChild() instead
  */
 export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
@@ -302,4 +309,49 @@ export const makeMyAddressNameAdminKit = address => {
   myAddressNameAdmin.reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };
+};
+
+/**
+ * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
+ * @param {unknown} criticalVatKey
+ * @param {(...args: any) => void} [log]
+ * @param {string} [label]
+ *
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ */
+export const makeVatSpace = (
+  svc,
+  criticalVatKey,
+  log = noop,
+  label = 'namedVat',
+) => {
+  const subSpaceLog = (...args) => log(label, ...args);
+  // XXX Only remotables can be keys of scalar WeakMapStores
+  /** @type {MapStore<string, CreateVatResults>} */
+  const store = makeScalarMapStore();
+
+  const createVatByName = async bundleName => {
+    subSpaceLog(`vatSpace: createVatByName(${bundleName})`);
+
+    const vatInfo = await E(svc).createVatByName(bundleName, {
+      critical: criticalVatKey,
+      name: bundleName,
+    });
+    return vatInfo;
+  };
+
+  const { provideAsync } = makeAtomicProvider(store);
+  /** @type {NamedVatPowers['namedVat']['consume']} */
+  // @ts-expect-error cast
+  const consume = new Proxy(
+    {},
+    {
+      get: (_target, name, _rx) => {
+        assert.typeof(name, 'string');
+        return provideAsync(name, createVatByName).then(vat => vat.root);
+      },
+    },
+  );
+  return { consume };
 };

@@ -9,10 +9,10 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
 import { E } from '@endo/far';
 import { zip } from '@agoric/internal';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { buildRootObject } from './boot-psm.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregatorKit.js';
-import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import {
   currentPurseBalance,
@@ -57,7 +57,8 @@ const makeTestSpace = async (log, bundleCache) => {
   // calling ensureOracleBrands and createPriceFeed
   // ensuring a feed for ATOM-USD
 
-  /** @type {ChainBootstrapSpace} */
+  /** @type {ChainBootstrapSpace & NamedVatPowers} */
+  // @ts-expect-error cast
   const space = psmVatRoot.getPromiseSpace();
   await eventLoopIteration();
 
@@ -71,10 +72,27 @@ const makeTestSpace = async (log, bundleCache) => {
     OUT_BRAND_NAME: 'USD',
     OUT_BRAND_DECIMALS: '6',
   };
+  /**
+   *
+   * @param {string} name
+   * @param {number|string} decimals
+   */
+  const ensureOracleBrand = (name, decimals) => {
+    const { brand } = makeIssuerKit(name, AssetKind.NAT, {
+      decimalPlaces: Number(decimals),
+    });
+    // @ts-expect-error XXX space lacks oracleBrand
+    space.oracleBrand.produce[name].resolve(brand);
+  };
+  ensureOracleBrand(
+    priceFeedOptions.IN_BRAND_NAME,
+    priceFeedOptions.IN_BRAND_DECIMALS,
+  );
+  ensureOracleBrand(
+    priceFeedOptions.OUT_BRAND_NAME,
+    priceFeedOptions.OUT_BRAND_DECIMALS,
+  );
 
-  await ensureOracleBrands(space, {
-    options: { priceFeedOptions },
-  });
   await eventLoopIteration();
 
   return space;
@@ -251,8 +269,7 @@ test.serial('admin price', async t => {
 
   // Verify price result
 
-  // @ts-expect-error cast
-  const manualTimer = /** @type {ManualTimer} */ (
+  const manualTimer = /** @type {Promise<ManualTimer>} */ (
     t.context.consume.chainTimerService
   );
   const timerBrand = await E(manualTimer).getTimerBrand();

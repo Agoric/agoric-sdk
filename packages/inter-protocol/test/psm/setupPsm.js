@@ -66,7 +66,8 @@ export const setupPsmBootstrap = async (
   const zoe = space.consume.zoe;
   produce.feeMintAccess.resolve(feeMintAccessP);
 
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 

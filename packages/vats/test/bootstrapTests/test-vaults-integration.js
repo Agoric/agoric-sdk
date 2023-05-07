@@ -71,36 +71,16 @@ test.after.always(t => {
 
 test('audit bootstrap exports', async t => {
   const expected = {
-    maxExports: 12,
-    maxNonDurable: 10,
+    maxExports: 5,
+    maxNonDurable: 5,
     ifaces: {
       // in bridgeCoreEval()
-      // TODO(#7576): support unregister
       coreHandler: true,
       // in bridgeProvisioner()
-      // TODO(#7576): support unregister
       provisioningHandler: true,
-      // makePrioritySendersManager() TODO(#7576): support unregister
       'prioritySenders manager': true,
       // TODO? move to provisioning vat?
       clientCreator: true,
-      // in startWalletFactory()
-      // TODO(#5885): vbank should provide a facet attenuated
-      // to only provide getAssetSubscription
-      // meanwhile, expose the whole poolBank rather than
-      // export this Far object from bootstrap?
-      AssetPublisher: true,
-      // in addBankAssets()
-      // XXX is attenuation needed here?
-      AssetHub: true,
-      // XXX price-feed-proposal uses makeIssuerKit
-      'USD brand': true,
-      'ATOM brand': true,
-      // from makeAddressNameHubs(),
-      // makeMyAddressNameAdminKit(),
-      // makeAgoricNamesAccess()
-      nameHub: true,
-      nameAdmin: true,
     },
   };
 
@@ -113,7 +93,7 @@ test('audit bootstrap exports', async t => {
     // @ts-expect-error kernel.dump() .promises type is wrong
     p => p.decider === myVatID,
   );
-  t.deepEqual(myPromises, [], 'no promises where bootstrap is the decider');
+  t.true(myPromises.length <= 1, 'bootstrap is the decider of only its return');
 
   const myExports = kState.kernelTable.filter(
     o => o[1] === myVatID && o[2].startsWith('o+'),

@@ -9,7 +9,6 @@ import { observeIteration } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
-import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/utils.js';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
@@ -43,16 +42,11 @@ export const publishDepositFacet = async (
   wallet,
   namesByAddressAdmin,
 ) => {
-  const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-  myAddressNameAdmin.reserve(WalletName.depositFacet);
+  const { nameAdmin: myAddressNameAdmin } = await E(
+    namesByAddressAdmin,
+  ).provideChild(address, [WalletName.depositFacet]);
 
-  // This may race against perAddress in makeAddressNameHubs, so we are careful
-  // not to clobber the first nameHub that is used to update
-  // namesByAddressAdmin.
-  await E(namesByAddressAdmin).default(address, nameHub, myAddressNameAdmin);
-
-  const actualAdmin = E(namesByAddressAdmin).lookupAdmin(address);
-  return E(actualAdmin).default(
+  return E(myAddressNameAdmin).default(
     WalletName.depositFacet,
     wallet.getDepositFacet(),
   );

@@ -18,10 +18,11 @@ export {};
  * allow passing a remote iterable, there would be an inordinate number of round
  * trips for the contents of even the simplest nameHub.
  *
+ * @property {(key: string) => boolean} has
  * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
- * @property {() => [string, unknown][]} entries get all the entries
+ * @property {(includeReserved?: boolean) => [string, unknown][]} entries get all the entries
  * available in the current NameHub
  * @property {() => string[]} keys get all names available in the
  * current NameHub
@@ -32,7 +33,7 @@ export {};
 /**
  * @typedef {object} NameAdmin write access to a node in a name hierarchy
  *
- * @property {(key: string, reserved?: string[]) => NameHubKit} provideChild
+ * @property {(key: string, reserved?: string[]) => Promise<NameHubKit>} provideChild
  * @property {(key: string) => Promise<void>} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted). If the key was already set it does nothing.
@@ -43,7 +44,7 @@ export {};
  *   key: string, newValue: unknown, newAdmin?: NameAdmin) => void
  * } set Update only if already initialized. Reject if not.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: NameAdmin) => Promise<void>
+ *   key: string, newValue: unknown, newAdmin?: NameAdmin) => void
  * } update Fulfill an outstanding reserved promise (if any) to the newValue and
  * set the key to the newValue.  If newAdmin is provided, set that to return via
  * lookupAdmin.
@@ -54,7 +55,9 @@ export {};
  * outstanding reserved promise (if any).
  * @property {() => NameHub} readonly get the NameHub corresponding to the
  * current NameAdmin
- * @property {(fn: undefined | ((entries: [string, unknown][]) => void)) => ERef<void>} onUpdate
+ * @property {(fn: undefined | (NameHubUpdateHandler)) => void} onUpdate
+ *
+ * @typedef {{ write: (entries: [string, unknown][]) => void }} NameHubUpdateHandler
  */
 
 /**
@@ -65,6 +68,15 @@ export {};
 
 /**
  * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
+ */
+/**
+ * @typedef {NameAdmin & {
+ *   provideChild(addr: string, reserved?: string[]): Promise<{
+ *     nameHub: NameHub,
+ *     nameAdmin: MyAddressNameAdmin,
+ *   }>,
+ *   lookupAdmin(addr: string): Promise<MyAddressNameAdmin>,
+ * }} NamesByAddressAdmin
  */
 
 /**

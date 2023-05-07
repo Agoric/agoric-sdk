@@ -1,7 +1,8 @@
 // @ts-check
 import { provide } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/marshal';
-import { prepareBoardKit } from './lib-board.js';
+import { prepareRecorderFactory, prepareBoardKit } from './lib-board.js';
 
 // There is only one board in this vat.
 const THE_BOARD = 'theboard';
@@ -12,6 +13,7 @@ const THE_BOARD = 'theboard';
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export function buildRootObject(_vatPowers, _vatParameters, baggage) {
+  const zone = makeDurableZone(baggage);
   const makeBoardKit = prepareBoardKit(baggage);
   const { board } = provide(
     baggage,
@@ -19,5 +21,20 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
     // XXX provide() type assumes the maker takes the key as its first argument
     () => makeBoardKit(),
   );
-  return Far('vat-board', { getBoard: () => board });
+
+  const recorderFactory = prepareRecorderFactory(zone);
+  const makePublishingRecorderKit = recorderFactory(
+    'publishing',
+    board.getPublishingMarshaller(),
+  );
+  const makeReadOnlyRecorderKit = recorderFactory(
+    'readonly',
+    board.getReadonlyMarshaller(),
+  );
+
+  return Far('vat-board', {
+    getBoard: () => board,
+    makePublishingRecorderKit,
+    makeReadOnlyRecorderKit,
+  });
 }

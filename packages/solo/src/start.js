@@ -165,7 +165,7 @@ const buildSwingset = async (
 
   const soloEnv = Object.fromEntries(
     Object.entries(process.env)
-      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes.
+      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes. e.g. SOLO_SLOGFILE
       .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
   );
   const env = {

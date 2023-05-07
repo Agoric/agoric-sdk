@@ -8,6 +8,7 @@ import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { bundles, devices } from '../test/devices.js';
 
+import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import { buildRootObject as ibcRoot } from '../src/vat-ibc.js';
@@ -17,7 +18,10 @@ import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 
+const { Fail } = assert;
+
 export const vatRoots = {
+  agoricNames: agoricNamesRoot,
   bank: bankRoot,
   board: boardRoot,
   ibc: ibcRoot,
@@ -104,6 +108,7 @@ export const makePopulatedFakeVatAdmin = () => {
   }
 
   const createVat = (bundleCap, options) => {
+    assert(bundleCap);
     if (bundleCap === zcfBundleCap) {
       return fakeVatAdmin.createVat(zcfBundleCap, options);
     }
@@ -125,8 +130,8 @@ export const makePopulatedFakeVatAdmin = () => {
       /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
     return { root: buildRoot({}, vatParameters, baggage), adminNode };
   };
-  const createVatByName = name => {
-    return createVat(fakeNameToCap.get(name));
+  const createVatByName = async name => {
+    return createVat(fakeNameToCap.get(name) || Fail`unknown vat ${name}`);
   };
 
   const vatAdminService = Far('vatAdminSvc', {

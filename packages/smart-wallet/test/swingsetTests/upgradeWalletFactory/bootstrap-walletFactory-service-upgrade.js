@@ -19,13 +19,13 @@ const walletAddr = 'agoric1whatever';
 
 const moolaKit = makeIssuerKit('moola');
 
-export const buildRootObject = () => {
+export const buildRootObject = async () => {
   const { bank, addAsset } = makeFakeBankKit([]);
   const storageKit = makeFakeStorageKit('walletFactoryUpgradeTest');
   const statusPath = `walletFactoryUpgradeTest.${walletAddr}`;
   const currentPath = `${statusPath}.current`;
   const board = makeBoard();
-  const { agoricNames } = makeAgoricNamesAccess();
+  const { agoricNames } = await makeAgoricNamesAccess();
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
 
   /** @type {PromiseKit<ZoeService>} */

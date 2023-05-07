@@ -190,17 +190,15 @@ export const ParametersShape = M.splitRecord(
  *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
-export const buildRootObject = (vatPowers, vatParameters) => {
+export const buildRootObject = async (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
   mustMatch(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = utils.makeAgoricNamesAccess(
-    log,
-    agoricNamesReserved,
-  );
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await utils.makeAgoricNamesAccess(log, agoricNamesReserved);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
@@ -262,13 +260,13 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ),
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
-      makeBoard(powersFor('makeBoard')),
+      makeBoard(allPowers),
       makeBridgeManager(powersFor('makeBridgeManager')),
       noProvisioner(powersFor('noProvisioner')),
       bridgeProvisioner(powersFor('bridgeProvisioner')),
       makeChainStorage(powersFor('makeChainStorage')),
-      makeAddressNameHubs(powersFor('makeAddressNameHubs')),
-      publishAgoricNames(powersFor('publishAgoricNames'), {
+      makeAddressNameHubs(allPowers),
+      publishAgoricNames(allPowers, {
         options: {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },

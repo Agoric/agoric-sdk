@@ -99,7 +99,7 @@ export const setupServices = async (t, params = defaultParams) => {
   const timer = buildManualTimer();
   await timer.advanceTo(140n);
 
-  const space = setupBootstrap(t, timer);
+  const space = await setupBootstrap(t, timer);
   installPuppetGovernance(zoe, space.installation.produce);
 
   // @ts-expect-error not all installs are needed for auctioneer.

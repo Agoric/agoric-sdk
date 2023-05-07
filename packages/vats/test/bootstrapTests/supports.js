@@ -21,7 +21,7 @@ E;
 
 const sink = () => {};
 
-/** @typedef {ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>} BootstrapRootObject */
+/** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
 
 /** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
 export const bootstrapMethods = {
