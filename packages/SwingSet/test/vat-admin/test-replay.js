@@ -48,7 +48,7 @@ test.serial('replay dynamic vat', async t => {
   // we could re-use the Storage object, but I'll be paranoid and create a
   // new one.
 
-  const serialized = ss1.debug.serialize();
+  const serialized = await ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
   {
     const c2 = await buildVatController(copy(config), [], {

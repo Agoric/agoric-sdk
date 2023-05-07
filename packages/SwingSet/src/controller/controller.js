@@ -316,8 +316,8 @@ export async function makeSwingsetController(
       return kernel.shutdown();
     },
 
-    changeKernelOptions(options) {
-      kernel.changeKernelOptions(options);
+    async changeKernelOptions(options) {
+      await kernel.changeKernelOptions(options);
     },
 
     getStats() {

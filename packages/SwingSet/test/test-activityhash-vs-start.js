@@ -52,7 +52,7 @@ test('restarting kernel does not change activityhash', async t => {
   await c1.run();
 
   // console.log(`--c1 serialize`);
-  const serialized = debug1.serialize();
+  const serialized = await debug1.serialize();
   // console.log(`ah: ${c1.getActivityhash()}`);
 
   // console.log(`--c1 poll1`);
@@ -111,7 +111,7 @@ test('comms initialize is deterministic', async t => {
   // the bootstrap message will cause comms to initialize itself
   await c1.run();
 
-  const serialized = debug1.serialize();
+  const serialized = await debug1.serialize();
 
   // but the second message should not
   c1.queueToVatRoot('bootstrap', 'addRemote', ['remote2']);

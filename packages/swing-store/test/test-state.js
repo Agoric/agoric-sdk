@@ -62,12 +62,13 @@ function makeExportLog() {
   };
 }
 
-function checkKVState(t, swingstore) {
-  const kv = swingstore.debug.dump().kvEntries;
+async function checkKVState(t, swingstore) {
+  const dump = await swingstore.debug.dump();
+  const kv = dump.kvEntries;
   t.deepEqual(kv, { foo: 'f', foo1: 'f1', foo3: 'f3' });
 }
 
-function testKVStore(t, storage, exportLog) {
+async function testKVStore(t, storage, exportLog) {
   const { kvStore, startCrank, endCrank } = storage.kernelStorage;
   startCrank();
   t.falsy(kvStore.has('missing'));
@@ -91,7 +92,7 @@ function testKVStore(t, storage, exportLog) {
     'foo2',
     'foo3',
   ]);
-  endCrank();
+  await endCrank();
   startCrank();
 
   kvStore.delete('foo2');
@@ -99,8 +100,8 @@ function testKVStore(t, storage, exportLog) {
   t.is(kvStore.get('foo2'), undefined);
   t.is(kvStore.getNextKey('foo1'), 'foo3');
   t.is(kvStore.getNextKey('foo2'), 'foo3');
-  endCrank();
-  checkKVState(t, storage);
+  await endCrank();
+  await checkKVState(t, storage);
   t.deepEqual(exportLog.getLog(), [
     [
       ['kv.foo', 'f'],
@@ -112,13 +113,13 @@ function testKVStore(t, storage, exportLog) {
   ]);
 }
 
-test('in-memory kvStore read/write', t => {
+test('in-memory kvStore read/write', async t => {
   const exportLog = makeExportLog();
   const ss1 = initSwingStore(null, { exportCallback: exportLog.callback });
-  testKVStore(t, ss1, exportLog);
-  const serialized = ss1.debug.serialize();
+  await testKVStore(t, ss1, exportLog);
+  const serialized = await ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
-  checkKVState(t, ss2);
+  await checkKVState(t, ss2);
 });
 
 test('persistent kvStore read/write/re-open', async t => {
@@ -127,13 +128,13 @@ test('persistent kvStore read/write/re-open', async t => {
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   const ss1 = initSwingStore(dbDir, { exportCallback: exportLog.callback });
-  testKVStore(t, ss1, exportLog);
+  await testKVStore(t, ss1, exportLog);
   await ss1.hostStorage.commit();
   await ss1.hostStorage.close();
   t.is(isSwingStore(dbDir), true);
 
   const ss2 = openSwingStore(dbDir);
-  checkKVState(t, ss2);
+  await checkKVState(t, ss2);
   await ss2.hostStorage.close();
   t.is(isSwingStore(dbDir), true);
 });

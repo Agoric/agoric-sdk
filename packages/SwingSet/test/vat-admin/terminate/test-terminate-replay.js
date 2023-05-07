@@ -34,7 +34,7 @@ test.serial('replay does not resurrect dead vat', async t => {
     await c1.shutdown();
   }
 
-  const serialized = ss1.debug.serialize();
+  const serialized = await ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
   {
     const c2 = await buildVatController(config, [], {

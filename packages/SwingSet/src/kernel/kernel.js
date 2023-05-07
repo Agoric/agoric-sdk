@@ -1718,7 +1718,7 @@ export default function buildKernel(
     return { message, processor: processDeliveryMessage };
   }
 
-  function changeKernelOptions(options) {
+  async function changeKernelOptions(options) {
     assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
     kernelKeeper.startCrank();
     try {
@@ -1739,7 +1739,7 @@ export default function buildKernel(
       }
     } finally {
       kernelKeeper.emitCrankHashes();
-      kernelKeeper.endCrank();
+      await kernelKeeper.endCrank();
     }
   }
 
@@ -1766,7 +1766,7 @@ export default function buildKernel(
         return 0;
       }
     } finally {
-      kernelKeeper.endCrank();
+      await kernelKeeper.endCrank();
     }
   }
 
@@ -1823,7 +1823,8 @@ export default function buildKernel(
           return count;
         }
       } finally {
-        kernelKeeper.endCrank();
+        // eslint-disable-next-line no-await-in-loop
+        await kernelKeeper.endCrank();
       }
     }
     return count;
@@ -1861,7 +1862,7 @@ export default function buildKernel(
         }
       } finally {
         kernelKeeper.emitCrankHashes();
-        kernelKeeper.endCrank();
+        await kernelKeeper.endCrank();
       }
     }
   }

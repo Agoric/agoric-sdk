@@ -58,7 +58,7 @@ test('state-sync reload', async t => {
   const { commit } = hostStorage;
   const initOpts = { addComms: false, addVattp: false, addTimer: false };
   await initializeSwingset(config, [], kernelStorage, initOpts);
-  commit();
+  await commit();
 
   const { runtimeOptions } = t.context.data;
   const c1 = await makeSwingsetController(kernelStorage, {}, runtimeOptions);
@@ -82,7 +82,7 @@ test('state-sync reload', async t => {
     t.is(res, i);
   }
 
-  commit();
+  await commit();
   await c1.shutdown();
 
   const exporter = makeSwingStoreExporter(dbDir);
