@@ -61,6 +61,7 @@ const finished = promisify(finishedCallback);
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @param {number} [options.compressionBufferSize]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
@@ -68,7 +69,7 @@ export function makeSnapStore(
   ensureTxn,
   { measureSeconds },
   noteExport = () => {},
-  { keepSnapshots = false } = {},
+  { keepSnapshots = false, compressionBufferSize = 40 * 1024 * 1024 } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
@@ -189,45 +190,46 @@ export function makeSnapStore(
   async function saveSnapshot(vatID, snapPos, snapshotStream) {
     const cleanup = [];
     return aggregateTryFinally(
-      async () => {
-        const hashStream = createHash('sha256');
-        const gzip = createGzip();
-        let uncompressedSize = 0;
-
-        const { duration: saveSeconds, result: compressedSnapshot } =
-          await measureSeconds(async () => {
-            const snapReader = Readable.from(snapshotStream);
-            cleanup.push(
-              () =>
-                new Promise((resolve, reject) =>
-                  snapReader.destroy(
-                    null,
-                    // @ts-expect-error incorrect types
-                    err => (err ? reject(err) : resolve()),
-                  ),
+      async () =>
+        measureSeconds(async () => {
+          const snapReader = Readable.from(snapshotStream);
+          cleanup.push(
+            () =>
+              new Promise((resolve, reject) =>
+                snapReader.destroy(
+                  null,
+                  // @ts-expect-error incorrect types
+                  err => (err ? reject(err) : resolve()),
                 ),
-            );
+              ),
+          );
 
-            snapReader.on('data', chunk => {
-              uncompressedSize += chunk.length;
-            });
-            snapReader.pipe(hashStream);
-            const compressedSnapshotP = buffer(snapReader.pipe(gzip));
-            await finished(snapReader);
-            return compressedSnapshotP;
+          const hashStream = createHash('sha256');
+          const compressionBufferStream = new PassThrough({
+            highWaterMark: compressionBufferSize,
           });
-        const hash = hashStream.digest('hex');
+          const gzip = createGzip();
 
-        const { duration: dbSaveSeconds } = await measureSeconds(async () => {
+          let uncompressedSize = 0;
+          snapReader.on('data', chunk => {
+            uncompressedSize += chunk.length;
+          });
+          snapReader.pipe(hashStream);
+          snapReader.pipe(compressionBufferStream).pipe(gzip);
+
+          const compressedSnapshotP = buffer(gzip);
+          await finished(snapReader);
+          const hash = hashStream.digest('hex');
+
           ensureTxn();
           stopUsingLastSnapshot(vatID);
           sqlInsertSnapshot.run(vatID, snapPos, 1, hash, uncompressedSize);
           pendingSaves.set(
             getPendingKey(vatID, snapPos),
-            Promise.resolve({
-              compressedSnapshot,
+            compressedSnapshotP.then(compressedSnapshot => ({
               hash,
-            }),
+              compressedSnapshot,
+            })),
           );
           const rec = snapshotRec(vatID, snapPos, hash, 1);
           const exportKey = snapshotMetadataKey(rec);
@@ -236,14 +238,13 @@ export function makeSnapStore(
             currentSnapshotMetadataKey(rec),
             snapshotArtifactName(rec),
           );
-        });
-
-        return harden({
-          hash,
-          uncompressedSize,
-          saveSeconds: saveSeconds + dbSaveSeconds,
-        });
-      },
+          return { hash, uncompressedSize };
+        }).then(({ duration: saveSeconds, result: saveInfo }) =>
+          harden({
+            ...saveInfo,
+            saveSeconds,
+          }),
+        ),
       async () => {
         await PromiseAllOrErrors(
           cleanup.reverse().map(fn => Promise.resolve().then(() => fn())),
