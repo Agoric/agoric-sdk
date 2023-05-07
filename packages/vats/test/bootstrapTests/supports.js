@@ -275,6 +275,7 @@ export const makeWalletFactoryDriver = async (
           makeWalletDriver(walletAddress, walletPresence),
         );
     },
+    marshaller,
   };
 };
 

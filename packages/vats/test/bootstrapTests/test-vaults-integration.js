@@ -69,6 +69,41 @@ test.after.always(t => {
   t.context.shutdown && t.context.shutdown();
 });
 
+test('revive wallet', async t => {
+  const {
+    runUtils: { EV },
+    agoricNamesRemotes,
+  } = t.context;
+  const {
+    walletFactoryDriver: { marshaller },
+  } = t.context;
+
+  const offer = Offers.vaults.OpenVault(agoricNamesRemotes.brand, {
+    offerId: 'open-vault',
+    collateralBrandKey,
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+  const offerCapData = marshaller.serialize(
+    harden({
+      method: 'executeOffer',
+      offer,
+    }),
+  );
+  const walletBridgeManager = await EV.vat('bootstrap').consumeItem(
+    'walletBridgeManager',
+  );
+  await EV(walletBridgeManager).fromBridge(
+    harden({
+      type: 'WALLET_SPEND_ACTION',
+      spendAction: JSON.stringify(offerCapData),
+      blockHeight: 123,
+      blockTime: 456,
+      owner: 'agoric1pismoWalletHolder',
+    }),
+  );
+});
+
 test('metrics path', async t => {
   const { EV } = t.context.runUtils;
   // example of awaitVatObject
