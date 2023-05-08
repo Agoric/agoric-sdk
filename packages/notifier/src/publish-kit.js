@@ -36,6 +36,29 @@ export const publishKitIKit = harden({
   subscriber: SubscriberI,
 });
 
+export const ForkableAsyncIterableIteratorShape = M.interface(
+  'ForkableAsyncIterableIterator',
+  {
+    fork: M.call().returns(M.any()),
+    [Symbol.asyncIterator]: M.call().returns(M.any()), // oops: recursive type
+    next: M.callWhen().returns(M.any()),
+  },
+);
+
+export const IterableEachTopicI = M.interface('IterableEachTopic', {
+  subscribeAfter: SubscriberI.methodGuards.subscribeAfter,
+  [Symbol.asyncIterator]: M.call().returns(
+    M.remotable('ForkableAsyncIterableIterator'),
+  ),
+});
+
+export const IterableLatestTopicI = M.interface('IterableLatestTopic', {
+  getUpdateSince: SubscriberI.methodGuards.getUpdateSince,
+  [Symbol.asyncIterator]: M.call().returns(
+    M.remotable('ForkableAsyncIterableIterator'),
+  ),
+});
+
 /**
  * @template {object} Arg
  * @template Ret
