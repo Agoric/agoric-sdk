@@ -88,6 +88,11 @@ export {};
  * @template T
  * @typedef {ForkableAsyncIterable<T, T> & EachTopic<T>} IterableEachTopic
  * An EachTopic with default asyncIterable behaviour.
+ *
+ * NOTE: the publication records and iterators returned by this object are
+ * ephemeral and will be severed during upgrade.  A caller should use
+ * `subscribeEach` to wrap this topic in a local iterable which automatically
+ * attempts to reconnect upon being severed.
  */
 
 /**
@@ -108,6 +113,11 @@ export {};
  * @template T
  * @typedef {AsyncIterableOnly<T, T> & LatestTopic<T>} IterableLatestTopic
  * A LatestTopic with default asyncIterable behaviour.
+ *
+ * NOTE: the iterators returned by this object are ephemeral and will be severed
+ * during upgrade.  A caller should use `subscribeLatest` to wrap this topic in
+ * a local iterable which automatically attempts to reconnect upon being
+ * severed.
  */
 
 /**

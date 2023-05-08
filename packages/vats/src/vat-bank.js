@@ -274,8 +274,8 @@ const prepareAssetSubscription = zone => {
    *
    * NOTE: the publication lists and iterators returned by this object are
    * ephemeral and will be severed during upgrade.  A caller should use
-   * `subscribeEach` to convert this subscription to a local iterable which
-   * automatically resumes upon being severed.
+   * `subscribeEach` to wrap this subscription in a local iterable which
+   * automatically attempts to reconnect upon being severed.
    *
    * @param {MapStore<Brand, AssetDescriptor>} brandToAssetDescriptor
    * @param {EachTopic<AssetDescriptor>} assetSubscriber

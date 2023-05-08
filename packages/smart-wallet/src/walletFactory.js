@@ -5,7 +5,7 @@
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
-import { observeIteration } from '@agoric/notifier';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
@@ -76,24 +76,27 @@ export const makeAssetRegistry = assetPublisher => {
   const brandDescriptors = makeScalarMapStore();
 
   // Watch the bank for issuers to keep on hand for making purses.
-  void observeIteration(E(assetPublisher).getAssetSubscription(), {
-    async updateState(desc) {
-      trace('registering asset', desc.issuerName);
-      const { brand, issuer: issuerP, issuerName: petname } = desc;
-      // await issuer identity for use in chainStorage
-      const [issuer, displayInfo] = await Promise.all([
-        issuerP,
-        E(brand).getDisplayInfo(),
-      ]);
+  void observeIteration(
+    subscribeEach(E(assetPublisher).getAssetSubscription()),
+    {
+      async updateState(desc) {
+        trace('registering asset', desc.issuerName);
+        const { brand, issuer: issuerP, issuerName: petname } = desc;
+        // await issuer identity for use in chainStorage
+        const [issuer, displayInfo] = await Promise.all([
+          issuerP,
+          E(brand).getDisplayInfo(),
+        ]);
 
-      brandDescriptors.init(desc.brand, {
-        brand,
-        issuer,
-        petname,
-        displayInfo,
-      });
+        brandDescriptors.init(desc.brand, {
+          brand,
+          issuer,
+          petname,
+          displayInfo,
+        });
+      },
     },
-  });
+  );
 
   const registry = {
     /** @param {Brand} brand */
@@ -115,7 +118,9 @@ export const makeAssetRegistry = assetPublisher => {
  * @typedef {import('@agoric/vats').NameHub} NameHub
  *
  * @typedef {{
- *   getAssetSubscription: () => ERef<AsyncIterable<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ *   getAssetSubscription: () => ERef<
+ *     import('@agoric/notifier/src/types').IterableEachTopic<
+ *       import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
  */
 

@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { observeIteration } from '@agoric/notifier';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 export const CONTRACT_NAME = 'Pegasus';
 
@@ -64,7 +64,7 @@ export const addPegasusTransferPort = async (
   pegasusConnectionsAdmin,
 ) => {
   const { handler, subscription } = await E(pegasus).makePegasusConnectionKit();
-  observeIteration(subscription, {
+  observeIteration(subscribeEach(subscription), {
     updateState(connectionState) {
       const { localAddr, actions } = connectionState;
       if (actions) {

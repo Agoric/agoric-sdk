@@ -31,6 +31,7 @@ import {
   makeNotifierKit,
   observeIteration,
   observeNotifier,
+  subscribeEach,
 } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -1892,7 +1893,7 @@ export function makeWalletRoot({
   // don't really trust.
   // The param is{import('@agoric/vats/src/vat-bank.js').Bank} but that here triggers https://github.com/Agoric/agoric-sdk/issues/4620
   const importBankAssets = async bank => {
-    observeIteration(E(bank).getAssetSubscription(), {
+    observeIteration(subscribeEach(E(bank).getAssetSubscription()), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
         try {
           issuerName = await addIssuer(issuerName, issuer);

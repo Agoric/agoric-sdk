@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { observeIteration } from '@agoric/notifier';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
@@ -167,7 +167,7 @@ const watchParams = async (zoe, contractInstanceP, log) => {
       prev = current;
     },
   });
-  void observeIteration(subscription, paramChangeObserver);
+  void observeIteration(subscribeEach(subscription), paramChangeObserver);
 };
 
 const setupParameterChanges = async (
