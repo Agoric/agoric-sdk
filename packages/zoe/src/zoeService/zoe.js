@@ -17,7 +17,7 @@ import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
+import { prepareExo } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -37,19 +37,19 @@ const { Fail } = assert;
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvcP] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {ShutdownWithFailure} shutdownZoeVat - a function to
+ * @param {ShutdownWithFailure} [shutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
- * @param {FeeIssuerConfig} feeIssuerConfig
+ * @param {FeeIssuerConfig} [feeIssuerConfig]
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
- * @param {Baggage} [zoeBaggage]
+ * @param {Baggage} zoeBaggage - the baggage for Zoe durability. Must be provided by caller
  */
 const makeZoeKit = (
   vatAdminSvcP = undefined,
   shutdownZoeVat = () => {},
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
-  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
+  zoeBaggage = undefined,
 ) => {
   let zcfBundleCap;
 

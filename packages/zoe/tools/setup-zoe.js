@@ -9,11 +9,11 @@ import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
  */
 export const makeZoeKitForTest = (vatAdminSvc = fakeVatAdmin) => {
   return makeZoeKit(
-    makeScalarBigMapStore('zoe baggage', { durable: true }),
     vatAdminSvc,
     undefined,
     undefined,
     undefined,
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 };
 
@@ -51,10 +51,11 @@ export const setUpZoeForTest = async ({
   }
   const { zoeService, feeMintAccess } = await makeFar(
     makeZoeKit(
-      makeScalarBigMapStore('zoe baggage', { durable: true }),
       vatAdminSvc,
       undefined,
       feeIssuerConfig,
+      undefined,
+      makeScalarBigMapStore('zoe baggage', { durable: true }),
     ),
   );
   return {
