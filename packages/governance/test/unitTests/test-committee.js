@@ -8,7 +8,7 @@ import { Far } from '@endo/far';
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -52,7 +52,7 @@ const setupContract = async () => {
     terms,
     {
       storageNode: mockChainStorageRoot.makeChildNode('thisElectorate'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
     },
   );
 

@@ -6,7 +6,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { mustMatch } from '@agoric/store';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -31,7 +31,7 @@ const secondGive = anchor.make(scale6(3));
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('psmUpgradeTest');
   const timer = buildManualTimer();
-  const marshaller = makeBoard().getReadonlyMarshaller();
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
   const { promise: committeeCreator, ...ccPK } = makePromiseKit();
 

@@ -7,7 +7,7 @@ import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { makeNameHubKit } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -24,7 +24,7 @@ export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('fluxAggregatorUpgradeTest');
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
   const timer = buildManualTimer();
-  const marshaller = makeBoard().getReadonlyMarshaller();
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
   /** @type {PromiseKit<ZoeService>} */
   const { promise: zoe, ...zoePK } = makePromiseKit();

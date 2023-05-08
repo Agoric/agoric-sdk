@@ -5,7 +5,7 @@ import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGo
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
@@ -83,7 +83,7 @@ export const setupBootstrap = async (t, optTimer) => {
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(makeMockChainStorageRoot());
-  produce.board.resolve(makeBoard());
+  produce.board.resolve(makeFakeBoard());
 
   const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);

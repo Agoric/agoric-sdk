@@ -13,7 +13,7 @@ import {
   publishAgoricNames,
   setupClientManager,
 } from '../src/core/chain-behaviors.js';
-import { makeBoard } from '../src/lib-board.js';
+import { makeFakeBoard } from '../tools/board-utils.js';
 import { makeAddressNameHubs } from '../src/core/basic-behaviors.js';
 import { makeNameHubKit } from '../src/nameHub.js';
 
@@ -21,7 +21,7 @@ test('publishAgoricNames publishes AMM instance', async t => {
   const space = makePromiseSpace();
   const storageRoot = makeMockChainStorageRoot();
   const { agoricNames, agoricNamesAdmin } = await makeAgoricNamesAccess();
-  const board = makeBoard();
+  const board = makeFakeBoard();
   const marshaller = board.getPublishingMarshaller();
   space.produce.agoricNames.resolve(agoricNames);
   space.produce.agoricNamesAdmin.resolve(agoricNamesAdmin);

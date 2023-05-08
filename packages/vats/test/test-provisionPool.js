@@ -18,7 +18,7 @@ import { E, Far } from '@endo/far';
 import path from 'path';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { makeBoard } from '../src/lib-board.js';
+import { makeFakeBoard } from '../tools/board-utils.js';
 import { makeNameHubKit } from '../src/nameHub.js';
 import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
@@ -60,7 +60,7 @@ const makeTestContext = async () => {
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
 
-  const marshaller = makeBoard().getReadonlyMarshaller();
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
   const storageRoot = makeMockChainStorageRoot();
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
@@ -147,7 +147,7 @@ const tools = context => {
         feeMintAccess,
         initialPoserInvitation,
         storageNode: storageRoot.makeChildNode(name),
-        marshaller: makeBoard().getReadonlyMarshaller(),
+        marshaller: makeFakeBoard().getReadonlyMarshaller(),
       },
     );
   };
@@ -205,7 +205,7 @@ test('provisionPool trades provided assets for IST', async t => {
       poolBank,
       initialPoserInvitation,
       storageNode: storageRoot.makeChildNode('provisionPool'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
     },
   );
 

@@ -2,7 +2,7 @@ import { Far, makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
@@ -74,7 +74,7 @@ export const setupPsmBootstrap = async (
   installGovernance(zoe, spaces.installation.produce);
   const mockChainStorage = makeMockChainStorageRoot();
   produce.chainStorage.resolve(mockChainStorage);
-  produce.board.resolve(makeBoard());
+  produce.board.resolve(makeFakeBoard());
 
   return { vatParameters: {}, produce, consume, ...spaces, mockChainStorage };
 };

@@ -2,10 +2,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E, Far } from '@endo/far';
-import { makeBoard } from '../src/lib-board.js';
+import { makeFakeBoard } from '../tools/board-utils.js';
 
 test('makeBoard', async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
 
   const obj1 = Far('obj1', { lookup: async (...path) => path });
   const obj2 = Far('obj2', {});
@@ -42,7 +42,7 @@ test('makeBoard', async t => {
   t.deepEqual(board.getId(obj1), idObj1, `value matches id obj1`);
   t.deepEqual(board.getId(obj2), idObj2, `value matches id obj2`);
 
-  const board2 = makeBoard(undefined, { prefix: 'tooboard' });
+  const board2 = makeFakeBoard(undefined, { prefix: 'tooboard' });
   const idObj1b = board2.getId(obj1);
   t.is(idObj1b, 'tooboard311');
   const idObj2b = board2.getId(obj2);
@@ -50,7 +50,7 @@ test('makeBoard', async t => {
 });
 
 test('board values must be scalar keys', async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
   const nonKey = harden({ a: 1 });
   await t.throwsAsync(() => E(board).getId(nonKey), {
     message: /arg 0: A "copyRecord" cannot be a scalar key: {"a":1}/,
@@ -115,13 +115,13 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
 };
 
 test('getPublishingMarshaller round trips unpublished objects', async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
   const marshaller = board.getPublishingMarshaller();
   await testBoardMarshaller(t, board, marshaller, true);
 });
 
 test(`getReadonlyMarshaller doesn't leak unpublished objects`, async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
   await testBoardMarshaller(t, board, marshaller, false);
 });
