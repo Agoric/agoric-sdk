@@ -140,9 +140,9 @@ export const makeMockChainStorageRoot = () => {
     ...bindAllMethods(rootNode),
     /**
      * Defaults to deserializing slot references into plain Remotable
-     * objects, but if supplied with a different marshaller, it could
-     * produce Remotables with e.g. the slot string embedded in the
-     * iface.
+     * objects having the specified interface name (as from `Far(iface)`),
+     * but can accept a different marshaller for producing Remotables
+     * that e.g. embed the slot string in their iface name.
      *
      * @param {string} path
      * @param {import('./lib-chainStorage.js').Marshaller} marshaller
