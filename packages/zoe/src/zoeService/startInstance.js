@@ -21,14 +21,14 @@ const { Fail, quote: q } = assert;
  * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
- * @param {Baggage} [zoeBaggage]
+ * @param {Baggage} zoeBaggage
  * @returns {import('./utils').StartInstance}
  */
 export const makeStartInstance = (
   startInstanceAccess,
   getZcfBundleCapP,
   getBundleCapByIdNow,
-  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
+  zoeBaggage,
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
 
