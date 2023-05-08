@@ -170,13 +170,15 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
       vatAdmin: 'vatAdmin',
     },
     devices: {
-      vatAdmin: true,
+      vatAdmin: 'kernel',
+    },
+    consume: {
+      vatStore: true,
     },
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
       loadCriticalVat: true,
-      vatStore: true,
     },
   },
   [startClient.name]: {

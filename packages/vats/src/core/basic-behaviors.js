@@ -3,7 +3,7 @@
 import { Nat } from '@endo/nat';
 import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
-import { makeScalarMapStore } from '@agoric/store';
+import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import {
   BridgeId,
@@ -13,6 +13,7 @@ import {
 } from '@agoric/internal';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
+import { Fail } from '@agoric/assert';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -50,30 +51,32 @@ const bootMsgEx = {
 
 /**
  * @param {BootstrapPowers & {
- *   produce: {vatStore: Producer<VatStore> }
+ *   consume: {vatStore: Promise<VatStore> }
  * }} powers
  *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
- * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
   devices,
-  produce: { vatAdminSvc, loadVat, loadCriticalVat, vatStore },
+  consume: { vatStore },
+  produce: { vatAdminSvc, loadVat, loadCriticalVat },
 }) => {
   // NOTE: we rely on multiple createVatAdminService calls
   // to return cooperating services.
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
 
-  /** @type {VatStore} */
-  const store = makeScalarMapStore();
-  vatStore.resolve(store);
+  const durableStore = await vatStore;
+
+  /** @type {MapStore<string, Promise<CreateVatResults>>} */
+  const tmpStore = makeScalarMapStore();
 
   const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
     return async (vatName, bundleRef = { bundleName: vatName }) => {
       const { bundleID, bundleName } = bundleRef;
-      const vatInfoP = provideLazy(store, vatName, async _k => {
+      const vatInfoP = provideLazy(tmpStore, vatName, async _k => {
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
           /** @type { Promise<CreateVatResults> } */
@@ -93,7 +96,16 @@ export const makeVatsFromBundles = async ({
         });
         return vatInfo;
       });
-      return E.when(vatInfoP, vatInfo => vatInfo.root);
+      return E.when(vatInfoP, vatInfo => {
+        harden(vatInfo); // XXX createVat should do this, no?
+        if (!durableStore.has(vatName)) {
+          durableStore.init(vatName, vatInfo);
+        } else {
+          keyEQ(vatInfo, durableStore.get(vatName)) ||
+            Fail`duplicate vat ${vatName}`;
+        }
+        return vatInfo.root;
+      });
     };
   };
 
@@ -605,7 +617,7 @@ export const addBankAssets = async ({
   });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
+  const bldKit = harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand });
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
@@ -675,11 +687,13 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     devices: {
       vatAdmin: 'kernel',
     },
+    consume: {
+      vatStore: true,
+    },
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
       loadCriticalVat: true,
-      vatStore: true,
     },
   },
   [buildZoe.name]: {

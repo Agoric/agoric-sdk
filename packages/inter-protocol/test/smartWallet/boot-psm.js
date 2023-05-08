@@ -202,6 +202,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
     await utils.makeAgoricNamesAccess(log, agoricNamesReserved);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+  produce.vatStore.resolve(makeScalarMapStore());
 
   const runBootstrapParts = async (vats, devices) => {
     /** TODO: BootstrapPowers type puzzle */

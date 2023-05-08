@@ -2,7 +2,8 @@
 import { E, Far } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
-import { makeScalarMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore, makeScalarMapStore } from '@agoric/vat-data';
+import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
@@ -132,7 +133,7 @@ export const extract = (template, specimen, path = []) => {
       get: (t, propName) => {
         if (typeof propName !== 'symbol') {
           propName in t ||
-            Fail`${propName} not permitted, only ${keys(template)}`;
+            Fail`${q(propName)} not permitted, only ${q(keys(template))}`;
         }
         return t[propName];
       },
@@ -327,9 +328,15 @@ export const makeVatSpace = (
   label = 'namedVat',
 ) => {
   const subSpaceLog = (...args) => log(label, ...args);
+
+  // XXX share vat stores with makeVatsFromBundles
+  const durableStore = makeScalarBigMapStore('Vat space backing', {
+    durable: true,
+  });
+
   // XXX Only remotables can be keys of scalar WeakMapStores
   /** @type {MapStore<string, CreateVatResults>} */
-  const store = makeScalarMapStore();
+  const tmpStore = makeScalarMapStore();
 
   const createVatByName = async bundleName => {
     subSpaceLog(`vatSpace: createVatByName(${bundleName})`);
@@ -341,7 +348,7 @@ export const makeVatSpace = (
     return vatInfo;
   };
 
-  const { provideAsync } = makeAtomicProvider(store);
+  const { provideAsync } = makeAtomicProvider(tmpStore);
   /** @type {NamedVatPowers['namedVat']['consume']} */
   // @ts-expect-error cast
   const consume = new Proxy(
@@ -349,9 +356,16 @@ export const makeVatSpace = (
     {
       get: (_target, name, _rx) => {
         assert.typeof(name, 'string');
-        return provideAsync(name, createVatByName).then(vat => vat.root);
+        return provideAsync(name, createVatByName).then(vat => {
+          if (!durableStore.has(name)) {
+            durableStore.init(name, vat);
+          } else {
+            keyEQ(vat, durableStore.get(name)) || Fail`duplicate vat ${name}`;
+          }
+          return vat.root;
+        });
       },
     },
   );
-  return { consume };
+  return { space: { consume }, durableStore };
 };

@@ -387,7 +387,10 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     // when using benefactor.makePool:
     // const { issuer, mint, brand } = await ibcKitP.promise;
     const kits = await E(space.consume.contractKits).values();
-    const mint = [...kits].find(k => k.label === 'mintHolder');
+    /** @type {{ creatorFacet: ERef<Mint<'nat'>> }} */
+    // @ts-expect-error cast
+    const { creatorFacet: mint } =
+      [...kits].find(k => k.label === 'mintHolder') || Fail`no mintHolder`;
     const issuer = E(mint).getIssuer();
     const purseP = E(issuer).makeEmptyPurse();
     const brand = await E(issuer).getBrand();

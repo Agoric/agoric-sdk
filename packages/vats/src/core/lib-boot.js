@@ -85,7 +85,11 @@ export const makeBootstrap = (
 
     const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-    const namedVat = makeVatSpace(svc, criticalVatKey, console.info);
+    const { space: namedVat, durableStore: vatStore } = makeVatSpace(
+      svc,
+      criticalVatKey,
+      console.info,
+    );
 
     const namesVat = namedVat.consume.agoricNames;
     const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
@@ -94,6 +98,7 @@ export const makeBootstrap = (
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+    produce.vatStore.resolve(vatStore);
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
