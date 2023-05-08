@@ -775,6 +775,16 @@ func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
 		normalizeProvisionAccount(ctx, app.AccountKeeper)
+
+		switch targetUpgrade {
+		case upgradeName:
+			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-vaults-config.json"
+		case upgradeNameTest:
+			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-test-vaults-config.json"
+		default:
+			return fromVm, fmt.Errorf("invalid upgrade name")
+		}
+
 		return fromVm, nil
 	}
 }
