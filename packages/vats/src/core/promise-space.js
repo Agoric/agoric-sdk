@@ -1,4 +1,6 @@
 // @ts-check
+import { assertKey } from '@agoric/store';
+import { canBeDurable } from '@agoric/vat-data';
 import { isPromise, makePromiseKit } from '@endo/promise-kit';
 
 /**
@@ -35,13 +37,32 @@ export const makeLogHooks = log =>
  */
 export const makeStoreHooks = (store, log = noop) => {
   const logHooks = makeLogHooks(log);
+
+  const save = (name, value) => {
+    try {
+      assertKey(value);
+    } catch (err) {
+      console.warn('cannot save non-passable:', name, err.message);
+      return;
+    }
+    if (!canBeDurable(value)) {
+      console.warn('cannot save non-durable:', name, value);
+      return;
+    }
+    if (store.has(name)) {
+      console.warn('cannot save duplicate:', name);
+      return;
+    }
+    store.init(name, value);
+  };
+
   return harden({
     ...logHooks,
     onResolve: (name, valueP) => {
       if (isPromise(valueP)) {
-        void valueP.then(value => store.init(name, value));
+        void valueP.then(value => save(name, value));
       } else {
-        store.init(name, valueP);
+        save(name, valueP);
       }
     },
     onReset: name => {
