@@ -64,7 +64,8 @@ export const makeBootstrap = (
   extra.length === 0 || Fail`missing behavior for manifest keys: ${extra}`;
 
   const log = vatPowers.logger || console.info;
-  const { produce, consume } = makePromiseSpace(log);
+  const powerStore = zone.mapStore('Bootstrap Powers');
+  const { produce, consume } = makePromiseSpace({ log, store: powerStore });
 
   /**
    * Bootstrap vats and devices.

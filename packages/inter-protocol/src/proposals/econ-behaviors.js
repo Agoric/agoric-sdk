@@ -10,6 +10,7 @@ import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
@@ -45,7 +46,7 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
  *   economicCommitteeKit: CommitteeStartResult,
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet,
  *   feeDistributorKit: StartedInstanceKit<typeof import('../feeDistributor.js').start>,
- *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
+ *   periodicFeeCollectors: MapStore<number, import('../feeDistributor.js').PeriodicFeeCollector>,
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
@@ -449,7 +450,9 @@ export const startRewardDistributor = async ({
   feeDistributorP.resolve(instanceKit.instance);
 
   // Initialize the periodic collectors list if we don't have one.
-  periodicFeeCollectorsP.resolve([]);
+  periodicFeeCollectorsP.resolve(
+    makeScalarBigMapStore('periodicCollectors', { durable: true }),
+  );
   const periodicCollectors = await periodicFeeCollectors;
 
   const collectorKit = {
@@ -464,7 +467,7 @@ export const startRewardDistributor = async ({
       const periodicCollector = await E(
         instanceKit.creatorFacet,
       ).startPeriodicCollection(debugName, collector);
-      periodicCollectors.push(periodicCollector);
+      periodicCollectors.init(periodicCollectors.getSize(), periodicCollector);
     }),
   );
 };

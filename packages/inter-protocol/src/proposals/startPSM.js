@@ -9,7 +9,7 @@ import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeHistoryReviver } from '@agoric/vats/tools/board-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
-import { makeScalarMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { reserveThenGetNamePaths } from './utils.js';
 
@@ -231,16 +231,16 @@ export const startPSM = async (
 
   /** @typedef {import('./econ-behaviors.js').PSMKit} psmKit */
   /** @type {psmKit} */
-  const newpsmKit = {
+  const newpsmKit = harden({
     psm,
     psmGovernor: governorFacets.instance,
     psmCreatorFacet,
     psmAdminFacet,
     psmGovernorCreatorFacet: governorFacets.creatorFacet,
-  };
+  });
 
   // Provide pattern with a promise.
-  producepsmKit.resolve(makeScalarMapStore());
+  producepsmKit.resolve(makeScalarBigMapStore('PSM Kits', { durable: true }));
 
   /** @type {MapStore<Brand,psmKit>} */
   const psmKitMap = await psmKit;
@@ -336,7 +336,7 @@ export const makeAnchorAsset = async (
   });
 
   const brand = await E(issuer).getBrand();
-  const kit = { mint, issuer, brand };
+  const kit = harden({ mint, issuer, brand });
 
   testFirstAnchorKit.resolve(kit);
 
@@ -344,7 +344,9 @@ export const makeAnchorAsset = async (
   const metricsKey = `${stablePsmKey}.${keyword}.metrics`;
   if (toSlotReviver.has(metricsKey)) {
     const metrics = toSlotReviver.getItem(metricsKey);
-    produceAnchorBalancePayments.resolve(makeScalarMapStore());
+    produceAnchorBalancePayments.resolve(
+      makeScalarBigMapStore('Anchor balance payments', { durable: true }),
+    );
     // XXX this rule should only apply to the 1st await
     // eslint-disable-next-line @jessie.js/no-nested-await
     const anchorPaymentMap = await anchorBalancePayments;
