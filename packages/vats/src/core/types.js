@@ -253,7 +253,6 @@
  *   fluxAggregatorKits: ERef<GovernanceFacetKit<GovernableStartFn>>[],
  *   highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager?,
  *   initialSupply: Payment<'nat'>,
- *   mints: MintsVat,
  *   namesByAddress: NameHub,
  *   namesByAddressAdmin: import('../types').NamesByAddressAdmin,
  *   pegasusConnections: import('@agoric/vats').NameHubKit,
@@ -317,6 +316,12 @@
  *   agoricNames: Awaited<AgoricNamesVat>,
  *   board: Awaited<BoardVat>,
  * }> }} NamedVatPowers
+ */
+
+/**
+ * @typedef {PromiseSpaceOf<{
+ *   mints: MintsVat
+ * }>} DemoFaucetPowers
  */
 
 /**
