@@ -31,6 +31,13 @@
  * @template T
  * @template [TReturn=any]
  * @template [TNext=undefined]
+ * @typedef {ForkableAsyncIterator<T, TReturn, TNext> & { [Symbol.asyncIterator](): ForkableAsyncIterableIterator<T, TReturn, TNext> }} ForkableAsyncIterableIterator
+ */
+
+/**
+ * @template T
+ * @template [TReturn=any]
+ * @template [TNext=undefined]
  * @typedef {{
  *   [Symbol.asyncIterator]: () => ForkableAsyncIterator<T, TReturn, TNext>
  * }} ForkableAsyncIterable

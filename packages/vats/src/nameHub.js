@@ -50,7 +50,7 @@ export const prepareMixinMyAddress = zone => {
     ...NameHubIKit.nameAdmin.methodGuards,
     getMyAddress: M.call().returns(M.string()),
   });
-  /** @type {import('@agoric/internal/src/callback.js').AttenuatorMaker<import('./types.js').MyAddressNameAdmin>} */
+  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<import('./types.js').MyAddressNameAdmin>} */
   const mixin = prepareGuardedAttenuator(zone, MixinI, {
     tag: 'MyAddressNameAdmin',
   });

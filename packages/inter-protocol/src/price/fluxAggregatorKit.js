@@ -82,7 +82,6 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * @param {StorageNode} storageNode
  * @param {() => PublishKit<any>} makeDurablePublishKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
- * @returns a method to call once to create the prepared kit
  */
 export const prepareFluxAggregatorKit = async (
   baggage,

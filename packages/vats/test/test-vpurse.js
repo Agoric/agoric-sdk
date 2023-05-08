@@ -1,15 +1,37 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
+import { fakeVomKit } from './setup-vat-data.js';
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeVirtualPurse } from '../src/virtual-purse.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { prepareVirtualPurse } from '../src/virtual-purse.js';
 
-const setup = (t, escrowValue = 0n) => {
+/** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */
+const test = rawTest;
+
+const makeTestContext = () => {
+  return { baggage: fakeVomKit.cm.provideBaggage() };
+};
+
+test.before(t => {
+  t.context = makeTestContext();
+});
+
+/**
+ * @param {*} t
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {bigint} [escrowValue]
+ */
+const setup = (t, zone, escrowValue = 0n) => {
+  const makeVirtualPurse = prepareVirtualPurse(zone);
+
   const kit = makeIssuerKit('fungible');
   const { brand } = kit;
 
@@ -38,15 +60,10 @@ const setup = (t, escrowValue = 0n) => {
   });
 
   /** @type {import('../src/virtual-purse').VirtualPurseController} */
-  const vpcontroller = harden({
-    async *getBalances(b) {
+  const vpcontroller = zone.exo('TestController', undefined, {
+    getBalances(b) {
       t.is(b, brand);
-      let record = await balanceNotifier.getUpdateSince();
-      while (record.updateCount) {
-        yield record.value;
-        // eslint-disable-next-line no-await-in-loop
-        record = await balanceNotifier.getUpdateSince(record.updateCount);
-      }
+      return balanceNotifier;
     },
     async pullAmount(amt) {
       t.is(amt.brand, brand);
@@ -87,8 +104,14 @@ const setup = (t, escrowValue = 0n) => {
 };
 
 test('makeVirtualPurse', async t => {
-  t.plan(16);
-  const { expected, balanceUpdater, issuer, mint, brand, vpurse } = setup(t);
+  t.plan(22);
+  const { baggage } = t.context;
+  const zone = makeDurableZone(baggage).subZone('makeVirtualPurse');
+
+  const { expected, balanceUpdater, issuer, mint, brand, vpurse } = setup(
+    t,
+    zone,
+  );
 
   const payment = mint.mintPayment(AmountMath.make(brand, 837n));
 
@@ -159,9 +182,13 @@ test('makeVirtualPurse', async t => {
 });
 
 test('makeVirtualPurse withdraw from escrowPurse', async t => {
-  t.plan(11);
+  const { baggage } = t.context;
+  const zone = makeDurableZone(baggage).subZone('withdraw from escrowPurse');
+
+  t.plan(16);
   const { expected, balanceUpdater, issuer, brand, vpurse } = setup(
     t,
+    zone,
     987654321n,
   );
 
@@ -219,8 +246,11 @@ test('makeVirtualPurse withdraw from escrowPurse', async t => {
 });
 
 test('vpurse.deposit', async t => {
-  t.plan(14);
-  const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
+  const { baggage } = t.context;
+  const zone = makeDurableZone(baggage).subZone('vpurse.deposit');
+
+  t.plan(19);
+  const { balanceUpdater, mint, brand, vpurse, expected } = setup(t, zone);
   const fungible0 = AmountMath.makeEmpty(brand);
   const fungible17 = AmountMath.make(brand, 17n);
   const fungible25 = AmountMath.make(brand, 25n);
@@ -271,8 +301,11 @@ test('vpurse.deposit', async t => {
 });
 
 test('vpurse.deposit promise', async t => {
-  t.plan(2);
-  const { issuer, mint, brand, vpurse } = setup(t);
+  const { baggage } = t.context;
+  const zone = makeDurableZone(baggage).subZone('vpurse.deposit promise');
+
+  t.plan(1);
+  const { issuer, mint, brand, vpurse } = setup(t, zone);
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
@@ -281,14 +314,20 @@ test('vpurse.deposit promise', async t => {
   await t.throwsAsync(
     // @ts-expect-error deliberate invalid arguments for testing
     () => E(vpurse).deposit(exclusivePaymentP, fungible25),
-    { message: /deposit does not accept promises/ },
+    {
+      message:
+        /deposit does not accept promises|promise .* Must be a remotable/i,
+    },
     'failed to reject a promise for a payment',
   );
 });
 
 test('vpurse.getDepositFacet', async t => {
-  t.plan(8);
-  const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
+  const { baggage } = t.context;
+  const zone = makeDurableZone(baggage).subZone('vpurse.getDepositFacet');
+
+  t.plan(11);
+  const { balanceUpdater, mint, brand, vpurse, expected } = setup(t, zone);
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
@@ -321,6 +360,6 @@ test('vpurse.getDepositFacet', async t => {
   expected.pushAmount(fungible25);
   await E(vpurse)
     .getDepositFacet()
-    .then(({ receive }) => receive(payment))
+    .then(df => df.receive(payment))
     .then(checkDeposit);
 });

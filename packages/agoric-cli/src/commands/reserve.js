@@ -9,7 +9,7 @@ import { outputActionAndHint } from '../lib/wallet.js';
 
 /**
  * @param {import('anylogger').Logger} _logger
- * @param io
+ * @param {*} io
  */
 export const makeReserveCommand = (_logger, io = {}) => {
   const { stdout = process.stdout, stderr = process.stderr, now } = io;

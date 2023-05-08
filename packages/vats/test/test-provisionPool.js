@@ -16,6 +16,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { makeBoard } from '../src/lib-board.js';
 import { makeNameHubKit } from '../src/nameHub.js';
@@ -269,7 +270,12 @@ test('provisionPool trades provided assets for IST', async t => {
  * @param {string} address
  */
 const makeWalletFactoryKitFor1 = async address => {
-  const bankManager = await buildBankRoot().makeBankManager();
+  const baggage = makeScalarBigMapStore('bank baggage');
+  const bankManager = await buildBankRoot(
+    undefined,
+    undefined,
+    baggage,
+  ).makeBankManager();
 
   const fees = withAmountUtils(makeIssuerKit('FEE'));
   await bankManager.addAsset('ufee', 'FEE', 'FEE', fees);
@@ -280,7 +286,7 @@ const makeWalletFactoryKitFor1 = async address => {
   };
 
   const b1 = bankManager.getBankForAddress(address);
-  const p1 = b1.getPurse(fees.brand);
+  const p1 = E(b1).getPurse(fees.brand);
 
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} */
   // @ts-expect-error mock

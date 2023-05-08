@@ -93,7 +93,7 @@ export const asBoardRemote = x => {
 
 /**
  * Summarize the balances array as user-facing informative tuples
-
+ *
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord['purses']} purses
  * @param {AssetDescriptor[]} assets
  */

@@ -63,15 +63,17 @@ const reconnectAsNeeded = async (getter, seed = []) => {
  * Create a near iterable that corresponds to a potentially far one.
  *
  * @template T
- * @param {ERef<AsyncIterable<T>>} itP
+ * @param {ERef<AsyncIterableIterator<T>>} itP
  */
 export const subscribe = itP =>
   Far('AsyncIterable', {
     [Symbol.asyncIterator]: () => {
       const it = E(itP)[Symbol.asyncIterator]();
-      return Far('AsyncIterator', {
+      const self = Far('AsyncIterableIterator', {
+        [Symbol.asyncIterator]: () => self,
         next: async () => E(it).next(),
       });
+      return self;
     },
   });
 
@@ -84,12 +86,13 @@ export const subscribe = itP =>
  * @param {ERef<EachTopic<T>>} topic
  * @param {ERef<PublicationRecord<T>>} nextCellP
  *   PublicationRecord corresponding with the first iteration result
- * @returns {ForkableAsyncIterator<T, T>}
+ * @returns {ForkableAsyncIterableIterator<T, T>}
  */
 const makeEachIterator = (topic, nextCellP) => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  return Far('EachIterator', {
+  const self = Far('EachIterator', {
+    [Symbol.asyncIterator]: () => self,
     next: () => {
       const {
         head: resultP,
@@ -124,6 +127,7 @@ const makeEachIterator = (topic, nextCellP) => {
     },
     fork: () => makeEachIterator(topic, nextCellP),
   });
+  return self;
 };
 
 /**
@@ -158,7 +162,7 @@ harden(subscribeEach);
  * @param {ERef<LatestTopic<T>>} topic
  * @param {bigint} [localUpdateCount]
  * @param {IteratorReturnResult<T>} [terminalResult]
- * @returns {ForkableAsyncIterator<T, T>}
+ * @returns {ForkableAsyncIterableIterator<T, T>}
  */
 const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
   let mutex = Promise.resolve();
@@ -192,8 +196,9 @@ const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
     return harden({ done: false, value });
   };
 
-  return Far('LatestIterator', {
+  const self = Far('LatestIterator', {
     fork: () => cloneLatestIterator(topic, localUpdateCount, terminalResult),
+    [Symbol.asyncIterator]: () => self,
     next: async () => {
       // In this adaptor, once `next()` is called and returns an unresolved
       // promise, further `next()` calls will also return unresolved promises
@@ -228,12 +233,13 @@ const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
       return nextResult;
     },
   });
+  return self;
 };
 
 /**
  * @template T
  * @param {ERef<LatestTopic<T>>} topic
- * @returns {ForkableAsyncIterator<T, T>}
+ * @returns {ForkableAsyncIterableIterator<T, T>}
  */
 const makeLatestIterator = topic => cloneLatestIterator(topic);
 

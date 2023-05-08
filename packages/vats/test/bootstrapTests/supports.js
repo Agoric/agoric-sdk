@@ -349,6 +349,8 @@ export const makeSwingsetTestKit = async (
     return marshal.fromCapData(capData);
   };
 
+  let lastNonce = 0n;
+
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
@@ -358,34 +360,48 @@ export const makeSwingsetTestKit = async (
    */
   const bridgeOutbound = (bridgeId, obj) => {
     switch (bridgeId) {
-      case BridgeId.BANK:
+      case BridgeId.BANK: {
         // bridgeOutbound bank : {
         //   moduleName: 'vbank/reserve',
         //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
         // }
-        if (
-          obj.moduleName === VBankAccount.reserve.module &&
-          obj.type === 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
-        ) {
-          return VBankAccount.reserve.address;
-        }
-        if (
-          obj.moduleName === VBankAccount.provision.module &&
-          obj.type === 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
-        ) {
-          return VBankAccount.provision.address;
-        }
+        switch (obj.type) {
+          case 'VBANK_GET_MODULE_ACCOUNT_ADDRESS': {
+            const { moduleName } = obj;
+            const moduleDescriptor = Object.values(VBankAccount).find(
+              ({ module }) => module === moduleName,
+            );
+            if (!moduleDescriptor) {
+              return 'undefined';
+            }
+            return moduleDescriptor.address;
+          }
 
-        // Observed message:
-        // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
-        // denom: 'ibc/toyatom',
-        // type: 'VBANK_GET_BALANCE'
-        if (obj.type === 'VBANK_GET_BALANCE') {
-          // empty balances for test, passed to `BigInt`
-          return '0';
-        }
+          // Observed message:
+          // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
+          // denom: 'ibc/toyatom',
+          // type: 'VBANK_GET_BALANCE'
+          case 'VBANK_GET_BALANCE': {
+            // empty balances for test.
+            return '0';
+          }
 
-        return undefined;
+          case 'VBANK_GRAB':
+          case 'VBANK_GIVE': {
+            lastNonce += 1n;
+            // Also empty balances.
+            return harden({
+              type: 'VBANK_BALANCE_UPDATE',
+              nonce: `${lastNonce}`,
+              updated: [],
+            });
+          }
+
+          default: {
+            return 'undefined';
+          }
+        }
+      }
       case BridgeId.CORE:
       case BridgeId.DIBC:
       case BridgeId.PROVISION:

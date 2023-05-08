@@ -335,7 +335,7 @@
  * @property {() => Amount<K>} getCurrentAmount
  * Get the amount contained in this purse.
  *
- * @property {() => Notifier<Amount<K>>} getCurrentAmountNotifier
+ * @property {() => LatestTopic<Amount<K>>} getCurrentAmountNotifier
  * Get a lossy notifier for changes to this purse's balance.
  *
  * @property {PurseDeposit<K>} deposit

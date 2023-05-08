@@ -14,7 +14,7 @@ const ownKeys =
 
 /**
  * @template T
- * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => Farable<T>} AttenuatorMaker
+ * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => Farable<T>} MakeAttenuator
  */
 
 /**
@@ -192,9 +192,9 @@ harden(isCallback);
 /**
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
- * @template {{ [K in PropertyKey]: (this: any, ...args: unknown[]) => any}} Methods
+ * @template {PropertyKey} M
  * @param {import('@agoric/zone').Zone} zone The zone in which to allocate attenuators.
- * @param {(keyof Methods)[]} methodNames Methods to forward.
+ * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
  * @param {InterfaceGuard} [opts.interfaceGuard] An interface guard for the
  * new attenuator.
@@ -207,7 +207,8 @@ export const prepareAttenuator = (
 ) => {
   /**
    * @typedef {(this: any, ...args: unknown[]) => any} Method
-   * @typedef {{ [K in keyof Methods]?: Callback<any> | null}} Overrides
+   * @typedef {{ [K in M]?: Callback<any> | null}} Overrides
+   * @typedef {{ [K in M]: (this: any, ...args: unknown[]) => any }} Methods
    */
   const methods = /** @type {Methods} */ (
     fromEntries(
@@ -307,7 +308,6 @@ harden(prepareAttenuator);
 /**
  * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
  *
- * @template {{ [K in PropertyKey]: (this: any, ...args: unknown[]) => any}} Methods
  * @param {import('@agoric/zone').Zone} zone
  * @param {InterfaceGuard} interfaceGuard
  * @param {object} [opts]
@@ -316,8 +316,10 @@ harden(prepareAttenuator);
 export const prepareGuardedAttenuator = (zone, interfaceGuard, opts = {}) => {
   const { methodGuards } = interfaceGuard;
   const methodNames = ownKeys(methodGuards);
-  return /** @type {AttenuatorMaker<Methods>} */ (
-    prepareAttenuator(zone, methodNames, { ...opts, interfaceGuard })
-  );
+  const makeAttenuator = prepareAttenuator(zone, methodNames, {
+    ...opts,
+    interfaceGuard,
+  });
+  return /** @type {MakeAttenuator<any>} */ (makeAttenuator);
 };
 harden(prepareGuardedAttenuator);
