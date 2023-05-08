@@ -26,6 +26,13 @@ const { details: X, quote: q, Fail } = assert;
 /** @typedef {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/inter-protocol/src/psm/psm.js').prepare>} PsmInstance */
 
 /**
+ * @typedef {object} ProvisionPoolKitReferences
+ * @property {ERef<BankManager>} bankManager
+ * @property {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+ * @property {ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>} walletFactory
+ */
+
+/**
  * @typedef {object} MetricsNotification
  * Metrics naming scheme is that nouns are present values and past-participles
  * are accumulative.
@@ -46,11 +53,7 @@ const { details: X, quote: q, Fail } = assert;
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
   /**
-   * @param {{
-   *   bankManager: ERef<BankManager>,
-   *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
-   *   walletFactory: ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>
-   * }} refs
+   * @param {ProvisionPoolKitReferences} refs
    */
   const makeBridgeHandler = ({
     bankManager,
@@ -143,6 +146,17 @@ export const prepareProvisionPoolKit = (
         keyShape: M.string(),
       });
 
+      /**
+       * to be set by `setReferences`
+       *
+       * @type {Partial<ProvisionPoolKitReferences>}
+       */
+      const references = {
+        bankManager: undefined,
+        namesByAddressAdmin: undefined,
+        walletFactory: undefined,
+      };
+
       return {
         brandToPSM,
         fundPurse,
@@ -152,16 +166,7 @@ export const prepareProvisionPoolKit = (
         totalMintedProvided: AmountMath.makeEmpty(poolBrand),
         totalMintedConverted: AmountMath.makeEmpty(poolBrand),
         revivableAddresses,
-        // to be set by `setReferences`
-        bankManager: /** @type {undefined | ERef<BankManager>} */ (undefined),
-        namesByAddressAdmin:
-          /** @type {undefined | ERef<import('@agoric/vats').NameAdmin>} */ (
-            undefined
-          ),
-        walletFactory:
-          /** @type {undefined | ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>} */ (
-            undefined
-          ),
+        ...references,
       };
     },
     {
@@ -177,11 +182,7 @@ export const prepareProvisionPoolKit = (
           return this.facets.walletReviver;
         },
         /**
-         * @param {{
-         *   bankManager: ERef<BankManager>,
-         *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
-         *   walletFactory: ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>
-         * }} erefs
+         * @param {ProvisionPoolKitReferences} erefs
          */
         async setReferences(erefs) {
           const { bankManager, namesByAddressAdmin, walletFactory } = erefs;
@@ -195,9 +196,10 @@ export const prepareProvisionPoolKit = (
         },
         makeBridgeHandler() {
           const { bankManager, namesByAddressAdmin, walletFactory } =
-            /** @type {Record<string, any>} */ (this.state);
-          (bankManager && namesByAddressAdmin && walletFactory) ||
-            Fail`must set references before handling requests`;
+            this.state;
+          if (!bankManager || !namesByAddressAdmin || !walletFactory) {
+            throw Fail`must set references before handling requests`;
+          }
           const { helper } = this.facets;
           // a bit obtuse but leave for backwards compatibility with tests
           const innerMaker = makeBridgeProvisionTool(
@@ -228,7 +230,7 @@ export const prepareProvisionPoolKit = (
             namesByAddressAdmin,
             walletFactory,
           } = this.state;
-          if (!(bankManager && namesByAddressAdmin && walletFactory)) {
+          if (!bankManager || !namesByAddressAdmin || !walletFactory) {
             throw Fail`must set references before handling requests`;
           }
           revivableAddresses.has(address) ||

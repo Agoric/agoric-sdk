@@ -468,6 +468,7 @@ test('provisionPool revives old wallets', async t => {
     'revived wallet must not receive new starter funds',
   );
   const epsilon = fees.make(1n);
+  /** @type {any} */
   const epsilonPayment = fees.mint.mintPayment(epsilon);
   await E(E(oldWallet).getDepositFacet()).receive(epsilonPayment);
   t.deepEqual(
