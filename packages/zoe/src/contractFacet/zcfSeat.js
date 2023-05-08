@@ -1,5 +1,4 @@
 import {
-  makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   provideDurableMapStore,
   provideDurableWeakMapStore,
@@ -28,7 +27,7 @@ export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
   shutdownWithFailure,
-  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
+  zcfBaggage,
 ) => {
   /** @type {WeakMapStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = provideDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
