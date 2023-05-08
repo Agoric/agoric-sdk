@@ -2,6 +2,7 @@
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import {
+  IterableEachTopicI,
   makeNotifierKit,
   makePublishKit as makeHeapPublishKit,
   prepareDurablePublishKit,
@@ -261,51 +262,65 @@ const makeHistoricalTopic = (historyValues, futureSubscriber, skipValue) => {
   return makeSubscriberFromAsyncIterable(allHistory, skipValue);
 };
 
-/**
- * @template T
-  @typedef {Omit<Subscription<T>, 'getSharableSubscriptionInternals'>} BaseSubscription */
 /** @type {WeakMap<MapStore<Brand, AssetDescriptor>, Promise<PublicationRecord<AssetDescriptor>>>} */
-const fullAssetLists = new WeakMap();
+const fullAssetPubLists = new WeakMap();
 
 /**
- * Build a heap asset subscription from its durable components.
- *
- * @param {MapStore<Brand, AssetDescriptor>} brandToAssetDescriptor
- * @param {EachTopic<AssetDescriptor>} assetSubscriber
+ * @param {import('@agoric/zone').Zone} zone
  */
-const provideAssetSubscription = (brandToAssetDescriptor, assetSubscriber) => {
-  /** @type {EachTopic<AssetDescriptor>} */
-  const topic = Far('AssetTopic', {
-    subscribeAfter(publishCount = -1n) {
-      if (publishCount !== -1n) {
-        return assetSubscriber.subscribeAfter(publishCount);
-      }
+const prepareAssetSubscription = zone => {
+  /**
+   * Build an exo asset subscription that resumes from its durable components.
+   *
+   * NOTE: the publication lists and iterators returned by this object are
+   * ephemeral and will be severed during upgrade.  A caller should use
+   * `subscribeEach` to convert this subscription to a local iterable which
+   * automatically resumes upon being severed.
+   *
+   * @param {MapStore<Brand, AssetDescriptor>} brandToAssetDescriptor
+   * @param {EachTopic<AssetDescriptor>} assetSubscriber
+   * @returns {IterableEachTopic<AssetDescriptor>}
+   */
+  const makeAssetSubscription = zone.exoClass(
+    'AssetSubscription',
+    IterableEachTopicI,
+    (brandToAssetDescriptor, assetSubscriber) => ({
+      brandToAssetDescriptor,
+      assetSubscriber,
+    }),
+    {
+      subscribeAfter(publishCount = -1n) {
+        const { brandToAssetDescriptor, assetSubscriber } = this.state;
+        if (publishCount !== -1n) {
+          return assetSubscriber.subscribeAfter(publishCount);
+        }
 
-      let pubList = fullAssetLists.get(brandToAssetDescriptor);
-      if (!pubList) {
-        const already = new Set();
-        const fullTopic = makeHistoricalTopic(
-          [...brandToAssetDescriptor.values()],
-          assetSubscriber,
-          ({ denom }) => {
-            const found = already.has(denom);
-            already.add(denom);
-            return found;
-          },
-        );
-        // Synchronously capture the first pubList entry before the
-        // assetSubscriber has a chance to publish more.
-        pubList = fullTopic.subscribeAfter();
-        fullAssetLists.set(brandToAssetDescriptor, pubList);
-      }
+        let pubList = fullAssetPubLists.get(brandToAssetDescriptor);
+        if (!pubList) {
+          const already = new Set();
+          const fullTopic = makeHistoricalTopic(
+            [...brandToAssetDescriptor.values()],
+            assetSubscriber,
+            ({ denom }) => {
+              const found = already.has(denom);
+              already.add(denom);
+              return found;
+            },
+          );
+          // Synchronously capture the first pubList entry before the
+          // assetSubscriber has a chance to publish more.
+          pubList = fullTopic.subscribeAfter();
+          fullAssetPubLists.set(brandToAssetDescriptor, pubList);
+        }
 
-      return pubList;
+        return pubList;
+      },
+      [Symbol.asyncIterator]() {
+        return subscribeEach(this.self)[Symbol.asyncIterator]();
+      },
     },
-  });
-  return Far('AssetSubscription', {
-    ...topic,
-    ...subscribeEach(topic),
-  });
+  );
+  return makeAssetSubscription;
 };
 
 export const BankI = M.interface('Bank', {
@@ -316,10 +331,14 @@ export const BankI = M.interface('Bank', {
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {object} makers
+ * @param {ReturnType<prepareAssetSubscription>} makers.makeAssetSubscription
  * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
  * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
  */
-const prepareBank = (zone, { makePublishKit, makeVirtualPurse }) => {
+const prepareBank = (
+  zone,
+  { makeAssetSubscription, makePublishKit, makeVirtualPurse },
+) => {
   const makeBalanceUpdater = prepareBalanceUpdater(zone);
   const makeBankPurseController = prepareBankPurseController(zone);
 
@@ -357,7 +376,7 @@ const prepareBank = (zone, { makePublishKit, makeVirtualPurse }) => {
     },
     {
       getAssetSubscription() {
-        return provideAssetSubscription(
+        return makeAssetSubscription(
           this.state.brandToAssetDescriptor,
           this.state.assetSubscriber,
         );
@@ -434,11 +453,16 @@ const prepareFromBaggage = baggage => {
     rootZone.mapStore('publisher'),
     'PublishKit',
   );
+  const makeAssetSubscription = prepareAssetSubscription(rootZone);
 
   const detachedZone = rootZone.detached();
   const makeVirtualPurse = prepareVirtualPurse(rootZone);
   const bridgeManagerToData = rootZone.mapStore('bridgeManagerToData');
-  const makeBank = prepareBank(rootZone, { makePublishKit, makeVirtualPurse });
+  const makeBank = prepareBank(rootZone, {
+    makeAssetSubscription,
+    makePublishKit,
+    makeVirtualPurse,
+  });
   const makeRewardPurseController = prepareRewardPurseController(rootZone);
   const makeBankChannelHandler = prepareBankChannelHandler(rootZone);
 
@@ -456,6 +480,7 @@ const prepareFromBaggage = baggage => {
   return {
     bridgeManagerToData,
     detachedZone,
+    makeAssetSubscription,
     makeBank,
     makeBankChannelHandler,
     makeBridgeChannelAttenuator,
@@ -495,7 +520,7 @@ const prepareFromBaggage = baggage => {
 
 /**
  * @typedef {object} Bank
- * @property {() => BaseSubscription<AssetDescriptor>} getAssetSubscription Returns
+ * @property {() => import('@agoric/notifier/src/types.js').IterableEachTopic<AssetDescriptor>} getAssetSubscription Returns
  * assets as they are added to the bank
  * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any existing vpurse
  * (keyed by address and brand) or create a new one.
@@ -505,6 +530,7 @@ export function buildRootObject(_vatPowers, _args, baggage) {
   const {
     bridgeManagerToData,
     detachedZone,
+    makeAssetSubscription,
     makeBank,
     makeBankChannelHandler,
     makeBridgeChannelAttenuator,
@@ -615,13 +641,10 @@ export function buildRootObject(_vatPowers, _args, baggage) {
         /**
          * Returns assets as they are added to the bank.
          *
-         * @returns {BaseSubscription<AssetDescriptor>}
+         * @returns {import('@agoric/notifier/src/types.js').IterableEachTopic<AssetDescriptor>}
          */
         getAssetSubscription() {
-          return provideAssetSubscription(
-            brandToAssetDescriptor,
-            assetSubscriber,
-          );
+          return makeAssetSubscription(brandToAssetDescriptor, assetSubscriber);
         },
         /**
          * @param {string} denom
