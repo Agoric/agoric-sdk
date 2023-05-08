@@ -330,19 +330,19 @@ export const getNodeTestVaultsConfig = async (
  *
  * @param {import('ava').ExecutionContext} t
  * @param {string} bundleDir directory to write bundles and config to
- * @param {string} [specifier] bootstrap config specifier
+ * @param {object} [options]
+ * @param {string} [options.configSpecifier] bootstrap config specifier
+ * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
 export const makeSwingsetTestKit = async (
   t,
   bundleDir = 'bundles',
-  specifier,
+  { configSpecifier, storage = makeFakeStorageKit('bootstrapTests') } = {},
 ) => {
   console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
+  const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
-
-  const storage = makeFakeStorageKit('bootstrapTests');
 
   const marshal = boardSlottingMarshaller(slotToRemotable);
 
@@ -416,8 +416,7 @@ export const makeSwingsetTestKit = async (
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
       case BridgeId.STORAGE:
-        void storage.toStorage(obj);
-        return undefined;
+        return storage.toStorage(obj);
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);
     }

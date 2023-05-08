@@ -18,22 +18,31 @@ const test = anyTest;
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
 
-const makeDefaultTestContext = async t => {
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {object} [options]
+ * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
+ */
+const makeDefaultTestContext = async (
+  t,
+  { storage = undefined } = {},
+) => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+    storage,
+  });
 
-  const { runUtils, storage } = swingsetTestKit;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { readLatest, runUtils } = swingsetTestKit;
+  ({ storage } = swingsetTestKit);
   const { EV } = runUtils;
+  console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
@@ -46,7 +55,6 @@ const makeDefaultTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
-  const { readLatest } = swingsetTestKit;
   const readRewardPoolBalance = () => {
     return readLatest('published.vaultFactory.metrics').rewardPoolAllocation
       .Minted?.value;
