@@ -1,6 +1,9 @@
 // @ts-check
 /**
- * @file Bootstrap test integration vaults with smart-wallet
+ * @file Bootstrap test integration vaults with smart-wallet.
+ * The tests in this file are NOT independent; a single `test.before()`
+ * handler creates shared state with `makeSwingsetTestKit` and each
+ * test is run serially and assumes changes from earlier tests.
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -10,24 +13,21 @@ import { Far, makeMarshal } from '@endo/marshal';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
-/**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
- */
-const test = anyTest;
-
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
 
 /**
  * @param {import('ava').ExecutionContext} t
  * @param {object} [options]
+ * @param {number} [options.incarnation=1]
+ * @param {boolean} [options.logTiming=true]
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
 const makeDefaultTestContext = async (
   t,
-  { storage = undefined } = {},
+  { incarnation = 1, logTiming = true, storage = undefined } = {},
 ) => {
-  console.time('DefaultTestContext');
+  logTiming && console.time('DefaultTestContext');
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
     storage,
   });
@@ -35,25 +35,25 @@ const makeDefaultTestContext = async (
   const { readLatest, runUtils } = swingsetTestKit;
   ({ storage } = swingsetTestKit);
   const { EV } = runUtils;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  logTiming && console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+  logTiming && console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
-  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
+  logTiming && console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
     runUtils,
     storage,
     agoricNamesRemotes,
   );
-  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+  logTiming && console.timeLog('DefaultTestContext', 'walletFactoryDriver');
 
-  console.timeEnd('DefaultTestContext');
+  logTiming && console.timeEnd('DefaultTestContext');
 
   const readRewardPoolBalance = () => {
     return readLatest('published.vaultFactory.metrics').rewardPoolAllocation
@@ -66,6 +66,7 @@ const makeDefaultTestContext = async (
 
   return {
     ...swingsetTestKit,
+    incarnation,
     agoricNamesRemotes,
     readCollateralMetrics,
     readRewardPoolBalance,
@@ -73,10 +74,46 @@ const makeDefaultTestContext = async (
   };
 };
 
+/**
+ * Shared context can be updated by re-bootstrapping, and is placed one
+ * property deep so such changes propagate to later tests.
+ *
+ * @type {import('ava').TestFn<{shared: Awaited<ReturnType<typeof makeDefaultTestContext>>}>}
+ */
+const test = anyTest;
 test.before(async t => {
-  t.context = await makeDefaultTestContext(t);
+  const shared = await makeDefaultTestContext(t);
+  t.context = { shared };
 });
-test.after.always(t => t.context.shutdown());
+test.after.always(t => t.context.shared.shutdown());
+
+test.serial('re-bootstrap', async t => {
+  const context = { ...t.context.shared };
+  const { storage } = context;
+  t.is(context.incarnation, 1);
+  const wd1 = await context.walletFactoryDriver.provideSmartWallet('agoric1a');
+  t.true(wd1.isNew);
+  await context.shutdown();
+  const newContext = await makeDefaultTestContext(t, {
+    incarnation: context.incarnation + 1,
+    logTiming: false,
+    storage,
+  });
+  Object.assign(t.context.shared, newContext);
+
+  t.is(newContext.incarnation, 2);
+  await t.throwsAsync(
+    context.walletFactoryDriver.provideSmartWallet('agoric1a'),
+  );
+  const wd2 = await newContext.walletFactoryDriver.provideSmartWallet(
+    'agoric1a',
+  );
+  t.false(wd2.isNew);
+  const wd3 = await newContext.walletFactoryDriver.provideSmartWallet(
+    'agoric1b',
+  );
+  t.true(wd3.isNew);
+});
 
 test.serial('audit bootstrap exports', async t => {
   const expected = {
@@ -93,7 +130,7 @@ test.serial('audit bootstrap exports', async t => {
     },
   };
 
-  const { controller } = t.context;
+  const { controller } = t.context.shared;
   const kState = controller.dump();
 
   const myVatID = 'v1';
@@ -170,11 +207,17 @@ test.serial('audit bootstrap exports', async t => {
 test.serial('open vault', async t => {
   console.time('open vault');
 
-  t.falsy(t.context.readRewardPoolBalance());
-
-  const { walletFactoryDriver } = t.context;
+  const {
+    incarnation,
+    readRewardPoolBalance,
+    readCollateralMetrics,
+    walletFactoryDriver,
+  } = t.context.shared;
+  t.is(incarnation, 2);
+  t.falsy(readRewardPoolBalance());
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1a');
+  t.false(wd.isNew);
 
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open1',
@@ -189,8 +232,8 @@ test.serial('open vault', async t => {
     status: { id: 'open1', numWantsSatisfied: 1 },
   });
 
-  t.is(t.context.readRewardPoolBalance(), 25000n);
-  t.like(t.context.readCollateralMetrics(0), {
+  t.is(readRewardPoolBalance(), 25000n);
+  t.like(readCollateralMetrics(0), {
     numActiveVaults: 1,
     totalCollateral: { value: 9000000n },
     totalDebt: { value: 5025000n },
@@ -199,7 +242,8 @@ test.serial('open vault', async t => {
 });
 
 test.serial('restart vaultFactory', async t => {
-  const { EV } = t.context.runUtils;
+  const { runUtils, readCollateralMetrics } = t.context.shared;
+  const { EV } = runUtils;
   /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
@@ -218,15 +262,15 @@ test.serial('restart vaultFactory', async t => {
     totalCollateral: { value: 9000000n },
     totalDebt: { value: 5025000n },
   };
-  t.like(t.context.readCollateralMetrics(0), keyMetrics);
-  t.log('awaiting VF restartContract');
+  t.like(readCollateralMetrics(0), keyMetrics);
+  t.log('awaiting VaultFactory restartContract');
   const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
-  t.like(t.context.readCollateralMetrics(0), keyMetrics); // unchanged
+  t.like(readCollateralMetrics(0), keyMetrics); // unchanged
 });
 
 test.serial('restart contractGovernor', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context.shared.runUtils;
   /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
@@ -246,9 +290,8 @@ test.serial('restart contractGovernor', async t => {
 });
 
 test.serial('open vault 2', async t => {
-  t.is(t.context.readRewardPoolBalance(), 25000n);
-
-  const { walletFactoryDriver } = t.context;
+  const { readRewardPoolBalance, walletFactoryDriver } = t.context.shared;
+  t.is(readRewardPoolBalance(), 25000n);
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1a');
 
@@ -268,12 +311,13 @@ test.serial('open vault 2', async t => {
   });
 
   // balance goes up as before restart (doubles because same wantMinted)
-  t.is(t.context.readRewardPoolBalance(), 50000n);
+  t.is(readRewardPoolBalance(), 50000n);
 });
 
 test.serial('adjust balance of vault opened before restart', async t => {
-  const { walletFactoryDriver } = t.context;
-  t.is(t.context.readRewardPoolBalance(), 50000n);
+  const { readCollateralMetrics, readRewardPoolBalance, walletFactoryDriver } =
+    t.context.shared;
+  t.is(readRewardPoolBalance(), 50000n);
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1a');
 
@@ -302,7 +346,7 @@ test.serial('adjust balance of vault opened before restart', async t => {
     },
   });
   // sanity check
-  t.like(t.context.readCollateralMetrics(0), {
+  t.like(readCollateralMetrics(0), {
     numActiveVaults: 2,
     numLiquidatingVaults: 0,
   });
@@ -310,12 +354,13 @@ test.serial('adjust balance of vault opened before restart', async t => {
 
 // charge interest to force a liquidation and verify the shortfall is transferred
 test.serial('force liquidation', async t => {
-  const { advanceTime } = t.context;
+  const { advanceTime, readCollateralMetrics, readRewardPoolBalance } =
+    t.context.shared;
 
   // advance a year to drive interest charges
   advanceTime(365, 'days');
-  t.is(t.context.readRewardPoolBalance(), 340000n);
-  t.like(t.context.readCollateralMetrics(0), {
+  t.is(readRewardPoolBalance(), 340000n);
+  t.like(readCollateralMetrics(0), {
     totalDebt: { value: 68340000n },
   });
 
@@ -324,7 +369,7 @@ test.serial('force liquidation', async t => {
   await advanceTime(1, 'hours');
   await advanceTime(1, 'hours');
   // wait for it...
-  t.like(t.context.readCollateralMetrics(0), {
+  t.like(readCollateralMetrics(0), {
     liquidatingCollateral: { value: 0n },
     liquidatingDebt: { value: 0n },
     numLiquidatingVaults: 0,
@@ -332,7 +377,7 @@ test.serial('force liquidation', async t => {
 
   // POW
   await advanceTime(1, 'hours');
-  t.like(t.context.readCollateralMetrics(0), {
+  t.like(readCollateralMetrics(0), {
     liquidatingCollateral: { value: 9000000n },
     liquidatingDebt: { value: 696421994n },
     numLiquidatingVaults: 1,
@@ -346,7 +391,7 @@ test.serial(
       controller,
       runUtils: { EV },
       swingStore,
-    } = t.context;
+    } = t.context.shared;
     const kState = controller.dump();
     const { kernelTable, vatTables } = kState;
 

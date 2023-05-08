@@ -193,8 +193,11 @@ export const makeWalletFactoryDriver = async (
   /**
    * @param {string} walletAddress
    * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
+   * @param {boolean} isNew
    */
-  const makeWalletDriver = (walletAddress, walletPresence) => ({
+  const makeWalletDriver = (walletAddress, walletPresence, isNew) => ({
+    isNew,
+
     /**
      * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
      * @returns {Promise<void>}
@@ -273,8 +276,8 @@ export const makeWalletFactoryDriver = async (
       const bank = await EV(bankManager).getBankForAddress(walletAddress);
       return EV(walletFactoryStartResult.creatorFacet)
         .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
-        .then(([walletPresence, _isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence),
+        .then(([walletPresence, isNew]) =>
+          makeWalletDriver(walletAddress, walletPresence, isNew),
         );
     },
   };
