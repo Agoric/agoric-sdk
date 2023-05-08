@@ -104,32 +104,37 @@ export const makeVatsFromBundles = async ({
 };
 harden(makeVatsFromBundles);
 
-/** @param {BootstrapSpace} powers */
+/** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
 export const produceStartUpgradable = async ({
+  zone,
   consume: { zoe },
-  produce, // startUpgradable
+  produce, // startUpgradable, contractKits
 }) => {
-  /** @type {startUpgradable} */
+  /** @type {MapStore<Instance, StartedInstanceKitWithLabel> } */
+  const contractKits = zone.mapStore('ContractKits');
+
+  /** @type {StartUpgradable} */
   const startUpgradable = async ({
     installation,
     issuerKeywordRecord,
     terms,
     privateArgs,
     label,
-    produceResults,
   }) => {
-    const startResult = E(zoe).startInstance(
+    const started = await E(zoe).startInstance(
       installation,
       issuerKeywordRecord,
       terms,
       privateArgs,
       label,
     );
-    produceResults.resolve(startResult);
-    return startResult;
+    const kit = harden({ ...started, label });
+    contractKits.init(kit.instance, kit);
+    return kit;
   };
 
   produce.startUpgradable.resolve(startUpgradable);
+  produce.contractKits.resolve(contractKits);
 };
 harden(produceStartUpgradable);
 
@@ -223,13 +228,25 @@ const startGovernedInstance = async (
   return facets;
 };
 
+/**
+ * @param {BootstrapSpace & {
+ *   zone: import('@agoric/zone').Zone,
+ *   consume: {
+ *     economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
+ *   }
+ * }} powers
+ */
 export const produceStartGovernedUpgradable = async ({
+  zone,
   consume: { chainTimerService, economicCommitteeCreatorFacet, zoe },
-  produce, // startGovernedUpgradable
+  produce, // startGovernedUpgradable, governedContractKits
   installation: {
     consume: { contractGovernor },
   },
 }) => {
+  /** @type {MapStore<Instance, GovernanceFacetKit<any> & {label: string}>} */
+  const contractKits = zone.mapStore('GovernedContractKits');
+
   /** @type {startGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
@@ -238,9 +255,8 @@ export const produceStartGovernedUpgradable = async ({
     terms,
     privateArgs,
     label,
-    produceResults,
   }) => {
-    const facetsP = startGovernedInstance(
+    const facets = await startGovernedInstance(
       {
         zoe,
         governedContractInstallation: installation,
@@ -256,11 +272,13 @@ export const produceStartGovernedUpgradable = async ({
         economicCommitteeCreatorFacet,
       },
     );
-    produceResults.resolve(facetsP);
-    return facetsP;
+    const kit = harden({ ...facets, label });
+    contractKits.init(facets.instance, kit);
+    return kit;
   };
 
   produce.startGovernedUpgradable.resolve(startGovernedUpgradable);
+  produce.governedContractKits.resolve(contractKits);
 };
 harden(produceStartGovernedUpgradable);
 
@@ -556,10 +574,10 @@ export const addBankAssets = async ({
     initialSupply,
     bridgeManager: bridgeManagerP,
     loadCriticalVat,
-    startUpgradable: startUpgradableP,
+    startUpgradable,
     zoe,
   },
-  produce: { bankManager, bldIssuerKit, bldMintHolderKit },
+  produce: { bankManager, bldIssuerKit },
   installation: {
     consume: { mintHolder },
   },
@@ -567,10 +585,9 @@ export const addBankAssets = async ({
   brand: { produce: produceBrand },
 }) => {
   const runIssuer = await E(zoe).getFeeIssuer();
-  const [runBrand, payment, startUpgradable] = await Promise.all([
+  const [runBrand, payment] = await Promise.all([
     E(runIssuer).getBrand(),
     initialSupply,
-    startUpgradableP,
   ]);
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
   const terms = harden({
@@ -579,14 +596,13 @@ export const addBankAssets = async ({
     displayInfo: Stake.displayInfo,
   });
 
-  const { creatorFacet: bldMint, publicFacet: bldIssuer } =
-    await startUpgradable({
-      installation: mintHolder,
-      label: Stake.symbol,
-      terms,
-      produceResults: bldMintHolderKit,
-      privateArgs: undefined,
-    });
+  const { creatorFacet: bldMint, publicFacet: bldIssuer } = await E(
+    startUpgradable,
+  )({
+    installation: mintHolder,
+    label: Stake.symbol,
+    terms,
+  });
 
   const bldBrand = await E(bldIssuer).getBrand();
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
@@ -745,7 +761,6 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     produce: {
       bankManager: 'bank',
       bldIssuerKit: true,
-      bldMintHolderKit: true,
     },
     installation: {
       consume: { centralSupply: 'zoe', mintHolder: 'zoe' },
@@ -754,16 +769,18 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
   },
   [produceStartUpgradable.name]: {
+    zone: true,
     consume: { zoe: 'zoe' },
-    produce: { startUpgradable: true },
+    produce: { startUpgradable: true, contractKits: true },
   },
   [produceStartGovernedUpgradable.name]: {
+    zone: true,
     consume: {
       chainTimerService: 'timer',
       economicCommitteeCreatorFacet: 'economicCommittee',
       zoe: 'zoe',
     },
-    produce: { startGovernedUpgradable: true },
+    produce: { startGovernedUpgradable: true, governedContractKits: true },
     installation: {
       consume: { contractGovernor: 'zoe' },
     },

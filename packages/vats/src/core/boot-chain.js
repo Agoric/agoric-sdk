@@ -1,4 +1,5 @@
 // @ts-check
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeBootstrap } from './lib-boot.js';
 
 import * as basicBehaviorsPlus from './basic-behaviors.js';
@@ -30,11 +31,20 @@ export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
  * @param {{
  *   coreProposalCode?: string,
  * }} vatParameters
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const buildRootObject = (vatPowers, vatParameters) => {
+export const buildRootObject = (vatPowers, vatParameters, baggage) => {
   console.debug(`chain bootstrap starting`);
+  const zone = makeDurableZone(baggage);
 
-  return makeBootstrap(vatPowers, vatParameters, MANIFEST, behaviors, modules);
+  return makeBootstrap(
+    vatPowers,
+    vatParameters,
+    MANIFEST,
+    behaviors,
+    modules,
+    zone,
+  );
 };
 
 harden({ buildRootObject });

@@ -290,16 +290,14 @@ export const makeAnchorAsset = async (
     consume: {
       agoricNamesAdmin,
       bankManager,
-      startUpgradable: startUpgradableP,
+      startUpgradable,
       anchorBalancePayments,
-      anchorKits,
     },
     installation: {
       consume: { mintHolder },
     },
     produce: {
       testFirstAnchorKit,
-      anchorKits: produceAnchorKits,
       anchorBalancePayments: produceAnchorBalancePayments,
     },
   },
@@ -329,20 +327,13 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  const startUpgradable = await startUpgradableP;
-  produceAnchorKits.resolve([]);
   /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
   // @ts-expect-error cast
-  const { creatorFacet: mint, publicFacet: issuerP } = await startUpgradable({
+  const { creatorFacet: mint, publicFacet: issuer } = await E(startUpgradable)({
     installation: mintHolder,
     label: keyword,
     terms,
-    privateArgs: undefined,
-    produceResults: {
-      resolve: kit => Promise.resolve(anchorKits).then(kits => kits.push(kit)),
-    },
   });
-  const issuer = await issuerP; // identity of issuers is important
 
   const brand = await E(issuer).getBrand();
   const kit = { mint, issuer, brand };

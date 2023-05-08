@@ -1,6 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
+import { heapZone } from '@agoric/zone';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -48,6 +49,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {BootstrapManifest} bootManifest
  * @param {Record<string, BootBehavior>} behaviors
  * @param {BootModules} modules
+ * @param {import('@agoric/zone').Zone} [zone]
  */
 export const makeBootstrap = (
   vatPowers,
@@ -55,6 +57,7 @@ export const makeBootstrap = (
   bootManifest,
   behaviors,
   modules,
+  zone = heapZone,
 ) => {
   const { keys } = Object;
   const extra = setDiff(keys(bootManifest), keys(behaviors));
@@ -110,6 +113,7 @@ export const makeBootstrap = (
       vatParameters,
       vats,
       devices,
+      zone,
       produce,
       consume,
       namedVat,

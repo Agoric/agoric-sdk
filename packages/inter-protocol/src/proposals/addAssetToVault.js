@@ -54,15 +54,7 @@ export const publishInterchainAssetFromBoardId = async (
  */
 export const publishInterchainAssetFromBank = async (
   {
-    consume: {
-      bankManager,
-      agoricNamesAdmin,
-      bankMints,
-      vBankKits,
-      reserveKit,
-      startUpgradable: startUpgradableP,
-    },
-    produce: { bankMints: produceBankMints, vBankKits: produceVBankKits },
+    consume: { bankManager, agoricNamesAdmin, reserveKit, startUpgradable },
     installation: {
       consume: { mintHolder },
     },
@@ -88,16 +80,11 @@ export const publishInterchainAssetFromBank = async (
     },
   };
 
-  const startUpgradable = await startUpgradableP;
-  produceVBankKits.resolve([]);
-  const { creatorFacet: mint, publicFacet: issuer } = await startUpgradable({
+  const { creatorFacet: mint, publicFacet: issuer } = await E(startUpgradable)({
     installation: mintHolder,
     label: keyword,
     privateArgs: undefined,
     terms,
-    produceResults: {
-      resolve: kit => Promise.resolve(vBankKits).then(kits => kits.push(kit)),
-    },
   });
 
   const brand = await E(issuer).getBrand();
@@ -105,13 +92,7 @@ export const publishInterchainAssetFromBank = async (
 
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
-  // Create the mint list if it doesn't exist and wasn't already rejected.
-  produceBankMints.resolve([]);
   await Promise.all([
-    Promise.resolve(bankMints).then(
-      mints => mints.push(mint),
-      () => {}, // If the bankMints list was rejected, ignore the error.
-    ),
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
     E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand),
     E(bankManager).addAsset(denom, keyword, proposedName, kit),
@@ -128,12 +109,10 @@ export const registerScaledPriceAuthority = async (
   {
     consume: {
       agoricNamesAdmin,
-      startUpgradable: startUpgradableP,
+      startUpgradable,
       priceAuthorityAdmin,
       priceAuthority,
-      scaledPriceAuthorityKits,
     },
-    produce: { scaledPriceAuthorityKits: produceScaledPriceAuthorityKits },
   },
   { options: { interchainAssetOptions } },
 ) => {
@@ -209,17 +188,10 @@ export const registerScaledPriceAuthority = async (
     }),
   );
 
-  const startUpgradable = await startUpgradableP;
-  produceScaledPriceAuthorityKits.resolve([]);
-  const spaKit = await startUpgradable({
+  const spaKit = await E(startUpgradable)({
     installation: scaledPriceAuthority,
     label: `scaledPriceAuthority-${keyword}`,
     terms,
-    produceResults: {
-      resolve: kit =>
-        Promise.resolve(scaledPriceAuthorityKits).then(kits => kits.push(kit)),
-    },
-    privateArgs: undefined,
   });
 
   await E(priceAuthorityAdmin).registerPriceAuthority(

@@ -209,12 +209,11 @@
  *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers' | 'governedParams' | 'electionManager'>,
  *   privateArgs: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'], 'initialPoserInvitation'>,
  *   label: string,
- *   produceResults: Pick<Producer<GovernanceFacetKit<SF>>, 'resolve'>,
- * }} startGovernedUpgradableOpts
+ * }} StartGovernedUpgradableOpts
  *
  */
 /**
- * @typedef {<SF extends GovernableStartFn>(opts: startGovernedUpgradableOpts<SF>) => Promise<GovernanceFacetKit<SF>>
+ * @typedef {<SF extends GovernableStartFn>(opts: StartGovernedUpgradableOpts<SF>) => Promise<GovernanceFacetKit<SF>>
  * } startGovernedUpgradable
  */
 
@@ -223,25 +222,30 @@
  * @typedef {{
  *   installation: ERef<Installation<SF>>,
  *   issuerKeywordRecord?: IssuerKeywordRecord,
- *   terms: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers'>,
- *   privateArgs: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
+ *   terms?: Omit<import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'], 'brands' | 'issuers'>,
+ *   privateArgs?: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
  *   label: string,
- *   produceResults: Pick<Producer<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>, 'resolve'>,
- * }} startUpgradableOpts
+ * }} StartUpgradableOpts
  */
 /**
- * @typedef {<SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>(opts: startUpgradableOpts<SF>) => Promise<import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF>>
- * } startUpgradable
+ * @typedef {<SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>(opts: StartUpgradableOpts<SF>)
+ *   => Promise<
+ *     import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF> &
+ *     { label: string }
+ *   >
+ * } StartUpgradable
  */
+
+/** @template T @typedef {import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T> } StartedInstanceKit */
+
+/** @typedef {{label: string} & StartedInstanceKit<import('@agoric/zoe/src/zoeService/utils').ContractStartFunction>} StartedInstanceKitWithLabel */
 
 /**
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
- *   anchorKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
- *   bldMintHolderKit: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>,
  *   board: import('@agoric/vats').Board,
  *   bridgeManager: import('../types.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
@@ -250,7 +254,6 @@
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: import('../types.js').BridgeHandler,
  *   feeMintAccess: FeeMintAccess,
- *   fluxAggregatorKits: ERef<GovernanceFacetKit<GovernableStartFn>>[],
  *   highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager?,
  *   initialSupply: Payment<'nat'>,
  *   namesByAddress: NameHub,
@@ -263,9 +266,10 @@
  *   provisioning: Awaited<ProvisioningVat> | undefined,
  *   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
- *   scaledPriceAuthorityKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   storageBridgeManager: import('../types.js').ScopedBridgeManager?,
- *   startUpgradable: startUpgradable,
+ *   contractKits: MapStore<Instance, StartedInstanceKitWithLabel>,
+ *   startUpgradable: StartUpgradable,
+ *   governedContractKits: MapStore<Instance, GovernanceFacetKit<any> & {label: string}>,
  *   startGovernedUpgradable: startGovernedUpgradable,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
@@ -285,6 +289,7 @@
  *   },
  * }} BootstrapVatParams
  * @typedef { BootstrapSpace & {
+ *   zone: import('@agoric/zone').Zone,
  *   devices: SoloDevices | ChainDevices,
  *   vats: SwingsetVats,
  *   vatPowers: { [prop: string]: any, D: DProxy },

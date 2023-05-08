@@ -94,10 +94,8 @@ export const createPriceFeed = async (
       namesByAddressAdmin,
       priceAuthority,
       priceAuthorityAdmin,
-      startGovernedUpgradable: startGovernedUpgradableP,
-      fluxAggregatorKits,
+      startGovernedUpgradable,
     },
-    produce: { fluxAggregatorKits: produceFluxAggregatorKits },
   },
   {
     options: {
@@ -150,10 +148,7 @@ export const createPriceFeed = async (
   const marshaller = E(board).getReadonlyMarshaller();
 
   trace('awaiting startInstance');
-  // Create the price feed.
-  const startGovernedUpgradable = await startGovernedUpgradableP;
-  produceFluxAggregatorKits.resolve([]);
-  const faKit = await startGovernedUpgradable({
+  const faKit = await E(startGovernedUpgradable)({
     governedParams: {},
     privateArgs: {
       highPrioritySendersManager,
@@ -164,10 +159,6 @@ export const createPriceFeed = async (
     terms,
     label,
     installation: priceAggregator,
-    produceResults: {
-      resolve: kit =>
-        Promise.resolve(fluxAggregatorKits).then(kits => kits.push(kit)),
-    },
   });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
@@ -239,10 +230,6 @@ export const getManifestForPriceFeed = async (
         priceAuthority: t,
         priceAuthorityAdmin: t,
         startGovernedUpgradable: t,
-        fluxAggregatorKits: t,
-      },
-      produce: {
-        fluxAggregatorKits: t,
       },
     },
     [ensureOracleBrands.name]: {

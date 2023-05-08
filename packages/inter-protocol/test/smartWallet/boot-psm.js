@@ -33,6 +33,7 @@ import {
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
+import { heapZone } from '@agoric/zone';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -212,6 +213,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       devices,
       produce,
       consume,
+      zone: heapZone,
       ...spaces,
       // ISSUE: needed? runBehaviors,
       // These module namespaces might be useful for core eval governance.
@@ -254,10 +256,8 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
     };
 
     await Promise.all([
-      produceStartUpgradable(powersFor('produceStartUpgradable')),
-      produceStartGovernedUpgradable(
-        powersFor('produceStartGovernedUpgradable'),
-      ),
+      produceStartUpgradable(allPowers),
+      produceStartGovernedUpgradable(allPowers),
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
       makeBoard(allPowers),

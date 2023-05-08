@@ -44,14 +44,8 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
  * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult,
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet,
- *   feeDistributorKit: {
- *     creatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
- *     publicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
- *     adminFacet: AdminFacet,
- *   },
+ *   feeDistributorKit: StartedInstanceKit<typeof import('../feeDistributor.js').start>,
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
- *   bankMints: Mint[],
- *   vBankKits: import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<any>[],
  *   psmKit: MapStore<Brand, PSMKit>,
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
  *   econCharterKit: EconCharterStartResult,
@@ -451,13 +445,7 @@ export const startRewardDistributor = async ({
     ),
   });
 
-  feeDistributorKit.resolve(
-    harden({
-      creatorFacet: instanceKit.creatorFacet,
-      publicFacet: instanceKit.publicFacet,
-      adminFacet: instanceKit.adminFacet,
-    }),
-  );
+  feeDistributorKit.resolve(instanceKit);
   feeDistributorP.resolve(instanceKit.instance);
 
   // Initialize the periodic collectors list if we don't have one.
