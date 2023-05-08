@@ -122,6 +122,12 @@ export const makeAssetRegistry = assetPublisher => {
  *     import('@agoric/notifier/src/types').IterableEachTopic<
  *       import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
+ *
+ * @typedef {boolean} isRevive
+ * @typedef {{
+ *   reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>,
+ *   ackWallet: (address: string) => isRevive,
+ * }} WalletReviver
  */
 
 // NB: even though all the wallets share this contract, they
@@ -132,7 +138,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {{
  *   storageNode: ERef<StorageNode>,
  *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
- *   walletReviver?: ERef<{reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>}>,
+ *   walletReviver?: ERef<WalletReviver>,
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -251,9 +257,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
-        let makerCalled = false;
-        /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
-        const maker = async () => {
+        let isNew = false;
+
+        /** @type {(address: string) => Promise<import('./smartWallet').SmartWallet>} */
+        const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);
           const wallet = await makeSmartWallet(
@@ -263,13 +270,19 @@ export const prepare = async (zcf, privateArgs, baggage) => {
           // An await here would deadlock with invitePSMCommitteeMembers
           void publishDepositFacet(address, wallet, namesByAddressAdmin);
 
-          makerCalled = true;
           return wallet;
         };
 
+        const finisher = walletReviver
+          ? async (_address, _wallet) => {
+              const isRevive = await E(walletReviver).ackWallet(address);
+              isNew = !isRevive;
+            }
+          : undefined;
+
         return provider
-          .provideAsync(address, maker)
-          .then(w => [w, makerCalled]);
+          .provideAsync(address, maker, finisher)
+          .then(w => [w, isNew]);
       },
     },
   );

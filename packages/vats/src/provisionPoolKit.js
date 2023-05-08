@@ -123,6 +123,7 @@ export const prepareProvisionPoolKit = (
         reviveWallet: M.callWhen(M.string()).returns(
           M.remotable('SmartWallet'),
         ),
+        ackWallet: M.call(M.string()).returns(M.boolean()),
       }),
       helper: UnguardedHelperI,
       public: M.interface('ProvisionPoolKit public', {
@@ -235,7 +236,6 @@ export const prepareProvisionPoolKit = (
           }
           revivableAddresses.has(address) ||
             Fail`non-revivable address ${address}`;
-          revivableAddresses.delete(address);
           const bank = E(bankManager).getBankForAddress(address);
           const [wallet, _created] = await E(walletFactory).provideSmartWallet(
             address,
@@ -243,6 +243,18 @@ export const prepareProvisionPoolKit = (
             namesByAddressAdmin,
           );
           return wallet;
+        },
+        /**
+         * @param {string} address
+         * @returns {boolean} isRevive
+         */
+        ackWallet(address) {
+          const { revivableAddresses } = this.state;
+          if (!revivableAddresses.has(address)) {
+            return false;
+          }
+          revivableAddresses.delete(address);
+          return true;
         },
       },
       helper: {
