@@ -158,16 +158,15 @@
   "vats": {
     "bootstrap": {
       "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
-      "parameters": {
-        "exportStorageSubtrees": [
-          "published.psm.IST"
-        ]
-      },
       "creationOptions": {
         "critical": true
       }
     }
   },
+  "exportStorageSubtrees": [
+    "published.psm.IST",
+    "published.wallet"
+  ],
   "bundles": {
     "agoricNames": {
       "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
