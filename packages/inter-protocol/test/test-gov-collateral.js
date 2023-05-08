@@ -180,7 +180,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const startDevNet = async () => {
     // If we don't have a proper bridge manager, we need it to be undefined.
     space.produce.bridgeManager.resolve(undefined);
-    space.produce.lienBridge.resolve(undefined);
 
     /** @type {BankManager} */
     const bankManager = Far('mock BankManager', {
