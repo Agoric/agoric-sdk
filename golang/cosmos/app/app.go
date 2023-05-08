@@ -773,9 +773,28 @@ func NewAgoricApp(
 
 func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		// change bootrap gov parameter to correct vaults parameter
+
+		prevParams := app.SwingSetKeeper.GetParams(ctx)
+
+		ctx.Logger().Info("Pre-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
+
+		switch targetUpgrade {
+		case upgradeName:
+			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-vaults-config.json"
+		case upgradeNameTest:
+			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-test-vaults-config.json"
+		default:
+			return fromVm, fmt.Errorf("invalid upgrade name")
+		}
+
+		app.SwingSetKeeper.SetParams(ctx, prevParams)
+		ctx.Logger().Info("Post-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
+
 		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
 		normalizeProvisionAccount(ctx, app.AccountKeeper)
-		return fromVm, nil
+
+		return app.mm.RunMigrations(ctx, app.configurator, fromVm)
 	}
 }
 
