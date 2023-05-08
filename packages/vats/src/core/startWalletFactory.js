@@ -106,7 +106,7 @@ export const startWalletFactory = async (
   // Carry forward wallets with an address already in chain storage.
   const dataReviver = makeHistoryReviver(chainStorageEntries);
   const walletStoragePath = await E(walletStorageNode).getPath();
-  const oldAddresses = harden(dataReviver.children(`${walletStoragePath}.`));
+  const oldAddresses = dataReviver.children(`${walletStoragePath}.`);
 
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({

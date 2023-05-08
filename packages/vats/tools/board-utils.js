@@ -161,14 +161,14 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   };
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
-    return [
+    return harden([
       ...new Set(
         entries
           .map(([k, _]) => k)
           .filter(k => k.startsWith(prefix))
           .map(k => k.slice(prefix.length).split('.')[0]),
       ),
-    ];
+    ]);
   };
   return harden({ getItem, children, has: k => vsMap.has(k) });
 };
