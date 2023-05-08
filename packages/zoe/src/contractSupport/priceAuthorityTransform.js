@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { Fail, assert } from '@agoric/assert';
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 
 /** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
@@ -36,7 +36,7 @@ export const mintQuote = async (
 
 /**
  * @param {object} opts
- * @param {ERef<Mint<'set'>>} [opts.quoteMint]
+ * @param {ERef<Mint<'set'>>} opts.quoteMint
  * @param {ERef<PriceAuthority>} opts.sourcePriceAuthority
  * @param {Brand<'nat'>} opts.sourceBrandIn
  * @param {Brand<'nat'>} opts.sourceBrandOut
@@ -48,7 +48,7 @@ export const mintQuote = async (
  * @param {(sourceAmountOut: Amount<'nat'>) => Amount<'nat'>} [opts.transformSourceAmountOut]
  */
 export const makePriceAuthorityTransform = async ({
-  quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
+  quoteMint,
   sourcePriceAuthority,
   sourceBrandIn,
   sourceBrandOut,
