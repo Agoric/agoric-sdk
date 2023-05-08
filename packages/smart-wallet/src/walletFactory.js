@@ -270,6 +270,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
           // An await here would deadlock with invitePSMCommitteeMembers
           void publishDepositFacet(address, wallet, namesByAddressAdmin);
 
+          isNew = true;
           return wallet;
         };
 

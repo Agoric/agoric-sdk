@@ -28,6 +28,7 @@ import { makeFakeBankKit } from '../tools/bank-utils.js';
 /**
  * @typedef {import('../src/vat-bank.js').Bank} Bank
  * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
+ * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
  */
 
 const pathname = new URL(import.meta.url).pathname;
@@ -318,6 +319,13 @@ const makeWalletFactoryKitForAddresses = async addresses => {
     }),
   );
 
+  /** @type {WalletReviver | undefined} */
+  let walletReviver;
+  /** @param {ERef<WalletReviver>} walletReviverP */
+  const setReviver = async walletReviverP => {
+    walletReviver = await walletReviverP;
+  };
+
   const done = new Set();
   /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
   const walletFactory = Far('mock walletFactory', {
@@ -325,16 +333,29 @@ const makeWalletFactoryKitForAddresses = async addresses => {
       const wallet = wallets.get(addr);
       assert(wallet);
 
-      const created = !done.has(addr);
-      if (created) {
-        await publishDepositFacet(addr, wallet, nameAdmin);
+      let isNew = !done.has(addr);
+      if (isNew) {
+        const isRevive =
+          walletReviver && (await E(walletReviver).ackWallet(addr));
+        if (isRevive) {
+          isNew = false;
+        } else {
+          await publishDepositFacet(addr, wallet, nameAdmin);
+        }
         done.add(addr);
       }
-      return [wallet, created];
+      return [wallet, isNew];
     },
   });
 
-  return { fees, sendInitialPayment, bankManager, walletFactory, purses };
+  return {
+    fees,
+    sendInitialPayment,
+    bankManager,
+    walletFactory,
+    setReviver,
+    purses,
+  };
 };
 
 test('makeBridgeProvisionTool handles duplicate requests', async t => {
@@ -399,7 +420,7 @@ test('provisionPool revives old wallets', async t => {
   // make a mock wallet factory and setup its bank
   const oldAddr = 'addr_old';
   const newAddr = 'addr_new';
-  const { walletFactory, purses, fees, bankManager } =
+  const { walletFactory, setReviver, purses, fees, bankManager } =
     await makeWalletFactoryKitForAddresses([oldAddr, newAddr]);
   const oldPurse = /** @type {Purse} */ (purses.get(oldAddr));
   const newPurse = /** @type {Purse} */ (purses.get(newAddr));
@@ -454,8 +475,9 @@ test('provisionPool revives old wallets', async t => {
   const bridgeHandler = await E(creatorFacet).makeBridgeHandler();
 
   // revive the old wallet and verify absence of new starter funds
-  const reviveWallet = addr =>
-    E(E(creatorFacet).getWalletReviver()).reviveWallet(addr);
+  const reviverP = E(creatorFacet).getWalletReviver();
+  await setReviver(reviverP);
+  const reviveWallet = addr => E(reviverP).reviveWallet(addr);
   await t.throwsAsync(
     reviveWallet('addr_unknown'),
     undefined,
