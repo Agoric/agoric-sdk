@@ -4,9 +4,9 @@ FROM ghcr.io/agoric/ag0:agoric-upgrade-7-2 as agoric-upgrade-7-2
 ENV UPGRADE_TO=agorictest-upgrade-8
 ENV THIS_NAME=agoric-upgrade-7-2
 
-RUN mkdir -p /usr/src/agoric-sdk
+RUN mkdir -p /usr/src/agoric-sdk/upgrade-test-scripts
 WORKDIR /usr/src/agoric-sdk/
-COPY upgrade-test-scripts ./upgrade-test-scripts
+COPY ./*.sh ./upgrade-test-scripts/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_ag0.sh
 
@@ -16,7 +16,8 @@ FROM ghcr.io/agoric/agoric-sdk:29 as agoric-upgrade-8
 WORKDIR /usr/src/agoric-sdk/
 ENV THIS_NAME=agoric-upgrade-8
 
-COPY upgrade-test-scripts ./upgrade-test-scripts
+COPY ./*.sh ./upgrade-test-scripts/
+COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-7-2 /usr/src/agoric-sdk/netstate netstate
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
@@ -28,7 +29,8 @@ ENV THIS_NAME=agoric-upgrade-8-1
 ENV UPGRADE_TO=agorictest-upgrade-9
 
 WORKDIR /usr/src/agoric-sdk/
-COPY upgrade-test-scripts ./upgrade-test-scripts
+COPY ./*.sh ./upgrade-test-scripts/
+COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8 /usr/src/agoric-sdk/netstate netstate
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
@@ -40,7 +42,8 @@ ENV THIS_NAME=agoric-upgrade-9
 ENV UPGRADE_TO=agorictest-upgrade-10
 
 WORKDIR /usr/src/agoric-sdk/
-COPY upgrade-test-scripts ./upgrade-test-scripts
+COPY ./*.sh ./upgrade-test-scripts/
+COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8-1 /usr/src/agoric-sdk/netstate netstate
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
@@ -52,7 +55,8 @@ FROM ${DEST_IMAGE} as agoric-upgrade-10
 ENV THIS_NAME=agoric-upgrade-10
 
 WORKDIR /usr/src/agoric-sdk/
-COPY upgrade-test-scripts ./upgrade-test-scripts
+COPY ./*.sh ./upgrade-test-scripts/
+COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-9 /usr/src/agoric-sdk/netstate netstate
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
@@ -62,10 +66,11 @@ ARG DEST_IMAGE
 FROM ${DEST_IMAGE} as agoric-upgrade-11
 ENV THIS_NAME=agoric-upgrade-11
 # this boot doesn't need an upgrade
-ENV DEST=1
+ENV DONE=1
 
 WORKDIR /usr/src/agoric-sdk/
-COPY upgrade-test-scripts ./upgrade-test-scripts
+COPY ./*.sh ./upgrade-test-scripts/
+COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-10 /usr/src/agoric-sdk/netstate netstate
 SHELL ["/bin/bash", "-c"]
 RUN chmod +x ./upgrade-test-scripts/start_to_to.sh

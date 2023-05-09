@@ -64,10 +64,15 @@ waitForBlock () (
 runActions () {
   action=${1:-"test"}
   if [[ -v THIS_NAME ]]; then
-    fn="${THIS_NAME}_${action}.sh"
-    if test -f "./upgrade-test-scripts/$fn"; then
-      echo "RUNACTION: $fn"
-      . "./upgrade-test-scripts/$fn"
+    if test -d "./upgrade-test-scripts/$THIS_NAME"; then
+      fn="${THIS_NAME}_${action}.sh"
+      if test -f "./upgrade-test-scripts/$THIS_NAME/$fn"; then
+        echo "RUNACTION: $fn"
+        . "./upgrade-test-scripts/$THIS_NAME/$fn"
+      fi
+    else
+      echo "./upgrade-test-scripts/$THIS_NAME directory is missing"
+      exit 1
     fi
   else
     echo "THIS_NAME is not defined for this release, can't run action $action"
