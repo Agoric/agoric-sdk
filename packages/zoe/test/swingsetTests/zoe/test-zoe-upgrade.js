@@ -7,7 +7,7 @@ import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-test.failing('zoe vat upgrade trauma', async t => {
+test('zoe vat upgrade trauma', async t => {
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
