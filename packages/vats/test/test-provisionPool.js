@@ -277,8 +277,9 @@ const makeWalletFactoryKitFor1 = async address => {
     baggage,
   ).makeBankManager();
 
-  const fees = withAmountUtils(makeIssuerKit('FEE'));
-  await bankManager.addAsset('ufee', 'FEE', 'FEE', fees);
+  const feeKit = makeIssuerKit('FEE');
+  const fees = withAmountUtils(feeKit);
+  await bankManager.addAsset('ufee', 'FEE', 'FEE', feeKit);
 
   const sendInitialPayment = async dest => {
     const pmt = fees.mint.mintPayment(fees.make(250n));

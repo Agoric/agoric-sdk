@@ -57,8 +57,10 @@ test('connectFaucet produces payments', async t => {
     /** @type { BootstrapPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
       space
     );
-  const { agoricNames, spaces } = await makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { zoe, feeMintAccessP, vatAdminService } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);

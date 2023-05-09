@@ -25,8 +25,10 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     /** @type { BootstrapPowers & { consume: { loadCriticalVat: VatLoader<any> }}} */ (
       space
     );
-  const { agoricNames, spaces } = await makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { vatAdminService } = makePopulatedFakeVatAdmin();
   const { zoeService, feeMintAccess: fma } = makeZoeKit(vatAdminService);
