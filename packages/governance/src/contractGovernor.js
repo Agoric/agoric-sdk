@@ -24,7 +24,7 @@ const trace = makeTracer('CGov', false);
  * @param {Instance} electorate
  * @param {ParamChangeIssueDetails} details
  */
-const validateQuestionDetails = async (zoe, electorate, details) => {
+export const validateQuestionDetails = async (zoe, electorate, details) => {
   const {
     counterInstance,
     issue: { contract: governedInstance },
@@ -41,6 +41,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
     E(governorPublic).validateTimer(details.closingRule),
   ]);
 };
+harden(validateQuestionDetails);
 
 /**
  * Validate that the questions counted by the voteCounter correspond to a
@@ -51,12 +52,17 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
  * @param {Instance} electorate
  * @param {Instance} voteCounter
  */
-const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
+export const validateQuestionFromCounter = async (
+  zoe,
+  electorate,
+  voteCounter,
+) => {
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
 
   return validateQuestionDetails(zoe, electorate, questionDetails);
 };
+harden(validateQuestionFromCounter);
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
@@ -145,8 +151,8 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * }>}
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-const start = async (zcf, privateArgs, baggage) => {
-  trace('start');
+export const prepare = async (zcf, privateArgs, baggage) => {
+  trace('prepare');
   const zoe = zcf.getZoeService();
   trace('getTerms', zcf.getTerms());
   const {
@@ -331,8 +337,4 @@ const start = async (zcf, privateArgs, baggage) => {
 
   return { creatorFacet, publicFacet };
 };
-
-harden(start);
-harden(validateQuestionDetails);
-harden(validateQuestionFromCounter);
-export { start, validateQuestionDetails, validateQuestionFromCounter };
+harden(prepare);
