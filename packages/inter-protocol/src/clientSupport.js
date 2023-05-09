@@ -174,7 +174,7 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  * @param {Instance} instance
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: number, feePct?: number } &
- *         ({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
+ *         ({ wantMinted: number | undefined, giveMinted: number | undefined, pair: [string, string] })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makePsmSwapOffer = (instance, brands, opts) => {
@@ -185,7 +185,6 @@ const makePsmSwapOffer = (instance, brands, opts) => {
     brands,
     opts,
     opts.feePct ? opts.feePct / 100 : undefined,
-    // @ts-expect-error please update types. Not sure where pair goees.
     opts.pair[1],
   );
 
