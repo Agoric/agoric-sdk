@@ -22,7 +22,7 @@ export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test" -
 sendOffer () (
     offer="$1"
     from="$2"
-    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test"
+    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test" --home "$STATEDIR"
 )
 
 wait_for_bootstrap () {
@@ -91,10 +91,22 @@ success () {
 test_val() {
   want="$2"
   got="$1"
+  testname="${3:-unnamedtest}"
   if [[ "$want" != "$got" ]]; then
-    fail "wanted $want, got $got"
+    fail "TEST: $testname: wanted $want, got $got"
   else
-    success "wanted $want, got $got"
+    success "TEST: $testname: wanted $want, got $got"
+  fi
+}
+
+test_not_val() {
+  want="$2"
+  got="$1"
+  testname="${3:-unnamedtest}"
+  if [[ "$want" == "$got" ]]; then
+    fail "TEST: $testname:  $want is equal to $got"
+  else
+    success "TEST: $testname: $want is not equal to $got"
   fi
 }
 

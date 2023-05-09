@@ -20,3 +20,5 @@ do
   agd tx swingset provision-one my-wallet "$i" SMART_WALLET --keyring-backend=test  --yes --home="$STATEDIR" --chain-id="$CHAINID" --from="$i"
   waitForBlock
 done
+
+waitForBlock 5
