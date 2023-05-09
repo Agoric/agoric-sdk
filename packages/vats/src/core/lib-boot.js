@@ -66,6 +66,7 @@ export const makeBootstrap = (
   const log = vatPowers.logger || console.info;
   const powerStore = zone.mapStore('Bootstrap Powers');
   const { produce, consume } = makePromiseSpace({ log, store: powerStore });
+  produce.powerStore.resolve(powerStore);
 
   /**
    * Bootstrap vats and devices.
@@ -217,6 +218,11 @@ export const makeBootstrap = (
       }
       return rawOutput ? value : encodePassable(value);
     },
+    /**
+     * @template K, V
+     * @param {MapStore<K, V>} store
+     */
+    snapshotStore: store => harden([...store.entries()]),
     //#endregion
   });
 };

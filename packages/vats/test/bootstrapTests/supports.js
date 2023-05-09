@@ -33,6 +33,7 @@ export const bootstrapMethods = {
   messageVatObject: 'messageVatObject',
   messageVatObjectSendOnly: 'messageVatObjectSendOnly',
   awaitVatObject: 'awaitVatObject',
+  snapshotStore: 'snapshotStore',
 };
 
 /**
