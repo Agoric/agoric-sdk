@@ -521,9 +521,9 @@
  * @typedef {object} GovernorPublic
  * @property {() => Promise<Instance>} getElectorate
  * @property {() => Instance} getGovernedContract
- * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
- * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
- * @property {(closingRule: ClosingRule) => boolean} validateTimer
+ * @property {(voteCounter: Instance) => Promise<void>} validateVoteCounter
+ * @property {(regP: ERef<Instance>) => Promise<void>} validateElectorate
+ * @property {(closingRule: ClosingRule) => void} validateTimer
  */
 
 /**

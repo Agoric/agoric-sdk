@@ -121,7 +121,7 @@ test.serial('change electorate', async t => {
     'params update: Electorate',
     'current value of MalleableNumber is 602214090000000000000000',
     'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]}}})',
-    'Validation complete: true',
+    'Validation complete',
     '@@ schedule task for:4, currently: 2 @@',
     'Voter Alice voted for {"changes":{"MalleableNumber":"[299792458n]"}}',
     'Voter Bob voted for {"changes":{"MalleableNumber":"[299792458n]"}}',
@@ -152,7 +152,7 @@ test.serial('brokenUpdateStart', async t => {
     '@@ tick:1 @@',
     '@@ tick:2 @@',
     'vote outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
-    'Validation complete: true',
+    'Validation complete',
     // [`prepareToSetInvitation`](https://github.com/Agoric/agoric-sdk/blob/c6570b015fd23c411e48981bec309b32eedd3a28/packages/governance/src/contractGovernance/paramManager.js#L199-L212)
     // does a `Promise.all` on 2 calls using the `invite` promise. If that promise
     // is rejected, this will result in a rejection race between the 2 paths. The
@@ -185,7 +185,7 @@ test.serial('changeTwoParams', async t => {
     'current value of MalleableNumber is 42',
     'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}})',
     'successful outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}} ',
-    'Validation complete: true',
+    'Validation complete',
   ]);
 });
 

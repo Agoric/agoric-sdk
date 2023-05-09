@@ -259,9 +259,9 @@ const validateElectorateChange = async (
 
   await assertContractElectorate(zoe, governorInstance, electorateInstance);
 
-  const [eValid, tValid] = await Promise.all([electorateValid, timerValid]);
+  await Promise.all([electorateValid, timerValid]);
 
-  return log(`Validation complete: ${eValid && tValid}`);
+  return log('Validation complete');
 };
 
 const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
