@@ -46,8 +46,7 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
   E(zoe).startInstance(
     scaledPriceInstallation,
     validIssuers,
-    validTerms,
-    // @ts-expect-error
-    'invalid privateArgs',
+    // @ts-expect-error includes an extra term
+    { ...validTerms, extra: string },
   );
 }

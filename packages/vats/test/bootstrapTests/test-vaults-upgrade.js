@@ -190,7 +190,7 @@ test.serial('open vault', async t => {
   console.timeEnd('open vault');
 });
 
-test.serial('restart', async t => {
+test.serial('restart vaultFactory', async t => {
   const { EV } = t.context.runUtils;
   /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
@@ -211,10 +211,30 @@ test.serial('restart', async t => {
     totalDebt: { value: 5025000n },
   };
   t.like(t.context.readCollateralMetrics(0), keyMetrics);
-  t.log('awaiting restartContract');
+  t.log('awaiting VF restartContract');
   const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
   t.like(t.context.readCollateralMetrics(0), keyMetrics); // unchanged
+});
+
+test.serial('restart contractGovernor', async t => {
+  const { EV } = t.context.runUtils;
+  /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
+  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
+    'vaultFactoryKit',
+  );
+
+  const governorAdminFacet = vaultFactoryKit.adminFacet;
+  // has no privateArgs of its own. the privateArgs.governed is only for the
+  // contract startInstance. any changes to those privateArgs have to happen
+  // through a restart or upgrade using the governed contract's adminFacet
+  const privateArgs = undefined;
+
+  t.log('awaiting CG restartContract');
+  const upgradeResult = await EV(governorAdminFacet).restartContract(
+    privateArgs,
+  );
+  t.deepEqual(upgradeResult, { incarnationNumber: 1 });
 });
 
 test.serial('open vault 2', async t => {

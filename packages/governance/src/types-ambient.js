@@ -624,7 +624,7 @@
  * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
  * @param {import('@agoric/time/src/types').Timestamp} deadline
- * @returns {ContractGovernanceVoteResult}
+ * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
 /**
