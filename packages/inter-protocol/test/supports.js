@@ -6,14 +6,11 @@ import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-pupp
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeZoeKit } from '@agoric/zoe';
+import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 import {
@@ -46,26 +43,13 @@ harden(provideBundle);
 /**
  * Returns promises for `zoe` and the `feeMintAccess`.
  *
- * @param {() => void} setJig
+ * @param {() => void} [setJig]
  */
-export const setUpZoeForTest = async (setJig = () => {}) => {
-  const { makeFar } = makeLoopback('zoeTest');
-
-  const { admin, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(admin, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
-  return {
-    zoe: zoeService,
-    feeMintAccessP: feeMintAccess,
-    vatAdminSvc: admin,
-    vatAdminState,
-  };
-};
+export const setUpZoeForTest = async (setJig = () => {}) =>
+  generalSetUpZoeForTest({
+    setJig,
+    feeIssuerConfig: utils.feeIssuerConfig,
+  });
 harden(setUpZoeForTest);
 
 /**

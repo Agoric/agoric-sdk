@@ -5,8 +5,7 @@ import '@agoric/zoe/exported.js';
 import path from 'path';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
-import { makeZoeKit } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -28,7 +27,7 @@ const electorateRoot = `${dirname}/../../src/committee.js`;
 const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
 const setupContract = async () => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest();
 
   const mockChainStorageRoot = makeMockChainStorageRoot();
 

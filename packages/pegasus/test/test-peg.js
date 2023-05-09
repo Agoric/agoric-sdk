@@ -9,9 +9,7 @@ import {
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
-import { makeZoeKit } from '@agoric/zoe';
-
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
 
 import '@agoric/ertp/exported.js';
@@ -61,7 +59,7 @@ async function testRemotePeg(t) {
     },
   });
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest();
 
   // Pack the contract.
   const contractBundle = await bundleSource(contractPath);

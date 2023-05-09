@@ -2,32 +2,15 @@
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
-import { makeLoopback } from '@endo/captp';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import '@agoric/zoe/exported.js';
 
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { Stable } from '../src/tokens.js';
-
-const setUpZoeForTest = async setJig => {
-  const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
-  return {
-    zoe: zoeService,
-    feeMintAccessP: feeMintAccess,
-  };
-};
+import { feeIssuerConfig } from '../src/core/utils.js';
 
 /** @template T @typedef {import('@agoric/zoe/src/zoeService/utils').Installation<T>} Installation<T> */
 /**
@@ -41,7 +24,9 @@ const setUpZoeForTest = async setJig => {
  */
 
 test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
-  const { zoe, feeMintAccessP } = await setUpZoeForTest(() => {});
+  const { zoe, feeMintAccessP } = await setUpZoeForTest({
+    feeIssuerConfig,
+  });
   const issuer = {
     IST: E(zoe).getFeeIssuer(),
   };

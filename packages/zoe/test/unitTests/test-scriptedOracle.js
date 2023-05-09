@@ -11,7 +11,7 @@ import { TimeMath } from '@agoric/time';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
-import { makeZoeKit } from '../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
 import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
@@ -45,7 +45,7 @@ test.before(
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { admin, vatAdminState } = makeFakeVatAdmin();
-    const { zoeService: zoe } = makeZoeKit(admin);
+    const zoe = makeZoeForTest(admin);
 
     const oracleContractBundle = await bundleSource(oracleContractPath);
     const bountyContractBundle = await bundleSource(bountyContractPath);

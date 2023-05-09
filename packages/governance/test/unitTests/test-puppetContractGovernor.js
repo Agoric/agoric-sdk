@@ -1,8 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { makeZoeKit } from '@agoric/zoe';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -23,27 +22,6 @@ const governedBundleP = await makeBundle(
   '../swingsetTests/contractGovernor/governedContract.js',
 );
 
-const setUpZoeForTest = async setJig => {
-  const makeFar = o => o;
-
-  /**
-   * These properties will be assigned by `setJig` in the contract.
-   *
-   * @typedef {object} TestContext
-   * @property {ZCF} zcf
-   * @property {IssuerRecord} mintedIssuerRecord
-   * @property {IssuerRecord} govIssuerRecord
-   */
-  const { zoeService } = makeZoeKit(
-    makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
-  );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  return {
-    zoe,
-  };
-};
-
 const governedTerms = {
   governedParams: {
     [MALLEABLE_NUMBER]: {
@@ -54,7 +32,7 @@ const governedTerms = {
 };
 
 test('multiple params bad change', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
@@ -81,7 +59,7 @@ test('multiple params bad change', async t => {
 });
 
 test('change a param', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets, getFakeInvitation } = await setUpGovernedContract(
     zoe,
@@ -141,7 +119,7 @@ test('change a param', async t => {
 });
 
 test('set offer Filter directly', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
@@ -158,7 +136,7 @@ test('set offer Filter directly', async t => {
 });
 
 test('call API directly', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,

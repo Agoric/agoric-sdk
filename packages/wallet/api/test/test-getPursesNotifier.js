@@ -2,8 +2,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { makeZoeKit } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -24,7 +23,7 @@ function makeFakeMyAddressNameAdmin() {
 }
 
 const setup = async () => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest();
   const board = makeFakeBoard();
 
   const pursesStateChangeHandler = _data => {};

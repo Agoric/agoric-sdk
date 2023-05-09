@@ -2,16 +2,15 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
-import { makeZoeKit } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { heapZone } from '@agoric/zone';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
-import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { makeAgoricNamesAccess, feeIssuerConfig } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
@@ -21,29 +20,11 @@ import {
   makeBoard,
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
-import { Stable, Stake } from '../src/tokens.js';
+import { Stake } from '../src/tokens.js';
 import { buildRootObject as buildProvisioningRoot } from '../src/vat-provisioning.js';
 
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
-
-const setUpZoeForTest = async () => {
-  const { makeFar } = makeLoopback('zoeTest');
-  const { vatAdminService } = makePopulatedFakeVatAdmin();
-  const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(vatAdminService, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
-  return {
-    zoe: zoeService,
-    feeMintAccessP: feeMintAccess,
-    vatAdminService,
-  };
-};
-harden(setUpZoeForTest);
 
 /**
  * @typedef {{
@@ -62,13 +43,16 @@ test('connectFaucet produces payments', async t => {
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
-  const { zoe, feeMintAccessP, vatAdminService } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP, vatAdminSvc } = await setUpZoeForTest({
+    feeIssuerConfig,
+    vatAdminSvc: makePopulatedFakeVatAdmin().vatAdminService,
+  });
   produce.zoe.resolve(zoe);
   const fma = await feeMintAccessP;
   produce.feeMintAccess.resolve(fma);
   produce.bridgeManager.resolve(undefined);
 
-  produce.vatAdminSvc.resolve(vatAdminService);
+  produce.vatAdminSvc.resolve(vatAdminSvc);
 
   const vatLoader = name => {
     switch (name) {

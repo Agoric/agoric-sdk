@@ -1,5 +1,5 @@
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { makeZoeKit } from '../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 const setupMixed = () => {
@@ -24,7 +24,7 @@ const setupMixed = () => {
   const moola = value => AmountMath.make(allBundles.moola.brand, value);
 
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest(fakeVatAdmin);
   return {
     zoe,
     ccIssuer,

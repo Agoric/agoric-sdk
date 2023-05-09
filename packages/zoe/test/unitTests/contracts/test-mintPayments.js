@@ -10,7 +10,7 @@ import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
-import { makeZoeKit } from '../../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -20,7 +20,7 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 test('zoe - mint payments', async t => {
   t.plan(2);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest(fakeVatAdmin);
 
   const makeAlice = () => {
     return {
@@ -93,7 +93,7 @@ test('zoe - mint payments', async t => {
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest(fakeVatAdmin);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

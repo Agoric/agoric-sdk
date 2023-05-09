@@ -2,6 +2,8 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 
 import {
@@ -9,7 +11,6 @@ import {
   makeMockChainStorageRoot,
   provideBundle,
 } from '../supports.js';
-import { setUpZoeForTest } from '../psm/setupPsm.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
@@ -72,7 +73,7 @@ export const setupReserveServices = async (
   electorateTerms,
   timer = buildManualTimer(t.log),
 ) => {
-  const farZoeKit = await setUpZoeForTest();
+  const farZoeKit = await setUpZoeForTest({ feeIssuerConfig });
   const { feeMintAccessP, zoe } = farZoeKit;
 
   const runIssuer = await E(zoe).getFeeIssuer();

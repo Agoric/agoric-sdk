@@ -8,8 +8,7 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { M } from '@agoric/store';
 
-import { makeZoeKit } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
@@ -142,7 +141,7 @@ const waitForUpdate = async (notifier, thunk) => {
 };
 
 test.before(async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
   const automaticRefundContractUrl = await importMetaResolve(
