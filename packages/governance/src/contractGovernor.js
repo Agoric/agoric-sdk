@@ -290,15 +290,14 @@ const start = async (zcf, privateArgs, baggage) => {
       createdParamQ || createdApiQ || createdFilterQ,
       'VoteCounter was not created by this contractGovernor',
     );
-    return true;
   };
 
   /** @param {ClosingRule} closingRule */
   const validateTimer = closingRule => {
     assert(closingRule.timer === timer, 'closing rule must use my timer');
-    return true;
   };
 
+  /** @param {ERef<Instance>} regP */
   const validateElectorate = async regP => {
     return E.when(regP, async reg => {
       const electorateInstance = await getElectorateInstance();
@@ -306,7 +305,6 @@ const start = async (zcf, privateArgs, baggage) => {
         reg === electorateInstance,
         "Electorate doesn't match my Electorate",
       );
-      return true;
     });
   };
 
