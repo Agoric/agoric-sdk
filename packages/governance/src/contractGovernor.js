@@ -143,8 +143,9 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   creatorFacet: GovernorCreatorFacet<SF>,
  *   publicFacet: GovernorPublic,
  * }>}
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-const start = async (zcf, privateArgs) => {
+const start = async (zcf, privateArgs, baggage) => {
   trace('start');
   const zoe = zcf.getZoeService();
   trace('getTerms', zcf.getTerms());
@@ -167,12 +168,8 @@ const start = async (zcf, privateArgs) => {
   });
 
   trace('starting governedContractInstallation');
-  const {
-    creatorFacet: governedCF,
-    instance: governedInstance,
-    publicFacet: governedPF,
-    adminFacet,
-  } = await E(zoe).startInstance(
+
+  const startedInstanceKit = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
@@ -181,6 +178,14 @@ const start = async (zcf, privateArgs) => {
     privateArgs.governed,
     governedContractLabel,
   );
+  // reachably durable for an upgrade of this contract to retrieve
+  baggage.init('startedInstanceKit', startedInstanceKit);
+  const {
+    creatorFacet: governedCF,
+    instance: governedInstance,
+    publicFacet: governedPF,
+    adminFacet,
+  } = startedInstanceKit;
 
   /** @type {() => Promise<Instance>} */
   const getElectorateInstance = async () => {
