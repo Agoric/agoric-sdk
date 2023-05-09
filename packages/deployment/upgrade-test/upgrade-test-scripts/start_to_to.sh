@@ -14,7 +14,7 @@ runActions "actions"
 
 runActions "test"
 
-if [[ "$DEST" != "1" ]]; then
+if [[ "$DONE" != "1" ]]; then
   #Destined for an upgrade
   if [[ -z "${UPGRADE_TO}" ]]; then
     echo "no upgrade set.  running for a few blocks and exiting"

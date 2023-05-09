@@ -1,4 +1,4 @@
-ARG DEST_IMAGE=ghcr.io/agoric/agoric-sdk:20230508142932-0fc191
+ARG DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
 # on agoric-uprade-7-2, with upgrade to agoric-upgrade-8
 FROM ghcr.io/agoric/ag0:agoric-upgrade-7-2 as ag0root
 ENV UPGRADE_TO=agorictest-upgrade-8

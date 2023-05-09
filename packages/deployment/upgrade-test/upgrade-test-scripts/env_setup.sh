@@ -79,6 +79,10 @@ fail () {
   exit 1
 }
 
+#agops () {
+#  yarn run --silent agops $*
+#}
+
 success () {
   echo "SUCCESS: $1"
 }
