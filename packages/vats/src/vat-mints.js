@@ -39,6 +39,8 @@ export function buildRootObject() {
      * @param  {[AssetKind?, DisplayInfo?]} issuerArgs
      */
     makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {
+      notForProductionUse();
+      // makeIssuerKit fails upgrade, this contract is for demo only
       const { mint, issuer, brand } = makeIssuerKit(
         issuerNameSingular,
         ...issuerArgs,
@@ -47,11 +49,13 @@ export function buildRootObject() {
       return issuer;
     },
     provideIssuerKit: (issuerName, ...issuerArgs) => {
+      notForProductionUse();
       if (mintsAndBrands.has(issuerName)) {
         const { mint, brand } = mintsAndBrands.get(issuerName);
         const issuer = mint.getIssuer();
         return { mint, issuer, brand };
       } else {
+        // makeIssuerKit fails upgrade, this contract is for demo only
         const { mint, issuer, brand } = makeIssuerKit(
           issuerName,
           ...issuerArgs,

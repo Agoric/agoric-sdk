@@ -460,6 +460,8 @@ export const publishAgoricNames = async (
   const marshaller = E(board).getPublishingMarshaller();
 
   // XXX will fail upon restart, but so would the makeStoredPublishKit this is replacing
+  // Since we expect the bootstrap vat to be replaced instead of upgraded this should be
+  // fine. See {@link ./README.md bootstrap documentation} for details.
   const fakeBaggage = makeScalarBigMapStore(
     'fake baggage for AgoricNames kinds',
   );
