@@ -141,9 +141,8 @@ export const makeStoredSubscription = (
   }
 
   /** @type {StoredSubscription<T>} */
-  // eslint-disable-next-line -- different per package https://github.com/Agoric/agoric-sdk/issues/4620
-  // @ts-ignore getStoreKey type does not have `subscription`
   const storesub = Far('StoredSubscription', {
+    // @ts-expect-error getStoreKey type does not have `subscription`
     getStoreKey: async () => {
       if (!storageNode) {
         return harden({ subscription });
@@ -155,6 +154,7 @@ export const makeStoredSubscription = (
     getSharableSubscriptionInternals: () =>
       subscription.getSharableSubscriptionInternals(),
     [Symbol.asyncIterator]: () => subscription[Symbol.asyncIterator](),
+    subscribeAfter: publishCount => subscription.subscribeAfter(publishCount),
   });
   return storesub;
 };

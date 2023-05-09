@@ -3,6 +3,9 @@
 export {
   makePublishKit,
   prepareDurablePublishKit,
+  ForkableAsyncIterableIteratorShape,
+  IterableEachTopicI,
+  IterableLatestTopicI,
   SubscriberShape,
 } from './publish-kit.js';
 export { subscribeEach, subscribeLatest } from './subscribe.js';

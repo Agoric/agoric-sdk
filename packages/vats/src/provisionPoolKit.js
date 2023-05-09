@@ -1,7 +1,11 @@
 // @ts-check
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { UnguardedHelperI } from '@agoric/inter-protocol/src/typeGuards.js';
-import { observeIteration, observeNotifier } from '@agoric/notifier';
+import {
+  observeIteration,
+  observeNotifier,
+  subscribeEach,
+} from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   makeRecorderTopic,
@@ -238,46 +242,49 @@ export const prepareProvisionPoolKit = (
           // That would be a severe bug.
           AmountMath.coerce(poolBrand, params.getPerAccountInitialAmount());
 
-          void observeIteration(E(poolBank).getAssetSubscription(), {
-            updateState: async desc => {
-              console.log('provisionPool notified of new asset', desc.brand);
-              await zcf.saveIssuer(desc.issuer, desc.issuerName);
-              /** @type {ERef<Purse>} */
-              // @ts-expect-error vbank purse is close enough for our use.
-              const exchangePurse = E(poolBank).getPurse(desc.brand);
-              void observeNotifier(
-                E(exchangePurse).getCurrentAmountNotifier(),
-                {
-                  updateState: async amount => {
-                    console.log('provisionPool balance update', amount);
-                    if (
-                      AmountMath.isEmpty(amount) ||
-                      amount.brand === poolBrand
-                    ) {
-                      return;
-                    }
-                    if (!brandToPSM.has(desc.brand)) {
-                      console.error(
-                        'funds arrived but no PSM instance',
-                        desc.brand,
-                      );
-                      return;
-                    }
-                    const instance = brandToPSM.get(desc.brand);
-                    const payment = E(exchangePurse).withdraw(amount);
-                    await helper
-                      .swap(payment, amount, instance)
-                      .catch(async reason => {
-                        console.error(X`swap failed: ${reason}`);
-                        const resolvedPayment = await payment;
-                        return E(exchangePurse).deposit(resolvedPayment);
-                      });
+          void observeIteration(
+            subscribeEach(E(poolBank).getAssetSubscription()),
+            {
+              updateState: async desc => {
+                console.log('provisionPool notified of new asset', desc.brand);
+                await zcf.saveIssuer(desc.issuer, desc.issuerName);
+                /** @type {ERef<Purse>} */
+                // @ts-expect-error vbank purse is close enough for our use.
+                const exchangePurse = E(poolBank).getPurse(desc.brand);
+                void observeNotifier(
+                  E(exchangePurse).getCurrentAmountNotifier(),
+                  {
+                    updateState: async amount => {
+                      console.log('provisionPool balance update', amount);
+                      if (
+                        AmountMath.isEmpty(amount) ||
+                        amount.brand === poolBrand
+                      ) {
+                        return;
+                      }
+                      if (!brandToPSM.has(desc.brand)) {
+                        console.error(
+                          'funds arrived but no PSM instance',
+                          desc.brand,
+                        );
+                        return;
+                      }
+                      const instance = brandToPSM.get(desc.brand);
+                      const payment = E(exchangePurse).withdraw(amount);
+                      await helper
+                        .swap(payment, amount, instance)
+                        .catch(async reason => {
+                          console.error(X`swap failed: ${reason}`);
+                          const resolvedPayment = await payment;
+                          return E(exchangePurse).deposit(resolvedPayment);
+                        });
+                    },
+                    fail: reason => console.error(reason),
                   },
-                  fail: reason => console.error(reason),
-                },
-              );
+                );
+              },
             },
-          });
+          );
         },
         /**
          * @param {ERef<Payment>} payIn

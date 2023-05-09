@@ -2,6 +2,7 @@
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import {
+  IterableEachTopicI,
   makeNotifierKit,
   makePublishKit as makeHeapPublishKit,
   prepareDurablePublishKit,
@@ -175,6 +176,9 @@ const prepareBankChannelHandler = zone =>
   zone.exoClass(
     'BankChannelHandler',
     BridgeHandlerI,
+    /**
+     * @param {MapStore<string, MapStore<string, BalanceUpdater>>} denomToAddressUpdater
+     */
     denomToAddressUpdater => ({ denomToAddressUpdater }),
     {
       async fromBridge(obj) {
@@ -182,15 +186,24 @@ const prepareBankChannelHandler = zone =>
           case 'VBANK_BALANCE_UPDATE': {
             const { denomToAddressUpdater } = this.state;
             for (const update of obj.updated) {
+              const { address, denom, amount: value, nonce } = update;
+              /** @type {BalanceUpdater | undefined} */
+              let updater;
               try {
-                const { address, denom, amount: value } = update;
                 const addressToUpdater = denomToAddressUpdater.get(denom);
-                const updater = addressToUpdater.get(address);
-
-                updater.update(value, obj.nonce);
+                if (addressToUpdater.has(address)) {
+                  updater = addressToUpdater.get(address);
+                }
                 // console.info('bank balance update', update);
               } catch (e) {
-                // console.error('Unregistered update', update);
+                console.error('Unregistered denom in', update, e);
+              }
+              if (updater) {
+                try {
+                  updater.update(value, nonce);
+                } catch (e) {
+                  console.error('Error updating balance', update, e);
+                }
               }
             }
             break;
@@ -253,60 +266,124 @@ const makeSubscriberFromAsyncIterable = (
  * @param {(value: T, prior?: T) => unknown} skipValue
  */
 const makeHistoricalTopic = (historyValues, futureSubscriber, skipValue) => {
-  // Take a synchronous snapshot of the future from now.
-  const futureIterable =
-    subscribeEach(futureSubscriber)[Symbol.asyncIterator]();
-
+  // Take a synchronous snapshot of the future starting now.
+  const futureIterable = subscribeEach(futureSubscriber);
   const allHistory = concatAsyncIterables([historyValues, futureIterable]);
   return makeSubscriberFromAsyncIterable(allHistory, skipValue);
 };
 
-/**
- * @template T
-  @typedef {Omit<Subscription<T>, 'getSharableSubscriptionInternals'>} BaseSubscription */
 /** @type {WeakMap<MapStore<Brand, AssetDescriptor>, Promise<PublicationRecord<AssetDescriptor>>>} */
-const fullAssetLists = new WeakMap();
+const fullAssetPubLists = new WeakMap();
 
 /**
- * Build a heap asset subscription from its durable components.
- *
- * @param {MapStore<Brand, AssetDescriptor>} brandToAssetDescriptor
- * @param {EachTopic<AssetDescriptor>} assetSubscriber
+ * @param {import('@agoric/zone').Zone} zone
  */
-const provideAssetSubscription = (brandToAssetDescriptor, assetSubscriber) => {
-  /** @type {EachTopic<AssetDescriptor>} */
-  const topic = Far('AssetTopic', {
-    subscribeAfter(publishCount = -1n) {
-      if (publishCount !== -1n) {
-        return assetSubscriber.subscribeAfter(publishCount);
-      }
+const prepareAssetSubscription = zone => {
+  const assetSubscriptionCache = zone.weakMapStore('assetSubscriptionCache');
 
-      let pubList = fullAssetLists.get(brandToAssetDescriptor);
-      if (!pubList) {
-        const already = new Set();
-        const fullTopic = makeHistoricalTopic(
-          [...brandToAssetDescriptor.values()],
-          assetSubscriber,
-          ({ denom }) => {
-            const found = already.has(denom);
-            already.add(denom);
-            return found;
-          },
-        );
-        // Synchronously capture the first pubList entry before the
-        // assetSubscriber has a chance to publish more.
-        pubList = fullTopic.subscribeAfter();
-        fullAssetLists.set(brandToAssetDescriptor, pubList);
-      }
+  /**
+   * Build an exo asset subscription that resumes from its durable components.
+   *
+   * @param {MapStore<Brand, AssetDescriptor>} brandToAssetDescriptor
+   * @param {EachTopic<AssetDescriptor>} assetSubscriber
+   * @returns {IterableEachTopic<AssetDescriptor>}
+   */
+  const makeAssetSubscription = zone.exoClass(
+    'AssetSubscription',
+    IterableEachTopicI,
+    (brandToAssetDescriptor, assetSubscriber) => ({
+      brandToAssetDescriptor,
+      assetSubscriber,
+    }),
+    {
+      subscribeAfter(publishCount = -1n) {
+        const { brandToAssetDescriptor, assetSubscriber } = this.state;
+        if (publishCount !== -1n) {
+          return assetSubscriber.subscribeAfter(publishCount);
+        }
 
-      return pubList;
+        let pubList = fullAssetPubLists.get(brandToAssetDescriptor);
+        if (!pubList) {
+          const already = new Set();
+          const fullTopic = makeHistoricalTopic(
+            brandToAssetDescriptor.values(),
+            assetSubscriber,
+            ({ denom }) => {
+              const found = already.has(denom);
+              already.add(denom);
+              return found;
+            },
+          );
+          // Synchronously capture the first pubList entry before the
+          // assetSubscriber has a chance to publish more.
+          pubList = fullTopic.subscribeAfter();
+          fullAssetPubLists.set(brandToAssetDescriptor, pubList);
+        }
+
+        return pubList;
+      },
+      [Symbol.asyncIterator]() {
+        return subscribeEach(this.self)[Symbol.asyncIterator]();
+      },
     },
-  });
-  return Far('AssetSubscription', {
-    ...topic,
-    ...subscribeEach(topic),
-  });
+  );
+
+  /** @type {typeof makeAssetSubscription} */
+  const provideAssetSubscription = (
+    brandToAssetDescriptor,
+    assetSubscriber,
+  ) => {
+    return provideLazy(assetSubscriptionCache, brandToAssetDescriptor, () =>
+      makeAssetSubscription(brandToAssetDescriptor, assetSubscriber),
+    );
+  };
+  return provideAssetSubscription;
 };
+
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} AssetIssuerKit
+ * @property {ERef<Mint<K>>} [mint]
+ * @property {ERef<Issuer<K>>} issuer
+ * @property {Brand<K>} brand
+ */
+
+const BaseIssuerKitShape = harden({
+  issuer: M.remotable('Issuer'),
+  brand: BrandShape,
+});
+
+const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
+  mint: M.remotable('Mint'),
+});
+
+/**
+ * @typedef {AssetIssuerKit & { denom: string, escrowPurse?: ERef<Purse> }} AssetRecord
+ */
+
+/**
+ * @typedef {object} AssetDescriptor
+ * @property {Brand} brand
+ * @property {ERef<Issuer>} issuer
+ * @property {string} issuerName
+ * @property {string} denom
+ * @property {string} proposedName
+ */
+
+/**
+ * @typedef { AssetDescriptor & {
+ *   issuer: Issuer<'nat'>, // settled identity
+ *   displayInfo: DisplayInfo,
+ * }} AssetInfo
+ */
+
+/**
+ * @typedef {object} Bank
+ * @property {() => import('@agoric/notifier/src/types.js').IterableEachTopic<AssetDescriptor>} getAssetSubscription Returns
+ * assets as they are added to the bank
+ * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any existing vpurse
+ * (keyed by address and brand) or create a new one.
+ */
 
 export const BankI = M.interface('Bank', {
   getAssetSubscription: M.call().returns(M.remotable('AssetSubscription')),
@@ -316,10 +393,14 @@ export const BankI = M.interface('Bank', {
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {object} makers
+ * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
  * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
  * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
  */
-const prepareBank = (zone, { makePublishKit, makeVirtualPurse }) => {
+const prepareBank = (
+  zone,
+  { provideAssetSubscription, makePublishKit, makeVirtualPurse },
+) => {
   const makeBalanceUpdater = prepareBalanceUpdater(zone);
   const makeBankPurseController = prepareBankPurseController(zone);
 
@@ -424,6 +505,264 @@ const prepareBank = (zone, { makePublishKit, makeVirtualPurse }) => {
   return makeBank;
 };
 
+const BankManagerI = M.interface('BankManager', {
+  addAsset: M.callWhen(
+    M.string(),
+    M.string(),
+    M.string(),
+    M.splitRecord(BaseIssuerKitShape, {
+      mint: M.remotable('Mint'),
+      payment: M.remotable('Payment'),
+    }),
+  ).returns(),
+  getAssetSubscription: M.call().returns(M.remotable('AssetSubscription')),
+  getBankForAddress: M.callWhen(M.string()).returns(M.remotable('Bank')),
+  getModuleAccountAddress: M.callWhen(M.string()).returns(
+    M.or(M.null(), M.string()),
+  ),
+  getRewardDistributorDepositFacet: M.callWhen(
+    M.string(),
+    AssetIssuerKitShape,
+  ).returns(M.remotable('DepositFacet')),
+});
+
+/**
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {object} makers
+ * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
+ * @param {ReturnType<prepareBank>} makers.makeBank
+ * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
+ * @param {ReturnType<prepareRewardPurseController>} makers.makeRewardPurseController
+ * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ */
+const prepareBankManager = (
+  zone,
+  {
+    provideAssetSubscription,
+    makeBank,
+    makePublishKit,
+    makeRewardPurseController,
+    makeVirtualPurse,
+  },
+) => {
+  const detachedZone = zone.detached();
+
+  const makeBankManager = zone.exoClass(
+    'BankManager',
+    BankManagerI,
+    /**
+     * @param {object} args
+     * @param {BridgeChannel} [args.bankChannel]
+     * @param {MapStore<string, MapStore<string, BalanceUpdater>>} args.denomToAddressUpdater
+     * @param {Pick<import('./types.js').NameHubKit['nameAdmin'], 'update'>} [args.nameAdmin]
+     */
+    ({ bankChannel, denomToAddressUpdater, nameAdmin }) => {
+      /** @type {MapStore<Brand, AssetRecord>} */
+      const brandToAssetRecord = detachedZone.mapStore('brandToAssetRecord');
+      /** @type {MapStore<Brand, AssetDescriptor>} */
+      const brandToAssetDescriptor = detachedZone.mapStore(
+        'brandToAssetDescriptor',
+      );
+      /** @type {MapStore<string, { bank: Bank, brandToVPurse: MapStore<Brand, VirtualPurse> }>} */
+      const addressToBank = detachedZone.mapStore('addressToBank');
+
+      /**
+       * CAVEAT: The history for the assetSubscriber needs to be loaded into the
+       * heap on first use in this incarnation.  Use provideAssetSubscription to
+       * set that up.
+       *
+       * @type {PublishKit<AssetDescriptor>}
+       */
+      const { subscriber: assetSubscriber, publisher: assetPublisher } =
+        makePublishKit();
+
+      return {
+        addressToBank,
+        assetSubscriber,
+        assetPublisher,
+        bankChannel,
+        brandToAssetDescriptor,
+        brandToAssetRecord,
+        denomToAddressUpdater,
+        nameAdmin,
+      };
+    },
+    {
+      /**
+       * Returns assets as they are added to the bank.
+       *
+       * @returns {import('@agoric/notifier/src/types.js').IterableEachTopic<AssetDescriptor>}
+       */
+      getAssetSubscription() {
+        const { brandToAssetDescriptor, assetSubscriber } = this.state;
+        return provideAssetSubscription(
+          brandToAssetDescriptor,
+          assetSubscriber,
+        );
+      },
+      /**
+       * @param {string} denom
+       * @param {AssetIssuerKit} feeKit
+       * @returns {import('@endo/far').EOnly<DepositFacet>}
+       */
+      getRewardDistributorDepositFacet(denom, feeKit) {
+        const { bankChannel } = this.state;
+        if (!bankChannel) {
+          throw Error(`Bank doesn't implement reward collectors`);
+        }
+
+        const feeVpc = makeRewardPurseController(
+          bankChannel,
+          denom,
+          feeKit.brand,
+        );
+
+        const vp = makeVirtualPurse(feeVpc, feeKit);
+        return E(vp).getDepositFacet();
+      },
+
+      /**
+       * Get the address of named module account.
+       *
+       * @param {string} moduleName
+       * @returns {Promise<string | null>} address of named module account, or
+       * null if unimplemented (no bankChannel)
+       */
+      async getModuleAccountAddress(moduleName) {
+        const { bankChannel } = this.state;
+        if (!bankChannel) {
+          return null;
+        }
+
+        return bankChannel.toBridge({
+          type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS',
+          moduleName,
+        });
+      },
+
+      /**
+       * Add an asset to the bank, and publish it to the subscriptions.
+       * If nameAdmin is defined, update with denom to AssetInfo entry.
+       *
+       * Note that AssetInfo has the settled identity of the issuer,
+       * not just a promise for it.
+       *
+       * @param {string} denom lower-level denomination string
+       * @param {string} issuerName
+       * @param {string} proposedName
+       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer kit (mint, brand, issuer)
+       */
+      async addAsset(denom, issuerName, proposedName, kit) {
+        const {
+          assetPublisher,
+          brandToAssetDescriptor,
+          brandToAssetRecord,
+          denomToAddressUpdater,
+          nameAdmin,
+        } = this.state;
+        assert.typeof(denom, 'string');
+        assert.typeof(issuerName, 'string');
+        assert.typeof(proposedName, 'string');
+
+        const brand = await kit.brand;
+        const assetKind = await E(kit.issuer).getAssetKind();
+        assert.equal(
+          assetKind,
+          AssetKind.NAT,
+          `Only fungible assets are allowed, not ${assetKind}`,
+        );
+
+        // Create an escrow purse for this asset, seeded with the payment.
+        const escrowPurse = E(kit.issuer).makeEmptyPurse();
+        const payment = await kit.payment;
+        await (payment && E(escrowPurse).deposit(payment));
+
+        const [privateAssetRecord, toPublish] = await deeplyFulfilledObject(
+          harden([
+            {
+              escrowPurse,
+              issuer: kit.issuer,
+              mint: kit.mint,
+              denom,
+              brand,
+            },
+            {
+              brand,
+              denom,
+              issuerName,
+              issuer: kit.issuer,
+              proposedName,
+            },
+          ]),
+        );
+        brandToAssetRecord.init(brand, privateAssetRecord);
+        denomToAddressUpdater.init(
+          denom,
+          detachedZone.mapStore('addressToUpdater'),
+        );
+        brandToAssetDescriptor.init(brand, toPublish);
+        assetPublisher.publish(toPublish);
+
+        if (!nameAdmin) {
+          return;
+        }
+        // publish settled issuer identity
+        void Promise.all([kit.issuer, E(kit.brand).getDisplayInfo()]).then(
+          ([issuer, displayInfo]) =>
+            E(nameAdmin).update(
+              denom,
+              /** @type { AssetInfo } */ (
+                harden({
+                  brand,
+                  issuer,
+                  issuerName,
+                  denom,
+                  proposedName,
+                  displayInfo,
+                })
+              ),
+            ),
+        );
+      },
+      /**
+       * Create a new personal bank interface for a given address.
+       *
+       * @param {string} address lower-level bank account address
+       * @returns {Promise<Bank>}
+       */
+      async getBankForAddress(address) {
+        const {
+          addressToBank,
+          assetSubscriber,
+          brandToAssetDescriptor,
+          brandToAssetRecord,
+          bankChannel,
+          denomToAddressUpdater,
+        } = this.state;
+        assert.typeof(address, 'string');
+        if (addressToBank.has(address)) {
+          return addressToBank.get(address).bank;
+        }
+
+        /** @type {MapStore<Brand, VirtualPurse>} */
+        const brandToVPurse = detachedZone.mapStore('brandToVPurse');
+        const bank = makeBank({
+          address,
+          assetSubscriber,
+          brandToAssetDescriptor,
+          brandToAssetRecord,
+          bankChannel,
+          brandToVPurse,
+          denomToAddressUpdater,
+        });
+        addressToBank.init(address, harden({ bank, brandToVPurse }));
+        return bank;
+      },
+    },
+  );
+  return makeBankManager;
+};
+
 /**
  * @param {MapStore<string, any>} baggage
  */
@@ -435,10 +774,15 @@ const prepareFromBaggage = baggage => {
     'PublishKit',
   );
 
+  const provideAssetSubscription = prepareAssetSubscription(rootZone);
+
   const detachedZone = rootZone.detached();
   const makeVirtualPurse = prepareVirtualPurse(rootZone);
-  const bridgeManagerToData = rootZone.mapStore('bridgeManagerToData');
-  const makeBank = prepareBank(rootZone, { makePublishKit, makeVirtualPurse });
+  const makeBank = prepareBank(rootZone, {
+    provideAssetSubscription,
+    makePublishKit,
+    makeVirtualPurse,
+  });
   const makeRewardPurseController = prepareRewardPurseController(rootZone);
   const makeBankChannelHandler = prepareBankChannelHandler(rootZone);
 
@@ -453,11 +797,20 @@ const prepareFromBaggage = baggage => {
     },
   );
 
+  const makeBankManager = prepareBankManager(rootZone, {
+    provideAssetSubscription,
+    makeBank,
+    makePublishKit,
+    makeRewardPurseController,
+    makeVirtualPurse,
+  });
+
   return {
-    bridgeManagerToData,
     detachedZone,
+    provideAssetSubscription,
     makeBank,
     makeBankChannelHandler,
+    makeBankManager,
     makeBridgeChannelAttenuator,
     makeRewardPurseController,
     makePublishKit,
@@ -465,52 +818,12 @@ const prepareFromBaggage = baggage => {
   };
 };
 
-/**
- * @template {AssetKind} [K=AssetKind]
- * @typedef {object} AssetIssuerKit
- * @property {ERef<Mint<K>>} [mint]
- * @property {ERef<Issuer<K>>} issuer
- * @property {Brand<K>} brand
- */
-
-/**
- * @typedef {AssetIssuerKit & { denom: string, escrowPurse?: ERef<Purse> }} AssetRecord
- */
-
-/**
- * @typedef {object} AssetDescriptor
- * @property {Brand} brand
- * @property {ERef<Issuer>} issuer
- * @property {string} issuerName
- * @property {string} denom
- * @property {string} proposedName
- */
-
-/**
- * @typedef { AssetDescriptor & {
- *   issuer: Issuer<'nat'>, // settled identity
- *   displayInfo: DisplayInfo,
- * }} AssetInfo
- */
-
-/**
- * @typedef {object} Bank
- * @property {() => BaseSubscription<AssetDescriptor>} getAssetSubscription Returns
- * assets as they are added to the bank
- * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any existing vpurse
- * (keyed by address and brand) or create a new one.
- */
-
 export function buildRootObject(_vatPowers, _args, baggage) {
   const {
-    bridgeManagerToData,
+    makeBankManager,
     detachedZone,
-    makeBank,
     makeBankChannelHandler,
     makeBridgeChannelAttenuator,
-    makePublishKit,
-    makeRewardPurseController,
-    makeVirtualPurse,
   } = prepareFromBaggage(baggage);
 
   return Far('bankMaker', {
@@ -518,41 +831,18 @@ export function buildRootObject(_vatPowers, _args, baggage) {
      * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
-     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdmin] update facet of
+     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP] update facet of
      *   a NameAdmin; see addAsset() for detail.
      */
     async makeBankManager(
       bankBridgeManagerP = undefined,
-      nameAdmin = undefined,
+      nameAdminP = undefined,
     ) {
       const bankBridgeManager = await bankBridgeManagerP;
 
-      /** @type {MapStore<Brand, AssetRecord>} */
-      const brandToAssetRecord = provideLazy(
-        bridgeManagerToData,
-        'brandToAssetRecord',
-        () => detachedZone.mapStore('brandToAssetRecord'),
-      );
-
-      /** @type {MapStore<Brand, AssetDescriptor>} */
-      const brandToAssetDescriptor = provideLazy(
-        bridgeManagerToData,
-        'brandToAssetPublications',
-        () => detachedZone.mapStore('brandToAssetPublications'),
-      );
-
       /** @type {MapStore<string, MapStore<string, BalanceUpdater>>} */
-      const denomToAddressUpdater = provideLazy(
-        bridgeManagerToData,
+      const denomToAddressUpdater = detachedZone.mapStore(
         'denomToAddressUpdater',
-        () => detachedZone.mapStore('denomToAddressUpdater'),
-      );
-
-      /** @type {MapStore<string, { bank: Bank, brandToVPurse: MapStore<Brand, VirtualPurse> }>} */
-      const addressToBank = provideLazy(
-        bridgeManagerToData,
-        'addressToBank',
-        () => detachedZone.mapStore('addressToBank'),
       );
 
       /**
@@ -574,170 +864,14 @@ export function buildRootObject(_vatPowers, _args, baggage) {
         return makeBridgeChannelAttenuator({ target: bankBridgeMgr });
       }
 
-      const bankChannel = await getBankChannel(bankBridgeManager);
-
-      /**
-       * CAVEAT: This history is kept on the heap, so we need to prime its pump.
-       *
-       * @type {PublishKit<AssetDescriptor>}
-       */
-      const { subscriber: assetSubscriber, publisher: assetPublisher } =
-        makePublishKit();
-
-      /**
-       * Create a new personal bank interface for a given address.
-       *
-       * @param {string} address lower-level bank account address
-       * @returns {Promise<Bank>}
-       */
-      const getBankForAddress = async address => {
-        assert.typeof(address, 'string');
-        if (addressToBank.has(address)) {
-          return addressToBank.get(address).bank;
-        }
-
-        /** @type {MapStore<Brand, VirtualPurse>} */
-        const brandToVPurse = detachedZone.mapStore('brandToVPurse');
-        const bank = makeBank({
-          address,
-          assetSubscriber,
-          brandToAssetDescriptor,
-          brandToAssetRecord,
-          bankChannel,
-          brandToVPurse,
-          denomToAddressUpdater,
-        });
-        addressToBank.init(address, harden({ bank, brandToVPurse }));
-        return bank;
-      };
-
-      return Far('bankManager', {
-        /**
-         * Returns assets as they are added to the bank.
-         *
-         * @returns {BaseSubscription<AssetDescriptor>}
-         */
-        getAssetSubscription() {
-          return provideAssetSubscription(
-            brandToAssetDescriptor,
-            assetSubscriber,
-          );
-        },
-        /**
-         * @param {string} denom
-         * @param {AssetIssuerKit} feeKit
-         * @returns {import('@endo/far').EOnly<DepositFacet>}
-         */
-        getRewardDistributorDepositFacet(denom, feeKit) {
-          if (!bankChannel) {
-            throw Error(`Bank doesn't implement reward collectors`);
-          }
-
-          const feeVpc = makeRewardPurseController(
-            bankChannel,
-            denom,
-            feeKit.brand,
-          );
-
-          const vp = makeVirtualPurse(feeVpc, feeKit);
-          return E(vp).getDepositFacet();
-        },
-
-        /**
-         * Get the address of named module account.
-         *
-         * @param {string} moduleName
-         * @returns {Promise<string | null>} address of named module account, or
-         * null if unimplemented (no bankCall)
-         */
-        getModuleAccountAddress: async moduleName => {
-          if (!bankChannel) {
-            return null;
-          }
-
-          return bankChannel.toBridge({
-            type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS',
-            moduleName,
-          });
-        },
-
-        /**
-         * Add an asset to the bank, and publish it to the subscriptions.
-         * If nameAdmin is defined, update with denom to AssetInfo entry.
-         *
-         * Note that AssetInfo has the settled identity of the issuer,
-         * not just a promise for it.
-         *
-         * @param {string} denom lower-level denomination string
-         * @param {string} issuerName
-         * @param {string} proposedName
-         * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer kit (mint, brand, issuer)
-         */
-        async addAsset(denom, issuerName, proposedName, kit) {
-          assert.typeof(denom, 'string');
-          assert.typeof(issuerName, 'string');
-          assert.typeof(proposedName, 'string');
-
-          const brand = await kit.brand;
-          const assetKind = await E(kit.issuer).getAssetKind();
-          assert.equal(
-            assetKind,
-            AssetKind.NAT,
-            `Only fungible assets are allowed, not ${assetKind}`,
-          );
-
-          // Create an escrow purse for this asset, seeded with the payment.
-          const escrowPurse = E(kit.issuer).makeEmptyPurse();
-          const payment = await kit.payment;
-          await (payment && E(escrowPurse).deposit(payment));
-
-          const [privateAssetRecord, toPublish] = await deeplyFulfilledObject(
-            harden([
-              {
-                escrowPurse,
-                issuer: kit.issuer,
-                mint: kit.mint,
-                denom,
-                brand,
-              },
-              {
-                brand,
-                denom,
-                issuerName,
-                issuer: kit.issuer,
-                proposedName,
-              },
-            ]),
-          );
-          brandToAssetRecord.init(brand, privateAssetRecord);
-          denomToAddressUpdater.init(
-            denom,
-            detachedZone.mapStore('addressToUpdater'),
-          );
-          brandToAssetDescriptor.init(brand, toPublish);
-          assetPublisher.publish(toPublish);
-
-          if (nameAdmin) {
-            // publish settled issuer identity
-            void Promise.all([kit.issuer, E(kit.brand).getDisplayInfo()]).then(
-              ([issuer, displayInfo]) =>
-                E(nameAdmin).update(
-                  denom,
-                  /** @type { AssetInfo } */ (
-                    harden({
-                      brand,
-                      issuer,
-                      issuerName,
-                      denom,
-                      proposedName,
-                      displayInfo,
-                    })
-                  ),
-                ),
-            );
-          }
-        },
-        getBankForAddress,
+      const [bankChannel, nameAdmin] = await Promise.all([
+        getBankChannel(bankBridgeManager),
+        nameAdminP,
+      ]);
+      return makeBankManager({
+        bankChannel,
+        denomToAddressUpdater,
+        nameAdmin,
       });
     },
   });

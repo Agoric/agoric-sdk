@@ -32,6 +32,13 @@ export {};
  * @template T
  * @template [TReturn=any]
  * @template [TNext=undefined]
+ * @typedef {{ [Symbol.asyncIterator]: AsyncIterableIterator<T, TReturn, TNext>}} AsyncIterableOnly
+ */
+
+/**
+ * @template T
+ * @template [TReturn=any]
+ * @template [TNext=undefined]
  * @typedef {{
  *   [Symbol.asyncIterator]: () => ForkableAsyncIterator<T, TReturn, TNext>
  * }} ForkableAsyncIterable
@@ -79,6 +86,17 @@ export {};
 
 /**
  * @template T
+ * @typedef {ForkableAsyncIterable<T, T> & EachTopic<T>} IterableEachTopic
+ * An EachTopic with default asyncIterable behaviour.
+ *
+ * NOTE: the publication records and iterators returned by this object are
+ * ephemeral and will be severed during upgrade.  A caller should use
+ * `subscribeEach` to wrap this topic in a local iterable which automatically
+ * attempts to reconnect upon being severed.
+ */
+
+/**
+ * @template T
  * @typedef {object} LatestTopic
  * @property {(updateCount?: bigint | number) => Promise<UpdateRecord<T>>} getUpdateSince
  * Returns a promise for an update record as of an update count.
@@ -89,6 +107,17 @@ export {};
  * does not allow consumers to pin a chain of historical PublicationRecords.
  * Used to make lossy ("latest") iterators.
  * NOTE: Use of `number` as an `updateCount` is deprecated.
+ */
+
+/**
+ * @template T
+ * @typedef {AsyncIterableOnly<T, T> & LatestTopic<T>} IterableLatestTopic
+ * A LatestTopic with default asyncIterable behaviour.
+ *
+ * NOTE: the iterators returned by this object are ephemeral and will be severed
+ * during upgrade.  A caller should use `subscribeLatest` to wrap this topic in
+ * a local iterable which automatically attempts to reconnect upon being
+ * severed.
  */
 
 /**
@@ -229,8 +258,7 @@ export {};
 
 /**
  * @template T
- * @typedef {ForkableAsyncIterable<T, T> & EachTopic<T> &
- *   SharableSubscription<T>} Subscription<T>
+ * @typedef {IterableEachTopic<T> & SharableSubscription<T>} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
 
