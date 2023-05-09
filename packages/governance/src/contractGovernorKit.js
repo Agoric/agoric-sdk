@@ -196,12 +196,12 @@ export const prepareContractGovernorKit = (baggage, powers) => {
         async validateVoteCounter(counter) {
           const { helper } = this.facets;
           const validators = [
-            E.get(helper.provideApiGovernance()).createdQuestion,
-            helper.provideFilterGovernance().createdFilterQuestion,
-            helper.provideParamGovernance().createdQuestion,
+            E.get(helper.provideApiGovernance()),
+            helper.provideFilterGovernance(),
+            helper.provideParamGovernance(),
           ];
           const checks = await Promise.all(
-            validators.map(validate => E(validate)(counter)),
+            validators.map(validate => E(validate.createdQuestion)(counter)),
           );
 
           checks.some(Boolean) ||

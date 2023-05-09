@@ -650,7 +650,7 @@
 /**
  * @typedef {object} FilterGovernor
  * @property {VoteOnOfferFilter} voteOnFilter
- * @property {CreatedQuestion} createdFilterQuestion
+ * @property {CreatedQuestion} createdQuestion
  */
 
 /**
