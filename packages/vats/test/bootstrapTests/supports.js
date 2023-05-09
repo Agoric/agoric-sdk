@@ -337,7 +337,8 @@ export const makeSwingsetTestKit = async (
 ) => {
   console.time('makeSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
-  const { kernelStorage, hostStorage } = initSwingStore();
+  const swingStore = initSwingStore();
+  const { kernelStorage, hostStorage } = swingStore;
 
   const storage = makeFakeStorageKit('bootstrapTests');
 
@@ -459,6 +460,7 @@ export const makeSwingsetTestKit = async (
 
   return {
     advanceTime,
+    swingStore,
     controller,
     readLatest,
     runUtils,
