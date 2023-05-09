@@ -209,13 +209,13 @@ export const makeBootstrap = (
       const decodedArgs = args.map(decodePassable);
       void E(object)[methodName](...decodedArgs);
     },
-    awaitVatObject: async ({ presence, path = [] }) => {
+    awaitVatObject: async ({ presence, path = [], rawOutput = false }) => {
       let value = await decodePassable(presence);
       for (const key of path) {
         // eslint-disable-next-line no-await-in-loop
         value = await value[key];
       }
-      return encodePassable(value);
+      return rawOutput ? value : encodePassable(value);
     },
     //#endregion
   });
