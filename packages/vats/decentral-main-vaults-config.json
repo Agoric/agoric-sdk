@@ -125,7 +125,7 @@
           "contractTerms": {
             "POLL_INTERVAL": 30,
             "maxSubmissionCount": 1000,
-            "minSubmissionCount": 1,
+            "minSubmissionCount": 3,
             "restartDelay": 1,
             "timeout": 10,
             "minSubmissionValue": 1,
@@ -133,8 +133,11 @@
           },
           "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
           "oracleAddresses": [
-            "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
-            "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang"
+            "agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr",
+            "agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8",
+            "agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78",
+            "agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p",
+            "agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj"
           ],
           "IN_BRAND_LOOKUP": [
             "agoricNames",
