@@ -1,20 +1,17 @@
 import { makeLoopback } from '@endo/captp';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeZoeKit } from '../src/zoeService/zoe.js';
+import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
 /**
  * @param {VatAdminSvc} [vatAdminSvc]
  */
 export const makeZoeKitForTest = (vatAdminSvc = fakeVatAdmin) => {
-  return makeZoeKit(
+  return makeDurableZoeKit({
     vatAdminSvc,
-    undefined,
-    undefined,
-    undefined,
-    makeScalarBigMapStore('zoe baggage', { durable: true }),
-  );
+    zoeBaggage: makeScalarBigMapStore('zoe baggage', { durable: true }),
+  });
 };
 
 /**
@@ -50,13 +47,11 @@ export const setUpZoeForTest = async ({
     ));
   }
   const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(
+    makeDurableZoeKit({
       vatAdminSvc,
-      undefined,
       feeIssuerConfig,
-      undefined,
-      makeScalarBigMapStore('zoe baggage', { durable: true }),
-    ),
+      zoeBaggage: makeScalarBigMapStore('zoe baggage', { durable: true }),
+    }),
   );
   return {
     zoe: zoeService,

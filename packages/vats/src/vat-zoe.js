@@ -1,5 +1,5 @@
 import { Far } from '@endo/far';
-import { makeZoeKit } from '@agoric/zoe';
+import { makeDurableZoeKit } from '@agoric/zoe';
 
 const BUILD_PARAMS_KEY = 'buildZoeParams';
 
@@ -7,15 +7,14 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
   const shutdownZoeVat = vatPowers.exitVatWithFailure;
 
   if (zoeBaggage.has(BUILD_PARAMS_KEY)) {
-    const { feeIssuerConfig, zcfBundleName } = zoeBaggage.get(BUILD_PARAMS_KEY);
-    makeZoeKit(
+    const { feeIssuerConfig, zcfSpec } = zoeBaggage.get(BUILD_PARAMS_KEY);
+    makeDurableZoeKit({
       // For now Zoe will rewire vatAdminSvc on its own
-      undefined,
       shutdownZoeVat,
       feeIssuerConfig,
-      { name: zcfBundleName },
+      zcfSpec,
       zoeBaggage,
-    );
+    });
   }
 
   return Far('root', {
@@ -24,18 +23,21 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
 
       const vatAdminSvc = await adminVat;
 
+      /** @type {ZCFSpec} */
+      const zcfSpec = { name: zcfBundleName };
+
       zoeBaggage.init(
         BUILD_PARAMS_KEY,
-        harden({ vatAdminSvc, feeIssuerConfig, zcfBundleName }),
+        harden({ vatAdminSvc, feeIssuerConfig, zcfSpec }),
       );
 
-      const { zoeService, feeMintAccess } = makeZoeKit(
-        adminVat,
+      const { zoeService, feeMintAccess } = makeDurableZoeKit({
+        vatAdminSvc,
         shutdownZoeVat,
         feeIssuerConfig,
-        { name: zcfBundleName },
+        zcfSpec,
         zoeBaggage,
-      );
+      });
 
       return harden({
         zoeService,
