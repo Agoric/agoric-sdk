@@ -3,7 +3,7 @@
 
 
 start=$((${EPOCHREALTIME/./} / 1000))
-output=$(docker build --progress=plain --output type=tar,dest=/dev/null -f ./Dockerfile.sdk ../../ 2>&1 )
+output=$(make docker-build-sdk 2>&1 )
 ec=$?
 sleep 1
 end=$((${EPOCHREALTIME/./} / 1000))

@@ -529,6 +529,10 @@ jobs:
       - uses: actions/checkout@v3
       - name: docker build (sdk)
         run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+      - name: docker build upgrade test
+        run: cd packages/deployment/upgrade-test && docker build -t docker-upgrade-test:latest .
+      - name: docker run upgrade final stage
+        run: docker run --env "DEST=0" docker-upgrade-test:latest
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         with:
