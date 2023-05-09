@@ -269,8 +269,12 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
   );
-  /** @type { ERef<ZoeService> } */
-  const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
+  /** @type {{zoeService: ERef<ZoeService>}} */
+  const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+    vatAdminSvc,
+    undefined,
+    'zcf',
+  );
   const installations = await installContracts(zoe, cb);
   const timer = buildManualTimer(log);
   const voterCreator = E(vats.voter).build(zoe);

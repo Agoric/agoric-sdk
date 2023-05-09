@@ -24,6 +24,9 @@ const generateBundlesP = Promise.all(
 
 async function main(argv) {
   const config = await loadBasedir(dirname);
+  config.vats.zoe = {
+    sourceSpec: `${dirname}/../../../../vats/src/vat-zoe.js`,
+  };
   config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
   config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };

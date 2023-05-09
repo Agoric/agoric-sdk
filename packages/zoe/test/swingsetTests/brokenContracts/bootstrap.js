@@ -41,7 +41,12 @@ export function buildRootObject(vatPowers, vatParameters) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      /** @type {{zoeService: ERef<ZoeService>}} */
+      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        undefined,
+        'zcf',
+      );
       const bcap = await E(vatAdminSvc).getNamedBundleCap('crashingAutoRefund');
       const id = D(bcap).getBundleID();
       const installations = {

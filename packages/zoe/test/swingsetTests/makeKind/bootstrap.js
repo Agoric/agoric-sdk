@@ -8,7 +8,12 @@ export function buildRootObject(vatPowers) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      /** @type {{zoeService: ERef<ZoeService>}} */
+      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        undefined,
+        'zcf',
+      );
       const bcap = await E(vatAdminSvc).getNamedBundleCap(
         'minimalMakeKindContract',
       );

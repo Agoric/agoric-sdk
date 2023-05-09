@@ -47,7 +47,8 @@ async function run() {
 
   const bootFn = new URL('measurement-bootstrap.js', import.meta.url).pathname;
   const targetFn = new URL('measurement-target.js', import.meta.url).pathname;
-  const zoeFn = new URL('measurement-zoe.js', import.meta.url).pathname;
+  const zoeFn = new URL('../../../vats/src/vat-zoe.js', import.meta.url)
+    .pathname;
   /** @type {SwingSetConfig} */
   const config = {
     defaultManagerType: 'xs-worker',

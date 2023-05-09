@@ -86,7 +86,12 @@ export function buildRootObject(vatPowers, vatParameters) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      /** @type {{zoeService: ERef<ZoeService>}} */
+      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        undefined,
+        'zcf',
+      );
       const installations = {};
       const installedPs = vatParameters.contractNames.map(name =>
         E(vatAdminSvc)

@@ -25,7 +25,11 @@ export function buildRootObject(_vatPowers, vatParameters) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        undefined,
+        'zcf',
+      );
 
       const exchange = await E(zoe).install(
         exchangeBundle.bundle,

@@ -6,6 +6,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 export function buildRootObject() {
   let control;
   let meter;
+  /** @type {ERef<ZoeService>} */
   let zoe;
   let installation;
 
@@ -14,7 +15,11 @@ export function buildRootObject() {
       const service = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      zoe = await E(vats.zoe).buildZoe(service);
+      ({ zoeService: zoe } = await E(vats.zoe).buildZoe(
+        service,
+        undefined,
+        'zcf',
+      ));
       const lots = 1_000_000_000n;
       meter = await E(service).createMeter(lots, 0n);
       const opts = { managerType: 'xs-worker', meter };

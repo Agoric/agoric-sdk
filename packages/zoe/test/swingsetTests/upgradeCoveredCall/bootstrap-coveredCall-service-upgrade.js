@@ -82,8 +82,8 @@ export const buildRootObject = () => {
     bootstrap: async (vats, devices) => {
       await timer.tick('bootstrap');
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      [zoe, ertpService] = await Promise.all([
-        E(vats.zoe).buildZoe(vatAdmin),
+      [{ zoeService: zoe }, ertpService] = await Promise.all([
+        E(vats.zoe).buildZoe(vatAdmin, undefined, 'zcf'),
         E(vats.ertp).getErtpService(),
       ]);
 
