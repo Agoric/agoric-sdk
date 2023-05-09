@@ -180,7 +180,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const startDevNet = async () => {
     // If we don't have a proper bridge manager, we need it to be undefined.
     space.produce.bridgeManager.resolve(undefined);
-    space.produce.lienBridge.resolve(undefined);
 
     /** @type {BankManager} */
     const bankManager = Far('mock BankManager', {
@@ -387,8 +386,11 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const makeAtomPurse = async value => {
     // when using benefactor.makePool:
     // const { issuer, mint, brand } = await ibcKitP.promise;
-    const { bankMints } = space.consume;
-    const mint = E.get(bankMints)[0];
+    const kits = await E(space.consume.contractKits).values();
+    /** @type {{ creatorFacet: ERef<Mint<'nat'>> }} */
+    // @ts-expect-error cast
+    const { creatorFacet: mint } =
+      [...kits].find(k => k.label === 'mintHolder') || Fail`no mintHolder`;
     const issuer = E(mint).getIssuer();
     const purseP = E(issuer).makeEmptyPurse();
     const brand = await E(issuer).getBrand();

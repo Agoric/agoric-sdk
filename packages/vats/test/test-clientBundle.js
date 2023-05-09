@@ -54,7 +54,7 @@ harden(setUpZoeForTest);
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
+    /** @type { BootstrapPowers & DemoFaucetPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
       space
     );
   const { agoricNames, agoricNamesAdmin, spaces } =

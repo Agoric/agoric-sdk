@@ -1,6 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
+import { heapZone } from '@agoric/zone';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -48,6 +49,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {BootstrapManifest} bootManifest
  * @param {Record<string, BootBehavior>} behaviors
  * @param {BootModules} modules
+ * @param {import('@agoric/zone').Zone} [zone]
  */
 export const makeBootstrap = (
   vatPowers,
@@ -55,13 +57,16 @@ export const makeBootstrap = (
   bootManifest,
   behaviors,
   modules,
+  zone = heapZone,
 ) => {
   const { keys } = Object;
   const extra = setDiff(keys(bootManifest), keys(behaviors));
   extra.length === 0 || Fail`missing behavior for manifest keys: ${extra}`;
 
   const log = vatPowers.logger || console.info;
-  const { produce, consume } = makePromiseSpace(log);
+  const powerStore = zone.mapStore('Bootstrap Powers');
+  const { produce, consume } = makePromiseSpace({ log, store: powerStore });
+  produce.powerStore.resolve(powerStore);
 
   /**
    * Bootstrap vats and devices.
@@ -81,7 +86,11 @@ export const makeBootstrap = (
 
     const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-    const namedVat = makeVatSpace(svc, criticalVatKey, console.info);
+    const { space: namedVat, durableStore: vatStore } = makeVatSpace(
+      svc,
+      criticalVatKey,
+      console.info,
+    );
 
     const namesVat = namedVat.consume.agoricNames;
     const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
@@ -90,6 +99,7 @@ export const makeBootstrap = (
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+    produce.vatStore.resolve(vatStore);
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
@@ -110,6 +120,7 @@ export const makeBootstrap = (
       vatParameters,
       vats,
       devices,
+      zone,
       produce,
       consume,
       namedVat,
@@ -199,14 +210,19 @@ export const makeBootstrap = (
       const decodedArgs = args.map(decodePassable);
       void E(object)[methodName](...decodedArgs);
     },
-    awaitVatObject: async ({ presence, path = [] }) => {
+    awaitVatObject: async ({ presence, path = [], rawOutput = false }) => {
       let value = await decodePassable(presence);
       for (const key of path) {
         // eslint-disable-next-line no-await-in-loop
         value = await value[key];
       }
-      return encodePassable(value);
+      return rawOutput ? value : encodePassable(value);
     },
+    /**
+     * @template K, V
+     * @param {MapStore<K, V>} store
+     */
+    snapshotStore: store => harden([...store.entries()]),
     //#endregion
   });
 };

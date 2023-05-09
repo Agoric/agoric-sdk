@@ -9,7 +9,7 @@ import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeHistoryReviver } from '@agoric/vats/tools/board-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
-import { makeScalarMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { reserveThenGetNamePaths } from './utils.js';
 
@@ -231,16 +231,16 @@ export const startPSM = async (
 
   /** @typedef {import('./econ-behaviors.js').PSMKit} psmKit */
   /** @type {psmKit} */
-  const newpsmKit = {
+  const newpsmKit = harden({
     psm,
     psmGovernor: governorFacets.instance,
     psmCreatorFacet,
     psmAdminFacet,
     psmGovernorCreatorFacet: governorFacets.creatorFacet,
-  };
+  });
 
   // Provide pattern with a promise.
-  producepsmKit.resolve(makeScalarMapStore());
+  producepsmKit.resolve(makeScalarBigMapStore('PSM Kits', { durable: true }));
 
   /** @type {MapStore<Brand,psmKit>} */
   const psmKitMap = await psmKit;
@@ -290,16 +290,14 @@ export const makeAnchorAsset = async (
     consume: {
       agoricNamesAdmin,
       bankManager,
-      startUpgradable: startUpgradableP,
+      startUpgradable,
       anchorBalancePayments,
-      anchorKits,
     },
     installation: {
       consume: { mintHolder },
     },
     produce: {
       testFirstAnchorKit,
-      anchorKits: produceAnchorKits,
       anchorBalancePayments: produceAnchorBalancePayments,
     },
   },
@@ -329,23 +327,16 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  const startUpgradable = await startUpgradableP;
-  produceAnchorKits.resolve([]);
   /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
   // @ts-expect-error cast
-  const { creatorFacet: mint, publicFacet: issuerP } = await startUpgradable({
+  const { creatorFacet: mint, publicFacet: issuer } = await E(startUpgradable)({
     installation: mintHolder,
     label: keyword,
     terms,
-    privateArgs: undefined,
-    produceResults: {
-      resolve: kit => Promise.resolve(anchorKits).then(kits => kits.push(kit)),
-    },
   });
-  const issuer = await issuerP; // identity of issuers is important
 
   const brand = await E(issuer).getBrand();
-  const kit = { mint, issuer, brand };
+  const kit = harden({ mint, issuer, brand });
 
   testFirstAnchorKit.resolve(kit);
 
@@ -353,7 +344,9 @@ export const makeAnchorAsset = async (
   const metricsKey = `${stablePsmKey}.${keyword}.metrics`;
   if (toSlotReviver.has(metricsKey)) {
     const metrics = toSlotReviver.getItem(metricsKey);
-    produceAnchorBalancePayments.resolve(makeScalarMapStore());
+    produceAnchorBalancePayments.resolve(
+      makeScalarBigMapStore('Anchor balance payments', { durable: true }),
+    );
     // XXX this rule should only apply to the 1st await
     // eslint-disable-next-line @jessie.js/no-nested-await
     const anchorPaymentMap = await anchorBalancePayments;

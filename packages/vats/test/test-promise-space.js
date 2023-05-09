@@ -56,4 +56,25 @@ test('makePromiseSpace backed by store', async t => {
   }
   await p;
   t.is(store.get('alice'), `Hi again!`);
+
+  {
+    const { produce } = makePromiseSpace({ store });
+    produce.vanilla.resolve(`vanilla`);
+    const doesNotResolve = new Promise(() => {});
+    produce.chocolate.resolve(doesNotResolve);
+    const nonPassable = harden(() => {});
+    produce.strawberry.resolve(nonPassable);
+    const actual = Object.fromEntries(store.entries());
+    t.deepEqual(
+      actual,
+      {
+        alice: 'Hi again!',
+        vanilla: 'vanilla',
+      },
+      'strore hooks filter unresolved promises and non-passables',
+    );
+
+    await null;
+    produce.strawberry.resolve('ignored already resolved');
+  }
 });

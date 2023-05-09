@@ -49,8 +49,8 @@ export const startWalletFactory = async (
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
       econCharterKit,
-      startUpgradable: startUpgradableP,
-      startGovernedUpgradable: startGovernedUpgradableP,
+      startUpgradable,
+      startGovernedUpgradable,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
@@ -114,8 +114,7 @@ export const startWalletFactory = async (
     }),
   );
 
-  const startUpgradable = await startUpgradableP;
-  const wfFacets = await startUpgradable({
+  const wfFacets = await E(startUpgradable)({
     installation: walletFactory,
     issuerKeywordRecord: { Fee: feeIssuer },
     terms,
@@ -124,14 +123,11 @@ export const startWalletFactory = async (
       walletBridgeManager,
     },
     label: 'walletFactory',
-    produceResults: walletFactoryStartResult,
   });
-  // TODO: push this resolve instance into startUpgradable too
-  // but make it optional, since not all instances go in agoricNames
+  walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  const startGovernedUpgradable = await startGovernedUpgradableP;
-  const ppFacets = await startGovernedUpgradable({
+  const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
     terms: {},
     privateArgs: harden({
@@ -146,9 +142,8 @@ export const startWalletFactory = async (
         value: AmountMath.make(feeBrand, perAccountInitialValue),
       },
     },
-    produceResults: provisionPoolStartResult,
   });
-  // TODO: push this resolve instance into startGovernedUpgradable likewise
+  provisionPoolStartResult.resolve(ppFacets);
   instanceProduce.provisionPool.resolve(ppFacets.instance);
 
   const handler = await E(ppFacets.creatorFacet).makeHandler({

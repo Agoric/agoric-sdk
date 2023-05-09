@@ -10,6 +10,48 @@ export * from './econ-behaviors.js';
 export * from './startPSM.js'; // eslint-disable-line import/export
 export * from './startEconCommittee.js'; // eslint-disable-line import/export
 
+// XXX all the startInstance() should use startUpgradable()
+// or startGovernedUpgradeable() but that would
+// require updating a lot of tests. So for now, we just
+// grab the kits afterward and store them.
+
+/**
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ */
+export const storeInterContractStartKits = async ({
+  consume: {
+    contractKits,
+    governedContractKits,
+    econCharterKit,
+    economicCommitteeKit,
+    feeDistributorKit,
+    auctioneerKit,
+    reserveKit,
+    vaultFactoryKit,
+  },
+}) => {
+  /**
+   * @param {Promise<MapStore<string, {instance: Instance}>>} storeP
+   * @param {Promise<{instance: Instance}>[]} kitPs
+   */
+  const storeAll = async (storeP, kitPs) => {
+    const store = await storeP;
+    const kits = await Promise.all(kitPs);
+    kits.forEach(kit => store.init(kit.instance, kit));
+  };
+
+  await storeAll(contractKits, [
+    economicCommitteeKit,
+    econCharterKit,
+    feeDistributorKit,
+  ]);
+  await storeAll(governedContractKits, [
+    auctioneerKit,
+    reserveKit,
+    vaultFactoryKit,
+  ]);
+};
+
 /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
   /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
@@ -96,6 +138,19 @@ const SHARED_MAIN_MANIFEST = harden({
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },
+    },
+  },
+
+  [storeInterContractStartKits.name]: {
+    consume: {
+      contractKits: true,
+      governedContractKits: true,
+      econCharterKit: true,
+      economicCommitteeKit: true,
+      feeDistributorKit: true,
+      auctioneerKit: true,
+      reserveKit: true,
+      vaultFactoryKit: true,
     },
   },
 });

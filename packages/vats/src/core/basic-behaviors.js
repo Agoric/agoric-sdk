@@ -3,7 +3,7 @@
 import { Nat } from '@endo/nat';
 import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
-import { makeScalarMapStore } from '@agoric/store';
+import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import {
   BridgeId,
@@ -13,6 +13,7 @@ import {
 } from '@agoric/internal';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
+import { Fail } from '@agoric/assert';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -50,30 +51,32 @@ const bootMsgEx = {
 
 /**
  * @param {BootstrapPowers & {
- *   produce: {vatStore: Producer<VatStore> }
+ *   consume: {vatStore: Promise<VatStore> }
  * }} powers
  *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
- * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
   devices,
-  produce: { vatAdminSvc, loadVat, loadCriticalVat, vatStore },
+  consume: { vatStore },
+  produce: { vatAdminSvc, loadVat, loadCriticalVat },
 }) => {
   // NOTE: we rely on multiple createVatAdminService calls
   // to return cooperating services.
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
 
-  /** @type {VatStore} */
-  const store = makeScalarMapStore();
-  vatStore.resolve(store);
+  const durableStore = await vatStore;
+
+  /** @type {MapStore<string, Promise<CreateVatResults>>} */
+  const tmpStore = makeScalarMapStore();
 
   const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
     return async (vatName, bundleRef = { bundleName: vatName }) => {
       const { bundleID, bundleName } = bundleRef;
-      const vatInfoP = provideLazy(store, vatName, async _k => {
+      const vatInfoP = provideLazy(tmpStore, vatName, async _k => {
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
           /** @type { Promise<CreateVatResults> } */
@@ -93,7 +96,16 @@ export const makeVatsFromBundles = async ({
         });
         return vatInfo;
       });
-      return E.when(vatInfoP, vatInfo => vatInfo.root);
+      return E.when(vatInfoP, vatInfo => {
+        harden(vatInfo); // XXX createVat should do this, no?
+        if (!durableStore.has(vatName)) {
+          durableStore.init(vatName, vatInfo);
+        } else {
+          keyEQ(vatInfo, durableStore.get(vatName)) ||
+            Fail`duplicate vat ${vatName}`;
+        }
+        return vatInfo.root;
+      });
     };
   };
 
@@ -104,32 +116,37 @@ export const makeVatsFromBundles = async ({
 };
 harden(makeVatsFromBundles);
 
-/** @param {BootstrapSpace} powers */
+/** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
 export const produceStartUpgradable = async ({
+  zone,
   consume: { zoe },
-  produce, // startUpgradable
+  produce, // startUpgradable, contractKits
 }) => {
-  /** @type {startUpgradable} */
+  /** @type {MapStore<Instance, StartedInstanceKitWithLabel> } */
+  const contractKits = zone.mapStore('ContractKits');
+
+  /** @type {StartUpgradable} */
   const startUpgradable = async ({
     installation,
     issuerKeywordRecord,
     terms,
     privateArgs,
     label,
-    produceResults,
   }) => {
-    const startResult = E(zoe).startInstance(
+    const started = await E(zoe).startInstance(
       installation,
       issuerKeywordRecord,
       terms,
       privateArgs,
       label,
     );
-    produceResults.resolve(startResult);
-    return startResult;
+    const kit = harden({ ...started, label });
+    contractKits.init(kit.instance, kit);
+    return kit;
   };
 
   produce.startUpgradable.resolve(startUpgradable);
+  produce.contractKits.resolve(contractKits);
 };
 harden(produceStartUpgradable);
 
@@ -223,13 +240,25 @@ const startGovernedInstance = async (
   return facets;
 };
 
+/**
+ * @param {BootstrapSpace & {
+ *   zone: import('@agoric/zone').Zone,
+ *   consume: {
+ *     economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
+ *   }
+ * }} powers
+ */
 export const produceStartGovernedUpgradable = async ({
+  zone,
   consume: { chainTimerService, economicCommitteeCreatorFacet, zoe },
-  produce, // startGovernedUpgradable
+  produce, // startGovernedUpgradable, governedContractKits
   installation: {
     consume: { contractGovernor },
   },
 }) => {
+  /** @type {MapStore<Instance, GovernanceFacetKit<any> & {label: string}>} */
+  const contractKits = zone.mapStore('GovernedContractKits');
+
   /** @type {startGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
@@ -238,9 +267,8 @@ export const produceStartGovernedUpgradable = async ({
     terms,
     privateArgs,
     label,
-    produceResults,
   }) => {
-    const facetsP = startGovernedInstance(
+    const facets = await startGovernedInstance(
       {
         zoe,
         governedContractInstallation: installation,
@@ -256,11 +284,13 @@ export const produceStartGovernedUpgradable = async ({
         economicCommitteeCreatorFacet,
       },
     );
-    produceResults.resolve(facetsP);
-    return facetsP;
+    const kit = harden({ ...facets, label });
+    contractKits.init(facets.instance, kit);
+    return kit;
   };
 
   produce.startGovernedUpgradable.resolve(startGovernedUpgradable);
+  produce.governedContractKits.resolve(contractKits);
 };
 harden(produceStartGovernedUpgradable);
 
@@ -556,10 +586,10 @@ export const addBankAssets = async ({
     initialSupply,
     bridgeManager: bridgeManagerP,
     loadCriticalVat,
-    startUpgradable: startUpgradableP,
+    startUpgradable,
     zoe,
   },
-  produce: { bankManager, bldIssuerKit, bldMintHolderKit },
+  produce: { bankManager, bldIssuerKit },
   installation: {
     consume: { mintHolder },
   },
@@ -567,10 +597,9 @@ export const addBankAssets = async ({
   brand: { produce: produceBrand },
 }) => {
   const runIssuer = await E(zoe).getFeeIssuer();
-  const [runBrand, payment, startUpgradable] = await Promise.all([
+  const [runBrand, payment] = await Promise.all([
     E(runIssuer).getBrand(),
     initialSupply,
-    startUpgradableP,
   ]);
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
   const terms = harden({
@@ -579,17 +608,16 @@ export const addBankAssets = async ({
     displayInfo: Stake.displayInfo,
   });
 
-  const { creatorFacet: bldMint, publicFacet: bldIssuer } =
-    await startUpgradable({
-      installation: mintHolder,
-      label: Stake.symbol,
-      terms,
-      produceResults: bldMintHolderKit,
-      privateArgs: undefined,
-    });
+  const { creatorFacet: bldMint, publicFacet: bldIssuer } = await E(
+    startUpgradable,
+  )({
+    installation: mintHolder,
+    label: Stake.symbol,
+    terms,
+  });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
+  const bldKit = harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand });
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
@@ -659,11 +687,13 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     devices: {
       vatAdmin: 'kernel',
     },
+    consume: {
+      vatStore: true,
+    },
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
       loadCriticalVat: true,
-      vatStore: true,
     },
   },
   [buildZoe.name]: {
@@ -745,7 +775,6 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     produce: {
       bankManager: 'bank',
       bldIssuerKit: true,
-      bldMintHolderKit: true,
     },
     installation: {
       consume: { centralSupply: 'zoe', mintHolder: 'zoe' },
@@ -754,16 +783,18 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
   },
   [produceStartUpgradable.name]: {
+    zone: true,
     consume: { zoe: 'zoe' },
-    produce: { startUpgradable: true },
+    produce: { startUpgradable: true, contractKits: true },
   },
   [produceStartGovernedUpgradable.name]: {
+    zone: true,
     consume: {
       chainTimerService: 'timer',
       economicCommitteeCreatorFacet: 'economicCommittee',
       zoe: 'zoe',
     },
-    produce: { startGovernedUpgradable: true },
+    produce: { startGovernedUpgradable: true, governedContractKits: true },
     installation: {
       consume: { contractGovernor: 'zoe' },
     },
