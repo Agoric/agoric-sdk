@@ -222,6 +222,13 @@ test('weak set addAll', t => {
   exerciseSetAddAll(t, true, makeScalarBigWeakSetStore('test weak set'));
 });
 
+test('set snapshot', t => {
+  const testStore = makeScalarBigSetStore('test set');
+  const allThatStuff = stuff.map(entry => entry[0]);
+  testStore.addAll(allThatStuff);
+  t.deepEqual(testStore.snapshot(), makeCopySet(allThatStuff));
+});
+
 function exerciseMapAddAll(t, weak, testStore) {
   testStore.addAll(stuff);
   for (const [k, v] of stuff) {
@@ -250,6 +257,12 @@ test('map addAll', t => {
 
 test('weak map addAll', t => {
   exerciseMapAddAll(t, true, makeScalarBigWeakMapStore('test weak map'));
+});
+
+test('map snapshot', t => {
+  const testStore = makeScalarBigMapStore('test map');
+  testStore.addAll(stuff);
+  t.deepEqual(testStore.snapshot(), makeCopyMap(stuff));
 });
 
 test('constrain map key shape', t => {
