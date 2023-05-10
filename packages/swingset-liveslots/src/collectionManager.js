@@ -15,7 +15,10 @@ import {
   makeCopySet,
   makeCopyMap,
   getRankCover,
+  getCopyMapEntries,
+  getCopySetKeys,
 } from '@endo/patterns';
+import { isCopyMap, isCopySet } from '@agoric/store';
 import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,
@@ -624,6 +627,36 @@ export function makeCollectionManager(
     const snapshotMap = (keyPatt, valuePatt) =>
       makeCopyMap(entries(keyPatt, valuePatt));
 
+    const addAllToSet = elems => {
+      if (typeof elems[Symbol.iterator] !== 'function') {
+        if (isCopySet(elems)) {
+          elems = getCopySetKeys(elems);
+        } else {
+          Fail`provided data source is not iterable`;
+        }
+      }
+      for (const elem of elems) {
+        addToSet(elem);
+      }
+    };
+
+    const addAllToMap = mapEntries => {
+      if (typeof mapEntries[Symbol.iterator] !== 'function') {
+        if (isCopyMap(mapEntries)) {
+          mapEntries = getCopyMapEntries(mapEntries);
+        } else {
+          Fail`provided data source is not iterable`;
+        }
+      }
+      for (const [key, value] of mapEntries) {
+        if (has(key)) {
+          set(key, value);
+        } else {
+          doInit(key, value, true);
+        }
+      }
+    };
+
     return {
       has,
       get,
@@ -635,6 +668,8 @@ export function makeCollectionManager(
       keys,
       values,
       entries,
+      addAllToSet,
+      addAllToMap,
       snapshotSet,
       snapshotMap,
       sizeInternal,
@@ -647,12 +682,23 @@ export function makeCollectionManager(
     const hasWeakKeys = storeKindInfo[kindName].hasWeakKeys;
     const raw = summonCollectionInternal(initial, collectionID, kindName);
 
-    const { has, get, init, addToSet, set, delete: del } = raw;
+    const {
+      has,
+      get,
+      init,
+      addToSet,
+      addAllToMap,
+      addAllToSet,
+      set,
+      delete: del,
+    } = raw;
     const weakMethods = {
       has,
       get,
       init,
       addToSet,
+      addAllToSet,
+      addAllToMap,
       set,
       delete: del,
     };
@@ -764,12 +810,48 @@ export function makeCollectionManager(
   }
 
   function collectionToMapStore(collection) {
-    const { snapshotSet: _, snapshotMap, ...rest } = collection;
-    return Far('mapStore', { snapshot: snapshotMap, ...rest });
+    const {
+      has,
+      get,
+      init,
+      set,
+      delete: del,
+      addAllToMap,
+      keys,
+      values,
+      entries,
+      snapshotMap,
+      getSize,
+      clear,
+    } = collection;
+    const mapStore = {
+      has,
+      get,
+      init,
+      set,
+      delete: del,
+      addAll: addAllToMap,
+      keys,
+      values,
+      entries,
+      snapshot: snapshotMap,
+      getSize,
+      clear,
+    };
+    return Far('mapStore', mapStore);
   }
 
   function collectionToWeakMapStore(collection) {
-    return Far('weakMapStore', collection);
+    const { has, get, init, set, delete: del, addAllToMap } = collection;
+    const weakMapStore = {
+      has,
+      get,
+      init,
+      set,
+      delete: del,
+      addAll: addAllToMap,
+    };
+    return Far('weakMapStore', weakMapStore);
   }
 
   function collectionToSetStore(collection) {
@@ -777,50 +859,35 @@ export function makeCollectionManager(
       has,
       addToSet,
       delete: del,
+      addAllToSet,
       keys,
-      getSize,
       snapshotSet,
+      getSize,
       clear,
     } = collection;
-    function* entries(patt) {
-      for (const k of keys(patt)) {
-        yield [k, k];
-      }
-    }
-    function addAll(elems) {
-      for (const elem of elems) {
-        addToSet(elem, null);
-      }
-    }
 
     const setStore = {
       has,
       add: addToSet,
-      addAll,
       delete: del,
+      addAll: addAllToSet,
       keys: patt => keys(patt),
       values: patt => keys(patt),
-      entries,
-      getSize: patt => getSize(patt),
       snapshot: snapshotSet,
+      getSize: patt => getSize(patt),
       clear,
     };
     return Far('setStore', setStore);
   }
 
   function collectionToWeakSetStore(collection) {
-    const { has, addToSet, delete: del } = collection;
-    function addAll(elems) {
-      for (const elem of elems) {
-        addToSet(elem);
-      }
-    }
+    const { has, addToSet, delete: del, addAllToSet } = collection;
 
     const weakSetStore = {
       has,
       add: addToSet,
-      addAll,
       delete: del,
+      addAll: addAllToSet,
     };
     return Far('weakSetStore', weakSetStore);
   }
