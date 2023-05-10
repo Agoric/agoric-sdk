@@ -106,7 +106,11 @@ export async function buildSwingset(
       return;
     }
     if (!config) throw Fail`config not yet set`;
-    const { coreProposals, exportStorageSubtrees } = config;
+    const {
+      coreProposals,
+      clearStorageSubtrees,
+      exportStorageSubtrees = [],
+    } = config;
 
     // XXX `initializeSwingset` does not have a default for `config.bootstrap`;
     // should we universally ensure its presence in `config` above?
@@ -124,39 +128,74 @@ export async function buildSwingset(
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
 
+    const readChainStorage = (method, path) =>
+      bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
+    const isInSubtree = (path, root) =>
+      path === root || path.startsWith(`${root}.`);
+
     // Extract data from chain storage as [path, value?] pairs.
-    if (exportStorageSubtrees) {
+    if (exportStorageSubtrees.length > 0) {
       // Disallow exporting internal details like bundle contents and the action queue.
       const exportRoot = STORAGE_PATH.CUSTOM;
       const badPaths = exportStorageSubtrees.filter(
-        path => path !== exportRoot && !path.startsWith(`${exportRoot}.`),
+        path => !isInSubtree(path, exportRoot),
       );
       badPaths.length === 0 ||
         // prettier-ignore
         Fail`Exported chain storage paths ${q(badPaths)} must start with ${q(exportRoot)}`;
 
-      const callChainStorage = (method, path) =>
-        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
       const makeExportEntry = (path, value) =>
         value == null ? [path] : [path, value];
 
       const chainStorageEntries = [];
       // Preserve the ordering of each subtree via depth-first traversal.
       let pendingEntries = exportStorageSubtrees.map(path => {
-        const value = callChainStorage('get', path);
+        const value = readChainStorage('get', path);
         return makeExportEntry(path, value);
       });
       while (pendingEntries.length > 0) {
         const entry = /** @type {[string, string?]} */ (pendingEntries.shift());
         chainStorageEntries.push(entry);
         const [path, _value] = entry;
-        const childEntryData = callChainStorage('entries', path);
+        const childEntryData = readChainStorage('entries', path);
         const childEntries = childEntryData.map(([pathSegment, value]) => {
           return makeExportEntry(`${path}.${pathSegment}`, value);
         });
         pendingEntries = [...childEntries, ...pendingEntries];
       }
       bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
+    }
+
+    // Clear other chain storage data as configured.
+    // NOTE THAT WE DO NOT LIMIT THIS TO THE CUSTOM PATH!
+    // USE AT YOUR OWN RISK!
+    if (clearStorageSubtrees) {
+      const pathsToClear = [];
+      const batchThreshold = 100;
+      const sendBatch = () => {
+        // Consume pathsToClear and map each path to a no-value entry.
+        const args = pathsToClear.splice(0).map(path => [path]);
+        bridgeOutbound(BRIDGE_ID.STORAGE, { method: 'setWithoutNotify', args });
+      };
+      let pathsToCheck = [...clearStorageSubtrees];
+      while (pathsToCheck.length > 0) {
+        const path = pathsToCheck.shift();
+        if (exportStorageSubtrees.some(root => isInSubtree(path, root))) {
+          // Don't purge data that is being exported.
+          continue;
+        }
+        pathsToClear.push(path);
+        if (pathsToClear.length >= batchThreshold) {
+          sendBatch();
+        }
+        const childPaths = readChainStorage('children', path).map(
+          segment => `${path}.${segment}`,
+        );
+        pathsToCheck = [...childPaths, ...pathsToCheck];
+      }
+      if (pathsToClear.length > 0) {
+        sendBatch();
+      }
     }
 
     config.pinBootstrapRoot = true;

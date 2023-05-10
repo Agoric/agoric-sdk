@@ -157,9 +157,19 @@ test('makeFakeStorageKit', async t => {
     'child entries',
   );
   t.deepEqual(
+    await toStorage({ method: 'children', args: [`${rootPath}.child`] }),
+    ['grandchild'],
+    'child path segments',
+  );
+  t.deepEqual(
     await toStorage({ method: 'entries', args: [rootPath] }),
     [...extremeSegments.map(segment => [segment, 'foo']), ['child']],
     'entries include empty non-terminals',
+  );
+  t.deepEqual(
+    await toStorage({ method: 'children', args: [rootPath] }),
+    [...extremeSegments, 'child'],
+    'child path segments include empty non-terminals',
   );
 
   await childNode.setValue('');

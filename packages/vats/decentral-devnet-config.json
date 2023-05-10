@@ -163,6 +163,9 @@
       }
     }
   },
+  "clearStorageSubtrees": [
+    "published"
+  ],
   "exportStorageSubtrees": [
     "published.psm.IST",
     "published.wallet"

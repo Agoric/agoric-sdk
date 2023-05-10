@@ -96,6 +96,10 @@ test.serial('re-bootstrap', async t => {
   );
   t.true(wd1.isNew);
   await oldContext.shutdown();
+  const syntheticPaths = ['published.synthetic', 'published.synthetic2.deep'];
+  for (const syntheticPath of syntheticPaths) {
+    storage.data.set(syntheticPath, 'doomed');
+  }
   const newContext = await makeDefaultTestContext(t, {
     incarnation: oldContext.incarnation + 1,
     logTiming: false,
@@ -109,6 +113,13 @@ test.serial('re-bootstrap', async t => {
     undefined,
     'must not be able to use old swingset',
   );
+  for (const syntheticPath of syntheticPaths) {
+    t.is(
+      storage.data.get(syntheticPath),
+      undefined,
+      `non-exported storage entries must be purged: ${syntheticPath}`,
+    );
+  }
   const wd2 = await newContext.walletFactoryDriver.provideSmartWallet(
     'agoric1a',
   );

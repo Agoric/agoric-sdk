@@ -177,6 +177,9 @@ export {};
  * @typedef {object} SwingSetOptions
  * @property {string} [bootstrap]
  * @property {ConfigProposal[]} [coreProposals]
+ * @property {string[]} [clearStorageSubtrees] chain storage paths identifying roots of subtrees
+ *   for which data should be deleted (except for overlaps with exportStorageSubtrees, which
+ *   are preserved).
  * @property {string[]} [exportStorageSubtrees] chain storage paths identifying roots of subtrees
  *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
  *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
