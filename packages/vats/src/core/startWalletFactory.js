@@ -168,7 +168,7 @@ export const startWalletFactory = async (
       walletFactory: wfFacets.creatorFacet,
     }),
   ]);
-  const bridgeHandler = await E(ppFacets.creatorFacet).makeBridgeHandler();
+  const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
 
   await Promise.all([
     E(provisionWalletBridgeManager).initHandler(bridgeHandler),

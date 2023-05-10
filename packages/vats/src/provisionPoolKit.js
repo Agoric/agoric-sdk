@@ -116,7 +116,7 @@ export const prepareProvisionPoolKit = (
           namesByAddressAdmin: M.eref(M.remotable('nameAdmin')),
           walletFactory: M.eref(M.remotable('walletFactory')),
         }).returns(),
-        makeBridgeHandler: M.call().returns(M.remotable('BridgeHandler')),
+        makeHandler: M.call().returns(M.remotable('BridgeHandler')),
         initPSM: M.call(BrandShape, InstanceHandleShape).returns(),
       }),
       walletReviver: M.interface('ProvisionPoolKit wallet reviver', {
@@ -195,7 +195,7 @@ export const prepareProvisionPoolKit = (
           const refs = await deeplyFulfilled(obj);
           Object.assign(this.state, refs);
         },
-        makeBridgeHandler() {
+        makeHandler() {
           const { bankManager, namesByAddressAdmin, walletFactory } =
             this.state;
           if (!bankManager || !namesByAddressAdmin || !walletFactory) {

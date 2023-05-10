@@ -472,7 +472,7 @@ test('provisionPool revives old wallets', async t => {
     namesByAddressAdmin: makeNameHubKit().nameAdmin,
     walletFactory,
   });
-  const bridgeHandler = await E(creatorFacet).makeBridgeHandler();
+  const bridgeHandler = await E(creatorFacet).makeHandler();
 
   // revive the old wallet and verify absence of new starter funds
   const reviverP = E(creatorFacet).getWalletReviver();
