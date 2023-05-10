@@ -22,7 +22,7 @@ export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test" -
 sendOffer () (
     offer="$1"
     from="$2"
-    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test"
+    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test" --home "$STATEDIR"
 )
 
 wait_for_bootstrap () {
@@ -64,10 +64,15 @@ waitForBlock () (
 runActions () {
   action=${1:-"test"}
   if [[ -v THIS_NAME ]]; then
-    fn="${THIS_NAME}_${action}.sh"
-    if test -f "./upgrade-test-scripts/$fn"; then
-      echo "RUNACTION: $fn"
-      . "./upgrade-test-scripts/$fn"
+    if test -d "./upgrade-test-scripts/$THIS_NAME"; then
+      fn="${THIS_NAME}_${action}.sh"
+      if test -f "./upgrade-test-scripts/$THIS_NAME/$fn"; then
+        echo "RUNACTION: $fn"
+        . "./upgrade-test-scripts/$THIS_NAME/$fn"
+      fi
+    else
+      echo "./upgrade-test-scripts/$THIS_NAME directory is missing"
+      exit 1
     fi
   else
     echo "THIS_NAME is not defined for this release, can't run action $action"
@@ -86,10 +91,22 @@ success () {
 test_val() {
   want="$2"
   got="$1"
+  testname="${3:-unnamedtest}"
   if [[ "$want" != "$got" ]]; then
-    fail "wanted $want, got $got"
+    fail "TEST: $testname: wanted $want, got $got"
   else
-    success "wanted $want, got $got"
+    success "TEST: $testname: wanted $want, got $got"
+  fi
+}
+
+test_not_val() {
+  want="$2"
+  got="$1"
+  testname="${3:-unnamedtest}"
+  if [[ "$want" == "$got" ]]; then
+    fail "TEST: $testname:  $want is equal to $got"
+  else
+    success "TEST: $testname: $want is not equal to $got"
   fi
 }
 
