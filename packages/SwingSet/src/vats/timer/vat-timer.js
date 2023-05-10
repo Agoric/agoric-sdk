@@ -888,7 +888,6 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
    * @param {RelativeTime} delay
    * @param {RelativeTime} interval
    * @param {CancelToken} cancelToken
-   * @returns { import('@agoric/notifier/src/types.js').BaseNotifier<Timestamp> }
    */
   const makeNotifier = (delay, interval, cancelToken) =>
     createNotifier(delay, interval, cancelToken).notifier;

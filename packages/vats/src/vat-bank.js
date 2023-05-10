@@ -379,7 +379,7 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
 
 /**
  * @typedef {object} Bank
- * @property {() => import('@agoric/notifier/src/types.js').IterableEachTopic<AssetDescriptor>} getAssetSubscription Returns
+ * @property {() => IterableEachTopic<AssetDescriptor>} getAssetSubscription Returns
  * assets as they are added to the bank
  * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any existing vpurse
  * (keyed by address and brand) or create a new one.
@@ -591,7 +591,7 @@ const prepareBankManager = (
       /**
        * Returns assets as they are added to the bank.
        *
-       * @returns {import('@agoric/notifier/src/types.js').IterableEachTopic<AssetDescriptor>}
+       * @returns {IterableEachTopic<AssetDescriptor>}
        */
       getAssetSubscription() {
         const { brandToAssetDescriptor, assetSubscriber } = this.state;
