@@ -18,7 +18,7 @@ ENV THIS_NAME=agoric-upgrade-8
 
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-COPY --from=agoric-upgrade-7-2 /usr/src/agoric-sdk/netstate netstate
+COPY --from=agoric-upgrade-7-2 /root/.agoric /root/.agoric
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
@@ -31,7 +31,7 @@ ENV UPGRADE_TO=agorictest-upgrade-9
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-COPY --from=agoric-upgrade-8 /usr/src/agoric-sdk/netstate netstate
+COPY --from=agoric-upgrade-8 /root/.agoric /root/.agoric
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
@@ -44,7 +44,7 @@ ENV UPGRADE_TO=agorictest-upgrade-10
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-COPY --from=agoric-upgrade-8-1 /usr/src/agoric-sdk/netstate netstate
+COPY --from=agoric-upgrade-8-1 /root/.agoric /root/.agoric
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
@@ -57,7 +57,7 @@ ENV THIS_NAME=agoric-upgrade-10
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-COPY --from=agoric-upgrade-9 /usr/src/agoric-sdk/netstate netstate
+COPY --from=agoric-upgrade-9 /root/.agoric /root/.agoric
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
@@ -71,7 +71,7 @@ ENV DONE=1
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-COPY --from=agoric-upgrade-10 /usr/src/agoric-sdk/netstate netstate
+COPY --from=agoric-upgrade-10 /root/.agoric /root/.agoric
 SHELL ["/bin/bash", "-c"]
 RUN chmod +x ./upgrade-test-scripts/start_to_to.sh
 ENTRYPOINT /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh
