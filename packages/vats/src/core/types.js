@@ -252,6 +252,7 @@
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: import('../types.js').BridgeHandler,
+ *   diagnostics: { instancePrivateArgs: Map<Instance, unknown> },
  *   feeMintAccess: FeeMintAccess,
  *   highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager?,
  *   initialSupply: Payment<'nat'>,

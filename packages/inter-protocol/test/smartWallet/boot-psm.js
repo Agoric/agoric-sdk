@@ -12,6 +12,7 @@ import {
   makeBoard,
   makeVatsFromBundles,
   mintInitialSupply,
+  produceDiagnostics,
   produceStartGovernedUpgradable,
   produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
@@ -257,6 +258,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
     };
 
     await Promise.all([
+      produceDiagnostics(allPowers),
       produceStartUpgradable(allPowers),
       produceStartGovernedUpgradable(allPowers),
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),

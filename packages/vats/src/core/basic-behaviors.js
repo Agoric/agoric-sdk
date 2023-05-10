@@ -116,6 +116,12 @@ export const makeVatsFromBundles = async ({
 };
 harden(makeVatsFromBundles);
 
+/** @param {Pick<ChainBootstrapSpace, 'produce'>} powers */
+export const produceDiagnostics = async ({ produce }) => {
+  const instancePrivateArgs = new Map();
+  produce.diagnostics.resolve({ instancePrivateArgs });
+};
+
 /** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
 export const produceStartUpgradable = async ({
   zone,
@@ -782,6 +788,9 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     },
     issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
+  },
+  [produceDiagnostics.name]: {
+    produce: { diagnostics: true },
   },
   [produceStartUpgradable.name]: {
     zone: true,

@@ -14,6 +14,7 @@ import {
   addBankAssets,
   installBootContracts,
   produceStartUpgradable,
+  produceDiagnostics,
 } from '../src/core/basic-behaviors.js';
 import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
@@ -97,6 +98,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
 
   const zone = heapZone;
   await Promise.all([
+    produceDiagnostics({ produce }),
     produceStartUpgradable({ zone, consume, produce, ...spaces }),
     addBankAssets({ consume, produce, ...spaces }),
   ]);

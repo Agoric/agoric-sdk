@@ -18,6 +18,7 @@ import {
   observeIteration,
   subscribeEach,
 } from '@agoric/notifier';
+import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 
 export { makeMockChainStorageRoot };
 
@@ -63,6 +64,8 @@ export const setupBootstrap = async (t, optTimer) => {
     /** @type { import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
       space
     );
+
+  await produceDiagnostics(space);
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
