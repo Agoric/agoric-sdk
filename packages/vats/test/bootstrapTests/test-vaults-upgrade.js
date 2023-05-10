@@ -88,14 +88,16 @@ test.before(async t => {
 test.after.always(t => t.context.shared.shutdown());
 
 test.serial('re-bootstrap', async t => {
-  const context = { ...t.context.shared };
-  const { storage } = context;
-  t.is(context.incarnation, 1);
-  const wd1 = await context.walletFactoryDriver.provideSmartWallet('agoric1a');
+  const oldContext = { ...t.context.shared };
+  const { storage } = oldContext;
+  t.is(oldContext.incarnation, 1);
+  const wd1 = await oldContext.walletFactoryDriver.provideSmartWallet(
+    'agoric1a',
+  );
   t.true(wd1.isNew);
-  await context.shutdown();
+  await oldContext.shutdown();
   const newContext = await makeDefaultTestContext(t, {
-    incarnation: context.incarnation + 1,
+    incarnation: oldContext.incarnation + 1,
     logTiming: false,
     storage,
   });
@@ -103,7 +105,9 @@ test.serial('re-bootstrap', async t => {
 
   t.is(newContext.incarnation, 2);
   await t.throwsAsync(
-    context.walletFactoryDriver.provideSmartWallet('agoric1a'),
+    oldContext.walletFactoryDriver.provideSmartWallet('agoric1a'),
+    undefined,
+    'must not be able to use old swingset',
   );
   const wd2 = await newContext.walletFactoryDriver.provideSmartWallet(
     'agoric1a',
