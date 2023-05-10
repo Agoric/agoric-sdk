@@ -48,6 +48,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
   const console = anylogger('agoric:follower');
 
   const {
+    firstValueOnly,
     proof,
     output,
     bootstrap = 'http://localhost:26657',
@@ -153,6 +154,9 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
             value,
           )}\n`,
         );
+        if (firstValueOnly) {
+          return;
+        }
       }
     }),
   );

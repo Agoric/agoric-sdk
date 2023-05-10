@@ -1191,6 +1191,9 @@ export const prepareVaultManagerKit = (
               debtBrand,
               collateralBrand,
             );
+          // reset lockedQuote after we've used it for the liquidation decision
+          state.lockedQuote = undefined;
+
           if (vaultData.getSize() === 0) {
             return;
           }
