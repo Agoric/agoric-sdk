@@ -177,6 +177,7 @@ export const prepareProvisionPoolKit = (
          * @param {string[]} oldAddresses
          */
         addRevivableAddresses(oldAddresses) {
+          console.log('revivableAddresses count', oldAddresses.length);
           this.state.revivableAddresses.addAll(oldAddresses);
         },
         getWalletReviver() {
