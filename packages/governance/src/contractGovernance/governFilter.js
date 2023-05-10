@@ -96,7 +96,7 @@ const setupFilterGovernance = (timer, getUpdatedPoserFacet, governedCF) => {
 
   return Far('filterGovernor', {
     voteOnFilter,
-    createdFilterQuestion: b => voteCounters.has(b),
+    createdQuestion: b => voteCounters.has(b),
   });
 };
 

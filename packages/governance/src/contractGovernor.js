@@ -1,14 +1,10 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 import { makeTracer } from '@agoric/internal';
-import {
-  CONTRACT_ELECTORATE,
-  setupParamGovernance,
-} from './contractGovernance/governParam.js';
-import { setupApiGovernance } from './contractGovernance/governApi.js';
-import { setupFilterGovernance } from './contractGovernance/governFilter.js';
+import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
+import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
+import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
 const { Fail } = assert;
@@ -24,7 +20,7 @@ const trace = makeTracer('CGov', false);
  * @param {Instance} electorate
  * @param {ParamChangeIssueDetails} details
  */
-const validateQuestionDetails = async (zoe, electorate, details) => {
+export const validateQuestionDetails = async (zoe, electorate, details) => {
   const {
     counterInstance,
     issue: { contract: governedInstance },
@@ -41,6 +37,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
     E(governorPublic).validateTimer(details.closingRule),
   ]);
 };
+harden(validateQuestionDetails);
 
 /**
  * Validate that the questions counted by the voteCounter correspond to a
@@ -51,12 +48,17 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
  * @param {Instance} electorate
  * @param {Instance} voteCounter
  */
-const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
+export const validateQuestionFromCounter = async (
+  zoe,
+  electorate,
+  voteCounter,
+) => {
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
 
   return validateQuestionDetails(zoe, electorate, questionDetails);
 };
+harden(validateQuestionFromCounter);
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
@@ -145,8 +147,8 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * }>}
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-const start = async (zcf, privateArgs, baggage) => {
-  trace('start');
+export const prepare = async (zcf, privateArgs, baggage) => {
+  trace('prepare');
   const zoe = zcf.getZoeService();
   trace('getTerms', zcf.getTerms());
   const {
@@ -162,177 +164,44 @@ const start = async (zcf, privateArgs, baggage) => {
   contractTerms.governedParams[CONTRACT_ELECTORATE] ||
     Fail`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`;
 
-  const augmentedTerms = harden({
-    ...contractTerms,
-    electionManager: zcf.getInstance(),
+  const makeContractGovernorKit = prepareContractGovernorKit(baggage, {
+    timer,
+    zoe,
   });
 
-  trace('starting governedContractInstallation');
+  trace('awaiting provideSingleton()');
+  const governorKit = await provideSingleton(
+    baggage,
+    'contractGovernorKit',
+    async () => {
+      const augmentedTerms = harden({
+        ...contractTerms,
+        electionManager: zcf.getInstance(),
+      });
 
-  const startedInstanceKit = await E(zoe).startInstance(
-    governedContractInstallation,
-    governedIssuerKeywordRecord,
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-    // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
-    augmentedTerms,
-    privateArgs.governed,
-    governedContractLabel,
+      trace('starting governedContractInstallation of', governedContractLabel);
+      const startedInstanceKit = await E(zoe).startInstance(
+        governedContractInstallation,
+        governedIssuerKeywordRecord,
+        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+        // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+        augmentedTerms,
+        privateArgs.governed,
+        governedContractLabel,
+      );
+      const limitedCreatorFacet = await E(
+        startedInstanceKit.creatorFacet,
+      ).getLimitedCreatorFacet();
+
+      return makeContractGovernorKit(startedInstanceKit, limitedCreatorFacet);
+    },
   );
-  // reachably durable for an upgrade of this contract to retrieve
-  baggage.init('startedInstanceKit', startedInstanceKit);
-  const {
-    creatorFacet: governedCF,
-    instance: governedInstance,
-    publicFacet: governedPF,
-    adminFacet,
-  } = startedInstanceKit;
 
-  /** @type {() => Promise<Instance>} */
-  const getElectorateInstance = async () => {
-    const invitationAmount = await E(governedPF).getInvitationAmount(
-      CONTRACT_ELECTORATE,
-    );
-    return invitationAmount.value[0].instance;
-  };
+  // At this point, some remote calls still need to be made within the governorKit.
+  // Specifically, to the vat of the governed contract for its API names. The exo
+  // defers that until API governance is requested to be invoked or validated.
 
   // CRUCIAL: only contractGovernor should get the ability to update params
-  const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
-
-  let currentInvitation;
-  let poserFacet;
-  /** @type {() => Promise<PoserFacet>} */
-  const getUpdatedPoserFacet = async () => {
-    const newInvitation = await E(
-      E(E(governedCF).getParamMgrRetriever()).get({ key: 'governedParams' }),
-    ).getInternalParamValue(CONTRACT_ELECTORATE);
-
-    if (newInvitation !== currentInvitation) {
-      poserFacet = E(E(zoe).offer(newInvitation)).getOfferResult();
-      currentInvitation = newInvitation;
-    }
-    return poserFacet;
-  };
-  trace('awaiting getUpdatedPoserFacet');
-  await getUpdatedPoserFacet();
-  assert(poserFacet, 'question poser facet must be initialized');
-
-  trace('awaiting setupParamGovernance');
-  // All governed contracts have at least a governed electorate
-  const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
-    setupParamGovernance(
-      E(governedCF).getParamMgrRetriever(),
-      governedInstance,
-      timer,
-      getUpdatedPoserFacet,
-    );
-
-  trace('awaiting setupFilterGovernance');
-  const { voteOnFilter, createdFilterQuestion } = setupFilterGovernance(
-    timer,
-    getUpdatedPoserFacet,
-    governedCF,
-  );
-
-  /**
-   * @param {Invitation} poserInvitation
-   * @returns {Promise<void>}
-   */
-  const replaceElectorate = poserInvitation => {
-    /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-    // @ts-ignore cast
-    const paramMgr = E(E(governedCF).getParamMgrRetriever()).get({
-      key: 'governedParams',
-    });
-
-    // TODO use updateElectorate
-    return E(paramMgr).updateParams({
-      Electorate: poserInvitation,
-    });
-  };
-
-  // this conditional was extracted so both sides are equally asynchronous
-  /** @type {() => Promise<ApiGovernor>} */
-  const initApiGovernance = async () => {
-    const [governedApis, governedNames] = await Promise.all([
-      E(governedCF).getGovernedApis(),
-      E(governedCF).getGovernedApiNames(),
-    ]);
-    if (governedNames.length) {
-      return setupApiGovernance(
-        zoe,
-        governedInstance,
-        governedApis,
-        governedNames,
-        timer,
-        getUpdatedPoserFacet,
-      );
-    }
-
-    // if we aren't governing APIs, voteOnApiInvocation shouldn't be called
-    return {
-      voteOnApiInvocation: () => {
-        throw Error('api governance not configured');
-      },
-      createdQuestion: () => false,
-    };
-  };
-
-  const { voteOnApiInvocation, createdQuestion: createdApiQuestion } =
-    await initApiGovernance();
-
-  const validateVoteCounter = async voteCounter => {
-    const createdParamQ = await E(createdParamQuestion)(voteCounter);
-    const createdApiQ = await E(createdApiQuestion)(voteCounter);
-    const createdFilterQ = await E(createdFilterQuestion)(voteCounter);
-
-    assert(
-      createdParamQ || createdApiQ || createdFilterQ,
-      'VoteCounter was not created by this contractGovernor',
-    );
-  };
-
-  /** @param {ClosingRule} closingRule */
-  const validateTimer = closingRule => {
-    assert(closingRule.timer === timer, 'closing rule must use my timer');
-  };
-
-  /** @param {ERef<Instance>} regP */
-  const validateElectorate = async regP => {
-    return E.when(regP, async reg => {
-      const electorateInstance = await getElectorateInstance();
-      assert(
-        reg === electorateInstance,
-        "Electorate doesn't match my Electorate",
-      );
-    });
-  };
-
-  /** @type {GovernorCreatorFacet<SF>} */
-  // @ts-expect-error cast
-  const creatorFacet = Far('governor creatorFacet', {
-    replaceElectorate,
-    voteOnParamChanges,
-    voteOnApiInvocation,
-    voteOnOfferFilter: voteOnFilter,
-    getCreatorFacet: () => limitedCreatorFacet,
-    getAdminFacet: () => adminFacet,
-    getInstance: () => governedInstance,
-    getPublicFacet: () => governedPF,
-  });
-
-  const publicFacet = Far('contract governor public', {
-    getElectorate: getElectorateInstance,
-    getGovernedContract: () => governedInstance,
-    validateVoteCounter,
-    validateElectorate,
-    validateTimer,
-  });
-
-  return { creatorFacet, publicFacet };
+  return { creatorFacet: governorKit.creator, publicFacet: governorKit.public };
 };
-
-harden(start);
-harden(validateQuestionDetails);
-harden(validateQuestionFromCounter);
-export { start, validateQuestionDetails, validateQuestionFromCounter };
+harden(prepare);

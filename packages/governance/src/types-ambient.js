@@ -65,7 +65,7 @@
  *
  * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T Governed parameters of contract
  * @typedef {{
- *   electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<import('./contractGovernor').start>,
+ *   electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<import('./contractGovernor.js')['prepare']>,
  *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & {
  *     Electorate: 'invitation'
  *   }>
@@ -624,7 +624,7 @@
  * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
  * @param {import('@agoric/time/src/types').Timestamp} deadline
- * @returns {ContractGovernanceVoteResult}
+ * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
 /**
@@ -650,7 +650,7 @@
 /**
  * @typedef {object} FilterGovernor
  * @property {VoteOnOfferFilter} voteOnFilter
- * @property {CreatedQuestion} createdFilterQuestion
+ * @property {CreatedQuestion} createdQuestion
  */
 
 /**
@@ -680,7 +680,7 @@
  * @param {ERef<ZoeService>} zoe
  * @param {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} allegedGoverned
  * @param {Instance} allegedGovernor
- * @param {Installation<import('@agoric/governance/src/contractGovernor').start>} contractGovernorInstallation
+ * @param {Installation<import('@agoric/governance/src/contractGovernor.js').prepare>} contractGovernorInstallation
  * @returns {Promise<GovernancePair>}
  */
 
@@ -699,7 +699,7 @@
  */
 
 /**
- * @typedef {import('./contractGovernor.js')['start']} GovernorSF
+ * @typedef {import('./contractGovernor.js')['prepare']} GovernorSF
  */
 
 // TODO find a way to parameterize the startInstance so the governed contract types flow
