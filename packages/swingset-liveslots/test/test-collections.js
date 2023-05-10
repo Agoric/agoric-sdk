@@ -212,6 +212,11 @@ function exerciseSetAddAll(t, weak, testStore) {
   if (!weak) {
     t.is(testStore.getSize(), 0);
   }
+
+  t.throws(
+    () => testStore.addAll({ bogus: 47 }),
+    m(/provided data source is not iterable/),
+  );
 }
 
 test('set addAll', t => {
@@ -249,6 +254,11 @@ function exerciseMapAddAll(t, weak, testStore) {
   if (!weak) {
     t.is(testStore.getSize(), 0);
   }
+
+  t.throws(
+    () => testStore.addAll({ bogus: 47 }),
+    m(/provided data source is not iterable/),
+  );
 }
 
 test('map addAll', t => {

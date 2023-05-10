@@ -59,10 +59,10 @@ export const makeWeakMapStoreMethods = (
 
     addAll: entries => {
       if (typeof entries[Symbol.iterator] !== 'function') {
-        if (isCopyMap(entries)) {
+        if (Object.isFrozen(entries) && isCopyMap(entries)) {
           entries = getCopyMapEntries(entries);
         } else {
-          Fail`provided data source is not iterable`;
+          Fail`provided data source is not iterable: ${entries}`;
         }
       }
       for (const [key, value] of /** @type {Iterable<[K, V]>} */ (entries)) {
