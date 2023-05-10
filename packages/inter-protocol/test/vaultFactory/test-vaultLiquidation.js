@@ -16,6 +16,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { NonNullish } from '@agoric/assert';
 
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
@@ -1917,14 +1918,14 @@ test('auction locks low price', async t => {
   // @ts-expect-error it's a mock
   priceAuthority.setPrice(makeRatio(0n, run.brand, baseCollateral, aeth.brand));
   await eventLoopIteration();
-  await startAuctionClock(auctioneerKit, manualTimer);
-  trace('auction started, binding lockedQuote in the vault manager state');
 
-  // Bump back up to a high price
-  // @ts-expect-error it's a mock
-  priceAuthority.setPrice(
-    makeRatio(100n * wanted, run.brand, baseCollateral, aeth.brand),
-  );
+  const schedule = await E(auctioneerKit.creatorFacet).getSchedule();
+  const priceDelay = await E(auctioneerKit.publicFacet).getPriceLockPeriod();
+  const { startTime, startDelay } = NonNullish(schedule.nextAuctionSchedule);
+  const nominalStart = TimeMath.subtractAbsRel(startTime, startDelay);
+  const priceLockTime = TimeMath.subtractAbsRel(nominalStart, priceDelay);
+  await manualTimer.advanceTo(TimeMath.absValue(priceLockTime));
+  await eventLoopIteration();
 
   // make vault MCR uses the locked price
   await t.throwsAsync(
@@ -1946,6 +1947,30 @@ test('auction locks low price', async t => {
         'Proposed debt {"brand":"[Alleged: IST brand]","value":"[525n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[0n]"} for {"brand":"[Alleged: aEth brand]","value":"[4n]"} collateral',
     },
   );
+
+  // Bump back up to a high price
+  // @ts-expect-error it's a mock
+  priceAuthority.setPrice(
+    makeRatio(100n * wanted, run.brand, baseCollateral, aeth.brand),
+  );
+
+  await manualTimer.advanceTo(TimeMath.absValue(nominalStart));
+  trace('auction started, binding lockedQuote in the vault manager state');
+  await eventLoopIteration();
+
+  const result = await E(
+    E(zoe).offer(
+      E(aethCollateralManager).makeVaultInvitation(),
+      harden({
+        give: { Collateral: aeth.make(baseCollateral) },
+        want: { Minted: run.make(wanted) },
+      }),
+      harden({
+        Collateral: aeth.mint.mintPayment(aeth.make(baseCollateral)),
+      }),
+    ),
+  ).getOfferResult();
+  t.truthy(result);
 });
 
 test('Bug 7422 vault reinstated with no assets', async t => {
