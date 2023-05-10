@@ -102,7 +102,9 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
 export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   const board = boardSlottingMarshaller(slotToVal);
   const vsMap = new Map(entries);
-  const getItem = key => unmarshalFromVstorage(vsMap, key, board.fromCapData);
+  const fromCapData = (...args) =>
+    Reflect.apply(board.fromCapData, board, args);
+  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData);
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
     return harden([

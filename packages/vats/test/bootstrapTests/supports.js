@@ -261,10 +261,12 @@ export const makeWalletFactoryDriver = async (
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
      */
     getLatestUpdateRecord() {
+      const fromCapData = (...args) =>
+        Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}`,
-        marshaller.fromCapData,
+        fromCapData,
       );
     },
   });
