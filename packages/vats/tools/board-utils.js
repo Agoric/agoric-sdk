@@ -25,7 +25,7 @@
 
 import { Fail } from '@agoric/assert';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { prepareBoardKit } from '../src/lib-board.js';
@@ -48,53 +48,6 @@ export const boardValToSlot = val => {
   }
   Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
 };
-
-// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
-// swingset-xsnap-supervisor, etc.
-/**
- * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
-};
-harden(assertCapData);
-
-/**
- * Read and unmarshal a value from a map representation of vstorage data
- *
- * @param {Map<string, string>} data
- * @param {string} key
- * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
- * @param {number} [index=-1] index of the desired value in a deserialized stream cell
- */
-export const unmarshalFromVstorage = (data, key, fromCapData, index = -1) => {
-  const serialized = data.get(key) || Fail`no data for ${key}`;
-  assert.typeof(serialized, 'string');
-
-  const streamCell = JSON.parse(serialized);
-  if (!isStreamCell(streamCell)) {
-    throw Fail`not a StreamCell: ${streamCell}`;
-  }
-
-  const { values } = streamCell;
-  values.length > 0 || Fail`no StreamCell values: ${streamCell}`;
-
-  const marshalled = values.at(index);
-  assert.typeof(marshalled, 'string');
-
-  /** @type {import("@endo/marshal").CapData<string>} */
-  const capData = harden(JSON.parse(marshalled));
-  assertCapData(capData);
-
-  const unmarshalled = fromCapData(capData);
-  return unmarshalled;
-};
-harden(unmarshalFromVstorage);
 
 /**
  * @param {import("@agoric/internal/src/storage-test-utils.js").FakeStorageKit} fakeStorageKit

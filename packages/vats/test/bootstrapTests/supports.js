@@ -14,10 +14,8 @@ import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import {
-  boardSlottingMarshaller,
-  unmarshalFromVstorage,
-} from '../../tools/board-utils.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
 E;

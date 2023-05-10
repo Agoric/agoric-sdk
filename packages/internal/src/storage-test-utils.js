@@ -1,10 +1,14 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
-import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
+import {
+  isStreamCell,
+  makeChainStorageRoot,
+  unmarshalFromVstorage,
+} from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 
-const { Fail, quote: q } = assert;
+const { Fail } = assert;
 
 /**
  * A map corresponding with a total function such that `get(key)`
@@ -196,14 +200,10 @@ export const makeMockChainStorageRoot = () => {
      */
     getBody: (path, marshaller = defaultMarshaller) => {
       data.size || Fail`no data in storage`;
-      const dataStr = data.get(path)?.at(-1);
-      if (!dataStr) {
-        console.debug('mockChainStorage data:', data);
-        Fail`no data at ${q(path)}`;
-      }
-      assert.typeof(dataStr, 'string');
-      const datum = JSON.parse(dataStr);
-      return marshaller.fromCapData(datum);
+      /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
+      const fromCapData = (...args) =>
+        Reflect.apply(marshaller.fromCapData, marshaller, args);
+      return unmarshalFromVstorage(data, path, fromCapData);
     },
     keys: () => [...data.keys()],
   });

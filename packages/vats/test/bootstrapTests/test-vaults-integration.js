@@ -6,12 +6,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
-  unmarshalFromVstorage,
 } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
