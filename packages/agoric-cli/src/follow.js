@@ -1,6 +1,11 @@
 // @ts-check
 import process from 'process';
-import { Far, getInterfaceOf, decodeToJustin } from '@endo/marshal';
+import {
+  Far,
+  getInterfaceOf,
+  decodeToJustin,
+  makeMarshal,
+} from '@endo/marshal';
 
 import {
   iterateLatest,
@@ -10,6 +15,33 @@ import {
   makeLeader,
 } from '@agoric/casting';
 import { makeLeaderOptions } from './lib/casting.js';
+
+const makeCapDataToQclass = () => {
+  const valToSlot = new WeakMap();
+  const slotToVal = new Map();
+  const convertValToSlot = val => {
+    return valToSlot.get(val);
+  };
+  const convertSlotToVal = (slot, iface) => {
+    if (slotToVal.has(slot)) {
+      return slotToVal.get(slot);
+    }
+    const debugName = iface.startsWith('Alleged: ')
+      ? iface.slice('Alleged: '.length)
+      : iface;
+    const remotable = Far(debugName, {});
+
+    valToSlot.set(remotable, slot);
+    slotToVal.set(slot, remotable);
+    return remotable;
+  };
+  const { toCapData, fromCapData } = makeMarshal(
+    convertValToSlot,
+    convertSlotToVal,
+  );
+  const capDataToQclass = capdata => toCapData(fromCapData(capdata));
+  return capDataToQclass;
+};
 
 export default async function followerMain(progname, rawArgs, powers, opts) {
   const { anylogger } = powers;
@@ -34,9 +66,11 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
   switch (output) {
     case 'justinlines':
     case 'justin': {
+      const capDataToQclass = makeCapDataToQclass();
       followerOptions.unserializer = null;
       const pretty = !output.endsWith('lines');
-      formatOutput = ({ body, slots }) => {
+      formatOutput = capdata => {
+        const { body, slots } = capDataToQclass(capdata);
         const encoded = JSON.parse(body);
         return decodeToJustin(encoded, pretty, slots);
       };
