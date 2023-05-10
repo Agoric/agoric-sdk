@@ -4,6 +4,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForInviteCommittee } from '../src/proposals/committee-proposal.js';
 
 // Build proposal for sim-chain etc.
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},

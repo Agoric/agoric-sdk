@@ -121,6 +121,7 @@ export const mainProposalBuilder = async ({
 };
 
 // Build proposal for sim-chain etc.
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
