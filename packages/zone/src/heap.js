@@ -12,6 +12,7 @@ import {
 } from '@agoric/store';
 
 import { Far } from '@endo/far';
+import { alwaysOnce } from './once.js';
 
 /**
  * @type {import('.').Stores}
@@ -19,6 +20,7 @@ import { Far } from '@endo/far';
 const heapStores = Far('heapStores', {
   detached: () => heapStores,
   isStorable: _specimen => true,
+  once: alwaysOnce,
 
   setStore: makeScalarSetStore,
   mapStore: makeScalarMapStore,

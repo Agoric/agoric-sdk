@@ -3,17 +3,20 @@
 import {
   canBeDurable,
   makeScalarMapStore,
-  prepareExo,
-  prepareExoClass,
-  prepareExoClassKit,
+  provide,
   provideDurableMapStore,
   provideDurableSetStore,
   provideDurableWeakMapStore,
   provideDurableWeakSetStore,
+  prepareExo,
+  prepareExoClass,
+  prepareExoClassKit,
   M,
 } from '@agoric/vat-data';
 
 import { Far } from '@endo/far';
+
+/** @typedef {import('.').Zone} Zone */
 
 const { Fail } = assert;
 
@@ -21,16 +24,19 @@ const { Fail } = assert;
  * @param {() => import('@agoric/vat-data').Baggage} getBaggage
  */
 const attachDurableStores = getBaggage => {
-  /** @type {import('.').Zone['mapStore']} */
+  /** @type {Zone['once']} */
+  const once = (key, makeValue) => provide(getBaggage(), key, makeValue);
+
+  /** @type {Zone['mapStore']} */
   const mapStore = (label, options) =>
     provideDurableMapStore(getBaggage(), label, options);
-  /** @type {import('.').Zone['setStore']} */
+  /** @type {Zone['setStore']} */
   const setStore = (label, options) =>
     provideDurableSetStore(getBaggage(), label, options);
-  /** @type {import('.').Zone['weakSetStore']} */
+  /** @type {Zone['weakSetStore']} */
   const weakSetStore = (label, options) =>
     provideDurableWeakSetStore(getBaggage(), label, options);
-  /** @type {import('.').Zone['weakMapStore']} */
+  /** @type {Zone['weakMapStore']} */
   const weakMapStore = (label, options) =>
     provideDurableWeakMapStore(getBaggage(), label, options);
 
@@ -39,6 +45,8 @@ const attachDurableStores = getBaggage => {
     // eslint-disable-next-line no-use-before-define
     detached: () => detachedDurableStores,
     isStorable: canBeDurable,
+    once,
+
     mapStore,
     setStore,
     weakMapStore,
@@ -55,20 +63,20 @@ export const detachedDurableStores = attachDurableStores(() =>
  * Create a zone whose objects persist between Agoric vat upgrades.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @returns {import('.').Zone}
+ * @returns {Zone}
  */
 export const makeDurableZone = baggage => {
   baggage || Fail`baggage required`;
-  /** @type {import('.').Zone['exoClass']} */
+  /** @type {Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
-  /** @type {import('.').Zone['exoClassKit']} */
+  /** @type {Zone['exoClassKit']} */
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
-  /** @type {import('.').Zone['exo']} */
+  /** @type {Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
 
   const attachedStores = attachDurableStores(() => baggage);
 
-  /** @type {import('.').Zone['subZone']} */
+  /** @type {Zone['subZone']} */
   const subZone = (label, options = {}) => {
     const subBaggage = provideDurableMapStore(baggage, label, options);
     return makeDurableZone(subBaggage);

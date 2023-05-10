@@ -12,6 +12,7 @@ import {
 } from '@agoric/vat-data';
 
 import { Far } from '@endo/far';
+import { alwaysOnce } from './once.js';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
@@ -46,6 +47,8 @@ const defineVirtualExo = (
 export const detachedVirtualStores = Far('virtualStores', {
   detached: () => detachedVirtualStores,
   isStorable: canBeDurable,
+  once: alwaysOnce,
+
   mapStore: makeScalarBigMapStore,
   setStore: makeScalarBigSetStore,
   weakMapStore: makeScalarBigWeakMapStore,
