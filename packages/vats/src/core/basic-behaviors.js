@@ -1,23 +1,23 @@
 // @ts-check
 
-import { Nat } from '@endo/nat';
-import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
-import { keyEQ, makeScalarMapStore } from '@agoric/store';
-import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import {
   BridgeId,
   deeplyFulfilledObject,
   VBankAccount,
   WalletName,
 } from '@agoric/internal';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { keyEQ, makeScalarMapStore } from '@agoric/store';
+import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
+import { E, getInterfaceOf } from '@endo/far';
+import { Nat } from '@endo/nat';
 
-import { Fail } from '@agoric/assert';
+import { Fail, NonNullish } from '@agoric/assert';
 import { makeNameHubKit } from '../nameHub.js';
-import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import { PowerFlags } from '../walletFlags.js';
+import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 
 const { details: X } = assert;
 
@@ -125,7 +125,7 @@ export const produceDiagnostics = async ({ produce }) => {
 /** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
 export const produceStartUpgradable = async ({
   zone,
-  consume: { zoe },
+  consume: { diagnostics, zoe },
   produce, // startUpgradable, contractKits
 }) => {
   /** @type {MapStore<Instance, StartedInstanceKitWithLabel> } */
@@ -146,8 +146,11 @@ export const produceStartUpgradable = async ({
       privateArgs,
       label,
     );
+    label ||= NonNullish(getInterfaceOf(started.instance));
     const kit = harden({ ...started, label });
     contractKits.init(kit.instance, kit);
+    const instancePA = await E.get(diagnostics).instancePrivateArgs;
+    instancePA.set(kit.instance, privateArgs);
     return kit;
   };
 
@@ -257,7 +260,12 @@ const startGovernedInstance = async (
  */
 export const produceStartGovernedUpgradable = async ({
   zone,
-  consume: { chainTimerService, economicCommitteeCreatorFacet, zoe },
+  consume: {
+    chainTimerService,
+    diagnostics,
+    economicCommitteeCreatorFacet,
+    zoe,
+  },
   produce, // startGovernedUpgradable, governedContractKits
   installation: {
     consume: { contractGovernor },
@@ -293,7 +301,14 @@ export const produceStartGovernedUpgradable = async ({
     );
     const kit = harden({ ...facets, label });
     contractKits.init(facets.instance, kit);
-    return kit;
+
+    const instancePA = await E.get(diagnostics).instancePrivateArgs;
+    instancePA.set(kit.instance, privateArgs);
+    instancePA.set(kit.governor, {
+      economicCommitteeCreatorFacet: await economicCommitteeCreatorFacet,
+    });
+
+    return facets;
   };
 
   produce.startGovernedUpgradable.resolve(startGovernedUpgradable);
@@ -794,13 +809,14 @@ export const BASIC_BOOTSTRAP_PERMITS = {
   },
   [produceStartUpgradable.name]: {
     zone: true,
-    consume: { zoe: 'zoe' },
+    consume: { diagnostics: true, zoe: 'zoe' },
     produce: { startUpgradable: true, contractKits: true },
   },
   [produceStartGovernedUpgradable.name]: {
     zone: true,
     consume: {
       chainTimerService: 'timer',
+      diagnostics: true,
       economicCommitteeCreatorFacet: 'economicCommittee',
       zoe: 'zoe',
     },

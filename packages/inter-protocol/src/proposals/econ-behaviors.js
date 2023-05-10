@@ -314,6 +314,10 @@ export const startVaultFactory = async (
       E(g.creatorFacet).getAdminFacet(),
     ]);
 
+  const { instancePrivateArgs } = await consume.diagnostics;
+  // XXX omitting the governor
+  instancePrivateArgs.set(vaultFactoryInstance, vaultFactoryPrivateArgs);
+
   vaultFactoryKit.resolve(
     harden({
       label: 'VaultFactory',
@@ -326,6 +330,7 @@ export const startVaultFactory = async (
       governorAdminFacet: g.adminFacet,
       governorCreatorFacet: g.creatorFacet,
 
+      // XXX try refactoring to use instancePrivateArgs
       privateArgs: vaultFactoryPrivateArgs,
     }),
   );
