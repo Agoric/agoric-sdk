@@ -233,6 +233,10 @@ const main = async (progname, rawArgs, powers) => {
       DEFAULT_JITTER_SECONDS,
     )
     .option(
+      '-F, --first-value-only',
+      'only display the first value of each <path-spec>',
+    )
+    .option(
       '-o, --output <format>',
       'value output format',
       value => {
