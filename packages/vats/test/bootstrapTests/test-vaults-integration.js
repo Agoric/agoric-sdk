@@ -11,6 +11,7 @@ import { makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
+  unmarshalFromVstorage,
 } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -352,12 +353,9 @@ test('propose change to auction governance param', async t => {
   await eventLoopIteration();
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
-  const key = `published.committees.Economic_Committee.latestQuestion`;
-  const capData = JSON.parse(
-    /** @type {string} */ (storage.data.get(key)?.at(-1)),
-  );
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-  const lastQuestion = fromCapData(capData);
+  const key = `published.committees.Economic_Committee.latestQuestion`;
+  const lastQuestion = unmarshalFromVstorage(storage.data, key, fromCapData);
   const changes = lastQuestion?.issue?.spec?.changes;
   t.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });

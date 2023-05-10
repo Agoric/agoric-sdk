@@ -50,6 +50,53 @@ export const boardValToSlot = val => {
   Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
 };
 
+// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
+// swingset-xsnap-supervisor, etc.
+/**
+ * @param {unknown} data
+ * @returns {asserts data is import('@endo/marshal').CapData<string>}
+ */
+export const assertCapData = data => {
+  assert.typeof(data, 'object');
+  assert(data);
+  assert.typeof(data.body, 'string');
+  assert(Array.isArray(data.slots));
+  // XXX check that the .slots array elements are actually strings
+};
+harden(assertCapData);
+
+/**
+ * Read and unmarshal a value from a map representation of vstorage data
+ *
+ * @param {Map<string, string>} data
+ * @param {string} key
+ * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
+ * @param {number} [index=-1] index of the desired value in a deserialized stream cell
+ */
+export const unmarshalFromVstorage = (data, key, fromCapData, index = -1) => {
+  const serialized = data.get(key) || Fail`no data for ${key}`;
+  assert.typeof(serialized, 'string');
+
+  const streamCell = JSON.parse(serialized);
+  if (!isStreamCell(streamCell)) {
+    throw Fail`not a StreamCell: ${streamCell}`;
+  }
+
+  const { values } = streamCell;
+  values.length > 0 || Fail`no StreamCell values: ${streamCell}`;
+
+  const marshalled = values.at(index);
+  assert.typeof(marshalled, 'string');
+
+  /** @type {import("@endo/marshal").CapData<string>} */
+  const capData = harden(JSON.parse(marshalled));
+  assertCapData(capData);
+
+  const unmarshalled = fromCapData(capData);
+  return unmarshalled;
+};
+harden(unmarshalFromVstorage);
+
 /**
  * @param {import("@agoric/internal/src/storage-test-utils.js").FakeStorageKit} fakeStorageKit
  * @returns {AgoricNamesRemotes}
@@ -64,18 +111,12 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   const reverse = {};
   // TODO support vbankAsset which must recur
   const entries = ['brand', 'instance'].map(kind => {
-    const key = `published.agoricNames.${kind}`;
-
-    const streamCellText = data.get(key);
-    streamCellText || Fail`no data for ${key}`;
-    const streamCell = JSON.parse(streamCellText);
-    isStreamCell(streamCell) || Fail`not a stream cell: ${streamCell}`;
-    const { values } = streamCell;
-    values.length > 0 || Fail`no values for ${key}`;
-    /** @type {import("@endo/marshal").CapData<string>} */
-    const latestCapData = JSON.parse(/** @type {string} */ (values.at(-1)));
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
-    const parts = fromCapData(latestCapData);
+    const parts = unmarshalFromVstorage(
+      data,
+      `published.agoricNames.${kind}`,
+      fromCapData,
+    );
     for (const [name, remote] of parts) {
       reverse[remote.getBoardId()] = name;
     }
@@ -101,50 +142,6 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
 };
 
 /**
- * @param {string} cellText
- * @returns {unknown[]}
- */
-export const parsedValuesFromStreamCellText = cellText => {
-  assert.typeof(cellText, 'string');
-  const cell = /** @type {{blockHeight: string, values: string[]}} */ (
-    JSON.parse(cellText)
-  );
-  isStreamCell(cell) || Fail`not a StreamCell: ${cell}`;
-  const parsedValues = cell.values.map(value => JSON.parse(value));
-  return harden(parsedValues);
-};
-harden(parsedValuesFromStreamCellText);
-
-/**
- * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
-};
-harden(assertCapData);
-
-/**
- * Decode vstorage value to CapData
- *
- * @param {string} cellText
- * @returns {import('@endo/marshal').CapData<string>}
- */
-export const deserializeVstorageValue = cellText => {
-  const values = parsedValuesFromStreamCellText(cellText);
-
-  assert.equal(values.length, 1);
-  const [data] = values;
-  assertCapData(data);
-  return data;
-};
-harden(deserializeVstorageValue);
-
-/**
  * Provide access to object graphs serialized in vstorage.
  *
  * @param {Array<[string, string]>} entries
@@ -153,12 +150,7 @@ harden(deserializeVstorageValue);
 export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   const board = boardSlottingMarshaller(slotToVal);
   const vsMap = new Map(entries);
-
-  const getItem = key => {
-    const raw = vsMap.get(key) || Fail`no ${key}`;
-    const capData = deserializeVstorageValue(raw);
-    return harden(board.fromCapData(capData));
-  };
+  const getItem = key => unmarshalFromVstorage(vsMap, key, board.fromCapData);
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
     return harden([

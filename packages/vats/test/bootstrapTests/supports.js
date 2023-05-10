@@ -14,7 +14,10 @@ import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { boardSlottingMarshaller } from '../../tools/board-utils.js';
+import {
+  boardSlottingMarshaller,
+  unmarshalFromVstorage,
+} from '../../tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
 E;
@@ -260,11 +263,11 @@ export const makeWalletFactoryDriver = async (
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
      */
     getLatestUpdateRecord() {
-      const key = `published.wallet.${walletAddress}`;
-      const lastWalletStatus = JSON.parse(
-        /** @type {string} */ (storage.data.get(key)?.at(-1)),
+      return unmarshalFromVstorage(
+        storage.data,
+        `published.wallet.${walletAddress}`,
+        marshaller.fromCapData,
       );
-      return marshaller.fromCapData(lastWalletStatus);
     },
   });
 
@@ -346,17 +349,10 @@ export const makeSwingsetTestKit = async (
   const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
+  const { fromCapData } = boardSlottingMarshaller(slotToRemotable);
 
-  const marshal = boardSlottingMarshaller(slotToRemotable);
-
-  const readLatest = path => {
-    const str = storage.data.get(path)?.at(-1);
-    if (!str) {
-      throw Fail`no data at path ${path}`;
-    }
-    const capData = JSON.parse(str);
-    return marshal.fromCapData(capData);
-  };
+  const readLatest = path =>
+    unmarshalFromVstorage(storage.data, path, fromCapData);
 
   let lastNonce = 0n;
 
