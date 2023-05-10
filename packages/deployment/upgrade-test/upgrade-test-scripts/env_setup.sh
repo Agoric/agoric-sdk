@@ -1,9 +1,10 @@
 #!/bin/bash
-export STATEDIR=netstate
 export CHAINID=localchain
 
 alias agops="yarn run --silent agops"
-
+if test -f "$HOME/.agoric/envs"; then
+  source "$HOME/.agoric/envs"
+fi
 
 export binary=ag0
 if [ -x "$(command -v "agd")" ]; then
@@ -13,16 +14,16 @@ if [ -x "$(command -v "agd")" ]; then
   sed -i "s/agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h/$GOV3ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
 fi
 
-export GOV1ADDR=$($binary keys show gov1 -a --keyring-backend="test" --home "$STATEDIR")
-export GOV2ADDR=$($binary keys show gov2 -a --keyring-backend="test" --home "$STATEDIR")
-export GOV3ADDR=$($binary keys show gov3 -a --keyring-backend="test" --home "$STATEDIR")
-export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test" --home "$STATEDIR")
+export GOV1ADDR=$($binary keys show gov1 -a --keyring-backend="test")
+export GOV2ADDR=$($binary keys show gov2 -a --keyring-backend="test")
+export GOV3ADDR=$($binary keys show gov3 -a --keyring-backend="test")
+export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test")
 
 
 sendOffer () (
     offer="$1"
     from="$2"
-    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test" --home "$STATEDIR"
+    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test"
 )
 
 wait_for_bootstrap () {
@@ -65,7 +66,7 @@ runActions () {
   action=${1:-"test"}
   if [[ -v THIS_NAME ]]; then
     if test -d "./upgrade-test-scripts/$THIS_NAME"; then
-      fn="${THIS_NAME}_${action}.sh"
+      fn="${action}.sh"
       if test -f "./upgrade-test-scripts/$THIS_NAME/$fn"; then
         echo "RUNACTION: $fn"
         . "./upgrade-test-scripts/$THIS_NAME/$fn"
@@ -114,9 +115,9 @@ voteLatestProposalAndWait() {
   waitForBlock
   proposal=$($binary q gov proposals -o json | jq -r '.proposals[-1].proposal_id')
   waitForBlock
-  $binary tx gov deposit $proposal 50000000ubld --from=validator --chain-id="$CHAINID" --yes --home "$STATEDIR" --keyring-backend test
+  $binary tx gov deposit $proposal 50000000ubld --from=validator --chain-id="$CHAINID" --yes --keyring-backend test
   waitForBlock
-  $binary tx gov vote $proposal yes --from=validator --chain-id="$CHAINID" --yes  --home "$STATEDIR" --keyring-backend test
+  $binary tx gov vote $proposal yes --from=validator --chain-id="$CHAINID" --yes  --keyring-backend test
   waitForBlock
 
 

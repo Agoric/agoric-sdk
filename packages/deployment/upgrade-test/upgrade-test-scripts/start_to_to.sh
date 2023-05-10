@@ -2,8 +2,9 @@
 
 set -e
 . ./upgrade-test-scripts/env_setup.sh
+apt install -y tmux
 
-agd start --home "$STATEDIR" --log_level warn &
+agd start --log_level warn &
 AGD_PID=$!
 wait_for_bootstrap
 waitForBlock 2
@@ -25,7 +26,7 @@ if [[ "$DEST" != "1" ]]; then
   voting_period_s=10
   latest_height=$(agd status | jq -r .SyncInfo.latest_block_height)
   height=$(( $latest_height + $voting_period_s + 10 ))
-  agd tx gov submit-proposal software-upgrade "$UPGRADE_TO" --upgrade-height="$height" --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" --from=validator --chain-id="$CHAINID" --yes --keyring-backend=test --home "$STATEDIR"
+  agd tx gov submit-proposal software-upgrade "$UPGRADE_TO" --upgrade-height="$height" --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" --from=validator --chain-id="$CHAINID" --yes --keyring-backend=test
   waitForBlock
 
   voteLatestProposalAndWait
@@ -45,7 +46,7 @@ if [[ "$DEST" != "1" ]]; then
 
   sleep 2
   kill $AGD_PID
-  echo "state directory $STATEDIR ready for upgrade to $UPGRADE_TO"
+  echo "ready for upgrade to $UPGRADE_TO"
 else
 
   wait $AGD_PID
