@@ -12,20 +12,31 @@ import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 const { values } = Object;
 const marshaller = boardSlottingMarshaller();
 
+/** @type {CurrentWalletRecord} */
+const emptyCurrentRecord = {
+  purses: [],
+  offerToUsedInvitation: [],
+  offerToPublicSubscriberPaths: [],
+  liveOffers: [],
+};
+
 /**
  * @param {string} addr
  * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>}
  */
 export const getCurrent = async (addr, { readLatestHead }) => {
+  // Partial because older writes may not have had all properties
+  // NB: assumes changes are only additions
   const current =
-    /** @type {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined} */ (
+    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord> | undefined} */ (
       await readLatestHead(`published.wallet.${addr}.current`)
     );
   if (current === undefined) {
     throw new Error(`undefined current node for ${addr}`);
   }
-  return current;
+  // override full empty record with defined values from published one
+  return { ...emptyCurrentRecord, ...current };
 };
 
 /**
