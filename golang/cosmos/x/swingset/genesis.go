@@ -37,13 +37,9 @@ type bootstrapBlockAction struct {
 	StoragePort int    `json:"storagePort"`
 }
 
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
-	keeper.SetParams(ctx, data.GetParams())
-	keeper.SetState(ctx, data.GetState())
-
-	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
+func BootSwingset(ctx sdk.Context, keeper Keeper) error {
+  // Just run the SwingSet kernel to finish bootstrap and get ready to open for
 	// business.
-	stdlog.Println("Running SwingSet until bootstrap is ready")
 	action := &bootstrapBlockAction{
 		Type:        "BOOTSTRAP_BLOCK",
 		BlockTime:   ctx.BlockTime().Unix(),
@@ -51,7 +47,16 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 	}
 
 	_, err := keeper.BlockingSend(ctx, action)
+	return err
+}
 
+func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
+	keeper.SetParams(ctx, data.GetParams())
+	keeper.SetState(ctx, data.GetState())
+
+	stdlog.Println("Running SwingSet until bootstrap is ready")
+	err := BootSwingset(ctx, keeper)
+	
 	// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
