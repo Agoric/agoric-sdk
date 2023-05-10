@@ -629,10 +629,10 @@ export function makeCollectionManager(
 
     const addAllToSet = elems => {
       if (typeof elems[Symbol.iterator] !== 'function') {
-        if (isCopySet(elems)) {
+        if (Object.isFrozen(elems) && isCopySet(elems)) {
           elems = getCopySetKeys(elems);
         } else {
-          Fail`provided data source is not iterable`;
+          Fail`provided data source is not iterable: ${elems}`;
         }
       }
       for (const elem of elems) {
@@ -642,10 +642,10 @@ export function makeCollectionManager(
 
     const addAllToMap = mapEntries => {
       if (typeof mapEntries[Symbol.iterator] !== 'function') {
-        if (isCopyMap(mapEntries)) {
+        if (Object.isFrozen(mapEntries) && isCopyMap(mapEntries)) {
           mapEntries = getCopyMapEntries(mapEntries);
         } else {
-          Fail`provided data source is not iterable`;
+          Fail`provided data source is not iterable: ${mapEntries}`;
         }
       }
       for (const [key, value] of mapEntries) {

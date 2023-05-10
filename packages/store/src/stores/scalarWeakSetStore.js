@@ -43,10 +43,10 @@ export const makeWeakSetStoreMethods = (
 
     addAll: keys => {
       if (typeof keys[Symbol.iterator] !== 'function') {
-        if (isCopySet(keys)) {
+        if (Object.isFrozen(keys) && isCopySet(keys)) {
           keys = getCopySetKeys(keys);
         } else {
-          Fail`provided data source is not iterable`;
+          Fail`provided data source is not iterable: ${keys}`;
         }
       }
       for (const key of /** @type {Iterable<K>} */ (keys)) {
