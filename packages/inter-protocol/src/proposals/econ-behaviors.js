@@ -328,7 +328,6 @@ export const startVaultFactory = async (
 
   // Advertise the installations, instances in agoricNames.
   instanceProduce.VaultFactory.resolve(vaultFactoryInstance);
-  instanceProduce.Treasury.resolve(vaultFactoryInstance);
   instanceProduce.VaultFactoryGovernor.resolve(governorInstance);
 };
 
