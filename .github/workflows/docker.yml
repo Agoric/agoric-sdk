@@ -69,7 +69,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
       - name: Build and Push ssh-node
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           file: packages/deployment/Dockerfile.ssh-node
           context: packages/deployment/docker
@@ -77,7 +77,7 @@ jobs:
           push: true
           tags: '${{ env.REGISTRY }}/agoric/ssh-node:${{ env.BUILD_TAG }}'
       - name: Build and Push sdk
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           file: packages/deployment/Dockerfile.sdk
           context: ./
@@ -94,7 +94,7 @@ jobs:
             XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
             GIT_REVISION=${{env.GIT_REVISION}}
       - name: Build and Push setup
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           file: packages/deployment/Dockerfile
           context: packages/deployment
@@ -208,7 +208,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
       - name: Build and Push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           file: packages/deployment/Dockerfile.ibc-alpha
           context: packages/deployment/docker
@@ -258,7 +258,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
       - name: Build and Push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           file: packages/solo/Dockerfile
           context: packages/solo
