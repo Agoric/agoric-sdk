@@ -13,7 +13,10 @@ import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/ex
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
-const PROD_CONFIG_FILES = ['decentral-test-vaults-config.json'];
+const PROD_CONFIG_FILES = [
+  'decentral-main-vaults-config.json',
+  'decentral-test-vaults-config.json',
+];
 
 const CONFIG_FILES = [
   'decentral-core-config.json', // TODO: remove mints from core-config
@@ -26,8 +29,6 @@ const NON_UPGRADEABLE_VATS = [
   'vat-network',
   'vat-ibc',
   'pegasus',
-  // TODO(#6687): prune centralSupply from prod config
-  // 'centralSupply',
   'mints',
   'sharing',
 ];

@@ -210,7 +210,7 @@ export const registerScaledPriceAuthority = async (
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
- * @param {bigint} config.options.debtLimitValue
+ * @param {bigint | number | string} config.options.debtLimitValue
  * @param {bigint} config.options.interestRateValue
  */
 export const addAssetToVault = async (
@@ -242,7 +242,7 @@ export const addAssetToVault = async (
   const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
-    debtLimit: AmountMath.make(stable, debtLimitValue),
+    debtLimit: AmountMath.make(stable, BigInt(debtLimitValue)),
     interestRate: makeRatio(interestRateValue, stable),
     // The rest of these we use safe defaults.
     // In production they will be governed by the Econ Committee.

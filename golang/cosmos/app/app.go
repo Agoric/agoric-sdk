@@ -781,7 +781,7 @@ func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 
 		switch targetUpgrade {
 		case upgradeName:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-vaults-config.json"
+			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-main-vaults-config.json"
 		case upgradeNameTest:
 			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-test-vaults-config.json"
 		default:
