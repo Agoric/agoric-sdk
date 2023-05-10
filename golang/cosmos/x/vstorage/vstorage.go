@@ -197,7 +197,11 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		entries := make([][]interface{}, len(children.Children))
 		for i, child := range children.Children {
 			entry := keeper.GetEntry(cctx.Context, fmt.Sprintf("%s.%s", path, child))
-			entries[i] = []interface{}{child, entry.Value()}
+			if !entry.HasData() {
+				entries[i] = []interface{}{child}
+			} else {
+				entries[i] = []interface{}{child, entry.Value()}
+			}
 		}
 		bytes, err := json.Marshal(entries)
 		if err != nil {

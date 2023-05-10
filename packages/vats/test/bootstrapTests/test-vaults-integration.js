@@ -6,6 +6,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeMarshal } from '@endo/marshal';
 import {
@@ -352,10 +353,9 @@ test('propose change to auction governance param', async t => {
   await eventLoopIteration();
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
-  const key = `published.committees.Economic_Committee.latestQuestion`;
-  const capData = JSON.parse(storage.data.get(key)?.at(-1));
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-  const lastQuestion = fromCapData(capData);
+  const key = `published.committees.Economic_Committee.latestQuestion`;
+  const lastQuestion = unmarshalFromVstorage(storage.data, key, fromCapData);
   const changes = lastQuestion?.issue?.spec?.changes;
   t.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });

@@ -1,10 +1,26 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
-import { makeChainStorageRoot } from './lib-chainStorage.js';
+import {
+  isStreamCell,
+  makeChainStorageRoot,
+  unmarshalFromVstorage,
+} from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 
-const { Fail, quote: q } = assert;
+const { Fail } = assert;
+
+/**
+ * A map corresponding with a total function such that `get(key)`
+ * is assumed to always succeed.
+ *
+ * @template K, V
+ * @typedef {{[k in Exclude<keyof Map<K, V>, 'get'>]: Map<K, V>[k]} & {get: (key: K) => V}} TotalMap
+ */
+/**
+ * @template T
+ * @typedef {T extends Map<infer K, infer V> ? TotalMap<K, V> : never} TotalMapFrom
+ */
 
 /**
  * A convertSlotToVal function that produces basic Remotables. Assumes
@@ -71,54 +87,88 @@ export const slotStringUnserialize = makeSlotStringUnserialize();
 /**
  * For testing, creates a chainStorage root node over an in-memory map
  * and exposes both the map and the sequence of received messages.
+ * The `sequence` option defaults to true.
  *
  * @param {string} rootPath
  * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
  */
 export const makeFakeStorageKit = (rootPath, rootOptions) => {
-  /** @type {Map<string, any[]>} */
+  const resolvedOptions = { sequence: true, ...rootOptions };
+  /** @type {TotalMap<string, string>} */
   const data = new Map();
   /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
   const messages = [];
   /** @param {import('../src/lib-chainStorage.js').StorageMessage} message */
   // eslint-disable-next-line consistent-return
-  const toStorage = async message => {
+  const toStorage = message => {
     messages.push(message);
     switch (message.method) {
       case 'getStoreKey': {
-        return {
-          storeName: 'swingset',
-          storeSubkey: `fake:${message.args[0]}`,
-        };
+        const [key] = message.args;
+        return { storeName: 'swingset', storeSubkey: `fake:${key}` };
       }
-      case 'set':
-        for (const [key, value] of message.args) {
-          if (value !== undefined) {
-            data.set(key, [value]);
+      case 'get': {
+        const [key] = message.args;
+        return data.has(key) ? data.get(key) : null;
+      }
+      case 'entries': {
+        const [key] = message.args;
+        const prefix = `${key}.`;
+        const childData = new Map();
+        for (const [path, value] of data.entries()) {
+          if (!path.startsWith(prefix)) {
+            continue;
+          }
+          const [segment, ...suffix] = path.slice(prefix.length).split('.');
+          if (suffix.length === 0) {
+            childData.set(segment, value);
+          } else if (!childData.has(segment)) {
+            childData.set(segment, null);
+          }
+        }
+        return [...childData.entries()].map(entry =>
+          entry[1] != null ? entry : [entry[0]],
+        );
+      }
+      case 'set': {
+        /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
+        const newEntries = message.args;
+        for (const [key, value] of newEntries) {
+          if (value != null) {
+            data.set(key, value);
           } else {
             data.delete(key);
           }
         }
         break;
-      case 'append':
-        for (const [key, value] of message.args) {
-          if (value === undefined) {
-            throw Error(`attempt to append with no value`);
-          }
-          let sequence = data.get(key);
-          if (!Array.isArray(sequence)) {
-            if (sequence === undefined) {
-              // Initialize an empty collection.
-              sequence = [];
-            } else {
-              // Wrap a previous single value in a collection.
-              sequence = [sequence];
+      }
+      case 'append': {
+        /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
+        const newEntries = message.args;
+        for (const [key, value] of newEntries) {
+          value != null || Fail`attempt to append with no value`;
+          // In the absence of block boundaries, everything goes in a single StreamCell.
+          const oldVal = data.get(key);
+          let streamCell;
+          if (oldVal != null) {
+            try {
+              streamCell = JSON.parse(oldVal);
+              assert(isStreamCell(streamCell));
+            } catch (_err) {
+              streamCell = undefined;
             }
-            data.set(key, sequence);
           }
-          sequence.push(value);
+          if (streamCell === undefined) {
+            streamCell = {
+              blockHeight: '0',
+              values: oldVal != null ? [oldVal] : [],
+            };
+          }
+          streamCell.values.push(value);
+          data.set(key, JSON.stringify(streamCell));
         }
         break;
+      }
       case 'size':
         // Intentionally incorrect because it counts non-child descendants,
         // but nevertheless supports a "has children" test.
@@ -128,7 +178,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         throw Error(`unsupported method: ${message.method}`);
     }
   };
-  const rootNode = makeChainStorageRoot(toStorage, rootPath, rootOptions);
+  const rootNode = makeChainStorageRoot(toStorage, rootPath, resolvedOptions);
   return { rootNode, data, messages, toStorage };
 };
 harden(makeFakeStorageKit);
@@ -150,14 +200,10 @@ export const makeMockChainStorageRoot = () => {
      */
     getBody: (path, marshaller = defaultMarshaller) => {
       data.size || Fail`no data in storage`;
-      const dataStr = data.get(path)?.at(-1);
-      if (!dataStr) {
-        console.debug('mockChainStorage data:', data);
-        Fail`no data at ${q(path)}`;
-      }
-      assert.typeof(dataStr, 'string');
-      const datum = JSON.parse(dataStr);
-      return marshaller.fromCapData(datum);
+      /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
+      const fromCapData = (...args) =>
+        Reflect.apply(marshaller.fromCapData, marshaller, args);
+      return unmarshalFromVstorage(data, path, fromCapData);
     },
     keys: () => [...data.keys()],
   });

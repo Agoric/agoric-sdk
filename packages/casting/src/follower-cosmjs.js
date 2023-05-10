@@ -5,6 +5,8 @@ import { E, Far } from '@endo/far';
 import * as tendermint34 from '@cosmjs/tendermint-rpc';
 import * as stargateStar from '@cosmjs/stargate';
 
+import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
+
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
@@ -26,21 +28,6 @@ const textDecoder = new TextDecoder();
  * This is a subset of `tendermint34.AbciQueryResponse` in order
  * to abstract away Tendermint versions.
  */
-
-/**
- * This is an imperfect heuristic to navigate the migration from value cells to
- * stream cells.
- * At time of writing, no legacy cells have the same shape as a stream cell,
- * and we do not intend to create any more legacy value cells.
- *
- * @param {any} cell
- */
-const isStreamCell = cell =>
-  cell &&
-  typeof cell === 'object' &&
-  Array.isArray(cell.values) &&
-  typeof cell.blockHeight === 'string' &&
-  /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
 
 /**
  * @param {Uint8Array} a

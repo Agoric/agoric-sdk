@@ -12,7 +12,8 @@ import {
 
 test('makeFakeStorageKit', async t => {
   const rootPath = 'root';
-  const { rootNode, messages } = makeFakeStorageKit(rootPath);
+  const opts = { sequence: false };
+  const { rootNode, messages, toStorage } = makeFakeStorageKit(rootPath, opts);
   t.is(rootNode.getPath(), rootPath);
   const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
@@ -149,6 +150,16 @@ test('makeFakeStorageKit', async t => {
     messages.slice(-1),
     [{ method: 'set', args: [[deepPath, 'foo']] }],
     'level-skipping setValue message',
+  );
+  t.deepEqual(
+    await toStorage({ method: 'entries', args: [`${rootPath}.child`] }),
+    [['grandchild', 'foo']],
+    'child entries',
+  );
+  t.deepEqual(
+    await toStorage({ method: 'entries', args: [rootPath] }),
+    [...extremeSegments.map(segment => [segment, 'foo']), ['child']],
+    'entries include empty non-terminals',
   );
 
   await childNode.setValue('');

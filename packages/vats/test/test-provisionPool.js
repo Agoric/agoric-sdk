@@ -25,6 +25,12 @@ import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
 import { PowerFlags } from '../src/walletFlags.js';
 import { makeFakeBankKit } from '../tools/bank-utils.js';
 
+/**
+ * @typedef {import('../src/vat-bank.js').Bank} Bank
+ * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
+ * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
+ */
+
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
@@ -267,9 +273,9 @@ test('provisionPool trades provided assets for IST', async t => {
  * out the part that had a bug as `publishDepositFacet`
  * and we make a mock walletFactory that uses it.
  *
- * @param {string} address
+ * @param {string[]} addresses
  */
-const makeWalletFactoryKitFor1 = async address => {
+const makeWalletFactoryKitForAddresses = async addresses => {
   const baggage = makeScalarBigMapStore('bank baggage');
   const bankManager = await buildBankRoot(
     undefined,
@@ -286,41 +292,78 @@ const makeWalletFactoryKitFor1 = async address => {
     return E(E(dest).getPurse(fees.brand)).deposit(pmt);
   };
 
-  const b1 = bankManager.getBankForAddress(address);
-  const p1 = E(b1).getPurse(fees.brand);
+  /** @type {Map<string, Promise<Bank>>} */
+  const banks = new Map(
+    addresses.map(addr => [addr, bankManager.getBankForAddress(addr)]),
+  );
+  /** @type {Map<string, Purse>} */
+  // @ts-expect-error
+  const purses = new Map(
+    addresses.map(addr => [
+      addr,
+      E(/** @type {Promise<Bank>} */ (banks.get(addr))).getPurse(fees.brand),
+    ]),
+  );
+  /** @type {Map<string, SmartWallet>} */
+  // @ts-expect-error
+  const wallets = new Map(
+    addresses.map(addr => {
+      const purse = /** @type {Purse} */ (purses.get(addr));
+      const mockWallet = Far('mock wallet', {
+        getDepositFacet: () =>
+          Far('mock depositFacet', {
+            receive: payment => E(purse).deposit(payment),
+          }),
+      });
+      return [addr, mockWallet];
+    }),
+  );
 
-  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} */
-  // @ts-expect-error mock
-  const smartWallet = harden({
-    getDepositFacet: () => {
-      pmt => E(p1).deposit(pmt);
-    },
-  });
+  /** @type {WalletReviver | undefined} */
+  let walletReviver;
+  /** @param {ERef<WalletReviver>} walletReviverP */
+  const setReviver = async walletReviverP => {
+    walletReviver = await walletReviverP;
+  };
 
   const done = new Set();
   /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
-  // @ts-expect-error cast mock
-  const walletFactory = {
-    provideSmartWallet: async (a, _b, nameAdmin) => {
-      assert.equal(a, address);
+  const walletFactory = Far('mock walletFactory', {
+    provideSmartWallet: async (addr, _b, nameAdmin) => {
+      const wallet = wallets.get(addr);
+      assert(wallet);
 
-      const created = !done.has(a);
-      if (created) {
-        await publishDepositFacet(address, smartWallet, nameAdmin);
-        done.add(a);
+      let isNew = !done.has(addr);
+      if (isNew) {
+        const isRevive =
+          walletReviver && (await E(walletReviver).ackWallet(addr));
+        if (isRevive) {
+          isNew = false;
+        } else {
+          await publishDepositFacet(addr, wallet, nameAdmin);
+        }
+        done.add(addr);
       }
-      return [smartWallet, created];
+      return [wallet, isNew];
     },
-  };
+  });
 
-  return { fees, sendInitialPayment, bankManager, walletFactory, p1 };
+  return {
+    fees,
+    sendInitialPayment,
+    bankManager,
+    walletFactory,
+    setReviver,
+    purses,
+  };
 };
 
 test('makeBridgeProvisionTool handles duplicate requests', async t => {
   const address = 'addr123';
   t.log('make a wallet factory just for', address);
-  const { walletFactory, p1, fees, sendInitialPayment, bankManager } =
-    await makeWalletFactoryKitFor1(address);
+  const { walletFactory, purses, fees, sendInitialPayment, bankManager } =
+    await makeWalletFactoryKitForAddresses([address]);
+  const purse = /** @type {Purse} */ (purses.get(address));
 
   t.log('use makeBridgeProvisionTool to make a bridge handler');
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
@@ -344,7 +387,7 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   });
 
   t.deepEqual(
-    await E(p1).getCurrentAmount(),
+    await E(purse).getCurrentAmount(),
     fees.make(250n),
     'received starter funds',
   );
@@ -365,8 +408,126 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
     'depositFacet lookup finds the same object',
   );
   t.deepEqual(
-    await E(p1).getCurrentAmount(),
+    await E(purse).getCurrentAmount(),
     fees.make(500n),
     'received more starter funds',
+  );
+});
+
+test('provisionPool revives old wallets', async t => {
+  const { zoe, installs, storageRoot, committeeCreator } = t.context;
+
+  // make a mock wallet factory and setup its bank
+  const oldAddr = 'addr_old';
+  const newAddr = 'addr_new';
+  const { walletFactory, setReviver, purses, fees, bankManager } =
+    await makeWalletFactoryKitForAddresses([oldAddr, newAddr]);
+  const oldPurse = /** @type {Purse} */ (purses.get(oldAddr));
+  const newPurse = /** @type {Purse} */ (purses.get(newAddr));
+  const poolBank = await E(bankManager).getBankForAddress('pool');
+  const poolPurse = E(poolBank).getPurse(fees.brand);
+  await E(poolPurse).deposit(
+    await E(fees.mint).mintPayment(fees.make(scale6(100))),
+  );
+
+  // start a provisionPool contract with mock governance terms
+  const starterAmount = fees.make(250n);
+  const initialPoserInvitation = await E(committeeCreator).getPoserInvitation();
+  const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
+    initialPoserInvitation,
+  );
+  const govTerms = {
+    electionManager: /** @type {any} */ (null),
+    initialPoserInvitation,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
+      PerAccountInitialAmount: {
+        type: ParamTypes.AMOUNT,
+        value: starterAmount,
+      },
+    },
+  };
+  const facets = await E(zoe).startInstance(
+    installs.provisionPool,
+    {},
+    govTerms,
+    {
+      poolBank,
+      initialPoserInvitation,
+      storageNode: storageRoot.makeChildNode('provisionPool'),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+    },
+  );
+  const creatorFacet = E(facets.creatorFacet).getLimitedCreatorFacet();
+
+  // identify the old address
+  await E(creatorFacet).addRevivableAddresses([oldAddr]);
+
+  // make a bridge handler for provisioning wallets
+  await E(creatorFacet).setReferences({
+    bankManager,
+    namesByAddressAdmin: makeNameHubKit().nameAdmin,
+    walletFactory,
+  });
+  const bridgeHandler = await E(creatorFacet).makeHandler();
+
+  // revive the old wallet and verify absence of new starter funds
+  const reviverP = E(creatorFacet).getWalletReviver();
+  await setReviver(reviverP);
+  const reviveWallet = addr => E(reviverP).reviveWallet(addr);
+  await t.throwsAsync(
+    reviveWallet('addr_unknown'),
+    undefined,
+    'must not revive wallet for unknown address',
+  );
+  const oldWallet = await reviveWallet(oldAddr);
+  t.deepEqual(
+    await E(oldPurse).getCurrentAmount(),
+    fees.make(0n),
+    'revived wallet must not receive new starter funds',
+  );
+  const epsilon = fees.make(1n);
+  /** @type {any} */
+  const epsilonPayment = fees.mint.mintPayment(epsilon);
+  await E(E(oldWallet).getDepositFacet()).receive(epsilonPayment);
+  t.deepEqual(
+    await E(oldPurse).getCurrentAmount(),
+    epsilon,
+    'revived wallet must be associated with expected purse',
+  );
+
+  // provision a new wallet and verify starter funds
+  const provisionWallet = address =>
+    E(bridgeHandler).fromBridge({
+      type: 'PLEASE_PROVISION',
+      address,
+      powerFlags: PowerFlags.SMART_WALLET,
+    });
+  await provisionWallet(newAddr);
+  t.deepEqual(
+    await E(newPurse).getCurrentAmount(),
+    starterAmount,
+    'new wallet must receive starter funds',
+  );
+  await t.throwsAsync(
+    reviveWallet(newAddr),
+    undefined,
+    'must not revive wallet for new address',
+  );
+
+  // (re)provision a revived wallet
+  await provisionWallet(oldAddr);
+  t.deepEqual(
+    await E(oldPurse).getCurrentAmount(),
+    AmountMath.add(epsilon, starterAmount),
+    'old wallet received new starter funds',
+  );
+  await t.throwsAsync(
+    reviveWallet(oldAddr),
+    undefined,
+    'must not re-revive wallet',
   );
 });

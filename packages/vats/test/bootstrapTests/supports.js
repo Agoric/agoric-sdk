@@ -14,6 +14,7 @@ import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
@@ -193,8 +194,11 @@ export const makeWalletFactoryDriver = async (
   /**
    * @param {string} walletAddress
    * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
+   * @param {boolean} isNew
    */
-  const makeWalletDriver = (walletAddress, walletPresence) => ({
+  const makeWalletDriver = (walletAddress, walletPresence, isNew) => ({
+    isNew,
+
     /**
      * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
      * @returns {Promise<void>}
@@ -257,9 +261,13 @@ export const makeWalletFactoryDriver = async (
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
      */
     getLatestUpdateRecord() {
-      const key = `published.wallet.${walletAddress}`;
-      const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
-      return marshaller.fromCapData(lastWalletStatus);
+      const fromCapData = (...args) =>
+        Reflect.apply(marshaller.fromCapData, marshaller, args);
+      return unmarshalFromVstorage(
+        storage.data,
+        `published.wallet.${walletAddress}`,
+        fromCapData,
+      );
     },
   });
 
@@ -271,8 +279,8 @@ export const makeWalletFactoryDriver = async (
       const bank = await EV(bankManager).getBankForAddress(walletAddress);
       return EV(walletFactoryStartResult.creatorFacet)
         .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
-        .then(([walletPresence, _isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence),
+        .then(([walletPresence, isNew]) =>
+          makeWalletDriver(walletAddress, walletPresence, isNew),
         );
     },
   };
@@ -328,28 +336,23 @@ export const getNodeTestVaultsConfig = async (
  *
  * @param {import('ava').ExecutionContext} t
  * @param {string} bundleDir directory to write bundles and config to
- * @param {string} [specifier] bootstrap config specifier
+ * @param {object} [options]
+ * @param {string} [options.configSpecifier] bootstrap config specifier
+ * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
 export const makeSwingsetTestKit = async (
   t,
   bundleDir = 'bundles',
-  specifier,
+  { configSpecifier, storage = makeFakeStorageKit('bootstrapTests') } = {},
 ) => {
   console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
+  const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
+  const { fromCapData } = boardSlottingMarshaller(slotToRemotable);
 
-  const storage = makeFakeStorageKit('bootstrapTests');
-
-  const marshal = boardSlottingMarshaller(slotToRemotable);
-
-  const readLatest = path => {
-    const str = storage.data.get(path)?.at(-1);
-    str || Fail`no data at path ${path}`;
-    const capData = JSON.parse(storage.data.get(path)?.at(-1));
-    return marshal.fromCapData(capData);
-  };
+  const readLatest = path =>
+    unmarshalFromVstorage(storage.data, path, fromCapData);
 
   let lastNonce = 0n;
 
@@ -412,8 +415,7 @@ export const makeSwingsetTestKit = async (
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
       case BridgeId.STORAGE:
-        void storage.toStorage(obj);
-        return undefined;
+        return storage.toStorage(obj);
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);
     }

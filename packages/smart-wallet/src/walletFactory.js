@@ -122,6 +122,12 @@ export const makeAssetRegistry = assetPublisher => {
  *     import('@agoric/notifier/src/types').IterableEachTopic<
  *       import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
+ *
+ * @typedef {boolean} isRevive
+ * @typedef {{
+ *   reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>,
+ *   ackWallet: (address: string) => isRevive,
+ * }} WalletReviver
  */
 
 // NB: even though all the wallets share this contract, they
@@ -132,6 +138,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {{
  *   storageNode: ERef<StorageNode>,
  *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
+ *   walletReviver?: ERef<WalletReviver>,
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -139,7 +146,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, walletBridgeManager } = privateArgs;
+  const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
@@ -179,7 +186,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         );
         mustMatch(harden(actionCapData), shape.StringCapData);
 
-        const wallet = walletsByAddress.get(obj.owner); // or throw
+        // Revive an old wallet if necessary, but otherwise
+        // insist that it is already in the store.
+        const address = obj.owner;
+        const walletP =
+          !walletsByAddress.has(address) && walletReviver
+            ? // this will call provideSmartWallet which will update `walletsByAddress` for next time
+              E(walletReviver).reviveWallet(address)
+            : walletsByAddress.get(address); // or throw
+        const wallet = await walletP;
 
         console.log('walletFactory:', { wallet, actionCapData });
         return E(wallet).handleBridgeAction(actionCapData, canSpend);
@@ -237,14 +252,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
        * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[import('./smartWallet').SmartWallet, boolean]>} wallet
+       * @returns {Promise<[wallet: import('./smartWallet').SmartWallet, isNew: boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
-        let makerCalled = false;
-        /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
-        const maker = async () => {
+        let isNew = false;
+
+        /** @type {(address: string) => Promise<import('./smartWallet').SmartWallet>} */
+        const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);
           const wallet = await makeSmartWallet(
@@ -254,13 +270,20 @@ export const prepare = async (zcf, privateArgs, baggage) => {
           // An await here would deadlock with invitePSMCommitteeMembers
           void publishDepositFacet(address, wallet, namesByAddressAdmin);
 
-          makerCalled = true;
+          isNew = true;
           return wallet;
         };
 
+        const finisher = walletReviver
+          ? async (_address, _wallet) => {
+              const isRevive = await E(walletReviver).ackWallet(address);
+              isNew = !isRevive;
+            }
+          : undefined;
+
         return provider
-          .provideAsync(address, maker)
-          .then(w => [w, makerCalled]);
+          .provideAsync(address, maker, finisher)
+          .then(w => [w, isNew]);
       },
     },
   );

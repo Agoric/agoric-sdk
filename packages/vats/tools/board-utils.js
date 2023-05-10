@@ -25,8 +25,9 @@
 
 import { Fail } from '@agoric/assert';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { Far } from '@endo/far';
-import { isObject, makeMarshal } from '@endo/marshal';
+import { makeMarshal } from '@endo/marshal';
 import { prepareBoardKit } from '../src/lib-board.js';
 
 /**
@@ -34,8 +35,7 @@ import { prepareBoardKit } from '../src/lib-board.js';
  * @returns {BoardRemote}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
-  const nonalleged =
-    iface && iface.length ? iface.slice('Alleged: '.length) : '';
+  const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
   return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
 };
 
@@ -63,14 +63,12 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   const reverse = {};
   // TODO support vbankAsset which must recur
   const entries = ['brand', 'instance'].map(kind => {
-    const key = `published.agoricNames.${kind}`;
-
-    const values = data.get(key);
-    if (!(values && values.length > 0)) throw Fail`no data for ${key}`;
-    /** @type {import("@endo/marshal").CapData<string>} */
-    const latestCapData = JSON.parse(values.at(-1));
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
-    const parts = fromCapData(latestCapData);
+    const parts = unmarshalFromVstorage(
+      data,
+      `published.agoricNames.${kind}`,
+      fromCapData,
+    );
     for (const [name, remote] of parts) {
       reverse[remote.getBoardId()] = name;
     }
@@ -96,55 +94,6 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
 };
 
 /**
- * @param {string} cellText
- * @returns {unknown[]}
- */
-export const parsedValuesFromStreamCellText = cellText => {
-  assert.typeof(cellText, 'string');
-  const cell = /** @type {{blockHeight: string, values: string[]}} */ (
-    JSON.parse(cellText)
-  );
-
-  assert(isObject(cell));
-  const { values } = cell;
-
-  assert(Array.isArray(values));
-  const parsedValues = values.map(value => JSON.parse(value));
-
-  return harden(parsedValues);
-};
-harden(parsedValuesFromStreamCellText);
-
-/**
- * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
-};
-harden(assertCapData);
-
-/**
- * Decode vstorage value to CapData
- *
- * @param {string} cellText
- * @returns {import('@endo/marshal').CapData<string>}
- */
-export const deserializeVstorageValue = cellText => {
-  const values = parsedValuesFromStreamCellText(cellText);
-
-  assert.equal(values.length, 1);
-  const [data] = values;
-  assertCapData(data);
-  return data;
-};
-harden(deserializeVstorageValue);
-
-/**
  * Provide access to object graphs serialized in vstorage.
  *
  * @param {Array<[string, string]>} entries
@@ -153,22 +102,19 @@ harden(deserializeVstorageValue);
 export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   const board = boardSlottingMarshaller(slotToVal);
   const vsMap = new Map(entries);
-
-  const getItem = key => {
-    const raw = vsMap.get(key) || Fail`no ${key}`;
-    const capData = deserializeVstorageValue(raw);
-    return harden(board.fromCapData(capData));
-  };
+  const fromCapData = (...args) =>
+    Reflect.apply(board.fromCapData, board, args);
+  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData);
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
-    return [
+    return harden([
       ...new Set(
         entries
           .map(([k, _]) => k)
           .filter(k => k.startsWith(prefix))
           .map(k => k.slice(prefix.length).split('.')[0]),
       ),
-    ];
+    ]);
   };
   return harden({ getItem, children, has: k => vsMap.has(k) });
 };

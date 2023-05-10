@@ -20,6 +20,13 @@ const { Fail } = assert;
  */
 
 /**
+ * @template [T=unknown]
+ * @typedef StreamCell
+ * @property {string} blockHeight decimal representation of a natural number
+ * @property {T[]} values
+ */
+
+/**
  * This represents a node in an IAVL tree.
  *
  * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
@@ -43,6 +50,70 @@ const ChainStorageNodeI = M.interface('StorageNode', {
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
     .returns(M.remotable('StorageNode')),
 });
+
+/**
+ * This is an imperfect heuristic to navigate the migration from value cells to
+ * stream cells.
+ * At time of writing, no legacy cells have the same shape as a stream cell,
+ * and we do not intend to create any more legacy value cells.
+ *
+ * @param {any} cell
+ * @returns {cell is StreamCell}
+ */
+export const isStreamCell = cell =>
+  cell &&
+  typeof cell === 'object' &&
+  Array.isArray(cell.values) &&
+  typeof cell.blockHeight === 'string' &&
+  /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
+harden(isStreamCell);
+
+// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
+// swingset-xsnap-supervisor, etc.
+/**
+ * @param {unknown} data
+ * @returns {asserts data is import('@endo/marshal').CapData<string>}
+ */
+export const assertCapData = data => {
+  assert.typeof(data, 'object');
+  assert(data);
+  assert.typeof(data.body, 'string');
+  assert(Array.isArray(data.slots));
+  // XXX check that the .slots array elements are actually strings
+};
+harden(assertCapData);
+
+/**
+ * Read and unmarshal a value from a map representation of vstorage data
+ *
+ * @param {Map<string, string>} data
+ * @param {string} key
+ * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
+ * @param {number} [index=-1] index of the desired value in a deserialized stream cell
+ */
+export const unmarshalFromVstorage = (data, key, fromCapData, index = -1) => {
+  const serialized = data.get(key) || Fail`no data for ${key}`;
+  assert.typeof(serialized, 'string');
+
+  const streamCell = JSON.parse(serialized);
+  if (!isStreamCell(streamCell)) {
+    throw Fail`not a StreamCell: ${streamCell}`;
+  }
+
+  const { values } = streamCell;
+  values.length > 0 || Fail`no StreamCell values: ${streamCell}`;
+
+  const marshalled = values.at(index);
+  assert.typeof(marshalled, 'string');
+
+  /** @type {import("@endo/marshal").CapData<string>} */
+  const capData = harden(JSON.parse(marshalled));
+  assertCapData(capData);
+
+  const unmarshalled = fromCapData(capData);
+  return unmarshalled;
+};
+harden(unmarshalFromVstorage);
 
 /**
  * @typedef {object} StoredFacet

@@ -159,6 +159,10 @@
       }
     }
   },
+  "exportStorageSubtrees": [
+    "published.psm.IST",
+    "published.wallet"
+  ],
   "bundles": {
     "agoricNames": {
       "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"

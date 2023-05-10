@@ -5,6 +5,10 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import {
+  makeHistoryReviver,
+  slotToBoardRemote,
+} from '../../tools/board-utils.js';
 import { Stable } from '../tokens.js';
 
 const trace = makeTracer('StartWF');
@@ -23,7 +27,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
- * @param {BootstrapPowers & PromiseSpaceOf<{
+ * @param {BootstrapPowers & ChainStorageVatParams & PromiseSpaceOf<{
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
  *   econCharterKit: {
  *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']>>['creatorFacet'],
@@ -40,6 +44,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  */
 export const startWalletFactory = async (
   {
+    vatParameters: { chainStorageEntries = [] },
     consume: {
       agoricNames,
       bankManager,
@@ -101,32 +106,15 @@ export const startWalletFactory = async (
     feeIssuerP,
   ]);
 
-  const poolBank = E(bankManager).getBankForAddress(poolAddr);
-  const terms = await deeplyFulfilled(
-    harden({
-      agoricNames,
-      board,
-      // TODO(#5885): vbank should provide a facet attenuated
-      // to only provide getAssetSubscription
-      // meanwhile, expose the whole poolBank rather than
-      // adding a bootstrap export.
-      assetPublisher: poolBank,
-    }),
+  // Carry forward wallets with an address already in chain storage.
+  const dataReviver = makeHistoryReviver(
+    chainStorageEntries,
+    slotToBoardRemote,
   );
+  const walletStoragePath = await E(walletStorageNode).getPath();
+  const oldAddresses = dataReviver.children(`${walletStoragePath}.`);
 
-  const wfFacets = await E(startUpgradable)({
-    installation: walletFactory,
-    issuerKeywordRecord: { Fee: feeIssuer },
-    terms,
-    privateArgs: {
-      storageNode: walletStorageNode,
-      walletBridgeManager,
-    },
-    label: 'walletFactory',
-  });
-  walletFactoryStartResult.resolve(wfFacets);
-  instanceProduce.walletFactory.resolve(wfFacets.instance);
-
+  const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
     terms: {},
@@ -146,14 +134,44 @@ export const startWalletFactory = async (
   provisionPoolStartResult.resolve(ppFacets);
   instanceProduce.provisionPool.resolve(ppFacets.instance);
 
-  const handler = await E(ppFacets.creatorFacet).makeHandler({
-    bankManager,
-    namesByAddressAdmin,
-    walletFactory: wfFacets.creatorFacet,
+  const terms = await deeplyFulfilled(
+    harden({
+      agoricNames,
+      board,
+      // TODO(#5885): vbank should provide a facet attenuated
+      // to only provide getAssetSubscription
+      // meanwhile, expose the whole poolBank rather than
+      // adding a bootstrap export.
+      assetPublisher: poolBank,
+    }),
+  );
+
+  const wfFacets = await E(startUpgradable)({
+    installation: walletFactory,
+    issuerKeywordRecord: { Fee: feeIssuer },
+    terms,
+    privateArgs: {
+      storageNode: walletStorageNode,
+      walletBridgeManager,
+      walletReviver: E(ppFacets.creatorFacet).getWalletReviver(),
+    },
+    label: 'walletFactory',
   });
+  walletFactoryStartResult.resolve(wfFacets);
+  instanceProduce.walletFactory.resolve(wfFacets.instance);
 
   await Promise.all([
-    E(provisionWalletBridgeManager).initHandler(handler),
+    E(ppFacets.creatorFacet).addRevivableAddresses(oldAddresses),
+    E(ppFacets.creatorFacet).setReferences({
+      bankManager,
+      namesByAddressAdmin,
+      walletFactory: wfFacets.creatorFacet,
+    }),
+  ]);
+  const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
+
+  await Promise.all([
+    E(provisionWalletBridgeManager).initHandler(bridgeHandler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.governorCreatorFacet,
@@ -177,6 +195,7 @@ export const startWalletFactory = async (
 
 export const WALLET_FACTORY_MANIFEST = {
   [startWalletFactory.name]: {
+    vatParameters: { chainStorageEntries: true },
     consume: {
       agoricNames: true,
       bankManager: 'bank',
