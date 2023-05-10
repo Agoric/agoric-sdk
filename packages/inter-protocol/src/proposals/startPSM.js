@@ -7,7 +7,11 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { makeHistoryReviver } from '@agoric/vats/tools/board-utils.js';
+import {
+  makeHistoryReviver,
+  makeBoardRemote,
+  slotToBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
@@ -39,7 +43,10 @@ const stablePsmKey = `published.psm.${Stable.symbol}`;
 const findOldPSMState = (chainStorageEntries, keyword, brands) => {
   // In this reviver, object references are revived as boardIDs
   // from the pre-bulldozer board.
-  const toSlotReviver = makeHistoryReviver(chainStorageEntries);
+  const toSlotReviver = makeHistoryReviver(
+    chainStorageEntries,
+    slotToBoardRemote,
+  );
   if (!toSlotReviver.has(`${stablePsmKey}.${keyword}.metrics`)) {
     return {};
   }
@@ -47,12 +54,19 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
     `${stablePsmKey}.${keyword}.metrics`,
   );
   const oldIDtoNewBrand = makeMap([
-    [metricsWithOldBoardIDs.feePoolBalance.brand, brands.minted],
-    [metricsWithOldBoardIDs.anchorPoolBalance.brand, brands.anchor],
+    [metricsWithOldBoardIDs.feePoolBalance.brand.getBoardId(), brands.minted],
+    [
+      metricsWithOldBoardIDs.anchorPoolBalance.brand.getBoardId(),
+      brands.anchor,
+    ],
   ]);
-  // revive brands; other object references map to undefined
-  const brandReviver = makeHistoryReviver(chainStorageEntries, s =>
-    oldIDtoNewBrand.get(s),
+  // revive brands; other object references map to dummy remotables
+  const brandReviver = makeHistoryReviver(
+    chainStorageEntries,
+    (slotID, iface) => {
+      const newBrand = oldIDtoNewBrand.get(slotID);
+      return newBrand || makeBoardRemote({ boardId: slotID, iface });
+    },
   );
   return {
     metrics: brandReviver.getItem(`${stablePsmKey}.${keyword}.metrics`),
@@ -340,7 +354,10 @@ export const makeAnchorAsset = async (
 
   testFirstAnchorKit.resolve(kit);
 
-  const toSlotReviver = makeHistoryReviver(chainStorageEntries);
+  const toSlotReviver = makeHistoryReviver(
+    chainStorageEntries,
+    slotToBoardRemote,
+  );
   const metricsKey = `${stablePsmKey}.${keyword}.metrics`;
   if (toSlotReviver.has(metricsKey)) {
     const metrics = toSlotReviver.getItem(metricsKey);
@@ -351,6 +368,8 @@ export const makeAnchorAsset = async (
     // eslint-disable-next-line @jessie.js/no-nested-await
     const anchorPaymentMap = await anchorBalancePayments;
 
+    // TODO: validate that `metrics.anchorPoolBalance.value` is
+    // pass-by-copy PureData (e.g., contains no remotables).
     // eslint-disable-next-line @jessie.js/no-nested-await
     const pmt = await E(mint).mintPayment(
       AmountMath.make(brand, metrics.anchorPoolBalance.value),

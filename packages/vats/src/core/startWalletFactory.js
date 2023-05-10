@@ -5,7 +5,10 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeHistoryReviver } from '../../tools/board-utils.js';
+import {
+  makeHistoryReviver,
+  slotToBoardRemote,
+} from '../../tools/board-utils.js';
 import { Stable } from '../tokens.js';
 
 const trace = makeTracer('StartWF');
@@ -104,7 +107,10 @@ export const startWalletFactory = async (
   ]);
 
   // Carry forward wallets with an address already in chain storage.
-  const dataReviver = makeHistoryReviver(chainStorageEntries);
+  const dataReviver = makeHistoryReviver(
+    chainStorageEntries,
+    slotToBoardRemote,
+  );
   const walletStoragePath = await E(walletStorageNode).getPath();
   const oldAddresses = dataReviver.children(`${walletStoragePath}.`);
 

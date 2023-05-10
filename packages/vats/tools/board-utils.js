@@ -35,8 +35,7 @@ import { prepareBoardKit } from '../src/lib-board.js';
  * @returns {BoardRemote}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
-  const nonalleged =
-    iface && iface.length ? iface.slice('Alleged: '.length) : '';
+  const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
   return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
 };
 
