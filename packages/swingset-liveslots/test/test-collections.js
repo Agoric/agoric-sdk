@@ -3,6 +3,7 @@ import '@endo/init/debug.js';
 
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
+import { makeCopyMap, makeCopySet } from '@endo/patterns';
 import { makeFakeCollectionManager } from '../tools/fakeVirtualSupport.js';
 
 const {
@@ -189,6 +190,66 @@ test('basic weak set operations', t => {
     'weak set',
     makeScalarBigWeakSetStore('weak set', { keyShape: M.any() }),
   );
+});
+
+function exerciseSetAddAll(t, weak, testStore) {
+  const allThatStuff = stuff.map(entry => entry[0]);
+
+  testStore.addAll(allThatStuff);
+  for (const elem of allThatStuff) {
+    t.truthy(testStore.has(elem));
+    testStore.delete(elem);
+  }
+  if (!weak) {
+    t.is(testStore.getSize(), 0);
+  }
+
+  testStore.addAll(makeCopySet(allThatStuff));
+  for (const elem of allThatStuff) {
+    t.truthy(testStore.has(elem));
+    testStore.delete(elem);
+  }
+  if (!weak) {
+    t.is(testStore.getSize(), 0);
+  }
+}
+
+test('set addAll', t => {
+  exerciseSetAddAll(t, false, makeScalarBigSetStore('test set'));
+});
+
+test('weak set addAll', t => {
+  exerciseSetAddAll(t, true, makeScalarBigWeakSetStore('test weak set'));
+});
+
+function exerciseMapAddAll(t, weak, testStore) {
+  testStore.addAll(stuff);
+  for (const [k, v] of stuff) {
+    t.truthy(testStore.has(k));
+    t.is(testStore.get(k), v);
+    testStore.delete(k);
+  }
+  if (!weak) {
+    t.is(testStore.getSize(), 0);
+  }
+
+  testStore.addAll(makeCopyMap(stuff));
+  for (const [k, v] of stuff) {
+    t.truthy(testStore.has(k));
+    t.is(testStore.get(k), v);
+    testStore.delete(k);
+  }
+  if (!weak) {
+    t.is(testStore.getSize(), 0);
+  }
+}
+
+test('map addAll', t => {
+  exerciseMapAddAll(t, false, makeScalarBigMapStore('test map'));
+});
+
+test('weak map addAll', t => {
+  exerciseMapAddAll(t, true, makeScalarBigWeakMapStore('test weak map'));
 });
 
 test('constrain map key shape', t => {
@@ -765,13 +826,6 @@ test('set queries', t => {
     symbolBozo,
     symbolKrusty,
     undefined,
-  ]);
-
-  // @ts-expect-error our BigSetStore has .entries, but not the SetStore type
-  t.deepEqual(Array.from(testStore.entries(M.number())), [
-    [-29, -29],
-    [3, 3],
-    [47, 47],
   ]);
 });
 
