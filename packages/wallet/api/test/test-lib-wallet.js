@@ -8,13 +8,12 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { M } from '@agoric/store';
 
-import { makeZoeKit } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
   makeNameHubKit,
@@ -63,7 +62,7 @@ async function setupTest(
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
-  const board = makeBoard();
+  const board = makeFakeBoard();
 
   const automaticRefundP = (automaticRefund &&
     (async () => {
@@ -142,7 +141,7 @@ const waitForUpdate = async (notifier, thunk) => {
 };
 
 test.before(async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
   const automaticRefundContractUrl = await importMetaResolve(
@@ -1496,7 +1495,7 @@ test('addOffer offer.invitation', async t => {
 });
 
 test('addOffer makeContinuingInvitation', async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
   const url = await importMetaResolve(
@@ -1586,7 +1585,7 @@ test('addOffer makeContinuingInvitation', async t => {
 });
 
 test('getZoe, getBoard', async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
 
   const pursesStateChangeHandler = (/** @type {any} */ _data) => {};
   const inboxStateChangeHandler = (/** @type {any} */ _data) => {};
@@ -1605,7 +1604,7 @@ test('getZoe, getBoard', async t => {
 });
 
 test('stamps from dateNow', async t => {
-  const board = makeBoard();
+  const board = makeFakeBoard();
 
   const startDateMS = new Date(2020, 0, 1).valueOf();
   let currentDateMS = startDateMS;

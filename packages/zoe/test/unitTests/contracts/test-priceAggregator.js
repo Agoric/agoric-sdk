@@ -18,7 +18,7 @@ import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-util
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import { makeZoeKit } from '../../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
 
@@ -97,7 +97,7 @@ test.before('setup aggregator and oracles', async t => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
   const { admin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(admin);
+  const zoe = makeZoeForTest(admin);
 
   // Pack the contracts.
   const oracleBundle = await bundleSource(oraclePath);

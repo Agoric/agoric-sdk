@@ -12,6 +12,7 @@ import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 import '../../tools/types-ambient.js';
 import {
@@ -64,6 +65,8 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
+  notForProductionUse();
+
   // brands come from named terms instead of `brands` key because the latter is
   // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
   // Oracle brands are inert (without issuers or mints).
@@ -76,7 +79,9 @@ const start = async (zcf, privateArgs) => {
   assertAllDefined({ marshaller, storageNode });
 
   const quoteMint =
-    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
+    privateArgs.quoteMint ||
+    // makeIssuerKit fails upgrade, this contract is for demo only
+    makeIssuerKit('quote', AssetKind.SET).mint;
   /** @type {IssuerRecord<'set'>} */
   // xxx saveIssuer not generic
   const quoteIssuerRecord = await zcf.saveIssuer(

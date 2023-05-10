@@ -3,6 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { assert } from '@agoric/assert';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -27,8 +28,11 @@ import { assert } from '@agoric/assert';
  * }>} zcf
  */
 const start = zcf => {
+  notForProductionUse();
+
   const { tokenName = 'token' } = zcf.getTerms();
   // Create the internal token mint
+  // makeIssuerKit fails upgrade, this contract is for demo only
   const { issuer, mint, brand } = makeIssuerKit(tokenName, AssetKind.SET);
 
   const zoeService = zcf.getZoeService();

@@ -1,12 +1,10 @@
-import { Far, makeLoopback } from '@endo/captp';
+import { Far } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
-import { makeZoeKit } from '@agoric/zoe';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -23,22 +21,6 @@ import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-export const setUpZoeForTest = async () => {
-  const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
-
-  return {
-    zoe: zoeService,
-    feeMintAccessP: feeMintAccess,
-  };
-};
-harden(setUpZoeForTest);
 /**
  * @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit
  */
@@ -74,7 +56,7 @@ export const setupPsmBootstrap = async (
   installGovernance(zoe, spaces.installation.produce);
   const mockChainStorage = makeMockChainStorageRoot();
   produce.chainStorage.resolve(mockChainStorage);
-  produce.board.resolve(makeBoard());
+  produce.board.resolve(makeFakeBoard());
 
   return { vatParameters: {}, produce, consume, ...spaces, mockChainStorage };
 };

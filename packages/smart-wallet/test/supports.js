@@ -12,11 +12,9 @@ import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeZoeKit } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
@@ -61,20 +59,6 @@ export const subscriptionKey = subscription => {
     });
 };
 
-const setUpZoeForTest = async () => {
-  const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(() => {}).admin),
-  );
-  /** @type {import('@endo/far').ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
-harden(setUpZoeForTest);
-
 /** @returns {import('@agoric/vats').BridgeManager} */
 const makeFakeBridgeManager = () =>
   Far('fakeBridgeManager', {
@@ -114,9 +98,9 @@ export const makeMockTestSpace = async log => {
   const { agoricNames, spaces } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
-  produce.feeMintAccess.resolve(feeMintAccess);
+  produce.feeMintAccess.resolve(feeMintAccessP);
 
   const vatLoader = name => {
     switch (name) {

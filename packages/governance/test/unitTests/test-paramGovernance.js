@@ -2,12 +2,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { makeZoeKit } from '@agoric/zoe';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -32,28 +31,6 @@ const contractGovernorBundleP = makeBundle(contractGovernorRoot);
 const committeeBundleP = makeBundle(committeeRoot);
 const voteCounterBundleP = makeBundle(voteCounterRoot);
 const governedBundleP = makeBundle(governedRoot);
-
-const setUpZoeForTest = async setJig => {
-  const makeFar = o => o;
-
-  /**
-   * These properties will be assigned by `setJig` in the contract.
-   *
-   * @typedef {object} TestContext
-   * @property {ZCF} zcf
-   * @property {IssuerRecord} mintedIssuerRecord
-   * @property {IssuerRecord} govIssuerRecord
-   */
-  const { zoeService, feeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
-  );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  return {
-    zoe,
-    feeMintAccessP: feeMintAccess,
-  };
-};
 
 const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 
@@ -84,7 +61,7 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     electorateTerms,
     {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
     },
   );
 
@@ -138,7 +115,7 @@ const setUpVoterAndVote = async (committeeCreator, zoe, qHandle, choice) => {
 };
 
 test('governParam no votes', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets, installs, invitationAmount } =
     await setUpGovernedContract(
@@ -192,7 +169,7 @@ test('governParam no votes', async t => {
 });
 
 test('multiple params bad change', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets, installs } = await setUpGovernedContract(
     zoe,
@@ -223,7 +200,7 @@ test('multiple params bad change', async t => {
 });
 
 test('change multiple params', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets, installs, invitationAmount, committeeCreator } =
     await setUpGovernedContract(
@@ -308,7 +285,7 @@ test('change multiple params', async t => {
 });
 
 test('change multiple params used invitation', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets, installs, invitationAmount, committeeCreator } =
     await setUpGovernedContract(
@@ -379,7 +356,7 @@ test('change multiple params used invitation', async t => {
 });
 
 test('change param continuing invitation', async t => {
-  const { zoe } = await setUpZoeForTest(() => {});
+  const zoe = await makeZoeForTest();
   const timer = buildManualTimer(t.log);
   const { governorFacets, installs, committeeCreator } =
     await setUpGovernedContract(

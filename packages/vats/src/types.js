@@ -8,7 +8,7 @@ export {};
  */
 
 /**
- * @typedef {ReturnType<typeof import('./lib-board.js').makeBoard>} Board
+ * @typedef {ReturnType<ReturnType<typeof import('./lib-board.js').prepareBoardKit>>['board']} Board
  */
 
 /**

@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 
 import { setup } from './setupBasicMints.js';
-import { makeZoeKit } from '../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import {
   depositToSeat,
@@ -23,16 +23,16 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/zcf/zcfTesterContract.js`;
 
 const setupContract = async (moolaIssuer, bucksIssuer) => {
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const fakeVatAdmin = makeFakeVatAdmin(setJig);
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin.admin);
+  /** @type {ContractFacet} */
+  let zcf;
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin(jig => {
+    zcf = jig.zcf;
+  });
+  const zoe = makeZoeForTest(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
-  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
+  vatAdminState.installBundle('b1-contract', bundle);
   // install the contract
   const installation = await E(zoe).installBundleID('b1-contract');
 
@@ -44,8 +44,6 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
 
   await E(zoe).startInstance(installation, issuerKeywordRecord);
 
-  /** @type {ContractFacet} */
-  const zcf = testJig.zcf;
   return { zoe, zcf };
 };
 

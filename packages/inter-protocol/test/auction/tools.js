@@ -1,10 +1,7 @@
-import { makeLoopback } from '@endo/captp';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { makeZoeKit } from '@agoric/zoe';
 import { objectMap, allValues } from '@agoric/internal';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
@@ -78,20 +75,6 @@ export const makeFakeAuctioneer = () => {
     getStartRounds: () => startRounds,
     lockPrices: () => (state.lockedPrices = true),
   });
-};
-
-/**
- * Returns promises for `zoe` and the `feeMintAccess`.
- *
- * @param {() => void} setJig
- */
-export const setUpZoeForTest = async (setJig = () => {}) => {
-  const { makeFar } = makeLoopback('zoeTest');
-
-  const { zoeService } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined),
-  );
-  return zoeService;
 };
 
 /**

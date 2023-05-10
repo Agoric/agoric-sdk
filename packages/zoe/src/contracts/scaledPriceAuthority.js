@@ -1,5 +1,3 @@
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-
 import { M, prepareExo } from '@agoric/vat-data';
 import {
   ceilDivideBy,
@@ -9,6 +7,7 @@ import {
 } from '../contractSupport/index.js';
 import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.js';
 import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
+import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js';
 
 /**
  * @typedef {object} ScaledPriceAuthorityOpts
@@ -29,14 +28,11 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
  *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
  * @param {object} privateArgs
- * @param {ERef<Mint<'set'>>} [privateArgs.quoteMint]
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (
-  zcf,
-  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
-  baggage,
-) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
+  const quoteMint = provideQuoteMint(baggage);
+
   const { sourcePriceAuthority, scaleIn, scaleOut, initialPrice } =
     zcf.getTerms();
 

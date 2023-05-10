@@ -5,15 +5,12 @@ import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGo
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeZoeKit } from '@agoric/zoe';
+import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 import {
@@ -46,26 +43,13 @@ harden(provideBundle);
 /**
  * Returns promises for `zoe` and the `feeMintAccess`.
  *
- * @param {() => void} setJig
+ * @param {() => void} [setJig]
  */
-export const setUpZoeForTest = async (setJig = () => {}) => {
-  const { makeFar } = makeLoopback('zoeTest');
-
-  const { admin, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(admin, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
-  return {
-    zoe: zoeService,
-    feeMintAccessP: feeMintAccess,
-    vatAdminSvc: admin,
-    vatAdminState,
-  };
-};
+export const setUpZoeForTest = async (setJig = () => {}) =>
+  generalSetUpZoeForTest({
+    setJig,
+    feeIssuerConfig: utils.feeIssuerConfig,
+  });
 harden(setUpZoeForTest);
 
 /**
@@ -83,7 +67,7 @@ export const setupBootstrap = async (t, optTimer) => {
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(makeMockChainStorageRoot());
-  produce.board.resolve(makeBoard());
+  produce.board.resolve(makeFakeBoard());
 
   const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);

@@ -5,7 +5,7 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeZoeKit } from '@agoric/zoe';
+import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { observeIteration } from '@agoric/notifier';
 import { heapZone } from '@agoric/zone';
 import { buildRootObject } from '../src/vat-bank.js';
@@ -32,7 +32,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { vatAdminService } = makePopulatedFakeVatAdmin();
-  const { zoeService, feeMintAccess: fma } = makeZoeKit(vatAdminService);
+  const { zoeService, feeMintAccess: fma } = makeZoeKitForTest(vatAdminService);
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(fma);
   produce.vatAdminSvc.resolve(vatAdminService);

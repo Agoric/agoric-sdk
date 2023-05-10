@@ -98,7 +98,12 @@ export function buildRootObject(_vatPowers, vatParameters) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      /** @type {{zoeService: ERef<ZoeService>}} */
+      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        undefined,
+        'zcf',
+      );
       const installations = {
         automaticRefund: await E(zoe).install(automaticRefundBundle.bundle),
         coveredCall: await E(zoe).install(coveredCallBundle.bundle),

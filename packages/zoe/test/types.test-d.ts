@@ -46,7 +46,22 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
   E(zoe).startInstance(
     scaledPriceInstallation,
     validIssuers,
-    // @ts-expect-error includes an extra term
-    { ...validTerms, extra: string },
+    {
+      ...validTerms,
+      // @ts-expect-error includes an extra term
+      extra: 'invalid',
+    },
+    validPrivates,
   );
+  // This test can no longer check that the type of `privateArgs` is inferred
+  // since the contract used for testing does not define any specific private args.
+  // Because we do not have strict type checks turned on, TS downgrade the type
+  // `object` to `any`, making any invalid argument style check impossible.
+  // E(zoe).startInstance(
+  //   scaledPriceInstallation,
+  //   validIssuers,
+  //   validTerms,
+  //   // @ts-expect-error
+  //   'invalid privateArgs',
+  // );
 }

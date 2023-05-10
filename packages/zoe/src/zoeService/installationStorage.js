@@ -1,7 +1,6 @@
 import { assert } from '@agoric/assert';
 import {
   M,
-  makeScalarBigMapStore,
   prepareExo,
   prepareKind,
   provideDurableWeakMapStore,
@@ -20,12 +19,9 @@ const { Fail, quote: q } = assert;
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {Baggage} [zoeBaggage] optional only so it can be omitted in tests
+ * @param {Baggage} zoeBaggage
  */
-export const makeInstallationStorage = (
-  getBundleCapForID,
-  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
-) => {
+export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
   /** @type {WeakMapStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
   const installationsBundleCap = provideDurableWeakMapStore(
     zoeBaggage,

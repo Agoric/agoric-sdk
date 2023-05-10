@@ -20,7 +20,7 @@
       "sourceSpec": "vat-dave.js"
     },
     "zoe": {
-      "sourceSpec": "vat-zoe.js",
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js",
       "parameters": {
         "zcfBundleName": "zcf"
       }

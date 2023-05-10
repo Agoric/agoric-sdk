@@ -44,12 +44,15 @@ test.before(async t => {
 
   const vats = {};
   await Promise.all(
-    ['voter', 'zoe'].map(async name => {
+    ['voter'].map(async name => {
       const source = `${dirname}/vat-${name}.js`;
       const bundle = await bundleSource(source);
       vats[name] = { bundle };
     }),
   );
+  vats.zoe = {
+    sourceSpec: `${dirname}/../../../../vats/src/vat-zoe.js`,
+  };
   const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
     bundle: await bundleSource(bootstrapSource),

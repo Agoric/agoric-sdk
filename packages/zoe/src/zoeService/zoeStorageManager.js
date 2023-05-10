@@ -46,14 +46,14 @@ const { ownKeys } = Reflect;
  *    getFeeIssuer: () => Issuer,
  *    getFeeBrand: () => Brand,
  * }} feeMint
- * @param {Baggage} [zoeBaggage]
+ * @param {Baggage} zoeBaggage
  */
 export const makeZoeStorageManager = (
   createZCFVat,
   getBundleCapForID,
   shutdownZoeVat,
   feeMint,
-  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
+  zoeBaggage,
 ) => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,

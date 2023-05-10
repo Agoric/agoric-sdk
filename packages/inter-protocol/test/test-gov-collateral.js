@@ -67,6 +67,7 @@ const makeTestContext = async () => {
   const bundleCache = await provideBundleCache('bundles/', {}, s => import(s));
   const { zoe, feeMintAccessP, vatAdminSvc, vatAdminState } =
     await setUpZoeForTest();
+  assert(vatAdminState);
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const stableBrand = await E(runIssuer).getBrand();

@@ -8,7 +8,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { makeZoeKit } from '../../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeRatio } from '../../../src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -37,7 +37,7 @@ test.before('setup scaled price authority', async ot => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
   const { admin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(admin);
+  const zoe = makeZoeForTest(admin);
 
   // Pack the contracts.
   const scaledPriceBundle = await bundleSource(scaledPricePath);

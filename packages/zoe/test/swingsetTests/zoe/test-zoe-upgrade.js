@@ -22,7 +22,7 @@ test('zoe vat upgrade trauma', async t => {
       ertp: { sourceSpec: bfile('../upgradeCoveredCall/vat-ertp-service.js') },
     },
     bundles: {
-      zoe: { sourceSpec: bfile('./vat-zoe.js') },
+      zoe: { sourceSpec: bfile('../../../../vats/src/vat-zoe.js') },
       zcf: { sourceSpec: bfile('../../../src/contractFacet/vatRoot.js') },
       coveredCall: {
         sourceSpec: bfile('../../../src/contracts/coveredCall-durable.js'),
@@ -74,7 +74,11 @@ test('zoe vat upgrade trauma', async t => {
   };
   await run('createVat', [zoeVatConfig]);
   const vatAdmin = await run('getVatAdmin');
-  const zoe = await messageVat('zoe', 'buildZoe', [vatAdmin]);
+  const { zoeService: zoe } = await messageVat('zoe', 'buildZoe', [
+    vatAdmin,
+    undefined,
+    'zcf',
+  ]);
   const coveredCallBundleId = await messageObject(
     vatAdmin,
     'getBundleIDByName',

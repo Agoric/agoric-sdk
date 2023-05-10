@@ -2,21 +2,21 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Far } from '@endo/far';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
   makeExportContext,
   makeImportContext,
 } from '../src/marshal-contexts.js';
 
-/** @param {ReturnType<typeof makeBoard>} board */
+/** @param {import('@agoric/vats').Board} board */
 const makeAMM = board => {
   const atom = Far('ATOM brand', {});
   const pub = board.getPublishingMarshaller();
   return harden({ getMetrics: () => pub.toCapData(harden([atom])) });
 };
 
-/** @param {ReturnType<typeof makeBoard>} board */
+/** @param {import('@agoric/vats').Board} board */
 const makeOnChainWallet = board => {
   const context = makeExportContext();
   let brand;
@@ -54,7 +54,7 @@ const makeOnChainWallet = board => {
 test('makeImportContext preserves identity across AMM and wallet', t => {
   const context = makeImportContext();
 
-  const board = makeBoard(0, { prefix: 'board' });
+  const board = makeFakeBoard(0, { prefix: 'board' });
   const amm = makeAMM(board);
   const ammMetricsCapData = amm.getMetrics();
 

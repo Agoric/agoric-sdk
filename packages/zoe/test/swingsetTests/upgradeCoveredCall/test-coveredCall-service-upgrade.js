@@ -21,7 +21,7 @@ test('coveredCall service upgrade', async t => {
         // TODO refactor to use bootstrap-relay.js
         sourceSpec: bfile('bootstrap-coveredCall-service-upgrade.js'),
       },
-      zoe: { sourceSpec: bfile('./vat-zoe.js') },
+      zoe: { sourceSpec: bfile('../../../../vats/src/vat-zoe.js') },
       ertp: { sourceSpec: bfile('./vat-ertp-service.js') },
     },
     bundles: {

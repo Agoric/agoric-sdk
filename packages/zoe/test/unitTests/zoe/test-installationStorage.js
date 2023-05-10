@@ -1,12 +1,19 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeHandle } from '../../../src/makeHandle.js';
 import { makeInstallationStorage } from '../../../src/zoeService/installationStorage.js';
 
+const getZoeBaggage = () =>
+  makeScalarBigMapStore('zoe baggage', { durable: true });
+
 test('install, unwrap installations', async t => {
-  // @ts-expect-error omitting required param during tests
-  const installationStorage = makeInstallationStorage();
+  const installationStorage = makeInstallationStorage(
+    // @ts-expect-error omitting required param during tests
+    undefined,
+    getZoeBaggage(),
+  );
   const fakeBundle = {};
 
   const installation = await installationStorage.installBundle(fakeBundle);
@@ -19,7 +26,10 @@ test('install, unwrap installation of bundlecap', async t => {
   const bundleCaps = { id: makeHandle('BundleCap') };
   const getBundleCapFromID = id => bundleCaps[id];
 
-  const installationStorage = makeInstallationStorage(getBundleCapFromID);
+  const installationStorage = makeInstallationStorage(
+    getBundleCapFromID,
+    getZoeBaggage(),
+  );
 
   const installation = await installationStorage.installBundleID('id');
   const unwrapped = await installationStorage.unwrapInstallation(installation);
@@ -34,7 +44,10 @@ test('install HashBundle, unwrap installation of bundlecap', async t => {
   const bundleCaps = { [bundleID]: makeHandle('BundleCap') };
   const getBundleCapFromID = async id => bundleCaps[id];
 
-  const installationStorage = makeInstallationStorage(getBundleCapFromID);
+  const installationStorage = makeInstallationStorage(
+    getBundleCapFromID,
+    getZoeBaggage(),
+  );
   const fakeBundle = {
     endoZipBase64Sha512: bundleHash,
     moduleFormat: 'endoZipBase64Sha512',
@@ -48,8 +61,11 @@ test('install HashBundle, unwrap installation of bundlecap', async t => {
 });
 
 test('unwrap promise for installation', async t => {
-  // @ts-expect-error omitting required param during tests
-  const installationStorage = makeInstallationStorage();
+  const installationStorage = makeInstallationStorage(
+    // @ts-expect-error omitting required param during tests
+    undefined,
+    getZoeBaggage(),
+  );
   const fakeBundle = {};
 
   const installation = await installationStorage.installBundle(fakeBundle);
@@ -61,8 +77,11 @@ test('unwrap promise for installation', async t => {
 });
 
 test('install several', async t => {
-  // @ts-expect-error omitting required param during tests
-  const installationStorage = makeInstallationStorage();
+  const installationStorage = makeInstallationStorage(
+    // @ts-expect-error omitting required param during tests
+    undefined,
+    getZoeBaggage(),
+  );
   const fakeBundle1 = {};
   const fakeBundle2 = {};
 
@@ -84,7 +103,10 @@ test('install several', async t => {
 test('install same twice', async t => {
   const bundleCaps = { id: makeHandle('BundleCap') };
   const getBundleCapFromID = id => bundleCaps[id];
-  const installationStorage = makeInstallationStorage(getBundleCapFromID);
+  const installationStorage = makeInstallationStorage(
+    getBundleCapFromID,
+    getZoeBaggage(),
+  );
   const fakeBundle1 = {};
 
   const installation1 = await installationStorage.installBundle(fakeBundle1);

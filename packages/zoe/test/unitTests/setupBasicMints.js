@@ -1,6 +1,6 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
-import { makeZoeKit } from '../../src/zoeService/zoe.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 export const setup = () => {
@@ -20,7 +20,7 @@ export const setup = () => {
   }
 
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const zoe = makeZoeForTest(fakeVatAdmin);
 
   /** @type {<K extends AssetKind>(brand: Brand<K>) => (value: any) => Amount<K>} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);

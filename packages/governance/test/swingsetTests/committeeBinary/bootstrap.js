@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
@@ -65,7 +65,7 @@ const committeeBinaryStart = async (
   const { creatorFacet: electorateFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
     });
 
   const choose = { text: 'Choose' };
@@ -128,7 +128,7 @@ const committeeBinaryTwoQuestions = async (
   const { creatorFacet: electorateFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
     });
 
   const invitations = await E(electorateFacet).getVoterInvitations();
@@ -225,8 +225,12 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
   );
-  /** @type { ERef<ZoeService> } */
-  const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
+  /** @type {{zoeService: ERef<ZoeService>}} */
+  const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+    vatAdminSvc,
+    undefined,
+    'zcf',
+  );
 
   const [committee, binaryVoteCounter] = await Promise.all([
     E(zoe).install(cb.committee),
