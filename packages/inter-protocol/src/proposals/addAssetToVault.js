@@ -211,7 +211,7 @@ export const registerScaledPriceAuthority = async (
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  * @param {bigint | number | string} config.options.debtLimitValue
- * @param {bigint} config.options.interestRateValue
+ * @param {bigint} config.options.interestRateBP
  */
 export const addAssetToVault = async (
   {
@@ -226,7 +226,7 @@ export const addAssetToVault = async (
       debtLimitValue = 1_000n * 1_000_000n,
       // Default to a safe value. Production will likely set this through governance.
       // Allow setting through bootstrap to simplify testing.
-      interestRateValue = 1n,
+      interestRateBP = 250n,
       interchainAssetOptions,
     },
   },
@@ -243,15 +243,15 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, BigInt(debtLimitValue)),
-    interestRate: makeRatio(interestRateValue, stable),
+    interestRate: makeRatio(BigInt(interestRateBP), stable, 100_00n),
     // The rest of these we use safe defaults.
     // In production they will be governed by the Econ Committee.
     // Product deployments are also expected to have a low debtLimitValue at the outset,
     // limiting the impact of these defaults.
-    liquidationPadding: makeRatio(25n, stable),
-    liquidationMargin: makeRatio(150n, stable),
+    liquidationPadding: makeRatio(20n, stable),
+    liquidationMargin: makeRatio(230n, stable),
     mintFee: makeRatio(50n, stable, 10_000n),
-    liquidationPenalty: makeRatio(1n, stable),
+    liquidationPenalty: makeRatio(10n, stable),
   });
   const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
   await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
@@ -261,7 +261,7 @@ export const getManifestForAddAssetToVault = (
   { restoreRef },
   {
     debtLimitValue,
-    interestRateValue,
+    interestRateBP,
     interchainAssetOptions,
     scaledPriceAuthorityRef,
   },
@@ -329,7 +329,7 @@ export const getManifestForAddAssetToVault = (
     options: {
       debtLimitValue,
       interchainAssetOptions,
-      interestRateValue,
+      interestRateBP,
     },
   };
 };

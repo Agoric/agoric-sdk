@@ -227,7 +227,7 @@ test('open vault with insufficient funds gives helpful error', async t => {
   const giveCollateral = 9.0;
   const wantMinted = giveCollateral * 100;
   const message =
-    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: ATOM brand]","value":"[9000000n]"} collateral';
+    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[44424000n]"} for {"brand":"[Alleged: ATOM brand]","value":"[9000000n]"} collateral';
   await t.throwsAsync(
     wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId: 'open-vault',

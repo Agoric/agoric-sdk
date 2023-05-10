@@ -9,7 +9,7 @@ export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   {
     debtLimitValue = undefined,
-    interestRateValue = undefined,
+    interestRateBP = undefined,
     interchainAssetOptions = /** @type {object} */ ({}),
   } = {},
   { env = process.env } = {},
@@ -37,7 +37,7 @@ export const defaultProposalBuilder = async (
       getManifestForAddAssetToVault.name,
       {
         debtLimitValue: debtLimitValue && BigInt(debtLimitValue),
-        interestRateValue: interestRateValue && BigInt(interestRateValue),
+        interestRateBP: interestRateBP && BigInt(interestRateBP),
         interchainAssetOptions: {
           denom,
           issuerBoardId,

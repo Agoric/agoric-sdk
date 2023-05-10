@@ -306,7 +306,7 @@ export const getNodeTestVaultsConfig = async (
   config.coreProposals = config.coreProposals?.filter(
     v => v !== '@agoric/pegasus/scripts/init-core.js',
   );
-  // set to high interestRateValue to accelerate liquidation
+  // set to high interestRateBP to accelerate liquidation
   for (const addVaultTypeProposal of (config.coreProposals || []).filter(
     p =>
       typeof p === 'object' &&
@@ -314,7 +314,7 @@ export const getNodeTestVaultsConfig = async (
       p.entrypoint === 'defaultProposalBuilder',
   )) {
     const opt = /** @type {any} */ (addVaultTypeProposal).args[0];
-    opt.interestRateValue = 10 * 100; // 10x APR
+    opt.interestRateBP = 10 * 100 * 100; // 10x APR
   }
 
   const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;
