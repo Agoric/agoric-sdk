@@ -83,7 +83,6 @@ const SHARED_MAIN_MANIFEST = harden({
       },
       produce: {
         VaultFactory: 'VaultFactory',
-        Treasury: 'VaultFactory',
         VaultFactoryGovernor: 'VaultFactoryGovernor',
       },
     },

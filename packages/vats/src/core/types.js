@@ -148,12 +148,11 @@
  *     'VaultFactory' | 'VaultFactoryGovernor' |
  *     'econCommitteeCharter' |
  *     'walletFactory' | 'provisionPool' |
- *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
+ *     'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',
  *   uiConfig: |
- *     'VaultFactory' |
- *     'Treasury' // compat.
+ *     'VaultFactory'
  * }} WellKnownName
  *
  * @typedef {{

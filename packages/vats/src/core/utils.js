@@ -57,7 +57,6 @@ export const agoricNamesReserved = harden({
     economicCommittee: 'Economic Committee',
     VaultFactory: 'vault factory',
     feeDistributor: 'fee distributor',
-    Treasury: 'Treasury', // for compatibility
     auctioneer: 'auctioneer',
     VaultFactoryGovernor: 'vault factory governor',
     Pegasus: 'remote peg',
@@ -72,7 +71,6 @@ export const agoricNamesReserved = harden({
   },
   uiConfig: {
     VaultFactory: 'vault factory',
-    Treasury: 'vault factory', // compatibility
   },
 });
 
