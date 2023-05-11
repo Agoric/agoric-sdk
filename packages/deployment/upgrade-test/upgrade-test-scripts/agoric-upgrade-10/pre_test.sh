@@ -3,8 +3,8 @@
 . ./upgrade-test-scripts/env_setup.sh
 
 # ensure there's only uist
+test_val "$(agd q bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | length')" "1"
 test_val "$(agd q bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances[0].denom')" "uist"
-
 
 # test wallets are provisioned
 test_not_val "$(agd q vstorage data published.wallet.$GOV1ADDR -o json | jq -r .value)" "" "ensure gov1 provisioned"
@@ -14,3 +14,6 @@ test_not_val "$(agd q vstorage data published.wallet.$GOV3ADDR -o json | jq -r .
 
 # test that we have no vaults
 test_val "$(agd q vstorage data published.vaultFactory.manager0.vaults.vault0 -o json | jq -r .value)" "" "ensure no vaults exist"
+
+# provision pool has right balance
+test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ') "19250000"
