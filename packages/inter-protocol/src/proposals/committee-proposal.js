@@ -15,11 +15,7 @@ const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
  */
 export const inviteCommitteeMembers = async (
   {
-    consume: {
-      namesByAddressAdmin,
-      economicCommitteeCreatorFacet,
-      highPrioritySendersManager,
-    },
+    consume: { namesByAddressAdmin, economicCommitteeCreatorFacet, ...consume },
   },
   { options: { voterAddresses } },
 ) => {
@@ -27,6 +23,8 @@ export const inviteCommitteeMembers = async (
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
   assert.equal(invitations.length, values(voterAddresses).length);
+
+  const highPrioritySendersManager = await consume.highPrioritySendersManager;
 
   /**
    * @param {[string, Promise<Invitation>][]} addrInvitations
@@ -40,10 +38,12 @@ export const inviteCommitteeMembers = async (
           addr,
           [invitationP],
         );
-        await E(highPrioritySendersManager)?.add(
-          EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
-          addr,
-        );
+        if (highPrioritySendersManager) {
+          await E(highPrioritySendersManager).add(
+            EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
+            addr,
+          );
+        }
       }),
     );
   };

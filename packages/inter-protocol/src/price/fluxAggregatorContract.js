@@ -6,8 +6,9 @@ import {
   prepareIssuerKit,
 } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
+import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
@@ -19,6 +20,23 @@ const trace = makeTracer('FluxAgg');
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
+
+export const privateArgsShape = M.splitRecord(
+  harden({
+    storageNode: StorageNodeShape,
+    marshaller: M.eref(M.remotable('marshaller')),
+    namesByAddressAdmin: M.any(),
+  }),
+  harden({
+    // always optional. XXX some code is including the key, set to null
+    highPrioritySendersManager: M.or(
+      M.eref(M.remotable('prioritySenders manager')),
+      M.null(),
+    ),
+    // only necessary on first invocation, not subsequent
+    initialPoserInvitation: M.remotable('Invitation'),
+  }),
+);
 
 /**
  * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
@@ -33,9 +51,9 @@ const trace = makeTracer('FluxAgg');
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
  * @param {{
- * highPrioritySendersManager: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager,
+ * highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager,
  * initialPoserInvitation: Invitation,
- * marshaller: Marshaller,
+ * marshaller: ERef<Marshaller>,
  * namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
  * storageNode: StorageNode,
  * }} privateArgs
@@ -57,7 +75,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     namesByAddressAdmin,
     storageNode,
   } = privateArgs;
-  assertAllDefined({ initialPoserInvitation, marshaller, storageNode });
 
   const { description, timer } = zcf.getTerms();
 
@@ -114,7 +131,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       addr,
       [invitation],
     );
-    await highPrioritySendersManager.add(description, addr);
+    if (highPrioritySendersManager) {
+      // eslint-disable-next-line @jessie.js/no-nested-await -- after another await
+      await E(highPrioritySendersManager).add(description, addr);
+    }
     return `added ${addr}`;
   };
 
@@ -126,7 +146,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const removeOracle = async addr => {
     trace('removeOracle', addr);
     await E(faKit.creator).removeOracle(addr);
-    highPrioritySendersManager.remove(description, addr);
+    if (highPrioritySendersManager) {
+      // eslint-disable-next-line @jessie.js/no-nested-await -- after another await
+      await E(highPrioritySendersManager).remove(description, addr);
+    }
     return `removed ${addr}`;
   };
 
