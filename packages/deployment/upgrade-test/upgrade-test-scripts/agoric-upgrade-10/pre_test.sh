@@ -20,27 +20,30 @@ test_val "$(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt6234
 
 
 # we should have more denoms in governance
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children | length')" "1" "more than one PSM denoms"
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children[] | select (. == "AUSD")')" "" "AUSD in IST"
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children[] | select (. == "ToyUSD")')" "" "ToyUSD in IST"
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children[] | select (. == "USDC_axl")')" "" "USDC_axl in IST"
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children[] | select (. == "USDC_grv")')" "" "USDC_grv in IST"
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children[] | select (. == "USDT_axl")')" "" "USDT_axl in IST"
-test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '.children[] | select (. == "USDT_grv")')" "" "USDT_grv in IST"
+psmISTChildren="$(agd q vstorage children published.psm.IST -o jsonlines)"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children | length')" "1" "more than one PSM denoms"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "AUSD")')" "" "AUSD in IST"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "ToyUSD")')" "" "ToyUSD in IST"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDC_axl")')" "" "USDC_axl in IST"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDC_grv")')" "" "USDC_grv in IST"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDT_axl")')" "" "USDT_axl in IST"
+test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDT_grv")')" "" "USDT_grv in IST"
 
 
 ## testing state from pismoC was preserved post bulldozer upgrade
 
 # test that the PSM gov params were preserved
-test_not_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "$(cat /root/psm_governance.json | jq -r '.current.MintLimit.value.value')" "PSM MintLimit preserved"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.GiveMintedFee.value.numerator.value')" "0" "GiveMintedFee numerator == 0"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.GiveMintedFee.value.denominator.value')" "$(cat /root/psm_governance.json | jq -r '.current.GiveMintedFee.value.denominator.value')" "GiveMintedFee denominator == 10000"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.WantMintedFee.value.numerator.value')" "0" "WantMintedFee numerator == 0"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.WantMintedFee.value.denominator.value')" "$(cat /root/psm_governance.json | jq -r '.current.WantMintedFee.value.denominator.value')" "WantMintedFee denominator == 10000"
+toyUSDGovernance="$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines)"
+test_not_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
+test_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.MintLimit.value.value')" "PSM MintLimit preserved"
+test_val "$(echo "$toyUSDGovernance" | jq -r '.current.GiveMintedFee.value.numerator.value')" "0" "GiveMintedFee numerator == 0"
+test_val "$(echo "$toyUSDGovernance" | jq -r '.current.GiveMintedFee.value.denominator.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.GiveMintedFee.value.denominator.value')" "GiveMintedFee denominator == 10000"
+test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.numerator.value')" "0" "WantMintedFee numerator == 0"
+test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.denominator.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.WantMintedFee.value.denominator.value')" "WantMintedFee denominator == 10000"
 
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.anchorPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.feePoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.mintedPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.totalAnchorProvided.value')" "$(cat /root/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.totalMintedProvided.value')" "$(cat /root/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
+toyUSDMetrics="$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines)"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.anchorPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.feePoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.totalAnchorProvided.value')" "$(cat /root/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
