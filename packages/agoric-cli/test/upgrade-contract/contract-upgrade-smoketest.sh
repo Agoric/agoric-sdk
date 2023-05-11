@@ -49,8 +49,10 @@ enactCoreEval() {
   done
 }
 
-(cd "$PROPDIR" && agoric run "$ORIGDIR/test/propose-buggy-contract.js")
-doTest "$PROPDIR"
+if [ "${1-init}" = init ]; then
+  (cd "$PROPDIR" && agoric run "$ORIGDIR/test/upgrade-contract/propose-buggy-contract.js")
+  enactCoreEval "$PROPDIR"
+fi
 
-(cd "$PROPDIR2" && agoric run "$ORIGDIR/test/propose-upgrade-contract.js")
-doTest "$PROPDIR2"
+(cd "$PROPDIR2" && agoric run "$ORIGDIR/test/upgrade-contract/propose-upgrade-contract.js")
+enactCoreEval "$PROPDIR2"

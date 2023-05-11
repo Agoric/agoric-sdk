@@ -1,14 +1,24 @@
+import { E } from '@endo/far';
+
+/**
+ * Initialize contractRef the first time.
+ *
+ * @param {BootstrapSpace} param0
+ */
 export const initContract = async ({
   consume: { zoe },
   produce: { myContractFacets },
-  installation: { consume: myInitInstallation },
-  instance: { produce: myInstance },
+  installation: {
+    consume: { myInitInstallation },
+  },
+  instance: {
+    produce: { myInstance },
+  },
 }) => {
-  const instanceFacets = await zoe.startInstance(
-    myInitInstallation,
-    myInstance,
-  );
+  const instanceFacets = await E(zoe).startInstance(myInitInstallation);
+  myContractFacets.reset();
   myContractFacets.resolve(instanceFacets);
+  myInstance.reset();
   myInstance.resolve(instanceFacets.instance);
 };
 
