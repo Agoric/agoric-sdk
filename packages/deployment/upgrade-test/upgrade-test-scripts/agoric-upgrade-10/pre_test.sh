@@ -42,8 +42,8 @@ test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.numer
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.denominator.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.WantMintedFee.value.denominator.value')" "WantMintedFee denominator == 10000"
 
 toyUSDMetrics="$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines)"
-test_val "$(echo "$toyUSDMetrics" | jq -r '.anchorPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
-test_val "$(echo "$toyUSDMetrics" | jq -r '.feePoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
-test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"
-test_val "$(echo "$toyUSDMetrics" | jq -r '.totalAnchorProvided.value')" "$(cat /root/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
-test_val "$(echo "$toyUSDMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.anchorPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.feePoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.totalAnchorProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
+test_val "$(echo "$toyUSDMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
