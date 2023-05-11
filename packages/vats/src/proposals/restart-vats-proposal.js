@@ -11,12 +11,18 @@ const trace = makeTracer('RV');
 const HR = '----------------';
 
 /**
- * TODO cover each of these collections
- * - [x] contractKits
- * - [ ] psmKit
- * - [x] governedContractKits
- * - [ ] vatStore
+ * Non-contract vats aren't automatically restarted here because doing it would
+ * break many other tests that are fragile.
  */
+const vatUpgradeStatus = {
+  agoricNames: 'UNTESTED',
+  bank: 'covered by test-upgrade-vats: upgrade vat-bank',
+  board: 'covered by test-upgrade-vats: upgrade vat-board',
+  bridge: 'covered by test-upgrade-vats: upgrade vat-bridge',
+  priceAuthority: 'covered by test-upgrade-vats: upgrade vat-priceAuthority',
+  provisioning: 'UNTESTED',
+  zoe: 'tested in @agoric/zoe',
+};
 
 /**
  * @param {BootstrapPowers & import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} space
@@ -114,6 +120,15 @@ export const restartVats = async ({ consume }, { options }) => {
     await tryRestartContract(kit.label, kit.psm, kit.psmAdminFacet);
   }
 
+  trace('iterating over vatStore');
+  for (const [name] of vatStore.entries()) {
+    const status = vatUpgradeStatus[name];
+    if (!status) {
+      Fail`unaudited vat ${name}`;
+    }
+    console.log('VAT', name, status);
+  }
+
   trace('restartVats done with ', failures.length, 'failures');
   console.log(HR);
   if (failures.length) {
@@ -132,6 +147,7 @@ export const getManifestForRestart = (_powers, options) => ({
         instancePrivateArgs: true,
         loadCriticalVat: true,
         psmKit: true,
+        vatStore: true,
         zoe: 'zoe',
         provisioning: 'provisioning',
         vaultFactoryKit: true,
