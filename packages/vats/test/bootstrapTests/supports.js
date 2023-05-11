@@ -293,7 +293,9 @@ export const getNodeTestVaultsConfig = async (
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
   );
-  const config = await loadSwingsetConfigFile(fullPath);
+  const config = /** @type {SwingSetConfig & {coreProposals?: any[]}} */ (
+    await loadSwingsetConfigFile(fullPath)
+  );
   assert(config);
 
   // speed up (e.g. 80s vs 133s with xs-worker in production config)
@@ -302,19 +304,21 @@ export const getNodeTestVaultsConfig = async (
   config.bundleCachePath = bundleDir;
   await fs.mkdir(bundleDir, { recursive: true });
 
-  // remove Pegasus because it relies on IBC to Golang that isn't running
-  config.coreProposals = config.coreProposals?.filter(
-    v => v !== '@agoric/pegasus/scripts/init-core.js',
-  );
-  // set to high interestRateValue to accelerate liquidation
-  for (const addVaultTypeProposal of (config.coreProposals || []).filter(
-    p =>
-      typeof p === 'object' &&
-      p.module === '@agoric/inter-protocol/scripts/add-collateral-core.js' &&
-      p.entrypoint === 'defaultProposalBuilder',
-  )) {
-    const opt = /** @type {any} */ (addVaultTypeProposal).args[0];
-    opt.interestRateValue = 10 * 100; // 10x APR
+  if (config.coreProposals) {
+    // remove Pegasus because it relies on IBC to Golang that isn't running
+    config.coreProposals = config.coreProposals.filter(
+      v => v !== '@agoric/pegasus/scripts/init-core.js',
+    );
+    for (const p of config.coreProposals) {
+      if (
+        typeof p === 'object' &&
+        p.module === '@agoric/inter-protocol/scripts/add-collateral-core.js' &&
+        p.entrypoint === 'defaultProposalBuilder'
+      ) {
+        // set vault interestRateValue high to accelerate liquidation
+        p.args[0].interestRateValue = 10 * 100; // 10x APR
+      }
+    }
   }
 
   const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;

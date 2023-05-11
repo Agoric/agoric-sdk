@@ -43,6 +43,20 @@ import { makeQueue } from './helpers/make-queue.js';
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
+/** @typedef {import('@agoric/swingset-vat').SwingSetConfig} SwingSetConfig */
+
+/**
+ * @typedef {object} CosmicSwingsetConfig
+ * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
+ * @property {string[]} [clearStorageSubtrees] chain storage paths identifying roots of subtrees
+ *   for which data should be deleted (except for overlaps with exportStorageSubtrees, which
+ *   are preserved).
+ * @property {string[]} [exportStorageSubtrees] chain storage paths identifying roots of subtrees
+ *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
+ *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
+ *   `chainStorageEntries: [ ['c.o', '"top"'], ['c.o.i'], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
+ */
+
 /**
  * Return the key in the reserved "host.*" section of the swing-store
  *
@@ -69,11 +83,13 @@ export async function buildSwingset(
   { debugName = undefined, slogCallbacks, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  /** @type {import('@agoric/swingset-vat').SwingSetConfig | null} */
-  let config = await loadSwingsetConfigFile(vatconfig);
-  if (config === null) {
-    config = loadBasedir(vatconfig);
+  let swingsetConfig = await loadSwingsetConfigFile(vatconfig);
+  if (swingsetConfig === null) {
+    swingsetConfig = loadBasedir(vatconfig);
   }
+  const config = /** @type {SwingSetConfig & CosmicSwingsetConfig} */ (
+    swingsetConfig
+  );
 
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
