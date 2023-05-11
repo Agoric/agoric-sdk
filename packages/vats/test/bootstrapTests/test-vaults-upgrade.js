@@ -95,11 +95,19 @@ test.serial('re-bootstrap', async t => {
     'agoric1a',
   );
   t.true(wd1.isNew);
+
   await oldContext.shutdown();
-  const syntheticPaths = ['published.synthetic', 'published.synthetic2.deep'];
-  for (const syntheticPath of syntheticPaths) {
+  const walletPaths = [...storage.data.keys()].filter(path =>
+    path.startsWith('published.wallet.'),
+  );
+  t.true(walletPaths.length > 1, 'wallet data must be in vstorage');
+  const preservedFakePath = `${walletPaths.at(-1)}.synthetic.extension`;
+  storage.data.set(preservedFakePath, 'saved');
+  const doomedFakePaths = ['published.synthetic', 'published.synthetic2.deep'];
+  for (const syntheticPath of doomedFakePaths) {
     storage.data.set(syntheticPath, 'doomed');
   }
+
   const newContext = await makeDefaultTestContext(t, {
     incarnation: oldContext.incarnation + 1,
     logTiming: false,
@@ -113,12 +121,14 @@ test.serial('re-bootstrap', async t => {
     undefined,
     'must not be able to use old swingset',
   );
-  for (const syntheticPath of syntheticPaths) {
-    t.is(
-      storage.data.get(syntheticPath),
-      undefined,
-      `non-exported storage entries must be purged: ${syntheticPath}`,
-    );
+  t.is(
+    storage.data.get(preservedFakePath),
+    'saved',
+    'exported storage subtrees must be preserved',
+  );
+  for (const syntheticPath of doomedFakePaths) {
+    const msg = `non-exported storage entries must be purged: ${syntheticPath}`;
+    t.is(storage.data.get(syntheticPath), undefined, msg);
   }
   const wd2 = await newContext.walletFactoryDriver.provideSmartWallet(
     'agoric1a',

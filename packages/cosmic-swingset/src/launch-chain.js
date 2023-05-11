@@ -149,7 +149,7 @@ export async function buildSwingset(
       path === root || path.startsWith(`${root}.`);
 
     // Extract data from chain storage as [path, value?] pairs.
-    if (exportStorageSubtrees.length > 0) {
+    if (bridgeOutbound && exportStorageSubtrees.length > 0) {
       // Disallow exporting internal details like bundle contents and the action queue.
       const exportRoot = STORAGE_PATH.CUSTOM;
       const badPaths = exportStorageSubtrees.filter(
@@ -184,7 +184,7 @@ export async function buildSwingset(
     // Clear other chain storage data as configured.
     // NOTE THAT WE DO NOT LIMIT THIS TO THE CUSTOM PATH!
     // USE AT YOUR OWN RISK!
-    if (clearStorageSubtrees) {
+    if (bridgeOutbound && clearStorageSubtrees) {
       const pathsToClear = [];
       const batchThreshold = 100;
       const sendBatch = () => {
