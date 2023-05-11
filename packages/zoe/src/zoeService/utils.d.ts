@@ -1,4 +1,5 @@
 import type { Callable } from '@agoric/internal/src/utils.js';
+import { VatUpgradeResults } from '@agoric/swingset-vat';
 import { Baggage } from '@agoric/vat-data';
 
 import type { IssuerKeywordRecord, Payment } from './types.js';
@@ -16,8 +17,8 @@ export type AdminFacet = {
   upgradeContract: (
     contractBundleId: string,
     newPrivateArgs?: any,
-  ) => Promise<{ incarnationNumber: number }>;
-  restartContract: (newPrivateArgs?: any) => void;
+  ) => Promise<VatUpgradeResults>;
+  restartContract: (newPrivateArgs?: any) => Promise<VatUpgradeResults>;
 };
 
 /**
