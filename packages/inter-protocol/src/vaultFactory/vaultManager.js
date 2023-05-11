@@ -64,7 +64,7 @@ import { Phase, prepareVault } from './vault.js';
 
 const { details: X, Fail } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM');
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 /** @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime */
@@ -355,6 +355,7 @@ export const prepareVaultManagerKit = (
          */
         start() {
           const { state, facets } = this;
+          trace('helper.start()', state.vaultCounter);
           const {
             collateralBrand,
             collateralUnit,
@@ -366,6 +367,7 @@ export const prepareVaultManagerKit = (
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
 
+          trace('helper.start() making periodNotifier');
           const periodNotifier = E(timerService).makeNotifier(
             0n,
             factoryPowers
@@ -373,6 +375,7 @@ export const prepareVaultManagerKit = (
               .getChargingPeriod(),
           );
 
+          trace('helper.start() starting observe periodNotifier');
           void observeNotifier(periodNotifier, {
             updateState: updateTime =>
               facets.helper
@@ -392,6 +395,7 @@ export const prepareVaultManagerKit = (
             },
           });
 
+          trace('helper.start() making quoteNotifier from', priceAuthority);
           const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
             collateralUnit,
             debtBrand,
@@ -401,14 +405,20 @@ export const prepareVaultManagerKit = (
             E(storageNode).makeChildNode('quotes'),
             marshaller,
           );
+          trace('helper.start() awaiting observe storedQuotesNotifier');
+          // NB: upon restart, there may not be a price for a while. If manager
+          // operations are permitted, ones the depend on price information will
+          // throw. See https://github.com/Agoric/agoric-sdk/issues/4317
           void observeNotifier(quoteNotifier, {
             updateState(value) {
+              trace('vaultManager got new collateral quote', value);
               ephemera.storedCollateralQuote = value;
             },
             fail(reason) {
               console.error('quoteNotifier failed to iterate', reason);
             },
           });
+          trace('helper.start() done');
         },
         /**
          * @param {Timestamp} updateTime
@@ -1292,6 +1302,7 @@ export const prepareVaultManagerKit = (
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const provideAndStartVaultManagerKits = baggage => {
+  trace('provideAndStartVaultManagerKits start');
   const key = 'vaultManagerKits';
 
   const noKits = /** @type {VaultManagerKit[]} */ (harden([]));
@@ -1300,6 +1311,7 @@ export const provideAndStartVaultManagerKits = baggage => {
     kit.helper.start();
   }
 
+  trace('provideAndStartVaultManagerKits returning');
   return {
     /** @type {(kit: VaultManagerKit) => void} */
     add: kit => {

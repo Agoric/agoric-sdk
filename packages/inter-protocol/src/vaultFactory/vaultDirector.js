@@ -560,7 +560,9 @@ export const provideAndStartDirector = (...args) => {
   const [baggage] = args;
 
   const director = provide(baggage, 'director', makeVaultDirector);
-  director.helper.start();
+  director.helper
+    .start()
+    .catch(err => console.error('🚨 vaultDirector failed to start:', err));
   return director;
 };
 harden(provideAndStartDirector);
