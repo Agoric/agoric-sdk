@@ -83,13 +83,10 @@ export async function buildSwingset(
   { debugName = undefined, slogCallbacks, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  let swingsetConfig = await loadSwingsetConfigFile(vatconfig);
-  if (swingsetConfig === null) {
-    swingsetConfig = loadBasedir(vatconfig);
+  let config = await loadSwingsetConfigFile(vatconfig);
+  if (config === null) {
+    config = loadBasedir(vatconfig);
   }
-  const config = /** @type {SwingSetConfig & CosmicSwingsetConfig} */ (
-    swingsetConfig
-  );
 
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
@@ -126,11 +123,13 @@ export async function buildSwingset(
       coreProposals,
       clearStorageSubtrees,
       exportStorageSubtrees = [],
-    } = config;
+      ...swingsetConfig
+    } = /** @type {SwingSetConfig & CosmicSwingsetConfig} */ (config);
 
-    // XXX `initializeSwingset` does not have a default for `config.bootstrap`;
-    // should we universally ensure its presence in `config` above?
-    const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+    // XXX `initializeSwingset` does not have a default for the `bootstrap` property;
+    // should we universally ensure its presence above?
+    const bootVat =
+      swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
     // Find the entrypoints for all the core proposals.
     if (coreProposals) {
@@ -138,7 +137,7 @@ export async function buildSwingset(
         coreProposals,
         vatconfig,
       );
-      config.bundles = { ...config.bundles, ...bundles };
+      swingsetConfig.bundles = { ...swingsetConfig.bundles, ...bundles };
 
       // Tell the bootstrap code how to run the core proposals.
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
@@ -214,8 +213,8 @@ export async function buildSwingset(
       }
     }
 
-    config.pinBootstrapRoot = true;
-    await initializeSwingset(config, bootstrapArgs, kernelStorage, {
+    swingsetConfig.pinBootstrapRoot = true;
+    await initializeSwingset(swingsetConfig, bootstrapArgs, kernelStorage, {
       // @ts-expect-error debugPrefix? what's that?
       debugPrefix,
     });
