@@ -10,6 +10,7 @@ import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 
+import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 import {
   installGovernance,
   provideBundle,
@@ -108,6 +109,7 @@ export const setupPsm = async (
   });
 
   await Promise.all([
+    produceDiagnostics(space),
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
     }),

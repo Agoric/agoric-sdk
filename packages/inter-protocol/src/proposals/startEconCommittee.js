@@ -28,7 +28,7 @@ const sanitizePathSegment = name => {
  */
 export const startEconomicCommittee = async (
   {
-    consume: { board, chainStorage, zoe },
+    consume: { board, chainStorage, diagnostics, zoe },
     produce: { economicCommitteeKit, economicCommitteeCreatorFacet },
     installation: {
       consume: { committee },
@@ -59,19 +59,26 @@ export const startEconomicCommittee = async (
   // NB: committee must only publish what it intended to be public
   const marshaller = await E(board).getPublishingMarshaller();
 
+  const privateArgs = {
+    storageNode,
+    marshaller,
+  };
   const startResult = await E(zoe).startInstance(
     committee,
     {},
     { committeeName, committeeSize, ...rest },
-    {
-      storageNode,
-      marshaller,
-    },
+    privateArgs,
     'economicCommittee',
   );
   const { creatorFacet, instance } = startResult;
 
-  economicCommitteeKit.resolve(startResult);
+  economicCommitteeKit.resolve(
+    // XXX should startInstance return its label?
+    harden({ ...startResult, label: 'economicCommittee' }),
+  );
+
+  await E(diagnostics).savePrivateArgs(startResult.instance, privateArgs);
+
   economicCommitteeCreatorFacet.resolve(creatorFacet);
   economicCommittee.resolve(instance);
 };
@@ -82,6 +89,7 @@ export const ECON_COMMITTEE_MANIFEST = harden({
     consume: {
       board: true,
       chainStorage: true,
+      diagnostics: true,
       zoe: true,
     },
     produce: {

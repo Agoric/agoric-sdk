@@ -14,12 +14,17 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
-export const privateArgsShape = harden({
-  poolBank: M.eref(M.remotable('bank')),
-  initialPoserInvitation: InvitationShape,
-  storageNode: M.eref(M.remotable('storageNode')),
-  marshaller: M.eref(M.remotable('marshaller')),
-});
+export const privateArgsShape = M.splitRecord(
+  harden({
+    poolBank: M.eref(M.remotable('bank')),
+    storageNode: M.eref(M.remotable('storageNode')),
+    marshaller: M.eref(M.remotable('marshaller')),
+  }),
+  harden({
+    // only necessary on first invocation, not subsequent
+    initialPoserInvitation: InvitationShape,
+  }),
+);
 
 /**
  * @typedef {StandardTerms & GovernanceTerms<{

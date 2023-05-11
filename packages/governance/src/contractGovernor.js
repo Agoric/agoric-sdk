@@ -189,6 +189,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         privateArgs.governed,
         governedContractLabel,
       );
+      trace('awaiting remote limitedCreatorFacet');
       const limitedCreatorFacet = await E(
         startedInstanceKit.creatorFacet,
       ).getLimitedCreatorFacet();
@@ -200,6 +201,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   // At this point, some remote calls still need to be made within the governorKit.
   // Specifically, to the vat of the governed contract for its API names. The exo
   // defers that until API governance is requested to be invoked or validated.
+
+  trace('prepare complete');
 
   // CRUCIAL: only contractGovernor should get the ability to update params
   return { creatorFacet: governorKit.creator, publicFacet: governorKit.public };

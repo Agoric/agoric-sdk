@@ -59,6 +59,7 @@ const SHARED_MAIN_MANIFEST = harden({
     consume: {
       board: 'board',
       chainStorage: true,
+      diagnostics: true,
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
@@ -99,6 +100,7 @@ const SHARED_MAIN_MANIFEST = harden({
     consume: {
       board: 'board',
       chainStorage: true,
+      diagnostics: true,
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
@@ -158,6 +160,7 @@ const REWARD_MANIFEST = harden({
   [econBehaviors.startRewardDistributor.name]: {
     consume: {
       chainTimerService: true,
+      diagnostics: true,
       bankManager: true,
       vaultFactoryKit: true,
       periodicFeeCollectors: true,

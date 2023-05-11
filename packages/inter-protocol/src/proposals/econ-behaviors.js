@@ -76,6 +76,7 @@ export const setupReserve = async ({
     feeMintAccess: feeMintAccessP,
     chainStorage,
     chainTimerService,
+    diagnostics,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
   },
@@ -120,19 +121,20 @@ export const setupReserve = async ({
       },
     }),
   );
+  const privateArgs = {
+    governed: {
+      feeMintAccess,
+      initialPoserInvitation: poserInvitation,
+      marshaller,
+      storageNode,
+    },
+  };
   /** @type {GovernorStartedInstallationKit<typeof reserveInstallation>} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
     reserveGovernorTerms,
-    {
-      governed: {
-        feeMintAccess,
-        initialPoserInvitation: poserInvitation,
-        marshaller,
-        storageNode,
-      },
-    },
+    privateArgs,
     'reserve.governor',
   );
 
@@ -155,6 +157,8 @@ export const setupReserve = async ({
       governorAdminFacet: g.adminFacet,
     }),
   );
+  await E(diagnostics).savePrivateArgs(instance, privateArgs.governed);
+  await E(diagnostics).savePrivateArgs(g.instance, privateArgs);
 
   reserveInstanceProducer.resolve(instance);
   reserveGovernor.resolve(g.instance);
@@ -314,6 +318,12 @@ export const startVaultFactory = async (
       E(g.creatorFacet).getAdminFacet(),
     ]);
 
+  // XXX omitting the governor
+  await E(consume.diagnostics).savePrivateArgs(
+    vaultFactoryInstance,
+    vaultFactoryPrivateArgs,
+  );
+
   vaultFactoryKit.resolve(
     harden({
       label: 'VaultFactory',
@@ -326,6 +336,7 @@ export const startVaultFactory = async (
       governorAdminFacet: g.adminFacet,
       governorCreatorFacet: g.creatorFacet,
 
+      // XXX try refactoring to use savePrivateArgs
       privateArgs: vaultFactoryPrivateArgs,
     }),
   );
@@ -449,7 +460,9 @@ export const startRewardDistributor = async ({
     ),
   });
 
-  feeDistributorKit.resolve(instanceKit);
+  feeDistributorKit.resolve(
+    harden({ ...instanceKit, label: 'feeDistributor' }),
+  );
   feeDistributorP.resolve(instanceKit.instance);
 
   // Initialize the periodic collectors list if we don't have one.

@@ -290,8 +290,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of performAction() in cosmic-swingset/src/launch-chain.js
-  await (walletBridgeManager &&
-    E(walletBridgeManager).initHandler(handleWalletAction));
+  if (walletBridgeManager) {
+    // NB: may not be in service when creatorFacet is used, or ever
+    // It can't be awaited because that fails vat restart
+    void E(walletBridgeManager).initHandler(handleWalletAction);
+  }
 
   return {
     creatorFacet,

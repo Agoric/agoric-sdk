@@ -259,6 +259,7 @@ export const startPSM = async (
   /** @type {MapStore<Brand,psmKit>} */
   const psmKitMap = await psmKit;
 
+  // TODO init into governedContractKits too to simplify testing
   psmKitMap.init(anchorBrand, newpsmKit);
   const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
 

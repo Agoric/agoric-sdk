@@ -463,6 +463,7 @@ test.serial(
       EV.vat('bootstrap').snapshotStore(await EV(powerStore).get(name));
 
     const contractKits = await getStoreSnapshot('contractKits');
+    // TODO refactor the entries to go into governedContractKits too (so the latter is sufficient to test)
     const psmKit = await getStoreSnapshot('psmKit');
     const governedContractKits = await getStoreSnapshot('governedContractKits');
     const vatStore = await getStoreSnapshot('vatStore');

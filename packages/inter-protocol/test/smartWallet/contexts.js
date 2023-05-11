@@ -5,6 +5,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import {
   produceStartUpgradable,
   produceStartGovernedUpgradable,
+  produceDiagnostics,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
@@ -44,6 +45,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const { consume, produce } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
+  await produceDiagnostics({ produce });
+  // @ts-expect-error Doesnt actually require all bootstrap powers
+  await produceDiagnostics({ consume, produce });
   // @ts-expect-error Doesnt actually require all bootstrap powers
   await produceStartUpgradable({ zone: heapZone, consume, produce });
 
