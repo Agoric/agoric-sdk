@@ -1,6 +1,11 @@
 #!/bin/bash
+set +x 
 
 . ./upgrade-test-scripts/env_setup.sh
+
+# apply patch
+sed -i "s/--econCommAcceptOfferId /--previousOfferId /g" "./packages/agoric-cli/src/commands/psm.js"
+
 waitForBlock 3
 # fund provision pool
 stakeamount="20000000ibc/toyusdc"
@@ -23,11 +28,10 @@ done
 
 waitForBlock 5
 
-govaccounts2=( "$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR" )
 # Accept invitation to economic committee
-for i in "${govaccounts2[@]}"; do
+for i in "${govaccounts[@]}"; do
   COMMITTEE_OFFER=$(mktemp -t agopscommittee.XXX)
-  yarn run --silent agops psm committee >|"$COMMITTEE_OFFER"
+  agops psm committee >|"$COMMITTEE_OFFER"
   if [[ "$i" == "$GOV2ADDR" ]]; then
     sed -i "s/Voter0/Voter1/g" "$COMMITTEE_OFFER"
   fi
@@ -35,7 +39,7 @@ for i in "${govaccounts2[@]}"; do
     sed -i "s/Voter0/Voter2/g" "$COMMITTEE_OFFER"
   fi
   jq ".body | fromjson" <"$COMMITTEE_OFFER"
-  yarn run --silent agops perf satisfaction --from $i --executeOffer $COMMITTEE_OFFER --keyring-backend=test
+  agops perf satisfaction --from $i --executeOffer $COMMITTEE_OFFER --keyring-backend=test
   # verify the offerId is readable from chain history
   agoric wallet show --from $i
   COMMITTEE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$COMMITTEE_OFFER")
@@ -45,9 +49,9 @@ for i in "${govaccounts2[@]}"; do
 
 # Accept invitation to be a charter member
   CHARTER_OFFER=$(mktemp -t agopscharter.XXX)
-  yarn run --silent agops psm charter >|"$CHARTER_OFFER"
+  agops psm charter >|"$CHARTER_OFFER"
   jq ".body | fromjson" <"$CHARTER_OFFER"
-  yarn run --silent agops perf satisfaction --from $i --executeOffer $CHARTER_OFFER --keyring-backend=test
+  agops perf satisfaction --from $i --executeOffer $CHARTER_OFFER --keyring-backend=test
 
   # verify the offerId is readable from chain history
   agoric wallet show --from $i
@@ -59,13 +63,42 @@ source "$HOME/.agoric/envs"
 waitForBlock 2
 
 
+# Propose a vote to raise the mint limit
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+oid="${GOV1ADDR}_CHARTER_OFFER_ID"
+agops psm proposeChangeMintLimit --pair IST.ToyUSD --limit 133337 --previousOfferId "${!oid}" >|"$PROPOSAL_OFFER"
+jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agops perf satisfaction --from $GOV1ADDR --executeOffer $PROPOSAL_OFFER --keyring-backend=test
+
+for i in "${govaccounts[@]}"; do
+  # vote on the question that was made
+  VOTE_OFFER=$(mktemp -t agops.XXX)
+  oid="${i}_COMMITTEE_OFFER_ID"
+  echo "$i using ${!oid}"
+  agops psm vote --pair IST.ToyUSD --forPosition 0 --previousOfferId "${!oid}" >|"$VOTE_OFFER"
+  jq ".body | fromjson" <"$VOTE_OFFER"
+
+  agops perf satisfaction --from $i --executeOffer $VOTE_OFFER --keyring-backend=test
+done
+
+## wait for the election to be resolved (1m default in commands/psm.js)
+echo "waiting 1 minute for election to be resolved"
+sleep 65
+
+agops psm info --pair IST.ToyUSD
 
 
 
-# test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom uist | jq -r .amount)" "250000"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom uist | jq -r .amount)" "250000" "pre-swap: validate IST"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ubld | jq -r .amount)" "190000000" "pre-swap: validate BLD balance"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ibc/toyusdc | jq -r .amount)" "100000000" "pre-swap: validate ToyUSD balance"
 
-# SWAP_OFFER=$(mktemp -t agops.XXX)
-# yarn run --silent agops psm swap --pair IST.ToyUSD   --wantMinted 10.00 --feePct 0.10 >|"$SWAP_OFFER"
-# sendOffer "$SWAP_OFFER" $GOV1ADDR
+SWAP_OFFER=$(mktemp -t agops.XXX)
+agops psm swap --pair IST.ToyUSD  --wantMinted 10.00 --feePct 0.10 >|"$SWAP_OFFER"
+agops perf satisfaction --from $GOV1ADDR --executeOffer "$SWAP_OFFER" --keyring-backend=test
 
-# waitForBlock 3
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom uist | jq -r .amount)" "10260011" "post-swap: validate IST"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ubld | jq -r .amount)" "190000000" "post-swap: validate BLD balance"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ibc/toyusdc | jq -r .amount)" "89989989" "post-swap: validate ToyUSD balance"
+
+waitForBlock 3
