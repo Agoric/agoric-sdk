@@ -1,0 +1,303 @@
+{
+  "type": "object",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "defaultManagerType": {
+          "anyOf": [
+            {
+              "const": "xsnap",
+              "type": "string"
+            },
+            {
+              "const": "xs-worker",
+              "type": "string"
+            },
+            {
+              "const": "local",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "defaultManagerType"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "includeDevDependencies": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "includeDevDependencies"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "defaultReapInterval": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "defaultReapInterval"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "snapshotInterval": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "snapshotInterval"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "vats": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sourceSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "critial"
+                      ]
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "sourceSpec",
+                    "creationOptions",
+                    "parameters"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundleSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "critial"
+                      ]
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundleSpec",
+                    "creationOptions",
+                    "parameters"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundle": {
+                      "type": "object",
+                      "properties": {
+                        "moduleType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "moduleType"
+                      ]
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "critial"
+                      ]
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundle",
+                    "creationOptions",
+                    "parameters"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "vats"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "bootstrap": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bootstrap"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "bundles": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sourceSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "critial"
+                      ]
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "sourceSpec",
+                    "creationOptions",
+                    "parameters"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundleSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "critial"
+                      ]
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundleSpec",
+                    "creationOptions",
+                    "parameters"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundle": {
+                      "type": "object",
+                      "properties": {
+                        "moduleType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "moduleType"
+                      ]
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "critial"
+                      ]
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundle",
+                    "creationOptions",
+                    "parameters"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "bundles"
+      ]
+    }
+  ]
+}
