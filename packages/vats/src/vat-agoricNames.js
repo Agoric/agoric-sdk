@@ -4,6 +4,7 @@ import { E, Far } from '@endo/far';
 import { BrandI } from '@agoric/ertp';
 import { provide } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { provideLazy } from '@agoric/store';
 import { prepareNameHubKit } from './nameHub.js';
 
 /** @param {import('@agoric/zone').Zone} zone */
@@ -80,6 +81,8 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
      * @param {DisplayInfo} displayInfo
      */
     provideInertBrand: (keyword, displayInfo) =>
-      provide(brandStore, keyword, () => makeNatBrand(keyword, displayInfo)),
+      provideLazy(brandStore, keyword, () =>
+        makeNatBrand(keyword, displayInfo),
+      ),
   });
 };
