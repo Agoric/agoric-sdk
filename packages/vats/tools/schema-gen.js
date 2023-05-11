@@ -72,7 +72,9 @@ export const toTypeBox = pattern => {
       case 'match:splitRecord': {
         const [required, optional] = patt.payload;
         const ty = recur(required);
-        return optional ? Type.Composite([ty, recur(optional)]) : ty;
+        return optional
+          ? Type.Composite([ty, Type.Partial(recur(optional))])
+          : ty;
       }
       case 'match:kind': {
         const valueKind = patt.payload;

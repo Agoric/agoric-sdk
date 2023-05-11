@@ -33,5 +33,5 @@ test('Generate JSON schema for editing swingset config files', async t => {
     JSON.parse(s),
   );
   t.truthy(config);
-  t.deepEqual(Value.Errors(schema, config), []);
+  t.deepEqual([...Value.Errors(schema, config)], []);
 });
