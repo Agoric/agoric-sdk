@@ -20,11 +20,13 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
+import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
+import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideAndStartDirector } from './vaultDirector.js';
 
@@ -38,6 +40,15 @@ const trace = makeTracer('VF', false);
  *   timerService: import('@agoric/time/src/types').TimerService,
  * }>} VaultFactoryZCF
  */
+
+export const privateArgsShape = {
+  feeMintAccess: M.any(),
+  initialPoserInvitation: InvitationShape,
+  initialShortfallInvitation: InvitationShape,
+  marshaller: M.remotable('Marshaller'),
+  storageNode: StorageNodeShape,
+};
+harden(privateArgsShape);
 
 /**
  * @param {VaultFactoryZCF} zcf
@@ -53,19 +64,11 @@ const trace = makeTracer('VF', false);
 export const prepare = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);
   const {
-    feeMintAccess,
     initialPoserInvitation,
     initialShortfallInvitation,
     marshaller,
     storageNode,
   } = privateArgs;
-  assertAllDefined({
-    feeMintAccess,
-    initialPoserInvitation,
-    initialShortfallInvitation,
-    marshaller,
-    storageNode,
-  });
 
   trace('awaiting debtMint');
   const { debtMint } = await provideAll(baggage, {
