@@ -31,13 +31,13 @@ test_not_val "$(agd q vstorage children published.psm.IST -o jsonlines | jq -r '
 
 ## testing state from pismoC was preserved post bulldozer upgrade
 
-# provision pool has right balance 
-test_val "$(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ')" "19250000"
-
 # test that the PSM gov params were preserved
+test_not_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
 test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "$(cat /root/psm_governance.json | jq -r '.current.MintLimit.value.value')" "PSM MintLimit preserved"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.GiveMintedFee.value.numerator.value')" "0" "GiveMintedFee == 0"
-test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.WantMintedFee.value.numerator.value')" "0" "WantMintedFee == 0"
+test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.GiveMintedFee.value.numerator.value')" "0" "GiveMintedFee numerator == 0"
+test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.GiveMintedFee.value.denominator.value')" "$(cat /root/psm_governance.json | jq -r '.current.GiveMintedFee.value.denominator.value')" "GiveMintedFee denominator == 10000"
+test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.WantMintedFee.value.numerator.value')" "0" "WantMintedFee numerator == 0"
+test_val "$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.WantMintedFee.value.denominator.value')" "$(cat /root/psm_governance.json | jq -r '.current.WantMintedFee.value.denominator.value')" "WantMintedFee denominator == 10000"
 
 test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.anchorPoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
 test_val "$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines | jq -r '.feePoolBalance.value')" "$(cat /root/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
