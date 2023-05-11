@@ -39,12 +39,20 @@ ARG DEST_IMAGE
 #this is agoric-upgrade-9 / pismoC
 FROM ghcr.io/agoric/agoric-sdk:31 as agoric-upgrade-9
 ENV THIS_NAME=agoric-upgrade-9
-ENV UPGRADE_TO=agorictest-upgrade-10
 
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8-1 /root/.agoric /root/.agoric
+SHELL ["/bin/bash", "-c"]
+RUN . ./upgrade-test-scripts/start_to_to.sh
+
+# this is agoric-upgrade-9 / pismoC with upgrade to agoric-upgrade-10
+FROM agoric-upgrade-9 as agoric-upgrade-9-to-10
+ENV THIS_NAME=agoric-upgrade-9
+ENV UPGRADE_TO=agorictest-upgrade-10
+
+WORKDIR /usr/src/agoric-sdk/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
@@ -57,7 +65,8 @@ ENV THIS_NAME=agoric-upgrade-10
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-COPY --from=agoric-upgrade-9 /root/.agoric /root/.agoric
+COPY --from=agoric-upgrade-9-to-10 /root/.agoric /root/.agoric
+COPY --from=agoric-upgrade-9-to-10 /root/*.json /root/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
