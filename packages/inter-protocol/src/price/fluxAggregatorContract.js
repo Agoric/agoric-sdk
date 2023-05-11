@@ -30,7 +30,7 @@ export const privateArgsShape = M.splitRecord(
   harden({
     // always optional. XXX some code is including the key, set to null
     highPrioritySendersManager: M.or(
-      M.eref(M.remotable('prioritySenders manager')),
+      M.remotable('prioritySenders manager'),
       M.null(),
     ),
     // only necessary on first invocation, not subsequent

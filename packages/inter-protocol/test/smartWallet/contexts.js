@@ -47,6 +47,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   await produceDiagnostics({ produce });
   // @ts-expect-error Doesnt actually require all bootstrap powers
+  await produceDiagnostics({ consume, produce });
+  // @ts-expect-error Doesnt actually require all bootstrap powers
   await produceStartUpgradable({ zone: heapZone, consume, produce });
 
   //#region Installs

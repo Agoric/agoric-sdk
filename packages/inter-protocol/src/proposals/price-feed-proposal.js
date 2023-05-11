@@ -145,13 +145,13 @@ export const createPriceFeed = async (
   const label = sanitizePathSegment(AGORIC_INSTANCE_NAME);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
-  const marshaller = E(board).getReadonlyMarshaller();
+  const marshaller = await E(board).getReadonlyMarshaller();
 
   trace('awaiting startInstance');
   const faKit = await E(startGovernedUpgradable)({
     governedParams: {},
     privateArgs: {
-      highPrioritySendersManager,
+      highPrioritySendersManager: await highPrioritySendersManager,
       marshaller,
       namesByAddressAdmin,
       storageNode: await E(storageNode).makeChildNode(label),

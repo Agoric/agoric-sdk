@@ -23,6 +23,7 @@ import {
   makeBridgeManager,
   makeChainStorage,
   noProvisioner,
+  produceHighPrioritySendersManager,
   publishAgoricNames,
   startTimerService,
 } from '@agoric/vats/src/core/chain-behaviors.js';
@@ -261,6 +262,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       produceDiagnostics(allPowers),
       produceStartUpgradable(allPowers),
       produceStartGovernedUpgradable(allPowers),
+      produceHighPrioritySendersManager(allPowers),
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
       makeBoard(allPowers),
