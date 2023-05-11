@@ -43,6 +43,20 @@ import { makeQueue } from './helpers/make-queue.js';
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
+/** @typedef {import('@agoric/swingset-vat').SwingSetConfig} SwingSetConfig */
+
+/**
+ * @typedef {object} CosmicSwingsetConfig
+ * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
+ * @property {string[]} [clearStorageSubtrees] chain storage paths identifying roots of subtrees
+ *   for which data should be deleted (except for overlaps with exportStorageSubtrees, which
+ *   are preserved).
+ * @property {string[]} [exportStorageSubtrees] chain storage paths identifying roots of subtrees
+ *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
+ *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
+ *   `chainStorageEntries: [ ['c.o', '"top"'], ['c.o.i'], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
+ */
+
 /**
  * Return the key in the reserved "host.*" section of the swing-store
  *
@@ -69,7 +83,6 @@ export async function buildSwingset(
   { debugName = undefined, slogCallbacks, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  /** @type {import('@agoric/swingset-vat').SwingSetConfig | null} */
   let config = await loadSwingsetConfigFile(vatconfig);
   if (config === null) {
     config = loadBasedir(vatconfig);
@@ -106,11 +119,17 @@ export async function buildSwingset(
       return;
     }
     if (!config) throw Fail`config not yet set`;
-    const { coreProposals, exportStorageSubtrees } = config;
+    const {
+      coreProposals,
+      clearStorageSubtrees,
+      exportStorageSubtrees = [],
+      ...swingsetConfig
+    } = /** @type {SwingSetConfig & CosmicSwingsetConfig} */ (config);
 
-    // XXX `initializeSwingset` does not have a default for `config.bootstrap`;
-    // should we universally ensure its presence in `config` above?
-    const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+    // XXX `initializeSwingset` does not have a default for the `bootstrap` property;
+    // should we universally ensure its presence above?
+    const bootVat =
+      swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
     // Find the entrypoints for all the core proposals.
     if (coreProposals) {
@@ -118,39 +137,42 @@ export async function buildSwingset(
         coreProposals,
         vatconfig,
       );
-      config.bundles = { ...config.bundles, ...bundles };
+      swingsetConfig.bundles = { ...swingsetConfig.bundles, ...bundles };
 
       // Tell the bootstrap code how to run the core proposals.
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
 
+    const readChainStorage = (method, path) =>
+      bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
+    const isInSubtree = (path, root) =>
+      path === root || path.startsWith(`${root}.`);
+
     // Extract data from chain storage as [path, value?] pairs.
-    if (exportStorageSubtrees) {
+    if (exportStorageSubtrees.length > 0) {
       // Disallow exporting internal details like bundle contents and the action queue.
       const exportRoot = STORAGE_PATH.CUSTOM;
       const badPaths = exportStorageSubtrees.filter(
-        path => path !== exportRoot && !path.startsWith(`${exportRoot}.`),
+        path => !isInSubtree(path, exportRoot),
       );
       badPaths.length === 0 ||
         // prettier-ignore
         Fail`Exported chain storage paths ${q(badPaths)} must start with ${q(exportRoot)}`;
 
-      const callChainStorage = (method, path) =>
-        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
       const makeExportEntry = (path, value) =>
         value == null ? [path] : [path, value];
 
       const chainStorageEntries = [];
       // Preserve the ordering of each subtree via depth-first traversal.
       let pendingEntries = exportStorageSubtrees.map(path => {
-        const value = callChainStorage('get', path);
+        const value = readChainStorage('get', path);
         return makeExportEntry(path, value);
       });
       while (pendingEntries.length > 0) {
         const entry = /** @type {[string, string?]} */ (pendingEntries.shift());
         chainStorageEntries.push(entry);
         const [path, _value] = entry;
-        const childEntryData = callChainStorage('entries', path);
+        const childEntryData = readChainStorage('entries', path);
         const childEntries = childEntryData.map(([pathSegment, value]) => {
           return makeExportEntry(`${path}.${pathSegment}`, value);
         });
@@ -159,8 +181,40 @@ export async function buildSwingset(
       bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
     }
 
-    config.pinBootstrapRoot = true;
-    await initializeSwingset(config, bootstrapArgs, kernelStorage, {
+    // Clear other chain storage data as configured.
+    // NOTE THAT WE DO NOT LIMIT THIS TO THE CUSTOM PATH!
+    // USE AT YOUR OWN RISK!
+    if (clearStorageSubtrees) {
+      const pathsToClear = [];
+      const batchThreshold = 100;
+      const sendBatch = () => {
+        // Consume pathsToClear and map each path to a no-value entry.
+        const args = pathsToClear.splice(0).map(path => [path]);
+        bridgeOutbound(BRIDGE_ID.STORAGE, { method: 'setWithoutNotify', args });
+      };
+      let pathsToCheck = [...clearStorageSubtrees];
+      while (pathsToCheck.length > 0) {
+        const path = pathsToCheck.shift();
+        if (exportStorageSubtrees.some(root => isInSubtree(path, root))) {
+          // Don't purge data that is being exported.
+          continue;
+        }
+        pathsToClear.push(path);
+        if (pathsToClear.length >= batchThreshold) {
+          sendBatch();
+        }
+        const childPaths = readChainStorage('children', path).map(
+          segment => `${path}.${segment}`,
+        );
+        pathsToCheck = [...childPaths, ...pathsToCheck];
+      }
+      if (pathsToClear.length > 0) {
+        sendBatch();
+      }
+    }
+
+    swingsetConfig.pinBootstrapRoot = true;
+    await initializeSwingset(swingsetConfig, bootstrapArgs, kernelStorage, {
       // @ts-expect-error debugPrefix? what's that?
       debugPrefix,
     });

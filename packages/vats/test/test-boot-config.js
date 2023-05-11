@@ -174,7 +174,7 @@ test('no test-only code is in production proposals', async t => {
       const fullPath = pathResolve('..', configSpec);
       const config = await loadSwingsetConfigFile(fullPath);
       if (!config) throw t.truthy(config, configSpec); // if/throw refines type
-      const { coreProposals } = config;
+      const { coreProposals } = /** @type {any} */ (config);
       return coreProposals || [];
     };
 

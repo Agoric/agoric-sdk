@@ -138,8 +138,8 @@ harden(assertPathSegment);
 /**
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
- * @typedef { 'get' | 'getStoreKey' | 'has' | 'entries' | 'values' |'size' } StorageGetByPathMessageMethod
- * @typedef { 'set' | 'append' } StorageUpdateEntriesMessageMethod
+ * @typedef { 'get' | 'getStoreKey' | 'has' | 'children' | 'entries' | 'values' |'size' } StorageGetByPathMessageMethod
+ * @typedef { 'set' | 'setWithoutNotify' | 'append' } StorageUpdateEntriesMessageMethod
  * @typedef {StorageGetByPathMessageMethod | StorageUpdateEntriesMessageMethod } StorageMessageMethod
  * @typedef { [path: string] } StorageGetByPathMessageArgs
  * @typedef { [path: string, value?: string | null] } StorageEntry

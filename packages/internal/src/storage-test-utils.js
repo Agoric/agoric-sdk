@@ -96,6 +96,23 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   const resolvedOptions = { sequence: true, ...rootOptions };
   /** @type {TotalMap<string, string>} */
   const data = new Map();
+  /** @param {string} prefix */
+  const getChildEntries = prefix => {
+    assert(prefix.endsWith('.'));
+    const childEntries = new Map();
+    for (const [path, value] of data.entries()) {
+      if (!path.startsWith(prefix)) {
+        continue;
+      }
+      const [segment, ...suffix] = path.slice(prefix.length).split('.');
+      if (suffix.length === 0) {
+        childEntries.set(segment, value);
+      } else if (!childEntries.has(segment)) {
+        childEntries.set(segment, null);
+      }
+    }
+    return childEntries;
+  };
   /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
   const messages = [];
   /** @param {import('../src/lib-chainStorage.js').StorageMessage} message */
@@ -111,26 +128,20 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         const [key] = message.args;
         return data.has(key) ? data.get(key) : null;
       }
+      case 'children': {
+        const [key] = message.args;
+        const childEntries = getChildEntries(`${key}.`);
+        return [...childEntries.keys()];
+      }
       case 'entries': {
         const [key] = message.args;
-        const prefix = `${key}.`;
-        const childData = new Map();
-        for (const [path, value] of data.entries()) {
-          if (!path.startsWith(prefix)) {
-            continue;
-          }
-          const [segment, ...suffix] = path.slice(prefix.length).split('.');
-          if (suffix.length === 0) {
-            childData.set(segment, value);
-          } else if (!childData.has(segment)) {
-            childData.set(segment, null);
-          }
-        }
-        return [...childData.entries()].map(entry =>
+        const childEntries = getChildEntries(`${key}.`);
+        return [...childEntries.entries()].map(entry =>
           entry[1] != null ? entry : [entry[0]],
         );
       }
-      case 'set': {
+      case 'set':
+      case 'setWithoutNotify': {
         /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
         const newEntries = message.args;
         for (const [key, value] of newEntries) {
@@ -179,7 +190,13 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     }
   };
   const rootNode = makeChainStorageRoot(toStorage, rootPath, resolvedOptions);
-  return { rootNode, data, messages, toStorage };
+  return {
+    rootNode,
+    // eslint-disable-next-line object-shorthand
+    data: /** @type {Map<string, string>} */ (data),
+    messages,
+    toStorage,
+  };
 };
 harden(makeFakeStorageKit);
 /** @typedef {ReturnType< typeof makeFakeStorageKit>} FakeStorageKit */

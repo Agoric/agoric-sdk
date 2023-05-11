@@ -10,6 +10,10 @@ import {
   makeEnactCoreProposalsFromBundleRef,
 } from './coreProposalBehavior.js';
 
+/**
+ * @typedef {string | { module: string, entrypoint: string, args?: Array<unknown> }} ConfigProposal
+ */
+
 const { details: X, Fail } = assert;
 
 const req = createRequire(import.meta.url);
@@ -42,7 +46,7 @@ const pathResolve = (...paths) => {
  * but for sim-chain and such, they can be declared statically in
  * the chain configuration, in which case they are run at bootstrap.
  *
- * @param {import('@agoric/swingset-vat').ConfigProposal[]} coreProposals - governance
+ * @param {ConfigProposal[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
  * @param {typeof makeEnactCoreProposalsFromBundleRef} [makeEnactCoreProposals]
