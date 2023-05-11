@@ -135,7 +135,7 @@ export async function buildSwingset(
     if (coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
         coreProposals,
-        vatconfig,
+        vatconfig, // for path resolution
       );
       swingsetConfig.bundles = { ...swingsetConfig.bundles, ...bundles };
 

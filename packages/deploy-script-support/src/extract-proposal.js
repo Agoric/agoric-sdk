@@ -1,5 +1,5 @@
 // @ts-check
-import { deeplyFulfilled } from '@endo/marshal';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
@@ -101,6 +101,7 @@ export const extractCoreProposalBundles = async (
       const thisProposalSequence = getSequenceForProposal(i);
       const initPath = pathResolve(dirname, module);
       const initDir = path.dirname(initPath);
+      /** @type {Record<string, import('./externalTypes.js').ProposalBuilder>} */
       const ns = await import(initPath);
       const install = (srcSpec, bundlePath) => {
         const absoluteSrc = pathResolve(initDir, srcSpec);
@@ -126,6 +127,7 @@ export const extractCoreProposalBundles = async (
         bundleHandleToAbsolutePaths.set(bundleHandle, harden(absolutePaths));
         return bundleHandle;
       };
+      /** @type {import('./externalTypes.js').PublishBundleRef} */
       const publishRef = async handleP => {
         const handle = await handleP;
         bundleHandleToAbsolutePaths.has(handle) ||
@@ -161,7 +163,7 @@ export const extractCoreProposalBundles = async (
 
       // Now that we've assigned all the bundleNames and hardened the
       // handles, we can extract the behavior bundle.
-      const { sourceSpec, getManifestCall } = await deeplyFulfilled(
+      const { sourceSpec, getManifestCall } = await deeplyFulfilledObject(
         harden(proposal),
       );
 

@@ -44,10 +44,10 @@ export const makeStartInstance = (
   );
 
   const InstanceAdminStateShape = harden({
-    instanceStorage: M.any(),
-    instanceAdmin: M.any(),
-    seatHandleToSeatAdmin: M.any(),
-    adminNode: M.any(),
+    instanceStorage: M.remotable('ZoeInstanceStorageManager'),
+    instanceAdmin: M.remotable('InstanceAdmin'),
+    seatHandleToSeatAdmin: M.remotable(),
+    adminNode: M.remotable('adminNode'),
   });
 
   const makeZoeInstanceAdmin = prepareExoClass(
@@ -129,7 +129,8 @@ export const makeStartInstance = (
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         } catch (err) {
-          state.adminNode.terminateWithFailure(err);
+          // nothing for Zoe to do if the termination fails
+          void E(state.adminNode).terminateWithFailure(err);
           throw err;
         }
       },

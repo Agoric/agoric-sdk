@@ -144,12 +144,15 @@ export const setupReserve = async ({
 
   reserveKit.resolve(
     harden({
+      label: 'AssetReserve',
       instance,
-      governor: g.instance,
       publicFacet,
       creatorFacet,
-      governorCreatorFacet: g.creatorFacet,
       adminFacet: g.adminFacet,
+
+      governor: g.instance,
+      governorCreatorFacet: g.creatorFacet,
+      governorAdminFacet: g.adminFacet,
     }),
   );
 
@@ -292,11 +295,7 @@ export const startVaultFactory = async (
   );
 
   /** @type {GovernorStartedInstallationKit<typeof vaultFactoryInstallation>} */
-  const {
-    creatorFacet: governorCreatorFacet,
-    instance: governorInstance,
-    adminFacet,
-  } = await E(consume.zoe).startInstance(
+  const g = await E(consume.zoe).startInstance(
     contractGovernorInstallation,
     undefined,
     governorTerms,
@@ -307,28 +306,33 @@ export const startVaultFactory = async (
     'vaultFactory.governor',
   );
 
-  const [vaultFactoryInstance, vaultFactoryCreator, publicFacet] =
+  const [vaultFactoryInstance, vaultFactoryCreator, publicFacet, adminFacet] =
     await Promise.all([
-      E(governorCreatorFacet).getInstance(),
-      E(governorCreatorFacet).getCreatorFacet(),
-      E(governorCreatorFacet).getPublicFacet(),
+      E(g.creatorFacet).getInstance(),
+      E(g.creatorFacet).getCreatorFacet(),
+      E(g.creatorFacet).getPublicFacet(),
+      E(g.creatorFacet).getAdminFacet(),
     ]);
 
   vaultFactoryKit.resolve(
     harden({
+      label: 'VaultFactory',
       creatorFacet: vaultFactoryCreator,
-      governorCreatorFacet,
       adminFacet,
       publicFacet,
-      governor: governorInstance,
       instance: vaultFactoryInstance,
+
+      governor: g.instance,
+      governorAdminFacet: g.adminFacet,
+      governorCreatorFacet: g.creatorFacet,
+
       privateArgs: vaultFactoryPrivateArgs,
     }),
   );
 
   // Advertise the installations, instances in agoricNames.
   instanceProduce.VaultFactory.resolve(vaultFactoryInstance);
-  instanceProduce.VaultFactoryGovernor.resolve(governorInstance);
+  instanceProduce.VaultFactoryGovernor.resolve(g.instance);
 };
 
 /**
@@ -584,12 +588,15 @@ export const startAuctioneer = async (
 
   auctioneerKit.resolve(
     harden({
+      label: 'auctioneer',
       creatorFacet: governedCreatorFacet,
-      governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
       publicFacet: governedPublicFacet,
-      governor: governorStartResult.instance,
       instance: governedInstance,
+
+      governor: governorStartResult.instance,
+      governorCreatorFacet: governorStartResult.creatorFacet,
+      governorAdminFacet: governorStartResult.adminFacet,
     }),
   );
 

@@ -236,6 +236,7 @@ const startGovernedInstance = async (
     creatorFacet,
     adminFacet,
     governorCreatorFacet: governorFacets.creatorFacet,
+    governorAdminFacet: governorFacets.adminFacet,
   };
   return facets;
 };

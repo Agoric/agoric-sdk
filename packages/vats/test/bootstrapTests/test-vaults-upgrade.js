@@ -291,7 +291,7 @@ test.serial('restart contractGovernor', async t => {
     'vaultFactoryKit',
   );
 
-  const governorAdminFacet = vaultFactoryKit.adminFacet;
+  const { governorAdminFacet } = vaultFactoryKit;
   // has no privateArgs of its own. the privateArgs.governed is only for the
   // contract startInstance. any changes to those privateArgs have to happen
   // through a restart or upgrade using the governed contract's adminFacet

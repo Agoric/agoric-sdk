@@ -89,12 +89,17 @@ export const customTermsShape = {
 };
 harden(customTermsShape);
 
-export const privateArgsShape = {
-  feeMintAccess: FeeMintAccessShape,
-  initialPoserInvitation: InvitationShape,
-  storageNode: StorageNodeShape,
-  marshaller: M.remotable('marshaller'),
-};
+export const privateArgsShape = M.splitRecord(
+  harden({
+    marshaller: M.remotable('Marshaller'),
+    storageNode: StorageNodeShape,
+  }),
+  harden({
+    // only necessary on first invocation, not subsequent
+    feeMintAccess: FeeMintAccessShape,
+    initialPoserInvitation: InvitationShape,
+  }),
+);
 harden(privateArgsShape);
 
 /**
