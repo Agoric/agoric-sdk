@@ -129,7 +129,8 @@ export const makeStartInstance = (
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         } catch (err) {
-          state.adminNode.terminateWithFailure(err);
+          // nothing for Zoe to do if the termination fails
+          void E(state.adminNode).terminateWithFailure(err);
           throw err;
         }
       },

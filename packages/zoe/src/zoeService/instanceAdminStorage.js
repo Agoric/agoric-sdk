@@ -182,7 +182,8 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
         /** @param {HandleOfferResult} result */
         result => zoeSeatAdmin.resolveExitAndResult(result),
         err => {
-          state.adminNode.terminateWithFailure(err);
+          // nothing for Zoe to do if the termination fails
+          void E(state.adminNode).terminateWithFailure(err);
           throw err;
         },
       );

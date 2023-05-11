@@ -1,3 +1,4 @@
+import { E } from '@endo/far';
 import { AssetKind, makeDurableIssuerKit, AmountMath } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
@@ -148,8 +149,8 @@ export const makeZoeStorageManager = (
           // Note redundant COMMIT POINT within burn.
           state.localIssuerRecord.issuer.burn(payment, totalToBurn);
         } catch (err) {
-          // eslint-disable-next-line no-use-before-define
-          state.adminNode.terminateWithFailure(err);
+          // nothing for Zoe to do if the termination fails
+          void E(state.adminNode).terminateWithFailure(err);
           throw err;
         }
       },
@@ -212,7 +213,7 @@ export const makeZoeStorageManager = (
             keyword,
             assetKind,
             displayInfo,
-            state.adminNode.terminateWithFailure,
+            reason => E(state.adminNode).terminateWithFailure(reason),
             { elementShape },
           );
           zoeMintBaggageSet.add(issuerBaggage);
