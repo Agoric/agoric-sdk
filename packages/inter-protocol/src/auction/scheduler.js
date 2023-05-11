@@ -10,6 +10,9 @@ const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SCHED', false);
 
+// If the startAuction wakeup is no more than 5 minutes late, go ahead with it.
+const MAX_LATE_TICK = 300n;
+
 /**
  * @file The scheduler is presumed to be quiescent between auction rounds. Each
  * Auction round consists of a sequence of steps with decreasing prices. There
@@ -218,6 +221,8 @@ export const makeScheduler = async (
     );
   };
 
+  const relativeTime = t => TimeMath.coerceRelativeTimeRecord(t, timerBrand);
+
   const startAuction = async () => {
     !liveSchedule || Fail`can't start an auction round while one is active`;
 
@@ -225,21 +230,26 @@ export const makeScheduler = async (
     // The clock tick may have arrived too late to trigger the next scheduled
     // round, for example because of a chain halt.  When this happens the oracle
     // quote may out of date and so must be ignored. Recover by returning
-    // deposits and scheduling the next round.
+    // deposits and scheduling the next round. If it's only a little late,
+    // continue with auction, just starting late.
     if (TimeMath.compareAbs(now, nextSchedule.startTime) > 0) {
-      console.warn(
-        `Auction time jumped to ${q(now)} before next scheduled start ${q(
-          nextSchedule.startTime,
-        )}. Skipping that round.`,
-      );
-      nextSchedule = computeRoundTiming(params, now);
+      const late = TimeMath.subtractAbsAbs(now, nextSchedule.startTime);
+      const maxLate = relativeTime(MAX_LATE_TICK);
+
+      if (TimeMath.compareRel(late, maxLate) > 0) {
+        console.warn(
+          `Auction time jumped to ${q(now)} before next scheduled start ${q(
+            nextSchedule.startTime,
+          )}. Skipping that round.`,
+        );
+        nextSchedule = computeRoundTiming(params, now);
+      } else {
+        console.warn(`Auction started late by ${q(late)}. Starting ${q(now)}`);
+      }
     }
     liveSchedule = nextSchedule;
 
-    const after = TimeMath.addAbsRel(
-      liveSchedule.endTime,
-      TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
-    );
+    const after = TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n));
     nextSchedule = computeRoundTiming(params, after);
 
     scheduleSteps();

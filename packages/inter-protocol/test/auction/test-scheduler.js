@@ -789,3 +789,287 @@ test('change Schedule', async t => {
     ),
   });
 });
+
+test('schedule anomalies', async t => {
+  const { zcf, zoe } = await setupZCFTest();
+  const installations = await setUpInstallations(zoe);
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
+  const timer = buildManualTimer();
+  const timerBrand = await timer.getTimerBrand();
+  const timestamp = time => TimeMath.coerceTimestampRecord(time, timerBrand);
+  const relative = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
+
+  const fakeAuctioneer = makeFakeAuctioneer();
+  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
+
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
+
+  const scheduleTracker = await subscriptionTracker(
+    t,
+    subscribeEach(recorderKit.subscriber),
+  );
+  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
+  const oneCycle = 3600n;
+  const delay = 30n;
+  const lock = 300n;
+  const step = 240n;
+  const duration = 480n + delay;
+  defaultParams = {
+    ...defaultParams,
+    StartFreq: oneCycle,
+    ClockStep: step,
+    AuctionStartDelay: delay,
+    PriceLockPeriod: lock,
+  };
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
+
+  // sometime in November 2023, so we're not using times near zero
+  const baseTime = 1700002800n;
+  /** @type {bigint} */
+  // ////////////// BEFORE LOCKING ///////////
+  let now = await timer.advanceTo(baseTime - (lock + 1n));
+
+  const { publisher } = makeGovernancePublisherFromFakes();
+  const paramManager = await makeAuctioneerParamManager(
+    // @ts-expect-error test fakes
+    { publisher, subscriber: null },
+    zcf,
+    paramValues,
+  );
+
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+  );
+  const firstStart = baseTime + delay;
+  await scheduleTracker.assertInitial({
+    activeStartTime: undefined,
+    nextDescendingStepTime: timestamp(firstStart),
+    nextStartTime: TimeMath.coerceTimestampRecord(baseTime + delay, timerBrand),
+  });
+  const schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+
+  t.false(fakeAuctioneer.getState().lockedPrices);
+  // ////////////// LOCK TIME ///////////
+  now = await timer.advanceTo(baseTime + delay - lock);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  const firstSchedule = {
+    startTime: timestamp(firstStart),
+    endTime: timestamp(firstStart + 2n * step),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(firstStart - lock),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
+
+  t.false(fakeAuctioneer.getState().final);
+  t.is(fakeAuctioneer.getState().step, 0);
+
+  // ////////////// NOMINAL START ///////////
+  now = await timer.advanceTo(baseTime);
+
+  await scheduleTracker.assertChange({
+    activeStartTime: timestamp(firstStart),
+    nextStartTime: { absValue: firstStart + oneCycle },
+  });
+
+  t.is(fakeAuctioneer.getState().step, 0);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  // ////////////// FIRST START ///////////
+  now = await timer.advanceTo(firstStart);
+  await eventLoopIteration();
+  await timer.advanceTo(now + 1n);
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: firstStart + step },
+  });
+
+  const schedule2 = scheduler.getSchedule();
+  t.deepEqual(schedule2.liveAuctionSchedule, firstSchedule);
+  t.deepEqual(schedule2.nextAuctionSchedule, {
+    startTime: timestamp(baseTime + oneCycle + delay),
+    endTime: timestamp(baseTime + oneCycle + duration),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(baseTime + oneCycle - lock + delay),
+  });
+
+  t.is(fakeAuctioneer.getState().step, 1);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  // ////////////// DESCENDING STEP ///////////
+  await timer.advanceTo(firstStart + step);
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: firstStart + 2n * step },
+  });
+
+  t.is(fakeAuctioneer.getState().step, 2);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  // ////////////// DESCENDING STEP ///////////
+  await timer.advanceTo(firstStart + 2n * step);
+  await eventLoopIteration();
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: firstStart + oneCycle },
+  });
+
+  t.is(fakeAuctioneer.getState().step, 3);
+  t.true(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
+
+  const secondStart = baseTime + oneCycle + delay;
+  // ////////////// JUMP SLIGHTLY PAST NEXT START ///////////
+  await timer.advanceTo(secondStart + 60n);
+  await scheduleTracker.assertChange({
+    activeStartTime: timestamp(secondStart),
+    nextDescendingStepTime: { absValue: secondStart + step },
+    nextStartTime: { absValue: secondStart + oneCycle },
+  });
+
+  t.is(fakeAuctioneer.getState().step, 4);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
+
+  const schedule3 = scheduler.getSchedule();
+  const thirdSchedule = {
+    startTime: timestamp(secondStart),
+    endTime: timestamp(secondStart + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(secondStart - lock),
+  };
+  t.deepEqual(schedule3.liveAuctionSchedule, thirdSchedule);
+
+  const thirdStart = baseTime + 2n * oneCycle + delay;
+  const fourthSchedule = {
+    startTime: timestamp(thirdStart),
+    endTime: timestamp(thirdStart + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(thirdStart - lock),
+  };
+  t.deepEqual(schedule3.nextAuctionSchedule, fourthSchedule);
+
+  // ////////////// DESCENDING STEP ///////////
+  await timer.advanceTo(secondStart + step);
+
+  await scheduleTracker.assertChange({});
+
+  t.is(fakeAuctioneer.getState().step, 4);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  // ////////////// DESCENDING STEP ///////////
+  now = await timer.advanceTo(secondStart + 2n * step);
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: thirdStart },
+  });
+
+  t.is(fakeAuctioneer.getState().step, 5);
+  t.true(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
+
+  // ////////////// JUMP TO THE END OF NEXT AUCTION ///////////
+  const lateStart = baseTime + 2n * oneCycle + delay;
+  await timer.advanceTo(lateStart + 300n);
+  await scheduleTracker.assertChange({
+    activeStartTime: timestamp(lateStart),
+    nextDescendingStepTime: { absValue: lateStart + 2n * step },
+    nextStartTime: { absValue: lateStart + oneCycle },
+  });
+
+  t.is(fakeAuctioneer.getState().step, 6);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3, 5]);
+
+  // ////////////// DESCENDING STEP ///////////
+  await timer.advanceTo(lateStart + 2n * step);
+  await scheduleTracker.assertChange({});
+
+  t.is(fakeAuctioneer.getState().step, 6);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  const schedule4 = scheduler.getSchedule();
+  const fifthSchedule = {
+    startTime: timestamp(lateStart),
+    endTime: timestamp(lateStart + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(lateStart - lock),
+  };
+  t.deepEqual(schedule4.liveAuctionSchedule, fifthSchedule);
+  const sixthSchedule = {
+    startTime: timestamp(lateStart + oneCycle),
+    endTime: timestamp(lateStart + oneCycle + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(lateStart + oneCycle - lock),
+  };
+  t.deepEqual(schedule4.nextAuctionSchedule, sixthSchedule);
+
+  // ////////////// JUMP PAST THE END OF NEXT AUCTION ///////////
+  const veryLateStart = baseTime + 5n * oneCycle;
+  await timer.advanceTo(veryLateStart);
+
+  // This schedule is published as a side effect of closing out the incomplete
+  // auction. The next one follows immediately and is correct.
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: 1700013630n },
+  });
+  const veryLateActual = veryLateStart + oneCycle + delay;
+  await scheduleTracker.assertChange({
+    activeStartTime: timestamp(veryLateActual),
+    nextDescendingStepTime: { absValue: veryLateActual },
+    nextStartTime: { absValue: veryLateActual + oneCycle },
+  });
+
+  t.true(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
+
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3, 5]);
+
+  const schedule5 = scheduler.getSchedule();
+  const seventhSchedule = {
+    startTime: timestamp(veryLateActual),
+    endTime: timestamp(veryLateActual + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(veryLateActual - lock),
+  };
+  t.deepEqual(schedule5.liveAuctionSchedule, seventhSchedule);
+});
