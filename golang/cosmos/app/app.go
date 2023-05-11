@@ -794,7 +794,15 @@ func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
 		normalizeProvisionAccount(ctx, app.AccountKeeper)
 
-		return app.mm.RunMigrations(ctx, app.configurator, fromVm)
+		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
+		if err != nil {
+			return mvm, err
+		}
+
+		// Just run the SwingSet kernel to finish bootstrap and get ready to open for
+		// business.
+		stdlog.Println("Rebooting SwingSet")
+		return mvm, swingset.BootSwingset(ctx, app.SwingSetKeeper)
 	}
 }
 
