@@ -170,7 +170,7 @@ export const providePriceAuthorityRegistry = baggage => {
       registerPriceAuthority(pa, brandIn, brandOut, force = false) {
         /** @type {MapStore<Brand, PriceAuthorityRecord>} */
         const priceStore = provide(assetToPriceStore, brandIn, () =>
-          provideDurableMapStore(baggage, 'brandOut'),
+          provideDurableMapStore(baggage, `${brandIn}@@@`),
         );
 
         // Put a box around the authority so that we can be ensured the deleter
