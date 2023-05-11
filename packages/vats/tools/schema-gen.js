@@ -65,8 +65,13 @@ export const toTypeBox = pattern => {
         const patts = patt.payload;
         return Type.Union(patts.map(recur));
       }
+      case 'match:arrayOf': {
+        const patts = patt.payload;
+        return Type.Array(patts.map(recur));
+      }
       case 'match:recordOf': {
         const [keyPatt, valuePatt] = patt.payload;
+        // XXX Type.Record requires Type.String()
         return Type.Record(recur(keyPatt), recur(valuePatt));
       }
       case 'match:splitRecord': {

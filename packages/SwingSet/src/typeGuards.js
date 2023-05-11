@@ -1,9 +1,23 @@
 // @jessie-check
 import { M } from '@agoric/store';
 
+// XXX re Foo vs FooShape: export const shapes = { Foo } is somewhat ideal.
+// the Foo names here should probably not be exported
+
 export const ManagerType = M.or('xsnap', 'xs-worker', 'local');
+const BundleFormat = M.or('getExport', 'nestedEvaluate', 'endoZipBase64');
 
 const Bundle = M.splitRecord({ moduleType: M.string() });
+
+/**
+ * @param {Record<string, Pattern>} record
+ */
+const partial = record =>
+  M.and(
+    ...Object.entries(record).map(([prop, patt]) =>
+      M.splitRecord({}, { [prop]: patt }),
+    ),
+  );
 
 const SwingsetConfigOptions = harden({
   creationOptions: M.splitRecord({}, { critial: M.boolean() }),
@@ -20,6 +34,14 @@ const SwingSetConfigDescriptor = M.recordOf(
   SwingSetConfigProperties,
 );
 
+const ConfigProposal = M.or(
+  M.string(), // specifier
+  M.splitRecord(
+    { module: M.string(), entrypoint: M.string() },
+    { args: M.array() },
+  ),
+);
+
 /**
  * NOTE: this pattern suffices for PSM bootstrap,
  * but does not cover the whole SwingSet config syntax.
@@ -28,14 +50,34 @@ const SwingSetConfigDescriptor = M.recordOf(
  * TODO: move this to swingset?
  *
  * @see SwingSetConfig
- * in ./types-external.js
+ * in {@link ./types-external.js}
  */
-export const SwingSetConfig = M.and(
-  M.splitRecord({}, { defaultManagerType: ManagerType }),
-  M.splitRecord({}, { includeDevDependencies: M.boolean() }),
-  M.splitRecord({}, { defaultReapInterval: M.number() }), // not in type decl
-  M.splitRecord({}, { snapshotInterval: M.number() }),
-  M.splitRecord({}, { vats: SwingSetConfigDescriptor }),
-  M.splitRecord({}, { bootstrap: M.string() }),
-  M.splitRecord({}, { bundles: SwingSetConfigDescriptor }),
+const KernelOptions = partial({
+  defaultManagerType: ManagerType,
+  defaultReapInterval: M.number(),
+  relaxDurabilityRules: M.boolean(),
+  snapshotInitial: M.number(),
+  snapshotInterval: M.number(),
+  pinBootstrapRoot: M.boolean(),
+  includeDevDependencies: M.boolean(),
+  vats: SwingSetConfigDescriptor,
+  bootstrap: M.string(),
+  bundles: SwingSetConfigDescriptor,
+});
+
+const SwingsetOptions = M.splitRecord(
+  {
+    vats: SwingSetConfigDescriptor,
+  },
+  {
+    bootstrap: M.string(),
+    coreProposals: M.arrayOf(ConfigProposal),
+    exportStorageSubtrees: M.arrayOf(M.string()),
+    includeDevDependencies: M.boolean(),
+    bundleCachePath: M.string(),
+    bundles: SwingSetConfigDescriptor,
+    bundleFormat: BundleFormat,
+  },
 );
+
+export const SwingSetConfig = M.and(KernelOptions, SwingsetOptions);
