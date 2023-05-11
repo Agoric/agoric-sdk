@@ -423,6 +423,10 @@ export const makeZCFZygote = async (
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintKind();
 
+      if (privateArgsShape) {
+        mustMatch(privateArgs, privateArgsShape, 'privateArgs');
+      }
+
       // restart an upgradeable contract
       return E.when(
         prepare(zcf, privateArgs, contractBaggage),
