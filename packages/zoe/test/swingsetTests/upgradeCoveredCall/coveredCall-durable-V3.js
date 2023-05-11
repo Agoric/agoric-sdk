@@ -25,6 +25,7 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
 const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+  debugger;
   const firstTime = !instanceBaggage.has('DidStart');
   if (firstTime) {
     instanceBaggage.init('DidStart', true);

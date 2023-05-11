@@ -12,7 +12,7 @@ test('coveredCall service upgrade', async t => {
   const config = {
     // includeDevDependencies: true, // for vat-data
     /** @type {ManagerType} */
-    defaultManagerType: 'xs-worker',
+    defaultManagerType: 'local',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,
