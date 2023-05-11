@@ -76,6 +76,7 @@ export const setupReserve = async ({
     feeMintAccess: feeMintAccessP,
     chainStorage,
     chainTimerService,
+    diagnostics,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
   },
@@ -120,19 +121,20 @@ export const setupReserve = async ({
       },
     }),
   );
+  const privateArgs = {
+    governed: {
+      feeMintAccess,
+      initialPoserInvitation: poserInvitation,
+      marshaller,
+      storageNode,
+    },
+  };
   /** @type {GovernorStartedInstallationKit<typeof reserveInstallation>} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
     reserveGovernorTerms,
-    {
-      governed: {
-        feeMintAccess,
-        initialPoserInvitation: poserInvitation,
-        marshaller,
-        storageNode,
-      },
-    },
+    privateArgs,
     'reserve.governor',
   );
 
@@ -155,6 +157,9 @@ export const setupReserve = async ({
       governorAdminFacet: g.adminFacet,
     }),
   );
+  const { instancePrivateArgs } = await diagnostics;
+  instancePrivateArgs.set(instance, privateArgs.governed);
+  instancePrivateArgs.set(g.instance, privateArgs);
 
   reserveInstanceProducer.resolve(instance);
   reserveGovernor.resolve(g.instance);
@@ -454,7 +459,9 @@ export const startRewardDistributor = async ({
     ),
   });
 
-  feeDistributorKit.resolve(instanceKit);
+  feeDistributorKit.resolve(
+    harden({ ...instanceKit, label: 'feeDistributor' }),
+  );
   feeDistributorP.resolve(instanceKit.instance);
 
   // Initialize the periodic collectors list if we don't have one.
