@@ -32,7 +32,6 @@
     "@agoric/governance": "^0.9.1",
     "@agoric/inter-protocol": "^0.13.1",
     "@agoric/internal": "^0.2.1",
-    "@endo/nat": "^4.1.27",
     "@agoric/notifier": "^0.5.1",
     "@agoric/sharing-service": "^0.2.6",
     "@agoric/store": "^0.8.3",
@@ -45,6 +44,7 @@
     "@endo/import-bundle": "^0.3.4",
     "@endo/init": "^0.5.56",
     "@endo/marshal": "^0.8.5",
+    "@endo/nat": "^4.1.27",
     "@endo/promise-kit": "^0.2.56"
   },
   "devDependencies": {
@@ -56,6 +56,7 @@
     "@endo/bundle-source": "^2.5.1",
     "@endo/captp": "^3.1.1",
     "@endo/stream": "^0.3.25",
+    "@sinclair/typebox": "^0.28.9",
     "ava": "^5.2.0",
     "c8": "^7.13.0",
     "import-meta-resolve": "^2.2.1"
