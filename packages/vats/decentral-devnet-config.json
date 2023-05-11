@@ -1,5 +1,6 @@
 {
   "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. Pending #5819, it includes vaults in coreProposals; once #5819 is done, vaults are expected to be added by devnet governance.",
+  "$schema": "./config-schema.json",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [
