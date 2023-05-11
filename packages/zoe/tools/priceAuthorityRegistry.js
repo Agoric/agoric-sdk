@@ -1,14 +1,16 @@
-import { Fail } from '@agoric/assert';
 import { BrandShape } from '@agoric/ertp';
 import {
   M,
   prepareExo,
-  provide,
+  makeScalarBigMapStore,
   provideDurableMapStore,
 } from '@agoric/vat-data';
+import { provideLazy } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { PriceAuthorityI } from '../src/contractSupport/priceAuthority.js';
+
+const { Fail } = assert;
 
 /**
  * @typedef {object} Deleter
@@ -67,7 +69,8 @@ export const providePriceAuthorityRegistry = baggage => {
    *
    * @param {'LT' | 'LTE' | 'GTE' | 'GT'} relation
    */
-  const makeQuoteWhen = relation =>
+  const makeQuoteWhen =
+    relation =>
     /**
      * Return a quote when relation is true of the arguments.
      *
@@ -76,7 +79,7 @@ export const providePriceAuthorityRegistry = baggage => {
      * @returns {Promise<PriceQuote>} resolve with a quote when `amountOut
      * relation amountOutLimit` is true
      */
-    async function quoteWhenRelation(amountIn, amountOutLimit) {
+    async (amountIn, amountOutLimit) => {
       const pa = paFor(amountIn.brand, amountOutLimit.brand);
       return E(pa)[`quoteWhen${relation}`](amountIn, amountOutLimit);
     };
@@ -86,7 +89,8 @@ export const providePriceAuthorityRegistry = baggage => {
    *
    * @param {'LT' | 'LTE' | 'GTE' | 'GT'} relation
    */
-  const makeMutableQuoteWhen = relation =>
+  const makeMutableQuoteWhen =
+    relation =>
     /**
      * Return a mutable quote when relation is true of the arguments.
      *
@@ -95,7 +99,7 @@ export const providePriceAuthorityRegistry = baggage => {
      * @returns {Promise<MutableQuote>} resolve with a quote when `amountOut
      * relation amountOutLimit` is true
      */
-    async function mutableQuoteWhenRelation(amountIn, amountOutLimit) {
+    async (amountIn, amountOutLimit) => {
       const pa = paFor(amountIn.brand, amountOutLimit.brand);
       return E(pa)[`mutableQuoteWhen${relation}`](amountIn, amountOutLimit);
     };
@@ -169,8 +173,8 @@ export const providePriceAuthorityRegistry = baggage => {
     {
       registerPriceAuthority(pa, brandIn, brandOut, force = false) {
         /** @type {MapStore<Brand, PriceAuthorityRecord>} */
-        const priceStore = provide(assetToPriceStore, brandIn, () =>
-          provideDurableMapStore(baggage, 'brandOut'),
+        const priceStore = provideLazy(assetToPriceStore, brandIn, () =>
+          makeScalarBigMapStore('brandOut', { durable: true }),
         );
 
         // Put a box around the authority so that we can be ensured the deleter
