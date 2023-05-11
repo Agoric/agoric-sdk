@@ -26,6 +26,7 @@ import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
+import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideAndStartDirector } from './vaultDirector.js';
@@ -41,13 +42,18 @@ const trace = makeTracer('VF', false);
  * }>} VaultFactoryZCF
  */
 
-export const privateArgsShape = {
-  feeMintAccess: M.any(),
-  initialPoserInvitation: InvitationShape,
-  initialShortfallInvitation: InvitationShape,
-  marshaller: M.remotable('Marshaller'),
-  storageNode: StorageNodeShape,
-};
+export const privateArgsShape = M.splitRecord(
+  harden({
+    marshaller: M.remotable('Marshaller'),
+    storageNode: StorageNodeShape,
+  }),
+  harden({
+    // only necessary on first invocation, not subsequent
+    feeMintAccess: FeeMintAccessShape,
+    initialPoserInvitation: InvitationShape,
+    initialShortfallInvitation: InvitationShape,
+  }),
+);
 harden(privateArgsShape);
 
 /**
