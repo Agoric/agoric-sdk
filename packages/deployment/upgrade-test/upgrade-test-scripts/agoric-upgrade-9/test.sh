@@ -8,3 +8,6 @@ test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 # ensure PSM IST has only ToyUSD
 test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children | length') "1"
 test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children | first') "ToyUSD"
+
+# Gov params
+test_not_val "$(timeout 2 agoric follow :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"

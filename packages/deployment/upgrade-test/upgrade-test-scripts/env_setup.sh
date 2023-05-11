@@ -1,5 +1,6 @@
 #!/bin/bash
-export CHAINID=localchain
+export CHAINID=agoriclocal
+shopt -s expand_aliases
 
 alias agops="yarn run --silent agops"
 if test -f "$HOME/.agoric/envs"; then
@@ -9,15 +10,17 @@ fi
 export binary=ag0
 if [ -x "$(command -v "agd")" ]; then
   export binary=agd
-  sed -i "s/agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang/$GOV2ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h/$GOV3ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
 fi
-
 export GOV1ADDR=$($binary keys show gov1 -a --keyring-backend="test")
 export GOV2ADDR=$($binary keys show gov2 -a --keyring-backend="test")
 export GOV3ADDR=$($binary keys show gov3 -a --keyring-backend="test")
 export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test")
+
+if [[ "$binary" == "agd" ]]; then
+  sed -i "s/agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i "s/agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang/$GOV2ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i "s/agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h/$GOV3ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
+fi
 
 
 sendOffer () (

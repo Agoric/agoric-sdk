@@ -66,7 +66,6 @@ WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-9-to-10 /root/.agoric /root/.agoric
-COPY --from=agoric-upgrade-9-to-10 /root/*.json /root/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
