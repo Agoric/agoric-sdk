@@ -88,6 +88,7 @@ export const startPSM = async (
     consume: {
       agoricNamesAdmin,
       board,
+      diagnostics,
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
@@ -203,6 +204,12 @@ export const startPSM = async (
       },
     }),
   );
+  const psmPrivateArgs = {
+    feeMintAccess,
+    initialPoserInvitation,
+    marshaller,
+    storageNode,
+  };
   /** @type {GovernorStartedInstallationKit<typeof psmInstall>} */
   const governorFacets = await E(zoe).startInstance(
     contractGovernor,
@@ -210,12 +217,7 @@ export const startPSM = async (
     governorTerms,
     harden({
       economicCommitteeCreatorFacet,
-      governed: {
-        feeMintAccess,
-        initialPoserInvitation,
-        marshaller,
-        storageNode,
-      },
+      governed: psmPrivateArgs,
     }),
     `${instanceKey}.governor`,
   );
@@ -225,6 +227,7 @@ export const startPSM = async (
     E(governorFacets.creatorFacet).getCreatorFacet(),
     E(governorFacets.creatorFacet).getAdminFacet(),
   ]);
+  await E(diagnostics).savePrivateArgs(psm, psmPrivateArgs);
 
   /** @param {MetricsNotification} metrics */
   const restoreMetrics = async metrics => {
@@ -243,9 +246,9 @@ export const startPSM = async (
   };
   await (oldState.metrics && restoreMetrics(oldState.metrics));
 
-  /** @typedef {import('./econ-behaviors.js').PSMKit} psmKit */
-  /** @type {psmKit} */
+  /** @type {import('./econ-behaviors.js').PSMKit} */
   const newpsmKit = harden({
+    label: instanceKey,
     psm,
     psmGovernor: governorFacets.instance,
     psmCreatorFacet,
@@ -256,7 +259,7 @@ export const startPSM = async (
   // Provide pattern with a promise.
   producepsmKit.resolve(makeScalarBigMapStore('PSM Kits', { durable: true }));
 
-  /** @type {MapStore<Brand,psmKit>} */
+  /** @type {MapStore<Brand, import('./econ-behaviors.js').PSMKit>} */
   const psmKitMap = await psmKit;
 
   // TODO init into governedContractKits too to simplify testing
@@ -436,6 +439,7 @@ export const PSM_MANIFEST = {
       agoricNamesAdmin: true,
       board: true,
       chainStorage: true,
+      diagnostics: true,
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',

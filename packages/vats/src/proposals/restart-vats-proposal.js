@@ -33,12 +33,15 @@ export const restartVats = async ({ consume }, { options }) => {
   await consume.vaultFactoryKit;
 
   trace('testing restarts');
-  const { contractKits, governedContractKits } = await deeplyFulfilledObject(
-    harden({
-      contractKits: consume.contractKits,
-      governedContractKits: consume.governedContractKits,
-    }),
-  );
+  const { contractKits, governedContractKits, psmKit, vatStore } =
+    await deeplyFulfilledObject(
+      harden({
+        contractKits: consume.contractKits,
+        governedContractKits: consume.governedContractKits,
+        psmKit: consume.psmKit,
+        vatStore: consume.vatStore,
+      }),
+    );
 
   const instancePrivateArgs = await consume.instancePrivateArgs;
 
@@ -49,7 +52,7 @@ export const restartVats = async ({ consume }, { options }) => {
    * @param {Instance} instance
    * @param {ERef<AdminFacet>} adminFacet
    */
-  const tryRestart = async (debugName, instance, adminFacet) => {
+  const tryRestartContract = async (debugName, instance, adminFacet) => {
     // TODO document that privateArgs cannot contain promises
     // TODO try making all the contract starts take resolved values
     const privateArgs = await deeplyFulfilledObject(
@@ -76,16 +79,17 @@ export const restartVats = async ({ consume }, { options }) => {
     }
   };
 
-  // iterate over the two contractKits and use the adminFacet to restartContract
+  trace('iterating over contractKits');
   for (const kit of contractKits.values()) {
     const debugName =
       kit.label || getInterfaceOf(kit.publicFacet) || 'UNLABELED';
     if (debugName !== kit.label) {
       console.warn('MISSING LABEL:', kit);
     }
-    await tryRestart(debugName, kit.instance, kit.adminFacet);
+    await tryRestartContract(debugName, kit.instance, kit.adminFacet);
   }
 
+  trace('iterating over governedContractKits');
   for (const kit of governedContractKits.values()) {
     const debugName =
       kit.label || getInterfaceOf(kit.publicFacet) || 'UNLABELED';
@@ -94,14 +98,20 @@ export const restartVats = async ({ consume }, { options }) => {
     }
 
     trace('restarting governed', debugName);
-    await tryRestart(debugName, kit.instance, kit.adminFacet);
+    await tryRestartContract(debugName, kit.instance, kit.adminFacet);
 
     trace('restarting governor of', debugName);
-    await tryRestart(
+    await tryRestartContract(
       `${debugName} [Governor]`,
       kit.governor,
       kit.governorAdminFacet,
     );
+  }
+
+  trace('iterating over psmKit');
+  for (const kit of psmKit.values()) {
+    console.log('restarting PSM', kit.label);
+    await tryRestartContract(kit.label, kit.psm, kit.psmAdminFacet);
   }
 
   trace('restartVats done with ', failures.length, 'failures');
@@ -121,6 +131,7 @@ export const getManifestForRestart = (_powers, options) => ({
         governedContractKits: true,
         instancePrivateArgs: true,
         loadCriticalVat: true,
+        psmKit: true,
         zoe: 'zoe',
         provisioning: 'provisioning',
         vaultFactoryKit: true,

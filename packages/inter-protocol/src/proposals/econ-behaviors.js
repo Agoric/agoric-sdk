@@ -28,6 +28,7 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 /**
  * @typedef {object} PSMKit
+ * @property {string} label
  * @property {Instance} psm
  * @property {Instance} psmGovernor
  * @property {Awaited<ReturnType<Awaited<ReturnType<import('../psm/psm.js')['prepare']>>['creatorFacet']['getLimitedCreatorFacet']>>} psmCreatorFacet
