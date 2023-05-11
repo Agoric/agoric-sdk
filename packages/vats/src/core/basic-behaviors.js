@@ -119,7 +119,14 @@ harden(makeVatsFromBundles);
 /** @param {Pick<ChainBootstrapSpace, 'produce'>} powers */
 export const produceDiagnostics = async ({ produce }) => {
   const instancePrivateArgs = new Map();
-  produce.diagnostics.resolve({ instancePrivateArgs });
+  const savePrivateArgs = (instance, privateArgs) => {
+    if (instancePrivateArgs.has(instance)) {
+      Fail`privateArgs already set`;
+    }
+    instancePrivateArgs.set(instance, privateArgs);
+  };
+  produce.diagnostics.resolve({ savePrivateArgs });
+  produce.instancePrivateArgs.resolve(instancePrivateArgs);
 };
 
 /** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
@@ -149,8 +156,7 @@ export const produceStartUpgradable = async ({
     label ||= NonNullish(getInterfaceOf(started.instance));
     const kit = harden({ ...started, label });
     contractKits.init(kit.instance, kit);
-    const instancePA = await E.get(diagnostics).instancePrivateArgs;
-    instancePA.set(kit.instance, privateArgs);
+    await E(diagnostics).savePrivateArgs(kit.instance, privateArgs);
     return kit;
   };
 
@@ -302,9 +308,8 @@ export const produceStartGovernedUpgradable = async ({
     const kit = harden({ ...facets, label });
     contractKits.init(facets.instance, kit);
 
-    const instancePA = await E.get(diagnostics).instancePrivateArgs;
-    instancePA.set(kit.instance, privateArgs);
-    instancePA.set(kit.governor, {
+    await E(diagnostics).savePrivateArgs(kit.instance, privateArgs);
+    await E(diagnostics).savePrivateArgs(kit.governor, {
       economicCommitteeCreatorFacet: await economicCommitteeCreatorFacet,
     });
 
@@ -805,7 +810,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
   },
   [produceDiagnostics.name]: {
-    produce: { diagnostics: true },
+    produce: { diagnostics: true, instancePrivateArgs: true },
   },
   [produceStartUpgradable.name]: {
     zone: true,

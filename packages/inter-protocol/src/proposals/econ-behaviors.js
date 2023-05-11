@@ -157,9 +157,8 @@ export const setupReserve = async ({
       governorAdminFacet: g.adminFacet,
     }),
   );
-  const { instancePrivateArgs } = await diagnostics;
-  instancePrivateArgs.set(instance, privateArgs.governed);
-  instancePrivateArgs.set(g.instance, privateArgs);
+  await E(diagnostics).savePrivateArgs(instance, privateArgs.governed);
+  await E(diagnostics).savePrivateArgs(g.instance, privateArgs);
 
   reserveInstanceProducer.resolve(instance);
   reserveGovernor.resolve(g.instance);
@@ -319,9 +318,11 @@ export const startVaultFactory = async (
       E(g.creatorFacet).getAdminFacet(),
     ]);
 
-  const { instancePrivateArgs } = await consume.diagnostics;
   // XXX omitting the governor
-  instancePrivateArgs.set(vaultFactoryInstance, vaultFactoryPrivateArgs);
+  await E(consume.diagnostics).savePrivateArgs(
+    vaultFactoryInstance,
+    vaultFactoryPrivateArgs,
+  );
 
   vaultFactoryKit.resolve(
     harden({
@@ -335,7 +336,7 @@ export const startVaultFactory = async (
       governorAdminFacet: g.adminFacet,
       governorCreatorFacet: g.creatorFacet,
 
-      // XXX try refactoring to use instancePrivateArgs
+      // XXX try refactoring to use savePrivateArgs
       privateArgs: vaultFactoryPrivateArgs,
     }),
   );

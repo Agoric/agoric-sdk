@@ -40,7 +40,7 @@ export const restartVats = async ({ consume }, { options }) => {
     }),
   );
 
-  const { instancePrivateArgs } = await consume.diagnostics;
+  const instancePrivateArgs = await consume.instancePrivateArgs;
 
   const failures = [];
   /**
@@ -118,8 +118,8 @@ export const getManifestForRestart = (_powers, options) => ({
     [restartVats.name]: {
       consume: {
         contractKits: true,
-        diagnostics: true,
         governedContractKits: true,
+        instancePrivateArgs: true,
         loadCriticalVat: true,
         zoe: 'zoe',
         provisioning: 'provisioning',

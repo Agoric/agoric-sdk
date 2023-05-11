@@ -76,8 +76,8 @@ export const startEconomicCommittee = async (
     // XXX should startInstance return its label?
     harden({ ...startResult, label: 'economicCommittee' }),
   );
-  const { instancePrivateArgs } = await diagnostics;
-  instancePrivateArgs.set(startResult.instance, privateArgs);
+
+  await E(diagnostics).savePrivateArgs(startResult.instance, privateArgs);
 
   economicCommitteeCreatorFacet.resolve(creatorFacet);
   economicCommittee.resolve(instance);
