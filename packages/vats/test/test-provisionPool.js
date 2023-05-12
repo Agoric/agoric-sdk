@@ -336,9 +336,10 @@ const makeWalletFactoryKitForAddresses = async addresses => {
       let isNew = !done.has(addr);
       if (isNew) {
         if (walletReviver) {
-          isNew = await E(walletReviver)
-            .ackWallet(addr, wallet)
-            .then(([_wallet, actualIsNew]) => actualIsNew);
+          isNew = await E.when(
+            E(walletReviver).ackWallet(addr, wallet),
+            ([_wallet, actualIsNew]) => actualIsNew,
+          );
         }
         if (isNew) {
           await publishDepositFacet(addr, wallet, nameAdmin);
@@ -479,9 +480,7 @@ test('provisionPool revives old wallets', async t => {
   const reviverP = E(creatorFacet).getWalletReviver();
   await setReviver(reviverP);
   const reviveWallet = addr =>
-    E(reviverP)
-      .reviveWallet(addr)
-      .then(([wallet, _isNew]) => wallet);
+    E.when(E(reviverP).reviveWallet(addr), ([wallet, _isNew]) => wallet);
   await t.throwsAsync(
     reviveWallet('addr_unknown'),
     undefined,

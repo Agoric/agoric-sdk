@@ -125,10 +125,10 @@ export const makeAssetRegistry = assetPublisher => {
  *       import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
  *
- * @typedef {boolean} isNew
+ * @typedef {boolean} IsNew
  * @typedef {{
- *   reviveWallet: (address: string) => Promise<[SmartWallet, isNew]>,
- *   ackWallet: (address: string, wallet: SmartWallet) => [SmartWallet, isNew],
+ *   reviveWallet: (address: string) => Promise<[SmartWallet, IsNew]>,
+ *   ackWallet: (address: string, wallet: SmartWallet) => [SmartWallet, IsNew],
  * }} WalletReviver
  */
 
@@ -194,9 +194,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         const walletP =
           !walletsByAddress.has(address) && walletReviver
             ? // this will call provideSmartWallet which will update `walletsByAddress` for next time
-              E(walletReviver)
-                .reviveWallet(address)
-                .then(([wallet, _isNew]) => wallet)
+              E.when(
+                E(walletReviver).reviveWallet(address),
+                ([wallet, _isNew]) => wallet,
+              )
             : walletsByAddress.get(address); // or throw
         const wallet = await walletP;
 
@@ -280,7 +281,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
         const wallet = await provider.provideAsync(address, maker);
         return isNew && walletReviver
-          ? E(walletReviver).ackWallet(address, wallet)
+          ? // ackWallet needs the wallet to reflect it back
+            // so we can avoid delayed `isNew => [wallet, isNew]`
+            // transformations in favor of more direct promise propagation
+            E(walletReviver).ackWallet(address, wallet)
           : [wallet, isNew];
       },
     },

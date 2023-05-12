@@ -256,12 +256,14 @@ export const prepareProvisionPoolKit = (
          */
         ackWallet(address, wallet) {
           const { revivableAddresses } = this.state;
-          const isRevive = revivableAddresses.has(address);
-          if (isRevive) {
-            revivableAddresses.delete(address);
+          if (!revivableAddresses.has(address)) {
+            // The address is unrecognized, so the wallet is new.
+            return [wallet, true];
           }
-          const isNew = !isRevive;
-          return [wallet, isNew];
+          // The wallet is not new.
+          // Clear the address as revived and return that information.
+          revivableAddresses.delete(address);
+          return [wallet, false];
         },
       },
       helper: {
