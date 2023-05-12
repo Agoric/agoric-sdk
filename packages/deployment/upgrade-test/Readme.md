@@ -1,31 +1,52 @@
 # Dockerized Chain Upgrade Tester
 
-This will build all previous upgrades and upgrade each one
+This will build all previous upgrades and upgrade each one.
 
+## Upgrades
 
-if you desire to use your local sdk build instead of the latest-available published master, you can do the following:
+| number | description    | notes                                                                      |
+| ------ | -------------- | -------------------------------------------------------------------------- |
+| 8      | Pismo          | Runs with Pismo release agoric-sdk (including CLI)                         |
+| 8.1    | PismoB?        |
+| 9      | PismoC ??      |
+| 10     | --> Vaults     | Runs with latest SDK. Tests backwards compatibility with Pismo vstorage.   |
+| 11     | Vaults --> V+1 | Anticipated upgrade. Tests that Vaults release _can be_ upgraded in place. |
 
-`make local_sdk`
+## Testing
 
+**To build the images to latest**
 
-To build the images to latest run
+```shell
+make build
+```
 
-`make build`
+**To run the latest upgrade interactively**
 
-To run the latest upgrade interactively run
+```shell
+make run
+```
 
-`make run`
+If you get an error about port 26656 already in use, you have a local chain running on your OS.
 
-
-
-
-To build and run a specific upgrade
+**To build and run a specific upgrade**
 
 ```shell
 TARGET=agoric-upgrade-8 make build run
 ```
 
-
-
 To make the wallet ui talk to your local chain, set the network config to
 `https://local.agoric.net/network-config`
+
+## Development
+
+You can iterate on a particular upgrade by targeting. When you exit and run again, it will be a fresh state.
+
+By default targets that use "agoric-sdk:latest" will source from CI builds. To use your local checkout of agoric-sdk inside Docker run,
+
+```shell
+make local_sdk
+```
+
+That will produce the an image tagged agoric-sdk:latest in your local resolution. (Then run `make build run` again.)
+
+You can send information from one run to the next using `/envs`. A release N can append ENV variable setting shell commands to `"$HOME/.agoric/envs"`. The N+1 release will then have them in its environment. (Because `env_setup.sh` starts with `source "$HOME/.agoric/envs"`)
