@@ -1,4 +1,10 @@
 #!/bin/bash
+
+echo ENV_SETUP starting
+
+# TODO what else should be in here?
+export DEBUG="SwingSet:ls,SwingSet:vat"
+
 export CHAINID=agoriclocal
 shopt -s expand_aliases
 
@@ -22,36 +28,35 @@ if [[ "$binary" == "agd" ]]; then
   sed -i "s/agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h/$GOV3ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
 fi
 
-
-sendOffer () (
-    offer="$1"
-    from="$2"
-    agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test"
+sendOffer() (
+  offer="$1"
+  from="$2"
+  agoric wallet send --offer "$offer" --from "$from" --keyring-backend="test"
 )
 
-wait_for_bootstrap () {
-    endpoint="localhost"
-    while true; do
-        if json=$(curl -s --fail -m 15 "$endpoint:26657/status"); then
-            if [[ "$(echo "$json" | jq -r .jsonrpc)" == "2.0" ]]; then
-                if last_height=$(echo "$json" | jq -r .result.sync_info.latest_block_height); then
-                    if [[ "$last_height" != "1" ]]; then
-                        echo "$last_height"
-                        return
-                    else
-                        echo "$last_height"
-                    fi
-                fi
-            fi
+wait_for_bootstrap() {
+  endpoint="localhost"
+  while true; do
+    if json=$(curl -s --fail -m 15 "$endpoint:26657/status"); then
+      if [[ "$(echo "$json" | jq -r .jsonrpc)" == "2.0" ]]; then
+        if last_height=$(echo "$json" | jq -r .result.sync_info.latest_block_height); then
+          if [[ "$last_height" != "1" ]]; then
+            echo "$last_height"
+            return
+          else
+            echo "$last_height"
+          fi
         fi
-        sleep 2
-    done
+      fi
+    fi
+    sleep 2
+  done
 }
 
-waitForBlock () (
+waitForBlock() (
   times=${1:-1}
   echo "$times"
-  for ((i=1; i <= times; i++)); do
+  for ((i = 1; i <= times; i++)); do
     b1=$(wait_for_bootstrap)
     while true; do
       b2=$(wait_for_bootstrap)
@@ -64,15 +69,15 @@ waitForBlock () (
   done
 )
 
-
-runActions () {
+runActions() {
   action=${1:-"test"}
   if [[ -v THIS_NAME ]]; then
     if test -d "./upgrade-test-scripts/$THIS_NAME"; then
       fn="${action}.sh"
       if test -f "./upgrade-test-scripts/$THIS_NAME/$fn"; then
-        echo "RUNACTION: $fn"
+        echo "RUNACTION: $THIS_NAME $fn start"
         . "./upgrade-test-scripts/$THIS_NAME/$fn"
+        echo "RUNACTION: $THIS_NAME $fn finished"
       fi
     else
       echo "./upgrade-test-scripts/$THIS_NAME directory is missing"
@@ -83,12 +88,12 @@ runActions () {
   fi
 }
 
-fail () {
+fail() {
   echo "FAIL: $1"
   exit 1
 }
 
-success () {
+success() {
   echo "SUCCESS: $1"
 }
 
@@ -120,9 +125,8 @@ voteLatestProposalAndWait() {
   waitForBlock
   $binary tx gov deposit $proposal 50000000ubld --from=validator --chain-id="$CHAINID" --yes --keyring-backend test
   waitForBlock
-  $binary tx gov vote $proposal yes --from=validator --chain-id="$CHAINID" --yes  --keyring-backend test
+  $binary tx gov vote $proposal yes --from=validator --chain-id="$CHAINID" --yes --keyring-backend test
   waitForBlock
-
 
   while true; do
     status=$($binary q gov proposal $proposal -ojson | jq -r .status)
@@ -135,11 +139,11 @@ voteLatestProposalAndWait() {
   done
 }
 
-newOfferId () {
+newOfferId() {
   date +"%s%3M"
 }
 
-printKeys () {
+printKeys() {
   echo "========== GOVERNANCE KEYS =========="
   echo "gov1: $GOV1ADDR"
   cat ~/.agoric/gov1.key || true
@@ -152,3 +156,4 @@ printKeys () {
   echo "========== GOVERNANCE KEYS =========="
 }
 
+echo ENV_SETUP finished

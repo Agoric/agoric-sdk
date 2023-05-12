@@ -6,9 +6,9 @@ This will build all previous upgrades and upgrade each one.
 
 | number | description    | notes                                                                      |
 | ------ | -------------- | -------------------------------------------------------------------------- |
-| 8      | Pismo          | Runs with Pismo release agoric-sdk (including CLI)                         |
-| 8.1    | PismoB?        |
-| 9      | PismoC ??      |
+| 8      | PismoA         | Runs with Pismo release agoric-sdk (including CLI)                         |
+| 8.1    | PismoB         |
+| 9      | PismoC         |
 | 10     | --> Vaults     | Runs with latest SDK. Tests backwards compatibility with Pismo vstorage.   |
 | 11     | Vaults --> V+1 | Anticipated upgrade. Tests that Vaults release _can be_ upgraded in place. |
 
@@ -28,11 +28,38 @@ make run
 
 If you get an error about port 26656 already in use, you have a local chain running on your OS.
 
+If you run into other problems, you might have a local `agoric-sdk:latest` that
+is stale. Either `make local_sdk` or delete your local image so Docker pulls
+from the repository instead.
+
 **To build and run a specific upgrade**
 
 ```shell
-TARGET=agoric-upgrade-8 make build run
+TARGET=agoric-upgrade-10 make build run
 ```
+
+This will put you in `/usr/src/agoric-sdk`. You'll run commands from here. `upgrade-test-scripts` is copied here with only the test scripts for the current image.
+
+
+If you lose the connection and want to get back,
+```sh
+# find the container id
+docker ps
+# reattach using the auto-generated goofy name
+docker attach sweet_edison
+```
+
+**To test CLI**
+
+You can point your local CLI tools to the chain running in Docker. Our Docker config binds on the same port (26656) as running a local chain. So you can use the agoric-cli commands on the Docker chain the same way. But note that the Cosmos account keys will be different from in your dev keyring.
+
+If when reattaching you get a log tail, you need to start a new TTY (with the container name).
+```sh
+docker exec -it sweet_edison bash
+```
+
+
+**To test GUI**
 
 To make the wallet ui talk to your local chain, set the network config to
 `https://local.agoric.net/network-config`
@@ -46,6 +73,7 @@ By default targets that use "agoric-sdk:latest" will source from CI builds. To u
 ```shell
 make local_sdk
 ```
+Builds an image: ghcr.io/agoric/agoric-sdk:latest that will be used by all your builds.
 
 That will produce the an image tagged agoric-sdk:latest in your local resolution. (Then run `make build run` again.)
 
@@ -57,6 +85,8 @@ Some IDEs support connecting to a running container. For VS Code you can use [De
 Note that whatever changes you make within the running container will be lost when you terminate it. Use this just for iterating and be sure to copy any changes you want back to your real workspace.
 
 # TODO
+- [X] make the Docker test environment log verbosely (agd start is just printing "block N" begin, commit)
 - [ ] a target like `local_sdk` that just copies the local filesystem, without a full rebuild
 - [ ] alternately, mount the local agoric-sdk in the container
+- [ ] provide a utility to import the Docker's GOV123 keys into a local keyring
 
