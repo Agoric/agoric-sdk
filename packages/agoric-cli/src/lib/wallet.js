@@ -238,14 +238,23 @@ export const makeWalletUtils = async (
    * @param {string} from
    * @param {string|number} id
    * @param {number|string} minHeight
+   * @param {boolean} [untilNumWantsSatisfied]
    */
-  const pollOffer = async (from, id, minHeight) => {
+  const pollOffer = async (
+    from,
+    id,
+    minHeight,
+    untilNumWantsSatisfied = false,
+  ) => {
     const lookup = async () => {
       // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
       const { offerStatuses } = await storedWalletState(from, minHeight);
       const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
       if (!offerStatus) throw Error('retry');
       harden(offerStatus);
+      if (untilNumWantsSatisfied && !('numWantsSatisfied' in offerStatus)) {
+        throw Error('retry (no numWantsSatisfied yet)');
+      }
       return offerStatus;
     };
     const retryMessage = 'offer not in wallet at block';

@@ -24,6 +24,7 @@ ORIGDIR=$(pwd)
 
 enactCoreEval() {
   dir="$1"
+  expect_wants=${2-true}
   for f in "$dir"/cache/*.json; do
     case "$f" in
       */"*.json") continue ;;
@@ -43,15 +44,38 @@ enactCoreEval() {
     status=$(agd query gov proposal "$propnum" --output=json | jq -r .status)
     case $status in
     PROPOSAL_STATUS_PASSED) break ;;
+    PROPOSAL_STATUS_REJECTED) return 1 ;;
     *) echo "waiting for proposal $propnum to pass (current status=$status)" ;;
     esac
     sleep 5
   done
+
+  sleep 15 # wait for the new contract to be installed
+
+  status=0
+  bin/agops simple --from gov1 || status=$?
+  if [ $status -eq 0 ]; then
+    if $expect_wants; then
+      echo "Expected wants, and got some"
+    else
+      echo "Expected no wants, but got some!"
+      return 1
+    fi
+  elif [ $status -eq 2 ]; then
+    if $expect_wants; then
+      echo "Expected wants, but got none!"
+      return 1
+    else
+      echo "Expected no wants, and got none"
+    fi
+  else
+    exit $status # other failure
+  fi
 }
 
 if [ "${1-init}" = init ]; then
   (cd "$PROPDIR" && agoric run "$ORIGDIR/test/upgrade-contract/propose-buggy-contract.js")
-  enactCoreEval "$PROPDIR"
+  enactCoreEval "$PROPDIR" false
 fi
 
 (cd "$PROPDIR2" && agoric run "$ORIGDIR/test/upgrade-contract/propose-upgrade-contract.js")

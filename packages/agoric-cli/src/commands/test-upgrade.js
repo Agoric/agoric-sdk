@@ -1,4 +1,5 @@
 // @ts-check
+/* global process */
 import { Fail } from '@agoric/assert';
 import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
@@ -93,8 +94,12 @@ export const makeSimpleOfferCommand = (
         throw result;
       }
       show({ height: result?.height, txhash: result?.txhash });
-      const found = await pollOffer(from, offer.id, result.height);
-      show(found);
+      const found = await pollOffer(from, offer.id, result.height, true);
+      show(found, true);
+      const numWantsSatisfied = found.numWantsSatisfied || 0;
+      if (numWantsSatisfied < 1) {
+        process.exit(2);
+      }
     });
   return simpleCmd;
 };
