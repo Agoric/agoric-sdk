@@ -1,14 +1,12 @@
 // @ts-check
-import { SwingSetConfig } from '@agoric/swingset-vat/src/typeGuards.js';
+// import { M } from '@agoric/vat-data';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { passStyleOf, getTag } from '@endo/pass-style';
 // XXX how to use devDependencies from tests/tools??
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Type } from '@sinclair/typebox';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { Value } from '@sinclair/typebox/value';
 
-import * as fsAmbient from 'fs/promises';
+// import * as fsAmbient from 'fs/promises';
 
 /**
  * @file Generate JSON schema for editing config files
@@ -66,8 +64,9 @@ export const toTypeBox = pattern => {
         return Type.Union(patts.map(recur));
       }
       case 'match:arrayOf': {
-        const patts = patt.payload;
-        return Type.Array(patts.map(recur));
+        const [subPatt, limits] = patt.payload;
+        if (limits) todo(limits);
+        return Type.Array(recur(subPatt));
       }
       case 'match:recordOf': {
         const [keyPatt, valuePatt] = patt.payload;
