@@ -8,7 +8,7 @@ import { getNetworkConfig } from '../lib/rpc.js';
 import { makeWalletUtils, sendAction } from '../lib/wallet.js';
 
 /**
- * Make simple offer command for upgrade testing.
+ * Make commands for testing.
  *
  * @param {{
  *   env: Partial<Record<string, string>>,
@@ -22,7 +22,7 @@ import { makeWalletUtils, sendAction } from '../lib/wallet.js';
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
  */
-export const makeSimpleOfferCommand = (
+export const makeTestCommand = (
   { env, stdout, now, setTimeout, execFileSync, createCommand },
   { fetch },
 ) => {
@@ -46,8 +46,11 @@ export const makeSimpleOfferCommand = (
     }
   };
 
-  const simpleCmd = createCommand('simple')
-    .description('make simple offer')
+  const testCmd = createCommand('test').description('test operations');
+
+  testCmd
+    .command('upgrade-contract')
+    .description('make simple offer to upgrade-contract')
     .option('--home <dir>', 'agd CosmosSDK application home directory')
     .option(
       '--keyring-backend [os|file|test]',
@@ -61,14 +64,14 @@ export const makeSimpleOfferCommand = (
       '--from <address>',
       'wallet address literal or name',
       literalOrName =>
-        normalizeAddressWithOptions(literalOrName, simpleCmd.opts(), {
+        normalizeAddressWithOptions(literalOrName, testCmd.opts(), {
           execFileSync,
         }),
     )
     .action(async opts => {
       const { agoricNames, networkConfig, pollOffer } = await tryMakeUtils();
       const { from } = opts;
-      const { home, keyringBackend: backend } = simpleCmd.opts();
+      const { home, keyringBackend: backend } = testCmd.opts();
 
       const io = { ...networkConfig, execFileSync, delay, stdout };
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
@@ -101,5 +104,6 @@ export const makeSimpleOfferCommand = (
         process.exit(2);
       }
     });
-  return simpleCmd;
+
+  return testCmd;
 };

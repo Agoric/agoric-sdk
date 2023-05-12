@@ -53,7 +53,7 @@ enactCoreEval() {
   sleep 15 # wait for the new contract to be installed
 
   status=0
-  bin/agops simple --from gov1 || status=$?
+  bin/agops test upgrade-contract --from gov1 || status=$?
   if [ $status -eq 0 ]; then
     if $expect_wants; then
       echo "Expected wants, and got some"
