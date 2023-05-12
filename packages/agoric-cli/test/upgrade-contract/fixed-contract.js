@@ -19,7 +19,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     const amount = AmountMath.make(brand, 32n);
     zcfMint.mintGains(harden({ Tokens: amount }), seat);
     seat.exit();
-    return 'Congratulations, free tokens!';
+    return 'Congratulations, Free Tokens!!!';
   };
 
   return harden({
