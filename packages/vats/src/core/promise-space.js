@@ -125,13 +125,21 @@ export const makePromiseSpace = (optsOrLog = {}) => {
 
   const makeProducer = name => {
     const resolve = value => {
-      onResolve(name, value);
       const old = provideState(name);
+      if (old.isSettling) {
+        // First attempt to settle always wins.
+        return;
+      }
+      onResolve(name, value);
       nameToState.set(name, harden({ ...old, isSettling: true }));
       old.pk.resolve(value);
     };
     const reject = reason => {
       const old = provideState(name);
+      if (old.isSettling) {
+        // First attempt to settle always wins.
+        return;
+      }
       nameToState.set(name, harden({ ...old, isSettling: true }));
       old.pk.reject(reason);
     };
