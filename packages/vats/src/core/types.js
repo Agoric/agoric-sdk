@@ -276,6 +276,7 @@
  *   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
  *   provisionPoolStartResult: unknown,
+ *   vatStore: import('./utils.js').VatStore,
  *   zoe: ZoeService,
  * }} ChainBootstrapSpaceT
  * @typedef {PromiseSpaceOf<ChainBootstrapSpaceT>} ChainBootstrapSpace

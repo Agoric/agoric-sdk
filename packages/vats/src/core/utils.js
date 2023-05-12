@@ -317,7 +317,7 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {string} [label]
  *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
- * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatSpace = (
   svc,

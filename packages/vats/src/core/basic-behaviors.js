@@ -51,7 +51,6 @@ const bootMsgEx = {
 
 /**
  * @param {BootstrapPowers & {
- *   consume: {vatStore: Promise<VatStore> }
  * }} powers
  *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
