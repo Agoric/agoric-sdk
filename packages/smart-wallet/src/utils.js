@@ -64,6 +64,11 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
         }
         break;
       }
+      // @ts-expect-error backwards compatibile
+      case 'brand': {
+        console.warn('obsolete brand update record - ignoring', updateRecord);
+        break;
+      }
       default:
         throw Error(`unknown record updated ${updated}`);
     }
