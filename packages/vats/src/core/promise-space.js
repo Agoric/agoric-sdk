@@ -164,27 +164,21 @@ export const makePromiseSpace = (optsOrLog = {}) => {
 
   /** @type {PromiseSpaceOf<T>['consume']} */
   // @ts-expect-error cast
-  const consume = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        return provideState(name).pk.promise;
-      },
+  const consume = new Proxy(harden({}), {
+    get: (_target, name) => {
+      assert.typeof(name, 'string');
+      return provideState(name).pk.promise;
     },
-  );
+  });
 
   /** @type {PromiseSpaceOf<T>['produce']} */
   // @ts-expect-error cast
-  const produce = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        return makeProducer(name);
-      },
+  const produce = new Proxy(harden({}), {
+    get: (_target, name) => {
+      assert.typeof(name, 'string');
+      return makeProducer(name);
     },
-  );
+  });
 
   return harden({ produce, consume });
 };
