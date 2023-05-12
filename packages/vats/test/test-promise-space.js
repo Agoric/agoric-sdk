@@ -64,6 +64,7 @@ test('makePromiseSpace copied into store', async t => {
     produce.chocolate.resolve(doesNotResolve);
     const nonPassable = harden(() => {});
     produce.strawberry.resolve(nonPassable);
+    await null;
     const actual = Object.fromEntries(store.entries());
     t.deepEqual(
       actual,

@@ -1,7 +1,8 @@
 // @ts-check
+import { E } from '@endo/far';
 import { assertKey } from '@agoric/store';
 import { canBeDurable } from '@agoric/vat-data';
-import { isPromise, makePromiseKit } from '@endo/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @typedef {{
@@ -59,11 +60,7 @@ export const makeStoreHooks = (store, log = noop) => {
   return harden({
     ...logHooks,
     onResolve: (name, valueP) => {
-      if (isPromise(valueP)) {
-        void valueP.then(value => save(name, value));
-      } else {
-        save(name, valueP);
-      }
+      void E.when(valueP, value => save(name, value));
     },
     onReset: name => {
       if (store.has(name)) {
