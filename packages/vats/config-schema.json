@@ -278,7 +278,255 @@
     },
     {
       "type": "object",
-      "properties": {}
+      "properties": {
+        "vats": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sourceSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "sourceSpec"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundleSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundleSpec"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundle": {
+                      "type": "object",
+                      "properties": {
+                        "moduleType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "moduleType"
+                      ]
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundle"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "bootstrap": {
+          "type": "string"
+        },
+        "coreProposals": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "module": {
+                    "type": "string"
+                  },
+                  "entrypoint": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {}
+                  }
+                },
+                "required": [
+                  "module",
+                  "entrypoint"
+                ]
+              }
+            ]
+          }
+        },
+        "exportStorageSubtrees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "includeDevDependencies": {
+          "type": "boolean"
+        },
+        "bundleCachePath": {
+          "type": "string"
+        },
+        "bundles": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sourceSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "sourceSpec"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundleSpec": {
+                      "type": "string"
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundleSpec"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "bundle": {
+                      "type": "object",
+                      "properties": {
+                        "moduleType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "moduleType"
+                      ]
+                    },
+                    "creationOptions": {
+                      "type": "object",
+                      "properties": {
+                        "critial": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "bundle"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "bundleFormat": {
+          "anyOf": [
+            {
+              "const": "getExport",
+              "type": "string"
+            },
+            {
+              "const": "nestedEvaluate",
+              "type": "string"
+            },
+            {
+              "const": "endoZipBase64",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "vats"
+      ]
     }
   ]
 }
