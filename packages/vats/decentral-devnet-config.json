@@ -168,7 +168,8 @@
   ],
   "exportStorageSubtrees": [
     "published.psm.IST",
-    "published.wallet"
+    "published.wallet",
+    "published.provisionPool.metrics"
   ],
   "bundles": {
     "agoricNames": {
