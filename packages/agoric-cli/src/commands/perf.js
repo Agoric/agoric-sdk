@@ -19,6 +19,8 @@ import {
 } from '../lib/chain.js';
 import { networkConfig } from '../lib/rpc.js';
 
+const { Fail } = assert;
+
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;
 
@@ -53,7 +55,10 @@ export const makePerfCommand = logger => {
       const sharedOpts = perf.opts();
       logger.warn({ sharedOpts, opts });
       const payloadStr = fs.readFileSync(opts.executeOffer).toString();
-      const { offer } = JSON.parse(JSON.parse(payloadStr).body);
+      const innerBody = JSON.parse(payloadStr).body;
+      innerBody.startsWith('#') ||
+        Fail`expected smallcaps encoded body: ${innerBody}`;
+      const { offer } = JSON.parse(innerBody.slice(1));
       const { id: offerId } = offer;
 
       const spec = `:published.wallet.${opts.from}`;
