@@ -10,6 +10,7 @@ import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 /** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
 
 const { values } = Object;
+const { Fail } = assert;
 const marshaller = boardSlottingMarshaller();
 
 /** @type {CurrentWalletRecord} */
@@ -28,13 +29,29 @@ const emptyCurrentRecord = {
 export const getCurrent = async (addr, { readLatestHead }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
-  const current =
+  let current =
     /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord> | undefined} */ (
       await readLatestHead(`published.wallet.${addr}.current`)
     );
   if (current === undefined) {
     throw new Error(`undefined current node for ${addr}`);
   }
+
+  // Repair a type misunderstanding seen in the wild.
+  // See https://github.com/Agoric/agoric-sdk/pull/7139
+  let offerToUsedInvitation = current.offerToUsedInvitation;
+  if (
+    offerToUsedInvitation &&
+    typeof offerToUsedInvitation === 'object' &&
+    !Array.isArray(offerToUsedInvitation)
+  ) {
+    offerToUsedInvitation = Object.entries(offerToUsedInvitation);
+    current = harden({
+      ...current,
+      offerToUsedInvitation,
+    });
+  }
+
   // override full empty record with defined values from published one
   return { ...emptyCurrentRecord, ...current };
 };
@@ -160,7 +177,7 @@ export const findContinuingIds = (current, agoricNames) => {
   /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
   const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
 
-  assert(Array.isArray(entries));
+  Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
 
   const keyOf = (obj, val) => {
     const found = Object.entries(obj).find(e => e[1] === val);
