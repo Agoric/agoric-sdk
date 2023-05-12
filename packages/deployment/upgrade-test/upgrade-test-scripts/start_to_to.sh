@@ -1,19 +1,32 @@
 #!/bin/bash
 
+grep -qF 'env_setup.sh' /root/.bashrc || echo ". ./upgrade-test-scripts/env_setup.sh" >> /root/.bashrc
+grep -qF 'printKeys' /root/.bashrc || echo "printKeys" >> /root/.bashrc
+
+tmux -V || apt install -y tmux
+
+if [[ "$DEST" == "1" ]] && [[ "$TMUX" == "" ]]; then
+  echo "launching entrypoint"
+  cd /usr/src/agoric-sdk || exit 1
+  . ./upgrade-test-scripts/bash_entrypoint.sh
+  exit 0
+fi
+
+
 set -e
 . ./upgrade-test-scripts/env_setup.sh
-apt install -y tmux
 
 agd start --log_level warn &
 AGD_PID=$!
 wait_for_bootstrap
 waitForBlock 2
 
-runActions "pre_test"
-
-runActions "actions"
-
-runActions "test"
+if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
+  runActions "pre_test"
+  runActions "actions"
+  runActions "test"
+  touch "$HOME/.agoric/runActions-${THIS_NAME}"
+fi
 
 if [[ "$DEST" != "1" ]]; then
   #Destined for an upgrade

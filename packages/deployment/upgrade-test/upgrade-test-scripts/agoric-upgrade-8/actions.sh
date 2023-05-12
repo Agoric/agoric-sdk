@@ -14,7 +14,7 @@ waitForBlock 3
 
 
 govaccounts=( "$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR" )
-govamount="200000000ubld,100000000ibc/toyusdc"
+govamount="200000000ubld,100000000ibc/toyusdc,100000000ibc/toyatom"
 
 for i in "${govaccounts[@]}"
 do

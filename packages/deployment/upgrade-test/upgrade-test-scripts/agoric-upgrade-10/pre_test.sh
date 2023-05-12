@@ -47,3 +47,6 @@ test_val "$(echo "$toyUSDMetrics" | jq -r '.feePoolBalance.value')" "$(cat /root
 test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.totalAnchorProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
+
+
+test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
