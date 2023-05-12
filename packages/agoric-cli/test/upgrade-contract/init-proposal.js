@@ -14,8 +14,17 @@ export const initContract = async ({
   instance: {
     produce: { myInstance },
   },
+  issuer,
+  brand,
 }) => {
   const instanceFacets = await E(zoe).startInstance(myInitInstallation);
+  const terms = await E(zoe).getTerms(instanceFacets.instance);
+
+  issuer.produce.GoodStuff.reset();
+  issuer.produce.GoodStuff.resolve(terms.issuers.GoodStuff);
+  brand.produce.GoodStuff.reset();
+  brand.produce.GoodStuff.resolve(terms.brands.GoodStuff);
+
   myContractFacets.reset();
   myContractFacets.resolve(instanceFacets);
   myInstance.reset();
@@ -42,6 +51,8 @@ export const getManifestForInitContract = ({ restoreRef }, { contractRef }) =>
             myInstance: true,
           },
         },
+        issuer: { produce: { GoodStuff: true } },
+        brand: { produce: { GoodStuff: true } },
       },
     },
     installations: {
