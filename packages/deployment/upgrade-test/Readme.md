@@ -50,3 +50,13 @@ make local_sdk
 That will produce the an image tagged agoric-sdk:latest in your local resolution. (Then run `make build run` again.)
 
 You can send information from one run to the next using `/envs`. A release N can append ENV variable setting shell commands to `"$HOME/.agoric/envs"`. The N+1 release will then have them in its environment. (Because `env_setup.sh` starts with `source "$HOME/.agoric/envs"`)
+
+### IDE
+
+Some IDEs support connecting to a running container. For VS Code you can use [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) to connect to a run above. Then you can edit the filesystem using the IDE. Once the workspace opens, you have to add a folder. E.g. `/usr/src/agoric-sdk/packages/agoric-cli/` for tweaking agoric-cli (without a rebuild of SDK).
+Note that whatever changes you make within the running container will be lost when you terminate it. Use this just for iterating and be sure to copy any changes you want back to your real workspace.
+
+# TODO
+- [ ] a target like `local_sdk` that just copies the local filesystem, without a full rebuild
+- [ ] alternately, mount the local agoric-sdk in the container
+
