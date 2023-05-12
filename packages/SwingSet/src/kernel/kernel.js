@@ -816,9 +816,10 @@ export default function buildKernel(
     const { meterID } = vatInfo;
     let computrons;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const oldIncarnation = vatKeeper.getIncarnationNumber();
     const disconnectionObject = makeUpgradeDisconnection(
       upgradeMessage,
-      vatKeeper.getIncarnationNumber(),
+      oldIncarnation,
     );
     const disconnectionCapData = kser(disconnectionObject);
 
@@ -892,6 +893,9 @@ export default function buildKernel(
     // There's a good analysis at
     // https://github.com/Agoric/agoric-sdk/pull/7244#discussion_r1153633902
     if (boydResults.terminate) {
+      console.log(
+        `WARNING: vat ${vatID} failed to upgrade from incarnation ${oldIncarnation} (BOYD)`,
+      );
       const { info: errorCapData } = boydResults.terminate;
       // eslint-disable-next-line @jessie.js/no-nested-await
       const results = await abortUpgrade(boydResults, errorCapData);
@@ -953,11 +957,18 @@ export default function buildKernel(
 
     if (startVatResults.terminate) {
       // abort and unwind just like above
+      console.log(
+        `WARNING: vat ${vatID} failed to upgrade from incarnation ${oldIncarnation} (startVat)`,
+      );
       const { info: errorCapData } = startVatResults.terminate;
       // eslint-disable-next-line @jessie.js/no-nested-await
       const results = await abortUpgrade(startVatResults, errorCapData);
       return results;
     }
+
+    console.log(
+      `vat ${vatID} upgraded from incarnation ${oldIncarnation} to ${newIncarnation} with source ${bundleID}`,
+    );
 
     const args = [upgradeID, true, undefined, newIncarnation];
     /** @type {RawMethargs} */
