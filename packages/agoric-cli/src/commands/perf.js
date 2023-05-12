@@ -12,14 +12,14 @@ import {
 import { Command } from 'commander';
 import fs from 'fs';
 import { exit } from 'process';
+import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
+import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
   execSwingsetTransaction,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
 import { networkConfig } from '../lib/rpc.js';
-
-const { Fail } = assert;
 
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;
@@ -55,10 +55,10 @@ export const makePerfCommand = logger => {
       const sharedOpts = perf.opts();
       logger.warn({ sharedOpts, opts });
       const payloadStr = fs.readFileSync(opts.executeOffer).toString();
-      const innerBody = JSON.parse(payloadStr).body;
-      innerBody.startsWith('#') ||
-        Fail`expected smallcaps encoded body: ${innerBody}`;
-      const { offer } = JSON.parse(innerBody.slice(1));
+      const payloadCapData = JSON.parse(payloadStr);
+      const unserializer = boardSlottingMarshaller(slotToRemotable);
+      const obj = unserializer.fromCapData(payloadCapData);
+      const { offer } = obj;
       const { id: offerId } = offer;
 
       const spec = `:published.wallet.${opts.from}`;
