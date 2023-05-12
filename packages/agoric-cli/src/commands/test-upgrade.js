@@ -53,7 +53,7 @@ export const makeTestCommand = (
     .description('make simple offer to upgrade-contract')
     .option('--home <dir>', 'agd CosmosSDK application home directory')
     .option(
-      '--keyring-backend [os|file|test]',
+      '--keyring-backend <os|file|test>',
       `keyring's backend (os|file|test) (default "${
         env.AGORIC_KEYRING_BACKEND || 'os'
       }")`,

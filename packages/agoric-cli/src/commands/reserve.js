@@ -47,18 +47,18 @@ export const makeReserveCommand = (_logger, io = {}) => {
     .command('proposeBurn')
     .description('propose a call to burnFeesToReduceShortfall')
     .option(
-      '--offerId [string]',
+      '--offerId <string>',
       'Offer id',
       String,
       `proposePauseOffers-${Date.now()}`,
     )
     .requiredOption(
-      '--charterAcceptOfferId [string]',
+      '--charterAcceptOfferId <string>',
       'offer that had continuing invitation result',
     )
     .requiredOption('--value [integer]', 'value of µIST to burn', BigInt)
     .option(
-      '--deadline [minutes]',
+      '--deadline <minutes>',
       'minutes from now to close the vote',
       Number,
       1,

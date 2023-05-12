@@ -129,9 +129,9 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
   ec.command('committee')
     .description('accept invitation to join the economic committee')
-    .option('--voter [number]', 'Voter number', Number, 0)
+    .option('--voter <number>', 'Voter number', Number, 0)
     .option(
-      '--offerId [string]',
+      '--offerId <string>',
       'Offer id',
       String,
       `ecCommittee-${Date.now()}`,
@@ -172,7 +172,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
   ec.command('charter')
     .description('accept the charter invitation')
-    .option('--offerId [string]', 'Offer id', String, `ecCharter-${Date.now()}`)
+    .option('--offerId <string>', 'Offer id', String, `ecCharter-${Date.now()}`)
     .option(
       '--send-from <name-or-address>',
       'Send from address',
@@ -214,7 +214,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       'from address',
       normalizeAddress,
     )
-    .requiredOption('--for [string]', 'description of the invitation')
+    .requiredOption('--for <string>', 'description of the invitation')
     .action(async opts => {
       const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
       const current = await getCurrent(opts.from, { readLatestHead });
@@ -250,9 +250,9 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
   ec.command('vote')
     .description('vote on a question (hard-coded for now))')
-    .option('--offerId [number]', 'Offer id', String, `ecVote-${Date.now()}`)
+    .option('--offerId <number>', 'Offer id', String, `ecVote-${Date.now()}`)
     .requiredOption(
-      '--forPosition [number]',
+      '--forPosition <number>',
       'index of one position to vote for (within the question description.positions); ',
       Number,
     )

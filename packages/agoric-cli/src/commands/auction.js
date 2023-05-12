@@ -70,7 +70,7 @@ export const makeAuctionCommand = (
     )
     .option('--offer-id <string>', 'Offer id', String, `propose-${Date.now()}`)
     .option(
-      '--deadline [minutes]',
+      '--deadline <minutes>',
       'minutes from now to close the vote',
       Number,
       1,
