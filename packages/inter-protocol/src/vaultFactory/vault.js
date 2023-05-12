@@ -350,7 +350,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           }
           const { phase } = state;
           const uiState = facets.helper.getStateSnapshot(phase);
-          trace('updateUiState', state.idInManager, uiState);
+          const brand = facets.helper.collateralBrand();
+          trace(brand, 'updateUiState', state.idInManager, uiState);
 
           switch (phase) {
             case Phase.ACTIVE:
