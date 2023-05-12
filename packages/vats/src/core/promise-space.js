@@ -1,4 +1,5 @@
 // @ts-check
+import { Fail } from '@agoric/assert';
 import { assertKey } from '@agoric/store';
 import { canBeDurable } from '@agoric/vat-data';
 import { isPromise, makePromiseKit } from '@endo/promise-kit';
@@ -77,7 +78,7 @@ export const makeStoreHooks = (store, log = noop) => {
  * Make { produce, consume } where for each name, `consume[name]` is a promise
  * and `produce[name].resolve` resolves it.
  *
- * Note: repeated resolve()s are noops.
+ * Note: repeated resolve()s without an intervening reset() are noops.
  *
  * @template {Record<string, unknown>} [T=Record<string, unknown>]
  * @param {{ log?: typeof console.log } & (
@@ -95,75 +96,69 @@ export const makePromiseSpace = (optsOrLog = {}) => {
   const { onAddKey, onSettled, onResolve, onReset } = hooks;
 
   /**
-   * @typedef {PromiseRecord<any> & {
-   *   reset: (reason?: unknown) => void,
-   *   isSettling: boolean,
-   * }} PromiseState
+   * @typedef {{ pk: PromiseRecord<any>, isSettling: boolean }} PromiseState
    */
   /** @type {Map<string, PromiseState>} */
   const nameToState = new Map();
   /** @type {Set<string>} */
   const remaining = new Set();
 
-  /** @param {string} name */
+  /** @type {(name: string) => PromiseState} */
   const provideState = name => {
-    /** @type {PromiseState} */
-    let state;
-    const currentState = nameToState.get(name);
-    if (currentState) {
-      state = currentState;
-    } else {
+    if (!nameToState.has(name)) {
       onAddKey(name);
+      remaining.add(name);
       const pk = makePromiseKit();
-
       pk.promise
         .finally(() => {
-          remaining.delete(name);
           onSettled(name, remaining);
         })
         .catch(() => {});
-
-      const settling = () => {
-        assert(state);
-        state = harden({ ...state, isSettling: true });
-        nameToState.set(name, state);
-      };
-
-      const resolve = value => {
-        settling();
-        onResolve(name, value);
-        pk.resolve(value);
-      };
-      const reject = reason => {
-        settling();
-        pk.reject(reason);
-      };
-
-      const reset = (reason = undefined) => {
-        onReset(name);
-        if (!state.isSettling) {
-          if (!reason) {
-            // Reuse the old promise; don't reject it.
-            return;
-          }
-          reject(reason);
-        }
-        // Now publish a new promise.
-        nameToState.delete(name);
-        remaining.delete(name);
-      };
-
-      state = harden({
-        isSettling: false,
-        resolve,
-        reject,
-        reset,
-        promise: pk.promise,
-      });
-      nameToState.set(name, state);
-      remaining.add(name);
+      nameToState.set(name, harden({ pk, isSettling: false }));
     }
-    return state;
+    return nameToState.get(name) || Fail`provideState(${name})`;
+  };
+
+  // we must tolerate these producer methods being retrieved both
+  // before and after the consumer is retrieved, and also both before
+  // and after reset() is invoked, so they only close over 'name' and
+  // not over any state variables
+
+  const makeProducer = name => {
+    const resolve = value => {
+      onResolve(name, value);
+      const old = provideState(name);
+      nameToState.set(name, harden({ ...old, isSettling: true }));
+      old.pk.resolve(value);
+      remaining.delete(name);
+    };
+    const reject = reason => {
+      const old = provideState(name);
+      nameToState.set(name, harden({ ...old, isSettling: true }));
+      old.pk.reject(reason);
+      remaining.delete(name);
+    };
+    const reset = (reason = undefined) => {
+      onReset(name);
+      const old = provideState(name);
+      if (!old.isSettling) {
+        // we haven't produced a value yet, and there might be
+        // consumers still watching old.pk.promise
+        if (!reason) {
+          // so just let them wait for the new value: resetting an
+          // unresolved item is a no-op
+          return;
+        }
+        // reject those watchers; new watchers will wait for the new
+        // value through the replacement promise
+        reject(reason);
+      }
+      // delete the state, so new callers will get a new promise kit
+      nameToState.delete(name);
+      remaining.delete(name);
+    };
+
+    return harden({ resolve, reject, reset });
   };
 
   /** @type {PromiseSpaceOf<T>['consume']} */
@@ -173,8 +168,7 @@ export const makePromiseSpace = (optsOrLog = {}) => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const kit = provideState(name);
-        return kit.promise;
+        return provideState(name).pk.promise;
       },
     },
   );
@@ -186,8 +180,7 @@ export const makePromiseSpace = (optsOrLog = {}) => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const { reject, resolve, reset } = provideState(name);
-        return harden({ reject, resolve, reset });
+        return makeProducer(name);
       },
     },
   );
