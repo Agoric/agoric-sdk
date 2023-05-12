@@ -816,9 +816,10 @@ export default function buildKernel(
     const { meterID } = vatInfo;
     let computrons;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const oldIncarnation = vatKeeper.getIncarnationNumber();
     const disconnectionObject = makeUpgradeDisconnection(
       upgradeMessage,
-      vatKeeper.getIncarnationNumber(),
+      oldIncarnation,
     );
     const disconnectionCapData = kser(disconnectionObject);
 
@@ -958,6 +959,10 @@ export default function buildKernel(
       const results = await abortUpgrade(startVatResults, errorCapData);
       return results;
     }
+
+    console.log(
+      `vat ${vatID} upgraded from incarnation ${oldIncarnation} to ${newIncarnation} with source ${bundleID}`,
+    );
 
     const args = [upgradeID, true, undefined, newIncarnation];
     /** @type {RawMethargs} */
