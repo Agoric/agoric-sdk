@@ -111,6 +111,7 @@ export const makePromiseSpace = (optsOrLog = {}) => {
       const pk = makePromiseKit();
       pk.promise
         .finally(() => {
+          remaining.delete(name);
           onSettled(name, remaining);
         })
         .catch(() => {});
@@ -131,13 +132,11 @@ export const makePromiseSpace = (optsOrLog = {}) => {
       const old = provideState(name);
       nameToState.set(name, harden({ ...old, isSettling: true }));
       old.pk.resolve(value);
-      remaining.delete(name);
     };
     const reject = reason => {
       const old = provideState(name);
       nameToState.set(name, harden({ ...old, isSettling: true }));
       old.pk.reject(reason);
-      remaining.delete(name);
     };
     const reset = (reason = undefined) => {
       onReset(name);
