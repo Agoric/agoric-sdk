@@ -157,3 +157,26 @@ printKeys() {
 }
 
 echo ENV_SETUP finished
+
+pushPrice () {
+  newPrice="${1:-10.00}"
+  for oracleNum in {1..2}; do
+    echo "Pushing Price from oracle #${oracleNum}"
+
+    if test -f "$HOME/.agoric/lastOracle"; then
+      echo "$GOV2ADDR" > "$HOME/.agoric/lastOracle"
+    fi
+
+    lastOracle=$(cat "$HOME/.agoric/lastOracle")
+    nextOracle="$GOV1ADDR"
+    if [[ "$lastOracle" == "$GOV1ADDR" ]]; then
+      nextOracle="$GOV2ADDR"
+    fi
+
+    oid="${nextOracle}_ORACLE"
+    offer=$(mktemp -t pushPrice.XXX)
+    agops oracle pushPriceRound --price "$newPrice" --oracleAdminAcceptOfferId "${!oid}" >|"$offer"
+    agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
+    echo "$nextOracle" > "$HOME/.agoric/lastOracle"
+  done
+}
