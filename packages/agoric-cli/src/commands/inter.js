@@ -10,6 +10,8 @@ import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBo
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@agoric/store';
+import { openStdin } from 'process';
+import { Fail } from '@agoric/assert';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   asBoardRemote,
@@ -612,5 +614,48 @@ $ inter bid list --from my-acct
       show(assets, true);
     });
 
+  const playCmd = interCmd.command('my').description('upgrade 6099');
+  playCmd
+    .command('make')
+    .description('make invitation')
+    .option('--offer-id <string>', 'Offer id', String, `my-${now()}`)
+    .requiredOption(
+      '--from <address>',
+      'wallet address literal or name',
+      normalizeAddress,
+    )
+    .action(async opts => {
+      const { agoricNames, networkConfig, pollOffer } = await tryMakeUtils();
+      console.log(agoricNames.instance.myInstance);
+      const { from } = opts;
+      const { home, keyringBackend: backend } = interCmd.opts();
+
+      const io = { ...networkConfig, execFileSync, delay, stdout };
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      const offer = {
+        id: opts.offerId,
+        invitationSpec: {
+          source: 'contract',
+          instance: agoricNames.instance.myInstance || Fail`no myInstance`,
+          publicInvitationMaker: 'makeInvitation',
+        },
+        proposal: {
+          want: { Tokens: { brand: agoricNames.brand.GoodStuff, value: 32n } },
+        },
+      };
+      const result = await sendAction(
+        {
+          method: 'executeOffer',
+          offer,
+        },
+        { keyring: { home, backend }, from, verbose: false, ...io },
+      );
+      if (result?.code !== 0) {
+        throw result;
+      }
+      show({ height: result?.height, txhash: result?.txhash });
+      const found = await pollOffer(from, offer.id, result.height);
+      show(found);
+    });
   return interCmd;
 };
