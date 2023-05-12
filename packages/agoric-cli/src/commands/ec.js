@@ -7,11 +7,11 @@ import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
 import {
+  findContinuingIds,
   getCurrent,
   getLastUpdate,
   outputActionAndHint,
   sendAction,
-  findContinuingIds,
 } from '../lib/wallet.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
@@ -205,6 +205,32 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
         instanceName: 'econCommitteeCharter',
         ...opts,
       });
+    });
+
+  ec.command('find-continuing-id')
+    .description('print id of specified voting continuing invitation')
+    .requiredOption(
+      '--from <name-or-address>',
+      'from address',
+      normalizeAddress,
+    )
+    .requiredOption('--for [string]', 'description of the invitation')
+    .action(async opts => {
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+      const current = await getCurrent(opts.from, { readLatestHead });
+
+      const known = findContinuingIds(current, agoricNames);
+      if (!known) {
+        console.error('No continuing ids found');
+        return;
+      }
+      const match = known.find(r => r.description === opts.for);
+      if (!match) {
+        console.error(`No match found for '${opts.for}'`);
+        return;
+      }
+
+      console.log(match.offerId);
     });
 
   ec.command('find-continuing-ids')
