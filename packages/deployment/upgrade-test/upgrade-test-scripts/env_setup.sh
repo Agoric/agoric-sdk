@@ -134,3 +134,21 @@ voteLatestProposalAndWait() {
     fi
   done
 }
+
+newOfferId () {
+  date +"%s%3M"
+}
+
+printKeys () {
+  echo "========== GOVERNANCE KEYS =========="
+  echo "gov1: $GOV1ADDR"
+  cat ~/.agoric/gov1.key || true
+  echo "gov2: $GOV2ADDR"
+  cat ~/.agoric/gov2.key || true
+  echo "gov3: $GOV3ADDR"
+  cat ~/.agoric/gov3.key || true
+  echo "validator: $VALIDATORADDR"
+  cat ~/.agoric/validator.key || true
+  echo "========== GOVERNANCE KEYS =========="
+}
+

@@ -4,7 +4,7 @@ set -e
 . ./upgrade-test-scripts/env_setup.sh
 ag0 init localnet --chain-id "$CHAINID"
 
-govaccounts=( "gov1" "gov2" "gov3" "validator ")
+govaccounts=( "gov1" "gov2" "gov3" "validator" )
 
 for i in "${govaccounts[@]}"
 do
@@ -14,6 +14,10 @@ done
 
 
 sed -i.bak "s/^timeout_commit =.*/timeout_commit = \"1s\"/" "$HOME/.agoric/config/config.toml"
+sed -i.bak "s/^enabled-unsafe-cors =.*/enabled-unsafe-cors = true/" "$HOME/.agoric/config/app.toml"
+sed -i.bak "s/^enable-unsafe-cors =.*/enable-unsafe-cors = true/" "$HOME/.agoric/config/app.toml"
+sed -i.bak "s/127.0.0.1:26657/0.0.0.0:26657/" "$HOME/.agoric/config/config.toml"
+sed -i.bak "s/cors_allowed_origins = \[\]/cors_allowed_origins = \[\"*\"\]/" "$HOME/.agoric/config/config.toml"
 
 
 contents="$(jq ".app_state.crisis.constant_fee.denom = \"ubld\"" "$HOME/.agoric/config/genesis.json")" && echo -E "${contents}" > "$HOME/.agoric/config/genesis.json"
@@ -24,7 +28,7 @@ contents="$(jq ".app_state.slashing.params.signed_blocks_window = \"20000\"" "$H
 contents=$(jq '. * { app_state: { gov: { voting_params: { voting_period: "10s" } } } }' "$HOME/.agoric/config/genesis.json") && echo -E "${contents}" > "$HOME/.agoric/config/genesis.json"
 export GENACCT=$(ag0 keys show validator -a --keyring-backend="test")
 echo "Genesis Account $GENACCT"
-coins="10000000000000000ubld,1000000000000000000ibc/toyusdc"
+coins="1000000000000000000ubld,1000000000000000000ibc/toyusdc,1000000000000000000ibc/toyatom"
 ag0 add-genesis-account "$GENACCT" $coins
 
 ag0 gentx validator 5000000000ubld --keyring-backend="test" --chain-id "$CHAINID" 
