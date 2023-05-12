@@ -6,8 +6,8 @@ import { E } from '@endo/far';
  * @param {BootstrapSpace} param0
  */
 export const initContract = async ({
-  consume: { zoe },
-  produce: { myContractFacets },
+  consume: { zoe, myStatus },
+  produce: { myContractFacets, myStatus: myStatusOut },
   installation: {
     consume: { myInitInstallation },
   },
@@ -17,7 +17,20 @@ export const initContract = async ({
   issuer,
   brand,
 }) => {
-  const instanceFacets = await E(zoe).startInstance(myInitInstallation);
+  myStatusOut.resolve({});
+  const status = await myStatus;
+  status.initContract = true;
+  status.iteration = (status.iteration || 0) + 1;
+  console.log('initContract', status);
+
+  const instanceFacets = await E(zoe).startInstance(
+    myInitInstallation,
+    undefined,
+    undefined,
+    undefined,
+    'myContract',
+  );
+  console.log({ instanceFacets });
   const terms = await E(zoe).getTerms(instanceFacets.instance);
 
   issuer.produce.GoodStuff.reset();
@@ -37,9 +50,11 @@ export const getManifestForInitContract = ({ restoreRef }, { contractRef }) =>
       [initContract.name]: {
         consume: {
           zoe: 'zoe',
+          myStatus: true,
         },
         produce: {
           myContractFacets: true,
+          myStatus: true,
         },
         installation: {
           consume: {
