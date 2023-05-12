@@ -358,7 +358,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         ) {
           const { priceBook, curAuctionPrice } = this.state;
           const { helper } = this.facets;
-          trace('acceptPrice');
+          trace(this.state.collateralBrand, 'acceptPrice');
 
           const settleIfPriceExists = () => {
             if (curAuctionPrice !== null) {
@@ -404,7 +404,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           maxBuy,
           { trySettle, exitAfterBuy = false },
         ) {
-          trace('accept scaledBid offer');
+          trace(this.state.collateralBrand, 'accept scaledBid offer');
           const { curAuctionPrice, lockedPriceForRound, scaledBidBook } =
             this.state;
           const { helper } = this.facets;
@@ -540,7 +540,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         settleAtNewRate(reduction) {
           const { state, facets } = this;
 
-          trace('settleAtNewRate', reduction);
+          trace(this.state.collateralBrand, 'settleAtNewRate', reduction);
           const { lockedPriceForRound, priceBook, scaledBidBook } = state;
           lockedPriceForRound !== null ||
             Fail`price must be locked before auction starts`;

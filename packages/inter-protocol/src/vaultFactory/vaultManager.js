@@ -355,7 +355,7 @@ export const prepareVaultManagerKit = (
          */
         start() {
           const { state, facets } = this;
-          trace('helper.start()', state.vaultCounter);
+          trace(state.collateralBrand, 'helper.start()', state.vaultCounter);
           const {
             collateralBrand,
             collateralUnit,
@@ -426,7 +426,7 @@ export const prepareVaultManagerKit = (
         async chargeAllVaults(updateTime) {
           const { state, facets } = this;
           const { collateralBrand, debtMint, poolIncrementSeat } = state;
-          trace('chargeAllVaults', collateralBrand, {
+          trace(collateralBrand, 'chargeAllVaults', {
             updateTime,
           });
 
@@ -935,7 +935,7 @@ export const prepareVaultManagerKit = (
           const { state } = this;
           const { collateralBrand } = this.state;
 
-          trace('burnAndRecord', collateralBrand, {
+          trace(collateralBrand, 'burnAndRecord', {
             toBurn,
             totalDebt: state.totalDebt,
           });
@@ -1016,7 +1016,7 @@ export const prepareVaultManagerKit = (
             );
           } else {
             const isNew = AmountMath.isEmpty(oldDebtNormalized);
-            trace({ isNew });
+            trace(state.collateralBrand, { isNew });
             if (!isNew) {
               // its position in the queue is no longer valid
 
@@ -1061,11 +1061,11 @@ export const prepareVaultManagerKit = (
          * @param {ZCFSeat} seat
          */
         async makeVaultKit(seat) {
-          trace('makeVaultKit');
           const {
             state,
             facets: { manager },
           } = this;
+          trace(state.collateralBrand, 'makeVaultKit');
           const { storageNode } = this.state;
           assert(marshaller, 'makeVaultKit missing marshaller');
           assert(storageNode, 'makeVaultKit missing storageNode');
@@ -1079,7 +1079,7 @@ export const prepareVaultManagerKit = (
           ).makeChildNode(`vault${vaultId}`);
 
           const { self: vault } = makeVault(manager, vaultId, vaultStorageNode);
-          trace('makeVaultKit made vault', vault);
+          trace(state.collateralBrand, 'makeVaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed
@@ -1178,7 +1178,7 @@ export const prepareVaultManagerKit = (
             liquidatingVaults,
             lockedQuote,
           } = state;
-          trace('considering liquidation');
+          trace(collateralBrand, 'considering liquidation');
 
           const { prioritizedVaults } = collateralEphemera(collateralBrand);
           assert(factoryPowers && prioritizedVaults && zcf);
