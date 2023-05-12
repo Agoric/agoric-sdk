@@ -37,7 +37,8 @@ export const getCurrent = async (addr, { readLatestHead }) => {
     throw new Error(`undefined current node for ${addr}`);
   }
 
-  // Repair a type misunderstanding seen in the wild
+  // Repair a type misunderstanding seen in the wild.
+  // See https://github.com/Agoric/agoric-sdk/pull/7139
   let offerToUsedInvitation = current.offerToUsedInvitation;
   if (
     offerToUsedInvitation &&
