@@ -167,10 +167,10 @@ pushPrice () {
 
     lastOracle=$(cat "$HOME/.agoric/lastOracle")
     nextOracle="$GOV1ADDR"
-    echo "Pushing Price from oracle $nextOracle"
     if [[ "$lastOracle" == "$GOV1ADDR" ]]; then
       nextOracle="$GOV2ADDR"
     fi
+    echo "Pushing Price from oracle $nextOracle"
 
     oid="${nextOracle}_ORACLE"
     offer=$(mktemp -t pushPrice.XXX)
