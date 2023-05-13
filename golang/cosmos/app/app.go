@@ -792,7 +792,8 @@ func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 		ctx.Logger().Info("Post-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
 
 		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
-		normalizeProvisionAccount(ctx, app.AccountKeeper)
+		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
+		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
 
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
@@ -806,19 +807,19 @@ func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 	}
 }
 
-// normalizeProvisionAccount ensures that the vbank/provision account is a module account,
-// initializing or updating it if necessary.
-func normalizeProvisionAccount(ctx sdk.Context, ak authkeeper.AccountKeeper) {
-	provisionAddr := ak.GetModuleAddress(vbanktypes.ProvisionPoolName)
-	provisionAcct := ak.GetAccount(ctx, provisionAddr)
-	if _, ok := provisionAcct.(authtypes.ModuleAccountI); ok {
+// normalizeModuleAccount ensures that the given account is a module account,
+// initializing or updating it if necessary. The account name must be listed in maccPerms.
+func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name string) {
+	addr := ak.GetModuleAddress(name)
+	acct := ak.GetAccount(ctx, addr)
+	if _, ok := acct.(authtypes.ModuleAccountI); ok {
 		return
 	}
-	perms := maccPerms[vbanktypes.ProvisionPoolName]
-	newAcct := authtypes.NewEmptyModuleAccount(vbanktypes.ProvisionPoolName, perms...)
-	if provisionAcct != nil {
-		newAcct.AccountNumber = provisionAcct.GetAccountNumber()
-		newAcct.Sequence = provisionAcct.GetSequence()
+	perms := maccPerms[name]
+	newAcct := authtypes.NewEmptyModuleAccount(name, perms...)
+	if acct != nil {
+		newAcct.AccountNumber = acct.GetAccountNumber()
+		newAcct.Sequence = acct.GetSequence()
 	}
 	ak.SetModuleAccount(ctx, newAcct)
 }
@@ -900,9 +901,10 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 		stdlog.Printf("Genesis time %s is in %s\n", genTime, d)
 	}
 
-	// initialize the provision module account, to avoid its implicit creation
+	// initialize the provision and reserve module accounts, to avoid their implicit creation
 	// as a default account upon receiving a transfer. See BockedAddrs().
-	normalizeProvisionAccount(ctx, app.AccountKeeper)
+	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
+	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
 
 	return res
 }
@@ -959,11 +961,12 @@ func (app *GaiaApp) ModuleAccountAddrs() map[string]bool {
 func (app *GaiaApp) BlockedAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
-		// The provision pool is not blocked from receiving funds.
-		// NOTE: because of this, the provision pool must be explicitly
-		// initialized as a module account during bootstrap to avoid
-		// implicit creation as a default accunt when funds are received.
-		if acc == vbanktypes.ProvisionPoolName {
+		// The provision and reserve pools are not blocked from receiving funds.
+		// NOTE: because of this, these pools must be explicitly
+		// initialized as module accounts during bootstrap to avoid
+		// implicit creation as a default account when funds are received.
+		switch acc {
+		case vbanktypes.ProvisionPoolName, vbanktypes.ReservePoolName:
 			continue
 		}
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
