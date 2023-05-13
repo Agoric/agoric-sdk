@@ -63,7 +63,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
    *
    * @param {{
    *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined) => OfferSpec,
-   *   sendFrom: string,
+   *   sendFrom?: string | undefined,
    *   instanceName?: string,
    * }} detail
    * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
@@ -208,7 +208,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
     });
 
   ec.command('find-continuing-ids')
-    .description('find ids of proposing, voting continuing invitations')
+    .description('print records of voting continuing invitations')
     .requiredOption(
       '--from <name-or-address>',
       'from address',
@@ -230,7 +230,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       'index of one position to vote for (within the question description.positions); ',
       Number,
     )
-    .option(
+    .requiredOption(
       '--send-from <name-or-address>',
       'Send from address',
       normalizeAddress,
@@ -258,6 +258,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
           it => it.instance === agoricNames.instance.economicCommittee,
         );
         if (!votingRight) {
+          console.debug('continuing ids', cont, 'for', current);
           throw new CommanderError(
             1,
             'NO_INVITATION',
