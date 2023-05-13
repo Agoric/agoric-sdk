@@ -243,7 +243,7 @@ const startGovernedInstance = async (
     E(governorFacets.creatorFacet).getAdminFacet(),
   ]);
   /** @type {GovernanceFacetKit<SF>} */
-  const facets = {
+  const facets = harden({
     instance,
     publicFacet,
     governor: governorFacets.instance,
@@ -251,7 +251,7 @@ const startGovernedInstance = async (
     adminFacet,
     governorCreatorFacet: governorFacets.creatorFacet,
     governorAdminFacet: governorFacets.adminFacet,
-  };
+  });
   return facets;
 };
 
