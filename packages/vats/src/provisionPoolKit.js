@@ -324,7 +324,11 @@ export const prepareProvisionPoolKit = (
               throw reason;
             });
         },
-        start() {
+        /**
+         * @param {object} [options]
+         * @param {MetricsNotification} [options.metrics]
+         */
+        start({ metrics } = {}) {
           const {
             state: { brandToPSM, poolBrand },
             facets: { helper },
@@ -378,6 +382,24 @@ export const prepareProvisionPoolKit = (
               },
             },
           );
+
+          if (metrics) {
+            // Restore state, but don't publishMetrics()
+            // because that already happened in the last incarnation.
+            const {
+              walletsProvisioned,
+              totalMintedProvided,
+              totalMintedConverted,
+            } = metrics;
+            assert.typeof(walletsProvisioned, 'bigint');
+            AmountMath.coerce(poolBrand, totalMintedProvided);
+            AmountMath.coerce(poolBrand, totalMintedConverted);
+            Object.assign(this.state, {
+              walletsProvisioned,
+              totalMintedProvided,
+              totalMintedConverted,
+            });
+          }
         },
         /**
          * @param {ERef<Payment>} payIn
@@ -410,11 +432,6 @@ export const prepareProvisionPoolKit = (
         },
       },
     },
-    {
-      finish: ({ facets }) => {
-        facets.helper.publishMetrics();
-      },
-    },
   );
 
   /**
@@ -423,18 +440,28 @@ export const prepareProvisionPoolKit = (
    * @param {object} opts
    * @param {Brand} opts.poolBrand
    * @param {ERef<StorageNode>} opts.storageNode
+   * @param {boolean} [opts.isRevived]
    */
-  const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
+  const makeProvisionPoolKit = async ({
+    poolBrand,
+    storageNode,
+    isRevived,
+  }) => {
     /** @type {Purse<'nat'>} */
     // @ts-expect-error vbank purse is close enough for our use.
     const fundPurse = await E(poolBank).getPurse(poolBrand);
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 
-    return makeProvisionPoolKitInternal({
+    const kit = makeProvisionPoolKitInternal({
       fundPurse,
       poolBrand,
       metricsNode,
     });
+    // Publish initial metrics (but don't republish revived metrics).
+    if (!isRevived) {
+      kit.helper.publishMetrics();
+    }
+    return kit;
   };
 
   return makeProvisionPoolKit;

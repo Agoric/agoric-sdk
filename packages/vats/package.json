@@ -46,7 +46,8 @@
     "@endo/import-bundle": "^0.3.4",
     "@endo/init": "^0.5.56",
     "@endo/marshal": "^0.8.5",
-    "@endo/promise-kit": "^0.2.56"
+    "@endo/promise-kit": "^0.2.56",
+    "jessie.js": "^0.3.2"
   },
   "devDependencies": {
     "@agoric/cosmic-swingset": "^0.39.2",

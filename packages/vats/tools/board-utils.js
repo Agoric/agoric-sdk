@@ -116,7 +116,7 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
       ),
     ]);
   };
-  return harden({ getItem, children, has: k => vsMap.has(k) });
+  return harden({ getItem, children, has: k => vsMap.get(k) !== undefined });
 };
 
 /**

@@ -1,4 +1,5 @@
 // @ts-check
+import { makeMap } from 'jessie.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer, VBankAccount } from '@agoric/internal';
@@ -7,6 +8,7 @@ import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   makeHistoryReviver,
+  makeBoardRemote,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
 import { Stable } from '../tokens.js';
@@ -71,8 +73,10 @@ export const startWalletFactory = async (
   },
   { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
-  const WALLET_STORAGE_PATH = 'wallet';
-  const POOL_STORAGE_PATH = 'provisionPool';
+  const WALLET_STORAGE_PATH_SEGMENT = 'wallet';
+  const POOL_STORAGE_PATH_SEGMENT = 'provisionPool';
+  const OLD_WALLET_STORAGE_PATH = 'published.wallet';
+  const OLD_POOL_METRICS_STORAGE_PATH = 'published.provisionPool.metrics';
   const [walletBridgeManager, provisionWalletBridgeManager, poolAddr] =
     await Promise.all([
       walletBridgeManagerP,
@@ -99,20 +103,39 @@ export const startWalletFactory = async (
     feeBrand,
     feeIssuer,
   ] = await Promise.all([
-    makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH),
-    makeStorageNodeChild(chainStorage, POOL_STORAGE_PATH),
+    makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH_SEGMENT),
+    makeStorageNodeChild(chainStorage, POOL_STORAGE_PATH_SEGMENT),
     namesByAddressAdminP,
     feeBrandP,
     feeIssuerP,
   ]);
 
-  // Carry forward wallets with an address already in chain storage.
+  // Restore metrics with updated brand references.
   const dataReviver = makeHistoryReviver(
     chainStorageEntries,
     slotToBoardRemote,
   );
-  const walletStoragePath = await E(walletStorageNode).getPath();
-  const oldAddresses = dataReviver.children(`${walletStoragePath}.`);
+
+  const reviveOldMetrics = () => {
+    if (!dataReviver.has(OLD_POOL_METRICS_STORAGE_PATH)) {
+      return undefined;
+    }
+    const oldPoolMetrics = dataReviver.getItem(OLD_POOL_METRICS_STORAGE_PATH);
+    const newBrandFromOldSlotID = makeMap([
+      [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), feeBrand],
+    ]);
+    const brandReviver = makeHistoryReviver(
+      chainStorageEntries,
+      (slotID, iface) => {
+        const newBrand = newBrandFromOldSlotID.get(slotID);
+        return newBrand || makeBoardRemote({ boardId: slotID, iface });
+      },
+    );
+    return brandReviver.getItem(OLD_POOL_METRICS_STORAGE_PATH);
+  };
+
+  // Carry forward wallets with an address already in chain storage.
+  const oldAddresses = dataReviver.children(`${OLD_WALLET_STORAGE_PATH}.`);
 
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({
@@ -122,6 +145,7 @@ export const startWalletFactory = async (
       poolBank,
       storageNode: poolStorageNode,
       marshaller: await E(board).getPublishingMarshaller(),
+      metricsOverride: reviveOldMetrics(),
     }),
     label: 'provisionPool',
     governedParams: {
