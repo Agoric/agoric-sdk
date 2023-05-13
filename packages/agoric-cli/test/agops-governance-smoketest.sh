@@ -34,10 +34,7 @@ agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # vote on the question that was made
-VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
-agoric wallet print --file "$VOTE_OFFER"
-agoric wallet send --offer "$VOTE_OFFER" --from gov1 --keyring-backend="test"
+bin/agops ec vote --forPosition 0 --send-from gov1 --keyring-backend="test" "$COMMITTEE_OFFER_ID"
 ## wait for the election to be resolved (1m in commands/psm.js)
 
 # FIXME this one failing with: Error: cannot grab 10002ibc/toyellie coins: 0ibc/toyellie is smaller than 10002ibc/toyellie: insufficient funds
@@ -67,10 +64,7 @@ agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test
 # agoric -B $networkConfig follow published.committees.Economic_Committee.latestQuestion
 
 # vote on the question that was made
-VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
-agoric wallet print --file "$VOTE_OFFER"
-agoric wallet send --offer "$VOTE_OFFER" --from gov1 --keyring-backend="test"
+bin/agops ec vote --forPosition 0 --send-from gov1 --keyring-backend="test" "$COMMITTEE_OFFER_ID"
 ## wait for the election to be resolved (1m default in commands/psm.js)
 
 # to see the new MintLimit
@@ -83,7 +77,4 @@ agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # Vote for the API call
-VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
-agoric wallet print --file "$VOTE_OFFER"
-agoric wallet send --offer "$VOTE_OFFER" --from gov1 --keyring-backend="test"
+bin/agops ec vote --forPosition 0 --send-from gov1 --keyring-backend="test" "$COMMITTEE_OFFER_ID"

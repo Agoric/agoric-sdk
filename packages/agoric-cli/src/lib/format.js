@@ -137,9 +137,10 @@ export const offerStatusTuples = (state, agoricNames) => {
     assert(o);
     let when = '??';
     try {
-      when = new Date(o.id).toISOString();
+      const timestamp = String(o.id).replace(/\D+/g, '');
+      when = new Date(Number(timestamp)).toISOString();
     } catch {
-      console.debug('offer id', o.id, 'not a timestamp');
+      console.debug('offer id', o.id, 'does not contain a timestamp');
     }
     const {
       proposal: { give, want },

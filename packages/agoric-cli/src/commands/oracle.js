@@ -65,7 +65,12 @@ export const makeOracleCommand = logger => {
       s => s.split('.'),
       ['ATOM', 'USD'],
     )
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option(
+      '--offerId <string>',
+      'Offer id',
+      String,
+      `oracleAccept-${Date.now()}`,
+    )
     .action(async function (opts) {
       const { lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
@@ -92,13 +97,13 @@ export const makeOracleCommand = logger => {
   oracle
     .command('pushPrice')
     .description('add a current price sample to a priceAggregator')
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option('--offerId <string>', 'Offer id', String, `pushPrice-${Date.now()}`)
     .requiredOption(
-      '--oracleAdminAcceptOfferId [number]',
+      '--oracleAdminAcceptOfferId <number>',
       'offer that had continuing invitation result',
       Number,
     )
-    .requiredOption('--price [number]', 'price (format TODO)', String)
+    .requiredOption('--price <number>', 'price (format TODO)', String)
     .action(async function (opts) {
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
@@ -123,14 +128,19 @@ export const makeOracleCommand = logger => {
   oracle
     .command('pushPriceRound')
     .description('add a price for a round to a fluxAggregator')
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option(
+      '--offerId <string>',
+      'Offer id',
+      String,
+      `pushPriceRound-${Date.now()}`,
+    )
     .requiredOption(
-      '--oracleAdminAcceptOfferId [number]',
+      '--oracleAdminAcceptOfferId <number>',
       'offer that had continuing invitation result',
       Number,
     )
-    .requiredOption('--price [number]', 'price', Number)
-    .option('--roundId [number]', 'round', Number)
+    .requiredOption('--price <number>', 'price', Number)
+    .option('--roundId <number>', 'round', Number)
     .action(async function (opts) {
       const unitPrice = scaleDecimals(opts.price);
       const roundId = 'roundId' in opts ? Nat(opts.roundId) : undefined;

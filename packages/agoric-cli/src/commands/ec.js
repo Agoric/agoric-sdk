@@ -7,11 +7,11 @@ import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
 import {
+  findContinuingIds,
   getCurrent,
   getLastUpdate,
   outputActionAndHint,
   sendAction,
-  findContinuingIds,
 } from '../lib/wallet.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
@@ -63,7 +63,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
    *
    * @param {{
    *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined) => OfferSpec,
-   *   sendFrom: string,
+   *   sendFrom?: string | undefined,
    *   instanceName?: string,
    * }} detail
    * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
@@ -129,9 +129,9 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
   ec.command('committee')
     .description('accept invitation to join the economic committee')
-    .option('--voter [number]', 'Voter number', Number, 0)
+    .option('--voter <number>', 'Voter number', Number, 0)
     .option(
-      '--offerId [string]',
+      '--offerId <string>',
       'Offer id',
       String,
       `ecCommittee-${Date.now()}`,
@@ -172,7 +172,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
   ec.command('charter')
     .description('accept the charter invitation')
-    .option('--offerId [string]', 'Offer id', String, `ecCharter-${Date.now()}`)
+    .option('--offerId <string>', 'Offer id', String, `ecCharter-${Date.now()}`)
     .option(
       '--send-from <name-or-address>',
       'Send from address',
@@ -207,8 +207,34 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       });
     });
 
+  ec.command('find-continuing-id')
+    .description('print id of specified voting continuing invitation')
+    .requiredOption(
+      '--from <name-or-address>',
+      'from address',
+      normalizeAddress,
+    )
+    .requiredOption('--for <string>', 'description of the invitation')
+    .action(async opts => {
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+      const current = await getCurrent(opts.from, { readLatestHead });
+
+      const known = findContinuingIds(current, agoricNames);
+      if (!known) {
+        console.error('No continuing ids found');
+        return;
+      }
+      const match = known.find(r => r.description === opts.for);
+      if (!match) {
+        console.error(`No match found for '${opts.for}'`);
+        return;
+      }
+
+      console.log(match.offerId);
+    });
+
   ec.command('find-continuing-ids')
-    .description('find ids of proposing, voting continuing invitations')
+    .description('print records of voting continuing invitations')
     .requiredOption(
       '--from <name-or-address>',
       'from address',
@@ -224,13 +250,13 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
   ec.command('vote')
     .description('vote on a question (hard-coded for now))')
-    .option('--offerId [number]', 'Offer id', String, `ecVote-${Date.now()}`)
+    .option('--offerId <number>', 'Offer id', String, `ecVote-${Date.now()}`)
     .requiredOption(
-      '--forPosition [number]',
+      '--forPosition <number>',
       'index of one position to vote for (within the question description.positions); ',
       Number,
     )
-    .option(
+    .requiredOption(
       '--send-from <name-or-address>',
       'Send from address',
       normalizeAddress,
@@ -258,6 +284,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
           it => it.instance === agoricNames.instance.economicCommittee,
         );
         if (!votingRight) {
+          console.debug('continuing ids', cont, 'for', current);
           throw new CommanderError(
             1,
             'NO_INVITATION',

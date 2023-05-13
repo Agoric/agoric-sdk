@@ -31,11 +31,11 @@ export const makePerfCommand = logger => {
   const perf = new Command('perf')
     .description('Performance testing commands')
     .option(
-      '--keyring-backend [string]',
+      '--keyring-backend <string>',
       'Select keyring’s backend (os|file|kwallet|pass|test|memory) (default "os")',
       'os',
     )
-    .option('--home [string]', 'directory for config and data');
+    .option('--home <string>', 'directory for config and data');
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, perf.opts());
 
@@ -47,7 +47,7 @@ export const makePerfCommand = logger => {
     )
     .description('filename of prepared offer')
     .requiredOption(
-      '--from [address]',
+      '--from <address>',
       'address literal or name',
       normalizeAddress,
     )

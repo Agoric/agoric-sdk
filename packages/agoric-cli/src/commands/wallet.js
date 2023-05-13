@@ -28,9 +28,9 @@ const SLEEP_SECONDS = 3;
 export const makeWalletCommand = async () => {
   const wallet = new Command('wallet')
     .description('wallet commands')
-    .option('--home [dir]', 'agd application home directory')
+    .option('--home <dir>', 'agd application home directory')
     .option(
-      '--keyring-backend [os|file|test]',
+      '--keyring-backend <os|file|test>',
       'keyring\'s backend (os|file|test) (default "os")',
     );
 
@@ -46,7 +46,7 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .option('--spend', 'confirm you want to spend')
-    .option('--nickname [string]', 'nickname to use', 'my-wallet')
+    .option('--nickname <string>', 'nickname to use', 'my-wallet')
     .action(function (opts) {
       const { account, nickname, spend } = opts;
       const { home, keyringBackend: backend } = wallet.opts();

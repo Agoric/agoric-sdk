@@ -149,10 +149,10 @@ export const makePsmCommand = logger => {
     )
     // wantMinted and giveMinted options conflict.
     // TODO use .conflicts() after https://github.com/Agoric/agoric-sdk/issues/6181
-    .option('--wantMinted [DOLLARS]', 'amount of anchor tokens to give', Number)
-    .option('--giveMinted [DOLLARS]', 'amount of minted tokens to give', Number)
+    .option('--wantMinted <DOLLARS>', 'amount of anchor tokens to give', Number)
+    .option('--giveMinted <DOLLARS>', 'amount of minted tokens to give', Number)
     .option('--feePct [%]', 'Gas fee percentage', Number)
-    .option('--offerId [string]', 'Offer id', String, `swap-${Date.now()}`)
+    .option('--offerId <string>', 'Offer id', String, `swap-${Date.now()}`)
     .action(async function (
       /** @type {Parameters<typeof Offers.psm.swap>[2]} */ opts,
     ) {
@@ -167,7 +167,7 @@ export const makePsmCommand = logger => {
     .command('proposePauseOffers')
     .description('propose a vote')
     .option(
-      '--offerId [string]',
+      '--offerId <string>',
       'Offer id',
       String,
       `proposePauseOffers-${Date.now()}`,
@@ -179,17 +179,17 @@ export const makePsmCommand = logger => {
       ['IST', 'AUSD'],
     )
     .requiredOption(
-      '--charterAcceptOfferId [string]',
+      '--charterAcceptOfferId <string>',
       'offer that had continuing invitation result',
     )
     .requiredOption(
-      '--substring [string]',
+      '--substring <string>',
       'an offer string to pause (can be repeated)',
       collectValues,
       [],
     )
     .option(
-      '--deadline [minutes]',
+      '--deadline <minutes>',
       'minutes from now to close the vote',
       Number,
       1,
@@ -224,7 +224,7 @@ export const makePsmCommand = logger => {
     .command('proposeChangeMintLimit')
     .description('propose to change the MintLimit parameter')
     .option(
-      '--offerId [string]',
+      '--offerId <string>',
       'id of this offer (optional)',
       String,
       `proposeChangeMintLimit-${Date.now()}`,
@@ -236,12 +236,12 @@ export const makePsmCommand = logger => {
       ['IST', 'AUSD'],
     )
     .requiredOption(
-      '--previousOfferId [string]',
+      '--previousOfferId <string>',
       'offer using psm charter invitation',
     )
-    .requiredOption('--limit [number]', 'new mint limit (in IST)', Number)
+    .requiredOption('--limit <number>', 'new mint limit (in IST)', Number)
     .option(
-      '--deadline [minutes]',
+      '--deadline <minutes>',
       'minutes from now to close the vote',
       Number,
       1,

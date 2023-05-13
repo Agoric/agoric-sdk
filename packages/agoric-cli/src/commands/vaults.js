@@ -20,7 +20,7 @@ export const makeVaultsCommand = logger => {
     .description('Vault Factory commands')
     .option('--home [dir]', 'agd application home directory')
     .option(
-      '--keyring-backend [os|file|test]',
+      '--keyring-backend <os|file|test>',
       'keyring\'s backend (os|file|test) (default "os")',
     );
 
@@ -57,10 +57,10 @@ export const makeVaultsCommand = logger => {
   vaults
     .command('open')
     .description('open a new vault')
-    .requiredOption('--giveCollateral [number]', 'Collateral to give', Number)
-    .requiredOption('--wantMinted [number]', 'Minted wants', Number)
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .option('--collateralBrand [string]', 'Collateral brand key', 'ATOM')
+    .requiredOption('--giveCollateral <number>', 'Collateral to give', Number)
+    .requiredOption('--wantMinted <number>', 'Minted wants', Number)
+    .option('--offerId <string>', 'Offer id', String, `openVault-${Date.now()}`)
+    .option('--collateralBrand <string>', 'Collateral brand key', 'ATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
       const { agoricNames } = await makeRpcUtils({ fetch });
@@ -84,13 +84,18 @@ export const makeVaultsCommand = logger => {
       'wallet address literal or name',
       normalizeAddress,
     )
-    .option('--giveCollateral [number]', 'More collateral to lend', Number)
-    .option('--wantCollateral [number]', 'Collateral to get back', Number)
-    .option('--giveMinted [number]', 'Minted to give back', Number)
-    .option('--wantMinted [number]', 'More minted to borrow', Number)
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .option('--collateralBrand [string]', 'Collateral brand key', 'ATOM')
-    .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
+    .option('--giveCollateral <number>', 'More collateral to lend', Number)
+    .option('--wantCollateral <number>', 'Collateral to get back', Number)
+    .option('--giveMinted <number>', 'Minted to give back', Number)
+    .option('--wantMinted <number>', 'More minted to borrow', Number)
+    .option(
+      '--offerId <string>',
+      'Offer id',
+      String,
+      `adjustVault-${Date.now()}`,
+    )
+    .option('--collateralBrand <string>', 'Collateral brand key', 'ATOM')
+    .requiredOption('--vaultId <string>', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
       const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
@@ -124,9 +129,14 @@ export const makeVaultsCommand = logger => {
       'wallet address literal or name',
       normalizeAddress,
     )
-    .requiredOption('--giveMinted [number]', 'Minted to give back', Number)
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
+    .requiredOption('--giveMinted <number>', 'Minted to give back', Number)
+    .requiredOption('--vaultId <string>', 'Key of vault (e.g. vault1)')
+    .option(
+      '--offerId <string>',
+      'Offer id',
+      String,
+      `closeVault-${Date.now()}`,
+    )
     .action(async function (opts) {
       logger.warn('running with options', opts);
       const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
