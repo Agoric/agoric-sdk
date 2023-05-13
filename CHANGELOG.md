@@ -13,8 +13,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     * A client for bidding in liquidation auctions
     * Econ committee levers for adjusting vaults parameters
 * Oracle network
-    * Receives stream of asset price updates
-    * May trigger vault liquidation
+    * External oracles push a stream of asset prices
+    * The Vaults contract observe the prices and might trigger liquidation
 * Contracts are now upgradeable
     * Virtualization and durability reduce the memory footprint
 * “Bulldozer” upgrade
