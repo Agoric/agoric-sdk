@@ -65,7 +65,7 @@ sleep 65
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.StartFrequency.value.relValue)" "$START_FREQUENCY"
 
-
+pushPrice 12.01
 
 # echo Open a vault
 # OFFER=$(mktemp -t agops.XXX)
@@ -81,32 +81,4 @@ test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq
 # # TODO
 # # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
 
-
-
-# echo Look up the ids from vstorage.
-# # You can debug the 'for' option with `find-continuing-id` to see the `description` fields
-# CHARTER_OFFER_ID=$(
-#     agops ec find-continuing-id --for "charter member invitation" --from gov1
-# )
-
 # # oracle invitation
-
-# echo Propose a new MintLimit for IST-AUSD
-# NEW_MINT_LIMIT=123456 # IST whole numbers
-# PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-# agops psm proposeChangeMintLimit --limit $NEW_MINT_LIMIT --deadline 1 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
-# # agoric wallet print --file "$PROPOSAL_OFFER"
-# agops perf satisfaction --executeOffer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
-# # agoric follow -F :published.committees.Economic_Committee.latestQuestion
-
-# test_val $(agoric follow -F :published.committees.Economic_Committee.latestQuestion -o jsonlines | jq -r .positions[0].changes.MintLimit.value) 123456000000
-
-# echo Vote to enact the new MintLimit 1000
-# agops ec vote --forPosition 0 --send-from gov1
-# agops ec vote --forPosition 0 --send-from gov2
-# agops ec vote --forPosition 0 --send-from gov3
-
-# # agoric wallet show --from $GOV1ADDR
-
-# # agops psm info
-# test_val $(agoric follow -F :published.psm.IST.AUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value') 123456000000

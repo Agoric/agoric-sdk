@@ -161,14 +161,13 @@ echo ENV_SETUP finished
 pushPrice () {
   newPrice="${1:-10.00}"
   for oracleNum in {1..2}; do
-    echo "Pushing Price from oracle #${oracleNum}"
-
-    if test -f "$HOME/.agoric/lastOracle"; then
-      echo "$GOV2ADDR" > "$HOME/.agoric/lastOracle"
+    if [[ ! -e "$HOME/.agoric/lastOracle" ]]; then
+      echo "$GOV1ADDR" > "$HOME/.agoric/lastOracle"
     fi
 
     lastOracle=$(cat "$HOME/.agoric/lastOracle")
     nextOracle="$GOV1ADDR"
+    echo "Pushing Price from oracle $nextOracle"
     if [[ "$lastOracle" == "$GOV1ADDR" ]]; then
       nextOracle="$GOV2ADDR"
     fi
