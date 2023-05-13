@@ -68,18 +68,50 @@ test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq
 
 pushPrice 12.01
 
-# echo Open a vault
-# OFFER=$(mktemp -t agops.XXX)
-# agops vaults open --wantMinted 5.00 --giveCollateral 9.0 >|"$OFFER"
-# # agoric wallet print --file "$OFFER"
-# agoric wallet send --offer "$OFFER" --from gov1 --keyring-backend="test"
+# vaults
+# attempt to open vaults under the minimum amount
+for vid in {1..2}; do
+    OFFER=$(mktemp -t agops.XXX)
+    if [[ "$vid" == "2" ]]; then
+        amount=3.00
+        collateral=5.0
+    else
+        amount=2.00
+        collateral=4.0
+    fi
+    agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
+    agoric wallet print --file "$OFFER"
+    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test || true
+done
 
-# # should have the vault
-# # VAULT_PATH=$(agops vaults list --from $GOV1ADDR | head -1)
-# # agoric follow -F :$VAULT_PATH
+# we should still have no vaults
+test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
+
+# open up some vaults
+for vid in {1..2}; do
+    OFFER=$(mktemp -t agops.XXX)
+    if [[ "$vid" == "2" ]]; then
+        amount=6.00
+        collateral=10.0
+    else
+        amount=5.00
+        collateral=9.0
+    fi
+    agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
+    agoric wallet print --file "$OFFER"
+    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+done
+
+# remove some collateral from the first vault
+OFFER=$(mktemp -t agops.XXX)
+agops vaults adjust --vaultId vault0 --wantCollateral 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
+# close the second vault
+OFFER=$(mktemp -t agops.XXX)
+agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
 # # TODO test bidding
-# # TODO
+# # TODO liquidations
 # # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
-
-# # oracle invitation
