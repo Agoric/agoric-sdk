@@ -95,6 +95,15 @@ test.serial('re-bootstrap', async t => {
     'agoric1a',
   );
   t.true(wd1.isNew);
+  // eslint-disable-next-line no-unused-vars
+  const assertWalletCount = (walletsProvisioned, message) => {
+    // eslint-disable-next-line no-unused-vars
+    const metrics = oldContext.readLatest('published.provisionPool.metrics');
+    // disabled while wallet provisioning bypasses provisionPool
+    // t.like(metrics, { walletsProvisioned }, message);
+  };
+  // prettier-ignore
+  assertWalletCount(1n, 'wallet provisioning must be recorded in provisionPool metrics');
 
   await oldContext.shutdown();
   const walletPaths = [...storage.data.keys()].filter(path =>
@@ -130,14 +139,20 @@ test.serial('re-bootstrap', async t => {
     const msg = `non-exported storage entries must be purged: ${syntheticPath}`;
     t.is(storage.data.get(syntheticPath), undefined, msg);
   }
+  // prettier-ignore
+  assertWalletCount(1n, 'provisionPool metrics must not be modified by re-bootstrap');
   const wd2 = await newContext.walletFactoryDriver.provideSmartWallet(
     'agoric1a',
   );
   t.false(wd2.isNew);
+  // prettier-ignore
+  assertWalletCount(1n, 'wallet restoration must not affect provisionPool metrics');
   const wd3 = await newContext.walletFactoryDriver.provideSmartWallet(
     'agoric1b',
   );
   t.true(wd3.isNew);
+  // prettier-ignore
+  assertWalletCount(2n, 'new wallet provisioning must update revived provisionPool metrics');
 });
 
 test.serial('audit bootstrap exports', async t => {
