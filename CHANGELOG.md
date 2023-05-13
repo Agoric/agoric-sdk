@@ -5,6 +5,73 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## Unreleased
 
+## Mainnet1B (agoric-upgrade-10)
+
+* Vaults
+    * Contract to mint IST from locked collateral
+    * Contract for auctions liquidating vaults with insufficient collateral
+    * A client for bidding in liquidation auctions
+    * Econ committee levers for adjusting vaults parameters
+* Oracle network
+    * Receives stream of asset price updates
+    * May trigger vault liquidation
+* Contracts are now upgradeable
+    * Virtualization and durability reduce the memory footprint
+* “Bulldozer” upgrade
+    * Rebuilds Swingset state from scratch
+    * Future upgrades will preserve stored Swingset state
+* State sync
+    * Cosmos state sync now works for Swingset state
+    * Much faster synchronization for new or recovering validator nodes
+* Bundles
+    * higher fee for bytes in permanent storage
+    * compressed in transit to surpass 1MB transaction size limit
+* Significant scalability and performance improvements throughout
+* Critical messages are prioritized in the Swingset inbound queue
+* liveslots, xsnap-lockdown, xsnap-supervisor moved to separate packages
+    * old vats keep using old versions despite those packages being upgraded
+    * new/upgraded vats automatically use latest liveslots/lockdown/supervisor code
+* swing-store consolidated into a single SQLite DB
+    * XS/xsnap heap snapshots included in DB and in consensus
+    * bundles and transcript items moved from kvStore to separate SQL table
+    * prepare for compressing/deleting old transcript spans, old snapshots
+* swing-store import/export to support state-sync
+    * a swing-store can be exported to a hashed tree, and imported from the same
+    * this supports cosmos-sdk state-sync snapshots
+* overhaul transcript handling
+    * add incarnation number to transcript store records
+    * include init-worker, load/save-snapshot in transcripts
+* switch to smallcaps encoding for all serialized data: smaller, faster
+* vat userspace -visible changes:
+    * `buildRootObject()` must return an ephemeral, not a durable
+    * remotables are accepted in virtual-collection keyShape/valueShape
+    * also in virtual-object stateShape, and they are now refcounted correctly
+    * Kind upgrades can add new facets (but only to already-multi-faceted Kinds)
+* vat liveslots-layer changes:
+    * `vatstore.getNext()` replaces `.getAfter()`
+    * rewrite VOM LRU cache, remove `virtualObjectCacheSize`
+    * changes vatstore access patterns to remove syscall sensitivity to GC timing
+    * vref format now includes virtual/durable annotation, helps kernel do cleanup
+* vat upgrade no longer relies on stopVat, but does a final BOYD to clean up
+* XS workers are reloaded during save-snapshot, to re-optimize memory layout
+    * this "spring cleaning" should let the worker run faster
+* vat-timer now emits branded timestamps, API overhauled
+    * only uses one device wakeup, to avoid memory leaks in device-timer
+* kernel only preloads `maxVatsOnline/2` vats, let sleeping vats lie
+* removed Meter-underflow Notifiers until we can make them durable
+* remove unused worker types: node-worker and subprocess-node
+* all swingset built-in vats (at least the ones we use) are upgradable
+* `defaultManagerType xsnap` is preferred to `xs-worker`
+* tell runPolicy about computrons in BOYD and failed deliveries
+* A `bin/agd` script transparently builds the system for use with Cosmovisor
+* Golang version 1.20 required
+* The smart wallet provisioning account will be converted to a module account
+* Cosmos-SDK updates
+    * Still based on cosmos/cosmos-sdk v0.45.11
+    * Cosmovisor enhancements to handle Github zip archives
+    * Various changes to support state sync
+* Tendermint and IBC unchanged from pismoC release
+
 ## Pismo-C (agoric-upgrade-9)
 
 * SwingSet: improve transcript replay tools
