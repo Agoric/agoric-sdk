@@ -47,9 +47,10 @@ source "$HOME/.agoric/envs"
 
 START_FREQUENCY=600 #StartFrequency: 600s (auction runs every 10m)
 CLOCK_STEP=20 #ClockStep: 20s (ensures auction completes in time)
+PRICE_LOCK_PERIOD=300
 
 FASTER_AUCTIONS_OFFER=$(mktemp -t agops.XXX)
-agops auctioneer proposeParamChange --charterAcceptOfferId "$(agops ec find-continuing-id --for "charter member invitation" --from "$GOV1ADDR")" --start-frequency $START_FREQUENCY --clock-step $CLOCK_STEP >|"$FASTER_AUCTIONS_OFFER"
+agops auctioneer proposeParamChange --charterAcceptOfferId "$(agops ec find-continuing-id --for "charter member invitation" --from "$GOV1ADDR")" --start-frequency $START_FREQUENCY --clock-step $CLOCK_STEP --price-lock-period $PRICE_LOCK_PERIOD >|"$FASTER_AUCTIONS_OFFER"
 agoric wallet print --file "$FASTER_AUCTIONS_OFFER"
 agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$FASTER_AUCTIONS_OFFER" --keyring-backend=test
 
