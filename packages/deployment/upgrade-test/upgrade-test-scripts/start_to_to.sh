@@ -12,8 +12,6 @@ if [[ "$DEST" == "1" ]] && [[ "$TMUX" == "" ]]; then
   exit 0
 fi
 
-
-set -e
 . ./upgrade-test-scripts/env_setup.sh
 
 agd start --log_level warn &
