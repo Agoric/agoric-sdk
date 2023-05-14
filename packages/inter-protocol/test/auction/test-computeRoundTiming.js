@@ -20,7 +20,7 @@ const makeDefaultParams = ({
   /** @type {import('@agoric/time').TimerBrand} */
   const timerBrand = Far('timerBrand');
 
-  return {
+  return /** @type {Awaited<import('../../src/auction/params.js').AuctionParamManaager>} */ ({
     getStartFrequency: () =>
       TimeMath.coerceRelativeTimeRecord(freq, timerBrand),
     getClockStep: () => TimeMath.coerceRelativeTimeRecord(step, timerBrand),
@@ -31,12 +31,12 @@ const makeDefaultParams = ({
     getLowestRate: () => lowest,
     getAuctionStartDelay: () =>
       TimeMath.coerceRelativeTimeRecord(delay, timerBrand),
-  };
+  });
 };
 
 /**
  * @param {any} t
- * @param {ReturnType<makeDefaultParams>} params
+ * @param {ReturnType<typeof makeDefaultParams>} params
  * @param {number} baseTime
  * @param {any} rawExpect
  */
@@ -64,7 +64,7 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
 
 /**
  * @param {any} t
- * @param {ReturnType<makeDefaultParams>} params
+ * @param {ReturnType<typeof makeDefaultParams>} params
  * @param {number} baseTime
  * @param {any} expectMessage  XXX should be {ThrowsExpectation}
  */
