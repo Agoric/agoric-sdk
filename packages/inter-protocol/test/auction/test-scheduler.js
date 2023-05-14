@@ -344,6 +344,427 @@ test('zero time for auction', async t => {
   );
 });
 
+test('debug52', async t => {
+  //#region copy of schedule start to finish
+  const { zcf, zoe } = await setupZCFTest();
+  const installations = await setUpInstallations(zoe);
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
+  const timer = buildManualTimer();
+  const timerBrand = await timer.getTimerBrand();
+
+  const fakeAuctioneer = makeFakeAuctioneer();
+  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
+
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
+
+  const scheduleTracker = await subscriptionTracker(
+    t,
+    subscribeEach(recorderKit.subscriber),
+  );
+  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
+  defaultParams = {
+    ...defaultParams,
+    AuctionStartDelay: 1n,
+    StartFreq: 10n,
+    PriceLockPeriod: 5n,
+  };
+  console.log({ defaultParams });
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
+
+  /** @type {bigint} */
+  let now = await timer.advanceTo(127n);
+
+  const { publisher } = makeGovernancePublisherFromFakes();
+  const paramManager = await makeAuctioneerParamManager(
+    // @ts-expect-error test fakes
+    { publisher, subscriber: null },
+    zcf,
+    paramValues,
+  );
+
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+  );
+  {
+    const schedule = scheduler.getSchedule();
+    t.deepEqual(schedule.liveAuctionSchedule, undefined);
+    const firstSchedule = {
+      startTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(135n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(126n, timerBrand),
+    };
+    t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
+
+    t.false(fakeAuctioneer.getState().final);
+    t.is(fakeAuctioneer.getState().step, 0);
+    t.false(fakeAuctioneer.getState().lockedPrices);
+
+    now = await timer.advanceTo(now + 1n);
+
+    t.is(fakeAuctioneer.getState().step, 0);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    await scheduleTracker.assertInitial({
+      activeStartTime: undefined,
+      nextDescendingStepTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+      nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+    });
+
+    now = await timer.advanceTo(130n);
+    await eventLoopIteration();
+    now = await timer.advanceTo(now + 1n);
+    await scheduleTracker.assertChange({
+      activeStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+      nextStartTime: { absValue: 141n },
+    });
+
+    const schedule2 = scheduler.getSchedule();
+    t.deepEqual(schedule2.liveAuctionSchedule, firstSchedule);
+    t.deepEqual(schedule2.nextAuctionSchedule, {
+      startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(136, timerBrand),
+    });
+
+    t.is(fakeAuctioneer.getState().step, 1);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // xxx I shouldn't have to tick twice.
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+    await eventLoopIteration();
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 133n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 2);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // final step
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+    await eventLoopIteration();
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 135n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 3);
+    t.true(fakeAuctioneer.getState().final);
+    t.false(fakeAuctioneer.getState().lockedPrices);
+
+    // Auction finished, nothing else happens
+    now = await timer.advanceTo(now + 1n);
+    await scheduleTracker.assertChange({
+      activeStartTime: undefined,
+      nextDescendingStepTime: { absValue: 141n },
+    });
+    now = await timer.advanceTo(now + 1n);
+
+    t.is(fakeAuctioneer.getState().step, 3);
+    t.true(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
+
+    const finalSchedule = scheduler.getSchedule();
+    t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+    const secondSchedule = {
+      startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(136n, timerBrand),
+    };
+    t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
+
+    now = await timer.advanceTo(140n);
+    await scheduleTracker.assertChange({
+      activeStartTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+      nextStartTime: { absValue: 151n },
+    });
+
+    t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+    t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
+
+    now = await timer.advanceTo(now + 1n);
+    await eventLoopIteration();
+
+    const schedule3 = scheduler.getSchedule();
+    t.deepEqual(schedule3.liveAuctionSchedule, secondSchedule);
+    t.deepEqual(schedule3.nextAuctionSchedule, {
+      startTime: TimeMath.coerceTimestampRecord(151n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(155n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(146n, timerBrand),
+    });
+
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 143n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 4);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // xxx I shouldn't have to tick twice.
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 145n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 5);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // final step
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+
+    t.is(fakeAuctioneer.getState().step, 6);
+    t.true(fakeAuctioneer.getState().final);
+    t.false(fakeAuctioneer.getState().lockedPrices);
+
+    // Auction finished, nothing else happens
+    now = await timer.advanceTo(now + 1n);
+    await timer.advanceTo(now + 1n);
+
+    await scheduleTracker.assertChange({
+      activeStartTime: undefined,
+      nextDescendingStepTime: { absValue: 151n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 6);
+    t.true(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
+  }
+  //#endregion
+
+  // try to break the scheduler
+  await paramManager.updateParams(
+    harden({
+      // bigger than StartFreq to trigger errror
+      PriceLockPeriod: { timerBrand, relValue: 15n },
+    }),
+  );
+  now = await timer.advanceTo(now + 1000n); // way into the future
+  await eventLoopIteration();
+
+  console.log('DEBUG one');
+  now = await timer.advanceTo(now + defaultParams.StartFreq + 1n);
+  await eventLoopIteration();
+
+  console.log('DEBUG two');
+  now = await timer.advanceTo(now + defaultParams.StartFreq + 1n);
+  await eventLoopIteration();
+
+  console.log('DEBUG three');
+  now = await timer.advanceTo(now + defaultParams.StartFreq + 1n);
+  await eventLoopIteration();
+
+  //#region copied again
+  {
+    const schedule = scheduler.getSchedule();
+    t.deepEqual(schedule.liveAuctionSchedule, undefined);
+    const firstSchedule = {
+      startTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(135n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(126n, timerBrand),
+    };
+    // t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
+
+    t.false(fakeAuctioneer.getState().final);
+    t.is(fakeAuctioneer.getState().step, 0);
+    // t.false(fakeAuctioneer.getState().lockedPrices);
+
+    now = await timer.advanceTo(now + 1n);
+
+    // t.is(fakeAuctioneer.getState().step, 0);
+    // t.false(fakeAuctioneer.getState().final);
+    // t.true(fakeAuctioneer.getState().lockedPrices);
+
+    await scheduleTracker.assertInitial({
+      activeStartTime: undefined,
+      nextDescendingStepTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+      nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+    });
+
+    now = await timer.advanceTo(130n);
+    await eventLoopIteration();
+    now = await timer.advanceTo(now + 1n);
+    await scheduleTracker.assertChange({
+      activeStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
+      nextStartTime: { absValue: 141n },
+    });
+
+    const schedule2 = scheduler.getSchedule();
+    t.deepEqual(schedule2.liveAuctionSchedule, firstSchedule);
+    t.deepEqual(schedule2.nextAuctionSchedule, {
+      startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(136, timerBrand),
+    });
+
+    t.is(fakeAuctioneer.getState().step, 1);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // xxx I shouldn't have to tick twice.
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+    await eventLoopIteration();
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 133n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 2);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // final step
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+    await eventLoopIteration();
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 135n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 3);
+    t.true(fakeAuctioneer.getState().final);
+    t.false(fakeAuctioneer.getState().lockedPrices);
+
+    // Auction finished, nothing else happens
+    now = await timer.advanceTo(now + 1n);
+    await scheduleTracker.assertChange({
+      activeStartTime: undefined,
+      nextDescendingStepTime: { absValue: 141n },
+    });
+    now = await timer.advanceTo(now + 1n);
+
+    t.is(fakeAuctioneer.getState().step, 3);
+    t.true(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
+
+    const finalSchedule = scheduler.getSchedule();
+    t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+    const secondSchedule = {
+      startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(136n, timerBrand),
+    };
+    t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
+
+    now = await timer.advanceTo(140n);
+    await scheduleTracker.assertChange({
+      activeStartTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
+      nextStartTime: { absValue: 151n },
+    });
+
+    t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+    t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
+
+    now = await timer.advanceTo(now + 1n);
+    await eventLoopIteration();
+
+    const schedule3 = scheduler.getSchedule();
+    t.deepEqual(schedule3.liveAuctionSchedule, secondSchedule);
+    t.deepEqual(schedule3.nextAuctionSchedule, {
+      startTime: TimeMath.coerceTimestampRecord(151n, timerBrand),
+      endTime: TimeMath.coerceTimestampRecord(155n, timerBrand),
+      steps: 2n,
+      endRate: 6500n,
+      startDelay: TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      clockStep: TimeMath.coerceRelativeTimeRecord(2n, timerBrand),
+      lockTime: TimeMath.coerceTimestampRecord(146n, timerBrand),
+    });
+
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 143n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 4);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // xxx I shouldn't have to tick twice.
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 145n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 5);
+    t.false(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    // final step
+    now = await timer.advanceTo(now + 1n);
+    now = await timer.advanceTo(now + 1n);
+
+    t.is(fakeAuctioneer.getState().step, 6);
+    t.true(fakeAuctioneer.getState().final);
+    t.false(fakeAuctioneer.getState().lockedPrices);
+
+    // Auction finished, nothing else happens
+    now = await timer.advanceTo(now + 1n);
+    await timer.advanceTo(now + 1n);
+
+    await scheduleTracker.assertChange({
+      activeStartTime: undefined,
+      nextDescendingStepTime: { absValue: 151n },
+    });
+
+    t.is(fakeAuctioneer.getState().step, 6);
+    t.true(fakeAuctioneer.getState().final);
+    t.true(fakeAuctioneer.getState().lockedPrices);
+
+    t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
+  }
+  //#endregion
+});
+
 test('discountStep 0', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
