@@ -62,7 +62,8 @@ sleep 65
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.StartFrequency.value.relValue)" "$START_FREQUENCY"
 
-pushPrice 12.01
+# DEBUGGING omit pushPrice so the build steps that await vault actions will wait forever
+# pushPrice 12.01
 
 # vaults
 # attempt to open vaults under the minimum amount
