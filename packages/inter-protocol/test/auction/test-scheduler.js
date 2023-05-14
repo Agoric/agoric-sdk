@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { subscribeEach } from '@agoric/notifier';
+import { subscribeEach, makePublishKit } from '@agoric/notifier';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 import { prepareMockRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
@@ -66,12 +66,15 @@ test('schedule start to finish', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. Wrong kind of subscriber.
+    subscriber,
   );
   const schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
@@ -279,17 +282,17 @@ test('lowest >= starting', async t => {
     paramValues,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-      ),
-    { message: /startingRate "\[105n]" must be more than lowest: "\[110n]"/ },
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, undefined);
 });
 
 test('zero time for auction', async t => {
@@ -328,20 +331,17 @@ test('zero time for auction', async t => {
     paramValues,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-      ),
-    {
-      message:
-        /clockStep "\[3n]" must be shorter than startFrequency "\[2n]" to allow at least one step down/,
-    },
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, undefined);
 });
 
 test('discountStep 0', async t => {
@@ -377,6 +377,7 @@ test('discountStep 0', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -385,6 +386,8 @@ test('discountStep 0', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
     { message: 'Division by zero' },
   );
@@ -424,17 +427,17 @@ test('discountStep larger than starting rate', async t => {
     paramValues,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-      ),
-    { message: /discountStep .* too large for requested rates/ },
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, undefined);
 });
 
 test('start Freq 0', async t => {
@@ -470,17 +473,17 @@ test('start Freq 0', async t => {
     paramValues,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-      ),
-    { message: /startFrequency must exceed startDelay.*0n.*10n.*/ },
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, undefined);
 });
 
 test('delay > freq', async t => {
@@ -517,17 +520,17 @@ test('delay > freq', async t => {
     paramValues,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-      ),
-    { message: /startFrequency must exceed startDelay.*\[20n\].*\[40n\].*/ },
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, undefined);
 });
 
 test('lockPeriod > freq', async t => {
@@ -565,19 +568,17 @@ test('lockPeriod > freq', async t => {
     paramValues,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-      ),
-    {
-      message: /startFrequency must exceed lock period.*\[3600n\].*\[7200n\].*/,
-    },
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, undefined);
 });
 
 // if duration = frequency, we'll cut the duration short to fit.
@@ -621,14 +622,17 @@ test('duration = freq', async t => {
     zcf,
     paramValues,
   );
-
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+
   let schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
   const firstSchedule = {
@@ -710,12 +714,15 @@ test('change Schedule', async t => {
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   await paramManager.getParams();
 
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
   let schedule = scheduler.getSchedule();
   t.is(schedule.liveAuctionSchedule, undefined);
@@ -843,12 +850,15 @@ test('schedule anomalies', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. Wrong kind of subscriber.
+    subscriber,
   );
   const firstStart = baseTime + delay;
   await scheduleTracker.assertInitial({
