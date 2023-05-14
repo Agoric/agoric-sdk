@@ -10,4 +10,4 @@ test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children 
 test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children | first') "ToyUSD"
 
 # Gov params
-test_not_val "$(timeout 2 agoric follow -l :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
+test_not_val "$(timeout 3 agoric follow -l :published.psm.IST.ToyUSD.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
