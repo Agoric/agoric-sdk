@@ -237,7 +237,7 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
       : protoTag
       ? 'Object'
       : '';
-  const protoConstructor = objProto.constructor;
+  const protoConstructor = objProto && objProto.constructor;
   const constructorTag =
     isPlainObject || typeof protoConstructor !== 'function'
       ? ''
@@ -429,8 +429,22 @@ function arrObjKeys(obj, inspect) {
   return elems;
 }
 
+const outerInspect = (obj, ...args) => {
+  try {
+    return inspect0(obj, ...args);
+  } catch (err) {
+    let errStr;
+    try {
+      errStr = inspect0(err);
+    } catch (_) {
+      errStr = 'throw';
+    }
+    return `[cannot inspect (${typeof obj}) due to ${errStr}]`;
+  }
+};
+
 // This must be the only import/export statement, and occur last in the file, so
 // that confined-object-inspect.js can comment out the `export default`
 // and evaluate this entire file's source code to obtain the inspector as the
 // completion value.
-export default harden(inspect0);
+export default harden(outerInspect);
