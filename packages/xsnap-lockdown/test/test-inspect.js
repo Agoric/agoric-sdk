@@ -46,6 +46,43 @@ const testCases = [
   ['new Proxy({}, {})', '{}'],
   ['new Proxy(() => {}, {})', '[Function (anonymous)]'],
   ["new Proxy(() => {}, { get: () => 'foo' })", '[Function: foo]'],
+
+  // null prototype still works
+  ['({__proto__: null})', '[Object: null prototype] {}'],
+  [
+    `({ __proto__: null, foo: 'bar' })`,
+    "[Object: null prototype] { foo: 'bar' }",
+  ],
+
+  // throws during inspection do not propagate
+  [
+    `({
+       get foo() {
+         throw URIError("gotcha");
+       },
+     })`,
+    '[cannot inspect (object) due to [URIError: gotcha]]',
+  ],
+  [
+    `({
+       get foo() {
+         throw "gotcha";
+       },
+     })`,
+    "[cannot inspect (object) due to 'gotcha']",
+  ],
+  [
+    `({
+       get foo() {
+         throw {
+           get bar() {
+             throw "nested";
+           },
+         };
+       },
+     })`,
+    '[cannot inspect (object) due to throw]',
+  ],
 ];
 
 test('unconfined inspect', async t => {
