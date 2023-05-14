@@ -1,8 +1,8 @@
-// @ts-nocheck
+/* global globalThis */
 /* eslint-disable no-empty,no-nested-ternary,no-use-before-define */
 /* eslint-enable @endo/no-polymorphic-call */
-/* global globalThis */
 // Adapted from object-inspect@1.12.0 https://github.com/inspect-js/object-inspect
+
 /*
 MIT License
 
@@ -26,9 +26,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-const mapSize = Object.getOwnPropertyDescriptor(Map.prototype, 'size').get;
+const mapSizeDesc = Object.getOwnPropertyDescriptor(Map.prototype, 'size');
+assert(mapSizeDesc !== undefined);
+const mapSize = mapSizeDesc.get;
 const mapForEach = Map.prototype.forEach;
-const setSize = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get;
+const setSizeDesc = Object.getOwnPropertyDescriptor(Set.prototype, 'size');
+assert(setSizeDesc !== undefined);
+const setSize = setSizeDesc.get;
 const setForEach = Set.prototype.forEach;
 const WeakRefPrototype =
   typeof globalThis.WeakRef === 'function' ? globalThis.WeakRef.prototype : {};
@@ -180,6 +184,7 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
       mapForEach.call(obj, (value, key) => {
         mapParts.push(`${inspect(key, obj, true)} => ${inspect(value, obj)}`);
       });
+      assert(mapSize !== undefined);
       return collectionOf('Map', mapSize.call(obj), mapParts, indent);
     }
     case Set.prototype: {
@@ -187,6 +192,7 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
       setForEach.call(obj, value => {
         setParts.push(inspect(value, obj));
       });
+      assert(setSize !== undefined);
       return collectionOf('Set', setSize.call(obj), setParts, indent);
     }
     case WeakMap.prototype: {
