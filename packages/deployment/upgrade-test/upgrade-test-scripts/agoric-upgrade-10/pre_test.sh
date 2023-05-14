@@ -33,7 +33,7 @@ test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDT
 ## testing state from pismoC was preserved post bulldozer upgrade
 
 # test that the PSM gov params were preserved
-toyUSDGovernance="$(agoric follow -F :published.psm.IST.ToyUSD.governance -o jsonlines)"
+toyUSDGovernance="$(agoric follow -lF :published.psm.IST.ToyUSD.governance -o jsonlines)"
 test_not_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.MintLimit.value.value')" "PSM MintLimit preserved"
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.GiveMintedFee.value.numerator.value')" "0" "GiveMintedFee numerator == 0"
@@ -41,7 +41,7 @@ test_val "$(echo "$toyUSDGovernance" | jq -r '.current.GiveMintedFee.value.denom
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.numerator.value')" "0" "WantMintedFee numerator == 0"
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.denominator.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.WantMintedFee.value.denominator.value')" "WantMintedFee denominator == 10000"
 
-toyUSDMetrics="$(agoric follow -F :published.psm.IST.ToyUSD.metrics -o jsonlines)"
+toyUSDMetrics="$(agoric follow -lF :published.psm.IST.ToyUSD.metrics -o jsonlines)"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.anchorPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.feePoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"

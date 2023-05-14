@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# TODO should env_setup do this for all?
-# set -ueo pipefail
-set -v -x -e
-
 . ./upgrade-test-scripts/env_setup.sh
 
 # UNTIL we have confidence this script will succeed and let the build complete

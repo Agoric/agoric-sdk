@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -e
 . ./upgrade-test-scripts/env_setup.sh
 ag0 init localnet --chain-id "$CHAINID"
 
