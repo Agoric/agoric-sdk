@@ -384,8 +384,8 @@ export const prepareProvisionPoolKit = (
           );
 
           if (metrics) {
-            // Restore state, but don't publishMetrics()
-            // because that already happened in the last incarnation.
+            // Restore state.
+            // we publishMetrics() below
             const {
               walletsProvisioned,
               totalMintedProvided,
@@ -432,6 +432,11 @@ export const prepareProvisionPoolKit = (
         },
       },
     },
+    {
+      finish: ({ facets }) => {
+        facets.helper.publishMetrics();
+      },
+    },
   );
 
   /**
@@ -440,28 +445,18 @@ export const prepareProvisionPoolKit = (
    * @param {object} opts
    * @param {Brand} opts.poolBrand
    * @param {ERef<StorageNode>} opts.storageNode
-   * @param {boolean} [opts.isRevived]
    */
-  const makeProvisionPoolKit = async ({
-    poolBrand,
-    storageNode,
-    isRevived,
-  }) => {
+  const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
     /** @type {Purse<'nat'>} */
     // @ts-expect-error vbank purse is close enough for our use.
     const fundPurse = await E(poolBank).getPurse(poolBrand);
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 
-    const kit = makeProvisionPoolKitInternal({
+    return makeProvisionPoolKitInternal({
       fundPurse,
       poolBrand,
       metricsNode,
     });
-    // Publish initial metrics (but don't republish revived metrics).
-    if (!isRevived) {
-      kit.helper.publishMetrics();
-    }
-    return kit;
   };
 
   return makeProvisionPoolKit;
