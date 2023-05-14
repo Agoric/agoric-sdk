@@ -9,7 +9,7 @@ import { makeScalarMapStore } from '@agoric/store';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
 
-const trace = makeTracer('LIQ', false);
+const trace = makeTracer('LIQ');
 
 /** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
 /** @typedef {import('@agoric/time/src/types').TimerWaker} TimerWaker */
@@ -35,6 +35,8 @@ const scheduleLiquidationWakeups = async (
     E(auctioneerPublicFacet).getGovernedParams(),
   ]);
 
+  console.log('DEBUG params', params);
+
   trace('SCHEDULE', schedules.nextAuctionSchedule);
   if (!schedules.nextAuctionSchedule?.startTime) {
     // The schedule says there's no next auction.
@@ -47,6 +49,7 @@ const scheduleLiquidationWakeups = async (
   // @ts-expect-error Casting
   // eslint-disable-next-line no-restricted-syntax -- https://github.com/Agoric/eslint-config-jessie/issues/33
   const priceLockPeriod = params[PRICE_LOCK_PERIOD].value;
+  console.log('DEBUG made priceLockPeriod', priceLockPeriod);
   /** @type {RelativeTimeRecord} */
   // @ts-expect-error Casting
   // eslint-disable-next-line no-restricted-syntax -- https://github.com/Agoric/eslint-config-jessie/issues/33
@@ -58,11 +61,12 @@ const scheduleLiquidationWakeups = async (
     priceLockPeriod,
   );
   const afterStart = TimeMath.addAbsRel(startTime, 1n);
+  console.log('DEBUG rescheduling to commence', afterStart);
   const a = t => TimeMath.absValue(t);
   trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
-  void E(timer).setWakeup(priceLockWakeTime, priceLockWaker);
-  void E(timer).setWakeup(nominalStart, liquidationWaker);
-  void E(timer).setWakeup(afterStart, reschedulerWaker);
+  await E(timer).setWakeup(priceLockWakeTime, priceLockWaker);
+  await E(timer).setWakeup(nominalStart, liquidationWaker);
+  await E(timer).setWakeup(afterStart, reschedulerWaker);
 };
 
 /**

@@ -40,7 +40,7 @@ import {
 
 const { Fail, quote: q } = assert;
 
-const trace = makeTracer('VD', false);
+const trace = makeTracer('VD');
 
 /**
  * @typedef {{
@@ -426,6 +426,7 @@ export const prepareVaultDirector = (
 
         makeLiquidationWaker() {
           return makeWaker('liquidationWaker', _timestamp => {
+            trace('liquidationWaker', _timestamp);
             allManagersDo(vm => vm.liquidateVaults(auctioneer));
           });
         },

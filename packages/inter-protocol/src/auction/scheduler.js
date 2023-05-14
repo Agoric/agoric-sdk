@@ -138,6 +138,7 @@ export const makeScheduler = async (
       }
     }
 
+    // If the auction has ended
     if (TimeMath.compareAbs(now, schedule.endTime) >= 0) {
       auctionState = AuctionState.WAITING;
 
@@ -184,7 +185,11 @@ export const makeScheduler = async (
         wake(time) {
           setTimeMonotonically(time);
           trace('wake step', now);
-          clockTick(liveSchedule);
+          try {
+            clockTick(liveSchedule);
+          } catch (err) {
+            console.error('🚨 clockTick failed:', err);
+          }
         },
       }),
       stepCancelToken,
@@ -199,6 +204,7 @@ export const makeScheduler = async (
       Far('SchedulerWaker', {
         wake(time) {
           setTimeMonotonically(time);
+          // ??? if wake() returns a rejection, what happens? should we return startAuction()?
           // eslint-disable-next-line no-use-before-define
           void startAuction();
         },
