@@ -48,4 +48,10 @@ test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /r
 test_val "$(echo "$toyUSDMetrics" | jq -r '.totalAnchorProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
 
+# test that provision pool metrics are retained across vaults upgrade
+provisionPoolMetrics="$(agoric follow -lF :published.provisionPool.metrics -o jsonlines)"
+test_val "$(echo "$provisionPoolMetrics" | jq -r '.totalMintedConverted.value')" "$(cat /root/.agoric/provision_pool_metrics.json | jq -r '.totalMintedConverted.value')" "totalMintedConverted preserved"
+test_val "$(echo "$provisionPoolMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/.agoric/provision_pool_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
+test_val "$(echo "$provisionPoolMetrics" | jq -r '.walletsProvisioned')" "$(cat /root/.agoric/provision_pool_metrics.json | jq -r '.walletsProvisioned')" "walletsProvisioned preserved"
+
 test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"

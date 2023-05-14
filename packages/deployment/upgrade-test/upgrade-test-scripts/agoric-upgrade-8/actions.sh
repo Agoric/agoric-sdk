@@ -102,3 +102,8 @@ test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ubld | jq -r .
 test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ibc/toyusdc | jq -r .amount)" "89989989" "post-swap: validate ToyUSD balance"
 
 waitForBlock 3
+
+# dump provision pool metrics
+echo "Dumping provision pool metrics..."
+timeout 2 agoric follow -l :published.provisionPool.metrics -o jsonlines | tee /root/.agoric/provision_pool_metrics.json
+test_not_val "$(cat /root/.agoric/provision_pool_metrics.json | wc -l)" "0" "provision pool metrics shouldnt be empty"
