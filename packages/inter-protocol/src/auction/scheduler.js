@@ -197,8 +197,13 @@ export const makeScheduler = async (
   };
 
   // schedule a wakeup for the next round
+  let lastStartNextRound;
   const scheduleNextRound = start => {
     trace(`nextRound`, start);
+    if (lastStartNextRound === start) {
+      console.error('scheduleNextRound called with same start', start);
+    }
+    lastStartNextRound = start;
     void E(timer).setWakeup(
       start,
       Far('SchedulerWaker', {
@@ -214,8 +219,13 @@ export const makeScheduler = async (
   };
 
   // schedule a wakeup to lock prices
+  let lastStartPriceLock;
   const schedulePriceLock = lockTime => {
     trace(`priceLock`, lockTime);
+    if (lastStartPriceLock === lockTime) {
+      console.error('schedulePriceLock called with same lockTime', lockTime);
+    }
+    lastStartPriceLock = lockTime;
     void E(timer).setWakeup(
       lockTime,
       Far('PriceLockWaker', {
