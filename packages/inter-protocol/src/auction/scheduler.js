@@ -2,11 +2,12 @@ import { E } from '@endo/eventual-send';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 import { AuctionState } from './util.js';
 import { nextDescendingStepTime, computeRoundTiming } from './scheduleMath.js';
 
-const { Fail, quote: q } = assert;
+const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('SCHED', false);
 
@@ -49,8 +50,8 @@ const makeCancelToken = () => {
  *
  * @property {Timestamp | undefined} activeStartTime start time of current
  *    auction if auction is active
- * @property {Timestamp} nextStartTime start time of next auction
- * @property {Timestamp} nextDescendingStepTime when the next descending step
+ * @property {Timestamp | undefined} nextStartTime start time of next auction
+ * @property {Timestamp | undefined} nextDescendingStepTime when the next descending step
  *    will take place
  */
 
@@ -60,6 +61,7 @@ const makeCancelToken = () => {
  * @param {Awaited<import('./params.js').AuctionParamManaager>} params
  * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
+ * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
  */
 export const makeScheduler = async (
   auctionDriver,
@@ -67,6 +69,7 @@ export const makeScheduler = async (
   params,
   timerBrand,
   scheduleRecorder,
+  paramUpdateSubscription,
 ) => {
   /**
    * live version is defined when an auction is active.
@@ -75,7 +78,7 @@ export const makeScheduler = async (
    */
   let liveSchedule;
 
-  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule }>} */
+  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule | undefined }>} */
   const initializeNextSchedule = async () => {
     return E.when(
       // XXX manualTimer returns a bigint, not a timeRecord.
@@ -200,7 +203,7 @@ export const makeScheduler = async (
         wake(time) {
           setTimeMonotonically(time);
           // eslint-disable-next-line no-use-before-define
-          void startAuction();
+          return startAuction();
         },
       }),
     );
@@ -226,7 +229,13 @@ export const makeScheduler = async (
   const startAuction = async () => {
     !liveSchedule || Fail`can't start an auction round while one is active`;
 
-    assert(nextSchedule);
+    if (!nextSchedule) {
+      console.error(
+        assert.error(X`tried to start auction when none is scheduled`),
+      );
+      return;
+    }
+
     // The clock tick may have arrived too late to trigger the next scheduled
     // round, for example because of a chain halt.  When this happens the oracle
     // quote may out of date and so must be ignored. Recover by returning
@@ -248,9 +257,15 @@ export const makeScheduler = async (
       }
     }
     liveSchedule = nextSchedule;
+    if (!liveSchedule) {
+      return;
+    }
 
     const after = TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n));
     nextSchedule = computeRoundTiming(params, after);
+    if (!nextSchedule) {
+      return;
+    }
 
     scheduleSteps();
     scheduleNextRound(
@@ -259,12 +274,29 @@ export const makeScheduler = async (
     schedulePriceLock(nextSchedule.lockTime);
   };
 
-  const firstStart = TimeMath.subtractAbsRel(
-    nextSchedule.startTime,
-    nextSchedule.startDelay,
-  );
-  scheduleNextRound(firstStart);
-  schedulePriceLock(nextSchedule.lockTime);
+  // initial setting:  firstStart is startDelay before next's startTime
+  const startSchedulingFromScratch = () => {
+    if (nextSchedule) {
+      const firstStart = TimeMath.subtractAbsRel(
+        nextSchedule.startTime,
+        nextSchedule.startDelay,
+      );
+      scheduleNextRound(firstStart);
+      schedulePriceLock(nextSchedule.lockTime);
+    }
+  };
+  startSchedulingFromScratch();
+
+  // when auction parameters change, schedule a next auction if one isn't
+  // already scheduled
+  observeIteration(subscribeEach(paramUpdateSubscription), {
+    async updateState(_newState) {
+      if (!liveSchedule && !nextSchedule) {
+        ({ nextSchedule } = await initializeNextSchedule());
+        startSchedulingFromScratch();
+      }
+    },
+  });
 
   return Far('scheduler', {
     getSchedule: () =>

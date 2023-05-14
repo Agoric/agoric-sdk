@@ -66,17 +66,18 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
  * @param {any} t
  * @param {ReturnType<makeDefaultParams>} params
  * @param {number} baseTime
- * @param {any} expectMessage  XXX should be {ThrowsExpectation}
  */
-const checkScheduleThrows = (t, params, baseTime, expectMessage) => {
+const checkScheduleNull = (t, params, baseTime) => {
   /** @type {import('@agoric/time/src/types').TimestampRecord} */
   // @ts-expect-error known for testing
   const startFrequency = params.getStartFrequency();
   const brand = startFrequency.timerBrand;
-  const baseTimeRecord = TimeMath.coerceTimestampRecord(baseTime, brand);
-  t.throws(() => computeRoundTiming(params, baseTimeRecord), {
-    message: expectMessage,
-  });
+  const schedule = computeRoundTiming(
+    params,
+    TimeMath.coerceTimestampRecord(baseTime, brand),
+  );
+
+  t.is(schedule, undefined);
 };
 
 // Hourly starts. 4 steps down, 5 price levels. discount steps of 10%.
@@ -128,34 +129,30 @@ test(
 // lock Period too Long
 test(
   'long lock period',
-  checkScheduleThrows,
+  checkScheduleNull,
   makeDefaultParams({ lock: 3600 }),
   100,
-  /startFrequency must exceed lock period/,
 );
 
 test(
   'longer auction than freq',
-  checkScheduleThrows,
+  checkScheduleNull,
   makeDefaultParams({ freq: 500, lock: 300 }),
   100,
-  /clockStep .* must be shorter than startFrequency /,
 );
 
 test(
   'startDelay too long',
-  checkScheduleThrows,
+  checkScheduleNull,
   makeDefaultParams({ delay: 5000 }),
   100,
-  /startFrequency must exceed startDelay/,
 );
 
 test(
   'large discount step',
-  checkScheduleThrows,
+  checkScheduleNull,
   makeDefaultParams({ discount: 5000n }),
   100,
-  /discountStep "\[5000n]" too large for requested rates/,
 );
 
 test(
@@ -176,10 +173,9 @@ test(
 
 test(
   'lowest rate higher than start',
-  checkScheduleThrows,
+  checkScheduleNull,
   makeDefaultParams({ lowest: 10_600n }),
   100,
-  /startingRate "\[10500n]" must be more than/,
 );
 
 // If the steps are small enough that we can't get to the end_rate, we'll cut
