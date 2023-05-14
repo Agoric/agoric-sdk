@@ -175,7 +175,11 @@ pushPrice () {
     oid="${nextOracle}_ORACLE"
     offer=$(mktemp -t pushPrice.XXX)
     agops oracle pushPriceRound --price "$newPrice" --oracleAdminAcceptOfferId "${!oid}" >|"$offer"
-    agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
+    sleep 1
+    timeout --preserve-status 15 yarn run --silent agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
+    if [ $? -ne 0 ]; then
+      echo "WARNING: pushPrice for $nextOracle failed!"
+    fi
     echo "$nextOracle" > "$HOME/.agoric/lastOracle"
   done
 }
