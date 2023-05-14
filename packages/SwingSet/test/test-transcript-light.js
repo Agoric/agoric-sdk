@@ -14,28 +14,28 @@ test('transcript-light load', async t => {
   const { kernelStorage, debug } = initSwingStore();
   const c = await buildVatController(config, ['one'], { kernelStorage });
   t.teardown(c.shutdown);
-  const serialized0 = debug.serialize();
-  const kvstate0 = debug.dump().kvEntries;
+  const serialized0 = await debug.serialize();
+  const { kvEntries: kvstate0 } = await debug.dump();
   t.is(kvstate0.initialized, 'true');
   t.is(kvstate0.runQueue, '[1,1]');
   t.not(kvstate0.acceptanceQueue, '[]');
 
   await c.step();
-  const state1 = debug.dump();
-  const serialized1 = debug.serialize();
+  const state1 = await debug.dump();
+  const serialized1 = await debug.serialize();
 
   await c.step();
-  const state2 = debug.dump();
-  const serialized2 = debug.serialize();
+  const state2 = await debug.dump();
+  const serialized2 = await debug.serialize();
 
   await c.step();
-  const state3 = debug.dump();
+  const state3 = await debug.dump();
 
   await c.step();
-  const state4 = debug.dump();
+  const state4 = await debug.dump();
 
   await c.step();
-  const state5 = debug.dump();
+  const state5 = await debug.dump();
 
   // build from loaded state
   // Step 0
@@ -50,19 +50,19 @@ test('transcript-light load', async t => {
   t.teardown(c0.shutdown);
 
   await c0.step();
-  t.deepEqual(state1, ss0.debug.dump(), `p1`);
+  t.deepEqual(state1, await ss0.debug.dump(), `p1`);
 
   await c0.step();
-  t.deepEqual(state2, ss0.debug.dump(), `p2`);
+  t.deepEqual(state2, await ss0.debug.dump(), `p2`);
 
   await c0.step();
-  t.deepEqual(state3, ss0.debug.dump(), `p3`);
+  t.deepEqual(state3, await ss0.debug.dump(), `p3`);
 
   await c0.step();
-  t.deepEqual(state4, ss0.debug.dump(), `p4`);
+  t.deepEqual(state4, await ss0.debug.dump(), `p4`);
 
   await c0.step();
-  t.deepEqual(state5, ss0.debug.dump(), `p5`);
+  t.deepEqual(state5, await ss0.debug.dump(), `p5`);
 
   // Step 1
 
@@ -75,19 +75,19 @@ test('transcript-light load', async t => {
   });
   t.teardown(c1.shutdown);
 
-  t.deepEqual(state1, ss1.debug.dump(), `p6`); // actual, expected
+  t.deepEqual(state1, await ss1.debug.dump(), `p6`); // actual, expected
 
   await c1.step();
-  t.deepEqual(state2, ss1.debug.dump(), `p7`);
+  t.deepEqual(state2, await ss1.debug.dump(), `p7`);
 
   await c1.step();
-  t.deepEqual(state3, ss1.debug.dump(), `p8`);
+  t.deepEqual(state3, await ss1.debug.dump(), `p8`);
 
   await c1.step();
-  t.deepEqual(state4, ss1.debug.dump(), `p9`);
+  t.deepEqual(state4, await ss1.debug.dump(), `p9`);
 
   await c1.step();
-  t.deepEqual(state5, ss1.debug.dump(), `p10`);
+  t.deepEqual(state5, await ss1.debug.dump(), `p10`);
 
   // Step 2
 
@@ -100,14 +100,14 @@ test('transcript-light load', async t => {
   });
   t.teardown(c2.shutdown);
 
-  t.deepEqual(state2, ss2.debug.dump(), `p11`);
+  t.deepEqual(state2, await ss2.debug.dump(), `p11`);
 
   await c2.step();
-  t.deepEqual(state3, ss2.debug.dump(), `p12`);
+  t.deepEqual(state3, await ss2.debug.dump(), `p12`);
 
   await c2.step();
-  t.deepEqual(state4, ss2.debug.dump(), `p13`);
+  t.deepEqual(state4, await ss2.debug.dump(), `p13`);
 
   await c2.step();
-  t.deepEqual(state5, ss2.debug.dump(), `p14`);
+  t.deepEqual(state5, await ss2.debug.dump(), `p14`);
 });

@@ -50,11 +50,8 @@ test('compress to cache file; closes snapshot stream', async t => {
   t.deepEqual(result, {
     hash: expectedHash,
     uncompressedSize: 3,
-    compressedSize: 23,
-    dbSaveSeconds: 0,
-    compressSeconds: 0,
+    saveSeconds: 0,
   });
-  const snapshotInfo = store.getSnapshotInfo('fakeVatID');
   const dbInfo = {
     snapPos: 47,
     hash: expectedHash,
@@ -66,6 +63,10 @@ test('compress to cache file; closes snapshot stream', async t => {
     hash: expectedHash,
     inUse: 1,
   };
+  let snapshotInfo = store.getSnapshotInfo('fakeVatID');
+  t.deepEqual(snapshotInfo, { ...dbInfo, compressedSize: null });
+  await store.flushSaves(true);
+  snapshotInfo = store.getSnapshotInfo('fakeVatID');
   t.deepEqual(snapshotInfo, dbInfo);
   t.is(store.hasHash('fakeVatID', hash), true);
   const zero =

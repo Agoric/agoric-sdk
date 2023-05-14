@@ -563,13 +563,7 @@ export function makeVatKeeper(
       restartWorker,
     );
 
-    const {
-      hash: snapshotID,
-      uncompressedSize,
-      dbSaveSeconds,
-      compressedSize,
-      compressSeconds,
-    } = info;
+    const { hash: snapshotID, uncompressedSize, saveSeconds } = info;
 
     // push a save-snapshot transcript entry
     addToTranscript(makeSaveSnapshotItem(snapshotID));
@@ -587,9 +581,7 @@ export function makeVatKeeper(
       vatID,
       snapshotID,
       uncompressedSize,
-      dbSaveSeconds,
-      compressedSize,
-      compressSeconds,
+      saveSeconds,
       endPosition,
       restartWorker,
     });

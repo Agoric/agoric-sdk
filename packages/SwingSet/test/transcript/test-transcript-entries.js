@@ -116,12 +116,12 @@ test('transcript spans', async t => {
   const { commit } = hostStorage;
   const initOpts = { addComms: false, addVattp: false, addTimer: false };
   await initializeSwingset(config, [], kernelStorage, initOpts);
-  commit();
+  await commit();
 
   let c;
   const restart = async () => {
     if (c) {
-      commit();
+      await commit();
       await c.shutdown();
     }
     const { runtimeOptions } = t.context.data;

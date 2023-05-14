@@ -412,7 +412,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       'done: Error: arbitrary reason',
     ]);
   }
-  const serialized = ss1.debug.serialize();
+  const serialized = await ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
   {
     const c2 = await buildVatController(config, [], {
@@ -466,7 +466,7 @@ test.serial('dead vat state removed', async t => {
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
   t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 10, true);
-  const beforeDump = debug.dump(true);
+  const beforeDump = await debug.dump(true);
   t.truthy(beforeDump.transcripts.v6);
   t.truthy(beforeDump.snapshots.v6);
 
@@ -475,7 +475,7 @@ test.serial('dead vat state removed', async t => {
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);
   t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length, 0);
-  const afterDump = debug.dump(true);
+  const afterDump = await debug.dump(true);
   t.falsy(afterDump.transcripts.v6);
   t.falsy(afterDump.snapshots.v6);
 });

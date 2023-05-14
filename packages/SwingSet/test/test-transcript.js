@@ -9,11 +9,20 @@ import { buildVatController, loadBasedir } from '../src/index.js';
 async function buildTrace(c, debug) {
   const states = []; // list of { dump, serialized }
   while (c.dump().runQueue.length && c.dump().gcActions.length) {
-    states.push({ dump: debug.dump(), serialized: debug.serialize() });
+    // eslint-disable-next-line no-await-in-loop
+    const [dump, serialized] = await Promise.all([
+      debug.dump(),
+      debug.serialize(),
+    ]);
+    states.push({ dump, serialized });
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  states.push({ dump: debug.dump(), serialized: debug.serialize() });
+  const [dump, serialized] = await Promise.all([
+    debug.dump(),
+    debug.serialize(),
+  ]);
+  states.push({ dump, serialized });
   await c.shutdown();
   return states;
 }

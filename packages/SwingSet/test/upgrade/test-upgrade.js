@@ -25,8 +25,8 @@ test.before(async t => {
 });
 
 // eslint-disable-next-line no-unused-vars
-const dumpState = (debug, vatID) => {
-  const s = debug.dump().kvEntries;
+const dumpState = async (debug, vatID) => {
+  const { kvEntries: s } = await debug.dump();
   const keys = Array.from(Object.keys(s)).sort();
   for (const k of keys) {
     if (k.startsWith(`${vatID}.vs.`)) {
@@ -392,7 +392,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
 
   // use the kvStore to support assertions about exported durable/virtual vrefs
   const vatID = kvStore.get(`${dur1Kref}.owner`); // probably 'v6'
-  // dumpState(debug, vatID);
+  // await dumpState(debug, vatID);
   const getCListEntry = kref => kvStore.get(`${vatID}.c.${kref}`);
   const getVref = kref => {
     const entry = getCListEntry(kref);
@@ -459,7 +459,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   // now perform the upgrade
   /** @type {any} */
   const v2result = await run('upgradeV2', []);
-  // dumpState(debug, vatID);
+  // await dumpState(debug, vatID);
   t.like(v2result, {
     version: 'v2',
     youAre: 'v2',

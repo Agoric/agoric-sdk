@@ -11,9 +11,7 @@ import { buffer } from './util.js';
  * @typedef {object} SnapshotResult
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number} uncompressedSize size of (uncompressed) snapshot
- * @property {number} dbSaveSeconds time to write snapshot in DB
- * @property {number} compressedSize size of (compressed) snapshot
- * @property {number} compressSeconds time to generate and compress the snapshot
+ * @property {number} saveSeconds time to generate and hash the snapshot
  */
 
 /**
@@ -41,11 +39,12 @@ import { buffer } from './util.js';
  *   importSnapshot: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => void,
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
+ *   flushSaves: (finalize: boolean) => Promise<void>,
  * }} SnapStoreInternal
  *
  * @typedef {{
  *   hasHash: (vatID: string, hash: string) => boolean,
- *   dumpSnapshots: (includeHistorical?: boolean) => {},
+ *   dumpSnapshots: (includeHistorical?: boolean) => Promise<{[vatID: string]: Array<{snapPos: number, hash: string, compressedSnapshot: Buffer, inUse: 0 | 1}>}>,
  *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  * }} SnapStoreDebug
  *
@@ -62,6 +61,7 @@ const finished = promisify(finishedCallback);
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @param {number} [options.compressionBufferSize]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
@@ -69,7 +69,7 @@ export function makeSnapStore(
   ensureTxn,
   { measureSeconds },
   noteExport = () => {},
-  { keepSnapshots = false } = {},
+  { keepSnapshots = false, compressionBufferSize = 40 * 1024 * 1024 } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
@@ -81,8 +81,7 @@ export function makeSnapStore(
       compressedSize INTEGER,
       compressedSnapshot BLOB,
       PRIMARY KEY (vatID, snapPos),
-      UNIQUE (vatID, inUse),
-      CHECK(compressedSnapshot is not null or inUse is null)
+      UNIQUE (vatID, inUse)
     )
   `);
 
@@ -90,6 +89,24 @@ export function makeSnapStore(
     DELETE FROM snapshots
     WHERE inUse is null
   `);
+
+  /** @type {Map<string, Promise<{compressedSnapshot: Buffer, hash: string}>>} */
+  const pendingSaves = new Map();
+
+  /**
+   * @param {string} vatID
+   * @param {number} snapPos
+   */
+  const getPendingKey = (vatID, snapPos) => JSON.stringify([vatID, snapPos]);
+
+  /**
+   * @param {string} key
+   * @returns {{vatID: string, snapPos: number}}
+   */
+  const parsePendingKey = key => {
+    const [vatID, snapPos] = JSON.parse(key);
+    return { vatID, snapPos };
+  };
 
   /**
    * Delete all extant snapshots from the snapstore that are not currently in
@@ -122,8 +139,8 @@ export function makeSnapStore(
     return { vatID, snapPos, hash, inUse: inUse ? 1 : 0 };
   }
 
-  const sqlGetPriorSnapshotInfo = db.prepare(`
-    SELECT snapPos, hash
+  const sqlGetCurrentSnapshotInfo = db.prepare(`
+    SELECT snapPos, hash, uncompressedSize, compressedSize
     FROM snapshots
     WHERE vatID = ? AND inUse = 1
   `);
@@ -142,7 +159,7 @@ export function makeSnapStore(
 
   function stopUsingLastSnapshot(vatID) {
     ensureTxn();
-    const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
+    const oldInfo = sqlGetCurrentSnapshotInfo.get(vatID);
     if (oldInfo) {
       const rec = snapshotRec(vatID, oldInfo.snapPos, oldInfo.hash, 0);
       noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
@@ -154,11 +171,11 @@ export function makeSnapStore(
     }
   }
 
-  const sqlSaveSnapshot = db.prepare(`
-    INSERT OR REPLACE INTO snapshots
-      (vatID, snapPos, inUse, hash, uncompressedSize, compressedSize, compressedSnapshot)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
+  const sqlInsertSnapshot = db.prepare(`
+  INSERT INTO snapshots
+    (vatID, snapPos, inUse, hash, uncompressedSize)
+  VALUES (?, ?, ?, ?, ?)
+`);
 
   /**
    * Generates a new XS heap snapshot, stores a gzipped copy of it into the
@@ -173,48 +190,46 @@ export function makeSnapStore(
   async function saveSnapshot(vatID, snapPos, snapshotStream) {
     const cleanup = [];
     return aggregateTryFinally(
-      async () => {
-        const hashStream = createHash('sha256');
-        const gzip = createGzip();
-        let compressedSize = 0;
-        let uncompressedSize = 0;
-
-        const { duration: compressSeconds, result: compressedSnapshot } =
-          await measureSeconds(async () => {
-            const snapReader = Readable.from(snapshotStream);
-            cleanup.push(
-              () =>
-                new Promise((resolve, reject) =>
-                  snapReader.destroy(
-                    null,
-                    // @ts-expect-error incorrect types
-                    err => (err ? reject(err) : resolve()),
-                  ),
+      async () =>
+        measureSeconds(async () => {
+          const snapReader = Readable.from(snapshotStream);
+          cleanup.push(
+            () =>
+              new Promise((resolve, reject) =>
+                snapReader.destroy(
+                  null,
+                  // @ts-expect-error incorrect types
+                  err => (err ? reject(err) : resolve()),
                 ),
-            );
+              ),
+          );
 
-            snapReader.on('data', chunk => {
-              uncompressedSize += chunk.length;
-            });
-            snapReader.pipe(hashStream);
-            const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
-            await finished(snapReader);
-            return compressedSnapshotData;
+          const hashStream = createHash('sha256');
+          const compressionBufferStream = new PassThrough({
+            highWaterMark: compressionBufferSize,
           });
-        const hash = hashStream.digest('hex');
+          const gzip = createGzip();
 
-        const { duration: dbSaveSeconds } = await measureSeconds(async () => {
+          let uncompressedSize = 0;
+          snapReader.on('data', chunk => {
+            uncompressedSize += chunk.length;
+          });
+          snapReader.pipe(hashStream);
+          snapReader.pipe(compressionBufferStream).pipe(gzip);
+
+          const compressedSnapshotP = buffer(gzip);
+          await finished(snapReader);
+          const hash = hashStream.digest('hex');
+
           ensureTxn();
           stopUsingLastSnapshot(vatID);
-          compressedSize = compressedSnapshot.length;
-          sqlSaveSnapshot.run(
-            vatID,
-            snapPos,
-            1,
-            hash,
-            uncompressedSize,
-            compressedSize,
-            compressedSnapshot,
+          sqlInsertSnapshot.run(vatID, snapPos, 1, hash, uncompressedSize);
+          pendingSaves.set(
+            getPendingKey(vatID, snapPos),
+            compressedSnapshotP.then(compressedSnapshot => ({
+              hash,
+              compressedSnapshot,
+            })),
           );
           const rec = snapshotRec(vatID, snapPos, hash, 1);
           const exportKey = snapshotMetadataKey(rec);
@@ -223,22 +238,62 @@ export function makeSnapStore(
             currentSnapshotMetadataKey(rec),
             snapshotArtifactName(rec),
           );
-        });
-
-        return harden({
-          hash,
-          uncompressedSize,
-          compressSeconds,
-          dbSaveSeconds,
-          compressedSize,
-        });
-      },
+          return { hash, uncompressedSize };
+        }).then(({ duration: saveSeconds, result: saveInfo }) =>
+          harden({
+            ...saveInfo,
+            saveSeconds,
+          }),
+        ),
       async () => {
         await PromiseAllOrErrors(
           cleanup.reverse().map(fn => Promise.resolve().then(() => fn())),
         );
       },
     );
+  }
+
+  const sqlGetSnapshotInfo = db.prepare(`
+    SELECT inUse, hash, compressedSize
+    FROM snapshots
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
+  const sqlSaveSnapshot = db.prepare(`
+    UPDATE snapshots
+    SET compressedSize = ?, compressedSnapshot = ?
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
+  async function flushSaves(finalize) {
+    // debugger;
+    const saved = await Promise.all(
+      [...pendingSaves.entries()].map(async ([key, pending]) => {
+        const snapshotInfo = await (finalize
+          ? pending
+          : Promise.race([pending, undefined]));
+        return /** @type {const} */ ([key, snapshotInfo]);
+      }),
+    );
+
+    for (const [key, snapshotInfo] of saved) {
+      if (!snapshotInfo) continue;
+      pendingSaves.delete(key);
+      const { vatID, snapPos } = parsePendingKey(key);
+      const storedInfo = sqlGetSnapshotInfo.get(vatID, snapPos);
+      // In case the previous crank where we initiated the snapshot save was
+      // rolled back, it's possible the snapshot row disappeared by the time
+      // the snapshot got compressed and we attempt writing it.
+      if (!storedInfo || storedInfo.hash !== snapshotInfo.hash) continue;
+
+      const compressedSnapshot =
+        storedInfo.inUse || keepSnapshots
+          ? snapshotInfo.compressedSnapshot
+          : // The snapshot is already outdated
+            null;
+      const compressedSize = snapshotInfo.compressedSnapshot.length;
+      sqlSaveSnapshot.run(compressedSize, compressedSnapshot, vatID, snapPos);
+    }
   }
 
   const sqlGetSnapshot = db.prepare(`
@@ -266,6 +321,9 @@ export function makeSnapStore(
     (parts.length === 3 && type === 'snapshot') ||
       Fail`expected artifact name of the form 'snapshot.{vatID}.{snapPos}', saw ${q(name)}`;
     const snapPos = Number(pos);
+    // Export should never run in the same swing-store as the active one
+    !pendingSaves.has(getPendingKey(vatID, snapPos)) ||
+      Fail`Unsupported export with pending save`;
     const snapshotInfo = sqlGetSnapshot.get(vatID, snapPos);
     snapshotInfo || Fail`snapshot ${q(name)} not available`;
     const { inUse, compressedSnapshot } = snapshotInfo;
@@ -294,10 +352,24 @@ export function makeSnapStore(
    * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
   async function* loadSnapshot(vatID) {
-    const loadInfo = sqlLoadSnapshot.get(vatID);
-    loadInfo || Fail`no snapshot available for vat ${q(vatID)}`;
-    const { hash: snapshotID, compressedSnapshot } = loadInfo;
-    compressedSnapshot || Fail`no snapshot available for vat ${q(vatID)}`;
+    /** @type {string} */
+    let snapshotID;
+    /** @type {Buffer} */
+    let compressedSnapshot;
+    // @ts-expect-error use before define
+    while (!snapshotID || !compressedSnapshot) {
+      const snapshotInfo = sqlGetCurrentSnapshotInfo.get(vatID);
+      snapshotInfo || Fail`no snapshot available for vat ${q(vatID)}`;
+      const loadInfo =
+        // eslint-disable-next-line no-await-in-loop
+        (await pendingSaves.get(getPendingKey(vatID, snapshotInfo.snapPos))) ||
+        /** @type {{compressedSnapshot: Buffer, hash: string} | undefined} */ (
+          sqlLoadSnapshot.get(vatID)
+        );
+      if (loadInfo && loadInfo.hash === snapshotInfo.hash) {
+        ({ hash: snapshotID, compressedSnapshot } = loadInfo);
+      }
+    }
     const gzReader = Readable.from(compressedSnapshot);
     const snapReader = gzReader.pipe(createGunzip());
     const hashStream = createHash('sha256');
@@ -346,12 +418,6 @@ export function makeSnapStore(
     sqlDeleteVatSnapshots.run(vatID);
   }
 
-  const sqlGetSnapshotInfo = db.prepare(`
-    SELECT snapPos, hash, uncompressedSize, compressedSize
-    FROM snapshots
-    WHERE vatID = ? AND inUse = 1
-  `);
-
   /**
    * Find out everything there is to know about a given vat's current snapshot
    * aside from the snapshot blob itself.
@@ -361,7 +427,7 @@ export function makeSnapStore(
    * @returns {SnapshotInfo}
    */
   function getSnapshotInfo(vatID) {
-    return /** @type {SnapshotInfo} */ (sqlGetSnapshotInfo.get(vatID));
+    return /** @type {SnapshotInfo} */ (sqlGetCurrentSnapshotInfo.get(vatID));
   }
 
   const sqlHasHash = db.prepare(`
@@ -458,6 +524,12 @@ export function makeSnapStore(
     }
   }
 
+  const sqlImportSnapshot = db.prepare(`
+    INSERT OR REPLACE INTO snapshots
+      (vatID, snapPos, inUse, hash, uncompressedSize, compressedSize, compressedSnapshot)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
   /**
    * @param {string} name  Artifact name of the snapshot
    * @param {SwingStoreExporter} exporter  Whence to get the bits
@@ -493,7 +565,7 @@ export function makeSnapStore(
     info.hash === hash ||
       Fail`snapshot ${q(name)} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
     ensureTxn();
-    sqlSaveSnapshot.run(
+    sqlImportSnapshot.run(
       vatID,
       snapPos,
       info.inUse ? 1 : null,
@@ -536,13 +608,29 @@ export function makeSnapStore(
    *
    * @param {boolean} [includeHistorical]
    */
-  function dumpSnapshots(includeHistorical = true) {
+  async function dumpSnapshots(includeHistorical = true) {
     const sql = includeHistorical
       ? sqlDumpAllSnapshots
       : sqlDumpCurrentSnapshots;
+    /** @type {Awaited<ReturnType<SnapStoreDebug['dumpSnapshots']>>} */
     const dump = {};
     for (const row of sql.iterate()) {
-      const { vatID, snapPos, hash, compressedSnapshot, inUse } = row;
+      const {
+        vatID,
+        snapPos,
+        hash,
+        compressedSnapshot: maybeCompressedSnapshot,
+        inUse,
+      } = row;
+      const pending = pendingSaves.get(getPendingKey(vatID, snapPos));
+      // eslint-disable-next-line no-await-in-loop
+      const compressedSnapshot = await (!pending
+        ? maybeCompressedSnapshot
+        : pending.then(snapshotInfo => {
+            snapshotInfo.hash === hash ||
+              Fail`snapshot at ${snapPos} for ${vatID} went missing while pending!?`;
+            return snapshotInfo.compressedSnapshot;
+          }));
       if (!dump[vatID]) {
         dump[vatID] = [];
       }
@@ -567,6 +655,7 @@ export function makeSnapStore(
     getArtifactNames,
     exportSnapshot,
     importSnapshot,
+    flushSaves,
 
     hasHash,
     listAllSnapshots,

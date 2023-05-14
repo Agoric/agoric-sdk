@@ -30,18 +30,24 @@ async function testChangeParameters(t) {
   c.pinVatRoot('bootstrap');
   await c.run();
   t.is(kvStore.get('kernel.defaultReapInterval'), '1');
-  c.changeKernelOptions({
+  await c.changeKernelOptions({
     snapshotInterval: 1000,
     defaultReapInterval: 10,
   });
   t.is(kvStore.get('kernel.defaultReapInterval'), '10');
-  t.throws(() => c.changeKernelOptions({ defaultReapInterval: 'banana' }), {
-    message: 'invalid defaultReapInterval value',
-  });
-  t.throws(() => c.changeKernelOptions({ snapshotInterval: 'elephant' }), {
-    message: 'invalid heap snapshotInterval value',
-  });
-  t.throws(() => c.changeKernelOptions({ baz: 'howdy' }), {
+  await t.throwsAsync(
+    () => c.changeKernelOptions({ defaultReapInterval: 'banana' }),
+    {
+      message: 'invalid defaultReapInterval value',
+    },
+  );
+  await t.throwsAsync(
+    () => c.changeKernelOptions({ snapshotInterval: 'elephant' }),
+    {
+      message: 'invalid heap snapshotInterval value',
+    },
+  );
+  await t.throwsAsync(() => c.changeKernelOptions({ baz: 'howdy' }), {
     message: 'unknown option "baz"',
   });
 

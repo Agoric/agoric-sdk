@@ -67,7 +67,7 @@ test('replay after upgrade', async t => {
   }
 
   // copy the store just to be sure
-  const serialized = ss1.debug.serialize();
+  const serialized = await ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
   {
     const c2 = await makeSwingsetController(ss2.kernelStorage, {}, runtimeOpts);

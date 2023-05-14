@@ -79,7 +79,7 @@ function getKeyType(key) {
  *   establishCrankSavepoint: (savepoint: string) => void,
  *   rollbackCrank: (savepoint: string) => void,
  *   emitCrankHashes: () => { crankhash: string, activityhash: string },
- *   endCrank: () => void,
+ *   endCrank: () => Promise<void>,
  *   getActivityhash: () => string,
  * }} SwingStoreKernelStorage
  *
@@ -100,8 +100,8 @@ function getKeyType(key) {
  * }} SwingStoreDebugDump
  *
  * @typedef {{
- *   dump: (includeHistorical?: boolean) => SwingStoreDebugDump,
- *   serialize: () => Buffer,
+ *   dump: (includeHistorical?: boolean) => Promise<SwingStoreDebugDump>,
+ *   serialize: () => Promise<Buffer>,
  * }} SwingStoreDebugTools
  *
  * @typedef {{
@@ -791,12 +791,13 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     }
   }
 
-  function endCrank() {
+  async function endCrank() {
     inCrank || Fail`endCrank outside of crank`;
     if (savepoints.length > 0) {
       sqlReleaseSavepoints.run();
       savepoints.length = 0;
     }
+    await snapStore.flushSaves(false);
     flushPendingExports();
     inCrank = false;
   }
@@ -807,6 +808,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   async function commit() {
     db || Fail`db not initialized`;
     if (db.inTransaction) {
+      await snapStore.flushSaves(true);
       flushPendingExports();
       sqlCommit.run();
     }
@@ -827,9 +829,9 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * Return a Buffer with the entire DB state, useful for cloning a
    * small swingstore in unit tests.
    *
-   * @returns {Buffer}
+   * @returns {Promise<Buffer>}
    */
-  function serialize() {
+  async function serialize() {
     // An on-disk DB with WAL mode enabled seems to produce a
     // serialized Buffer that can be unserialized, but the resulting
     // 'db' object fails all operations with SQLITE_CANTOPEN. So
@@ -837,6 +839,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     if (filePath !== ':memory:') {
       throw Error('on-disk DBs with WAL mode enabled do not serialize well');
     }
+    await snapStore.flushSaves(true);
     return db.serialize();
   }
 
@@ -845,13 +848,19 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     return Object.fromEntries(s.all());
   }
 
-  function dump(includeHistorical = true) {
+  async function dump(includeHistorical = true) {
     // return comparable JS object graph with entire DB state
+    const [kvEntries, transcripts, snapshots, bundles] = await Promise.all([
+      dumpKVEntries(),
+      dumpTranscripts(includeHistorical),
+      dumpSnapshots(includeHistorical),
+      dumpBundles(),
+    ]);
     return harden({
-      kvEntries: dumpKVEntries(),
-      transcripts: dumpTranscripts(includeHistorical),
-      snapshots: dumpSnapshots(includeHistorical),
-      bundles: dumpBundles(),
+      kvEntries,
+      transcripts,
+      snapshots,
+      bundles,
     });
   }
 

@@ -60,7 +60,7 @@ async function embundle(filename) {
   return [bundleID, bundle];
 }
 
-function actLikeAVatRunningACrank(vat, ks, crank, doFail) {
+async function actLikeAVatRunningACrank(vat, ks, crank, doFail) {
   const { kvStore, transcriptStore } = ks;
   const { vatID } = vat;
   ks.startCrank();
@@ -81,7 +81,7 @@ function actLikeAVatRunningACrank(vat, ks, crank, doFail) {
   } else {
     vat.endPos += 1;
   }
-  ks.endCrank();
+  await ks.endCrank();
 }
 
 async function fakeAVatSnapshot(vat, ks) {
@@ -117,7 +117,8 @@ test('crank abort leaves no debris in export log', async t => {
   for (let block = 0; block < 4; block += 1) {
     for (let crank = 0; crank < 4; crank += 1) {
       crankNum += 1;
-      actLikeAVatRunningACrank(
+      // eslint-disable-next-line no-await-in-loop
+      await actLikeAVatRunningACrank(
         vat,
         kernelStorage,
         crankNum,
@@ -216,7 +217,8 @@ async function testExportImport(
     for (let crank = 0; crank < 4; crank += 1) {
       crankNum += 1;
       const vat = vats[crankNum % vats.length];
-      actLikeAVatRunningACrank(vat, kernelStorage, crankNum);
+      // eslint-disable-next-line no-await-in-loop
+      await actLikeAVatRunningACrank(vat, kernelStorage, crankNum);
     }
     if (block < 3) {
       // eslint-disable-next-line no-await-in-loop
@@ -312,7 +314,7 @@ async function testExportImport(
 
   const includeHistorical = importMode !== 'current';
 
-  const beforeDump = debug.dump(keepSnapshots);
+  const beforeDump = await debug.dump(keepSnapshots);
   let ssIn;
   try {
     ssIn = await importSwingStore(exporter, null, {
@@ -333,7 +335,7 @@ async function testExportImport(
   const dumpsShouldMatch =
     runMode !== 'debug' || (exportMode === 'debug' && importMode !== 'current');
   if (dumpsShouldMatch) {
-    const afterDump = ssIn.debug.dump(keepSnapshots);
+    const afterDump = await ssIn.debug.dump(keepSnapshots);
     t.deepEqual(beforeDump, afterDump);
   }
 }

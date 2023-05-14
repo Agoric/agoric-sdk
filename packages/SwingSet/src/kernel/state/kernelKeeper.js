@@ -224,8 +224,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     return kernelStorage.emitCrankHashes();
   }
 
-  function endCrank() {
-    kernelStorage.endCrank();
+  async function endCrank() {
+    await kernelStorage.endCrank();
   }
 
   const ephemeral = harden({
