@@ -23,7 +23,6 @@ export const privateArgsShape = M.splitRecord(
   harden({
     // only necessary on first invocation, not subsequent
     initialPoserInvitation: InvitationShape,
-    // expected only in upgrade incarnations
     metricsOverride: M.recordOf(M.string()),
   }),
 );
@@ -81,7 +80,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         // NB: changing the brand will break this pool
         poolBrand: params.getPerAccountInitialAmount().brand,
         storageNode: privateArgs.storageNode,
-        isRevived: metricsOverride !== undefined,
       }),
     kit => kit.helper.start({ metrics: metricsOverride }),
   );
