@@ -399,6 +399,7 @@ export const prepareProvisionPoolKit = (
               totalMintedProvided,
               totalMintedConverted,
             });
+            helper.publishMetrics();
           }
         },
         /**
