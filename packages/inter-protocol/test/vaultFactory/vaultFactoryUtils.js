@@ -104,7 +104,7 @@ export const setupElectorateReserveAndAuction = async (
   space.produce.priceAuthority.resolve(pa);
 
   const auctionParams = {
-    StartFreq: startFrequency || 7n * 24n * 3600n,
+    StartFrequency: startFrequency || 7n * 24n * 3600n,
     ClockStep: 2n,
     StartingRate: 10500n,
     LowestRate: 5500n,

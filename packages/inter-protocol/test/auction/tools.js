@@ -44,7 +44,7 @@ export const setUpInstallations = async zoe => {
 export const makeDefaultParams = (invitation, timerBrand) =>
   harden({
     ElectorateInvitationAmount: invitation,
-    StartFreq: 60n,
+    StartFrequency: 60n,
     ClockStep: 2n,
     StartingRate: 10500n,
     LowestRate: 5500n,
