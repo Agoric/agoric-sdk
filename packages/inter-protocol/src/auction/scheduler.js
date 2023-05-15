@@ -50,10 +50,10 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
 /**
  * @typedef {object} ScheduleNotification
  *
- * @property {Timestamp | undefined} activeStartTime start time of current
+ * @property {Timestamp | null} activeStartTime start time of current
  *    auction if auction is active
- * @property {Timestamp | undefined} nextStartTime start time of next auction
- * @property {Timestamp | undefined} nextDescendingStepTime when the next descending step
+ * @property {Timestamp | null} nextStartTime start time of next auction
+ * @property {Timestamp | null} nextDescendingStepTime when the next descending step
  *    will take place
  */
 
@@ -85,11 +85,11 @@ export const makeScheduler = async (
   /**
    * live version is defined when an auction is active.
    *
-   * @type {Schedule | undefined}
+   * @type {Schedule | null}
    */
-  let liveSchedule;
+  let liveSchedule = null;
 
-  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule | undefined }>} */
+  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule | null }>} */
   const initializeNextSchedule = async () => {
     return E.when(
       // XXX manualTimer returns a bigint, not a timeRecord.
@@ -120,8 +120,8 @@ export const makeScheduler = async (
    */
   const publishSchedule = () => {
     const sched = harden({
-      activeStartTime: liveSchedule?.startTime,
-      nextStartTime: nextSchedule?.startTime,
+      activeStartTime: liveSchedule?.startTime || null,
+      nextStartTime: nextSchedule?.startTime || null,
       nextDescendingStepTime: nextDescendingStepTime(
         liveSchedule,
         nextSchedule,
@@ -132,7 +132,7 @@ export const makeScheduler = async (
   };
 
   /**
-   * @param {Schedule | undefined} schedule
+   * @param {Schedule | null} schedule
    */
   const clockTick = schedule => {
     trace('clockTick', schedule?.startTime, now);
@@ -157,7 +157,7 @@ export const makeScheduler = async (
         nextSchedule = safelyComputeRoundTiming(params, afterNow);
       }
 
-      liveSchedule = undefined;
+      liveSchedule = null;
       return E(timer).cancel(stepCancelToken);
     };
 
@@ -364,6 +364,6 @@ export const makeScheduler = async (
 
 /**
  * @typedef {object} FullSchedule
- * @property {Schedule | undefined} nextAuctionSchedule
- * @property {Schedule | undefined} liveAuctionSchedule
+ * @property {Schedule | null} nextAuctionSchedule
+ * @property {Schedule | null} liveAuctionSchedule
  */

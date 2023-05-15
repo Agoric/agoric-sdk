@@ -77,7 +77,7 @@ test('schedule start to finish', async t => {
     subscriber,
   );
   const schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
   const firstSchedule = {
     startTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(135n, timerBrand),
@@ -100,7 +100,7 @@ test('schedule start to finish', async t => {
   t.true(fakeAuctioneer.getState().lockedPrices);
 
   await scheduleTracker.assertInitial({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
   });
@@ -156,7 +156,7 @@ test('schedule start to finish', async t => {
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: 141n },
   });
   now = await timer.advanceTo(now + 1n);
@@ -168,7 +168,7 @@ test('schedule start to finish', async t => {
   t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
 
   const finalSchedule = scheduler.getSchedule();
-  t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+  t.deepEqual(finalSchedule.liveAuctionSchedule, null);
   const secondSchedule = {
     startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
@@ -186,7 +186,7 @@ test('schedule start to finish', async t => {
     nextStartTime: { absValue: 151n },
   });
 
-  t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+  t.deepEqual(finalSchedule.liveAuctionSchedule, null);
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
   now = await timer.advanceTo(now + 1n);
@@ -236,7 +236,7 @@ test('schedule start to finish', async t => {
   await timer.advanceTo(now + 1n);
 
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: 151n },
   });
 
@@ -660,7 +660,7 @@ test('duration = freq', async t => {
   );
 
   let schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
   const firstSchedule = {
     startTime: TimeMath.coerceTimestampRecord(365n, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(665n, timerBrand),
@@ -751,7 +751,7 @@ test('change Schedule', async t => {
     subscriber,
   );
   let schedule = scheduler.getSchedule();
-  t.is(schedule.liveAuctionSchedule, undefined);
+  t.is(schedule.liveAuctionSchedule, null);
 
   const lockTime = 345n;
   const startTime = 365n;
@@ -888,12 +888,12 @@ test('schedule anomalies', async t => {
   );
   const firstStart = baseTime + delay;
   await scheduleTracker.assertInitial({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: timestamp(firstStart),
     nextStartTime: TimeMath.coerceTimestampRecord(baseTime + delay, timerBrand),
   });
   const schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
 
   t.false(fakeAuctioneer.getState().lockedPrices);
   // ////////////// LOCK TIME ///////////
@@ -964,7 +964,7 @@ test('schedule anomalies', async t => {
   await timer.advanceTo(firstStart + 2n * step);
   await eventLoopIteration();
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: firstStart + oneCycle },
   });
 
@@ -1023,7 +1023,7 @@ test('schedule anomalies', async t => {
   // ////////////// DESCENDING STEP ///////////
   now = await timer.advanceTo(secondStart + 2n * step);
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: thirdStart },
   });
 
@@ -1083,7 +1083,7 @@ test('schedule anomalies', async t => {
   // This schedule is published as a side effect of closing out the incomplete
   // auction. The next one follows immediately and is correct.
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: 1700017230n },
   });
   const veryLateActual = veryLateStart + oneCycle + delay;

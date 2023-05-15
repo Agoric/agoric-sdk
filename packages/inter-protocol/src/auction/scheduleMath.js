@@ -91,15 +91,16 @@ harden(computeRoundTiming);
  * auction has started, then it'll be nextSchedule.startTime. Otherwise, it's
  * the start of the step following the current step.
  *
- * @param {import('./scheduler.js').Schedule | undefined} liveSchedule
- * @param {import('./scheduler.js').Schedule | undefined} nextSchedule
+ * @param {import('./scheduler.js').Schedule | null} liveSchedule
+ * @param {import('./scheduler.js').Schedule | null} nextSchedule
  * @param {Timestamp} now
+ * @returns {Timestamp | null}
  */
 export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
   nextSchedule || Fail`nextSchedule must always be defined`;
 
   if (!liveSchedule) {
-    return nextSchedule?.startTime;
+    return nextSchedule?.startTime || null;
   }
 
   const { startTime, endTime, clockStep } = liveSchedule;
@@ -114,7 +115,7 @@ export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
   const expectedNext = TimeMath.addAbsRel(lastStepStart, clockStep);
 
   if (TimeMath.compareAbs(expectedNext, endTime) > 0) {
-    return nextSchedule?.startTime;
+    return nextSchedule?.startTime || null;
   }
 
   return expectedNext;

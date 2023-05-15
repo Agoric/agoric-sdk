@@ -931,7 +931,7 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
 
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
     nextStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
   });
@@ -1002,7 +1002,7 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
 
   await driver.advanceTo(185n, 'wait');
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: 210n },
   });
   await bookTracker.assertChange({
@@ -1064,7 +1064,7 @@ test.serial('add assets to open auction', async t => {
   });
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
     nextStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
   });
@@ -1142,7 +1142,7 @@ test.serial('add assets to open auction', async t => {
   });
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 210n },
-    activeStartTime: undefined,
+    activeStartTime: null,
   });
 
   // sellers split proceeds and refund 2:1
