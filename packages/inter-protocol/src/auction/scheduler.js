@@ -127,6 +127,7 @@ export const makeScheduler = async (
       return;
     }
 
+    /** @type {() => Promise<void>} */
     const finishAuctionRound = () => {
       auctionState = AuctionState.WAITING;
       auctionDriver.finalize();
@@ -144,7 +145,7 @@ export const makeScheduler = async (
       }
 
       liveSchedule = undefined;
-      void E(timer).cancel(stepCancelToken);
+      return E(timer).cancel(stepCancelToken);
     };
 
     if (
