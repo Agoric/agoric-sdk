@@ -525,12 +525,15 @@ jobs:
 
   test-docker-build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bootstrap-version: ['test', 'main']
     steps:
       - uses: actions/checkout@v3
       - name: docker build (sdk)
         run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
       - name: docker build upgrade test
-        run: cd packages/deployment/upgrade-test && docker build -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
+        run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
         run: docker run --env "DEST=0" docker-upgrade-test:latest
       - uses: ./.github/actions/post-test

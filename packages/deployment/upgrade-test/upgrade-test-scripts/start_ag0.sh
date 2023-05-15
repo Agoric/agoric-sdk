@@ -1,15 +1,16 @@
 #!/bin/bash
 
-. ./upgrade-test-scripts/env_setup.sh
+export CHAINID=agoriclocal
 ag0 init localnet --chain-id "$CHAINID"
 
 govaccounts=( "gov1" "gov2" "gov3" "validator" )
-
 for i in "${govaccounts[@]}"
 do
   ag0 keys add $i --keyring-backend=test  2>&1 | tee "$HOME/.agoric/$i.out"
   cat "$HOME/.agoric/$i.out" | tail -n1 | tee "$HOME/.agoric/$i.key"
 done
+
+. ./upgrade-test-scripts/env_setup.sh
 
 
 sed -i.bak "s/^timeout_commit =.*/timeout_commit = \"1s\"/" "$HOME/.agoric/config/config.toml"
@@ -39,6 +40,7 @@ denoms=(
 "ibc/386D09AE31DA7C0C93091BB45D08CB7A0730B1F697CD813F06A5446DCF02EEB2" #main_usdt_grv
 "ibc/3914BDEF46F429A26917E4D8D434620EC4817DC6B6E68FB327E190902F1E9242" #main_dai_axl
 "ibc/3D5291C23D776C3AA7A7ABB34C7B023193ECD2BC42EA19D3165B2CF9652117E7" #main_dai_grv
+"provisionpass" #for swingset provisioning
 )
 
 camount="1000000000000000000"
@@ -59,6 +61,10 @@ waitForBlock 2
 voting_period_s=10
 latest_height=$(ag0 status | jq -r .SyncInfo.latest_block_height)
 height=$(( $latest_height + $voting_period_s + 10 ))
+if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
+  UPGRADE_TO=${UPGRADE_TO//agoric-/agorictest-}
+fi
+
 ag0 tx gov submit-proposal software-upgrade "$UPGRADE_TO" --upgrade-height="$height" --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" --from=validator --chain-id="$CHAINID" --yes --keyring-backend=test
 waitForBlock
 

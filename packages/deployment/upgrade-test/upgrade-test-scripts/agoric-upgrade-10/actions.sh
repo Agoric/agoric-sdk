@@ -2,9 +2,6 @@
 
 . ./upgrade-test-scripts/env_setup.sh
 
-# UNTIL we have confidence this script will succeed and let the build complete
-#exit 0
-
 # For development:
 # TARGET=agoric-upgrade-10 make local_sdk build run
 # agoric wallet show --from $GOV1ADDR
@@ -23,10 +20,13 @@ for i in "${govaccounts[@]}"; do
             agops ec committee --send-from "$i" --voter "$cm"
             cm=$((cm + 1))
         fi
+        waitForBlock 3
     done
     echo "$i: Accepting EC Charter"
     agops ec charter --send-from "$i"
 done
+
+waitForBlock 3
 
 oracles=("$GOV1ADDR" "$GOV2ADDR")
 for i in "${oracles[@]}"; do
@@ -58,56 +58,63 @@ done
 # wait for the vote to pass
 sleep 65
 
+
+
+
 # ensure params were changed
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.StartFrequency.value.relValue)" "$START_FREQUENCY"
 
 pushPrice 12.01
 
-# vaults
-# attempt to open vaults under the minimum amount
-for vid in {1..2}; do
-    OFFER=$(mktemp -t agops.XXX)
-    if [[ "$vid" == "2" ]]; then
-        amount=3.00
-        collateral=5.0
-    else
-        amount=2.00
-        collateral=4.0
-    fi
-    agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
-    agoric wallet print --file "$OFFER"
-    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test || true
-done
+if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
+    # TODO: support main bootstrap mode by changing the mintlimit higher
+    # vaults
+    # attempt to open vaults under the minimum amount
+    for vid in {1..2}; do
+        OFFER=$(mktemp -t agops.XXX)
+        if [[ "$vid" == "2" ]]; then
+            amount=3.00
+            collateral=5.0
+        else
+            amount=2.00
+            collateral=4.0
+        fi
+        agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
+        agoric wallet print --file "$OFFER"
+        agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test || true
+    done
 
-# we should still have no vaults
-test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
+    # we should still have no vaults
+    test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
 
-# open up some vaults
-for vid in {1..2}; do
+    # open up some vaults
+    for vid in {1..2}; do
+        OFFER=$(mktemp -t agops.XXX)
+        if [[ "$vid" == "2" ]]; then
+            amount=6.00
+            collateral=10.0
+        else
+            amount=5.00
+            collateral=9.0
+        fi
+        agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
+        agoric wallet print --file "$OFFER"
+        agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+    done
+
+    # remove some collateral from the first vault
     OFFER=$(mktemp -t agops.XXX)
-    if [[ "$vid" == "2" ]]; then
-        amount=6.00
-        collateral=10.0
-    else
-        amount=5.00
-        collateral=9.0
-    fi
-    agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
-    agoric wallet print --file "$OFFER"
+    agops vaults adjust --vaultId vault0 --wantCollateral 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
     agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
-done
 
-# remove some collateral from the first vault
-OFFER=$(mktemp -t agops.XXX)
-agops vaults adjust --vaultId vault0 --wantCollateral 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
-agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+    # close the second vault
+    OFFER=$(mktemp -t agops.XXX)
+    agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
-# close the second vault
-OFFER=$(mktemp -t agops.XXX)
-agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
-agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+    # # TODO test bidding
+    # # TODO liquidations
+    # # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
 
-# # TODO test bidding
-# # TODO liquidations
-# # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
+fi
