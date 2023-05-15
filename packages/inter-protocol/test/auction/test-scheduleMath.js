@@ -7,7 +7,13 @@ import '@agoric/zoe/exported.js';
 import {
   computeRoundTiming,
   nextDescendingStepTime,
+  timeVsSchedule,
 } from '../../src/auction/scheduleMath.js';
+
+/** @type {import('@agoric/time').TimerBrand} */
+const timerBrand = Far('timerBrand');
+const coerceAbs = time => TimeMath.coerceTimestampRecord(time, timerBrand);
+const coerceRel = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
 
 const makeDefaultParams = ({
   freq = 3600,
@@ -17,20 +23,14 @@ const makeDefaultParams = ({
   lock = 15 * 60,
   lowest = 6_500n,
 } = {}) => {
-  /** @type {import('@agoric/time').TimerBrand} */
-  const timerBrand = Far('timerBrand');
-
   return {
-    getStartFrequency: () =>
-      TimeMath.coerceRelativeTimeRecord(freq, timerBrand),
-    getClockStep: () => TimeMath.coerceRelativeTimeRecord(step, timerBrand),
+    getStartFrequency: () => coerceRel(freq),
+    getClockStep: () => coerceRel(step),
     getStartingRate: () => 10_500n,
     getDiscountStep: () => discount,
-    getPriceLockPeriod: () =>
-      TimeMath.coerceRelativeTimeRecord(lock, timerBrand),
+    getPriceLockPeriod: () => coerceRel(lock),
     getLowestRate: () => lowest,
-    getAuctionStartDelay: () =>
-      TimeMath.coerceRelativeTimeRecord(delay, timerBrand),
+    getAuctionStartDelay: () => coerceRel(delay),
   };
 };
 
@@ -41,23 +41,16 @@ const makeDefaultParams = ({
  * @param {any} rawExpect
  */
 const checkSchedule = (t, params, baseTime, rawExpect) => {
-  /** @type {import('@agoric/time/src/types').TimestampRecord} */
-  // @ts-expect-error known for testing
-  const startFrequency = params.getStartFrequency();
-  const brand = startFrequency.timerBrand;
-  const schedule = computeRoundTiming(
-    params,
-    TimeMath.coerceTimestampRecord(baseTime, brand),
-  );
+  const schedule = computeRoundTiming(params, coerceAbs(baseTime));
 
   const expect = {
-    startTime: TimeMath.coerceTimestampRecord(rawExpect.startTime, brand),
-    endTime: TimeMath.coerceTimestampRecord(rawExpect.endTime, brand),
+    startTime: coerceAbs(rawExpect.startTime),
+    endTime: coerceAbs(rawExpect.endTime),
     steps: rawExpect.steps,
     endRate: rawExpect.endRate,
-    startDelay: TimeMath.coerceRelativeTimeRecord(rawExpect.startDelay, brand),
-    clockStep: TimeMath.coerceRelativeTimeRecord(rawExpect.clockStep, brand),
-    lockTime: TimeMath.coerceTimestampRecord(rawExpect.lockTime, brand),
+    startDelay: coerceRel(rawExpect.startDelay),
+    clockStep: coerceRel(rawExpect.clockStep),
+    lockTime: coerceAbs(rawExpect.lockTime),
   };
   t.deepEqual(schedule, expect);
 };
@@ -68,14 +61,7 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
  * @param {number} baseTime
  */
 const checkScheduleNull = (t, params, baseTime) => {
-  /** @type {import('@agoric/time/src/types').TimestampRecord} */
-  // @ts-expect-error known for testing
-  const startFrequency = params.getStartFrequency();
-  const brand = startFrequency.timerBrand;
-  const schedule = computeRoundTiming(
-    params,
-    TimeMath.coerceTimestampRecord(baseTime, brand),
-  );
+  const schedule = computeRoundTiming(params, coerceAbs(baseTime));
 
   t.is(schedule, undefined);
 };
@@ -224,10 +210,10 @@ const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
 const checkDescendingStep = (t, liveSchedule, nextSchedule, now, expected) => {
   const brand = nextSchedule.startTime.timerBrand;
 
-  const nowTime = TimeMath.coerceTimestampRecord(now, brand);
+  const nowTime = coerceAbs(now);
   t.deepEqual(
     nextDescendingStepTime(liveSchedule, nextSchedule, nowTime),
-    TimeMath.coerceTimestampRecord(expected, brand),
+    coerceAbs(expected),
   );
 };
 
