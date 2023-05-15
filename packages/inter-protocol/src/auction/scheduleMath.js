@@ -33,7 +33,7 @@ const subtract1 = relTime =>
  * selling early (e.g. reaching their target debt to raise or selling all of
  * their collateral).
  *
- * @param {Awaited<import('./params.js').AuctionParamManaager>} params
+ * @param {Awaited<import('./params.js').AuctionParamManager>} params
  * @param {Timestamp} baseTime
  * @returns {import('./scheduler.js').Schedule}
  */

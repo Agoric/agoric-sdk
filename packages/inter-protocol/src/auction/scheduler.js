@@ -69,7 +69,7 @@ const safelyComputeRoundTiming = (params, baseTime) => {
 /**
  * @param {AuctionDriver} auctionDriver
  * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {Awaited<import('./params.js').AuctionParamManaager>} params
+ * @param {Awaited<import('./params.js').AuctionParamManager>} params
  * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
  * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
