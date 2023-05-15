@@ -4,10 +4,17 @@ import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import '@agoric/zoe/exported.js';
 
+import { NonNullish } from '@agoric/assert';
 import {
   computeRoundTiming,
   nextDescendingStepTime,
+  timeVsSchedule,
 } from '../../src/auction/scheduleMath.js';
+
+/** @type {import('@agoric/time').TimerBrand} */
+const timerBrand = Far('timerBrand');
+const coerceAbs = time => TimeMath.coerceTimestampRecord(time, timerBrand);
+const coerceRel = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
 
 const makeDefaultParams = ({
   freq = 3600,
@@ -17,65 +24,47 @@ const makeDefaultParams = ({
   lock = 15 * 60,
   lowest = 6_500n,
 } = {}) => {
-  /** @type {import('@agoric/time').TimerBrand} */
-  const timerBrand = Far('timerBrand');
-
   return {
-    getStartFrequency: () =>
-      TimeMath.coerceRelativeTimeRecord(freq, timerBrand),
-    getClockStep: () => TimeMath.coerceRelativeTimeRecord(step, timerBrand),
+    getStartFrequency: () => coerceRel(freq),
+    getClockStep: () => coerceRel(step),
     getStartingRate: () => 10_500n,
     getDiscountStep: () => discount,
-    getPriceLockPeriod: () =>
-      TimeMath.coerceRelativeTimeRecord(lock, timerBrand),
+    getPriceLockPeriod: () => coerceRel(lock),
     getLowestRate: () => lowest,
-    getAuctionStartDelay: () =>
-      TimeMath.coerceRelativeTimeRecord(delay, timerBrand),
+    getAuctionStartDelay: () => coerceRel(delay),
   };
 };
 
 /**
  * @param {any} t
- * @param {ReturnType<makeDefaultParams>} params
+ * @param {*} params
  * @param {number} baseTime
  * @param {any} rawExpect
  */
 const checkSchedule = (t, params, baseTime, rawExpect) => {
-  /** @type {import('@agoric/time/src/types').TimestampRecord} */
-  // @ts-expect-error known for testing
-  const startFrequency = params.getStartFrequency();
-  const brand = startFrequency.timerBrand;
-  const schedule = computeRoundTiming(
-    params,
-    TimeMath.coerceTimestampRecord(baseTime, brand),
-  );
+  const schedule = computeRoundTiming(params, coerceAbs(baseTime));
 
   const expect = {
-    startTime: TimeMath.coerceTimestampRecord(rawExpect.startTime, brand),
-    endTime: TimeMath.coerceTimestampRecord(rawExpect.endTime, brand),
+    startTime: coerceAbs(rawExpect.startTime),
+    endTime: coerceAbs(rawExpect.endTime),
     steps: rawExpect.steps,
     endRate: rawExpect.endRate,
-    startDelay: TimeMath.coerceRelativeTimeRecord(rawExpect.startDelay, brand),
-    clockStep: TimeMath.coerceRelativeTimeRecord(rawExpect.clockStep, brand),
-    lockTime: TimeMath.coerceTimestampRecord(rawExpect.lockTime, brand),
+    startDelay: coerceRel(rawExpect.startDelay),
+    clockStep: coerceRel(rawExpect.clockStep),
+    lockTime: coerceAbs(rawExpect.lockTime),
   };
   t.deepEqual(schedule, expect);
 };
 
 /**
  * @param {any} t
- * @param {ReturnType<makeDefaultParams>} params
+ * @param {*} params
  * @param {number} baseTime
- * @param {any} expectMessage  XXX should be {ThrowsExpectation}
+ * @param {string | RegExp} message
  */
-const checkScheduleThrows = (t, params, baseTime, expectMessage) => {
-  /** @type {import('@agoric/time/src/types').TimestampRecord} */
-  // @ts-expect-error known for testing
-  const startFrequency = params.getStartFrequency();
-  const brand = startFrequency.timerBrand;
-  const baseTimeRecord = TimeMath.coerceTimestampRecord(baseTime, brand);
-  t.throws(() => computeRoundTiming(params, baseTimeRecord), {
-    message: expectMessage,
+const checkScheduleThrows = async (t, params, baseTime, message) => {
+  t.throws(() => computeRoundTiming(params, coerceAbs(baseTime)), {
+    message,
   });
 };
 
@@ -131,7 +120,7 @@ test(
   checkScheduleThrows,
   makeDefaultParams({ lock: 3600 }),
   100,
-  /startFrequency must exceed lock period/,
+  /startFrequency must exceed lock period, .*3600n.*3600n/,
 );
 
 test(
@@ -139,7 +128,7 @@ test(
   checkScheduleThrows,
   makeDefaultParams({ freq: 500, lock: 300 }),
   100,
-  /clockStep .* must be shorter than startFrequency /,
+  /clockStep "\[600n]" must be shorter than startFrequency "\[500n]" to allow at least one step down/,
 );
 
 test(
@@ -147,7 +136,7 @@ test(
   checkScheduleThrows,
   makeDefaultParams({ delay: 5000 }),
   100,
-  /startFrequency must exceed startDelay/,
+  /startFrequency must exceed startDelay, .*3600n.*5000n/,
 );
 
 test(
@@ -179,7 +168,7 @@ test(
   checkScheduleThrows,
   makeDefaultParams({ lowest: 10_600n }),
   100,
-  /startingRate "\[10500n]" must be more than/,
+  /startingRate "\[10500n]" must be more than lowest: "\[10600n]"/,
 );
 
 // If the steps are small enough that we can't get to the end_rate, we'll cut
@@ -221,17 +210,15 @@ test(
 const TWO_PM = 1680876000n;
 const FIVE_MINUTES = 5n * 60n;
 const FIFTEEN_MINUTES = 15n * 60n;
-const defaults = makeDefaultParams();
+const defaults = /** @type {any} */ (makeDefaultParams());
 const TWO_PM_SCHED = computeRoundTiming(defaults, TWO_PM - 1n);
 const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
 
 const checkDescendingStep = (t, liveSchedule, nextSchedule, now, expected) => {
-  const brand = nextSchedule.startTime.timerBrand;
-
-  const nowTime = TimeMath.coerceTimestampRecord(now, brand);
+  const nowTime = coerceAbs(now);
   t.deepEqual(
     nextDescendingStepTime(liveSchedule, nextSchedule, nowTime),
-    TimeMath.coerceTimestampRecord(expected, brand),
+    coerceAbs(expected),
   );
 };
 
@@ -288,3 +275,18 @@ test(
   TWO_PM + 45n * 60n + 1n,
   TWO_PM + 60n * 60n + FIVE_MINUTES,
 );
+
+test('timeVsSchedule', t => {
+  const params = /** @type {any} */ (makeDefaultParams());
+
+  const schedule = NonNullish(computeRoundTiming(params, coerceAbs(100n)));
+  console.log(schedule);
+
+  t.is(timeVsSchedule(0n, schedule), 'before');
+  t.is(timeVsSchedule(schedule.startTime, schedule), 'during');
+  t.is(timeVsSchedule(schedule.endTime, schedule), 'endExactly');
+  t.is(
+    timeVsSchedule(TimeMath.addAbsRel(schedule.endTime, 1n), schedule),
+    'after',
+  );
+});

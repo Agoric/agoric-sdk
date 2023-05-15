@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { subscribeEach } from '@agoric/notifier';
+import { subscribeEach, makePublishKit } from '@agoric/notifier';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 import { prepareMockRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
@@ -66,15 +66,18 @@ test('schedule start to finish', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. Wrong kind of subscriber.
+    subscriber,
   );
   const schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
   const firstSchedule = {
     startTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(135n, timerBrand),
@@ -97,7 +100,7 @@ test('schedule start to finish', async t => {
   t.true(fakeAuctioneer.getState().lockedPrices);
 
   await scheduleTracker.assertInitial({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
   });
@@ -153,7 +156,7 @@ test('schedule start to finish', async t => {
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: 141n },
   });
   now = await timer.advanceTo(now + 1n);
@@ -165,7 +168,7 @@ test('schedule start to finish', async t => {
   t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
 
   const finalSchedule = scheduler.getSchedule();
-  t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+  t.deepEqual(finalSchedule.liveAuctionSchedule, null);
   const secondSchedule = {
     startTime: TimeMath.coerceTimestampRecord(141n, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(145n, timerBrand),
@@ -183,7 +186,7 @@ test('schedule start to finish', async t => {
     nextStartTime: { absValue: 151n },
   });
 
-  t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
+  t.deepEqual(finalSchedule.liveAuctionSchedule, null);
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
   now = await timer.advanceTo(now + 1n);
@@ -233,7 +236,7 @@ test('schedule start to finish', async t => {
   await timer.advanceTo(now + 1n);
 
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: 151n },
   });
 
@@ -279,6 +282,7 @@ test('lowest >= starting', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -287,8 +291,13 @@ test('lowest >= starting', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
-    { message: /startingRate "\[105n]" must be more than lowest: "\[110n]"/ },
+    {
+      message:
+        /startingRate \\"\[105n]\\" must be more than lowest: \\"\[110n]\\"/,
+    },
   );
 });
 
@@ -328,6 +337,7 @@ test('zero time for auction', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -336,10 +346,12 @@ test('zero time for auction', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
     {
       message:
-        /clockStep "\[3n]" must be shorter than startFrequency "\[2n]" to allow at least one step down/,
+        /clockStep \\"\[3n]\\" must be shorter than startFrequency \\"\[2n]\\" to allow at least one step down/,
     },
   );
 });
@@ -377,6 +389,7 @@ test('discountStep 0', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -385,8 +398,10 @@ test('discountStep 0', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
-    { message: 'Division by zero' },
+    { message: /Division by zero/ },
   );
 });
 
@@ -424,6 +439,7 @@ test('discountStep larger than starting rate', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -432,6 +448,8 @@ test('discountStep larger than starting rate', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
     { message: /discountStep .* too large for requested rates/ },
   );
@@ -470,6 +488,7 @@ test('start Freq 0', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -478,6 +497,8 @@ test('start Freq 0', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
     { message: /startFrequency must exceed startDelay.*0n.*10n.*/ },
   );
@@ -517,6 +538,7 @@ test('delay > freq', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -525,6 +547,8 @@ test('delay > freq', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
     { message: /startFrequency must exceed startDelay.*\[20n\].*\[40n\].*/ },
   );
@@ -565,6 +589,7 @@ test('lockPeriod > freq', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   await t.throwsAsync(
     () =>
       makeScheduler(
@@ -573,6 +598,8 @@ test('lockPeriod > freq', async t => {
         paramManager,
         timer.getTimerBrand(),
         recorderKit.recorder,
+        // @ts-expect-error Oops. wrong kind of subscriber.
+        subscriber,
       ),
     {
       message: /startFrequency must exceed lock period.*\[3600n\].*\[7200n\].*/,
@@ -621,16 +648,19 @@ test('duration = freq', async t => {
     zcf,
     paramValues,
   );
-
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+
   let schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
   const firstSchedule = {
     startTime: TimeMath.coerceTimestampRecord(365n, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(665n, timerBrand),
@@ -710,15 +740,18 @@ test('change Schedule', async t => {
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   await paramManager.getParams();
 
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
   let schedule = scheduler.getSchedule();
-  t.is(schedule.liveAuctionSchedule, undefined);
+  t.is(schedule.liveAuctionSchedule, null);
 
   const lockTime = 345n;
   const startTime = 365n;
@@ -843,21 +876,24 @@ test('schedule anomalies', async t => {
     paramValues,
   );
 
+  const { subscriber } = makePublishKit();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
     paramManager,
     timer.getTimerBrand(),
     recorderKit.recorder,
+    // @ts-expect-error Oops. Wrong kind of subscriber.
+    subscriber,
   );
   const firstStart = baseTime + delay;
   await scheduleTracker.assertInitial({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: timestamp(firstStart),
     nextStartTime: TimeMath.coerceTimestampRecord(baseTime + delay, timerBrand),
   });
   const schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
 
   t.false(fakeAuctioneer.getState().lockedPrices);
   // ////////////// LOCK TIME ///////////
@@ -928,7 +964,7 @@ test('schedule anomalies', async t => {
   await timer.advanceTo(firstStart + 2n * step);
   await eventLoopIteration();
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: firstStart + oneCycle },
   });
 
@@ -987,7 +1023,7 @@ test('schedule anomalies', async t => {
   // ////////////// DESCENDING STEP ///////////
   now = await timer.advanceTo(secondStart + 2n * step);
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
+    activeStartTime: null,
     nextDescendingStepTime: { absValue: thirdStart },
   });
 
@@ -999,36 +1035,27 @@ test('schedule anomalies', async t => {
   const lateStart = baseTime + 2n * oneCycle + delay;
   await timer.advanceTo(lateStart + 300n);
   await scheduleTracker.assertChange({
-    activeStartTime: timestamp(lateStart),
-    nextDescendingStepTime: { absValue: lateStart + 2n * step },
-    nextStartTime: { absValue: lateStart + oneCycle },
+    // a cycle later
+    activeStartTime: timestamp(lateStart + oneCycle),
+    nextDescendingStepTime: { absValue: lateStart + oneCycle },
+    nextStartTime: { absValue: lateStart + 2n * oneCycle },
   });
 
-  t.is(fakeAuctioneer.getState().step, 6);
-  t.false(fakeAuctioneer.getState().final);
+  t.is(fakeAuctioneer.getState().step, 5);
+  t.true(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().lockedPrices);
-  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3, 5]);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 
   // ////////////// DESCENDING STEP ///////////
   await timer.advanceTo(lateStart + 2n * step);
-  await scheduleTracker.assertChange({});
+  // no change to schedule
 
-  t.is(fakeAuctioneer.getState().step, 6);
-  t.false(fakeAuctioneer.getState().final);
+  t.is(fakeAuctioneer.getState().step, 5);
+  t.true(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().lockedPrices);
 
   const schedule4 = scheduler.getSchedule();
   const fifthSchedule = {
-    startTime: timestamp(lateStart),
-    endTime: timestamp(lateStart + duration - delay),
-    steps: 2n,
-    endRate: 6500n,
-    startDelay: relative(delay),
-    clockStep: relative(step),
-    lockTime: timestamp(lateStart - lock),
-  };
-  t.deepEqual(schedule4.liveAuctionSchedule, fifthSchedule);
-  const sixthSchedule = {
     startTime: timestamp(lateStart + oneCycle),
     endTime: timestamp(lateStart + oneCycle + duration - delay),
     steps: 2n,
@@ -1036,6 +1063,16 @@ test('schedule anomalies', async t => {
     startDelay: relative(delay),
     clockStep: relative(step),
     lockTime: timestamp(lateStart + oneCycle - lock),
+  };
+  t.deepEqual(schedule4.liveAuctionSchedule, fifthSchedule);
+  const sixthSchedule = {
+    startTime: timestamp(lateStart + 2n * oneCycle),
+    endTime: timestamp(lateStart + 2n * oneCycle + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(lateStart + 2n * oneCycle - lock),
   };
   t.deepEqual(schedule4.nextAuctionSchedule, sixthSchedule);
 
@@ -1046,8 +1083,8 @@ test('schedule anomalies', async t => {
   // This schedule is published as a side effect of closing out the incomplete
   // auction. The next one follows immediately and is correct.
   await scheduleTracker.assertChange({
-    activeStartTime: undefined,
-    nextDescendingStepTime: { absValue: 1700013630n },
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: 1700017230n },
   });
   const veryLateActual = veryLateStart + oneCycle + delay;
   await scheduleTracker.assertChange({
@@ -1059,7 +1096,7 @@ test('schedule anomalies', async t => {
   t.true(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().lockedPrices);
 
-  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3, 5]);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 
   const schedule5 = scheduler.getSchedule();
   const seventhSchedule = {

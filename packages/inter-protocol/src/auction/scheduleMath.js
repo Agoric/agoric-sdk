@@ -2,41 +2,54 @@
 
 import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeTracer } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 
 const { subtract, multiply, floorDivide } = natSafeMath;
 const { Fail } = assert;
 
 const trace = makeTracer('SMath', false);
 
-export const computeRoundTiming = (params, baseTime) => {
-  // currently a TimeValue; hopefully a TimeRecord soon
-  /** @type {RelativeTime} */
-  const freq = params.getStartFrequency();
-  /** @type {RelativeTime} */
-  const clockStep = params.getClockStep();
-  /** @type {NatValue} */
-  const startingRate = params.getStartingRate();
-  /** @type {NatValue} */
-  const discountStep = params.getDiscountStep();
-  /** @type {RelativeTime} */
-  const lockPeriod = params.getPriceLockPeriod();
-  /** @type {NatValue} */
-  const lowestRate = params.getLowestRate();
+const subtract1 = relTime =>
+  TimeMath.subtractRelRel(
+    relTime,
+    TimeMath.coerceRelativeTimeRecord(1n, relTime.timerBrand),
+  );
 
-  /** @type {RelativeTime} */
+/**
+ * The length of the auction has to be inferred from the governed params.
+ *
+ * 1. The auction starts by offering collateral at a `StartingRate` (e.g., 105%)
+ *    of the market price at auction start, and continues until it reaches
+ *    (or would exceed on its next step) LowestRate (e.g., 65%)
+ * 2. The offer price changes every `ClockStep` seconds
+ * 3. The offer price changes by `DiscountStep` amount (e.g., 5%) each step So
+ *    it must run however many `ClockSteps` are required to get from
+ *    `StartingRate` to `LowestRate` changing by `DiscountStep` each time.
+ *
+ * Therefore, the duration is `(StartingRate - LowestRate) / DiscountStep * ClockStep`.
+ *
+ * Note that this is what's *scheduled*. More than one auction can be running
+ * simultaneously, and some conditions can cause some of the auctions to stop
+ * selling early (e.g. reaching their target debt to raise or selling all of
+ * their collateral).
+ *
+ * @param {Awaited<import('./params.js').AuctionParamManager>} params
+ * @param {Timestamp} baseTime
+ * @returns {import('./scheduler.js').Schedule}
+ */
+export const computeRoundTiming = (params, baseTime) => {
+  const freq = params.getStartFrequency();
+  const clockStep = params.getClockStep();
+  const startingRate = params.getStartingRate();
+  const discountStep = params.getDiscountStep();
+  const lockPeriod = params.getPriceLockPeriod();
+  const lowestRate = params.getLowestRate();
   const startDelay = params.getAuctionStartDelay();
+
   TimeMath.compareRel(freq, startDelay) > 0 ||
     Fail`startFrequency must exceed startDelay, ${freq}, ${startDelay}`;
   TimeMath.compareRel(freq, lockPeriod) > 0 ||
     Fail`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`;
-
-  startingRate > lowestRate ||
-    Fail`startingRate ${startingRate} must be more than lowest: ${lowestRate}`;
-  const rateChange = subtract(startingRate, lowestRate);
-  const requestedSteps = floorDivide(rateChange, discountStep);
-  requestedSteps > 0n ||
-    Fail`discountStep ${discountStep} too large for requested rates`;
   TimeMath.compareRel(freq, clockStep) >= 0 ||
     Fail`clockStep ${TimeMath.relValue(
       clockStep,
@@ -44,22 +57,31 @@ export const computeRoundTiming = (params, baseTime) => {
       freq,
     )} to allow at least one step down`;
 
-  const requestedDuration = TimeMath.multiplyRelNat(clockStep, requestedSteps);
-  const targetDuration =
-    TimeMath.compareRel(requestedDuration, freq) < 0
-      ? requestedDuration
-      : TimeMath.subtractRelRel(freq, 1n);
-  const steps = TimeMath.divideRelRel(targetDuration, clockStep);
-  const duration = TimeMath.multiplyRelNat(clockStep, steps);
+  startingRate > lowestRate ||
+    Fail`startingRate ${startingRate} must be more than lowest: ${lowestRate}`;
 
+  const rateChange = subtract(startingRate, lowestRate);
+  const requestedSteps = floorDivide(rateChange, discountStep);
+  requestedSteps > 0n ||
+    Fail`discountStep ${discountStep} too large for requested rates`;
+
+  // How many steps fit in a full auction? We want the biggest integer for which
+  // steps * discountStep <= startingRate - lowestRate, and
+  // steps * clockStep < freq
+  const maxRateSteps = floorDivide(startingRate - lowestRate, discountStep);
+  const maxTimeSteps = TimeMath.divideRelRel(subtract1(freq), clockStep);
+  const steps = maxRateSteps < maxTimeSteps ? maxRateSteps : maxTimeSteps;
+
+  const duration = TimeMath.multiplyRelNat(clockStep, steps);
   steps > 0n ||
     Fail`clockStep ${clockStep} too long for auction duration ${duration}`;
   const endRate = subtract(startingRate, multiply(steps, discountStep));
 
+  // Use a duration that exactly matches the last step completing (no remainder)
   const actualDuration = TimeMath.multiplyRelNat(clockStep, steps);
-  // computed start is baseTime + freq - (now mod freq). if there are hourly
-  // starts, we add an hour to the time, and subtract now mod freq.
-  // Then we add the delay
+  // computed start is `startDelay + baseTime + freq - (baseTime mod freq)`.
+  // That is, if there are hourly starts, we add an hour to the time, and
+  // subtract baseTime mod freq. Then we add the delay.
   /** @type {import('@agoric/time/src/types').TimestampRecord} */
   const startTime = TimeMath.addAbsRel(
     TimeMath.addAbsRel(
@@ -91,15 +113,16 @@ harden(computeRoundTiming);
  * auction has started, then it'll be nextSchedule.startTime. Otherwise, it's
  * the start of the step following the current step.
  *
- * @param {import('./scheduler.js').Schedule | undefined} liveSchedule
- * @param {import('./scheduler.js').Schedule} nextSchedule
+ * @param {import('./scheduler.js').Schedule | null} liveSchedule
+ * @param {import('./scheduler.js').Schedule | null} nextSchedule
  * @param {Timestamp} now
+ * @returns {Timestamp | null}
  */
 export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
   nextSchedule || Fail`nextSchedule must always be defined`;
 
   if (!liveSchedule) {
-    return nextSchedule.startTime;
+    return nextSchedule?.startTime || null;
   }
 
   const { startTime, endTime, clockStep } = liveSchedule;
@@ -114,9 +137,33 @@ export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
   const expectedNext = TimeMath.addAbsRel(lastStepStart, clockStep);
 
   if (TimeMath.compareAbs(expectedNext, endTime) > 0) {
-    return nextSchedule.startTime;
+    return nextSchedule?.startTime || null;
   }
 
   return expectedNext;
 };
 harden(nextDescendingStepTime);
+
+/**
+ *
+ * @param {Timestamp} time
+ * @param {import('./scheduler.js').Schedule} schedule
+ * @returns {'before' | 'during' | 'endExactly' | 'after'}
+ */
+export const timeVsSchedule = (time, schedule) => {
+  const { startTime, endTime } = schedule;
+  assertAllDefined({ startTime, endTime });
+
+  if (TimeMath.compareAbs(time, schedule.startTime) < 0) {
+    return 'before';
+  }
+  if (TimeMath.compareAbs(time, schedule.endTime) < 0) {
+    return 'during';
+  }
+  if (TimeMath.compareAbs(time, schedule.endTime) === 0) {
+    return 'endExactly';
+  }
+
+  return 'after';
+};
+harden(timeVsSchedule);

@@ -573,16 +573,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   });
 
-  const scheduler = await E.when(scheduleKit.recorderP, scheduleRecorder =>
-    makeScheduler(
-      driver,
-      timer,
-      // @ts-expect-error types are correct. How to convince TS?
-      params,
-      timerBrand,
-      scheduleRecorder,
-    ),
-  );
+  // eslint-disable-next-line no-use-before-define
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
   /**
@@ -649,7 +640,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         );
       },
       getSchedules() {
-        return E(scheduler).getSchedule();
+        // eslint-disable-next-line no-use-before-define
+        return scheduler.getSchedule();
       },
       getScheduleUpdates() {
         return scheduleKit.subscriber;
@@ -669,6 +661,18 @@ export const start = async (zcf, privateArgs, baggage) => {
       makeDepositInvitation,
       ...params,
     }),
+  );
+
+  const scheduler = await E.when(scheduleKit.recorderP, scheduleRecorder =>
+    makeScheduler(
+      driver,
+      timer,
+      // @ts-expect-error types are correct. How to convince TS?
+      params,
+      timerBrand,
+      scheduleRecorder,
+      publicFacet.getSubscription(),
+    ),
   );
 
   const creatorFacet = makeFarGovernorFacet(

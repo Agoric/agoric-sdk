@@ -171,4 +171,4 @@ export const makeGovernedTerms = (
 };
 harden(makeGovernedTerms);
 
-/** @typedef {ReturnType<typeof makeAuctioneerParamManager>} AuctionParamManaager */
+/** @typedef {ReturnType<typeof makeAuctioneerParamManager>} AuctionParamManager */

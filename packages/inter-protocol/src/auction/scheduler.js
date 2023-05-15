@@ -2,11 +2,16 @@ import { E } from '@endo/eventual-send';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 
-import { AuctionState } from './util.js';
-import { nextDescendingStepTime, computeRoundTiming } from './scheduleMath.js';
+import { AuctionState, makeCancelTokenMaker } from './util.js';
+import {
+  computeRoundTiming,
+  nextDescendingStepTime,
+  timeVsSchedule,
+} from './scheduleMath.js';
 
-const { Fail, quote: q } = assert;
+const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('SCHED', false);
 
@@ -31,10 +36,8 @@ const MAX_LATE_TICK = 300n;
  * progress. It would take additional work on the manual timer to test this
  * thoroughly.
  */
-const makeCancelToken = () => {
-  let tokenCount = 1;
-  return Far(`cancelToken${(tokenCount += 1)}`, {});
-};
+
+const makeCancelToken = makeCancelTokenMaker('scheduler');
 
 /**
  * @typedef {object} AuctionDriver
@@ -47,19 +50,29 @@ const makeCancelToken = () => {
 /**
  * @typedef {object} ScheduleNotification
  *
- * @property {Timestamp | undefined} activeStartTime start time of current
+ * @property {Timestamp | null} activeStartTime start time of current
  *    auction if auction is active
- * @property {Timestamp} nextStartTime start time of next auction
- * @property {Timestamp} nextDescendingStepTime when the next descending step
+ * @property {Timestamp | null} nextStartTime start time of next auction
+ * @property {Timestamp | null} nextDescendingStepTime when the next descending step
  *    will take place
  */
+
+const safelyComputeRoundTiming = (params, baseTime) => {
+  try {
+    return computeRoundTiming(params, baseTime);
+  } catch (e) {
+    console.error('No Next Auction', assert.error(e));
+    return null;
+  }
+};
 
 /**
  * @param {AuctionDriver} auctionDriver
  * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {Awaited<import('./params.js').AuctionParamManaager>} params
+ * @param {Awaited<import('./params.js').AuctionParamManager>} params
  * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
+ * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
  */
 export const makeScheduler = async (
   auctionDriver,
@@ -67,21 +80,22 @@ export const makeScheduler = async (
   params,
   timerBrand,
   scheduleRecorder,
+  paramUpdateSubscription,
 ) => {
   /**
    * live version is defined when an auction is active.
    *
-   * @type {Schedule | undefined}
+   * @type {Schedule | null}
    */
-  let liveSchedule;
+  let liveSchedule = null;
 
-  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule }>} */
+  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule | null }>} */
   const initializeNextSchedule = async () => {
     return E.when(
       // XXX manualTimer returns a bigint, not a timeRecord.
       E(timer).getCurrentTimestamp(),
       now => {
-        const nextSchedule = computeRoundTiming(
+        const nextSchedule = safelyComputeRoundTiming(
           params,
           TimeMath.coerceTimestampRecord(now, timerBrand),
         );
@@ -106,8 +120,8 @@ export const makeScheduler = async (
    */
   const publishSchedule = () => {
     const sched = harden({
-      activeStartTime: liveSchedule?.startTime,
-      nextStartTime: nextSchedule?.startTime,
+      activeStartTime: liveSchedule?.startTime || null,
+      nextStartTime: nextSchedule?.startTime || null,
       nextDescendingStepTime: nextDescendingStepTime(
         liveSchedule,
         nextSchedule,
@@ -118,7 +132,7 @@ export const makeScheduler = async (
   };
 
   /**
-   * @param {Schedule | undefined} schedule
+   * @param {Schedule | null} schedule
    */
   const clockTick = schedule => {
     trace('clockTick', schedule?.startTime, now);
@@ -126,23 +140,10 @@ export const makeScheduler = async (
       return;
     }
 
-    if (
-      TimeMath.compareAbs(now, schedule.startTime) >= 0 &&
-      TimeMath.compareAbs(now, schedule.endTime) <= 0
-    ) {
-      if (auctionState !== AuctionState.ACTIVE) {
-        auctionState = AuctionState.ACTIVE;
-        auctionDriver.startRound();
-      } else {
-        auctionDriver.reducePriceAndTrade();
-      }
-    }
-
-    if (TimeMath.compareAbs(now, schedule.endTime) >= 0) {
+    /** @type {() => Promise<void>} */
+    const finishAuctionRound = () => {
       auctionState = AuctionState.WAITING;
-
       auctionDriver.finalize();
-
       if (!nextSchedule) throw Fail`nextSchedule not defined`;
 
       // only recalculate the next schedule at this point if the lock time has
@@ -153,11 +154,52 @@ export const makeScheduler = async (
           now,
           TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
         );
-        nextSchedule = computeRoundTiming(params, afterNow);
+        nextSchedule = safelyComputeRoundTiming(params, afterNow);
       }
-      liveSchedule = undefined;
 
-      void E(timer).cancel(stepCancelToken);
+      liveSchedule = null;
+      return E(timer).cancel(stepCancelToken);
+    };
+
+    const advanceRound = () => {
+      if (auctionState === AuctionState.ACTIVE) {
+        auctionDriver.reducePriceAndTrade();
+      } else {
+        auctionState = AuctionState.ACTIVE;
+        try {
+          auctionDriver.startRound();
+          // This has been observed to fail because prices hadn't been locked.
+          // This may be an issue about timing during chain start-up.
+        } catch (e) {
+          console.error(
+            assert.error(
+              'Unable to start auction cleanly. skipping this auction round.',
+            ),
+          );
+          finishAuctionRound();
+
+          return false;
+        }
+      }
+      return true;
+    };
+
+    switch (timeVsSchedule(now, schedule)) {
+      case 'before':
+        break;
+      case 'during':
+        advanceRound();
+        break;
+      case 'endExactly':
+        if (advanceRound()) {
+          finishAuctionRound();
+        }
+        break;
+      case 'after':
+        finishAuctionRound();
+        break;
+      default:
+        Fail`invalid case`;
     }
 
     publishSchedule();
@@ -200,7 +242,7 @@ export const makeScheduler = async (
         wake(time) {
           setTimeMonotonically(time);
           // eslint-disable-next-line no-use-before-define
-          void startAuction();
+          return startAuction();
         },
       }),
     );
@@ -226,14 +268,24 @@ export const makeScheduler = async (
   const startAuction = async () => {
     !liveSchedule || Fail`can't start an auction round while one is active`;
 
-    assert(nextSchedule);
+    if (!nextSchedule) {
+      console.error(
+        assert.error(X`tried to start auction when none is scheduled`),
+      );
+      return;
+    }
+
     // The clock tick may have arrived too late to trigger the next scheduled
     // round, for example because of a chain halt.  When this happens the oracle
     // quote may out of date and so must be ignored. Recover by returning
     // deposits and scheduling the next round. If it's only a little late,
     // continue with auction, just starting late.
-    if (TimeMath.compareAbs(now, nextSchedule.startTime) > 0) {
-      const late = TimeMath.subtractAbsAbs(now, nextSchedule.startTime);
+    const nominalStart = TimeMath.subtractAbsRel(
+      nextSchedule.startTime,
+      nextSchedule.startDelay,
+    );
+    if (TimeMath.compareAbs(now, nominalStart) > 0) {
+      const late = TimeMath.subtractAbsAbs(now, nominalStart);
       const maxLate = relativeTime(MAX_LATE_TICK);
 
       if (TimeMath.compareRel(late, maxLate) > 0) {
@@ -242,15 +294,22 @@ export const makeScheduler = async (
             nextSchedule.startTime,
           )}. Skipping that round.`,
         );
-        nextSchedule = computeRoundTiming(params, now);
+        nextSchedule = safelyComputeRoundTiming(params, now);
       } else {
         console.warn(`Auction started late by ${q(late)}. Starting ${q(now)}`);
       }
     }
+
+    if (!nextSchedule) {
+      return;
+    }
     liveSchedule = nextSchedule;
 
     const after = TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n));
-    nextSchedule = computeRoundTiming(params, after);
+    nextSchedule = safelyComputeRoundTiming(params, after);
+    if (!nextSchedule) {
+      return;
+    }
 
     scheduleSteps();
     scheduleNextRound(
@@ -259,12 +318,32 @@ export const makeScheduler = async (
     schedulePriceLock(nextSchedule.lockTime);
   };
 
-  const firstStart = TimeMath.subtractAbsRel(
-    nextSchedule.startTime,
-    nextSchedule.startDelay,
+  // initial setting:  firstStart is startDelay before next's startTime
+  const startSchedulingFromScratch = () => {
+    if (nextSchedule) {
+      const firstStart = TimeMath.subtractAbsRel(
+        nextSchedule.startTime,
+        nextSchedule.startDelay,
+      );
+      scheduleNextRound(firstStart);
+      schedulePriceLock(nextSchedule.lockTime);
+    }
+  };
+  startSchedulingFromScratch();
+
+  // when auction parameters change, schedule a next auction if one isn't
+  // already scheduled
+  observeIteration(
+    subscribeEach(paramUpdateSubscription),
+    harden({
+      async updateState(_newState) {
+        if (!liveSchedule && !nextSchedule) {
+          ({ nextSchedule } = await initializeNextSchedule());
+          startSchedulingFromScratch();
+        }
+      },
+    }),
   );
-  scheduleNextRound(firstStart);
-  schedulePriceLock(nextSchedule.lockTime);
 
   return Far('scheduler', {
     getSchedule: () =>
@@ -289,6 +368,6 @@ export const makeScheduler = async (
 
 /**
  * @typedef {object} FullSchedule
- * @property {Schedule | undefined} nextAuctionSchedule
- * @property {Schedule | undefined} liveAuctionSchedule
+ * @property {Schedule | null} nextAuctionSchedule
+ * @property {Schedule | null} liveAuctionSchedule
  */
