@@ -61,4 +61,17 @@ test_val "$(echo "$provisionPoolMetrics" | jq -r '.totalMintedConverted.value')"
 test_val "$(echo "$provisionPoolMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/.agoric/provision_pool_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
 test_val "$(echo "$provisionPoolMetrics" | jq -r '.walletsProvisioned')" "$(cat /root/.agoric/provision_pool_metrics.json | jq -r '.walletsProvisioned')" "walletsProvisioned preserved"
 
+# vaults pre-tests
+
+# attempt to open a vault on main
+# these should fail due to debt limit starting at 0
+if [[ "$BOOTSTRAP_MODE" == "main" ]]; then
+    test_val "$(agoric follow -lF :published.vaultFactory.managers.manager0.governance -o jsonlines | jq -r '.current.DebtLimit.value.value')" "0" "boostrap(main) DebtLimit starts at 0"
+
+    OFFER=$(mktemp -t agops.XXX)
+    agops vaults open --wantMinted 5.00 --giveCollateral 9 >|"$OFFER"
+    agoric wallet print --file "$OFFER"
+    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test || true
+fi
+
 test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
