@@ -62,6 +62,34 @@
       ]
     },
     {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "keyword": "DAI_axl",
+            "proposedName": "DAI",
+            "decimalPlaces": 18,
+            "denom": "ibc/3914BDEF46F429A26917E4D8D434620EC4817DC6B6E68FB327E190902F1E9242"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "keyword": "DAI_grv",
+            "proposedName": "DAI",
+            "decimalPlaces": 18,
+            "denom": "ibc/3D5291C23D776C3AA7A7ABB34C7B023193ECD2BC42EA19D3165B2CF9652117E7"
+          }
+        }
+      ]
+    },
+    {
       "module": "@agoric/inter-protocol/scripts/price-feed-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
