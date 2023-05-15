@@ -37,7 +37,7 @@ const makeDefaultParams = ({
 
 /**
  * @param {any} t
- * @param {ReturnType<makeDefaultParams>} params
+ * @param {*} params
  * @param {number} baseTime
  * @param {any} rawExpect
  */
@@ -58,8 +58,9 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
 
 /**
  * @param {any} t
- * @param {ReturnType<makeDefaultParams>} params
+ * @param {*} params
  * @param {number} baseTime
+ * @param {string | RegExp} message
  */
 const checkScheduleThrows = async (t, params, baseTime, message) => {
   t.throws(() => computeRoundTiming(params, coerceAbs(baseTime)), {
@@ -209,7 +210,7 @@ test(
 const TWO_PM = 1680876000n;
 const FIVE_MINUTES = 5n * 60n;
 const FIFTEEN_MINUTES = 15n * 60n;
-const defaults = makeDefaultParams();
+const defaults = /** @type {any} */ (makeDefaultParams());
 const TWO_PM_SCHED = computeRoundTiming(defaults, TWO_PM - 1n);
 const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
 
@@ -276,7 +277,7 @@ test(
 );
 
 test('timeVsSchedule', t => {
-  const params = makeDefaultParams();
+  const params = /** @type {any} */ (makeDefaultParams());
 
   const schedule = NonNullish(computeRoundTiming(params, coerceAbs(100n)));
   console.log(schedule);
