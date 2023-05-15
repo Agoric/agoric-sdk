@@ -1,33 +1,31 @@
 #!/bin/bash
 set +x 
-
 . ./upgrade-test-scripts/env_setup.sh
-
 # apply patch
 sed -i "s/--econCommAcceptOfferId /--previousOfferId /g" "./packages/agoric-cli/src/commands/psm.js"
 
 waitForBlock 3
 # fund provision pool
-stakeamount="20000000ibc/toyusdc"
+stakeamount="20000000${USDC_DENOM}"
 agd tx bank send "validator" "agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346" "$stakeamount" -y --keyring-backend=test --chain-id="$CHAINID"
 waitForBlock 3
 
 
 govaccounts=( "$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR" )
-govamount="200000000ubld,100000000ibc/toyusdc,100000000ibc/toyatom"
+govamount="200000000ubld,100000000${USDC_DENOM},100000000${ATOM_DENOM}"
 
 for i in "${govaccounts[@]}"
 do
   echo "funding $i"
   agd tx bank send "validator" "$i" "$govamount" -y --keyring-backend=test --chain-id="$CHAINID"
-  waitForBlock 2
+  waitForBlock
   echo "provisioning $i"
   agd tx swingset provision-one my-wallet "$i" SMART_WALLET --keyring-backend=test  --yes --chain-id="$CHAINID" --from="$i"
   waitForBlock
+  agoric wallet show --from $i
 done
 
 waitForBlock 5
-
 # Accept invitation to economic committee
 for i in "${govaccounts[@]}"; do
   COMMITTEE_OFFER=$(mktemp -t agopscommittee.XXX)
@@ -66,7 +64,7 @@ waitForBlock 2
 # Propose a vote to raise the mint limit
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 oid="${GOV1ADDR}_CHARTER_OFFER_ID"
-agops psm proposeChangeMintLimit --pair IST.ToyUSD --limit 133337 --previousOfferId "${!oid}" >|"$PROPOSAL_OFFER"
+agops psm proposeChangeMintLimit --pair ${PSM_PAIR} --limit 133337 --previousOfferId "${!oid}" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agops perf satisfaction --from $GOV1ADDR --executeOffer $PROPOSAL_OFFER --keyring-backend=test
 
@@ -75,7 +73,7 @@ for i in "${govaccounts[@]}"; do
   VOTE_OFFER=$(mktemp -t agops.XXX)
   oid="${i}_COMMITTEE_OFFER_ID"
   echo "$i using ${!oid}"
-  agops psm vote --pair IST.ToyUSD --forPosition 0 --previousOfferId "${!oid}" >|"$VOTE_OFFER"
+  agops psm vote --pair ${PSM_PAIR} --forPosition 0 --previousOfferId "${!oid}" >|"$VOTE_OFFER"
   jq ".body | fromjson" <"$VOTE_OFFER"
 
   agops perf satisfaction --from $i --executeOffer $VOTE_OFFER --keyring-backend=test
@@ -85,21 +83,24 @@ done
 echo "waiting 1 minute for election to be resolved"
 sleep 65
 
-agops psm info --pair IST.ToyUSD
+agops psm info --pair ${PSM_PAIR}
 
+# test mint limit was adjusted
+toyUSDGovernance="$(timeout 2 agoric follow -l :published.psm.${PSM_PAIR}.governance -o jsonlines)"
+test_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "133337000000" "PSM MintLimit set correctly"
 
 
 test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom uist | jq -r .amount)" "250000" "pre-swap: validate IST"
 test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ubld | jq -r .amount)" "190000000" "pre-swap: validate BLD balance"
-test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ibc/toyusdc | jq -r .amount)" "100000000" "pre-swap: validate ToyUSD balance"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ${USDC_DENOM} | jq -r .amount)" "100000000" "pre-swap: validate USDC balance"
 
 SWAP_OFFER=$(mktemp -t agops.XXX)
-agops psm swap --pair IST.ToyUSD  --wantMinted 10.00 --feePct 0.10 >|"$SWAP_OFFER"
+agops psm swap --pair ${PSM_PAIR}  --wantMinted 10.00 --feePct 0.10 >|"$SWAP_OFFER"
 agops perf satisfaction --from $GOV1ADDR --executeOffer "$SWAP_OFFER" --keyring-backend=test
 
 test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom uist | jq -r .amount)" "10260011" "post-swap: validate IST"
 test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ubld | jq -r .amount)" "190000000" "post-swap: validate BLD balance"
-test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ibc/toyusdc | jq -r .amount)" "89989989" "post-swap: validate ToyUSD balance"
+test_val "$(agd q bank balances "$GOV1ADDR" --output=json --denom ${USDC_DENOM} | jq -r .amount)" "89989989" "post-swap: validate USDC balance"
 
 waitForBlock 3
 

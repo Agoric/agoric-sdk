@@ -34,6 +34,11 @@ if [[ "$DEST" != "1" ]]; then
     exit 0
   fi
 
+  if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
+    UPGRADE_TO=${UPGRADE_TO//agoric-/agorictest-}
+  fi
+
+
   voting_period_s=10
   latest_height=$(agd status | jq -r .SyncInfo.latest_block_height)
   height=$(( $latest_height + $voting_period_s + 10 ))
