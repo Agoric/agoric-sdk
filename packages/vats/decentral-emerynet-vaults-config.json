@@ -34,6 +34,20 @@
       ]
     },
     {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyusd",
+            "decimalPlaces": 6,
+            "keyword": "ToyUSD",
+            "proposedName": "ToyUSD"
+          }
+        }
+      ]
+    },
+    {
       "module": "@agoric/inter-protocol/scripts/price-feed-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
