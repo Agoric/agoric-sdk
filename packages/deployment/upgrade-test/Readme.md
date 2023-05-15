@@ -20,6 +20,19 @@ This will build all previous upgrades and upgrade each one.
 make build
 ```
 
+By default pre-releases use the lastest image tagged `dev` in our [container repository](https://github.com/agoric/agoric-sdk/pkgs/container/agoric-sdk). To use
+a specific build:
+
+```shell
+DEST_IMAGE=docker pull ghcr.io/agoric/agoric-sdk:20230515033839-e56ae7
+```
+To use a build based on local changes:
+```shell
+# build ghcr.io/agoric/agoric-sdk:latest
+make local_sdk build
+# or DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest make build
+```
+
 **To run the latest upgrade interactively**
 
 ```shell
