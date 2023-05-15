@@ -48,6 +48,20 @@
       ]
     },
     {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/4B53406F2FD21ABE4EF15977D0585D0C1B9C1DBBA1F911BD1463F42B067FB4D8",
+            "decimalPlaces": 6,
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin"
+          }
+        }
+      ]
+    },
+    {
       "module": "@agoric/inter-protocol/scripts/price-feed-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
