@@ -5,15 +5,6 @@ grep -qF 'printKeys' /root/.bashrc || echo "printKeys" >> /root/.bashrc
 
 tmux -V || apt install -y tmux
 
-if [ ! -d "/libfaketime/" ]; then
-  mkdir -p /libfaketime/src
-  
-  (cd /libfaketime/src && git clone https://github.com/wolfcw/libfaketime.git && cd libfaketime && make install)
-  echo "LD_PRELOAD=/usr/local/lib/faketime/libfaketime.so.1 FAKETIME_NO_CACHE=1 " >> /root/.bashrc
-fi
-export LD_PRELOAD=/usr/local/lib/faketime/libfaketime.so.1 
-export FAKETIME_NO_CACHE=1 
-
 if [[ "$DEST" == "1" ]] && [[ "$TMUX" == "" ]]; then
   echo "launching entrypoint"
   cd /usr/src/agoric-sdk || exit 1
