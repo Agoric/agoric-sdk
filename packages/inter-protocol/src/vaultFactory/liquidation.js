@@ -6,8 +6,10 @@ import { makeTracer } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeScalarMapStore } from '@agoric/store';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
+import { makeCancelTokenMaker } from '../auction/util';
 
 const trace = makeTracer('LIQ', false);
 
@@ -15,6 +17,16 @@ const trace = makeTracer('LIQ', false);
 /** @typedef {import('@agoric/time/src/types').TimerWaker} TimerWaker */
 /** @typedef {import('@agoric/time/src/types').CancelToken} CancelToken */
 /** @typedef {import('@agoric/time/src/types').RelativeTimeRecord} RelativeTimeRecord */
+
+const makeCancelToken = makeCancelTokenMaker('liq');
+
+/**
+ * This will normally be set. If the schedule goes sideways, we'll unschedule
+ * all events and unset it. When auction params are changed, we'll restart the schedule
+ *
+ * @type {object | undefined}
+ */
+let cancelToken = makeCancelToken();
 
 /**
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
@@ -30,18 +42,37 @@ const scheduleLiquidationWakeups = async (
   liquidationWaker,
   reschedulerWaker,
 ) => {
-  const [schedules, params] = await Promise.all([
+  const [schedules, params, now] = await Promise.all([
     E(auctioneerPublicFacet).getSchedules(),
     E(auctioneerPublicFacet).getGovernedParams(),
+    E(timer).getCurrentTimestamp(),
   ]);
+
+  // make one observer that will usually ignore the update.
+  observeIteration(subscribeEach(E(auctioneerPublicFacet).getSubscription()), {
+    async updateState(_newState) {
+      if (!cancelToken) {
+        cancelToken = makeCancelToken();
+        void E(timer).setWakeup(now, reschedulerWaker, cancelToken);
+      }
+    },
+  });
+
+  const waitForNewAuctionParams = () => {
+    if (cancelToken) {
+      E(timer).cancel(cancelToken);
+    }
+    cancelToken = undefined;
+  };
 
   trace('SCHEDULE', schedules.nextAuctionSchedule);
   if (!schedules.nextAuctionSchedule?.startTime) {
     // The schedule says there's no next auction.
+    waitForNewAuctionParams();
     return;
   }
 
-  const { startTime } = schedules.nextAuctionSchedule;
+  const { startTime, endTime } = schedules.nextAuctionSchedule;
 
   /** @type {RelativeTimeRecord} */
   // @ts-expect-error Casting
@@ -53,16 +84,36 @@ const scheduleLiquidationWakeups = async (
   const auctionStartDelay = params[AUCTION_START_DELAY].value;
 
   const nominalStart = TimeMath.subtractAbsRel(startTime, auctionStartDelay);
+  const afterStart = TimeMath.addAbsRel(startTime, 1n);
+
+  // scheduleLiquidationWakeups is supposed to be called just after an auction
+  // started. If we're late but there's still time for the nominal start, then
+  // we'll proceed. Reschedule for the next round if that's still in the future.
+  // Otherwise, wait for governance params to change.
+  if (TimeMath.compareAbs(now, nominalStart) > 0) {
+    if (TimeMath.compareAbs(now, endTime) < 0) {
+      if (cancelToken) {
+        E(timer).cancel(cancelToken);
+      }
+
+      void E(timer).setWakeup(afterStart, reschedulerWaker);
+      return;
+    } else {
+      waitForNewAuctionParams();
+      return;
+    }
+  }
+
+  cancelToken = cancelToken || harden({});
   const priceLockWakeTime = TimeMath.subtractAbsRel(
     nominalStart,
     priceLockPeriod,
   );
-  const afterStart = TimeMath.addAbsRel(startTime, 1n);
   const a = t => TimeMath.absValue(t);
   trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
-  void E(timer).setWakeup(priceLockWakeTime, priceLockWaker);
-  void E(timer).setWakeup(nominalStart, liquidationWaker);
-  void E(timer).setWakeup(afterStart, reschedulerWaker);
+  void E(timer).setWakeup(priceLockWakeTime, priceLockWaker, cancelToken);
+  void E(timer).setWakeup(nominalStart, liquidationWaker, cancelToken);
+  void E(timer).setWakeup(afterStart, reschedulerWaker, cancelToken);
 };
 
 /**

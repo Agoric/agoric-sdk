@@ -5,6 +5,7 @@ import {
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { Far } from '@endo/marshal';
 
 /**
  * Constants for Auction State.
@@ -46,3 +47,9 @@ export const priceFrom = quote =>
     quote.quoteAmount.value[0].amountOut,
     quote.quoteAmount.value[0].amountIn,
   );
+
+export const makeCancelTokenMaker = name => {
+  let tokenCount = 1;
+
+  return () => Far(`cancelToken-${name}-${(tokenCount += 1)}`, {});
+};

@@ -1009,36 +1009,27 @@ test('schedule anomalies', async t => {
   const lateStart = baseTime + 2n * oneCycle + delay;
   await timer.advanceTo(lateStart + 300n);
   await scheduleTracker.assertChange({
-    activeStartTime: timestamp(lateStart),
-    nextDescendingStepTime: { absValue: lateStart + 2n * step },
-    nextStartTime: { absValue: lateStart + oneCycle },
+    // a cycle later
+    activeStartTime: timestamp(lateStart + oneCycle),
+    nextDescendingStepTime: { absValue: lateStart + oneCycle },
+    nextStartTime: { absValue: lateStart + 2n * oneCycle },
   });
 
-  t.is(fakeAuctioneer.getState().step, 6);
-  t.false(fakeAuctioneer.getState().final);
+  t.is(fakeAuctioneer.getState().step, 5);
+  t.true(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().lockedPrices);
-  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3, 5]);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 
   // ////////////// DESCENDING STEP ///////////
   await timer.advanceTo(lateStart + 2n * step);
-  await scheduleTracker.assertChange({});
+  // no change to schedule
 
-  t.is(fakeAuctioneer.getState().step, 6);
-  t.false(fakeAuctioneer.getState().final);
+  t.is(fakeAuctioneer.getState().step, 5);
+  t.true(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().lockedPrices);
 
   const schedule4 = scheduler.getSchedule();
   const fifthSchedule = {
-    startTime: timestamp(lateStart),
-    endTime: timestamp(lateStart + duration - delay),
-    steps: 2n,
-    endRate: 6500n,
-    startDelay: relative(delay),
-    clockStep: relative(step),
-    lockTime: timestamp(lateStart - lock),
-  };
-  t.deepEqual(schedule4.liveAuctionSchedule, fifthSchedule);
-  const sixthSchedule = {
     startTime: timestamp(lateStart + oneCycle),
     endTime: timestamp(lateStart + oneCycle + duration - delay),
     steps: 2n,
@@ -1046,6 +1037,16 @@ test('schedule anomalies', async t => {
     startDelay: relative(delay),
     clockStep: relative(step),
     lockTime: timestamp(lateStart + oneCycle - lock),
+  };
+  t.deepEqual(schedule4.liveAuctionSchedule, fifthSchedule);
+  const sixthSchedule = {
+    startTime: timestamp(lateStart + 2n * oneCycle),
+    endTime: timestamp(lateStart + 2n * oneCycle + duration - delay),
+    steps: 2n,
+    endRate: 6500n,
+    startDelay: relative(delay),
+    clockStep: relative(step),
+    lockTime: timestamp(lateStart + 2n * oneCycle - lock),
   };
   t.deepEqual(schedule4.nextAuctionSchedule, sixthSchedule);
 
@@ -1057,7 +1058,7 @@ test('schedule anomalies', async t => {
   // auction. The next one follows immediately and is correct.
   await scheduleTracker.assertChange({
     activeStartTime: undefined,
-    nextDescendingStepTime: { absValue: 1700013630n },
+    nextDescendingStepTime: { absValue: 1700017230n },
   });
   const veryLateActual = veryLateStart + oneCycle + delay;
   await scheduleTracker.assertChange({
@@ -1069,7 +1070,7 @@ test('schedule anomalies', async t => {
   t.true(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().lockedPrices);
 
-  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3, 5]);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 
   const schedule5 = scheduler.getSchedule();
   const seventhSchedule = {

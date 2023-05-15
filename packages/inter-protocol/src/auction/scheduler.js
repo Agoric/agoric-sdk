@@ -4,8 +4,8 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
-import { AuctionState } from './util.js';
-import { nextDescendingStepTime, computeRoundTiming } from './scheduleMath.js';
+import { AuctionState, makeCancelTokenMaker } from './util.js';
+import { computeRoundTiming, nextDescendingStepTime } from './scheduleMath.js';
 
 const { details: X, Fail, quote: q } = assert;
 
@@ -32,10 +32,8 @@ const MAX_LATE_TICK = 300n;
  * progress. It would take additional work on the manual timer to test this
  * thoroughly.
  */
-const makeCancelToken = () => {
-  let tokenCount = 1;
-  return Far(`cancelToken${(tokenCount += 1)}`, {});
-};
+
+const makeCancelToken = makeCancelTokenMaker('scheduler');
 
 /**
  * @typedef {object} AuctionDriver
@@ -129,23 +127,9 @@ export const makeScheduler = async (
       return;
     }
 
-    if (
-      TimeMath.compareAbs(now, schedule.startTime) >= 0 &&
-      TimeMath.compareAbs(now, schedule.endTime) <= 0
-    ) {
-      if (auctionState !== AuctionState.ACTIVE) {
-        auctionState = AuctionState.ACTIVE;
-        auctionDriver.startRound();
-      } else {
-        auctionDriver.reducePriceAndTrade();
-      }
-    }
-
-    if (TimeMath.compareAbs(now, schedule.endTime) >= 0) {
+    const finishAuctionRound = () => {
       auctionState = AuctionState.WAITING;
-
       auctionDriver.finalize();
-
       if (!nextSchedule) throw Fail`nextSchedule not defined`;
 
       // only recalculate the next schedule at this point if the lock time has
@@ -158,9 +142,39 @@ export const makeScheduler = async (
         );
         nextSchedule = computeRoundTiming(params, afterNow);
       }
-      liveSchedule = undefined;
 
+      liveSchedule = undefined;
       void E(timer).cancel(stepCancelToken);
+    };
+
+    if (
+      TimeMath.compareAbs(now, schedule.startTime) >= 0 &&
+      TimeMath.compareAbs(now, schedule.endTime) <= 0
+    ) {
+      if (auctionState !== AuctionState.ACTIVE) {
+        auctionState = AuctionState.ACTIVE;
+        try {
+          auctionDriver.startRound();
+          // This has been observed to fail because prices hadn't been locked.
+          // This may be an issue about timing during chain start-up.
+        } catch (e) {
+          console.error(
+            assert.error(
+              'Unable to start auction cleanly. skipping this auction round.',
+            ),
+          );
+          finishAuctionRound();
+          publishSchedule();
+          return;
+        }
+      } else {
+        auctionDriver.reducePriceAndTrade();
+      }
+    }
+
+    // When now is schedule.endTime, we do both the above step and this branch.
+    if (TimeMath.compareAbs(now, schedule.endTime) >= 0) {
+      finishAuctionRound();
     }
 
     publishSchedule();
@@ -241,8 +255,12 @@ export const makeScheduler = async (
     // quote may out of date and so must be ignored. Recover by returning
     // deposits and scheduling the next round. If it's only a little late,
     // continue with auction, just starting late.
-    if (TimeMath.compareAbs(now, nextSchedule.startTime) > 0) {
-      const late = TimeMath.subtractAbsAbs(now, nextSchedule.startTime);
+    const nominalStart = TimeMath.subtractAbsRel(
+      nextSchedule.startTime,
+      nextSchedule.startDelay,
+    );
+    if (TimeMath.compareAbs(now, nominalStart) > 0) {
+      const late = TimeMath.subtractAbsAbs(now, nominalStart);
       const maxLate = relativeTime(MAX_LATE_TICK);
 
       if (TimeMath.compareRel(late, maxLate) > 0) {
