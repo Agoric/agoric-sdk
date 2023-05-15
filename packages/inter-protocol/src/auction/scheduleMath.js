@@ -5,7 +5,7 @@ import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 
 const { subtract, multiply, floorDivide } = natSafeMath;
-const { details: X, Fail } = assert;
+const { Fail } = assert;
 
 const trace = makeTracer('SMath', false);
 
@@ -24,48 +24,25 @@ export const computeRoundTiming = (params, baseTime) => {
   /** @type {NatValue} */
   const lowestRate = params.getLowestRate();
 
-  const noNextAuction = msg => {
-    console.error(assert.error(msg));
-    return undefined;
-  };
-
   /** @type {RelativeTime} */
   const startDelay = params.getAuctionStartDelay();
-  if (TimeMath.compareRel(freq, startDelay) <= 0) {
-    return noNextAuction(
-      X`startFrequency must exceed startDelay, ${freq}, ${startDelay}`,
-    );
-  }
-  if (TimeMath.compareRel(freq, lockPeriod) <= 0) {
-    return noNextAuction(
-      X`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`,
-    );
-  }
+  TimeMath.compareRel(freq, startDelay) > 0 ||
+    Fail`startFrequency must exceed startDelay, ${freq}, ${startDelay}`;
+  TimeMath.compareRel(freq, lockPeriod) > 0 ||
+    Fail`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`;
 
-  if (startingRate <= lowestRate) {
-    return noNextAuction(
-      X`startingRate ${startingRate} must be more than lowest: ${lowestRate}`,
-    );
-  }
-
+  startingRate > lowestRate ||
+    Fail`startingRate ${startingRate} must be more than lowest: ${lowestRate}`;
   const rateChange = subtract(startingRate, lowestRate);
   const requestedSteps = floorDivide(rateChange, discountStep);
-
-  if (requestedSteps <= 0n) {
-    return noNextAuction(
-      X`discountStep ${discountStep} too large for requested rates`,
-    );
-  }
-
-  if (TimeMath.compareRel(freq, clockStep) < 0) {
-    return noNextAuction(
-      X`clockStep ${TimeMath.relValue(
-        clockStep,
-      )} must be shorter than startFrequency ${TimeMath.relValue(
-        freq,
-      )} to allow at least one step down`,
-    );
-  }
+  requestedSteps > 0n ||
+    Fail`discountStep ${discountStep} too large for requested rates`;
+  TimeMath.compareRel(freq, clockStep) >= 0 ||
+    Fail`clockStep ${TimeMath.relValue(
+      clockStep,
+    )} must be shorter than startFrequency ${TimeMath.relValue(
+      freq,
+    )} to allow at least one step down`;
 
   const requestedDuration = TimeMath.multiplyRelNat(clockStep, requestedSteps);
   const targetDuration =
@@ -75,12 +52,8 @@ export const computeRoundTiming = (params, baseTime) => {
   const steps = TimeMath.divideRelRel(targetDuration, clockStep);
   const duration = TimeMath.multiplyRelNat(clockStep, steps);
 
-  if (steps <= 0n) {
-    return noNextAuction(
-      X`clockStep ${clockStep} too long for auction duration ${duration}`,
-    );
-  }
-
+  steps > 0n ||
+    Fail`clockStep ${clockStep} too long for auction duration ${duration}`;
   const endRate = subtract(startingRate, multiply(steps, discountStep));
 
   const actualDuration = TimeMath.multiplyRelNat(clockStep, steps);

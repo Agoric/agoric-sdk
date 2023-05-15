@@ -61,10 +61,10 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
  * @param {ReturnType<makeDefaultParams>} params
  * @param {number} baseTime
  */
-const checkScheduleNull = (t, params, baseTime) => {
-  const schedule = computeRoundTiming(params, coerceAbs(baseTime));
-
-  t.is(schedule, undefined);
+const checkScheduleThrows = async (t, params, baseTime, message) => {
+  t.throws(() => computeRoundTiming(params, coerceAbs(baseTime)), {
+    message,
+  });
 };
 
 // Hourly starts. 4 steps down, 5 price levels. discount steps of 10%.
@@ -116,30 +116,34 @@ test(
 // lock Period too Long
 test(
   'long lock period',
-  checkScheduleNull,
+  checkScheduleThrows,
   makeDefaultParams({ lock: 3600 }),
   100,
+  /startFrequency must exceed lock period, .*3600n.*3600n/,
 );
 
 test(
   'longer auction than freq',
-  checkScheduleNull,
+  checkScheduleThrows,
   makeDefaultParams({ freq: 500, lock: 300 }),
   100,
+  /clockStep "\[600n]" must be shorter than startFrequency "\[500n]" to allow at least one step down/,
 );
 
 test(
   'startDelay too long',
-  checkScheduleNull,
+  checkScheduleThrows,
   makeDefaultParams({ delay: 5000 }),
   100,
+  /startFrequency must exceed startDelay, .*3600n.*5000n/,
 );
 
 test(
   'large discount step',
-  checkScheduleNull,
+  checkScheduleThrows,
   makeDefaultParams({ discount: 5000n }),
   100,
+  /discountStep "\[5000n]" too large for requested rates/,
 );
 
 test(
@@ -160,9 +164,10 @@ test(
 
 test(
   'lowest rate higher than start',
-  checkScheduleNull,
+  checkScheduleThrows,
   makeDefaultParams({ lowest: 10_600n }),
   100,
+  /startingRate "\[10500n]" must be more than lowest: "\[10600n]"/,
 );
 
 // If the steps are small enough that we can't get to the end_rate, we'll cut

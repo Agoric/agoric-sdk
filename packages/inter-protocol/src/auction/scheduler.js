@@ -57,6 +57,15 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
  *    will take place
  */
 
+const safelyComputeRoundTiming = (params, baseTime) => {
+  try {
+    return computeRoundTiming(params, baseTime);
+  } catch (e) {
+    console.error(assert.error(e));
+    return null;
+  }
+};
+
 /**
  * @param {AuctionDriver} auctionDriver
  * @param {import('@agoric/time/src/types').TimerService} timer
@@ -86,7 +95,7 @@ export const makeScheduler = async (
       // XXX manualTimer returns a bigint, not a timeRecord.
       E(timer).getCurrentTimestamp(),
       now => {
-        const nextSchedule = computeRoundTiming(
+        const nextSchedule = safelyComputeRoundTiming(
           params,
           TimeMath.coerceTimestampRecord(now, timerBrand),
         );
@@ -145,7 +154,7 @@ export const makeScheduler = async (
           now,
           TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
         );
-        nextSchedule = computeRoundTiming(params, afterNow);
+        nextSchedule = safelyComputeRoundTiming(params, afterNow);
       }
 
       liveSchedule = undefined;
@@ -285,7 +294,7 @@ export const makeScheduler = async (
             nextSchedule.startTime,
           )}. Skipping that round.`,
         );
-        nextSchedule = computeRoundTiming(params, now);
+        nextSchedule = safelyComputeRoundTiming(params, now);
       } else {
         console.warn(`Auction started late by ${q(late)}. Starting ${q(now)}`);
       }
@@ -296,7 +305,7 @@ export const makeScheduler = async (
     }
 
     const after = TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n));
-    nextSchedule = computeRoundTiming(params, after);
+    nextSchedule = safelyComputeRoundTiming(params, after);
     if (!nextSchedule) {
       return;
     }
