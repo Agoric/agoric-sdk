@@ -531,3 +531,59 @@ test('provisionPool revives old wallets', async t => {
     'must not re-revive wallet',
   );
 });
+
+test('provisionPool publishes metricsOverride promptly', async t => {
+  const { zoe, installs, storageRoot, committeeCreator } = t.context;
+
+  const { minted, poolBank } = tools(t.context);
+
+  const initialPoserInvitation = await E(committeeCreator).getPoserInvitation();
+  const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
+    initialPoserInvitation,
+  );
+
+  // mock gov terms
+  const govTerms = {
+    electionManager: /** @type {any} */ (null),
+    initialPoserInvitation,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
+      PerAccountInitialAmount: {
+        type: ParamTypes.AMOUNT,
+        value: minted.make(scale6(0.25)),
+      },
+    },
+  };
+
+  t.log('startInstance(provisionPool)');
+  const facets = await E(zoe).startInstance(
+    installs.provisionPool,
+    {},
+    govTerms,
+    {
+      poolBank,
+      initialPoserInvitation,
+      storageNode: storageRoot.makeChildNode('provisionPool'),
+      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      metricsOverride: {
+        totalMintedConverted: minted.make(20_000_000n),
+        totalMintedProvided: minted.make(750_000n),
+        walletsProvisioned: 3n,
+      },
+    },
+  );
+
+  const metrics = E(facets.publicFacet).getMetrics();
+
+  const {
+    head: { value: initialMetrics },
+  } = await E(metrics).subscribeAfter();
+  t.deepEqual(initialMetrics, {
+    totalMintedConverted: minted.make(20_000_000n),
+    totalMintedProvided: minted.make(750_000n),
+    walletsProvisioned: 3n,
+  });
+});
