@@ -61,7 +61,7 @@ const safelyComputeRoundTiming = (params, baseTime) => {
   try {
     return computeRoundTiming(params, baseTime);
   } catch (e) {
-    console.error(assert.error(e));
+    console.error('No Next Auction', assert.error(e));
     return null;
   }
 };
@@ -299,10 +299,11 @@ export const makeScheduler = async (
         console.warn(`Auction started late by ${q(late)}. Starting ${q(now)}`);
       }
     }
-    liveSchedule = nextSchedule;
-    if (!liveSchedule) {
+
+    if (!nextSchedule) {
       return;
     }
+    liveSchedule = nextSchedule;
 
     const after = TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n));
     nextSchedule = safelyComputeRoundTiming(params, after);
@@ -332,14 +333,17 @@ export const makeScheduler = async (
 
   // when auction parameters change, schedule a next auction if one isn't
   // already scheduled
-  observeIteration(subscribeEach(paramUpdateSubscription), {
-    async updateState(_newState) {
-      if (!liveSchedule && !nextSchedule) {
-        ({ nextSchedule } = await initializeNextSchedule());
-        startSchedulingFromScratch();
-      }
-    },
-  });
+  observeIteration(
+    subscribeEach(paramUpdateSubscription),
+    harden({
+      async updateState(_newState) {
+        if (!liveSchedule && !nextSchedule) {
+          ({ nextSchedule } = await initializeNextSchedule());
+          startSchedulingFromScratch();
+        }
+      },
+    }),
+  );
 
   return Far('scheduler', {
     getSchedule: () =>

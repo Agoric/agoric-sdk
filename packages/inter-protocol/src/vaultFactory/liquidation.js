@@ -9,7 +9,7 @@ import { makeScalarMapStore } from '@agoric/store';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
-import { makeCancelTokenMaker } from '../auction/util';
+import { makeCancelTokenMaker } from '../auction/util.js';
 
 const trace = makeTracer('LIQ', false);
 
@@ -49,14 +49,17 @@ const scheduleLiquidationWakeups = async (
   ]);
 
   // make one observer that will usually ignore the update.
-  observeIteration(subscribeEach(E(auctioneerPublicFacet).getSubscription()), {
-    async updateState(_newState) {
-      if (!cancelToken) {
-        cancelToken = makeCancelToken();
-        void E(timer).setWakeup(now, reschedulerWaker, cancelToken);
-      }
-    },
-  });
+  observeIteration(
+    subscribeEach(E(auctioneerPublicFacet).getSubscription()),
+    harden({
+      async updateState(_newState) {
+        if (!cancelToken) {
+          cancelToken = makeCancelToken();
+          void E(timer).setWakeup(now, reschedulerWaker, cancelToken);
+        }
+      },
+    }),
+  );
 
   const waitForNewAuctionParams = () => {
     if (cancelToken) {
@@ -104,7 +107,7 @@ const scheduleLiquidationWakeups = async (
     }
   }
 
-  cancelToken = cancelToken || harden({});
+  cancelToken = cancelToken || makeCancelToken();
   const priceLockWakeTime = TimeMath.subtractAbsRel(
     nominalStart,
     priceLockPeriod,
