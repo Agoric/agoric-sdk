@@ -433,7 +433,7 @@ export const prepareProvisionPoolKit = (
       },
     },
     {
-      finish: ({ facets }) => {
+      finish: ({ facets: _f }) => {
         // DISABLED to avoid some tests breaking
         // facets.helper.publishMetrics();
       },
