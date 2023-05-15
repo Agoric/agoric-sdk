@@ -4,6 +4,7 @@ import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import '@agoric/zoe/exported.js';
 
+import { NonNullish } from '@agoric/assert';
 import {
   computeRoundTiming,
   nextDescendingStepTime,
@@ -208,8 +209,6 @@ const TWO_PM_SCHED = computeRoundTiming(defaults, TWO_PM - 1n);
 const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
 
 const checkDescendingStep = (t, liveSchedule, nextSchedule, now, expected) => {
-  const brand = nextSchedule.startTime.timerBrand;
-
   const nowTime = coerceAbs(now);
   t.deepEqual(
     nextDescendingStepTime(liveSchedule, nextSchedule, nowTime),
@@ -270,3 +269,18 @@ test(
   TWO_PM + 45n * 60n + 1n,
   TWO_PM + 60n * 60n + FIVE_MINUTES,
 );
+
+test('timeVsSchedule', t => {
+  const params = makeDefaultParams();
+
+  const schedule = NonNullish(computeRoundTiming(params, coerceAbs(100n)));
+  console.log(schedule);
+
+  t.is(timeVsSchedule(0n, schedule), 'before');
+  t.is(timeVsSchedule(schedule.startTime, schedule), 'during');
+  t.is(timeVsSchedule(schedule.endTime, schedule), 'endExactly');
+  t.is(
+    timeVsSchedule(TimeMath.addAbsRel(schedule.endTime, 1n), schedule),
+    'after',
+  );
+});

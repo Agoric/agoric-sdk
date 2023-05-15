@@ -2,7 +2,7 @@
 
 import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeTracer } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 
 const { subtract, multiply, floorDivide } = natSafeMath;
 const { details: X, Fail } = assert;
@@ -147,3 +147,27 @@ export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
   return expectedNext;
 };
 harden(nextDescendingStepTime);
+
+/**
+ *
+ * @param {Timestamp} time
+ * @param {import('./scheduler.js').Schedule} schedule
+ * @returns {'before' | 'during' | 'endExactly' | 'after'}
+ */
+export const timeVsSchedule = (time, schedule) => {
+  const { startTime, endTime } = schedule;
+  assertAllDefined({ startTime, endTime });
+
+  if (TimeMath.compareAbs(time, schedule.startTime) < 0) {
+    return 'before';
+  }
+  if (TimeMath.compareAbs(time, schedule.endTime) < 0) {
+    return 'during';
+  }
+  if (TimeMath.compareAbs(time, schedule.endTime) === 0) {
+    return 'endExactly';
+  }
+
+  return 'after';
+};
+harden(timeVsSchedule);

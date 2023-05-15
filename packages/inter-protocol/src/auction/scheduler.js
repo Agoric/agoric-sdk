@@ -5,7 +5,11 @@ import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 import { AuctionState, makeCancelTokenMaker } from './util.js';
-import { computeRoundTiming, nextDescendingStepTime } from './scheduleMath.js';
+import {
+  computeRoundTiming,
+  nextDescendingStepTime,
+  timeVsSchedule,
+} from './scheduleMath.js';
 
 const { details: X, Fail, quote: q } = assert;
 
@@ -148,11 +152,10 @@ export const makeScheduler = async (
       return E(timer).cancel(stepCancelToken);
     };
 
-    if (
-      TimeMath.compareAbs(now, schedule.startTime) >= 0 &&
-      TimeMath.compareAbs(now, schedule.endTime) <= 0
-    ) {
-      if (auctionState !== AuctionState.ACTIVE) {
+    const advanceRound = () => {
+      if (auctionState === AuctionState.ACTIVE) {
+        auctionDriver.reducePriceAndTrade();
+      } else {
         auctionState = AuctionState.ACTIVE;
         try {
           auctionDriver.startRound();
@@ -165,17 +168,29 @@ export const makeScheduler = async (
             ),
           );
           finishAuctionRound();
-          publishSchedule();
-          return;
-        }
-      } else {
-        auctionDriver.reducePriceAndTrade();
-      }
-    }
 
-    // When now is schedule.endTime, we do both the above step and this branch.
-    if (TimeMath.compareAbs(now, schedule.endTime) >= 0) {
-      finishAuctionRound();
+          return false;
+        }
+      }
+      return true;
+    };
+
+    switch (timeVsSchedule(now, schedule)) {
+      case 'before':
+        break;
+      case 'during':
+        advanceRound();
+        break;
+      case 'endExactly':
+        if (advanceRound()) {
+          finishAuctionRound();
+        }
+        break;
+      case 'after':
+        finishAuctionRound();
+        break;
+      default:
+        Fail`invalid case`;
     }
 
     publishSchedule();
