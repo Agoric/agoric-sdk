@@ -383,7 +383,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             priceBook.add(seat, price, stillWant, exitAfterBuy);
           }
 
-          helper.publishBookData();
+          void helper.publishBookData();
         },
 
         /**
@@ -437,7 +437,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
           }
 
-          helper.publishBookData();
+          void helper.publishBookData();
         },
         publishBookData() {
           const { state } = this;
@@ -457,7 +457,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
-          state.bookDataKit.recorder.write(bookData);
+          return state.bookDataKit.recorder.write(bookData);
         },
       },
       self: {
@@ -534,7 +534,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           state.startCollateral = state.startCollateral
             ? AmountMath.add(state.startCollateral, assetAmount)
             : assetAmount;
-          facets.helper.publishBookData();
+          void facets.helper.publishBookData();
         },
         /** @type {(reduction: Ratio) => void} */
         settleAtNewRate(reduction) {
@@ -601,7 +601,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             }
           }
 
-          facets.helper.publishBookData();
+          void facets.helper.publishBookData();
         },
         getCurrentPrice() {
           return this.state.curAuctionPrice;
@@ -615,7 +615,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           trace(`locking `, state.updatingOracleQuote);
           state.lockedPriceForRound = state.updatingOracleQuote;
-          facets.helper.publishBookData();
+          void facets.helper.publishBookData();
         },
 
         setStartingRate(rate) {
@@ -689,7 +689,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           state.curAuctionPrice = null;
           state.remainingProceedsGoal = null;
           state.startProceedsGoal = null;
-          facets.helper.publishBookData();
+          void facets.helper.publishBookData();
         },
         getDataUpdates() {
           return this.state.bookDataKit.subscriber;
@@ -738,7 +738,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             });
           },
         );
-        facets.helper.publishBookData();
+        void facets.helper.publishBookData();
       },
       stateShape: AuctionBookStateShape,
     },
