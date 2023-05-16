@@ -1855,7 +1855,7 @@ test('reinstate vault', async t => {
     totalDebt: { value: 158n },
     totalCollateral: { value: 44n },
     totalProceedsReceived: { value: 34n },
-    totalShortfallReceived: { value: 224n },
+    totalShortfallReceived: { value: 66n },
     totalCollateralSold: { value: 8n },
     numLiquidatingVaults: 0,
     numLiquidationsCompleted: 1,

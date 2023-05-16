@@ -715,6 +715,7 @@ export const prepareVaultManagerKit = (
               vaultData.getSize(),
             );
 
+            facets.helper.recordShortfallAndProceeds(accounting);
             facets.helper.markDoneLiquidating(totalDebt, totalCollateral);
           } else if (AmountMath.isEmpty(collateralProceeds)) {
             // Flow #2a
@@ -782,6 +783,7 @@ export const prepareVaultManagerKit = (
               vaultData.getSize(),
             );
 
+            facets.helper.recordShortfallAndProceeds(accounting);
             facets.helper.markDoneLiquidating(totalDebt, totalCollateral);
           } else {
             // Flow #2b: There's unsold collateral; some vaults may be revived.
@@ -801,13 +803,13 @@ export const prepareVaultManagerKit = (
               : AmountMath.makeEmptyFromAmount(collateralProceeds);
 
             let collatRemaining = distributableCollateral;
-            let debtRemaining = totalDebt;
             /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
             const transfers = [];
             let liquidated = 0;
             /** @type {MapStore<string, Vault>} */
             const vaultsToReinstate = makeScalarMapStore();
             let collateralReduction = AmountMath.makeEmpty(collateralBrand);
+            let shortfallToReserve = accounting.shortfall;
 
             const reduceCollateral = amount =>
               (collateralReduction = AmountMath.add(
@@ -825,13 +827,16 @@ export const prepareVaultManagerKit = (
               if (
                 reconstituteVaults &&
                 AmountMath.isGTE(collatRemaining, collatPostDebt) &&
-                AmountMath.isGTE(debtRemaining, debtAmount)
+                AmountMath.isGTE(totalDebt, debtAmount)
               ) {
                 collatRemaining = AmountMath.subtract(
                   collatRemaining,
                   collatPostDebt,
                 );
-                debtRemaining = AmountMath.subtract(debtRemaining, debtAmount);
+                shortfallToReserve = AmountMath.subtract(
+                  shortfallToReserve,
+                  debtAmount,
+                );
                 const seat = vault.getVaultSeat();
                 const vaultId = vault.abortLiquidation();
                 liquidatingVaults.delete(vault);
@@ -869,13 +874,13 @@ export const prepareVaultManagerKit = (
               transfers.length,
             );
 
-            facets.helper.markRestoreDebt(
-              AmountMath.subtract(totalDebt, debtRemaining),
-            );
             facets.helper.sendToReserve(collatRemaining, liqSeat);
             facets.helper.markDoneLiquidating(totalDebt, totalCollateral);
+            facets.helper.recordShortfallAndProceeds({
+              overage: accounting.overage,
+              shortfall: shortfallToReserve,
+            });
           }
-          facets.helper.recordShortfallAndProceeds(accounting);
           return facets.helper.updateMetrics();
         },
       },
