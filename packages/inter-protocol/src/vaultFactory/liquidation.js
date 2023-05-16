@@ -49,7 +49,7 @@ const scheduleLiquidationWakeups = async (
   ]);
 
   // make one observer that will usually ignore the update.
-  observeIteration(
+  void observeIteration(
     subscribeEach(E(auctioneerPublicFacet).getSubscription()),
     harden({
       async updateState(_newState) {
@@ -63,7 +63,7 @@ const scheduleLiquidationWakeups = async (
 
   const waitForNewAuctionParams = () => {
     if (cancelToken) {
-      E(timer).cancel(cancelToken);
+      void E(timer).cancel(cancelToken);
     }
     cancelToken = undefined;
   };
@@ -96,7 +96,7 @@ const scheduleLiquidationWakeups = async (
   if (TimeMath.compareAbs(now, nominalStart) > 0) {
     if (TimeMath.compareAbs(now, endTime) < 0) {
       if (cancelToken) {
-        E(timer).cancel(cancelToken);
+        void E(timer).cancel(cancelToken);
       }
 
       void E(timer).setWakeup(afterStart, reschedulerWaker);

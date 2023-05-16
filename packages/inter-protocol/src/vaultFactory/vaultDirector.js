@@ -539,7 +539,7 @@ export const prepareVaultDirector = (
          */
         async start() {
           const { helper } = this.facets;
-          helper.rescheduleLiquidationWakeups();
+          await helper.rescheduleLiquidationWakeups();
           await updateShortfallReporter();
         },
       },
