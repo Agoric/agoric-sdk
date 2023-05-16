@@ -1037,41 +1037,39 @@ export const prepareVaultManagerKit = (
               ),
               'Settled vaults must not be retained in storage',
             );
-          } else {
-            const isNew = AmountMath.isEmpty(oldDebtNormalized);
-            trace(state.collateralBrand, { isNew });
-            if (!isNew) {
-              // its position in the queue is no longer valid
-
-              const vaultInStore = prioritizedVaults.removeVaultByAttributes(
-                oldDebtNormalized,
-                oldCollateral,
-                vaultId,
-              );
-              assert(
-                vault === vaultInStore,
-                'handleBalanceChange for two different vaults',
-              );
-              trace('removed', vault, vaultId);
-            }
-
-            // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
-            // getCurrentDebt() would also work (0x = 0) but require more computation.
-            if (!AmountMath.isEmpty(vault.getNormalizedDebt())) {
-              prioritizedVaults.addVault(vaultId, vault);
-            }
-
-            // totalCollateral += vault's collateral delta (post — pre)
-            state.totalCollateral = AmountMath.subtract(
-              AmountMath.add(
-                state.totalCollateral,
-                vault.getCollateralAmount(),
-              ),
-              oldCollateral,
-            );
-            // debt accounting managed through minting and burning
-            void facets.helper.writeMetrics();
+            return;
           }
+
+          const isNew = AmountMath.isEmpty(oldDebtNormalized);
+          trace(state.collateralBrand, { isNew });
+          if (!isNew) {
+            // its position in the queue is no longer valid
+
+            const vaultInStore = prioritizedVaults.removeVaultByAttributes(
+              oldDebtNormalized,
+              oldCollateral,
+              vaultId,
+            );
+            assert(
+              vault === vaultInStore,
+              'handleBalanceChange for two different vaults',
+            );
+            trace('removed', vault, vaultId);
+          }
+
+          // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
+          // getCurrentDebt() would also work (0x = 0) but require more computation.
+          if (!AmountMath.isEmpty(vault.getNormalizedDebt())) {
+            prioritizedVaults.addVault(vaultId, vault);
+          }
+
+          // totalCollateral += vault's collateral delta (post — pre)
+          state.totalCollateral = AmountMath.subtract(
+            AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
+            oldCollateral,
+          );
+          // debt accounting managed through minting and burning
+          void facets.helper.writeMetrics();
         },
       },
       self: {
