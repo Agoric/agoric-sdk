@@ -245,7 +245,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
       initialPrice: makeRatio(100n, bid.brand, 100n, collateralBrand),
     });
     priceAuthorities.init(collateralBrand, pa);
-    registry.registerPriceAuthority(pa, collateralBrand, bid.brand, true);
+    await registry.registerPriceAuthority(pa, collateralBrand, bid.brand, true);
 
     await E(creatorFacet).addBrand(
       issuerKit.issuer,
@@ -1015,8 +1015,8 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   await assertPayouts(t, liqSeat, bid, collateral, 116n, 0n);
 
   await driver.advanceTo(186n, 'wait');
-  scheduleTracker.assertNoUpdate();
-  bookTracker.assertNoUpdate();
+  await scheduleTracker.assertNoUpdate();
+  await bookTracker.assertNoUpdate();
 
   await driver.advanceTo(210n, 'wait');
   await scheduleTracker.assertChange({

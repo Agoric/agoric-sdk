@@ -791,7 +791,7 @@ test('change Schedule', async t => {
 
   const newFreq = 100n;
   const newStep = 40n;
-  paramManager.updateParams({
+  await paramManager.updateParams({
     StartFrequency: TimeMath.coerceRelativeTimeRecord(newFreq, timerBrand),
     ClockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
   });
