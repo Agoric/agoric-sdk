@@ -116,7 +116,7 @@ export async function start(zcf, privateArgs, baggage) {
     }
   };
 
-  const burnAndRecord = (toBurn, seat) => {
+  const burn = (toBurn, seat) => {
     runMint.burnLosses(harden({ Minted: toBurn }), seat);
   };
 
@@ -162,7 +162,7 @@ export async function start(zcf, privateArgs, baggage) {
     getAssetSubscriber: () => assetSubscriber,
     maxDebtFor,
     mintAndTransfer,
-    burnAndRecord,
+    burn,
     getCollateralQuote() {
       return Promise.reject(Error('Not implemented'));
     },

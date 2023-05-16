@@ -275,7 +275,7 @@ export const prepareVaultManagerKit = (
           AmountShape,
           M.arrayOf(TransferPartShape),
         ).returns(),
-        burnAndRecord: M.call(AmountShape, SeatShape).returns(),
+        burn: M.call(AmountShape, SeatShape).returns(),
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
@@ -947,22 +947,20 @@ export const prepareVaultManagerKit = (
             toMint,
           );
           factoryPowers.mintAndTransfer(mintReceiver, toMint, fee, transfers);
-          state.totalDebt = AmountMath.add(state.totalDebt, toMint);
         },
         /**
          * @param {Amount<'nat'>} toBurn
          * @param {ZCFSeat} seat
          */
-        burnAndRecord(toBurn, seat) {
+        burn(toBurn, seat) {
           const { state } = this;
           const { collateralBrand } = this.state;
 
-          trace(collateralBrand, 'burnAndRecord', {
+          trace(collateralBrand, 'burn', {
             toBurn,
             totalDebt: state.totalDebt,
           });
           factoryPowers.burnDebt(toBurn, seat);
-          state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
           return this.state.assetTopicKit.subscriber;
@@ -1063,12 +1061,15 @@ export const prepareVaultManagerKit = (
             prioritizedVaults.addVault(vaultId, vault);
           }
 
-          // totalCollateral += vault's collateral delta (post — pre)
+          // total += vault's delta (post — pre)
           state.totalCollateral = AmountMath.subtract(
             AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
             oldCollateral,
           );
-          // debt accounting managed through minting and burning
+          state.totalDebt = AmountMath.subtract(
+            AmountMath.add(state.totalDebt, vault.getCurrentDebt()),
+            oldDebtNormalized,
+          );
           void facets.helper.writeMetrics();
         },
       },
