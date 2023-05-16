@@ -305,7 +305,7 @@ export const makeMyAddressNameAdminKit = address => {
     getMyAddress: () => address,
   });
   // reserve space for deposit facet
-  // This may not finish before another reserve() call, but this one will win
+  // XXX deprecated utility used only in solo
   void myAddressNameAdmin.reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };

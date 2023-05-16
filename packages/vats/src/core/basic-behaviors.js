@@ -489,7 +489,7 @@ export const makeAddressNameHubs = async ({
 
   const perAddress = address => {
     const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-    // This may not finish before another reserve() call, but this one will win
+    // XXX deprecated utility used only in solo
     void myAddressNameAdmin.reserve(WalletName.depositFacet);
 
     // This may race against walletFactory.js/publishDepositFacet, so we are
