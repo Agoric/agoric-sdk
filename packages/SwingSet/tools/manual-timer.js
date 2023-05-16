@@ -77,7 +77,7 @@ const setup = callbacks => {
  * @param {object} [options]
  * @param {Timestamp} [options.startTime]
  * @param {ManualTimerCallbacks} [options.callbacks]
- * @returns {TimerService & { advanceTo: (when: Timestamp, msg?: string) => bigint; }}
+ * @returns {TimerService & { advanceTo: (when: Timestamp, msg?: string) => bigint; advanceBy: (rel: import('@agoric/time').RelativeTime, msg?: string) => bigint; }}
  */
 export const buildManualTimer = (options = {}) => {
   const { startTime = 0n, callbacks = {}, ...other } = options;
@@ -114,5 +114,13 @@ export const buildManualTimer = (options = {}) => {
     return when;
   };
 
-  return Far('ManualTimer', { ...bindAllMethods(timerService), advanceTo });
+  const advanceBy = (rel, msg) => {
+    return advanceTo(TimeMath.addAbsRel(state.now, rel), msg);
+  };
+
+  return Far('ManualTimer', {
+    ...bindAllMethods(timerService),
+    advanceTo,
+    advanceBy,
+  });
 };
