@@ -15,14 +15,11 @@ const { Fail, quote: q } = assert;
  * @param {string[]} [clearStorageSubtrees] chain storage paths identifying
  *   roots of subtrees for which data should be deleted (TODO: including
  *   overlaps with exportStorageSubtrees, which are *not* preserved).
- * @param {boolean} [preserveExports] if true, do not clear any storage
- * appearing in the exportStorageSubtrees list
  */
 export const exportStorage = (
   batchChainStorage,
   exportStorageSubtrees = [],
   clearStorageSubtrees = [],
-  preserveExports = true,
 ) => {
   const chainStorageEntries = [];
 
@@ -76,13 +73,6 @@ export const exportStorage = (
     let pathsToCheck = [...clearStorageSubtrees];
     while (pathsToCheck.length > 0) {
       const path = pathsToCheck.shift();
-      if (
-        preserveExports &&
-        exportStorageSubtrees.some(root => isInSubtree(path, root))
-      ) {
-        // Don't purge data that is being exported.
-        continue;
-      }
       pathsToClear.push(path);
       if (pathsToClear.length >= batchThreshold) {
         sendBatch();
