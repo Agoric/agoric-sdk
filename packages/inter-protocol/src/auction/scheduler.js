@@ -61,7 +61,7 @@ const safelyComputeRoundTiming = (params, baseTime) => {
   try {
     return computeRoundTiming(params, baseTime);
   } catch (e) {
-    console.error('No Next Auction', assert.error(e));
+    console.error('🚨 No Next Auction', e);
     return null;
   }
 };
@@ -145,17 +145,22 @@ export const makeScheduler = async (
     const finishAuctionRound = () => {
       auctionState = AuctionState.WAITING;
       auctionDriver.finalize();
-      if (!nextSchedule) throw Fail`nextSchedule not defined`;
 
-      // only recalculate the next schedule at this point if the lock time has
-      // not been reached.
-      const nextLock = nextSchedule.lockTime;
-      if (nextLock && TimeMath.compareAbs(now, nextLock) < 0) {
-        const afterNow = TimeMath.addAbsRel(
-          now,
-          TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+      if (nextSchedule) {
+        // only recalculate the next schedule at this point if the lock time has
+        // not been reached.
+        const nextLock = nextSchedule.lockTime;
+        if (nextLock && TimeMath.compareAbs(now, nextLock) < 0) {
+          const afterNow = TimeMath.addAbsRel(
+            now,
+            TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
+          );
+          nextSchedule = safelyComputeRoundTiming(params, afterNow);
+        }
+      } else {
+        console.error(
+          '🛠️ finishAuctionRound without scheduling the next; repair with new auctioneer params',
         );
-        nextSchedule = safelyComputeRoundTiming(params, afterNow);
       }
 
       liveSchedule = null;
@@ -187,7 +192,9 @@ export const makeScheduler = async (
       return true;
     };
 
-    switch (timeVsSchedule(now, schedule)) {
+    const phase = timeVsSchedule(now, schedule);
+    trace('phase', phase);
+    switch (phase) {
       case 'before':
         break;
       case 'during':
@@ -208,11 +215,12 @@ export const makeScheduler = async (
     void publishSchedule();
   };
 
+  // XXX liveSchedule and nextSchedule are in scope
   // schedule the wakeups for the steps of this round
-  const scheduleSteps = () => {
-    if (!liveSchedule) throw Fail`liveSchedule not defined`;
+  const scheduleSteps = schedule => {
+    schedule || Fail`liveSchedule not defined`;
 
-    const { startTime } = liveSchedule;
+    const { startTime } = schedule;
     trace('START ', startTime);
 
     const delayFromNow =
@@ -224,12 +232,12 @@ export const makeScheduler = async (
 
     void E(timer).repeatAfter(
       delayFromNow,
-      liveSchedule.clockStep,
+      schedule.clockStep,
       Far('PriceStepWaker', {
         wake(time) {
           setTimeMonotonically(time);
           trace('wake step', now);
-          void clockTick(liveSchedule);
+          void clockTick(schedule);
         },
       }),
       stepCancelToken,
@@ -304,25 +312,36 @@ export const makeScheduler = async (
     }
 
     if (!nextSchedule) {
+      // nothing new to schedule
       return;
     }
+    // activate the nextSchedule as the live one
+    // (read here and in function calls below)
     liveSchedule = nextSchedule;
-
-    const after = TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n));
-    nextSchedule = safelyComputeRoundTiming(params, after);
-    if (!nextSchedule) {
-      return;
-    }
-
-    scheduleSteps();
-    scheduleNextRound(
-      TimeMath.subtractAbsRel(nextSchedule.startTime, nextSchedule.startDelay),
+    nextSchedule = safelyComputeRoundTiming(
+      params,
+      TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n)),
     );
-    schedulePriceLock(nextSchedule.lockTime);
+
+    scheduleSteps(liveSchedule);
+    if (nextSchedule) {
+      scheduleNextRound(
+        TimeMath.subtractAbsRel(
+          nextSchedule.startTime,
+          nextSchedule.startDelay,
+        ),
+      );
+      schedulePriceLock(nextSchedule.lockTime);
+    } else {
+      console.warn(
+        'no nextSchedule so cannot schedule next round or price lock',
+      );
+    }
   };
 
   // initial setting:  firstStart is startDelay before next's startTime
   const startSchedulingFromScratch = () => {
+    trace('startSchedulingFromScratch');
     if (nextSchedule) {
       const firstStart = TimeMath.subtractAbsRel(
         nextSchedule.startTime,
@@ -340,7 +359,8 @@ export const makeScheduler = async (
     subscribeEach(paramUpdateSubscription),
     harden({
       async updateState(_newState) {
-        if (!liveSchedule && !nextSchedule) {
+        trace('received param update');
+        if (!nextSchedule) {
           ({ nextSchedule } = await initializeNextSchedule());
           startSchedulingFromScratch();
         }
