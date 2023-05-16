@@ -174,9 +174,9 @@ fi
       esac
       # Ensure minimum patch versions of Go environment
       goversion=$(go version 2>/dev/null)
-      goregexp='go version go([0-9]+).([0-9]+)(.([0-9]+))? '
+      goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
       [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
-      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
       # Build the daemon.
       cd "$GOLANG_DIR"
       make
