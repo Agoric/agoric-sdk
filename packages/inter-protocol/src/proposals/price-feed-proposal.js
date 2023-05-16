@@ -161,10 +161,11 @@ export const createPriceFeed = async (
     installation: priceAggregator,
   });
 
-  E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
-    AGORIC_INSTANCE_NAME,
-    faKit.instance,
-  );
+  E(E(agoricNamesAdmin).lookupAdmin('instance'))
+    .update(AGORIC_INSTANCE_NAME, faKit.instance)
+    .catch(err =>
+      console.error(`🚨 failed to update ${AGORIC_INSTANCE_NAME}`, err),
+    );
 
   E(E.get(econCharterKit).creatorFacet).addInstance(
     faKit.instance,
