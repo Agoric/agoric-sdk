@@ -27,7 +27,10 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import { setWakeupsForNextAuction } from './liquidation.js';
+import {
+  setWakeupsForNextAuction,
+  watchForGovernanceChange,
+} from './liquidation.js';
 import {
   provideVaultParamManagers,
   SHORTFALL_INVITATION_KEY,
@@ -538,7 +541,8 @@ export const prepareVaultDirector = (
          * Start non-durable processes (or restart if needed after vat restart)
          */
         async start() {
-          const { helper } = this.facets;
+          const { helper, machine } = this.facets;
+
           await helper.resetWakeupsForNextAuction();
           updateShortfallReporter().catch(err =>
             console.error(
@@ -546,6 +550,9 @@ export const prepareVaultDirector = (
               err,
             ),
           );
+          // independent of the other one which can be canceled
+          const rescheduleWaker = machine.makeReschedulerWaker();
+          void watchForGovernanceChange(auctioneer, timer, rescheduleWaker);
         },
       },
     },

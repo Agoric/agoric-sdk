@@ -226,7 +226,7 @@ export const makeScheduler = async (
         ? TimeMath.subtractAbsAbs(startTime, now)
         : TimeMath.subtractAbsAbs(startTime, startTime);
 
-    trace('repeating', now, delayFromNow, startTime);
+    trace('scheduleSteps repeating', now, delayFromNow, startTime);
 
     void E(timer).repeatAfter(
       delayFromNow,

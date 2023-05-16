@@ -28,84 +28,55 @@ const makeCancelToken = makeCancelTokenMaker('liq');
  */
 let cancelToken = makeCancelToken();
 
+const waitForRepair = () => {
+  // the params observer will setWakeup to resume.
+  console.warn(
+    '🛠️ No wake for reschedule. Repair by resetting auction params.',
+  );
+};
+
+// Generally, canceling wakups has to be followed by setting up new ones but
+// not in the case of pausing wakeups. We do that in the event of invalid
+// schedule params. When they are repaired by governance, the wakers resume.
+/** @param {ERef<TimerService>} timer */
+const cancelWakeups = timer => {
+  if (cancelToken) {
+    void E(timer).cancel(cancelToken);
+  }
+  cancelToken = undefined;
+};
+
 /**
  * Schedule wakeups for the *next* auction round.
  *
- * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
- * time there's a "reschedule" wakeup.
+ * In practice, there are these cases to handle (with N as "live" and N+1 is "next"):
  *
- * In practice, there are these cases to handle:
- *
- * | when                             | what                                    |
+ * | when (now within the range)      | what                                    |
  * | -------------------------------- | --------------------------------------- |
  * | [start N, nominalStart N+1]      | good: schedule normally the three wakers|
  * | (nominalStart N+1, endTime N+1]  | recover: skip round N+1 and schedule N+2|
  * | (endTime N+1, ∞)                 | give up: wait for repair by governance  |
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
- * @param {ERef<TimerService>} timer
- * @param {TimerWaker} priceLockWaker
- * @param {TimerWaker} liquidationWaker
- * @param {TimerWaker} reschedulerWaker
- * @returns {Promise<void>}
+ * @param {object} opts
+ * @param {ERef<TimerService>} opts.timer
+ * @param {TimerWaker} opts.priceLockWaker
+ * @param {TimerWaker} opts.liquidationWaker
+ * @param {TimerWaker} opts.reschedulerWaker
+ * @param {import('../auction/scheduler.js').Schedule} opts.nextAuctionSchedule
+ * @param {import('@agoric/time/src/types').TimestampRecord} opts.now
+ * @param {ParamStateRecord} opts.params
+ * @returns {void}
  */
-const setWakeupsForNextAuction = async (
-  auctioneerPublicFacet,
+const setWakeups = ({
+  nextAuctionSchedule,
+  now,
   timer,
-  priceLockWaker,
-  liquidationWaker,
   reschedulerWaker,
-) => {
-  const [schedules, params, now] = await Promise.all([
-    E(auctioneerPublicFacet).getSchedules(),
-    E(auctioneerPublicFacet).getGovernedParams(),
-    E(timer).getCurrentTimestamp(),
-  ]);
-
-  // FIXME move out of the loop
-  // make one observer that will usually ignore the update.
-  void observeIteration(
-    subscribeEach(E(auctioneerPublicFacet).getSubscription()),
-    harden({
-      async updateState(_newState) {
-        if (!cancelToken) {
-          cancelToken = makeCancelToken();
-          void E(timer).setWakeup(
-            // bump one tick to prevent an infinite loop
-            TimeMath.addAbsRel(now, 1n),
-            reschedulerWaker,
-            cancelToken,
-          );
-        }
-      },
-    }),
-  );
-
-  // Generally, canceling wakups has to be followed by setting up new ones but
-  // not in the case of pausing wakeups. We do that in the event of invalid
-  // schedule params. When they are repaired by governance, the wakers resume.
-  const cancelWakeups = () => {
-    if (cancelToken) {
-      void E(timer).cancel(cancelToken);
-    }
-    cancelToken = undefined;
-  };
-  const waitForRepair = () => {
-    // the params observer will setWakeup to resume.
-    console.warn(
-      '🛠️ No wake for reschedule. Repair by resetting auction params.',
-    );
-  };
-
-  trace('SCHEDULE', schedules.nextAuctionSchedule);
-  if (!schedules.nextAuctionSchedule) {
-    // The schedule says there's no next auction. (same action as case 3, for a different reason)
-    cancelWakeups();
-    waitForRepair();
-    return;
-  }
-
-  const { startTime, endTime } = schedules.nextAuctionSchedule;
+  liquidationWaker,
+  priceLockWaker,
+  params,
+}) => {
+  const { startTime, endTime } = nextAuctionSchedule;
 
   /** @type {RelativeTimeRecord} */
   // @ts-expect-error Casting
@@ -127,7 +98,7 @@ const setWakeupsForNextAuction = async (
   // Otherwise, wait for governance params to change.
   if (TimeMath.compareAbs(now, nominalStart) > 0) {
     // nominalStart is past
-    cancelWakeups();
+    cancelWakeups(timer);
 
     if (TimeMath.compareAbs(now, endTime) < 0) {
       // endTime is in the future or now to reschedule waking (case 2)
@@ -152,6 +123,51 @@ const setWakeupsForNextAuction = async (
   void E(timer).setWakeup(nominalStart, liquidationWaker, cancelToken);
   // Call setWakeupsForNextAuction again one tick after nominalStart
   void E(timer).setWakeup(afterStart, reschedulerWaker, cancelToken);
+};
+
+/**
+ * Schedule wakeups for the *next* auction round.
+ *
+ * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
+ * time there's a "reschedule" wakeup.
+ *
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<TimerService>} timer
+ * @param {TimerWaker} priceLockWaker
+ * @param {TimerWaker} liquidationWaker
+ * @param {TimerWaker} reschedulerWaker
+ * @returns {Promise<void>}
+ */
+const setWakeupsForNextAuction = async (
+  auctioneerPublicFacet,
+  timer,
+  priceLockWaker,
+  liquidationWaker,
+  reschedulerWaker,
+) => {
+  const [{ nextAuctionSchedule }, params, now] = await Promise.all([
+    E(auctioneerPublicFacet).getSchedules(),
+    E(auctioneerPublicFacet).getGovernedParams(),
+    E(timer).getCurrentTimestamp(),
+  ]);
+
+  trace('SCHEDULE', nextAuctionSchedule);
+  if (!nextAuctionSchedule) {
+    // There should always be a nextAuctionSchedule. If there isn't, give up for now.
+    cancelWakeups(timer);
+    waitForRepair();
+    return;
+  }
+
+  setWakeups({
+    nextAuctionSchedule,
+    now,
+    timer,
+    reschedulerWaker,
+    liquidationWaker,
+    priceLockWaker,
+    params,
+  });
 };
 
 /**
@@ -181,6 +197,40 @@ const liquidationResults = (debt, minted) => {
     toBurn,
     shortfall,
   };
+};
+
+/**
+ * Watch governed params for change
+ *
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<TimerService>} timer
+ * @param {TimerWaker} reschedulerWaker
+ * @returns {void}
+ */
+export const watchForGovernanceChange = (
+  auctioneerPublicFacet,
+  timer,
+  reschedulerWaker,
+) => {
+  void E.when(E(timer).getCurrentTimestamp(), now =>
+    // make one observer that will usually ignore the update.
+    observeIteration(
+      subscribeEach(E(auctioneerPublicFacet).getSubscription()),
+      harden({
+        async updateState(_newState) {
+          if (!cancelToken) {
+            cancelToken = makeCancelToken();
+            void E(timer).setWakeup(
+              // bump one tick to prevent an infinite loop
+              TimeMath.addAbsRel(now, 1n),
+              reschedulerWaker,
+              cancelToken,
+            );
+          }
+        },
+      }),
+    ),
+  );
 };
 
 /**
