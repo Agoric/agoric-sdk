@@ -31,7 +31,7 @@ let cancelToken = makeCancelToken();
 /**
  * Schedule wakeups for the *next* auction round.
  *
- * Called by vaultDirector's rescheduleLiquidationWakeups at start() and every
+ * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
  * time there's a "reschedule" wakeup.
  *
  * In practice, there are these cases to handle:
@@ -49,8 +49,7 @@ let cancelToken = makeCancelToken();
  * @param {TimerWaker} reschedulerWaker
  * @returns {Promise<void>}
  */
-// TODO rename to say it's about scheduling the next round
-const scheduleLiquidationWakeups = async (
+const setWakeupsForNextAuction = async (
   auctioneerPublicFacet,
   timer,
   priceLockWaker,
@@ -122,7 +121,7 @@ const scheduleLiquidationWakeups = async (
   const afterStart = TimeMath.addAbsRel(startTime, 1n);
 
   // Is there a problem (case 2 or 3)?
-  // scheduleLiquidationWakeups is supposed to be called just after an auction
+  // setWakeupsForNextAuction is supposed to be called just after an auction
   // started. If we're late but there's still time for the nominal start, then
   // we'll proceed. Reschedule for the next round if that's still in the future.
   // Otherwise, wait for governance params to change.
@@ -151,7 +150,7 @@ const scheduleLiquidationWakeups = async (
   trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
   void E(timer).setWakeup(priceLockWakeTime, priceLockWaker, cancelToken);
   void E(timer).setWakeup(nominalStart, liquidationWaker, cancelToken);
-  // Call scheduleLiquidationWakeups again one tick after nominalStart
+  // Call setWakeupsForNextAuction again one tick after nominalStart
   void E(timer).setWakeup(afterStart, reschedulerWaker, cancelToken);
 };
 
@@ -244,12 +243,8 @@ const getLiquidatableVaults = (
   return { vaultData, totalDebt, totalCollateral, liqSeat };
 };
 
-harden(scheduleLiquidationWakeups);
+harden(setWakeupsForNextAuction);
 harden(liquidationResults);
 harden(getLiquidatableVaults);
 
-export {
-  scheduleLiquidationWakeups,
-  liquidationResults,
-  getLiquidatableVaults,
-};
+export { setWakeupsForNextAuction, liquidationResults, getLiquidatableVaults };
