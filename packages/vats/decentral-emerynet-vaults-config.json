@@ -24,25 +24,11 @@
         {
           "debtLimitValue": 0,
           "interchainAssetOptions": {
-            "denom": "ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA",
-            "decimalPlaces": 6,
-            "keyword": "ATOM",
-            "oracleBrand": "ATOM",
-            "proposedName": "ATOM"
-          }
-        }
-      ]
-    },
-    {
-      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
-      "entrypoint": "psmProposalBuilder",
-      "args": [
-        {
-          "anchorOptions": {
             "denom": "ibc/toyusd",
             "decimalPlaces": 6,
-            "keyword": "ToyUSD",
-            "proposedName": "ToyUSD"
+            "keyword": "ToyIBCAsset",
+            "oracleBrand": "ToyIBCAsset",
+            "proposedName": "ToyIBCAsset"
           }
         }
       ]
