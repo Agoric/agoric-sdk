@@ -15,7 +15,10 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  floorMultiplyBy,
+  multiplyBy,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { NonNullish } from '@agoric/assert';
 
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
@@ -1864,9 +1867,17 @@ test('reinstate vault', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
+  t.deepEqual(aliceUpdate.value.locked, aeth.make(0n));
 
+  // Reduce Bob's collateral by liquidation penalty
+  const recoveredBobCollateral = AmountMath.subtract(
+    bobCollateralAmount,
+    aeth.make(4n),
+  );
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
+  t.deepEqual(bobUpdate.value.locked, recoveredBobCollateral);
+  t.deepEqual(bobUpdate.value.debtSnapshot.debt, bobRunDebtLevel);
 
   await assertBidderPayout(t, bidderSeat, run, 66n, aeth, 8n);
 

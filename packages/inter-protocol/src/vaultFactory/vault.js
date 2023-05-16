@@ -117,7 +117,7 @@ export const VaultI = M.interface('Vault', {
   getNormalizedDebt: M.call().returns(AmountShape),
   getVaultSeat: M.call().returns(SeatShape),
   initVaultKit: M.call(SeatShape, StorageNodeShape).returns(M.promise()),
-  liquidated: M.call().returns(undefined),
+  finishLiquidation: M.call().returns(undefined),
   liquidating: M.call().returns(undefined),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
@@ -682,18 +682,18 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
         /**
          * Called by manager at end of liquidation, at which point all debts have been
-         * covered.
+         * covered, or the vault has already been restored to ACTIVE
          */
-        liquidated() {
-          const { facets } = this;
-
+        finishLiquidation() {
+          const { state, facets } = this;
           const { helper } = facets;
-          helper.updateDebtSnapshot(
-            // liquidated vaults retain no debt
-            AmountMath.makeEmpty(helper.debtBrand()),
-          );
-
-          helper.assignPhase(Phase.LIQUIDATED);
+          if (state.phase === Phase.LIQUIDATING) {
+            helper.updateDebtSnapshot(
+              // liquidated vaults retain no debt
+              AmountMath.makeEmpty(helper.debtBrand()),
+            );
+            helper.assignPhase(Phase.LIQUIDATED);
+          }
           helper.updateUiState();
         },
 
@@ -702,6 +702,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * collateral. The liquidation fee was charged against the collateral,
          * but the debt will be restored and the vault will be active again.
          * Liquidation.md has details on the liquidation approach.
+         * `finishLiquidation` will be called to ensure clients are notified
+         * after all collateral is moved.
          */
         abortLiquidation() {
           const { state, facets } = this;
@@ -709,7 +711,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           const { helper } = facets;
 
           helper.assignPhase(Phase.ACTIVE);
-          helper.updateUiState();
           return state.idInManager;
         },
 

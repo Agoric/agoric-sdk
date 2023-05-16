@@ -642,12 +642,6 @@ export const prepareVaultManagerKit = (
           const accounting = liquidationResults(totalDebt, mintedProceeds);
           const { Collateral: collateralProceeds } = proceeds;
 
-          /** @type {(v: Vault) => void} */
-          const recordLiquidation = v => {
-            v.liquidated();
-            liquidatingVaults.delete(v);
-          };
-
           const penaltyRate = facets.self
             .getGovernedParams()
             .getLiquidationPenalty();
@@ -703,7 +697,6 @@ export const prepareVaultManagerKit = (
                   { Collateral: collat },
                 ]);
               }
-              recordLiquidation(vault);
             }
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
@@ -778,7 +771,6 @@ export const prepareVaultManagerKit = (
                 const seat = vault.getVaultSeat();
                 transfers.push([liqSeat, seat, { Minted: mintedToReturn }]);
               }
-              recordLiquidation(vault);
             }
 
             if (transfers.length > 0) {
@@ -849,7 +841,6 @@ export const prepareVaultManagerKit = (
                 );
                 const seat = vault.getVaultSeat();
                 const vaultId = vault.abortLiquidation();
-                liquidatingVaults.delete(vault);
                 // must reinstate after atomicRearrange(), so we record them.
                 vaultsToReinstate.init(vaultId, vault);
                 reduceCollateral(vaultDebt);
@@ -861,9 +852,7 @@ export const prepareVaultManagerKit = (
                   debtAmount,
                   vault.getCurrentDebt(),
                 );
-
                 reduceCollateral(vCollat);
-                recordLiquidation(vault);
               }
             }
 
@@ -889,6 +878,10 @@ export const prepareVaultManagerKit = (
               ...accounting,
               shortfall: shortfallToReserve,
             });
+          }
+          for (const [vault] of bestToWorst) {
+            vault.finishLiquidation();
+            liquidatingVaults.delete(vault);
           }
           return facets.helper.updateMetrics();
         },
