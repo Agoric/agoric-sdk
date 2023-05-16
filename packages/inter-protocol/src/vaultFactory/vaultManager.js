@@ -567,9 +567,17 @@ export const prepareVaultManagerKit = (
           );
           state.totalDebt = AmountMath.subtract(state.totalDebt, shortfall);
 
-          void E.when(factoryPowers.getShortfallReporter(), reporter =>
-            E(reporter).increaseLiquidationShortfall(shortfall),
-          );
+          E.when(
+            factoryPowers.getShortfallReporter(),
+            reporter => E(reporter).increaseLiquidationShortfall(shortfall),
+            err =>
+              console.error(
+                '🛠️ getShortfallReporter() failed during liquidation; repair by updating governance',
+                err,
+              ),
+          ).catch(err => {
+            console.error('🚨 failed to report liquidation shortfall', err);
+          });
         },
         /**
          * If interest was charged between liquidating and liquidated, erase it.
