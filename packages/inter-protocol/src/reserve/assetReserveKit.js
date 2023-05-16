@@ -134,7 +134,7 @@ export const prepareAssetReserveKit = async (
             totalFeeMinted: state.totalFeeMinted,
             totalFeeBurned: state.totalFeeBurned,
           });
-          state.metricsKit.recorder.write(metrics);
+          void state.metricsKit.recorder.write(metrics);
         },
       },
       governedApis: {
