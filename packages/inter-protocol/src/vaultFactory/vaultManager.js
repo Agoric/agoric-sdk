@@ -983,6 +983,7 @@ export const prepareVaultManagerKit = (
          * @param {VaultId} vaultId
          * @param {import('./vault.js').VaultPhase} vaultPhase at the end of whatever change updated balances
          * @param {Vault} vault
+         * @returns {void}
          */
         handleBalanceChange(
           oldDebtNormalized,
@@ -1054,7 +1055,7 @@ export const prepareVaultManagerKit = (
               oldCollateral,
             );
             // debt accounting managed through minting and burning
-            facets.helper.updateMetrics();
+            void facets.helper.updateMetrics();
           }
         },
       },
@@ -1221,7 +1222,7 @@ export const prepareVaultManagerKit = (
           );
 
           helper.markLiquidating(totalDebt, totalCollateral);
-          helper.updateMetrics();
+          void helper.updateMetrics();
 
           const { userSeatPromise, deposited } = await E.when(
             E(auctionPF).makeDepositInvitation(),
@@ -1247,7 +1248,7 @@ export const prepareVaultManagerKit = (
           );
 
           trace(`LiqV after long wait`, proceeds);
-          helper.distributeProceeds(
+          return helper.distributeProceeds(
             proceeds,
             totalDebt,
             storedCollateralQuote,
@@ -1273,7 +1274,7 @@ export const prepareVaultManagerKit = (
         );
 
         // push initial state of metrics
-        helper.updateMetrics();
+        void helper.updateMetrics();
       },
     },
   );
