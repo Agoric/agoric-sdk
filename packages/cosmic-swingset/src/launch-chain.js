@@ -16,12 +16,11 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
-import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
@@ -39,6 +38,7 @@ import {
 } from './sim-params.js';
 import { parseParams } from './params.js';
 import { makeQueue } from './helpers/make-queue.js';
+import { exportStorage } from './export-storage.js';
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -48,9 +48,9 @@ const blockManagerConsole = anylogger('block-manager');
 /**
  * @typedef {object} CosmicSwingsetConfig
  * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
- * @property {string[]} [clearStorageSubtrees] chain storage paths identifying roots of subtrees
- *   for which data should be deleted (except for overlaps with exportStorageSubtrees, which
- *   are preserved).
+ * @property {string[]} [clearStorageSubtrees] chain storage paths identifying
+ *   roots of subtrees for which data should be deleted (including overlaps with
+ *   exportStorageSubtrees, which are *not* preserved).
  * @property {string[]} [exportStorageSubtrees] chain storage paths identifying roots of subtrees
  *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
  *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
@@ -66,7 +66,7 @@ const getHostKey = path => `host.${path}`;
 
 /**
  * @param {Map<*, *>} mailboxStorage
- * @param {*} bridgeOutbound
+ * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string} vatconfig absolute path
  * @param {unknown} bootstrapArgs JSON-serializable data
@@ -143,74 +143,17 @@ export async function buildSwingset(
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
 
-    const readChainStorage = (method, path) =>
-      bridgeOutbound(BRIDGE_ID.STORAGE, { method, args: [path] });
-    const isInSubtree = (path, root) =>
-      path === root || path.startsWith(`${root}.`);
+    if (bridgeOutbound) {
+      const batchChainStorage = (method, args) =>
+        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
 
-    // Extract data from chain storage as [path, value?] pairs.
-    if (bridgeOutbound && exportStorageSubtrees.length > 0) {
-      // Disallow exporting internal details like bundle contents and the action queue.
-      const exportRoot = STORAGE_PATH.CUSTOM;
-      const badPaths = exportStorageSubtrees.filter(
-        path => !isInSubtree(path, exportRoot),
+      // Extract data from chain storage as [path, value?] pairs.
+      const chainStorageEntries = exportStorage(
+        batchChainStorage,
+        exportStorageSubtrees,
+        clearStorageSubtrees,
       );
-      badPaths.length === 0 ||
-        // prettier-ignore
-        Fail`Exported chain storage paths ${q(badPaths)} must start with ${q(exportRoot)}`;
-
-      const makeExportEntry = (path, value) =>
-        value == null ? [path] : [path, value];
-
-      const chainStorageEntries = [];
-      // Preserve the ordering of each subtree via depth-first traversal.
-      let pendingEntries = exportStorageSubtrees.map(path => {
-        const value = readChainStorage('get', path);
-        return makeExportEntry(path, value);
-      });
-      while (pendingEntries.length > 0) {
-        const entry = /** @type {[string, string?]} */ (pendingEntries.shift());
-        chainStorageEntries.push(entry);
-        const [path, _value] = entry;
-        const childEntryData = readChainStorage('entries', path);
-        const childEntries = childEntryData.map(([pathSegment, value]) => {
-          return makeExportEntry(`${path}.${pathSegment}`, value);
-        });
-        pendingEntries = [...childEntries, ...pendingEntries];
-      }
       bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
-    }
-
-    // Clear other chain storage data as configured.
-    // NOTE THAT WE DO NOT LIMIT THIS TO THE CUSTOM PATH!
-    // USE AT YOUR OWN RISK!
-    if (bridgeOutbound && clearStorageSubtrees) {
-      const pathsToClear = [];
-      const batchThreshold = 100;
-      const sendBatch = () => {
-        // Consume pathsToClear and map each path to a no-value entry.
-        const args = pathsToClear.splice(0).map(path => [path]);
-        bridgeOutbound(BRIDGE_ID.STORAGE, { method: 'setWithoutNotify', args });
-      };
-      let pathsToCheck = [...clearStorageSubtrees];
-      while (pathsToCheck.length > 0) {
-        const path = pathsToCheck.shift();
-        if (exportStorageSubtrees.some(root => isInSubtree(path, root))) {
-          // Don't purge data that is being exported.
-          continue;
-        }
-        pathsToClear.push(path);
-        if (pathsToClear.length >= batchThreshold) {
-          sendBatch();
-        }
-        const childPaths = readChainStorage('children', path).map(
-          segment => `${path}.${segment}`,
-        );
-        pathsToCheck = [...childPaths, ...pathsToCheck];
-      }
-      if (pathsToClear.length > 0) {
-        sendBatch();
-      }
     }
 
     swingsetConfig.pinBootstrapRoot = true;
