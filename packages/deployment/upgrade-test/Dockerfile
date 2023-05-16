@@ -60,7 +60,6 @@ ARG DEST_IMAGE
 FROM ${DEST_IMAGE} as agoric-upgrade-10
 ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
-ENV DEST=1
 
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
@@ -76,7 +75,6 @@ FROM ${DEST_IMAGE} as agoric-upgrade-11
 ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 # this boot doesn't need an upgrade
-ENV DEST=1
 
 WORKDIR /usr/src/agoric-sdk/
 COPY ./*.sh ./upgrade-test-scripts/
