@@ -227,8 +227,8 @@ test('schedule start to finish', async t => {
   now = await timer.advanceTo(now + 2n);
 
   t.is(fakeAuctioneer.getState().step, 6);
-  t.false(fakeAuctioneer.getState().final);
-  t.true(fakeAuctioneer.getState().lockedPrices);
+  t.true(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
 
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);

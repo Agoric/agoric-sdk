@@ -141,7 +141,7 @@ export const makeScheduler = async (
       return;
     }
 
-    /** @type {() => Promise<void>} */
+    /** @type {() => void} */
     const finishAuctionRound = () => {
       auctionState = AuctionState.WAITING;
       auctionDriver.finalize();
@@ -159,10 +159,12 @@ export const makeScheduler = async (
       }
 
       liveSchedule = null;
-      return E(timer).cancel(stepCancelToken);
+
+      // Async because a remote call. In rare event of failure, wakeup is robust.
+      void E(timer).cancel(stepCancelToken);
     };
 
-    const advanceRound = async () => {
+    const advanceRound = () => {
       if (auctionState === AuctionState.ACTIVE) {
         auctionDriver.reducePriceAndTrade();
       } else {
@@ -177,7 +179,7 @@ export const makeScheduler = async (
               'Unable to start auction cleanly. skipping this auction round.',
             ),
           );
-          await finishAuctionRound();
+          finishAuctionRound();
 
           return false;
         }
@@ -189,11 +191,11 @@ export const makeScheduler = async (
       case 'before':
         break;
       case 'during':
-        await advanceRound();
+        advanceRound();
         break;
       case 'endExactly':
-        if (await advanceRound()) {
-          await finishAuctionRound();
+        if (advanceRound()) {
+          finishAuctionRound();
         }
         break;
       case 'after':
