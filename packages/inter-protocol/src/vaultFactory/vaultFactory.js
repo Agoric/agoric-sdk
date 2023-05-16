@@ -29,7 +29,7 @@ import { E } from '@endo/eventual-send';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
-import { provideAndStartDirector } from './vaultDirector.js';
+import { provideDirector } from './vaultDirector.js';
 
 const trace = makeTracer('VF', false);
 
@@ -116,7 +116,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     vaultDirectorParamTypes,
   );
 
-  const director = provideAndStartDirector(
+  const director = provideDirector(
     baggage,
     zcf,
     vaultDirectorParamManager,
@@ -129,6 +129,12 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     makeRecorderKit,
     makeERecorderKit,
   );
+
+  // cannot await because it would make remote calls during vat restart
+  director.helper.start().catch(err => {
+    console.error('💀 vaultDirector failed to start:', err);
+    zcf.shutdownWithFailure(err);
+  });
 
   // validate async to wait for params to be finished
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343

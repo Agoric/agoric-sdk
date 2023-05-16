@@ -305,7 +305,8 @@ export const makeMyAddressNameAdminKit = address => {
     getMyAddress: () => address,
   });
   // reserve space for deposit facet
-  myAddressNameAdmin.reserve(WalletName.depositFacet);
+  // This may not finish before another reserve() call, but this one will win
+  void myAddressNameAdmin.reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };
 };

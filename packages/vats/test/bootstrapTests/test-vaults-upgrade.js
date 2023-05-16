@@ -392,35 +392,43 @@ test.serial('adjust balance of vault opened before restart', async t => {
   });
 });
 
-// charge interest to force a liquidation and verify the shortfall is transferred
+// charge interest to force a liquidation and verify it starts
 test.serial('force liquidation', async t => {
   const { advanceTime, readCollateralMetrics, readRewardPoolBalance } =
     t.context.shared;
 
   // advance a year to drive interest charges
-  advanceTime(365, 'days');
-  t.is(readRewardPoolBalance(), 340000n);
+  await advanceTime(365, 'days');
+  // accrues massively
+  t.is(readRewardPoolBalance(), 683693581n);
   t.like(readCollateralMetrics(0), {
+    numActiveVaults: 2,
     totalDebt: { value: 68340000n },
   });
 
   // liquidation will have been skipped because time skipped ahead
   // so now advance slowly
   await advanceTime(1, 'hours');
-  await advanceTime(1, 'hours');
-  // wait for it...
   t.like(readCollateralMetrics(0), {
-    liquidatingCollateral: { value: 0n },
-    liquidatingDebt: { value: 0n },
+    numActiveVaults: 2,
     numLiquidatingVaults: 0,
   });
-
-  // POW
   await advanceTime(1, 'hours');
   t.like(readCollateralMetrics(0), {
-    liquidatingCollateral: { value: 9000000n },
-    liquidatingDebt: { value: 696421994n },
+    liquidatingCollateral: { value: 9_000_000n },
+    liquidatingDebt: { value: 696_421_994n },
+    numActiveVaults: 1,
     numLiquidatingVaults: 1,
+  });
+
+  // after this the liquidation aborts due to the shortfall reporter being broken after upgrade.
+  // it has to be repaired by governance until https://github.com/Agoric/agoric-sdk/issues/5200
+  await advanceTime(1, 'hours');
+  t.like(readCollateralMetrics(0), {
+    numActiveVaults: 2,
+    numLiquidatingVaults: 0,
+    numLiquidationsAborted: 1,
+    numLiquidationsCompleted: 0,
   });
 });
 

@@ -539,8 +539,13 @@ export const prepareVaultDirector = (
          */
         async start() {
           const { helper } = this.facets;
-          helper.rescheduleLiquidationWakeups();
-          await updateShortfallReporter();
+          await helper.rescheduleLiquidationWakeups();
+          updateShortfallReporter().catch(err =>
+            console.error(
+              '🛠️ updateShortfallReporter failed during start(); repair by updating governance',
+              err,
+            ),
+          );
         },
       },
     },
@@ -550,19 +555,15 @@ export const prepareVaultDirector = (
 harden(prepareVaultDirector);
 
 /**
- * Prepare the VaultDirector kind, get or make the singleton, and call .start() to kick off processes.
+ * Prepare the VaultDirector kind, get or make the singleton
  *
  * @type {(...pvdArgs: Parameters<typeof prepareVaultDirector>) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
  */
-export const provideAndStartDirector = (...args) => {
+export const provideDirector = (...args) => {
   const makeVaultDirector = prepareVaultDirector(...args);
 
   const [baggage] = args;
 
-  const director = provide(baggage, 'director', makeVaultDirector);
-  director.helper
-    .start()
-    .catch(err => console.error('🚨 vaultDirector failed to start:', err));
-  return director;
+  return provide(baggage, 'director', makeVaultDirector);
 };
-harden(provideAndStartDirector);
+harden(provideDirector);

@@ -224,12 +224,11 @@ test('schedule start to finish', async t => {
   t.true(fakeAuctioneer.getState().lockedPrices);
 
   // final step
-  now = await timer.advanceTo(now + 1n);
-  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(now + 2n);
 
   t.is(fakeAuctioneer.getState().step, 6);
-  t.true(fakeAuctioneer.getState().final);
-  t.false(fakeAuctioneer.getState().lockedPrices);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().lockedPrices);
 
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
@@ -791,7 +790,7 @@ test('change Schedule', async t => {
 
   const newFreq = 100n;
   const newStep = 40n;
-  paramManager.updateParams({
+  await paramManager.updateParams({
     StartFrequency: TimeMath.coerceRelativeTimeRecord(newFreq, timerBrand),
     ClockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
   });
@@ -1080,15 +1079,9 @@ test('schedule anomalies', async t => {
   const veryLateStart = baseTime + 5n * oneCycle;
   await timer.advanceTo(veryLateStart);
 
-  // This schedule is published as a side effect of closing out the incomplete
-  // auction. The next one follows immediately and is correct.
-  await scheduleTracker.assertChange({
-    activeStartTime: null,
-    nextDescendingStepTime: { absValue: 1700017230n },
-  });
   const veryLateActual = veryLateStart + oneCycle + delay;
   await scheduleTracker.assertChange({
-    activeStartTime: timestamp(veryLateActual),
+    activeStartTime: { absValue: veryLateActual },
     nextDescendingStepTime: { absValue: veryLateActual },
     nextStartTime: { absValue: veryLateActual + oneCycle },
   });

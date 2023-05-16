@@ -1226,7 +1226,7 @@ test('overdeposit', async t => {
     E(vaultFactory).makeCollectFeesInvitation(),
   );
   await E(collectFeesSeat).getOfferResult();
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     await E.get(E(collectFeesSeat).getFinalAllocation()).Fee,
     run.make(300n),

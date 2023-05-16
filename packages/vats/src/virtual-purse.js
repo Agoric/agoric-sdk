@@ -162,7 +162,7 @@ const prepareVirtualPurseKit = zone =>
       minter: {
         /** @type {Retain} */
         async retain(payment, optAmountShape) {
-          this.state.mint || Fail`minter cannot retain without a mint.`;
+          !!this.state.mint || Fail`minter cannot retain without a mint.`;
           return E(this.state.issuer).burn(payment, optAmountShape);
         },
         /** @type {Redeem} */

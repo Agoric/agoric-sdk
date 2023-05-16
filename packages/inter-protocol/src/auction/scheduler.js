@@ -128,13 +128,14 @@ export const makeScheduler = async (
         now,
       ),
     });
-    scheduleRecorder.write(sched);
+    return scheduleRecorder.write(sched);
   };
 
   /**
    * @param {Schedule | null} schedule
+   * @returns {Promise<void>}
    */
-  const clockTick = schedule => {
+  const clockTick = async schedule => {
     trace('clockTick', schedule?.startTime, now);
     if (!schedule) {
       return;
@@ -161,7 +162,7 @@ export const makeScheduler = async (
       return E(timer).cancel(stepCancelToken);
     };
 
-    const advanceRound = () => {
+    const advanceRound = async () => {
       if (auctionState === AuctionState.ACTIVE) {
         auctionDriver.reducePriceAndTrade();
       } else {
@@ -176,7 +177,7 @@ export const makeScheduler = async (
               'Unable to start auction cleanly. skipping this auction round.',
             ),
           );
-          finishAuctionRound();
+          await finishAuctionRound();
 
           return false;
         }
@@ -188,21 +189,21 @@ export const makeScheduler = async (
       case 'before':
         break;
       case 'during':
-        advanceRound();
+        await advanceRound();
         break;
       case 'endExactly':
-        if (advanceRound()) {
-          finishAuctionRound();
+        if (await advanceRound()) {
+          await finishAuctionRound();
         }
         break;
       case 'after':
-        finishAuctionRound();
+        await finishAuctionRound();
         break;
       default:
         Fail`invalid case`;
     }
 
-    publishSchedule();
+    void publishSchedule();
   };
 
   // schedule the wakeups for the steps of this round
@@ -226,7 +227,7 @@ export const makeScheduler = async (
         wake(time) {
           setTimeMonotonically(time);
           trace('wake step', now);
-          clockTick(liveSchedule);
+          void clockTick(liveSchedule);
         },
       }),
       stepCancelToken,
@@ -246,7 +247,7 @@ export const makeScheduler = async (
         },
       }),
     );
-    publishSchedule();
+    void publishSchedule();
   };
 
   // schedule a wakeup to lock prices
@@ -333,7 +334,7 @@ export const makeScheduler = async (
 
   // when auction parameters change, schedule a next auction if one isn't
   // already scheduled
-  observeIteration(
+  void observeIteration(
     subscribeEach(paramUpdateSubscription),
     harden({
       async updateState(_newState) {
