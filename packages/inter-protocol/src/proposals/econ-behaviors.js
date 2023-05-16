@@ -17,8 +17,8 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
 
 const trace = makeTracer('RunEconBehaviors', false);
 
-const SECONDS_PER_HOUR = 60n * 60n;
-const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
+export const SECONDS_PER_HOUR = 60n * 60n;
+export const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 /**
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
