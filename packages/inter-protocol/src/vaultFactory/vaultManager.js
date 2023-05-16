@@ -598,7 +598,7 @@ export const prepareVaultManagerKit = (
 
           state.totalDebt = AmountMath.add(state.totalDebt, debt);
         },
-        updateMetrics() {
+        writeMetrics() {
           const { state } = this;
           const { collateralBrand, retainedCollateralSeat, metricsTopicKit } =
             state;
@@ -898,7 +898,7 @@ export const prepareVaultManagerKit = (
               shortfall: shortfallToReserve,
             });
           }
-          return facets.helper.updateMetrics();
+          return facets.helper.writeMetrics();
         },
       },
 
@@ -1070,7 +1070,7 @@ export const prepareVaultManagerKit = (
               oldCollateral,
             );
             // debt accounting managed through minting and burning
-            void facets.helper.updateMetrics();
+            void facets.helper.writeMetrics();
           }
         },
       },
@@ -1237,7 +1237,7 @@ export const prepareVaultManagerKit = (
           );
 
           helper.markLiquidating(totalDebt, totalCollateral);
-          void helper.updateMetrics();
+          void helper.writeMetrics();
 
           const { userSeatPromise, deposited } = await E.when(
             E(auctionPF).makeDepositInvitation(),
@@ -1289,7 +1289,7 @@ export const prepareVaultManagerKit = (
         );
 
         // push initial state of metrics
-        void helper.updateMetrics();
+        void helper.writeMetrics();
       },
     },
   );
