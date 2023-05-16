@@ -298,7 +298,7 @@ test.serial('errors', async t => {
 
   // TODO move to smart-wallet package when it has sufficient test supports
   acceptInvitationCounter -= 1; // try again with same id
-  t.throwsAsync(acceptInvitation(wallet, priceAggregator), {
+  await t.throwsAsync(acceptInvitation(wallet, priceAggregator), {
     message: `cannot re-use offer id "acceptInvitation${acceptInvitationCounter}"`,
   });
 
