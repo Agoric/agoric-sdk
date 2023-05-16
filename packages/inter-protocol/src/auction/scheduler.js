@@ -213,12 +213,14 @@ export const makeScheduler = async (
     void publishSchedule();
   };
 
-  // XXX liveSchedule and nextSchedule are in scope
-  // schedule the wakeups for the steps of this round
-  const scheduleSteps = schedule => {
-    schedule || Fail`liveSchedule not defined`;
+  // set wakeups for the steps of this round
+  const queueLiveSchedule = () => {
+    if (!liveSchedule) {
+      console.error('🚨 queueLiveSchedule called with no liveSchedule');
+      return;
+    }
 
-    const { startTime } = schedule;
+    const { startTime } = liveSchedule;
     trace('START ', startTime);
 
     const delayFromNow =
@@ -226,16 +228,16 @@ export const makeScheduler = async (
         ? TimeMath.subtractAbsAbs(startTime, now)
         : TimeMath.subtractAbsAbs(startTime, startTime);
 
-    trace('scheduleSteps repeating', now, delayFromNow, startTime);
+    trace('queueLiveSchedule repeating', now, delayFromNow, startTime);
 
     void E(timer).repeatAfter(
       delayFromNow,
-      schedule.clockStep,
+      liveSchedule.clockStep,
       Far('PriceStepWaker', {
         wake(time) {
           setTimeMonotonically(time);
           trace('wake step', now);
-          void clockTick(schedule);
+          void clockTick(liveSchedule);
         },
       }),
       stepCancelToken,
@@ -321,7 +323,7 @@ export const makeScheduler = async (
       TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n)),
     );
 
-    scheduleSteps(liveSchedule);
+    queueLiveSchedule();
     if (nextSchedule) {
       scheduleNextRound(
         TimeMath.subtractAbsRel(
