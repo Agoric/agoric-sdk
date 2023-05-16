@@ -34,6 +34,7 @@ let cancelToken = makeCancelToken();
  * @param {TimerWaker} priceLockWaker
  * @param {TimerWaker} liquidationWaker
  * @param {TimerWaker} reschedulerWaker
+ * @returns {Promise<void>}
  */
 const scheduleLiquidationWakeups = async (
   auctioneerPublicFacet,
@@ -76,7 +77,8 @@ const scheduleLiquidationWakeups = async (
   trace('SCHEDULE nextAuctionSchedule', schedules.nextAuctionSchedule);
   if (!schedules.nextAuctionSchedule?.startTime) {
     // The schedule says there's no next auction.
-    waitForNewAuctionParams();
+    // eslint-disable-next-line @jessie.js/no-nested-await -- await at function top
+    await waitForNewAuctionParams();
     return;
   }
 
@@ -104,11 +106,11 @@ const scheduleLiquidationWakeups = async (
         void E(timer).cancel(cancelToken);
       }
 
-      void E(timer).setWakeup(afterStart, reschedulerWaker);
+      // eslint-disable-next-line @jessie.js/no-nested-await -- await at function top
+      await E(timer).setWakeup(afterStart, reschedulerWaker);
       return;
     } else {
-      waitForNewAuctionParams();
-      return;
+      return waitForNewAuctionParams();
     }
   }
 
