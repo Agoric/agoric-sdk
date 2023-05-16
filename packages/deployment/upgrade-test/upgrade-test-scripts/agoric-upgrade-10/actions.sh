@@ -108,6 +108,11 @@ if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
     agops vaults adjust --vaultId vault0 --wantCollateral 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
     agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
+    # take some IST from the first vault, increasing debt
+    OFFER=$(mktemp -t agops.XXX)
+    agops vaults adjust --vaultId vault0 --wantMinted 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
     # close the second vault
     OFFER=$(mktemp -t agops.XXX)
     agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
