@@ -67,7 +67,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
 test.after.always(t => {
-  t.context.shutdown && t.context.shutdown();
+  return t.context.shutdown && t.context.shutdown();
 });
 
 test('metrics path', async t => {

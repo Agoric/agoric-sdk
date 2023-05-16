@@ -67,7 +67,7 @@ test('makeNameHubKit - reserve and update', async t => {
   t.deepEqual(nameHub.entries(), []);
 
   // Try reserving and looking up.
-  nameAdmin.reserve('hello');
+  await nameAdmin.reserve('hello');
 
   let lookedUpHello = false;
   const lookupHelloP = nameHub
@@ -104,7 +104,7 @@ test('makeNameHubKit - reserve and delete', async t => {
   t.deepEqual(nameHub.values(), []);
   t.deepEqual(nameHub.entries(), []);
 
-  nameAdmin.reserve('goodbye');
+  await nameAdmin.reserve('goodbye');
   let lookedUpGoodbye = false;
   const lookupGoodbyeP = nameHub
     .lookup('bar')

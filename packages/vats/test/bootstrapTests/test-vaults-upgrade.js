@@ -398,8 +398,8 @@ test.serial('force liquidation', async t => {
     t.context.shared;
 
   // advance a year to drive interest charges
-  advanceTime(365, 'days');
-  t.is(readRewardPoolBalance(), 340000n);
+  await advanceTime(365, 'days');
+  t.is(readRewardPoolBalance(), 683693581n);
   t.like(readCollateralMetrics(0), {
     totalDebt: { value: 68340000n },
   });
