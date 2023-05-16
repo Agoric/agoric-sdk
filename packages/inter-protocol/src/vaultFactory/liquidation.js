@@ -1,12 +1,12 @@
 // @jessie-check
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeScalarMapStore } from '@agoric/store';
-import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { E } from '@endo/eventual-send';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
 import { makeCancelTokenMaker } from '../auction/util.js';
@@ -55,7 +55,12 @@ const scheduleLiquidationWakeups = async (
       async updateState(_newState) {
         if (!cancelToken) {
           cancelToken = makeCancelToken();
-          void E(timer).setWakeup(now, reschedulerWaker, cancelToken);
+          void E(timer).setWakeup(
+            // bump one tick to prevent an infinite loop
+            TimeMath.addAbsRel(now, 1n),
+            reschedulerWaker,
+            cancelToken,
+          );
         }
       },
     }),
@@ -68,7 +73,7 @@ const scheduleLiquidationWakeups = async (
     cancelToken = undefined;
   };
 
-  trace('SCHEDULE', schedules.nextAuctionSchedule);
+  trace('SCHEDULE nextAuctionSchedule', schedules.nextAuctionSchedule);
   if (!schedules.nextAuctionSchedule?.startTime) {
     // The schedule says there's no next auction.
     waitForNewAuctionParams();

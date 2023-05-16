@@ -192,9 +192,7 @@ export const makeScheduler = async (
       return true;
     };
 
-    const phase = timeVsSchedule(now, schedule);
-    trace('phase', phase);
-    switch (phase) {
+    switch (timeVsSchedule(now, schedule)) {
       case 'before':
         break;
       case 'during':
