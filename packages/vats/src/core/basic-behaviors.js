@@ -489,7 +489,8 @@ export const makeAddressNameHubs = async ({
 
   const perAddress = address => {
     const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-    myAddressNameAdmin.reserve(WalletName.depositFacet);
+    // This may not finish before another reserve() call, but this one will win
+    void myAddressNameAdmin.reserve(WalletName.depositFacet);
 
     // This may race against walletFactory.js/publishDepositFacet, so we are
     // careful not to clobber the first nameHub that is used to update
