@@ -35,6 +35,10 @@ fi
 
 ## testing state from pismoC was preserved post bulldozer upgrade
 
+# there should be no @qclass
+
+test_not_val $(agd q vstorage data published.psm.${PSM_PAIR}.governance | grep "@qclass") "" "No @qclass in PSM gov params"
+
 # test that the PSM gov params were preserved
 toyUSDGovernance="$(agoric follow -lF :published.psm.${PSM_PAIR}.governance -o jsonlines)"
 test_not_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
@@ -44,12 +48,16 @@ test_val "$(echo "$toyUSDGovernance" | jq -r '.current.GiveMintedFee.value.denom
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.numerator.value')" "0" "WantMintedFee numerator == 0"
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.WantMintedFee.value.denominator.value')" "$(cat /root/.agoric/psm_governance.json | jq -r '.current.WantMintedFee.value.denominator.value')" "WantMintedFee denominator == 10000"
 
+test_not_val $(agd q vstorage data published.psm.${PSM_PAIR}.governance | grep "@qclass") "" "No @qclass in PSM gov params"
+
 toyUSDMetrics="$(agoric follow -lF :published.psm.${PSM_PAIR}.metrics -o jsonlines)"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.anchorPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.anchorPoolBalance.value')" "anchorPoolBalance preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.feePoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.feePoolBalance.value')" "feePoolBalance preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.mintedPoolBalance.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.mintedPoolBalance.value')" "mintedPoolBalance preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.totalAnchorProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalAnchorProvided.value')" "totalAnchorProvided preserved"
 test_val "$(echo "$toyUSDMetrics" | jq -r '.totalMintedProvided.value')" "$(cat /root/.agoric/psm_metrics.json | jq -r '.totalMintedProvided.value')" "totalMintedProvided preserved"
+
+test_not_val $(agd q vstorage data published.provisionPool.metrics | grep "@qclass") "" "No @qclass in PSM gov params"
 
 # test that provision pool metrics are retained across vaults upgrade
 provisionPoolMetrics="$(agoric follow -lF :published.provisionPool.metrics -o jsonlines)"
