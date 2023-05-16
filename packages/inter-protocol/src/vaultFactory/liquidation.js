@@ -29,6 +29,19 @@ const makeCancelToken = makeCancelTokenMaker('liq');
 let cancelToken = makeCancelToken();
 
 /**
+ * Schedule wakeups for the *next* auction round.
+ *
+ * Called by vaultDirector's rescheduleLiquidationWakeups at start() and every
+ * time there's a "reschedule" wakeup.
+ *
+ * In practice, there are these cases to handle:
+ *
+ * | when                             | what                                    |
+ * | -------------------------------- | --------------------------------------- |
+ * | [start N, nominalStart N+1]      | good: schedule normally the three wakers|
+ * | (nominalStart N+1, endTime N+1]  | recover: skip round N+1 and schedule N+2|
+ * | (endTime N+1, ∞)                 | give up: wait for repair by governance  |
+ *
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
  * @param {ERef<TimerService>} timer
  * @param {TimerWaker} priceLockWaker
@@ -36,6 +49,7 @@ let cancelToken = makeCancelToken();
  * @param {TimerWaker} reschedulerWaker
  * @returns {Promise<void>}
  */
+// TODO rename to say it's about scheduling the next round
 const scheduleLiquidationWakeups = async (
   auctioneerPublicFacet,
   timer,
@@ -49,6 +63,7 @@ const scheduleLiquidationWakeups = async (
     E(timer).getCurrentTimestamp(),
   ]);
 
+  // FIXME move out of the loop
   // make one observer that will usually ignore the update.
   void observeIteration(
     subscribeEach(E(auctioneerPublicFacet).getSubscription()),
@@ -67,18 +82,27 @@ const scheduleLiquidationWakeups = async (
     }),
   );
 
-  const waitForNewAuctionParams = () => {
+  // Generally, canceling wakups has to be followed by setting up new ones but
+  // not in the case of pausing wakeups. We do that in the event of invalid
+  // schedule params. When they are repaired by governance, the wakers resume.
+  const cancelWakeups = () => {
     if (cancelToken) {
       void E(timer).cancel(cancelToken);
     }
     cancelToken = undefined;
   };
+  const waitForRepair = () => {
+    // the params observer will setWakeup to resume.
+    console.warn(
+      '🛠️ No wake for reschedule. Repair by resetting auction params.',
+    );
+  };
 
-  trace('SCHEDULE nextAuctionSchedule', schedules.nextAuctionSchedule);
-  if (!schedules.nextAuctionSchedule?.startTime) {
-    // The schedule says there's no next auction.
-    // eslint-disable-next-line @jessie.js/no-nested-await -- await at function top
-    await waitForNewAuctionParams();
+  trace('SCHEDULE', schedules.nextAuctionSchedule);
+  if (!schedules.nextAuctionSchedule) {
+    // The schedule says there's no next auction. (same action as case 3, for a different reason)
+    cancelWakeups();
+    waitForRepair();
     return;
   }
 
@@ -93,26 +117,30 @@ const scheduleLiquidationWakeups = async (
   // eslint-disable-next-line no-restricted-syntax -- https://github.com/Agoric/eslint-config-jessie/issues/33
   const auctionStartDelay = params[AUCTION_START_DELAY].value;
 
+  // nominal is the declared start time, but the actual auctioning begins after auctionStartDelay
   const nominalStart = TimeMath.subtractAbsRel(startTime, auctionStartDelay);
   const afterStart = TimeMath.addAbsRel(startTime, 1n);
 
+  // Is there a problem (case 2 or 3)?
   // scheduleLiquidationWakeups is supposed to be called just after an auction
   // started. If we're late but there's still time for the nominal start, then
   // we'll proceed. Reschedule for the next round if that's still in the future.
   // Otherwise, wait for governance params to change.
   if (TimeMath.compareAbs(now, nominalStart) > 0) {
-    if (TimeMath.compareAbs(now, endTime) < 0) {
-      if (cancelToken) {
-        void E(timer).cancel(cancelToken);
-      }
+    // nominalStart is past
+    cancelWakeups();
 
-      // eslint-disable-next-line @jessie.js/no-nested-await -- await at function top
-      await E(timer).setWakeup(afterStart, reschedulerWaker);
-      return;
+    if (TimeMath.compareAbs(now, endTime) < 0) {
+      // endTime is in the future or now to reschedule waking (case 2)
+      void E(timer).setWakeup(afterStart, reschedulerWaker);
     } else {
-      return waitForNewAuctionParams();
+      // case 3
+      waitForRepair();
     }
+
+    return;
   }
+  // nominalStart is now or in the future (case 1)
 
   cancelToken = cancelToken || makeCancelToken();
   const priceLockWakeTime = TimeMath.subtractAbsRel(
@@ -123,6 +151,7 @@ const scheduleLiquidationWakeups = async (
   trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
   void E(timer).setWakeup(priceLockWakeTime, priceLockWaker, cancelToken);
   void E(timer).setWakeup(nominalStart, liquidationWaker, cancelToken);
+  // Call scheduleLiquidationWakeups again one tick after nominalStart
   void E(timer).setWakeup(afterStart, reschedulerWaker, cancelToken);
 };
 
