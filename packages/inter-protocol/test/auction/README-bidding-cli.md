@@ -46,10 +46,10 @@ SKIP_DOWNLOAD=false ./bin/agd build
 
 ### Locating the `agd` command
 
-`agd` follows `go` conventions, so be sure `~/go/bin` is in your `$PATH`:
+To ensure `agd` is in your `$PATH`:
 
 ```sh
-export PATH=~/go/bin:$PATH
+export PATH=$PWD/bin:$PATH
 ```
 
 Then try `agd version` to confirm.
