@@ -128,7 +128,7 @@ export const makeScheduler = async (
         now,
       ),
     });
-    scheduleRecorder.write(sched);
+    return scheduleRecorder.write(sched);
   };
 
   /**
@@ -202,7 +202,7 @@ export const makeScheduler = async (
         Fail`invalid case`;
     }
 
-    publishSchedule();
+    void publishSchedule();
   };
 
   // schedule the wakeups for the steps of this round
@@ -246,7 +246,7 @@ export const makeScheduler = async (
         },
       }),
     );
-    publishSchedule();
+    void publishSchedule();
   };
 
   // schedule a wakeup to lock prices
@@ -333,7 +333,7 @@ export const makeScheduler = async (
 
   // when auction parameters change, schedule a next auction if one isn't
   // already scheduled
-  observeIteration(
+  void observeIteration(
     subscribeEach(paramUpdateSubscription),
     harden({
       async updateState(_newState) {
