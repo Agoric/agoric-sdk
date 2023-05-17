@@ -132,8 +132,8 @@ test.serial('re-bootstrap', async t => {
   );
   t.is(
     storage.data.get(preservedFakePath),
-    'saved',
-    'exported storage subtrees must be preserved',
+    undefined,
+    'exported storage subtrees must not be preserved',
   );
   for (const syntheticPath of doomedFakePaths) {
     const msg = `non-exported storage entries must be purged: ${syntheticPath}`;
