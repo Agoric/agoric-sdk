@@ -73,6 +73,9 @@ node ./upgrade-test-scripts/agoric-upgrade-10/param-change-offer-gen.js $previou
 agoric wallet print --file "$DEBT_LIMIT_OFFER"
 agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$DEBT_LIMIT_OFFER" --keyring-backend=test
 
+# wait for question to post. XXX right way is to check deadline of .latestQuestion
+waitForBlock 3
+
 govaccounts=("$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR")
 for i in "${govaccounts[@]}"; do
     agops ec vote --forPosition 0 --send-from "$i"
