@@ -696,8 +696,14 @@ export const prepareVaultManagerKit = (
               );
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
               const collatPostDebt = AmountMath.subtract(vCollat, vaultDebt);
+
+              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
+              const collatPostPenalty = AmountMath.subtract(
+                collatPostDebt,
+                ceilMultiplyBy(vaultPenalty, debtPortion),
+              );
               if (!AmountMath.isEmpty(leftToStage)) {
-                const collat = AmountMath.min(leftToStage, collatPostDebt);
+                const collat = AmountMath.min(leftToStage, collatPostPenalty);
                 leftToStage = AmountMath.subtract(leftToStage, collat);
                 transfers.push([
                   liqSeat,
@@ -832,8 +838,17 @@ export const prepareVaultManagerKit = (
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
+              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
+
+              const collatPostPenalty = AmountMath.subtract(
+                vCollat,
+                ceilMultiplyBy(vaultPenalty, debtPortion),
+              );
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
-              const collatPostDebt = AmountMath.subtract(vCollat, vaultDebt);
+              const collatPostDebt = AmountMath.subtract(
+                collatPostPenalty,
+                vaultDebt,
+              );
               if (
                 reconstituteVaults &&
                 AmountMath.isGTE(collatRemaining, collatPostDebt) &&

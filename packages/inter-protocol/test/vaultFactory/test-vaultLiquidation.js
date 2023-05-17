@@ -1864,12 +1864,12 @@ test('reinstate vault', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
-  t.deepEqual(aliceUpdate.value.locked, aeth.make(0n));
+  t.deepEqual(aliceUpdate.value.locked, aeth.makeEmpty());
 
-  // Reduce Bob's collateral by liquidation penalty
+  // Reduce Bob's collateral by debt and liquidation penalty
   const recoveredBobCollateral = AmountMath.subtract(
     bobCollateralAmount,
-    aeth.make(4n),
+    aeth.make(5n),
   );
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
@@ -1883,7 +1883,7 @@ test('reinstate vault', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
   await m.assertLike({
     allocations: {
-      Aeth: aeth.make(4n),
+      Aeth: aeth.make(5n),
       Fee: run.makeEmpty(),
     },
   });
