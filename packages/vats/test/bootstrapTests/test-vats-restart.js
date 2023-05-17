@@ -19,7 +19,7 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 const test = anyTest;
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
-const PLATFORM_CONFIG = '@agoric/vats/decentral-test-vaults-config.json';
+const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

@@ -15,7 +15,7 @@ const test = anyTest;
 
 const PROD_CONFIG_FILES = [
   'decentral-main-vaults-config.json',
-  'decentral-test-vaults-config.json',
+  'decentral-itest-vaults-config.json',
 ];
 
 const CONFIG_FILES = [
@@ -191,7 +191,7 @@ test('no test-only code is in production proposals', async t => {
 test('bootstrap permit visualization snapshot', async t => {
   const { runViz } = t.context;
 
-  const cmd = runViz(['@agoric/vats/decentral-test-vaults-config.json']);
+  const cmd = runViz(['@agoric/vats/decentral-itest-vaults-config.json']);
   const output = async () => {
     const parts = [];
     cmd.child.stdout?.on('data', chunk => parts.push(chunk));
