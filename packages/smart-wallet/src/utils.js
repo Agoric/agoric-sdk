@@ -1,9 +1,11 @@
 /* eslint-disable no-undef-init */
-import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
+import { deeplyFulfilledObject, objectMap, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
+
+const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
@@ -31,7 +33,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
         if (!invitationBrand) {
-          console.warn(
+          trace(
             'balance update without invitationBrand known may be an invitation',
           );
         }
@@ -62,14 +64,14 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
               acceptedIn: status.id,
             });
           } else {
-            console.error('no record of invitation in offerStatus', status);
+            trace('no record of invitation in offerStatus', status);
           }
         }
         break;
       }
       // @ts-expect-error backwards compatibile
       case 'brand': {
-        console.warn('obsolete brand update record - ignoring', updateRecord);
+        trace('obsolete brand update record - ignoring', updateRecord);
         break;
       }
       default:
