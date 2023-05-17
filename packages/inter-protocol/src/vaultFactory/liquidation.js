@@ -1,12 +1,12 @@
 // @jessie-check
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeScalarMapStore } from '@agoric/store';
-import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { E } from '@endo/eventual-send';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
 import { makeCancelTokenMaker } from '../auction/util.js';
@@ -28,54 +28,55 @@ const makeCancelToken = makeCancelTokenMaker('liq');
  */
 let cancelToken = makeCancelToken();
 
-/**
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
- * @param {ERef<TimerService>} timer
- * @param {TimerWaker} priceLockWaker
- * @param {TimerWaker} liquidationWaker
- * @param {TimerWaker} reschedulerWaker
- */
-const scheduleLiquidationWakeups = async (
-  auctioneerPublicFacet,
-  timer,
-  priceLockWaker,
-  liquidationWaker,
-  reschedulerWaker,
-) => {
-  const [schedules, params, now] = await Promise.all([
-    E(auctioneerPublicFacet).getSchedules(),
-    E(auctioneerPublicFacet).getGovernedParams(),
-    E(timer).getCurrentTimestamp(),
-  ]);
-
-  // make one observer that will usually ignore the update.
-  void observeIteration(
-    subscribeEach(E(auctioneerPublicFacet).getSubscription()),
-    harden({
-      async updateState(_newState) {
-        if (!cancelToken) {
-          cancelToken = makeCancelToken();
-          void E(timer).setWakeup(now, reschedulerWaker, cancelToken);
-        }
-      },
-    }),
+const waitForRepair = () => {
+  // the params observer will setWakeup to resume.
+  console.warn(
+    '🛠️ No wake for reschedule. Repair by resetting auction params.',
   );
+};
 
-  const waitForNewAuctionParams = () => {
-    if (cancelToken) {
-      void E(timer).cancel(cancelToken);
-    }
-    cancelToken = undefined;
-  };
-
-  trace('SCHEDULE', schedules.nextAuctionSchedule);
-  if (!schedules.nextAuctionSchedule?.startTime) {
-    // The schedule says there's no next auction.
-    waitForNewAuctionParams();
-    return;
+// Generally, canceling wakups has to be followed by setting up new ones but
+// not in the case of pausing wakeups. We do that in the event of invalid
+// schedule params. When they are repaired by governance, the wakers resume.
+/** @param {ERef<TimerService>} timer */
+const cancelWakeups = timer => {
+  if (cancelToken) {
+    void E(timer).cancel(cancelToken);
   }
+  cancelToken = undefined;
+};
 
-  const { startTime, endTime } = schedules.nextAuctionSchedule;
+/**
+ * Schedule wakeups for the *next* auction round.
+ *
+ * In practice, there are these cases to handle (with N as "live" and N+1 is "next"):
+ *
+ * | when (now within the range)      | what                                    |
+ * | -------------------------------- | --------------------------------------- |
+ * | [start N, nominalStart N+1]      | good: schedule normally the three wakers|
+ * | (nominalStart N+1, endTime N+1]  | recover: skip round N+1 and schedule N+2|
+ * | (endTime N+1, ∞)                 | give up: wait for repair by governance  |
+ *
+ * @param {object} opts
+ * @param {ERef<TimerService>} opts.timer
+ * @param {TimerWaker} opts.priceLockWaker
+ * @param {TimerWaker} opts.liquidationWaker
+ * @param {TimerWaker} opts.reschedulerWaker
+ * @param {import('../auction/scheduler.js').Schedule} opts.nextAuctionSchedule
+ * @param {import('@agoric/time/src/types').TimestampRecord} opts.now
+ * @param {ParamStateRecord} opts.params
+ * @returns {void}
+ */
+const setWakeups = ({
+  nextAuctionSchedule,
+  now,
+  timer,
+  reschedulerWaker,
+  liquidationWaker,
+  priceLockWaker,
+  params,
+}) => {
+  const { startTime, endTime } = nextAuctionSchedule;
 
   /** @type {RelativeTimeRecord} */
   // @ts-expect-error Casting
@@ -86,26 +87,30 @@ const scheduleLiquidationWakeups = async (
   // eslint-disable-next-line no-restricted-syntax -- https://github.com/Agoric/eslint-config-jessie/issues/33
   const auctionStartDelay = params[AUCTION_START_DELAY].value;
 
+  // nominal is the declared start time, but the actual auctioning begins after auctionStartDelay
   const nominalStart = TimeMath.subtractAbsRel(startTime, auctionStartDelay);
   const afterStart = TimeMath.addAbsRel(startTime, 1n);
 
-  // scheduleLiquidationWakeups is supposed to be called just after an auction
+  // Is there a problem (case 2 or 3)?
+  // setWakeupsForNextAuction is supposed to be called just after an auction
   // started. If we're late but there's still time for the nominal start, then
   // we'll proceed. Reschedule for the next round if that's still in the future.
   // Otherwise, wait for governance params to change.
   if (TimeMath.compareAbs(now, nominalStart) > 0) {
-    if (TimeMath.compareAbs(now, endTime) < 0) {
-      if (cancelToken) {
-        void E(timer).cancel(cancelToken);
-      }
+    // nominalStart is past
+    cancelWakeups(timer);
 
+    if (TimeMath.compareAbs(now, endTime) < 0) {
+      // endTime is in the future or now to reschedule waking (case 2)
       void E(timer).setWakeup(afterStart, reschedulerWaker);
-      return;
     } else {
-      waitForNewAuctionParams();
-      return;
+      // case 3
+      waitForRepair();
     }
+
+    return;
   }
+  // nominalStart is now or in the future (case 1)
 
   cancelToken = cancelToken || makeCancelToken();
   const priceLockWakeTime = TimeMath.subtractAbsRel(
@@ -116,7 +121,53 @@ const scheduleLiquidationWakeups = async (
   trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
   void E(timer).setWakeup(priceLockWakeTime, priceLockWaker, cancelToken);
   void E(timer).setWakeup(nominalStart, liquidationWaker, cancelToken);
+  // Call setWakeupsForNextAuction again one tick after nominalStart
   void E(timer).setWakeup(afterStart, reschedulerWaker, cancelToken);
+};
+
+/**
+ * Schedule wakeups for the *next* auction round.
+ *
+ * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
+ * time there's a "reschedule" wakeup.
+ *
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<TimerService>} timer
+ * @param {TimerWaker} priceLockWaker
+ * @param {TimerWaker} liquidationWaker
+ * @param {TimerWaker} reschedulerWaker
+ * @returns {Promise<void>}
+ */
+const setWakeupsForNextAuction = async (
+  auctioneerPublicFacet,
+  timer,
+  priceLockWaker,
+  liquidationWaker,
+  reschedulerWaker,
+) => {
+  const [{ nextAuctionSchedule }, params, now] = await Promise.all([
+    E(auctioneerPublicFacet).getSchedules(),
+    E(auctioneerPublicFacet).getGovernedParams(),
+    E(timer).getCurrentTimestamp(),
+  ]);
+
+  trace('SCHEDULE', nextAuctionSchedule);
+  if (!nextAuctionSchedule) {
+    // There should always be a nextAuctionSchedule. If there isn't, give up for now.
+    cancelWakeups(timer);
+    waitForRepair();
+    return;
+  }
+
+  setWakeups({
+    nextAuctionSchedule,
+    now,
+    timer,
+    reschedulerWaker,
+    liquidationWaker,
+    priceLockWaker,
+    params,
+  });
 };
 
 /**
@@ -146,6 +197,40 @@ const liquidationResults = (debt, minted) => {
     toBurn,
     shortfall,
   };
+};
+
+/**
+ * Watch governed params for change
+ *
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<TimerService>} timer
+ * @param {TimerWaker} reschedulerWaker
+ * @returns {void}
+ */
+export const watchForGovernanceChange = (
+  auctioneerPublicFacet,
+  timer,
+  reschedulerWaker,
+) => {
+  void E.when(E(timer).getCurrentTimestamp(), now =>
+    // make one observer that will usually ignore the update.
+    observeIteration(
+      subscribeEach(E(auctioneerPublicFacet).getSubscription()),
+      harden({
+        async updateState(_newState) {
+          if (!cancelToken) {
+            cancelToken = makeCancelToken();
+            void E(timer).setWakeup(
+              // bump one tick to prevent an infinite loop
+              TimeMath.addAbsRel(now, 1n),
+              reschedulerWaker,
+              cancelToken,
+            );
+          }
+        },
+      }),
+    ),
+  );
 };
 
 /**
@@ -208,12 +293,8 @@ const getLiquidatableVaults = (
   return { vaultData, totalDebt, totalCollateral, liqSeat };
 };
 
-harden(scheduleLiquidationWakeups);
+harden(setWakeupsForNextAuction);
 harden(liquidationResults);
 harden(getLiquidatableVaults);
 
-export {
-  scheduleLiquidationWakeups,
-  liquidationResults,
-  getLiquidatableVaults,
-};
+export { setWakeupsForNextAuction, liquidationResults, getLiquidatableVaults };

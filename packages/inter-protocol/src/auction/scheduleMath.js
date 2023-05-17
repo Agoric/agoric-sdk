@@ -119,8 +119,6 @@ harden(computeRoundTiming);
  * @returns {Timestamp | null}
  */
 export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
-  nextSchedule || Fail`nextSchedule must always be defined`;
-
   if (!liveSchedule) {
     return nextSchedule?.startTime || null;
   }

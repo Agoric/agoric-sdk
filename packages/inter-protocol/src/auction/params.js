@@ -63,7 +63,7 @@ export const auctioneerParamTypes = harden({
 /**
  * @typedef {object} AuctionParams
  * @property {Amount<'set'>} ElectorateInvitationAmount
- * @property {RelativeTime} StartFreq
+ * @property {RelativeTime} StartFrequency
  * @property {RelativeTime} ClockStep
  * @property {bigint} StartingRate
  * @property {bigint} LowestRate
@@ -78,7 +78,7 @@ export const auctioneerParamTypes = harden({
  */
 export const makeAuctioneerParams = ({
   ElectorateInvitationAmount,
-  StartFreq,
+  StartFrequency,
   ClockStep,
   LowestRate,
   StartingRate,
@@ -94,7 +94,7 @@ export const makeAuctioneerParams = ({
     },
     [START_FREQUENCY]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.coerceRelativeTimeRecord(StartFreq, TimerBrand),
+      value: TimeMath.coerceRelativeTimeRecord(StartFrequency, TimerBrand),
     },
     [CLOCK_STEP]: {
       type: ParamTypes.RELATIVE_TIME,

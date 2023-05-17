@@ -52,7 +52,7 @@ const test = anyTest;
 const trace = makeTracer('Test AuctContract', false);
 
 const defaultParams = {
-  StartFreq: 40n,
+  StartFrequency: 40n,
   ClockStep: 5n,
   StartingRate: 10500n,
   LowestRate: 4500n,

@@ -45,7 +45,7 @@ test('schedule start to finish', async t => {
   defaultParams = {
     ...defaultParams,
     AuctionStartDelay: 1n,
-    StartFreq: 10n,
+    StartFrequency: 10n,
     PriceLockPeriod: 5n,
   };
   /** @type {import('../../src/auction/params.js').AuctionParams} */
@@ -227,8 +227,8 @@ test('schedule start to finish', async t => {
   now = await timer.advanceTo(now + 2n);
 
   t.is(fakeAuctioneer.getState().step, 6);
-  t.false(fakeAuctioneer.getState().final);
-  t.true(fakeAuctioneer.getState().lockedPrices);
+  t.true(fakeAuctioneer.getState().final);
+  t.false(fakeAuctioneer.getState().lockedPrices);
 
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
@@ -282,22 +282,16 @@ test('lowest >= starting', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    {
-      message:
-        /startingRate \\"\[105n]\\" must be more than lowest: \\"\[110n]\\"/,
-    },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('zero time for auction', async t => {
@@ -316,7 +310,7 @@ test('zero time for auction', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    StartFreq: 2n,
+    StartFrequency: 2n,
     ClockStep: 3n,
     AuctionStartDelay: 1n,
     PriceLockPeriod: 1n,
@@ -337,22 +331,16 @@ test('zero time for auction', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    {
-      message:
-        /clockStep \\"\[3n]\\" must be shorter than startFrequency \\"\[2n]\\" to allow at least one step down/,
-    },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('discountStep 0', async t => {
@@ -389,19 +377,16 @@ test('discountStep 0', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    { message: /Division by zero/ },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('discountStep larger than starting rate', async t => {
@@ -439,19 +424,16 @@ test('discountStep larger than starting rate', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    { message: /discountStep .* too large for requested rates/ },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('start Freq 0', async t => {
@@ -470,7 +452,7 @@ test('start Freq 0', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    StartFreq: 0n,
+    StartFrequency: 0n,
   };
   /** @type {import('../../src/auction/params.js').AuctionParams} */
   // @ts-expect-error ignore missing values for test
@@ -488,19 +470,16 @@ test('start Freq 0', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    { message: /startFrequency must exceed startDelay.*0n.*10n.*/ },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('delay > freq', async t => {
@@ -520,7 +499,7 @@ test('delay > freq', async t => {
   defaultParams = {
     ...defaultParams,
     AuctionStartDelay: 40n,
-    StartFreq: 20n,
+    StartFrequency: 20n,
   };
   /** @type {import('../../src/auction/params.js').AuctionParams} */
   // @ts-expect-error ignore missing values for test
@@ -538,19 +517,16 @@ test('delay > freq', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    { message: /startFrequency must exceed startDelay.*\[20n\].*\[40n\].*/ },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('lockPeriod > freq', async t => {
@@ -570,7 +546,7 @@ test('lockPeriod > freq', async t => {
   defaultParams = {
     ...defaultParams,
     PriceLockPeriod: 7200n,
-    StartFreq: 3600n,
+    StartFrequency: 3600n,
     AuctionStartDelay: 500n,
   };
   /** @type {import('../../src/auction/params.js').AuctionParams} */
@@ -589,21 +565,16 @@ test('lockPeriod > freq', async t => {
   );
 
   const { subscriber } = makePublishKit();
-  await t.throwsAsync(
-    () =>
-      makeScheduler(
-        fakeAuctioneer,
-        timer,
-        paramManager,
-        timer.getTimerBrand(),
-        recorderKit.recorder,
-        // @ts-expect-error Oops. wrong kind of subscriber.
-        subscriber,
-      ),
-    {
-      message: /startFrequency must exceed lock period.*\[3600n\].*\[7200n\].*/,
-    },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
   );
+  t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 // if duration = frequency, we'll cut the duration short to fit.
@@ -626,7 +597,7 @@ test('duration = freq', async t => {
   defaultParams = {
     ...defaultParams,
     PriceLockPeriod: 20n,
-    StartFreq: 360n,
+    StartFrequency: 360n,
     AuctionStartDelay: 5n,
     ClockStep: 60n,
     StartingRate: 100n,
@@ -714,7 +685,7 @@ test('change Schedule', async t => {
   defaultParams = {
     ...defaultParams,
     PriceLockPeriod: lockPeriod,
-    StartFreq: startFreq,
+    StartFrequency: startFreq,
     AuctionStartDelay: startDelay,
     ClockStep: clockStep,
     StartingRate: 100n,
@@ -849,7 +820,7 @@ test('schedule anomalies', async t => {
   const duration = 480n + delay;
   defaultParams = {
     ...defaultParams,
-    StartFreq: oneCycle,
+    StartFrequency: oneCycle,
     ClockStep: step,
     AuctionStartDelay: delay,
     PriceLockPeriod: lock,

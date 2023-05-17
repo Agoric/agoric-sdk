@@ -13,10 +13,12 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
+import { NonNullish } from '@agoric/assert';
+import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import {
   setupReserve,
-  startVaultFactory,
   startAuctioneer,
+  startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import '../../src/vaultFactory/types.js';
@@ -29,7 +31,7 @@ import {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('VFDriver', false);
+const trace = makeTracer('VFDriver');
 
 export const AT_NEXT = Symbol('AT_NEXT');
 
@@ -74,7 +76,8 @@ const defaultParamValues = debt =>
  * @typedef {{
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
  * aethInitialLiquidity: Amount<'nat'>,
- * puppetGovernors: { [contractName: string]: ERef<import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<any>['creatorFacet']> },
+ * consume: import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'],
+ * puppetGovernors: { [contractName: string]: undefined | ERef<import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<any>['creatorFacet']> },
  * electorateTerms: any,
  * feeMintAccess: FeeMintAccess,
  * installation: Record<string, any>,
@@ -84,15 +87,22 @@ const defaultParamValues = debt =>
  * rates: any,
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * runInitialLiquidity: Amount<'nat'>,
- * timer: import('@agoric/time/src/types').TimerService,
+ * timer: ReturnType<typeof buildManualTimer>,
  * zoe: ZoeService,
  * }} DriverContext
  */
 
 /**
+ * @param {object} opts
+ * @param {InterestTiming} [opts.interestTiming]
  * @returns {Promise<DriverContext>}
  */
-export const makeDriverContext = async () => {
+export const makeDriverContext = async ({
+  interestTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+  },
+} = {}) => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
   const stableBrand = await E(runIssuer).getBrand();
@@ -113,14 +123,10 @@ export const makeDriverContext = async () => {
 
   const feeMintAccess = await feeMintAccessP;
   const contextPs = {
-    bundles,
     installation,
     zoe,
     feeMintAccess,
-    interestTiming: {
-      chargingPeriod: 2n,
-      recordingPeriod: 6n,
-    },
+    interestTiming,
     minInitialDebt: 50n,
     rates: defaultParamValues(run),
     runInitialLiquidity: run.make(1_500_000_000n),
@@ -148,10 +154,10 @@ const setupReserveAndElectorate = async t => {
     options: { econCommitteeOptions: electorateTerms },
   });
 
-  t.context.puppetGovernors = {
-    // @ts-expect-error more specific type?
+  t.context.puppetGovernors = /** @type {any} */ ({
+    auctioneer: E.get(space.consume.auctioneerKit).governorCreatorFacet,
     vaultFactory: E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
-  };
+  });
   await setupReserve(space);
 
   return { space };
@@ -195,19 +201,15 @@ const getRunFromFaucet = async (t, amt) => {
  * @param {import('ava').ExecutionContext<DriverContext>} t
  * @param {Amount} initialPrice
  * @param {Amount} priceBase
- * @param {import('@agoric/time/src/types').TimerService} timer
  */
-const setupServices = async (
-  t,
-  initialPrice,
-  priceBase,
-  timer = buildManualTimer(t.log),
-) => {
+const setupServices = async (t, initialPrice, priceBase) => {
+  const timer = buildManualTimer(t.log);
   const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 
   const { space } = await setupReserveAndElectorate(t);
   const { consume, produce } = space;
+  t.context.consume = consume;
 
   // Cheesy hack for easy use of manual price authority
   const priceAuthority = makeManualPriceAuthority({
@@ -251,16 +253,9 @@ const setupServices = async (
       E(governorCreatorFacet).getPublicFacet(),
       aethVaultManagerP,
     ]);
-  trace(t, 'pa', {
-    governorInstance,
-    vaultFactory,
-    vfPublic,
-    priceAuthority: !!priceAuthority,
-  });
 
   return {
     zoe,
-    // installs,
     governor: {
       governorInstance,
       governorPublicFacet: E(zoe).getPublicFacet(governorInstance),
@@ -287,13 +282,13 @@ export const makeManagerDriver = async (
   initialPrice = t.context.run.make(500n),
   priceBase = t.context.aeth.make(100n),
 ) => {
-  const timer = buildManualTimer(t.log);
-  const services = await setupServices(t, initialPrice, priceBase, timer);
+  const services = await setupServices(t, initialPrice, priceBase);
 
   const { zoe, aeth, run } = t.context;
   const {
     vaultFactory: { lender, vaultFactory, vfPublic },
     priceAuthority,
+    timer,
   } = services;
   const managerNotifier = await makeNotifierFromSubscriber(
     E(lender).getSubscriber(),
@@ -476,7 +471,7 @@ export const makeManagerDriver = async (
       paramPath = { key: 'governedParams' },
     ) => {
       trace(t, 'setGovernedParam', name);
-      const vfGov = t.context.puppetGovernors.vaultFactory;
+      const vfGov = NonNullish(t.context.puppetGovernors.vaultFactory);
       return E(vfGov).changeParams(
         harden({
           paramPath,
@@ -489,7 +484,7 @@ export const makeManagerDriver = async (
      */
     setGovernedFilters: filters => {
       trace(t, 'setGovernedFilters', filters);
-      const vfGov = t.context.puppetGovernors.vaultFactory;
+      const vfGov = NonNullish(t.context.puppetGovernors.vaultFactory);
       return E(vfGov).setFilters(harden(filters));
     },
     /**
@@ -517,4 +512,62 @@ export const makeManagerDriver = async (
     },
   };
   return driver;
+};
+
+/**
+ * @param {import('ava').ExecutionContext<DriverContext>} t
+ */
+export const makeAuctioneerDriver = async t => {
+  const auctioneerKit = await t.context.consume.auctioneerKit;
+
+  return {
+    auctioneerKit,
+    advanceTimerByStartFrequency: async () => {
+      trace('advanceTimerByStartFrequency');
+      // TODO source from context or config
+      const startFrequency = 3600n;
+      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
+      await t.context.timer.advanceBy(BigInt(startFrequency));
+      await eventLoopIteration();
+    },
+    assertSchedulesLike: async (liveAuctionPartial, nextAuctionPartial) => {
+      await eventLoopIteration();
+      const { liveAuctionSchedule, nextAuctionSchedule } = await E(
+        auctioneerKit.publicFacet,
+      ).getSchedules();
+      if (liveAuctionPartial === null) {
+        t.is(liveAuctionSchedule, null, 'expected liveAuctionSchedule null');
+      } else {
+        t.like(
+          liveAuctionSchedule,
+          liveAuctionPartial,
+          'unexpected liveAuctionSchedule',
+        );
+      }
+      if (nextAuctionPartial === null) {
+        t.is(nextAuctionSchedule, null, 'expected nextAuctionSchedule null');
+      } else {
+        t.like(
+          nextAuctionSchedule,
+          nextAuctionPartial,
+          'unexpected nextAuctionSchedule',
+        );
+      }
+    },
+    /**
+     * @param {keyof import('../../src/auction/params.js').AuctionParams} name
+     * @param {*} newValue
+     */
+    setGovernedParam: async (name, newValue) => {
+      trace('setGovernedParam', name);
+      const auctioneerGov = NonNullish(t.context.puppetGovernors.auctioneer);
+      await E(auctioneerGov).changeParams(
+        harden({
+          paramPath: undefined, // auctioneer getParamMgrRetriever() takes no args
+          changes: { [name]: newValue },
+        }),
+      );
+      await eventLoopIteration();
+    },
+  };
 };

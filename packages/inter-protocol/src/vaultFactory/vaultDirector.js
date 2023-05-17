@@ -27,7 +27,10 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import { scheduleLiquidationWakeups } from './liquidation.js';
+import {
+  setWakeupsForNextAuction,
+  watchForGovernanceChange,
+} from './liquidation.js';
 import {
   provideVaultParamManagers,
   SHORTFALL_INVITATION_KEY,
@@ -310,7 +313,7 @@ export const prepareVaultDirector = (
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
       helper: M.interface('helper', {
-        rescheduleLiquidationWakeups: M.call().returns(M.promise()),
+        resetWakeupsForNextAuction: M.call().returns(M.promise()),
         start: M.call().returns(M.promise()),
       }),
     },
@@ -432,7 +435,7 @@ export const prepareVaultDirector = (
         makeReschedulerWaker() {
           const { facets } = this;
           return makeWaker('reschedulerWaker', () => {
-            void facets.helper.rescheduleLiquidationWakeups();
+            void facets.helper.resetWakeupsForNextAuction();
           });
         },
         makePriceLockWaker() {
@@ -520,13 +523,13 @@ export const prepareVaultDirector = (
         },
       },
       helper: {
-        rescheduleLiquidationWakeups() {
+        resetWakeupsForNextAuction() {
           const { facets } = this;
 
           const priceLockWaker = facets.machine.makePriceLockWaker();
           const liquidationWaker = facets.machine.makeLiquidationWaker();
           const rescheduleWaker = facets.machine.makeReschedulerWaker();
-          return scheduleLiquidationWakeups(
+          return setWakeupsForNextAuction(
             auctioneer,
             timer,
             priceLockWaker,
@@ -538,14 +541,18 @@ export const prepareVaultDirector = (
          * Start non-durable processes (or restart if needed after vat restart)
          */
         async start() {
-          const { helper } = this.facets;
-          await helper.rescheduleLiquidationWakeups();
+          const { helper, machine } = this.facets;
+
+          await helper.resetWakeupsForNextAuction();
           updateShortfallReporter().catch(err =>
             console.error(
               '🛠️ updateShortfallReporter failed during start(); repair by updating governance',
               err,
             ),
           );
+          // independent of the other one which can be canceled
+          const rescheduleWaker = machine.makeReschedulerWaker();
+          void watchForGovernanceChange(auctioneer, timer, rescheduleWaker);
         },
       },
     },
