@@ -661,6 +661,8 @@ export const prepareVaultManagerKit = (
               quoteAsRatio(oraclePriceAtStart.quoteAmount.value[0]),
             ),
           );
+          const getVaultPenalty = debtAmount =>
+            ceilMultiplyBy(debtAmount, penaltyRate);
 
           const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
           // Liquidation.md describes how to process liquidation proceeds
@@ -696,11 +698,9 @@ export const prepareVaultManagerKit = (
               );
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
               const collatPostDebt = AmountMath.subtract(vCollat, vaultDebt);
-
-              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
               const collatPostPenalty = AmountMath.subtract(
                 collatPostDebt,
-                ceilMultiplyBy(vaultPenalty, debtPortion),
+                ceilMultiplyBy(getVaultPenalty(debtAmount), debtPortion),
               );
               if (!AmountMath.isEmpty(leftToStage)) {
                 const collat = AmountMath.min(leftToStage, collatPostPenalty);
@@ -838,11 +838,9 @@ export const prepareVaultManagerKit = (
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
-              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
-
               const collatPostPenalty = AmountMath.subtract(
                 vCollat,
-                ceilMultiplyBy(vaultPenalty, debtPortion),
+                ceilMultiplyBy(getVaultPenalty(debtAmount), debtPortion),
               );
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
               const collatPostDebt = AmountMath.subtract(
