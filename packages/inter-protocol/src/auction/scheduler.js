@@ -184,12 +184,8 @@ export const makeScheduler = async (
               'Unable to start auction cleanly. skipping this auction round.',
             ),
           );
-          finishAuctionRound();
-
-          return false;
         }
       }
-      return true;
     };
 
     switch (timeVsSchedule(now, schedule)) {
@@ -199,9 +195,9 @@ export const makeScheduler = async (
         advanceRound();
         break;
       case 'endExactly':
-        if (advanceRound()) {
-          finishAuctionRound();
-        }
+        // do both the "during" and "after" behaviors
+        advanceRound();
+        finishAuctionRound();
         break;
       case 'after':
         await finishAuctionRound();
