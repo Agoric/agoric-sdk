@@ -1046,13 +1046,20 @@ test('schedule anomalies', async t => {
   };
   t.deepEqual(schedule4.nextAuctionSchedule, sixthSchedule);
 
+  await scheduleTracker.assertNoUpdate();
+
   // ////////////// JUMP PAST THE END OF NEXT AUCTION ///////////
   const veryLateStart = baseTime + 5n * oneCycle;
   await timer.advanceTo(veryLateStart);
 
+  await scheduleTracker.assertChange({
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: veryLateStart - oneCycle + delay },
+  });
+
   const veryLateActual = veryLateStart + oneCycle + delay;
   await scheduleTracker.assertChange({
-    activeStartTime: { absValue: veryLateActual },
+    activeStartTime: timestamp(veryLateActual),
     nextDescendingStepTime: { absValue: veryLateActual },
     nextStartTime: { absValue: veryLateActual + oneCycle },
   });

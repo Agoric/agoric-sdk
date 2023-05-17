@@ -133,9 +133,9 @@ export const makeScheduler = async (
 
   /**
    * @param {Schedule | null} schedule
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  const clockTick = async schedule => {
+  const clockTick = schedule => {
     trace('clockTick', schedule?.startTime, now);
     if (!schedule) {
       return;
@@ -200,7 +200,7 @@ export const makeScheduler = async (
         finishAuctionRound();
         break;
       case 'after':
-        await finishAuctionRound();
+        finishAuctionRound();
         break;
       default:
         Fail`invalid case`;
