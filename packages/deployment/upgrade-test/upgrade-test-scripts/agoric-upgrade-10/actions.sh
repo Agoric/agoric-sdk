@@ -69,7 +69,7 @@ test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq
 # Raise debt limit
 DEBT_LIMIT_OFFER=$(mktemp -t agops.XXX)
 previous="$(agops ec find-continuing-id --for "charter member invitation" --from "$GOV1ADDR")"
-node ./upgrade-test-scripts/agoric-upgrade-10/param-change-offer-gen.js $previous 30 >|"$DEBT_LIMIT_OFFER"
+node ./upgrade-test-scripts/agoric-upgrade-10/param-change-offer-gen.mjs $previous 30 123000000 >|"$DEBT_LIMIT_OFFER"
 agoric wallet print --file "$DEBT_LIMIT_OFFER"
 agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$DEBT_LIMIT_OFFER" --keyring-backend=test
 
