@@ -26,9 +26,9 @@
           "interchainAssetOptions": {
             "denom": "ibc/06362C6F7F4FB702B94C13CD2E7C03DEC357683FD978936340B43FBFBC5351EB",
             "decimalPlaces": 6,
-            "keyword": "ToyIBCAsset",
-            "oracleBrand": "ToyIBCAsset",
-            "proposedName": "ToyIBCAsset"
+            "keyword": "ATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
           }
         }
       ]
