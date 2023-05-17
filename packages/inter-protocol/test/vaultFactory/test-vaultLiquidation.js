@@ -15,10 +15,7 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import {
-  floorMultiplyBy,
-  multiplyBy,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { NonNullish } from '@agoric/assert';
 
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
