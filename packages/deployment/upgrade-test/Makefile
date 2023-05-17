@@ -9,9 +9,11 @@ endif
 local_sdk:
 	(cd ../ && make docker-build-sdk)
 
+# build main bootstrap
 build:
 	docker build --build-arg BOOTSTRAP_MODE=main --progress=plain $(buildTargetFlag) -t $(REPOSITORY):$(dockerLabel) -f Dockerfile upgrade-test-scripts
 
+# build test bootstrap
 build_test:
 	docker build --build-arg BOOTSTRAP_MODE=test --progress=plain $(buildTargetFlag) -t $(REPOSITORY):$(dockerLabel) -f Dockerfile upgrade-test-scripts
 
