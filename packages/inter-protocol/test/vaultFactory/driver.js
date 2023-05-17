@@ -520,14 +520,21 @@ export const makeManagerDriver = async (
 export const makeAuctioneerDriver = async t => {
   const auctioneerKit = await t.context.consume.auctioneerKit;
 
+  // TODO source from context or config
+  const startFrequency = 3600n;
+
   return {
     auctioneerKit,
     advanceTimerByStartFrequency: async () => {
       trace('advanceTimerByStartFrequency');
-      // TODO source from context or config
-      const startFrequency = 3600n;
       // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency));
+      await eventLoopIteration();
+    },
+    induceTimequake: async () => {
+      trace('induceTimequake');
+      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
+      await t.context.timer.advanceBy(BigInt(startFrequency) * 10n);
       await eventLoopIteration();
     },
     assertSchedulesLike: async (liveAuctionPartial, nextAuctionPartial) => {

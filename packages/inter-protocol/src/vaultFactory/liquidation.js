@@ -89,7 +89,6 @@ const setWakeups = ({
 
   // nominal is the declared start time, but the actual auctioning begins after auctionStartDelay
   const nominalStart = TimeMath.subtractAbsRel(startTime, auctionStartDelay);
-  const afterStart = TimeMath.addAbsRel(startTime, 1n);
 
   // Is there a problem (case 2 or 3)?
   // setWakeupsForNextAuction is supposed to be called just after an auction
@@ -97,20 +96,26 @@ const setWakeups = ({
   // we'll proceed. Reschedule for the next round if that's still in the future.
   // Otherwise, wait for governance params to change.
   if (TimeMath.compareAbs(now, nominalStart) > 0) {
-    // nominalStart is past
+    // nominalStart is past, so cancel timers and plan to recover
     cancelWakeups(timer);
 
     if (TimeMath.compareAbs(now, endTime) < 0) {
-      // endTime is in the future or now to reschedule waking (case 2)
-      void E(timer).setWakeup(afterStart, reschedulerWaker);
+      // We're currently scheduling the N+1 (where N is live), but we need to skip it.
+      // So wake up for the N+2 round's startTime
+      const afterNextStartTime = TimeMath.addAbsRel(endTime, 1n);
+      trace(
+        'CASE 2: endTime is in the future or now so reschedule waking to startTime of the following round',
+        afterNextStartTime,
+      );
+      void E(timer).setWakeup(afterNextStartTime, reschedulerWaker);
     } else {
-      // case 3
+      trace('CASE 3: endTime is past; wait for repair');
       waitForRepair();
     }
 
     return;
   }
-  // nominalStart is now or in the future (case 1)
+  trace('CASE 1: nominalStart is now or in the future');
 
   cancelToken = cancelToken || makeCancelToken();
   const priceLockWakeTime = TimeMath.subtractAbsRel(
@@ -122,6 +127,7 @@ const setWakeups = ({
   void E(timer).setWakeup(priceLockWakeTime, priceLockWaker, cancelToken);
   void E(timer).setWakeup(nominalStart, liquidationWaker, cancelToken);
   // Call setWakeupsForNextAuction again one tick after nominalStart
+  const afterStart = TimeMath.addAbsRel(startTime, 1n);
   void E(timer).setWakeup(afterStart, reschedulerWaker, cancelToken);
 };
 
@@ -151,7 +157,7 @@ const setWakeupsForNextAuction = async (
     E(timer).getCurrentTimestamp(),
   ]);
 
-  trace('SCHEDULE', nextAuctionSchedule);
+  trace('SCHEDULE', now.absValue, nextAuctionSchedule);
   if (!nextAuctionSchedule) {
     // There should always be a nextAuctionSchedule. If there isn't, give up for now.
     cancelWakeups(timer);

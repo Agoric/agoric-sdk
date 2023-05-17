@@ -133,9 +133,9 @@ export const makeScheduler = async (
 
   /**
    * @param {Schedule | null} schedule
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  const clockTick = async schedule => {
+  const clockTick = schedule => {
     trace('clockTick', schedule?.startTime, now);
     if (!schedule) {
       return;
@@ -178,18 +178,13 @@ export const makeScheduler = async (
           auctionDriver.startRound();
           // This has been observed to fail because prices hadn't been locked.
           // This may be an issue about timing during chain start-up.
-        } catch (e) {
+        } catch (err) {
           console.error(
-            assert.error(
-              'Unable to start auction cleanly. skipping this auction round.',
-            ),
+            'Unable to start auction cleanly. skipping this auction round.',
+            err,
           );
-          finishAuctionRound();
-
-          return false;
         }
       }
-      return true;
     };
 
     switch (timeVsSchedule(now, schedule)) {
@@ -199,12 +194,12 @@ export const makeScheduler = async (
         advanceRound();
         break;
       case 'endExactly':
-        if (advanceRound()) {
-          finishAuctionRound();
-        }
+        // do both the "during" and "after" behaviors
+        advanceRound();
+        finishAuctionRound();
         break;
       case 'after':
-        await finishAuctionRound();
+        finishAuctionRound();
         break;
       default:
         Fail`invalid case`;
@@ -354,13 +349,16 @@ export const makeScheduler = async (
   startSchedulingFromScratch();
 
   // when auction parameters change, schedule a next auction if one isn't
-  // already scheduled
+  // already scheduled.
+  // NB: what is already scheduled (live or next) is unaffected by param changes
   void observeIteration(
     subscribeEach(paramUpdateSubscription),
     harden({
+      // NB: may be fired with the initial params as well
       async updateState(_newState) {
-        trace('received param update');
+        trace('received param update', _newState);
         if (!nextSchedule) {
+          trace('repairing nextSchedule and restarting');
           ({ nextSchedule } = await initializeNextSchedule());
           startSchedulingFromScratch();
         }
