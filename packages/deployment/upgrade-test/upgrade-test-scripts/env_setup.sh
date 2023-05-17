@@ -21,6 +21,7 @@ export GOV1ADDR=$($binary keys show gov1 -a --keyring-backend="test")
 export GOV2ADDR=$($binary keys show gov2 -a --keyring-backend="test")
 export GOV3ADDR=$($binary keys show gov3 -a --keyring-backend="test")
 export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test")
+export USER1ADDR=$($binary keys show user1 -a --keyring-backend="test")
 
 if [[ "$binary" == "agd" ]]; then
 # Support testnet addresses
@@ -178,6 +179,8 @@ printKeys() {
   cat ~/.agoric/gov3.key || true
   echo "validator: $VALIDATORADDR"
   cat ~/.agoric/validator.key || true
+  echo "user1: $USER1ADDR"
+  cat ~/.agoric/user1.key || true
   echo "========== GOVERNANCE KEYS =========="
 }
 

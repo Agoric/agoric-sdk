@@ -3,8 +3,8 @@
 export CHAINID=agoriclocal
 ag0 init localnet --chain-id "$CHAINID"
 
-govaccounts=( "gov1" "gov2" "gov3" "validator" )
-for i in "${govaccounts[@]}"
+allaccounts=( "gov1" "gov2" "gov3" "user1" "validator" )
+for i in "${allaccounts[@]}"
 do
   ag0 keys add $i --keyring-backend=test  2>&1 | tee "$HOME/.agoric/$i.out"
   cat "$HOME/.agoric/$i.out" | tail -n1 | tee "$HOME/.agoric/$i.key"
