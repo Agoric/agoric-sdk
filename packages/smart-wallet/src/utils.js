@@ -19,8 +19,11 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
    */
   const invitationsReceived = new Map();
 
-  /** @param {import('./smartWallet').UpdateRecord} updateRecord newer than previous */
+  /** @param {import('./smartWallet').UpdateRecord | {}} updateRecord newer than previous */
   const update = updateRecord => {
+    if (!('updated' in updateRecord)) {
+      return;
+    }
     const { updated } = updateRecord;
     switch (updateRecord.updated) {
       case 'balance': {
