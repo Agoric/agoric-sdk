@@ -92,59 +92,55 @@ test_val "$(agoric follow -l -F :published.vaultFactory.managers.manager0.govern
 
 pushPrice 12.01
 
-if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
-    # TODO: support main bootstrap mode by changing the mintlimit higher
-    # vaults
-    # attempt to open vaults under the minimum amount
-    for vid in {1..2}; do
-        OFFER=$(mktemp -t agops.XXX)
-        if [[ "$vid" == "2" ]]; then
-            amount=3.00
-            collateral=5.0
-        else
-            amount=2.00
-            collateral=4.0
-        fi
-        agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
-        agoric wallet print --file "$OFFER"
-        agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test || true
-    done
-
-    # we should still have no vaults
-    test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
-
-    # open up some vaults
-    for vid in {1..2}; do
-        OFFER=$(mktemp -t agops.XXX)
-        if [[ "$vid" == "2" ]]; then
-            amount=6.00
-            collateral=10.0
-        else
-            amount=5.00
-            collateral=9.0
-        fi
-        agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
-        agoric wallet print --file "$OFFER"
-        agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
-    done
-
-    # remove some collateral from the first vault
+## vaults
+# attempt to open vaults under the minimum amount
+for vid in {1..2}; do
     OFFER=$(mktemp -t agops.XXX)
-    agops vaults adjust --vaultId vault0 --wantCollateral 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
-    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+    if [[ "$vid" == "2" ]]; then
+        amount=3.00
+        collateral=5.0
+    else
+        amount=2.00
+        collateral=4.0
+    fi
+    agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
+    agoric wallet print --file "$OFFER"
+    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test || true
+done
 
-    # take some IST from the first vault, increasing debt
+# we should still have no vaults
+test_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
+
+# open up some vaults
+for vid in {1..2}; do
     OFFER=$(mktemp -t agops.XXX)
-    agops vaults adjust --vaultId vault0 --wantMinted 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+    if [[ "$vid" == "2" ]]; then
+        amount=6.00
+        collateral=10.0
+    else
+        amount=5.00
+        collateral=9.0
+    fi
+    agops vaults open --wantMinted $amount --giveCollateral $collateral >|"$OFFER"
+    agoric wallet print --file "$OFFER"
     agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+done
 
-    # close the second vault
-    OFFER=$(mktemp -t agops.XXX)
-    agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
-    agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+# remove some collateral from the first vault
+OFFER=$(mktemp -t agops.XXX)
+agops vaults adjust --vaultId vault0 --wantCollateral 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
-    # # TODO test bidding
-    # # TODO liquidations
-    # # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
+# take some IST from the first vault, increasing debt
+OFFER=$(mktemp -t agops.XXX)
+agops vaults adjust --vaultId vault0 --wantMinted 1.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
-fi
+# close the second vault
+OFFER=$(mktemp -t agops.XXX)
+agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
+# # TODO test bidding
+# # TODO liquidations
+# # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
