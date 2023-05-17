@@ -81,3 +81,47 @@ test('reset auction params', async t => {
     { startTime: { absValue: schedule2.startTime.absValue + 5n * freq } },
   );
 });
+
+// TODO get this to induce CASE 2 of auction scheduling
+// https://github.com/Agoric/agoric-sdk/issues/7781
+test('timequake', async t => {
+  const md = await makeManagerDriver(t);
+  await md.setGovernedParam('ChargingPeriod', 10_000n);
+  const ad = await makeAuctioneerDriver(t);
+
+  // XXX source from config
+  const freq = 3600n;
+  const delay = 2n;
+  const baseSchedule = {
+    startTime: { absValue: freq + delay },
+  };
+
+  await ad.assertSchedulesLike(null, baseSchedule);
+  await ad.advanceTimerByStartFrequency();
+  const schedule2 = {
+    startTime: { absValue: baseSchedule.startTime.absValue + freq },
+  };
+  await ad.assertSchedulesLike(baseSchedule, schedule2);
+
+  await ad.induceTimequake();
+
+  // recovery
+  const schedule3 = { ...schedule2, startTime: { absValue: 43202n } };
+  const schedule4 = { ...schedule3, startTime: { absValue: 46802n } };
+  // liveSchedule isn't affected (yet), but nextSchedule is cleared
+  await ad.assertSchedulesLike(schedule3, schedule4);
+
+  // try triggering another liquidation
+  await ad.advanceTimerByStartFrequency();
+
+  // shouldn't the round advance?
+  await ad.assertSchedulesLike(schedule3, schedule4);
+
+  // keep going for good measure
+  await ad.advanceTimerByStartFrequency();
+  await ad.advanceTimerByStartFrequency();
+  await ad.assertSchedulesLike(
+    { startTime: { absValue: schedule4.startTime.absValue + 1n * freq } },
+    { startTime: { absValue: schedule4.startTime.absValue + 2n * freq } },
+  );
+});

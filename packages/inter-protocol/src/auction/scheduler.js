@@ -178,11 +178,10 @@ export const makeScheduler = async (
           auctionDriver.startRound();
           // This has been observed to fail because prices hadn't been locked.
           // This may be an issue about timing during chain start-up.
-        } catch (e) {
+        } catch (err) {
           console.error(
-            assert.error(
-              'Unable to start auction cleanly. skipping this auction round.',
-            ),
+            'Unable to start auction cleanly. skipping this auction round.',
+            err,
           );
         }
       }
@@ -350,10 +349,12 @@ export const makeScheduler = async (
   startSchedulingFromScratch();
 
   // when auction parameters change, schedule a next auction if one isn't
-  // already scheduled
+  // already scheduled.
+  // NB: what is already scheduled (live or next) is unaffected by param changes
   void observeIteration(
     subscribeEach(paramUpdateSubscription),
     harden({
+      // NB: may be fired with the initial params as well
       async updateState(_newState) {
         trace('received param update', _newState);
         if (!nextSchedule) {
