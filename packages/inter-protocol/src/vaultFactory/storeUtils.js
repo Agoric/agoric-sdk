@@ -17,7 +17,7 @@ import { makeTracer } from '@agoric/internal';
 
 const { multiply } = natSafeMath;
 
-const trace = makeTracer('Store', false);
+const trace = makeTracer('Store', true);
 
 /**
  * @typedef {import('@endo/marshal').PureData} PureData

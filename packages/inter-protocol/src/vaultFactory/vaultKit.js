@@ -5,7 +5,7 @@ import '@agoric/zoe/exported.js';
 import { makeTracer } from '@agoric/internal';
 import { prepareVaultHolder } from './vaultHolder.js';
 
-const trace = makeTracer('VK', false);
+const trace = makeTracer('VK', true);
 
 /**
  * Wrap the VaultHolder duration object in a record suitable for the result of an invitation.

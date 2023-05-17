@@ -8,7 +8,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { prepareAssetReserveKit } from './assetReserveKit.js';
 
-const trace = makeTracer('AR', false);
+const trace = makeTracer('AR', true);
 
 /**
  * @typedef {{

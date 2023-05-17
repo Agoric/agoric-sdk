@@ -13,7 +13,7 @@ import {
 
 const { details: X, Fail, quote: q } = assert;
 
-const trace = makeTracer('SCHED', false);
+const trace = makeTracer('SCHED', true);
 
 // If the startAuction wakeup is no more than 5 minutes late, go ahead with it.
 const MAX_LATE_TICK = 300n;

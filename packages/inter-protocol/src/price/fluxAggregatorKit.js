@@ -22,7 +22,7 @@ import { Far } from '@endo/marshal';
 import { prepareOracleAdminKit } from './priceOracleKit.js';
 import { prepareRoundsManagerKit } from './roundsManager.js';
 
-const trace = makeTracer('FlxAgg', false);
+const trace = makeTracer('FlxAgg', true);
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 

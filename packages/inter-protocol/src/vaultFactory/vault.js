@@ -17,7 +17,7 @@ import { calculateDebtCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
 
-const trace = makeTracer('Vault', false);
+const trace = makeTracer('Vault', true);
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 

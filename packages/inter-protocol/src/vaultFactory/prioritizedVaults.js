@@ -16,7 +16,7 @@ import {
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
-const trace = makeTracer('PVaults', false);
+const trace = makeTracer('PVaults', true);
 
 /**
  * @param {Amount<'nat'>} debtAmount

@@ -31,7 +31,7 @@ import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
-const trace = makeTracer('VF', false);
+const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
