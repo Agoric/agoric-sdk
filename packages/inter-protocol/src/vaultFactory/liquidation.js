@@ -101,16 +101,16 @@ const setWakeups = ({
     cancelWakeups(timer);
 
     if (TimeMath.compareAbs(now, endTime) < 0) {
-      // endTime is in the future or now to reschedule waking (case 2)
+      trace('CASE 2: endTime is in the future or now so reschedule waking');
       void E(timer).setWakeup(afterStart, reschedulerWaker);
     } else {
-      // case 3
+      trace('CASE 3: endTime is past; wait for repair');
       waitForRepair();
     }
 
     return;
   }
-  // nominalStart is now or in the future (case 1)
+  trace('CASE 1: nominalStart is now or in the future');
 
   cancelToken = cancelToken || makeCancelToken();
   const priceLockWakeTime = TimeMath.subtractAbsRel(
@@ -151,7 +151,7 @@ const setWakeupsForNextAuction = async (
     E(timer).getCurrentTimestamp(),
   ]);
 
-  trace('SCHEDULE', nextAuctionSchedule);
+  trace('SCHEDULE', now.absValue, nextAuctionSchedule);
   if (!nextAuctionSchedule) {
     // There should always be a nextAuctionSchedule. If there isn't, give up for now.
     cancelWakeups(timer);

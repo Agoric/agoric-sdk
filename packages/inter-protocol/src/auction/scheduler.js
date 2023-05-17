@@ -359,8 +359,9 @@ export const makeScheduler = async (
     subscribeEach(paramUpdateSubscription),
     harden({
       async updateState(_newState) {
-        trace('received param update');
+        trace('received param update', _newState);
         if (!nextSchedule) {
+          trace('repairing nextSchedule and restarting');
           ({ nextSchedule } = await initializeNextSchedule());
           startSchedulingFromScratch();
         }
