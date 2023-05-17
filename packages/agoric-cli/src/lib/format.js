@@ -191,7 +191,7 @@ export const summarize = (current, coalesced, agoricNames) => {
       ([offerId, invitationAmt]) => [
         agoricNames.reverse[invitationAmt.value[0].instance.boardId],
         invitationAmt.value[0].description,
-        Number(offerId),
+        offerId,
       ],
     ),
     offers: offerStatusTuples(coalesced, agoricNames),
