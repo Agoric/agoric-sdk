@@ -12,7 +12,7 @@ test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children 
 test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children | first') ${PSM_PAIR//IST./}
 
 # Gov params
-test_not_val "$(timeout 6 agoric follow -l :published.psm.${PSM_PAIR}.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
+test_not_val "$(timeout 8 agoric follow -l :published.psm.${PSM_PAIR}.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
 
 test_wallet_state "$USER1ADDR" old "user1 wallet is old"
 test_wallet_state "$GOV1ADDR" old "gov1 wallet is old"

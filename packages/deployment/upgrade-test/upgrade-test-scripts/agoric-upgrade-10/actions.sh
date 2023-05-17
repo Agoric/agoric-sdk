@@ -15,7 +15,7 @@ for i in "${govaccounts[@]}"; do
     for run in {1..2}; do
         echo "$i: $run: Accepting EC Committee"
         if [[ "$run" == "1" ]]; then
-            timeout 6 yarn run --silent agops ec committee --send-from "$i" || true
+            timeout 8 yarn run --silent agops ec committee --send-from "$i" || true
         else
             agops ec committee --send-from "$i" --voter "$cm"
             cm=$((cm + 1))
