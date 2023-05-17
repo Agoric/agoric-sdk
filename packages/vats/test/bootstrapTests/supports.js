@@ -288,7 +288,7 @@ export const makeWalletFactoryDriver = async (
 
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
-  specifier = '@agoric/vats/decentral-test-vaults-config.json',
+  specifier = '@agoric/vats/decentral-itest-vaults-config.json',
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
