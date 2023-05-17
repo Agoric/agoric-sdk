@@ -41,13 +41,13 @@ export const subscriptionTracker = async (t, subscription) => {
     trace('assertInitial notif', notif);
     t.deepEqual(notif.value, expectedValue);
   };
-  const assertChange = async expectedDelta => {
+  const assertChange = async expectedChanges => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
     trace('assertChange notif', notif);
     // @ts-expect-error diff() overly constrains
-    const actualDelta = diff(prevNotif.value, notif.value);
-    t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
+    const actualChanges = diff(prevNotif.value, notif.value);
+    t.deepEqual(actualChanges, expectedChanges, 'Unexpected changes');
   };
   const assertLike = async expectedState => {
     notif = await metrics.getUpdateSince(notif?.updateCount);

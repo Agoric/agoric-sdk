@@ -275,7 +275,7 @@ export const prepareVaultManagerKit = (
           AmountShape,
           M.arrayOf(TransferPartShape),
         ).returns(),
-        burnAndRecord: M.call(AmountShape, SeatShape).returns(),
+        burn: M.call(AmountShape, SeatShape).returns(),
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
@@ -598,7 +598,7 @@ export const prepareVaultManagerKit = (
 
           state.totalDebt = AmountMath.add(state.totalDebt, debt);
         },
-        updateMetrics() {
+        writeMetrics() {
           const { state } = this;
           const { collateralBrand, retainedCollateralSeat, metricsTopicKit } =
             state;
@@ -898,7 +898,7 @@ export const prepareVaultManagerKit = (
               shortfall: shortfallToReserve,
             });
           }
-          return facets.helper.updateMetrics();
+          return facets.helper.writeMetrics();
         },
       },
 
@@ -947,22 +947,20 @@ export const prepareVaultManagerKit = (
             toMint,
           );
           factoryPowers.mintAndTransfer(mintReceiver, toMint, fee, transfers);
-          state.totalDebt = AmountMath.add(state.totalDebt, toMint);
         },
         /**
          * @param {Amount<'nat'>} toBurn
          * @param {ZCFSeat} seat
          */
-        burnAndRecord(toBurn, seat) {
+        burn(toBurn, seat) {
           const { state } = this;
           const { collateralBrand } = this.state;
 
-          trace(collateralBrand, 'burnAndRecord', {
+          trace(collateralBrand, 'burn', {
             toBurn,
             totalDebt: state.totalDebt,
           });
           factoryPowers.burnDebt(toBurn, seat);
-          state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
           return this.state.assetTopicKit.subscriber;
@@ -1037,41 +1035,42 @@ export const prepareVaultManagerKit = (
               ),
               'Settled vaults must not be retained in storage',
             );
-          } else {
-            const isNew = AmountMath.isEmpty(oldDebtNormalized);
-            trace(state.collateralBrand, { isNew });
-            if (!isNew) {
-              // its position in the queue is no longer valid
-
-              const vaultInStore = prioritizedVaults.removeVaultByAttributes(
-                oldDebtNormalized,
-                oldCollateral,
-                vaultId,
-              );
-              assert(
-                vault === vaultInStore,
-                'handleBalanceChange for two different vaults',
-              );
-              trace('removed', vault, vaultId);
-            }
-
-            // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
-            // getCurrentDebt() would also work (0x = 0) but require more computation.
-            if (!AmountMath.isEmpty(vault.getNormalizedDebt())) {
-              prioritizedVaults.addVault(vaultId, vault);
-            }
-
-            // totalCollateral += vault's collateral delta (post — pre)
-            state.totalCollateral = AmountMath.subtract(
-              AmountMath.add(
-                state.totalCollateral,
-                vault.getCollateralAmount(),
-              ),
-              oldCollateral,
-            );
-            // debt accounting managed through minting and burning
-            void facets.helper.updateMetrics();
+            return;
           }
+
+          const isNew = AmountMath.isEmpty(oldDebtNormalized);
+          trace(state.collateralBrand, { isNew });
+          if (!isNew) {
+            // its position in the queue is no longer valid
+
+            const vaultInStore = prioritizedVaults.removeVaultByAttributes(
+              oldDebtNormalized,
+              oldCollateral,
+              vaultId,
+            );
+            assert(
+              vault === vaultInStore,
+              'handleBalanceChange for two different vaults',
+            );
+            trace('removed', vault, vaultId);
+          }
+
+          // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
+          // getCurrentDebt() would also work (0x = 0) but require more computation.
+          if (!AmountMath.isEmpty(vault.getNormalizedDebt())) {
+            prioritizedVaults.addVault(vaultId, vault);
+          }
+
+          // total += vault's delta (post — pre)
+          state.totalCollateral = AmountMath.subtract(
+            AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
+            oldCollateral,
+          );
+          state.totalDebt = AmountMath.subtract(
+            AmountMath.add(state.totalDebt, vault.getCurrentDebt()),
+            oldDebtNormalized,
+          );
+          void facets.helper.writeMetrics();
         },
       },
       self: {
@@ -1237,7 +1236,7 @@ export const prepareVaultManagerKit = (
           );
 
           helper.markLiquidating(totalDebt, totalCollateral);
-          void helper.updateMetrics();
+          void helper.writeMetrics();
 
           const { userSeatPromise, deposited } = await E.when(
             E(auctionPF).makeDepositInvitation(),
@@ -1289,7 +1288,7 @@ export const prepareVaultManagerKit = (
         );
 
         // push initial state of metrics
-        void helper.updateMetrics();
+        void helper.writeMetrics();
       },
     },
   );

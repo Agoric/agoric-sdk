@@ -1931,6 +1931,14 @@ test('manager notifiers, with snapshot', async t => {
     totalCollateral: { value: totalCollateral },
   });
 
+  totalCollateral += given.value;
+  totalDebt += WANT_EXTRA + 29n; // magic number is fees
+
+  await m.assertChange({
+    totalCollateral: { value: totalCollateral },
+    totalDebt: { value: totalDebt },
+  });
+
   trace('10. Close vault');
   vaultOpSeat = await E(services.zoe).offer(
     await E(vault).makeCloseInvitation(),
@@ -1943,9 +1951,11 @@ test('manager notifiers, with snapshot', async t => {
     }),
   );
   await E(vaultOpSeat).getOfferResult();
-  totalCollateral += 2n;
-  totalDebt += 420n;
+
+  totalCollateral -= AMPLE + given.value;
+  totalDebt -= DEBT1_EXTRA - 17n; // magic number is fees
   await m.assertChange({
+    numActiveVaults: 6,
     totalCollateral: { value: totalCollateral },
     totalDebt: { value: totalDebt },
   });

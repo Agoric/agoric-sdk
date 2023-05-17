@@ -138,7 +138,7 @@ export const prepareVaultDirector = (
       rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
     });
   };
-  const updateMetrics = () => E(metricsKit.recorderP).write(sampleMetrics());
+  const writeMetrics = () => E(metricsKit.recorderP).write(sampleMetrics());
 
   const updateShortfallReporter = async () => {
     const oldInvitation = baggage.has(shortfallInvitationKey)
@@ -215,7 +215,7 @@ export const prepareVaultDirector = (
         debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
         throw e;
       }
-      void updateMetrics();
+      void writeMetrics();
     },
     getShortfallReporter: async () => {
       await updateShortfallReporter();
@@ -411,7 +411,7 @@ export const prepareVaultDirector = (
           const { self: vm } = kit;
           vm || Fail`no vault`;
           collateralManagers.init(collateralBrand, managerIndex);
-          void updateMetrics();
+          void writeMetrics();
           return vm;
         },
         makeCollectFeesInvitation() {

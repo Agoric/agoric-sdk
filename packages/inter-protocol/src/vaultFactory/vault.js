@@ -85,7 +85,7 @@ const validTransitions = {
  * @property {(base: string) => string} scopeDescription
  * @property {() => Brand<'nat'>} getDebtBrand
  * @property {MintAndTransfer} mintAndTransfer
- * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
+ * @property {(amount: Amount, seat: ZCFSeat) => void} burn
  * @property {() => Ratio} getCompoundedInterest
  * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
@@ -405,7 +405,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
               vaultSeat.getCurrentAllocation(),
             );
 
-            state.manager.burnAndRecord(debt, seat);
+            state.manager.burn(debt, seat);
           } else if (phase === Phase.LIQUIDATED) {
             // Simply reallocate vault assets to the offer seat.
             // Don't take anything from the offer, even if vault is underwater.
@@ -559,7 +559,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             collateralPre,
             newDebt,
           );
-          state.manager.burnAndRecord(giveMintedTaken, vaultSeat);
+          state.manager.burn(giveMintedTaken, vaultSeat);
           helper.assertVaultHoldsNoMinted();
 
           helper.updateUiState();
