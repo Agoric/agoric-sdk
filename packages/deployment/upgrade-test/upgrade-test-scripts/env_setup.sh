@@ -145,6 +145,20 @@ test_not_val() {
   fi
 }
 
+test_wallet_state() {
+  addr=$1
+  want=$2
+  desc=$3
+  body="$(timeout 3 agoric follow -l ":published.wallet.$addr" -o text | jq -r '.body')"
+  case $body in
+  *'"@qclass":'*) state=old ;;
+  '#{}') state=upgraded ;;
+  '#'*) state=revived ;;
+  *) state=$body ;;
+  esac
+  test_val "$state" "$want" "$desc"
+}
+
 voteLatestProposalAndWait() {
   waitForBlock
   proposal=$($binary q gov proposals -o json | jq -r '.proposals[-1].proposal_id')

@@ -3,8 +3,12 @@
 . ./upgrade-test-scripts/env_setup.sh
 
 # provision pool has right balance 
-test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ') "19250000"
+test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ') "19000000"
 
+test_wallet_state "$USER1ADDR" upgraded "user1 wallet is upgraded"
+test_wallet_state "$GOV1ADDR" revived "gov1 wallet is revived"
+test_wallet_state "$GOV2ADDR" revived "gov2 wallet is revived"
+test_wallet_state "$GOV3ADDR" revived "gov3 wallet is revived"
 
 if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
 
