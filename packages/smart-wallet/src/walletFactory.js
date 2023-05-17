@@ -119,8 +119,7 @@ export const makeAssetRegistry = assetPublisher => {
  *
  * @typedef {{
  *   getAssetSubscription: () => ERef<
- *     import('@agoric/notifier/src/types').IterableEachTopic<
- *       import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ *     IterableEachTopic<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
  *
  * @typedef {boolean} isRevive

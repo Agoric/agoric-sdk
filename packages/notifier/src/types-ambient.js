@@ -31,7 +31,18 @@
  * @template T
  * @template [TReturn=any]
  * @template [TNext=undefined]
- * @typedef {ForkableAsyncIterator<T, TReturn, TNext> & { [Symbol.asyncIterator](): ForkableAsyncIterableIterator<T, TReturn, TNext> }} ForkableAsyncIterableIterator
+ * @typedef {{ [Symbol.asyncIterator](): AsyncIterableIterator<T, TReturn, TNext> }} AsyncIterableOnly
+ */
+
+/**
+ * @template T
+ * @template [TReturn=any]
+ * @template [TNext=undefined]
+ * @typedef {{
+ *   [Symbol.asyncIterator](): ForkableAsyncIterableIterator<T, TReturn, TNext>,
+ *   fork(): ForkableAsyncIterableIterator<T, TReturn, TNext> } &
+ *   ForkableAsyncIterator<T, TReturn, TNext>
+ * } ForkableAsyncIterableIterator
  */
 
 /**
@@ -68,7 +79,8 @@
  * outside the current package should consider it opaque, not depending on its
  * internal structure.
  * @property {IteratorResult<T>} head
- * @property {bigint} publishCount
+ * @property {bigint} publishCount starts at 1 for the first result
+ *   and advances by 1 for each subsequent result
  * @property {Promise<PublicationRecord<T>>} tail
  */
 
@@ -80,6 +92,28 @@
  * immediate successor via a `tail` promise) that is later than the
  * provided publishCount.
  * Used to make forward-lossless ("each") iterators.
+ */
+
+/**
+ * @template T
+ * @typedef {ForkableAsyncIterable<T, T> & EachTopic<T>} IterableEachTopic
+ * An EachTopic with default asyncIterable behaviour.
+ *
+ * NOTE: the publication records and iterators returned by this object are
+ * ephemeral and will be severed during upgrade.  A caller should use
+ * `subscribeEach` to wrap this topic in a local iterable which automatically
+ * attempts to reconnect upon being severed.
+ */
+
+/**
+ * @template T
+ * @typedef {AsyncIterableOnly<T, T> & LatestTopic<T>} IterableLatestTopic
+ * A LatestTopic with default asyncIterable behaviour.
+ *
+ * NOTE: the iterators returned by this object are ephemeral and will be severed
+ * during upgrade.  A caller should use `subscribeLatest` to wrap this topic in
+ * a local iterable which automatically attempts to reconnect upon being
+ * severed.
  */
 
 /**
@@ -233,7 +267,7 @@
 
 /**
  * @template T
- * @typedef {ForkableAsyncIterable<T, T> & EachTopic<T> &
+ * @typedef {IterableEachTopic<T> & EachTopic<T> &
  *   SharableSubscription<T>} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
