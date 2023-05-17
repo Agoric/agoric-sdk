@@ -65,6 +65,28 @@ sleep 65
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
 test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.StartFrequency.value.relValue)" "$START_FREQUENCY"
 
+#####
+# Raise debt limit
+DEBT_LIMIT_OFFER=$(mktemp -t agops.XXX)
+previous="$(agops ec find-continuing-id --for "charter member invitation" --from "$GOV1ADDR")"
+node ./upgrade-test-scripts/agoric-upgrade-10/param-change-offer-gen.mjs $previous 30 123000000 >|"$DEBT_LIMIT_OFFER"
+agoric wallet print --file "$DEBT_LIMIT_OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$DEBT_LIMIT_OFFER" --keyring-backend=test
+
+# wait for question to post. XXX right way is to check deadline of .latestQuestion
+waitForBlock 3
+
+govaccounts=("$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR")
+for i in "${govaccounts[@]}"; do
+    agops ec vote --forPosition 0 --send-from "$i"
+done
+
+# wait for the vote to pass
+sleep 65
+
+# ensure params were changed
+test_val "$(agoric follow -l -F  :published.vaultFactory.managers.manager0.governance -o jsonlines | jq -r .current.DebtLimit.value.value)" "123000000000000"
+
 pushPrice 12.01
 
 if [[ "$BOOTSTRAP_MODE" == "test" ]]; then

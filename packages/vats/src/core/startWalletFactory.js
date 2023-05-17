@@ -26,6 +26,33 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
 /**
+ * Publish an arbitrary wallet state so that clients
+ * can tell that a wallet has been provisioned.
+ *
+ * @param {string[]} oldAddresses
+ * @param {Marshaller} marshaller
+ * @param {StorageNode} walletStorageNode
+ */
+const publishRevivableWalletState = async (
+  oldAddresses,
+  marshaller,
+  walletStorageNode,
+) => {
+  const arbData = harden({});
+  const arbMarshalled = await E(marshaller).serialize(arbData);
+  const arbJSON = JSON.stringify(arbMarshalled);
+  const publishArbitraryWalletState = async address => {
+    const walletUpdateNode = makeStorageNodeChild(walletStorageNode, address);
+    const walletCurrentNode = makeStorageNodeChild(walletUpdateNode, 'current');
+    await Promise.all([
+      E(walletUpdateNode).setValue(arbJSON),
+      E(walletCurrentNode).setValue(arbJSON),
+    ]);
+  };
+  await Promise.all(oldAddresses.map(publishArbitraryWalletState));
+};
+
+/**
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
@@ -137,6 +164,7 @@ export const startWalletFactory = async (
   // Carry forward wallets with an address already in chain storage.
   const oldAddresses = dataReviver.children(`${OLD_WALLET_STORAGE_PATH}.`);
 
+  const marshaller = await E(board).getPublishingMarshaller();
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
@@ -144,7 +172,7 @@ export const startWalletFactory = async (
     privateArgs: harden({
       poolBank,
       storageNode: poolStorageNode,
-      marshaller: await E(board).getPublishingMarshaller(),
+      marshaller,
       metricsOverride: reviveOldMetrics(),
     }),
     label: 'provisionPool',
@@ -191,6 +219,7 @@ export const startWalletFactory = async (
       namesByAddressAdmin,
       walletFactory: wfFacets.creatorFacet,
     }),
+    publishRevivableWalletState(oldAddresses, marshaller, walletStorageNode),
   ]);
   const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
 

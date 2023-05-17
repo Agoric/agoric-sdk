@@ -24,14 +24,18 @@ test_val "$(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt6234
 psmISTChildren="$(agd q vstorage children published.psm.IST -o jsonlines)"
 test_not_val "$(echo "$psmISTChildren" | jq -r '.children | length')" "1" "more than one PSM denoms"
 
+# emerynet started with ToyUSD; gov proposals added USDC_axl, DAI_axl, DAI_grv
+# main started with USDC, USDT x axl, grv and a gov proposal added DAI x axl, grv
 if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
-    test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "AUSD")')" "" "AUSD in IST"
     test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "ToyUSD")')" "" "ToyUSD in IST"
-fi
-    test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDC_axl")')" "" "USDC_axl in IST"
+else
     test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDC_grv")')" "" "USDC_grv in IST"
     test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDT_axl")')" "" "USDT_axl in IST"
     test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDT_grv")')" "" "USDT_grv in IST"
+fi
+    test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "USDC_axl")')" "" "USDC_axl in IST"
+    test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "DAI_axl")')" "" "DAI_axl in IST"
+    test_not_val "$(echo "$psmISTChildren" | jq -r '.children[] | select (. == "DAI_grv")')" "" "DAI_grv in IST"
 
 ## testing state from pismoC was preserved post bulldozer upgrade
 
