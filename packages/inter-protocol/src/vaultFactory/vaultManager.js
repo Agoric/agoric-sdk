@@ -31,7 +31,6 @@ import {
   M,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
-  makeScalarMapStore,
   prepareExoClassKit,
   provide,
 } from '@agoric/vat-data';
@@ -650,10 +649,13 @@ export const prepareVaultManagerKit = (
           const accounting = liquidationResults(totalDebt, mintedProceeds);
           const { Collateral: collateralProceeds } = proceeds;
 
-          /** @type {(v: Vault) => void} */
-          const recordLiquidation = v => {
-            v.liquidated();
-            liquidatingVaults.delete(v);
+          /** @type {Array<Vault>} */
+          const vaultsToLiquidate = [];
+          const liquidateAll = () => {
+            for (const vault of vaultsToLiquidate) {
+              vault.liquidated();
+              liquidatingVaults.delete(vault);
+            }
           };
 
           const penaltyRate = facets.self
@@ -711,7 +713,7 @@ export const prepareVaultManagerKit = (
                   { Collateral: collat },
                 ]);
               }
-              recordLiquidation(vault);
+              vaultsToLiquidate.push(vault);
             }
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
@@ -786,7 +788,7 @@ export const prepareVaultManagerKit = (
                 const seat = vault.getVaultSeat();
                 transfers.push([liqSeat, seat, { Minted: mintedToReturn }]);
               }
-              recordLiquidation(vault);
+              vaultsToLiquidate.push(vault);
             }
 
             if (transfers.length > 0) {
@@ -824,8 +826,17 @@ export const prepareVaultManagerKit = (
             /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
             const transfers = [];
             let liquidated = 0;
-            /** @type {MapStore<string, Vault>} */
-            const vaultsToReinstate = makeScalarMapStore();
+            /** @type {Array<Vault>} */
+            const vaultsToReinstate = [];
+            const reinstateAll = () => {
+              const { prioritizedVaults } = collateralEphemera(collateralBrand);
+              for (const vault of vaultsToReinstate) {
+                const vaultId = vault.abortLiquidation();
+                prioritizedVaults.addVault(vaultId, vault);
+                liquidatingVaults.delete(vault);
+              }
+            };
+
             let collateralReduction = AmountMath.makeEmpty(collateralBrand);
             let shortfallToReserve = accounting.shortfall;
 
@@ -856,10 +867,8 @@ export const prepareVaultManagerKit = (
                   debtAmount,
                 );
                 const seat = vault.getVaultSeat();
-                const vaultId = vault.abortLiquidation();
-                liquidatingVaults.delete(vault);
                 // must reinstate after atomicRearrange(), so we record them.
-                vaultsToReinstate.init(vaultId, vault);
+                vaultsToReinstate.push(vault);
                 reduceCollateral(vaultDebt);
                 transfers.push([liqSeat, seat, { Collateral: collatPostDebt }]);
               } else {
@@ -871,7 +880,7 @@ export const prepareVaultManagerKit = (
                 );
 
                 reduceCollateral(vCollat);
-                recordLiquidation(vault);
+                vaultsToLiquidate.push(vault);
               }
             }
 
@@ -881,10 +890,7 @@ export const prepareVaultManagerKit = (
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
             }
-            const { prioritizedVaults } = collateralEphemera(collateralBrand);
-            for (const [vaultId, vault] of vaultsToReinstate.entries()) {
-              prioritizedVaults.addVault(vaultId, vault);
-            }
+            reinstateAll();
 
             facets.helper.markCollateralLiquidated(
               collateralReduction,
@@ -898,6 +904,7 @@ export const prepareVaultManagerKit = (
               shortfall: shortfallToReserve,
             });
           }
+          liquidateAll();
           return facets.helper.writeMetrics();
         },
       },
