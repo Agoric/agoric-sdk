@@ -4,6 +4,7 @@
 /* eslint-disable func-names */
 /* global fetch */
 import { Fail } from '@agoric/assert';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';
 import { inspect } from 'util';
@@ -143,19 +144,15 @@ export const makeOracleCommand = logger => {
     .requiredOption('--price <number>', 'price', Number)
     .option('--roundId <number>', 'round', Number)
     .action(async function (opts) {
+      const { offerId } = opts;
       const unitPrice = scaleDecimals(opts.price);
       const roundId = 'roundId' in opts ? Nat(opts.roundId) : undefined;
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: opts.oracleAdminAcceptOfferId,
-          invitationMakerName: 'PushPrice',
-          invitationArgs: harden([{ unitPrice, roundId }]),
-        },
-        proposal: {},
-      };
+
+      const offer = Offers.fluxAggregator.PushPrice(
+        {},
+        { offerId, unitPrice, roundId },
+        opts.oracleAdminAcceptOfferId,
+      );
 
       outputAction({
         method: 'executeOffer',
