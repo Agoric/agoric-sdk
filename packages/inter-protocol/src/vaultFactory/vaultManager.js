@@ -847,7 +847,7 @@ export const prepareVaultManagerKit = (
 
             let collateralReduction = AmountMath.makeEmpty(collateralBrand);
             let shortfallToReserve = accounting.shortfall;
-
+            const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
             const reduceCollateral = amount =>
               (collateralReduction = AmountMath.add(
                 collateralReduction,
@@ -859,19 +859,21 @@ export const prepareVaultManagerKit = (
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
-              const debtInCollateral = ceilDivideBy(debtAmount, price);
-              const collatPostDebt = AmountMath.isGTE(vCollat, debtInCollateral)
-                ? AmountMath.subtract(vCollat, debtInCollateral)
-                : AmountMath.makeEmptyFromAmount(vCollat);
+              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
+              const collatPostPenalty = AmountMath.subtract(
+                vCollat,
+                ceilMultiplyBy(vaultPenalty, debtPortion),
+              );
+              const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
               if (
                 reconstituteVaults &&
-                !AmountMath.isEmpty(collatPostDebt) &&
-                AmountMath.isGTE(collatRemaining, collatPostDebt) &&
+                !AmountMath.isEmpty(collatPostPenalty) &&
+                AmountMath.isGTE(collatRemaining, collatPostPenalty) &&
                 AmountMath.isGTE(totalDebt, debtAmount)
               ) {
                 collatRemaining = AmountMath.subtract(
                   collatRemaining,
-                  collatPostDebt,
+                  collatPostPenalty,
                 );
                 shortfallToReserve = AmountMath.isGTE(
                   shortfallToReserve,
@@ -882,8 +884,12 @@ export const prepareVaultManagerKit = (
                 const seat = vault.getVaultSeat();
                 // must reinstate after atomicRearrange(), so we record them.
                 vaultsToReinstate.push(vault);
-                reduceCollateral(debtInCollateral);
-                transfers.push([liqSeat, seat, { Collateral: collatPostDebt }]);
+                reduceCollateral(vaultDebt);
+                transfers.push([
+                  liqSeat,
+                  seat,
+                  { Collateral: collatPostPenalty },
+                ]);
               } else {
                 reconstituteVaults = false;
                 liquidated += 1;
