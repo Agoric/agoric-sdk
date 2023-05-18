@@ -14,18 +14,6 @@ waitForBlock 3
 govaccounts=( "$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR" )
 govamount="200000000ubld,100000000${USDC_DENOM},100000000${ATOM_DENOM}"
 
-provisionSmartWallet() {
-  i="$1"
-  amount="$2"
-  echo "funding $i"
-  agd tx bank send "validator" "$i" "$amount" -y --keyring-backend=test --chain-id="$CHAINID"
-  waitForBlock
-  echo "provisioning $i"
-  agd tx swingset provision-one my-wallet "$i" SMART_WALLET --keyring-backend=test  --yes --chain-id="$CHAINID" --from="$i"
-  waitForBlock
-  agoric wallet show --from $i
-}
-
 for i in "${govaccounts[@]}"
 do
   provisionSmartWallet "$i" "$govamount"

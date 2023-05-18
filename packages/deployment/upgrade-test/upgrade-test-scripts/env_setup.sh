@@ -23,6 +23,10 @@ export GOV3ADDR=$($binary keys show gov3 -a --keyring-backend="test")
 export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test")
 export USER1ADDR=$($binary keys show user1 -a --keyring-backend="test")
 
+if [[ $THIS_NAME == "agoric-upgrade-10" || $THIS_NAME == "agoric-upgrade-11" ]]; then
+  export USER2ADDR=$($binary keys show user2 -a --keyring-backend="test" 2> /dev/null)
+fi
+
 if [[ "$binary" == "agd" ]]; then
 # Support testnet addresses
   sed -i "s/agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
@@ -53,6 +57,18 @@ if [[ "$binary" == "agd" ]]; then
   sed -i 's/committeeSize": 6/committeeSize": 3/g' /usr/src/agoric-sdk/packages/vats/*.json
   sed -i 's/minSubmissionCount": 3/minSubmissionCount": 1/g' /usr/src/agoric-sdk/packages/vats/*.json
 fi
+
+provisionSmartWallet() {
+  i="$1"
+  amount="$2"
+  echo "funding $i"
+  agd tx bank send "validator" "$i" "$amount" -y --keyring-backend=test --chain-id="$CHAINID"
+  waitForBlock
+  echo "provisioning $i"
+  agd tx swingset provision-one my-wallet "$i" SMART_WALLET --keyring-backend=test  --yes --chain-id="$CHAINID" --from="$i"
+  waitForBlock
+  agoric wallet show --from $i
+}
 
 sendOffer() (
   offer="$1"
@@ -195,6 +211,9 @@ printKeys() {
   cat ~/.agoric/validator.key || true
   echo "user1: $USER1ADDR"
   cat ~/.agoric/user1.key || true
+  if [[ $THIS_NAME == "agoric-upgrade-10" || $THIS_NAME == "agoric-upgrade-11" ]]; then
+    cat ~/.agoric/user2.key || true
+  fi
   echo "========== GOVERNANCE KEYS =========="
 }
 
