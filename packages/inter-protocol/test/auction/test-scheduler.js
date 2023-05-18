@@ -42,6 +42,8 @@ test('schedule start to finish', async t => {
     subscribeEach(recorderKit.subscriber),
   );
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
+  // at 0: capturePrice, at 1: 1st step, at 3: 2nd step,
+  // at 5: 3rd step, reset price, set final
   defaultParams = {
     ...defaultParams,
     AuctionStartDelay: 1n,
@@ -93,11 +95,12 @@ test('schedule start to finish', async t => {
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().capturedPrices);
 
+  // :08
   now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().final);
-  t.true(fakeAuctioneer.getState().capturedPrices);
+  t.false(fakeAuctioneer.getState().capturedPrices);
 
   await scheduleTracker.assertInitial({
     activeStartTime: null,
@@ -105,12 +108,21 @@ test('schedule start to finish', async t => {
     nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
   });
 
+  // XX:00
   now = await timer.advanceTo(130n);
   await eventLoopIteration();
-  now = await timer.advanceTo(now + 1n);
+  t.is(fakeAuctioneer.getState().step, 0);
+  t.false(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().capturedPrices);
   await scheduleTracker.assertChange({
     activeStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     nextStartTime: { absValue: 141n },
+  });
+
+  // XX:01
+  now = await timer.advanceTo(now + 1n);
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 133n },
   });
 
   const schedule2 = scheduler.getSchedule();
@@ -129,42 +141,32 @@ test('schedule start to finish', async t => {
   t.false(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().capturedPrices);
 
-  // xxx I shouldn't have to tick twice.
-  now = await timer.advanceTo(now + 1n);
-  now = await timer.advanceTo(now + 1n);
-  await eventLoopIteration();
+  // XX:03
+  now = await timer.advanceTo(now + 2n);
   await scheduleTracker.assertChange({
-    nextDescendingStepTime: { absValue: 133n },
+    nextDescendingStepTime: { absValue: 135n },
   });
 
   t.is(fakeAuctioneer.getState().step, 2);
   t.false(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().capturedPrices);
 
-  // final step
-  now = await timer.advanceTo(now + 1n);
-  now = await timer.advanceTo(now + 1n);
-  await eventLoopIteration();
+  // XX:05  final step
+  now = await timer.advanceTo(now + 2n);
   await scheduleTracker.assertChange({
-    nextDescendingStepTime: { absValue: 135n },
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: 141n },
   });
 
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
   t.false(fakeAuctioneer.getState().capturedPrices);
 
-  // Auction finished, nothing else happens
-  now = await timer.advanceTo(now + 1n);
-  await scheduleTracker.assertChange({
-    activeStartTime: null,
-    nextDescendingStepTime: { absValue: 141n },
-  });
-  now = await timer.advanceTo(now + 1n);
-
+  // XX:07 Auction finished, nothing else happens
+  now = await timer.advanceTo(now + 2n);
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
-  t.true(fakeAuctioneer.getState().capturedPrices);
-
+  t.false(fakeAuctioneer.getState().capturedPrices);
   t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
 
   const finalSchedule = scheduler.getSchedule();
@@ -188,9 +190,15 @@ test('schedule start to finish', async t => {
 
   t.deepEqual(finalSchedule.liveAuctionSchedule, null);
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
+  t.true(fakeAuctioneer.getState().capturedPrices);
 
+  t.is(fakeAuctioneer.getState().step, 3);
+  t.true(fakeAuctioneer.getState().final);
+  t.true(fakeAuctioneer.getState().capturedPrices);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0]);
+
+  // XX:01
   now = await timer.advanceTo(now + 1n);
-  await eventLoopIteration();
 
   const schedule3 = scheduler.getSchedule();
   t.deepEqual(schedule3.liveAuctionSchedule, secondSchedule);
@@ -211,10 +219,10 @@ test('schedule start to finish', async t => {
   t.is(fakeAuctioneer.getState().step, 4);
   t.false(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().capturedPrices);
+  t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 
-  // xxx I shouldn't have to tick twice.
-  now = await timer.advanceTo(now + 1n);
-  now = await timer.advanceTo(now + 1n);
+  // XX:03
+  now = await timer.advanceTo(now + 2n);
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 145n },
   });
@@ -223,15 +231,16 @@ test('schedule start to finish', async t => {
   t.false(fakeAuctioneer.getState().final);
   t.true(fakeAuctioneer.getState().capturedPrices);
 
-  // final step
+  // XX:05   final step
   now = await timer.advanceTo(now + 2n);
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
   t.false(fakeAuctioneer.getState().capturedPrices);
 
-  // Auction finished, nothing else happens
+  // XX:08  Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
+  // XX:09  Auction finished, nothing else happens
   await timer.advanceTo(now + 1n);
 
   await scheduleTracker.assertChange({
@@ -241,7 +250,7 @@ test('schedule start to finish', async t => {
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
-  t.true(fakeAuctioneer.getState().capturedPrices);
+  t.false(fakeAuctioneer.getState().capturedPrices);
 
   t.deepEqual(fakeAuctioneer.getStartRounds(), [0, 3]);
 });
@@ -868,7 +877,7 @@ test('schedule anomalies', async t => {
   t.false(fakeAuctioneer.getState().capturedPrices);
   // ////////////// PRICE LOCK TIME /////////// not price capture
   now = await timer.advanceTo(baseTime + delay - lock);
-  t.true(fakeAuctioneer.getState().capturedPrices);
+  t.false(fakeAuctioneer.getState().capturedPrices);
 
   const firstSchedule = {
     startTime: timestamp(firstStart),
