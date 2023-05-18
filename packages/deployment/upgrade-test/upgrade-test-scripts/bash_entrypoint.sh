@@ -1,6 +1,5 @@
 #!/bin/bash -i
 cd /usr/src/agoric-sdk/ || exit 1
-tmux -V || apt install -y tmux
 
 if [[ $TMUX_USE_CC == "1" ]]; then
     TMUX_FLAGS="-CC -u"

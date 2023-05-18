@@ -18,6 +18,9 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-8 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 WORKDIR /usr/src/agoric-sdk/
 
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked   \
+    apt-get update && apt-get install -y tmux
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-7-2 /root/.agoric /root/.agoric
@@ -32,6 +35,9 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-8-1 UPGRADE_TO=agoric-upgrade-9 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked   \
+    apt-get update && apt-get install -y tmux
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8 /root/.agoric /root/.agoric
@@ -46,6 +52,9 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-9 UPGRADE_TO=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked   \
+    apt-get update && apt-get install -y tmux
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8-1 /root/.agoric /root/.agoric
@@ -62,6 +71,9 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked   \
+    apt-get update && apt-get install -y tmux
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-9 /root/.agoric /root/.agoric
@@ -77,10 +89,12 @@ ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 # this boot doesn't need an upgrade
 
 WORKDIR /usr/src/agoric-sdk/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked   \
+    apt-get update && apt-get install -y tmux
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-10 /root/.agoric /root/.agoric
-RUN apt install -y tmux
 SHELL ["/bin/bash", "-c"]
 RUN chmod +x ./upgrade-test-scripts/*.sh
 ENTRYPOINT /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh
