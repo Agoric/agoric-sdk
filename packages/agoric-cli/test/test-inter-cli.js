@@ -445,79 +445,80 @@ test('README: inter auction status', async t => {
 
   const { brand } = agoricNames;
   const timerBrand = brand.timer;
-  const net = makeNet({
-    ...publishedNames,
-    auction: {
-      schedule: {
-        _: {
-          activeStartTime: undefined,
-          nextDescendingStepTime: { absValue: 1681875302n, timerBrand },
-          nextStartTime: { absValue: 1681875302n, timerBrand },
-        },
+  const auctionInfo = {
+    schedule: {
+      _: {
+        activeStartTime: undefined,
+        nextDescendingStepTime: { absValue: 1681875302n, timerBrand },
+        nextStartTime: { absValue: 1681875302n, timerBrand },
       },
-      book0: {
-        _: {
-          collateralAvailable: { brand: brand.ATOM, value: 0n },
-          currentPriceLevel: {
-            denominator: { brand: brand.ATOM, value: 10000000000n },
-            numerator: { brand: brand.IST, value: 44955000000n },
-          },
-          proceedsRaised: undefined,
-          remainingProceedsGoal: null,
-          startCollateral: { brand: brand.ATOM, value: 0n },
-          startPrice: {
-            denominator: { brand: brand.ATOM, value: 1000000n },
-            numerator: { brand: brand.IST, value: 9990000n },
-          },
-          startProceedsGoal: null,
+    },
+    book0: {
+      _: {
+        collateralAvailable: { brand: brand.ATOM, value: 0n },
+        currentPriceLevel: {
+          denominator: { brand: brand.ATOM, value: 10000000000n },
+          numerator: { brand: brand.IST, value: 44955000000n },
         },
+        proceedsRaised: undefined,
+        remainingProceedsGoal: null,
+        startCollateral: { brand: brand.ATOM, value: 0n },
+        startPrice: {
+          denominator: { brand: brand.ATOM, value: 1000000n },
+          numerator: { brand: brand.IST, value: 9990000n },
+        },
+        startProceedsGoal: null,
       },
-      governance: {
-        _: {
-          current: {
-            AuctionStartDelay: {
-              type: 'relativeTime',
-              value: { relValue: 2n, timerBrand },
+    },
+    governance: {
+      _: {
+        current: {
+          AuctionStartDelay: {
+            type: 'relativeTime',
+            value: { relValue: 2n, timerBrand },
+          },
+          ClockStep: {
+            type: 'relativeTime',
+            value: { relValue: 10n, timerBrand },
+          },
+          DiscountStep: { type: 'nat', value: 500n },
+          Electorate: {
+            type: 'invitation',
+            value: {
+              brand: brand.Invitation,
+              value: [
+                {
+                  description: 'questionPoser',
+                  handle: {},
+                  installation: {},
+                  instance: {},
+                },
+              ],
             },
-            ClockStep: {
-              type: 'relativeTime',
-              value: { relValue: 10n, timerBrand },
-            },
-            DiscountStep: { type: 'nat', value: 500n },
-            Electorate: {
-              type: 'invitation',
-              value: {
-                brand: brand.Invitation,
-                value: [
-                  {
-                    description: 'questionPoser',
-                    handle: {},
-                    installation: {},
-                    instance: {},
-                  },
-                ],
-              },
-            },
-            LowestRate: {
-              type: 'nat',
-              value: 4500n,
-            },
-            PriceLockPeriod: {
-              type: 'relativeTime',
-              value: { relValue: 60n, timerBrand },
-            },
-            StartFrequency: {
-              type: 'relativeTime',
-              value: { relValue: 300n, timerBrand },
-            },
-            StartingRate: {
-              type: 'nat',
-              value: 10500n,
-            },
+          },
+          LowestRate: {
+            type: 'nat',
+            value: 4500n,
+          },
+          PriceLockPeriod: {
+            type: 'relativeTime',
+            value: { relValue: 60n, timerBrand },
+          },
+          StartFrequency: {
+            type: 'relativeTime',
+            value: { relValue: 300n, timerBrand },
+          },
+          StartingRate: {
+            type: 'nat',
+            value: 10500n,
           },
         },
       },
     },
+  };
+  const net = makeNet({
+    ...publishedNames,
+    auction: auctionInfo,
   });
 
   const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
