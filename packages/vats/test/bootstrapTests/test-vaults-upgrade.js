@@ -421,13 +421,11 @@ test.serial('force liquidation', async t => {
     numLiquidatingVaults: 1,
   });
 
-  // after this the liquidation aborts due to the shortfall reporter being broken after upgrade.
-  // it has to be repaired by governance until https://github.com/Agoric/agoric-sdk/issues/5200
   await advanceTime(1, 'hours');
   t.like(readCollateralMetrics(0), {
-    numActiveVaults: 2,
-    numLiquidatingVaults: 0,
-    numLiquidationsAborted: 1,
+    numActiveVaults: 1,
+    numLiquidatingVaults: 1,
+    numLiquidationsAborted: 0,
     numLiquidationsCompleted: 0,
   });
 });

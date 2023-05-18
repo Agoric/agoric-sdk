@@ -158,7 +158,7 @@ const setupServices = async (
     priceOrList,
     quoteInterval,
     unitAmountIn,
-    startFrequency,
+    { StartFrequency: startFrequency },
   );
 
   const { consume, produce } = space;

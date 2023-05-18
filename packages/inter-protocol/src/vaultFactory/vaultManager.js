@@ -37,6 +37,7 @@ import {
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
   atomicRearrange,
+  ceilDivideBy,
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
@@ -639,15 +640,20 @@ export const prepareVaultManagerKit = (
           const { state, facets } = this;
           const { collateralBrand, debtBrand, liquidatingVaults } = this.state;
 
+          const { Collateral: collateralProceeds } = proceeds;
+          /** @type {Amount<'nat'>} */
+          const collateralSold = AmountMath.subtract(
+            totalCollateral,
+            collateralProceeds,
+          );
           state.totalCollateralSold = AmountMath.add(
             state.totalCollateralSold,
-            AmountMath.subtract(totalCollateral, proceeds.Collateral),
+            collateralSold,
           );
 
           const mintedProceeds =
             proceeds.Minted || AmountMath.makeEmpty(debtBrand);
           const accounting = liquidationResults(totalDebt, mintedProceeds);
-          const { Collateral: collateralProceeds } = proceeds;
 
           /** @type {Array<Vault>} */
           const vaultsToLiquidate = [];
@@ -670,7 +676,7 @@ export const prepareVaultManagerKit = (
             ),
           );
 
-          const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
+          const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
           // Liquidation.md describes how to process liquidation proceeds
           const bestToWorst = [...vaultData.entries()].reverse();
           if (AmountMath.isEmpty(accounting.shortfall)) {
@@ -702,8 +708,10 @@ export const prepareVaultManagerKit = (
                 debtAmount,
                 vault.getCurrentDebt(),
               );
-              const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
-              const collatPostDebt = AmountMath.subtract(vCollat, vaultDebt);
+              const debtInCollateral = ceilDivideBy(debtAmount, price);
+              const collatPostDebt = AmountMath.isGTE(vCollat, debtInCollateral)
+                ? AmountMath.subtract(vCollat, debtInCollateral)
+                : AmountMath.makeEmptyFromAmount(vCollat);
               if (!AmountMath.isEmpty(leftToStage)) {
                 const collat = AmountMath.min(leftToStage, collatPostDebt);
                 leftToStage = AmountMath.subtract(leftToStage, collat);
@@ -851,10 +859,13 @@ export const prepareVaultManagerKit = (
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
-              const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
-              const collatPostDebt = AmountMath.subtract(vCollat, vaultDebt);
+              const debtInCollateral = ceilDivideBy(debtAmount, price);
+              const collatPostDebt = AmountMath.isGTE(vCollat, debtInCollateral)
+                ? AmountMath.subtract(vCollat, debtInCollateral)
+                : AmountMath.makeEmptyFromAmount(vCollat);
               if (
                 reconstituteVaults &&
+                !AmountMath.isEmpty(collatPostDebt) &&
                 AmountMath.isGTE(collatRemaining, collatPostDebt) &&
                 AmountMath.isGTE(totalDebt, debtAmount)
               ) {
@@ -862,14 +873,16 @@ export const prepareVaultManagerKit = (
                   collatRemaining,
                   collatPostDebt,
                 );
-                shortfallToReserve = AmountMath.subtract(
+                shortfallToReserve = AmountMath.isGTE(
                   shortfallToReserve,
                   debtAmount,
-                );
+                )
+                  ? AmountMath.subtract(shortfallToReserve, debtAmount)
+                  : AmountMath.makeEmptyFromAmount(shortfallToReserve);
                 const seat = vault.getVaultSeat();
                 // must reinstate after atomicRearrange(), so we record them.
                 vaultsToReinstate.push(vault);
-                reduceCollateral(vaultDebt);
+                reduceCollateral(debtInCollateral);
                 transfers.push([liqSeat, seat, { Collateral: collatPostDebt }]);
               } else {
                 reconstituteVaults = false;
