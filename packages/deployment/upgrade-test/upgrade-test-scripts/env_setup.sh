@@ -201,6 +201,7 @@ printKeys() {
 echo ENV_SETUP finished
 
 pushPrice () {
+  echo ACTIONS pushPrice $1
   newPrice="${1:-10.00}"
   for oracleNum in {1..2}; do
     if [[ ! -e "$HOME/.agoric/lastOracle" ]]; then
@@ -254,6 +255,7 @@ pushPriceOnce () {
 
   offer=$(mktemp -t pushPrice.XXX)
   agops oracle pushPriceRound --price "$newPrice" --oracleAdminAcceptOfferId "${adminOfferId}" >|"$offer"
+  cat "$offer"
   sleep 1
   timeout --preserve-status 15 yarn run --silent agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
   if [ $? -eq 0 ]; then

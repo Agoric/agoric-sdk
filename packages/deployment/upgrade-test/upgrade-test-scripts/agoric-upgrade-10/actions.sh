@@ -2,12 +2,15 @@
 
 . ./upgrade-test-scripts/env_setup.sh
 
+# Enable debugging
+set -x
+
 # For development:
-# TARGET=agoric-upgrade-10 make local_sdk build run
+# TARGET=agoric-upgrade-10 make local_sdk build_test run
 # agoric wallet show --from $GOV1ADDR
 waitForBlock 20
 
-echo "Tickling the wallets so they are revived"
+echo "ACTIONS Tickling the wallets so they are revived"
 # Until they are revived, the invitations can't be deposited. So the first action can't be to accept an invitation (because it won't be there).
 govaccounts=("$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR")
 cm=0
@@ -36,13 +39,15 @@ for i in "${oracles[@]}"; do
     agops oracle accept --offerId "$OFFER_ID" >|"$ORACLE_OFFER"
     agoric wallet print --file "$ORACLE_OFFER"
     agops perf satisfaction --from "$i" --executeOffer "$ORACLE_OFFER" --keyring-backend=test
-    echo "${i}_ORACLE=$OFFER_ID" >> "$HOME/.agoric/envs"
+    echo "${i}_ORACLE=$OFFER_ID" >>"$HOME/.agoric/envs"
 done
 
+echo ACTIONS Sourcing environment
 source "$HOME/.agoric/envs"
 
+echo ACTIONS proposing new auction params
 START_FREQUENCY=600 #StartFrequency: 600s (auction runs every 10m)
-CLOCK_STEP=20 #ClockStep: 20s (ensures auction completes in time)
+CLOCK_STEP=20       #ClockStep: 20s (ensures auction completes in time)
 PRICE_LOCK_PERIOD=300
 
 FASTER_AUCTIONS_OFFER=$(mktemp -t agops.XXX)
@@ -50,23 +55,21 @@ agops auctioneer proposeParamChange --charterAcceptOfferId "$(agops ec find-cont
 agoric wallet print --file "$FASTER_AUCTIONS_OFFER"
 agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$FASTER_AUCTIONS_OFFER" --keyring-backend=test
 
+echo ACTIONS voting for new auction params
 govaccounts=("$GOV1ADDR" "$GOV2ADDR" "$GOV3ADDR")
 for i in "${govaccounts[@]}"; do
     agops ec vote --forPosition 0 --send-from "$i"
 done
 
-# wait for the vote to pass
+echo ACTIONS wait for the vote deadline to pass
 sleep 65
 
-
-
-
-# ensure params were changed
-test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
-test_val "$(agoric follow -l -F  :published.auction.governance -o jsonlines | jq -r .current.StartFrequency.value.relValue)" "$START_FREQUENCY"
+echo ACTIONS ensuring params were changed
+test_val "$(agoric follow -l -F :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
+test_val "$(agoric follow -l -F :published.auction.governance -o jsonlines | jq -r .current.StartFrequency.value.relValue)" "$START_FREQUENCY"
 
 #####
-# Raise debt limit
+echo ACTIONS Raising debt limit
 DEBT_LIMIT_OFFER=$(mktemp -t agops.XXX)
 previous="$(agops ec find-continuing-id --for "charter member invitation" --from "$GOV1ADDR")"
 node ./upgrade-test-scripts/agoric-upgrade-10/param-change-offer-gen.mjs $previous 30 123000000 >|"$DEBT_LIMIT_OFFER"
@@ -81,11 +84,11 @@ for i in "${govaccounts[@]}"; do
     agops ec vote --forPosition 0 --send-from "$i"
 done
 
-# wait for the vote to pass
+echo ACTIONS wait for the vote to pass
 sleep 65
 
-# ensure params were changed
-test_val "$(agoric follow -l -F  :published.vaultFactory.managers.manager0.governance -o jsonlines | jq -r .current.DebtLimit.value.value)" "123000000000000"
+echo ACTIONS ensure params were changed
+test_val "$(agoric follow -l -F :published.vaultFactory.managers.manager0.governance -o jsonlines | jq -r .current.DebtLimit.value.value)" "123000000000000"
 
 pushPrice 12.01
 
