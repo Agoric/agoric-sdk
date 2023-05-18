@@ -682,6 +682,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           scaledBidBook.exitAllSeats();
         },
         endAuction() {
+          trace('endAuction');
           const { state, facets } = this;
 
           state.startCollateral = AmountMath.makeEmpty(state.collateralBrand);
