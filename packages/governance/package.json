@@ -1,6 +1,6 @@
 {
   "name": "@agoric/governance",
-  "version": "0.9.1",
+  "version": "0.9.3",
   "description": "Core governance support",
   "type": "module",
   "main": "src/index.js",

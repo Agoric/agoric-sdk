@@ -1,6 +1,6 @@
 {
   "name": "@agoric/telemetry",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Agoric's telemetry implementation",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",

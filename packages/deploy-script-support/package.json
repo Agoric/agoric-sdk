@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deploy-script-support",
-  "version": "0.9.4",
+  "version": "0.9.6",
   "description": "Helpers and other support for writing deploy scripts",
   "type": "module",
   "main": "src/helpers.js",

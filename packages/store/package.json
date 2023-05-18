@@ -1,6 +1,6 @@
 {
   "name": "@agoric/store",
-  "version": "0.8.3",
+  "version": "0.8.5",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "src/index.js",

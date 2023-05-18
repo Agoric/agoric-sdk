@@ -1,6 +1,6 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Deep equals",
   "type": "module",
   "main": "index.js",

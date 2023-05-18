@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet-backend",
-  "version": "0.13.3",
+  "version": "0.13.5",
   "description": "Wallet backend",
   "type": "module",
   "scripts": {

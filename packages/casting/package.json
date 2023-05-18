@@ -1,6 +1,6 @@
 {
   "name": "@agoric/casting",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "Agoric's OCap broadcasting system",
   "type": "module",
   "main": "src/main.js",

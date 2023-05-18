@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sharing-service",
-  "version": "0.2.6",
+  "version": "0.2.8",
   "description": "Share objects with another party but not publicly",
   "type": "module",
   "main": "./src/sharing.js",

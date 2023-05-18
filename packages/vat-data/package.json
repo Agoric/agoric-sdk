@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vat-data",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "description": "Safe access to VatData global",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",

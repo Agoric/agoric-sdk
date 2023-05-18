@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-swingset",
-  "version": "0.39.2",
+  "version": "0.40.0",
   "description": "Agoric's Cosmos blockchain integration",
   "type": "module",
   "bin": {
