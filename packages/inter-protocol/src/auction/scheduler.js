@@ -44,7 +44,7 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
  * @property {() => void} reducePriceAndTrade
  * @property {() => void} finalize
  * @property {() => void} startRound
- * @property {() => void} lockPrices
+ * @property {() => void} capturePrices
  */
 
 /**
@@ -209,9 +209,9 @@ export const makeScheduler = async (
   };
 
   // set wakeups for the steps of this round
-  const queueLiveSchedule = () => {
+  const scheduleDescendingSteps = () => {
     if (!liveSchedule) {
-      console.error('🚨 queueLiveSchedule called with no liveSchedule');
+      console.error('🚨 scheduleDescendingSteps called with no liveSchedule');
       return;
     }
 
@@ -223,7 +223,7 @@ export const makeScheduler = async (
         ? TimeMath.subtractAbsAbs(startTime, now)
         : TimeMath.subtractAbsAbs(startTime, startTime);
 
-    trace('queueLiveSchedule repeating', now, delayFromNow, startTime);
+    trace('scheduleDescendingSteps repeating', now, delayFromNow, startTime);
 
     void E(timer).repeatAfter(
       delayFromNow,
@@ -263,7 +263,7 @@ export const makeScheduler = async (
       Far('PriceLockWaker', {
         wake(time) {
           setTimeMonotonically(time);
-          auctionDriver.lockPrices();
+          auctionDriver.capturePrices();
         },
       }),
     );
@@ -318,7 +318,7 @@ export const makeScheduler = async (
       TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n)),
     );
 
-    queueLiveSchedule();
+    scheduleDescendingSteps();
     if (nextSchedule) {
       scheduleNextRound(
         TimeMath.subtractAbsRel(
@@ -329,7 +329,7 @@ export const makeScheduler = async (
       schedulePriceLock(nextSchedule.lockTime);
     } else {
       console.warn(
-        'no nextSchedule so cannot schedule next round or price lock',
+        'no nextSchedule so cannot schedule next round or price capture',
       );
     }
   };

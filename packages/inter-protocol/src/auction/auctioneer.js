@@ -566,9 +566,9 @@ export const start = async (zcf, privateArgs, baggage) => {
 
       tradeEveryBook();
     },
-    lockPrices() {
+    capturePrices() {
       for (const book of books.values()) {
-        book.lockOraclePriceForRound();
+        book.captureOraclePriceForRound();
       }
     },
   });
