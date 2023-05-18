@@ -1,0 +1,6 @@
+{
+    "consume": {
+        "vatStore": true,
+        "vatAdminSvc": true
+    }
+}
