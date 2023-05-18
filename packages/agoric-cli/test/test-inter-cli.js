@@ -445,84 +445,108 @@ test('README: inter auction status', async t => {
 
   const { brand } = agoricNames;
   const timerBrand = brand.timer;
-  const net = makeNet({
-    ...publishedNames,
-    auction: {
-      schedule: {
-        _: {
-          activeStartTime: undefined,
-          nextDescendingStepTime: { absValue: 1681875302n, timerBrand },
-          nextStartTime: { absValue: 1681875302n, timerBrand },
-        },
+  const auctionInfo = {
+    schedule: {
+      _: {
+        activeStartTime: undefined,
+        nextDescendingStepTime: { absValue: 1681875302n, timerBrand },
+        nextStartTime: { absValue: 1681875302n, timerBrand },
       },
-      book0: {
-        _: {
-          collateralAvailable: { brand: brand.ATOM, value: 0n },
-          currentPriceLevel: {
-            denominator: { brand: brand.ATOM, value: 10000000000n },
-            numerator: { brand: brand.IST, value: 44955000000n },
-          },
-          proceedsRaised: undefined,
-          remainingProceedsGoal: null,
-          startCollateral: { brand: brand.ATOM, value: 0n },
-          startPrice: {
-            denominator: { brand: brand.ATOM, value: 1000000n },
-            numerator: { brand: brand.IST, value: 9990000n },
-          },
-          startProceedsGoal: null,
+    },
+    book0: {
+      _: {
+        collateralAvailable: { brand: brand.ATOM, value: 0n },
+        currentPriceLevel: {
+          denominator: { brand: brand.ATOM, value: 10000000000n },
+          numerator: { brand: brand.IST, value: 44955000000n },
         },
+        proceedsRaised: undefined,
+        remainingProceedsGoal: null,
+        startCollateral: { brand: brand.ATOM, value: 0n },
+        startPrice: {
+          denominator: { brand: brand.ATOM, value: 1000000n },
+          numerator: { brand: brand.IST, value: 9990000n },
+        },
+        startProceedsGoal: null,
       },
-      governance: {
-        _: {
-          current: {
-            AuctionStartDelay: {
-              type: 'relativeTime',
-              value: { relValue: 2n, timerBrand },
+    },
+    governance: {
+      _: {
+        current: {
+          AuctionStartDelay: {
+            type: 'relativeTime',
+            value: { relValue: 2n, timerBrand },
+          },
+          ClockStep: {
+            type: 'relativeTime',
+            value: { relValue: 10n, timerBrand },
+          },
+          DiscountStep: { type: 'nat', value: 500n },
+          Electorate: {
+            type: 'invitation',
+            value: {
+              brand: brand.Invitation,
+              value: [
+                {
+                  description: 'questionPoser',
+                  handle: {},
+                  installation: {},
+                  instance: {},
+                },
+              ],
             },
-            ClockStep: {
-              type: 'relativeTime',
-              value: { relValue: 10n, timerBrand },
-            },
-            DiscountStep: { type: 'nat', value: 500n },
-            Electorate: {
-              type: 'invitation',
-              value: {
-                brand: brand.Invitation,
-                value: [
-                  {
-                    description: 'questionPoser',
-                    handle: {},
-                    installation: {},
-                    instance: {},
-                  },
-                ],
-              },
-            },
-            LowestRate: {
-              type: 'nat',
-              value: 4500n,
-            },
-            PriceLockPeriod: {
-              type: 'relativeTime',
-              value: { relValue: 60n, timerBrand },
-            },
-            StartFrequency: {
-              type: 'relativeTime',
-              value: { relValue: 300n, timerBrand },
-            },
-            StartingRate: {
-              type: 'nat',
-              value: 10500n,
-            },
+          },
+          LowestRate: {
+            type: 'nat',
+            value: 4500n,
+          },
+          PriceLockPeriod: {
+            type: 'relativeTime',
+            value: { relValue: 60n, timerBrand },
+          },
+          StartFrequency: {
+            type: 'relativeTime',
+            value: { relValue: 300n, timerBrand },
+          },
+          StartingRate: {
+            type: 'nat',
+            value: 10500n,
           },
         },
       },
     },
+  };
+  const net = makeNet({
+    ...publishedNames,
+    auction: auctionInfo,
   });
 
   const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
   await cmd.parseAsync(argv);
   t.deepEqual(JSON.parse(out.join('')), expected);
+
+  // schedule fields can be null
+  const auctionInfo2 = {
+    ...auctionInfo,
+    schedule: {
+      _: {
+        activeStartTime: null,
+        nextDescendingStepTime: null,
+        nextStartTime: 1681875302n,
+      },
+    },
+  };
+
+  const { nextDescendingStepTime: _, ...schedule2 } = expected.schedule;
+  const net2 = makeNet({
+    ...publishedNames,
+    auction: auctionInfo2,
+  });
+
+  out.splice(0);
+  const cmd2 = await makeInterCommand(makeProcess(t, testKeyring, out), net2);
+  await cmd2.parseAsync(argv);
+  t.deepEqual(JSON.parse(out.join('')), { ...expected, schedule: schedule2 });
 });
 
 test('README: inter vbank list', async t => {
