@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [2.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.5.0...@agoric/deployment@2.5.1) (2023-02-17)
+
+
+### Bug Fixes
+
+* review comments ([c875ee2](https://github.com/Agoric/agoric-sdk/commit/c875ee2548c0eb599389a9c7e111a112f8c1390d))
+* update docker golang version ([777c382](https://github.com/Agoric/agoric-sdk/commit/777c38284bcdaffed41e5fe6c5e62ef62e7c65b3))
+
+
+
 ## [2.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.4.0...@agoric/deployment@2.5.0) (2022-10-05)
 
 

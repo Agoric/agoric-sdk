@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.13.2...@agoric/xsnap@0.13.3) (2023-02-17)
+
+
+### Bug Fixes
+
+* **xsnap:** Update Moddable SDK with divergence fixes ([#6758](https://github.com/Agoric/agoric-sdk/issues/6758)) ([fc6afec](https://github.com/Agoric/agoric-sdk/commit/fc6afecb6b752a019c34377a863eb58108944dc3))
+
+
+
 ### [0.13.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.13.1...@agoric/xsnap@0.13.2) (2022-10-05)
 
 **Note:** Version bump only for package @agoric/xsnap

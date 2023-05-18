@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.4.0...@agoric/telemetry@0.5.0) (2023-02-17)
+
+
+### Features
+
+* **telemetry:** do not carry span stack corruption across blocks ([e150320](https://github.com/Agoric/agoric-sdk/commit/e150320d88ade61b0a7fa0a0c4992988885ad34d))
+
+
+### Bug Fixes
+
+* **telemetry:** fix various edge cases ([2c65492](https://github.com/Agoric/agoric-sdk/commit/2c6549289d1c484aff861c061a7730c4b1f284e7))
+* **telemetry:** handle paging `create-vat` ([c9bef2f](https://github.com/Agoric/agoric-sdk/commit/c9bef2f994ddaabf88dac6249f3adbc21fa6b4a0))
+* **telemetry:** upgrade otel deps ([2c9b017](https://github.com/Agoric/agoric-sdk/commit/2c9b017d301048e5782b3b8cf684392e00419221))
+
+
+
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.3.0...@agoric/telemetry@0.4.0) (2022-10-05)
 
 
