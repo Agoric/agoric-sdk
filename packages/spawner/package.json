@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@agoric/internal": "^0.2.1",
-    "@agoric/swingset-vat": "^0.30.2",
+    "@agoric/swingset-vat": "^0.31.0",
     "@endo/bundle-source": "^2.5.1",
     "@endo/init": "^0.5.56",
     "ava": "^5.2.0",
