@@ -14,7 +14,7 @@ fi
 
 . ./upgrade-test-scripts/env_setup.sh
 
-if test -f "/workspace/fix-${THIS_NAME}.patch"; then
+if [[ "$BOOTSTRAP_MODE" == "test" ]] && test -f "/workspace/fix-${THIS_NAME}.patch"; then
   patch -p1 < "/workspace/fix-${THIS_NAME}.patch"
 fi
 
