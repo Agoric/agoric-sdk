@@ -15,7 +15,7 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
-const trace = makeTracer('RunEconBehaviors', false);
+const trace = makeTracer('RunEconBehaviors', true);
 
 export const SECONDS_PER_HOUR = 60n * 60n;
 export const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;

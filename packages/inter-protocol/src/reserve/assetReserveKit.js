@@ -14,7 +14,7 @@ import { UnguardedHelperI } from '../typeGuards.js';
 
 const { quote: q } = assert;
 
-const trace = makeTracer('ReserveKit', false);
+const trace = makeTracer('ReserveKit', true);
 
 /**
  * @typedef {object} MetricsNotification

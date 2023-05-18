@@ -201,6 +201,7 @@ printKeys() {
 echo ENV_SETUP finished
 
 pushPrice () {
+  echo ACTIONS pushPrice $1
   newPrice="${1:-10.00}"
   for oracleNum in {1..2}; do
     if [[ ! -e "$HOME/.agoric/lastOracle" ]]; then
@@ -224,6 +225,44 @@ pushPrice () {
     fi
     echo "$nextOracle" > "$HOME/.agoric/lastOracle"
   done
+}
+
+
+# variant of pushPrice() that figures out which oracle to send from
+# WIP because it doesn't always work
+pushPriceOnce () {
+  echo ACTIONS pushPrice $1
+  newPrice="${1:-10.00}"
+  timeout 3 agoric follow -lF :published.priceFeed.ATOM-USD_price_feed.latestRound -ojson > "$HOME/.agoric/latestRound-ATOM.json"
+  
+  lastStartedBy=$(jq -r .startedBy "$HOME/.agoric/latestRound-ATOM.json" || echo null)
+  echo lastStartedBy $lastStartedBy
+  nextOracle="ERROR"
+  # cycle to next among oracles (first of the two governance accounts)
+  case $lastStartedBy in
+    "$GOV1ADDR") nextOracle=$GOV2ADDR;;
+    "$GOV2ADDR") nextOracle=$GOV1ADDR;;
+    *)
+      echo last price was pushed by a different account, using GOV1
+      nextOracle=$GOV1ADDR
+      ;;
+  esac
+  echo nextOracle $nextOracle
+
+  adminOfferId="${nextOracle}_ORACLE"
+
+  echo "Pushing Price from oracle $nextOracle with offer $adminOfferId"
+
+  offer=$(mktemp -t pushPrice.XXX)
+  agops oracle pushPriceRound --price "$newPrice" --oracleAdminAcceptOfferId "${adminOfferId}" >|"$offer"
+  cat "$offer"
+  sleep 1
+  timeout --preserve-status 15 yarn run --silent agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
+  if [ $? -eq 0 ]; then
+    echo SUCCESS
+  else
+    echo "ERROR: pushPrice failed (using $nextOracle)"
+  fi
 }
 
 export USDC_DENOM="ibc/toyusdc"

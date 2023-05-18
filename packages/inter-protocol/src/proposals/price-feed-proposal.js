@@ -9,7 +9,7 @@ import { makeTracer } from '@agoric/internal';
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
 
-const trace = makeTracer('RunPriceFeed', false);
+const trace = makeTracer('RunPriceFeed', true);
 
 /** @type {(name: string) => string} */
 const sanitizePathSegment = name => {

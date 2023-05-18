@@ -7,7 +7,7 @@ import { assertAllDefined, makeTracer } from '@agoric/internal';
 const { subtract, multiply, floorDivide } = natSafeMath;
 const { Fail } = assert;
 
-const trace = makeTracer('SMath', false);
+const trace = makeTracer('SMath', true);
 
 const subtract1 = relTime =>
   TimeMath.subtractRelRel(

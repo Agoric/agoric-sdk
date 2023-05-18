@@ -40,7 +40,7 @@ import { AuctionState } from './util.js';
 const { Fail, quote: q } = assert;
 const { add, multiply } = natSafeMath;
 
-const trace = makeTracer('Auction', false);
+const trace = makeTracer('Auction', true);
 
 /**
  * @file

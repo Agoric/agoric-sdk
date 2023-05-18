@@ -77,7 +77,7 @@ export const makeOracleCommand = logger => {
 
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
-        id: Number(opts.offerId),
+        id: opts.offerId,
         invitationSpec: {
           source: 'purse',
           instance,
@@ -107,7 +107,7 @@ export const makeOracleCommand = logger => {
     .action(async function (opts) {
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
-        id: Number(opts.offerId),
+        id: opts.offerId,
         invitationSpec: {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
@@ -146,7 +146,7 @@ export const makeOracleCommand = logger => {
       const roundId = 'roundId' in opts ? Nat(opts.roundId) : undefined;
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
-        id: Number(opts.offerId),
+        id: opts.offerId,
         invitationSpec: {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,

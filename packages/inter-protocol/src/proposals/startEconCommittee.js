@@ -5,7 +5,7 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
-const trace = makeTracer('RunEconCommittee', false);
+const trace = makeTracer('RunEconCommittee', true);
 
 /** @type {(name: string) => string} */
 const sanitizePathSegment = name => {

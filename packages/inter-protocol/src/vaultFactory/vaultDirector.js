@@ -43,7 +43,7 @@ import {
 
 const { Fail, quote: q } = assert;
 
-const trace = makeTracer('VD', false);
+const trace = makeTracer('VD', true);
 
 /**
  * @typedef {{
