@@ -135,9 +135,9 @@ export const makeOracleCommand = logger => {
       `pushPriceRound-${Date.now()}`,
     )
     .requiredOption(
-      '--oracleAdminAcceptOfferId <number>',
+      '--oracleAdminAcceptOfferId <string>',
       'offer that had continuing invitation result',
-      Number,
+      String,
     )
     .requiredOption('--price <number>', 'price', Number)
     .option('--roundId <number>', 'round', Number)
