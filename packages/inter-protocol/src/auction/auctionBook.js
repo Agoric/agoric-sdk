@@ -311,12 +311,6 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             ? [proceedsLimit, floorDivideBy(proceedsLimit, curAuctionPrice)]
             : [minProceedsTarget, initialCollateralTarget];
 
-          trace('settle', {
-            collateralTarget,
-            proceedsTarget,
-            remainingProceedsGoal,
-          });
-
           const { Collateral } = seat.getProposal().want;
           if (Collateral && AmountMath.isGTE(Collateral, collateralTarget)) {
             seat.exit('unable to satisfy want');
@@ -336,6 +330,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               proceedsTarget,
             );
           }
+
+          trace('settle', {
+            collateralTarget,
+            proceedsTarget,
+            remainingProceedsGoal: this.state.remainingProceedsGoal,
+          });
+
           return collateralTarget;
         },
 

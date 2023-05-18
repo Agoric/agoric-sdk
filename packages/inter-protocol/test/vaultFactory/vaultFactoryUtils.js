@@ -8,6 +8,7 @@ import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { E } from '@endo/eventual-send';
 import {
+  SECONDS_PER_WEEK,
   setupReserve,
   startAuctioneer,
 } from '../../src/proposals/econ-behaviors.js';
@@ -58,7 +59,7 @@ export const defaultParamValues = debtBrand =>
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
  * @param {Amount | undefined} unitAmountIn
- * @param {bigint} [startFrequency]
+ * @param {Pick<import('../../src/auction/params.js').AuctionParams, 'StartFrequency' | 'DiscountStep'>} actionParams
  */
 export const setupElectorateReserveAndAuction = async (
   t,
@@ -67,7 +68,7 @@ export const setupElectorateReserveAndAuction = async (
   priceOrList,
   quoteInterval,
   unitAmountIn,
-  startFrequency = undefined,
+  { StartFrequency = SECONDS_PER_WEEK, DiscountStep = 2000n },
 ) => {
   const {
     zoe,
@@ -104,11 +105,11 @@ export const setupElectorateReserveAndAuction = async (
   space.produce.priceAuthority.resolve(pa);
 
   const auctionParams = {
-    StartFrequency: startFrequency || 7n * 24n * 3600n,
+    StartFrequency,
     ClockStep: 2n,
     StartingRate: 10500n,
     LowestRate: 5500n,
-    DiscountStep: 2000n,
+    DiscountStep,
     AuctionStartDelay: 10n,
     PriceLockPeriod: 3n,
   };
