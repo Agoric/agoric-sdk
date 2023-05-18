@@ -524,6 +524,29 @@ test('README: inter auction status', async t => {
   const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
   await cmd.parseAsync(argv);
   t.deepEqual(JSON.parse(out.join('')), expected);
+
+  // schedule fields can be null
+  const auctionInfo2 = {
+    ...auctionInfo,
+    schedule: {
+      _: {
+        activeStartTime: null,
+        nextDescendingStepTime: null,
+        nextStartTime: 1681875302n,
+      },
+    },
+  };
+
+  const { nextDescendingStepTime: _, ...schedule2 } = expected.schedule;
+  const net2 = makeNet({
+    ...publishedNames,
+    auction: auctionInfo2,
+  });
+
+  out.splice(0);
+  const cmd2 = await makeInterCommand(makeProcess(t, testKeyring, out), net2);
+  await cmd2.parseAsync(argv);
+  t.deepEqual(JSON.parse(out.join('')), { ...expected, schedule: schedule2 });
 });
 
 test('README: inter vbank list', async t => {

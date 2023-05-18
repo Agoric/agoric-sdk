@@ -10,6 +10,12 @@ import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBo
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@agoric/store';
+
+// XXX scare away ambient type zombies to fix ScheduleNotification.activeStartTime etc.
+// https://github.com/Agoric/agoric-sdk/issues/6512
+// https://github.com/Agoric/agoric-sdk/issues/6343
+import '@agoric/inter-protocol/src/vaultFactory/types.js';
+
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   asBoardRemote,
@@ -64,8 +70,12 @@ const makeFormatters = assets => {
   const discount = r =>
     r4(100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100);
 
-  /** @param {import('@agoric/time/src/types.js').TimestampRecord} tr */
-  const absTime = tr => new Date(Number(tr.absValue) * 1000).toISOString();
+  // XXX real TimeMath.absValue requires real Remotable timerBrand
+  /** @param {import('@agoric/time/src/types.js').Timestamp} ts */
+  const absValue = ts => (typeof ts === 'bigint' ? ts : ts.absValue);
+
+  /** @param {import('@agoric/time/src/types.js').Timestamp} tr */
+  const absTime = tr => new Date(Number(absValue(tr)) * 1000).toISOString();
   /** @param {import('@agoric/time/src/types.js').RelativeTimeRecord} tr */
   const relTime = tr =>
     new Date(Number(tr.relValue) * 1000).toISOString().slice(11, 19);
@@ -290,8 +300,8 @@ inter auction status
         const info = {
           schedule: {
             activeStartTime: fmt.absTimeOpt(schedule.activeStartTime),
-            nextStartTime: fmt.absTime(schedule.nextStartTime),
-            nextDescendingStepTime: fmt.absTime(
+            nextStartTime: fmt.absTimeOpt(schedule.nextStartTime),
+            nextDescendingStepTime: fmt.absTimeOpt(
               schedule.nextDescendingStepTime,
             ),
           },
