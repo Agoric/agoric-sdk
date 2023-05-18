@@ -11,7 +11,8 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
-import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
+import { makeSwingsetTestKit } from './supports.js';
+import { makeWalletFactoryDriver } from './drivers.js';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

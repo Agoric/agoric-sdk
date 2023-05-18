@@ -13,7 +13,8 @@ import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
-import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
+import { makeSwingsetTestKit } from './supports.js';
+import { makeWalletFactoryDriver } from './drivers.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}

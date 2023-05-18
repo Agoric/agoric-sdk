@@ -11,7 +11,8 @@ import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
-import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
+import { makeSwingsetTestKit } from './supports.js';
+import { makeWalletFactoryDriver } from './drivers.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}
