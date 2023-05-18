@@ -23,10 +23,6 @@ export GOV3ADDR=$($binary keys show gov3 -a --keyring-backend="test")
 export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test")
 export USER1ADDR=$($binary keys show user1 -a --keyring-backend="test")
 
-if [[ $THIS_NAME == "agoric-upgrade-10" || $THIS_NAME == "agoric-upgrade-11" ]]; then
-  export USER2ADDR=$($binary keys show user2 -a --keyring-backend="test" 2> /dev/null)
-fi
-
 if [[ "$binary" == "agd" ]]; then
 # Support testnet addresses
   sed -i "s/agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
@@ -211,78 +207,9 @@ printKeys() {
   cat ~/.agoric/validator.key || true
   echo "user1: $USER1ADDR"
   cat ~/.agoric/user1.key || true
-  if [[ $THIS_NAME == "agoric-upgrade-10" || $THIS_NAME == "agoric-upgrade-11" ]]; then
-    cat ~/.agoric/user2.key || true
-  fi
   echo "========== GOVERNANCE KEYS =========="
 }
 
-echo ENV_SETUP finished
-
-pushPrice () {
-  echo ACTIONS pushPrice $1
-  newPrice="${1:-10.00}"
-  for oracleNum in {1..2}; do
-    if [[ ! -e "$HOME/.agoric/lastOracle" ]]; then
-      echo "$GOV1ADDR" > "$HOME/.agoric/lastOracle"
-    fi
-
-    lastOracle=$(cat "$HOME/.agoric/lastOracle")
-    nextOracle="$GOV1ADDR"
-    if [[ "$lastOracle" == "$GOV1ADDR" ]]; then
-      nextOracle="$GOV2ADDR"
-    fi
-    echo "Pushing Price from oracle $nextOracle"
-
-    oid="${nextOracle}_ORACLE"
-    offer=$(mktemp -t pushPrice.XXX)
-    agops oracle pushPriceRound --price "$newPrice" --oracleAdminAcceptOfferId "${!oid}" >|"$offer"
-    sleep 1
-    timeout --preserve-status 15 yarn run --silent agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
-    if [ $? -ne 0 ]; then
-      echo "WARNING: pushPrice for $nextOracle failed!"
-    fi
-    echo "$nextOracle" > "$HOME/.agoric/lastOracle"
-  done
-}
-
-
-# variant of pushPrice() that figures out which oracle to send from
-# WIP because it doesn't always work
-pushPriceOnce () {
-  echo ACTIONS pushPrice $1
-  newPrice="${1:-10.00}"
-  timeout 3 agoric follow -lF :published.priceFeed.ATOM-USD_price_feed.latestRound -ojson > "$HOME/.agoric/latestRound-ATOM.json"
-  
-  lastStartedBy=$(jq -r .startedBy "$HOME/.agoric/latestRound-ATOM.json" || echo null)
-  echo lastStartedBy $lastStartedBy
-  nextOracle="ERROR"
-  # cycle to next among oracles (first of the two governance accounts)
-  case $lastStartedBy in
-    "$GOV1ADDR") nextOracle=$GOV2ADDR;;
-    "$GOV2ADDR") nextOracle=$GOV1ADDR;;
-    *)
-      echo last price was pushed by a different account, using GOV1
-      nextOracle=$GOV1ADDR
-      ;;
-  esac
-  echo nextOracle $nextOracle
-
-  adminOfferId="${nextOracle}_ORACLE"
-
-  echo "Pushing Price from oracle $nextOracle with offer $adminOfferId"
-
-  offer=$(mktemp -t pushPrice.XXX)
-  agops oracle pushPriceRound --price "$newPrice" --oracleAdminAcceptOfferId "${adminOfferId}" >|"$offer"
-  cat "$offer"
-  sleep 1
-  timeout --preserve-status 15 yarn run --silent agops perf satisfaction --from $nextOracle --executeOffer "$offer" --keyring-backend test
-  if [ $? -eq 0 ]; then
-    echo SUCCESS
-  else
-    echo "ERROR: pushPrice failed (using $nextOracle)"
-  fi
-}
 
 export USDC_DENOM="ibc/toyusdc"
 # Recent transfer to Emerynet
@@ -293,3 +220,12 @@ if [[ "$BOOTSTRAP_MODE" == "main" ]]; then
   export ATOM_DENOM="ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA"
   export PSM_PAIR="IST.USDC_axl"
 fi
+
+# additional env specific to a version
+if test -f ./upgrade-test-scripts/$THIS_NAME/env_setup.sh; then
+  echo ENV_SETUP found $THIS_NAME specific env, importing...
+  . ./upgrade-test-scripts/$THIS_NAME/env_setup.sh
+  echo ENV_SETUP imported $THIS_NAME specific env
+fi
+
+echo ENV_SETUP finished
