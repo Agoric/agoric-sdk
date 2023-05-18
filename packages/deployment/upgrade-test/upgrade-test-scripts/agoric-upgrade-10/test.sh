@@ -10,7 +10,7 @@ test_wallet_state "$GOV1ADDR" revived "gov1 wallet is revived"
 test_wallet_state "$GOV2ADDR" revived "gov2 wallet is revived"
 test_wallet_state "$GOV3ADDR" revived "gov3 wallet is revived"
 
-test_val $(agd q vstorage children published.vaultFactory.managers.manager0.vaults -o json | jq -r '.children | length') 3 "we only have three vaults"
+test_val $(agd q vstorage children published.vaultFactory.managers.manager0.vaults -o json | jq -r '.children | length') 3 "we have three vaults"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.metrics -o jsonlines | jq -r '.numActiveVaults') 1 "only one vault is active"
 
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.metrics -o jsonlines | jq -r '.totalDebt.value') "6030000" "totalDebt is correct"
