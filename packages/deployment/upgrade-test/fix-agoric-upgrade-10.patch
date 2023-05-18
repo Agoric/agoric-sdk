@@ -1,0 +1,20 @@
+diff --git a/packages/inter-protocol/src/proposals/econ-behaviors.js b/packages/inter-protocol/src/proposals/econ-behaviors.js
+index 3897578a1..4850feec5 100644
+--- a/packages/inter-protocol/src/proposals/econ-behaviors.js
++++ b/packages/inter-protocol/src/proposals/econ-behaviors.js
+@@ -523,13 +523,13 @@ export const startAuctioneer = async (
+   },
+   {
+     auctionParams = {
+-      StartFrequency: 3600n,
++      StartFrequency: 10n * 60n, // 10min - convenient for testing
+       ClockStep: 3n * 60n,
+       StartingRate: 10500n,
+       LowestRate: 6500n,
+       DiscountStep: 500n,
+       AuctionStartDelay: 2n,
+-      PriceLockPeriod: 30n * 60n, // half an hour
++      PriceLockPeriod: 5n * 60n, // 5 min
+     },
+   } = {},
+ ) => {

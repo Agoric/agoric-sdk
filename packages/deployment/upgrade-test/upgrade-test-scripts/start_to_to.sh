@@ -14,6 +14,10 @@ fi
 
 . ./upgrade-test-scripts/env_setup.sh
 
+if test -f "/workspace/fix-${THIS_NAME}.patch"; then
+  patch -p1 < "/workspace/fix-${THIS_NAME}.patch"
+fi
+
 agd start --log_level warn &
 AGD_PID=$!
 wait_for_bootstrap
