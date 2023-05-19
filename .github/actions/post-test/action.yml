@@ -24,6 +24,7 @@ runs:
       env:
         DD_ENV: ci
         DATADOG_SITE: ${{ inputs.datadog-site }}
+      continue-on-error: true
       run: |
         ./scripts/ci-collect-testruns.sh
         if [ "${{ inputs.datadog-token }}" != "" ]; then
@@ -31,7 +32,7 @@ runs:
           export DD_ENV="ci"
           export DD_SITE="${{ inputs.datadog-site }}"
 
-          npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          timeout 15 npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
         fi
     - name: upload coverage prepare
       shell: bash
@@ -48,5 +49,6 @@ runs:
     - name: Upload coverage reports to Codecov
       if: ${{ github.repository_owner == 'agoric' }} && ${{ steps.coverage-prep.outputs.skip == 'false' }} && (success() || failure())
       uses: codecov/codecov-action@v3
+      continue-on-error: true
       with:
         token: ${{ inputs.codecov-token }}
