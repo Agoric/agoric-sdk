@@ -63,6 +63,7 @@ const trace = makeTracer('TestST', false);
 
 const SECONDS_PER_DAY = SECONDS_PER_YEAR / 365n;
 const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7n;
+const TEN_MINUTES = 10n * 60n;
 
 // Define locally to test that vaultFactory uses these values
 export const Phase = /** @type {const} */ ({
@@ -131,6 +132,7 @@ test.before(async t => {
  * @param {bigint} [actionParams.startFrequency]
  * @param {bigint} [actionParams.discountStep]
  * @param {bigint} [actionParams.lowestRate]
+ * @param {bigint} [actionParams.clockStep]
  */
 const setupServices = async (
   t,
@@ -140,10 +142,11 @@ const setupServices = async (
   quoteInterval = 1n,
   runInitialLiquidity,
   // FIXME: should be an AuctionParams
-  { startFrequency, discountStep, lowestRate } = {
+  { startFrequency, discountStep, lowestRate, clockStep } = {
     startFrequency: undefined,
     discountStep: undefined,
     lowestRate: undefined,
+    clockStep: undefined,
   },
 ) => {
   const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
@@ -159,9 +162,10 @@ const setupServices = async (
     quoteInterval,
     unitAmountIn,
     {
-      StartFreuency: startFrequency,
+      StartFrequency: startFrequency,
       LowestRate: lowestRate,
       DiscountStep: discountStep,
+      ClockStep: clockStep,
     },
   );
 

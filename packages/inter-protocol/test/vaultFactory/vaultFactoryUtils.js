@@ -59,7 +59,7 @@ export const defaultParamValues = debtBrand =>
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
  * @param {Amount | undefined} unitAmountIn
- * @param {Pick<import('../../src/auction/params.js').AuctionParams, 'StartFrequency' | 'DiscountStep' | 'LowestRate'>} [actionParamArgs]
+ * @param {Pick<import('../../src/auction/params.js').AuctionParams, 'StartFrequency' | 'DiscountStep' | 'LowestRate' | 'ClockStep'>} [actionParamArgs]
  */
 export const setupElectorateReserveAndAuction = async (
   t,
@@ -72,6 +72,7 @@ export const setupElectorateReserveAndAuction = async (
     StartFrequency = SECONDS_PER_WEEK,
     DiscountStep = 2000n,
     LowestRate = 5500n,
+    ClockStep = 2n,
   },
 ) => {
   const {
@@ -110,7 +111,7 @@ export const setupElectorateReserveAndAuction = async (
 
   const auctionParams = {
     StartFrequency,
-    ClockStep: 2n,
+    ClockStep,
     StartingRate: 10500n,
     LowestRate,
     DiscountStep,
