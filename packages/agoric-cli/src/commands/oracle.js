@@ -3,11 +3,12 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch */
+import { Fail } from '@agoric/assert';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
-import { outputAction } from '../lib/wallet.js';
+import { getCurrent, outputAction } from '../lib/wallet.js';
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
@@ -135,9 +136,9 @@ export const makeOracleCommand = logger => {
       `pushPriceRound-${Date.now()}`,
     )
     .requiredOption(
-      '--oracleAdminAcceptOfferId <number>',
+      '--oracleAdminAcceptOfferId <string>',
       'offer that had continuing invitation result',
-      Number,
+      String,
     )
     .requiredOption('--price <number>', 'price', Number)
     .option('--roundId <number>', 'round', Number)
@@ -163,6 +164,30 @@ export const makeOracleCommand = logger => {
 
       console.warn('Now execute the prepared offer');
     });
+
+  oracle
+    .command('find-continuing-id')
+    .description('print id of specified oracle continuing invitation')
+    .requiredOption('--from <address>', 'from address', String)
+    .action(async opts => {
+      const { readLatestHead } = await makeRpcUtils({ fetch });
+      const current = await getCurrent(opts.from, { readLatestHead });
+
+      const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
+      Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
+
+      for (const [offerId, { value }] of entries) {
+        /** @type {{ description: string, instance: unknown }[]} */
+        const [{ description }] = value;
+        if (description === 'oracle invitation') {
+          console.log(offerId);
+          return;
+        }
+      }
+
+      console.error('No continuing ids found');
+    });
+
   oracle
     .command('query')
     .description('return current aggregated (median) price')
