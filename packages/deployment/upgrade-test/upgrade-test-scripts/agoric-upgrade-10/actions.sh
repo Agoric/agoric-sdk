@@ -12,9 +12,7 @@ waitForBlock 20
 
 # provision a new user wallet
 
-agd keys add user2 --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user2.out"
-cat "$HOME/.agoric/user2.out" | tail -n1 | tee "$HOME/.agoric/user2.key"
-export USER2ADDR=$($binary keys show user2 -a --keyring-backend="test" 2> /dev/null)
+echo "User2 $USER2ADDR"
 provisionSmartWallet $USER2ADDR "20000000ubld,100000000${ATOM_DENOM}"
 waitForBlock
 
@@ -28,12 +26,12 @@ for i in "${govaccounts[@]}"; do
     for run in {1..2}; do
         echo "$i: $run: Accepting EC Committee"
         if [[ "$run" == "1" ]]; then
-            timeout 3 yarn run --silent agops ec committee --send-from "$i" || true
+            timeout 10 yarn run --silent agops ec committee --send-from "$i" || true
         else
             agops ec committee --send-from "$i" --voter "$cm"
             cm=$((cm + 1))
         fi
-        waitForBlock 3
+        waitForBlock 5
     done
     echo "$i: Accepting EC Charter"
     agops ec charter --send-from "$i"
@@ -72,7 +70,7 @@ for i in "${govaccounts[@]}"; do
 done
 
 echo ACTIONS wait for the vote deadline to pass
-sleep 65
+sleep 75
 
 echo ACTIONS ensuring params were changed
 test_val "$(agoric follow -l -F :published.auction.governance -o jsonlines | jq -r .current.ClockStep.value.relValue)" "$CLOCK_STEP"
@@ -95,7 +93,8 @@ for i in "${govaccounts[@]}"; do
 done
 
 echo ACTIONS wait for the vote to pass
-sleep 65
+# TODO: modify this to look at .latestOutcome directly with a timeout
+sleep 85
 
 echo ACTIONS ensure params were changed
 test_val "$(agoric follow -l -F :published.vaultFactory.managers.manager0.governance -o jsonlines | jq -r .current.DebtLimit.value.value)" "123000000000000"

@@ -3,12 +3,23 @@
 export CHAINID=agoriclocal
 ag0 init localnet --chain-id "$CHAINID"
 
-allaccounts=( "gov1" "gov2" "gov3" "user1" "validator" )
-for i in "${allaccounts[@]}"
-do
-  ag0 keys add $i --keyring-backend=test  2>&1 | tee "$HOME/.agoric/$i.out"
-  cat "$HOME/.agoric/$i.out" | tail -n1 | tee "$HOME/.agoric/$i.key"
-done
+echo "robot stairs pumpkin gap supply artwork retreat off color gentle into control couch broom vocal attract sort load casino card hand web process tiny" > "$HOME/.agoric/gov1.key"
+cat "$HOME/.agoric/gov1.key" | ag0 keys add gov1 --recover --keyring-backend=test  2>&1 | tee "$HOME/.agoric/gov1.out"
+
+echo "involve black empty vicious tray diagram play sister bench kitchen wife patient north loud oblige misery caution bless rather anxiety leave across describe silk" > "$HOME/.agoric/gov2.key"
+cat "$HOME/.agoric/gov2.key" | ag0 keys add gov2 --recover --keyring-backend=test  2>&1 | tee "$HOME/.agoric/gov2.out"
+
+echo "size recipe slab tattoo satoshi kid voice wrap recycle provide action action trick involve release hurry next stairs include under abuse much renew grab" > "$HOME/.agoric/gov3.key"
+cat "$HOME/.agoric/gov3.key" | ag0 keys add gov3 --recover --keyring-backend=test  2>&1 | tee "$HOME/.agoric/gov3.out"
+
+echo "love warm smart trash limb liar sustain become evoke course panther awful chunk fiscal wrist universe inform police business reject dutch gallery kangaroo festival" > "$HOME/.agoric/user1.key"
+cat "$HOME/.agoric/user1.key" | ag0 keys add user1 --recover --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user1.out"
+
+echo "erupt march program uncle broom fork razor web dune fit gauge drift loud issue amazing glove example vintage cram total calm talent page below" > "$HOME/.agoric/user2.key"
+cat "$HOME/.agoric/user2.key" | ag0 keys add user2 --recover --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user2.out"
+
+echo "inch toss fan sort table brisk normal crew match they mom narrow company furnace amateur position solution bring usage typical glare pledge banner shallow" > "$HOME/.agoric/validator.key"
+cat "$HOME/.agoric/validator.key" | ag0 keys add validator --recover --keyring-backend=test  2>&1 | tee "$HOME/.agoric/validator.out"
 
 . ./upgrade-test-scripts/env_setup.sh
 

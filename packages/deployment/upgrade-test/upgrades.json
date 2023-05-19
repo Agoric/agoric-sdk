@@ -1,0 +1,37 @@
+{
+    "upgrades": [
+        {
+            "name": "agoric-upgrade-7-2",
+            "image": "ghcr.io/agoric/ag0:agoric-upgrade-7-2",
+            "upgrade_to": "agoric-upgrade-8",
+            "cacheable": true
+        },
+        {
+            "name": "agoric-upgrade-8",
+            "image": "ghcr.io/agoric/agoric-sdk:29",
+            "cacheable": true
+        },
+        {
+            "name": "agoric-upgrade-8-1",
+            "image": "ghcr.io/agoric/agoric-sdk:30",
+            "upgrade_to": "agoric-upgrade-9",
+            "cacheable": true
+        },
+        {
+            "name": "agoric-upgrade-9",
+            "image": "ghcr.io/agoric/agoric-sdk:31",
+            "upgrade_to": "agoric-upgrade-10",
+            "cacheable": true
+        },
+        {
+            "name": "agoric-upgrade-10",
+            "image": "ghcr.io/agoric/agoric-sdk:32",
+            "cacheable": true
+        },
+        {
+            "name": "agoric-upgrade-11",
+            "image": "ghcr.io/agoric/agoric-sdk:latest",
+            "cacheable": false
+        }
+    ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@agoric/deployment-upgrade-test",
+  "version": "0.0.1",
+  "description": "Set up Agoric public chain nodes",
+  "type": "module",
+  "private": true,
+  "main": "assemble.js",
+  "scripts": {
+    "assemble": "node assemble.js"
+  },
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "glob": "^10.2.5"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "readline-transform": "^1.0.0"
+  }
+}

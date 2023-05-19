@@ -77,12 +77,12 @@ done
 
 ## wait for the election to be resolved (1m default in commands/psm.js)
 echo "waiting 1 minute for election to be resolved"
-sleep 65
+sleep 75
 
 agops psm info --pair ${PSM_PAIR}
 
 # test mint limit was adjusted
-toyUSDGovernance="$(timeout 2 agoric follow -l :published.psm.${PSM_PAIR}.governance -o jsonlines)"
+toyUSDGovernance="$(timeout 4 agoric follow -l :published.psm.${PSM_PAIR}.governance -o jsonlines)"
 test_val "$(echo "$toyUSDGovernance" | jq -r '.current.MintLimit.value.value')" "133337000000" "PSM MintLimit set correctly"
 
 

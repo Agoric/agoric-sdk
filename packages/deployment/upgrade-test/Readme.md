@@ -17,7 +17,7 @@ This will build all previous upgrades and upgrade each one.
 **To build the images to latest**
 
 ```shell
-make build
+make local_sdk clean build
 ```
 
 **To run the latest upgrade interactively**
@@ -35,7 +35,7 @@ from the repository instead.
 **To build and run a specific upgrade**
 
 ```shell
-TARGET=agoric-upgrade-10 make build run
+TARGET=agoric-upgrade-10 make clean build run
 ```
 
 This will put you in `/usr/src/agoric-sdk`. You'll run commands from here. `upgrade-test-scripts` is copied here with only the test scripts for the current image.
