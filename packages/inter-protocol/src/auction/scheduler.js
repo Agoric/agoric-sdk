@@ -44,7 +44,7 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
  * @property {() => void} reducePriceAndTrade
  * @property {() => void} finalize
  * @property {() => void} startRound
- * @property {() => void} lockPrices
+ * @property {() => void} capturePrices
  */
 
 /**
@@ -65,6 +65,9 @@ const safelyComputeRoundTiming = (params, baseTime) => {
     return null;
   }
 };
+
+const nominalStartTime = nextSchedule =>
+  TimeMath.subtractAbsRel(nextSchedule.startTime, nextSchedule.startDelay);
 
 /**
  * @param {AuctionDriver} auctionDriver
@@ -209,9 +212,9 @@ export const makeScheduler = async (
   };
 
   // set wakeups for the steps of this round
-  const queueLiveSchedule = () => {
+  const scheduleDescendingSteps = () => {
     if (!liveSchedule) {
-      console.error('🚨 queueLiveSchedule called with no liveSchedule');
+      console.error('🚨 scheduleDescendingSteps called with no liveSchedule');
       return;
     }
 
@@ -223,7 +226,7 @@ export const makeScheduler = async (
         ? TimeMath.subtractAbsAbs(startTime, now)
         : TimeMath.subtractAbsAbs(startTime, startTime);
 
-    trace('queueLiveSchedule repeating', now, delayFromNow, startTime);
+    trace('scheduleDescendingSteps repeating', now, delayFromNow, startTime);
 
     void E(timer).repeatAfter(
       delayFromNow,
@@ -247,26 +250,13 @@ export const makeScheduler = async (
       Far('SchedulerWaker', {
         wake(time) {
           setTimeMonotonically(time);
+          auctionDriver.capturePrices();
           // eslint-disable-next-line no-use-before-define
           return startAuction();
         },
       }),
     );
     void publishSchedule();
-  };
-
-  // schedule a wakeup to lock prices
-  const schedulePriceLock = lockTime => {
-    trace(`priceLock`, lockTime);
-    void E(timer).setWakeup(
-      lockTime,
-      Far('PriceLockWaker', {
-        wake(time) {
-          setTimeMonotonically(time);
-          auctionDriver.lockPrices();
-        },
-      }),
-    );
   };
 
   const relativeTime = t => TimeMath.coerceRelativeTimeRecord(t, timerBrand);
@@ -286,10 +276,7 @@ export const makeScheduler = async (
     // quote may out of date and so must be ignored. Recover by returning
     // deposits and scheduling the next round. If it's only a little late,
     // continue with auction, just starting late.
-    const nominalStart = TimeMath.subtractAbsRel(
-      nextSchedule.startTime,
-      nextSchedule.startDelay,
-    );
+    const nominalStart = nominalStartTime(nextSchedule);
     if (TimeMath.compareAbs(now, nominalStart) > 0) {
       const late = TimeMath.subtractAbsAbs(now, nominalStart);
       const maxLate = relativeTime(MAX_LATE_TICK);
@@ -313,23 +300,17 @@ export const makeScheduler = async (
     // activate the nextSchedule as the live one
     // (read here and in function calls below)
     liveSchedule = nextSchedule;
+    scheduleDescendingSteps();
     nextSchedule = safelyComputeRoundTiming(
       params,
       TimeMath.addAbsRel(liveSchedule.endTime, relativeTime(1n)),
     );
 
-    queueLiveSchedule();
     if (nextSchedule) {
-      scheduleNextRound(
-        TimeMath.subtractAbsRel(
-          nextSchedule.startTime,
-          nextSchedule.startDelay,
-        ),
-      );
-      schedulePriceLock(nextSchedule.lockTime);
+      scheduleNextRound(nominalStartTime(nextSchedule));
     } else {
       console.warn(
-        'no nextSchedule so cannot schedule next round or price lock',
+        'no nextSchedule so cannot schedule next round or price capture',
       );
     }
   };
@@ -338,12 +319,7 @@ export const makeScheduler = async (
   const startSchedulingFromScratch = () => {
     trace('startSchedulingFromScratch');
     if (nextSchedule) {
-      const firstStart = TimeMath.subtractAbsRel(
-        nextSchedule.startTime,
-        nextSchedule.startDelay,
-      );
-      scheduleNextRound(firstStart);
-      schedulePriceLock(nextSchedule.lockTime);
+      scheduleNextRound(nominalStartTime(nextSchedule));
     }
   };
   startSchedulingFromScratch();

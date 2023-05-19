@@ -34,7 +34,7 @@ const DEFAULT_DECIMALS = 9;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
- * auction. It holds the book, the lockedPrice, and the collateralSeat that has
+ * auction. It holds the book, the capturedPrice, and the collateralSeat that has
  * the allocation of assets for sale.
  *
  * The book contains orders for the collateral. It holds two kinds of
@@ -124,7 +124,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     scaledBidBook: M.any(),
     startCollateral: M.any(),
     startProceedsGoal: M.any(),
-    lockedPriceForRound: M.any(),
+    capturedPriceForRound: M.any(),
     curAuctionPrice: M.any(),
     remainingProceedsGoal: M.any(),
   });
@@ -204,12 +204,12 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         startProceedsGoal: null,
 
         /**
-         * Assigned a value to lock the price and reset to null at the end of
+         * Assigned a value to capture the price and reset to null at the end of
          * each auction.
          *
          * @type {Ratio | null}
          */
-        lockedPriceForRound: null,
+        capturedPriceForRound: null,
 
         /**
          * non-null during auctions. It is assigned a value at the beginning of
@@ -406,19 +406,19 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           { trySettle, exitAfterBuy = false },
         ) {
           trace(this.state.collateralBrand, 'accept scaledBid offer');
-          const { curAuctionPrice, lockedPriceForRound, scaledBidBook } =
+          const { curAuctionPrice, capturedPriceForRound, scaledBidBook } =
             this.state;
           const { helper } = this.facets;
 
           const settleIfPricesDefined = () => {
             if (
               curAuctionPrice &&
-              lockedPriceForRound &&
+              capturedPriceForRound &&
               trySettle &&
               isScaledBidPriceHigher(
                 bidScaling,
                 curAuctionPrice,
-                lockedPriceForRound,
+                capturedPriceForRound,
               )
             ) {
               return helper.settle(seat, maxBuy);
@@ -450,7 +450,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               : makeEmpty(state.collateralBrand);
 
           const bookData = harden({
-            startPrice: state.lockedPriceForRound,
+            startPrice: state.capturedPriceForRound,
             startProceedsGoal: state.startProceedsGoal,
             remainingProceedsGoal: state.remainingProceedsGoal,
             proceedsRaised: allocation.Bid,
@@ -542,14 +542,14 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { state, facets } = this;
 
           trace(this.state.collateralBrand, 'settleAtNewRate', reduction);
-          const { lockedPriceForRound, priceBook, scaledBidBook } = state;
-          lockedPriceForRound !== null ||
-            Fail`price must be locked before auction starts`;
-          assert(lockedPriceForRound);
+          const { capturedPriceForRound, priceBook, scaledBidBook } = state;
+          capturedPriceForRound !== null ||
+            Fail`price must be captured before auction starts`;
+          assert(capturedPriceForRound);
 
           state.curAuctionPrice = multiplyRatios(
             reduction,
-            lockedPriceForRound,
+            capturedPriceForRound,
           );
           // extract after it's set in state
           const { curAuctionPrice } = state;
@@ -611,24 +611,24 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { scaledBidBook, priceBook } = this.state;
           return scaledBidBook.hasOrders() || priceBook.hasOrders();
         },
-        lockOraclePriceForRound() {
+        captureOraclePriceForRound() {
           const { facets, state } = this;
 
-          trace(`locking `, state.updatingOracleQuote);
-          state.lockedPriceForRound = state.updatingOracleQuote;
+          trace(`capturing oracle price `, state.updatingOracleQuote);
+          state.capturedPriceForRound = state.updatingOracleQuote;
           void facets.helper.publishBookData();
         },
 
         setStartingRate(rate) {
-          const { lockedPriceForRound } = this.state;
-          lockedPriceForRound !== null ||
-            Fail`lockedPriceForRound must be set before each round`;
-          assert(lockedPriceForRound);
+          const { capturedPriceForRound } = this.state;
+          capturedPriceForRound !== null ||
+            Fail`capturedPriceForRound must be set before each round`;
+          assert(capturedPriceForRound);
 
-          trace('set startPrice', lockedPriceForRound);
+          trace('set startPrice', capturedPriceForRound);
           this.state.remainingProceedsGoal = this.state.startProceedsGoal;
           this.state.curAuctionPrice = multiplyRatios(
-            lockedPriceForRound,
+            capturedPriceForRound,
             rate,
           );
         },
@@ -686,7 +686,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           state.startCollateral = AmountMath.makeEmpty(state.collateralBrand);
 
-          state.lockedPriceForRound = null;
+          state.capturedPriceForRound = null;
           state.curAuctionPrice = null;
           state.remainingProceedsGoal = null;
           state.startProceedsGoal = null;

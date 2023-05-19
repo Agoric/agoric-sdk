@@ -83,7 +83,7 @@ test('states', async t => {
   const { moolaKit, simoleanKit } = basics;
   const { book } = await assembleAuctionBook(basics);
 
-  book.lockOraclePriceForRound();
+  book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(90n, moolaKit.brand, 100n));
   t.deepEqual(
     book.getCurrentPrice(),
@@ -129,7 +129,7 @@ test('simple addOffer', async t => {
   await eventLoopIteration();
 
   book.addAssets(AmountMath.make(simoleanKit.brand, 123n), donorSeat);
-  book.lockOraclePriceForRound();
+  book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
 
   book.addOffer(
@@ -171,7 +171,7 @@ test('getOffers to a price limit', async t => {
     moolaKit,
   );
 
-  book.lockOraclePriceForRound();
+  book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
 
   book.addOffer(
@@ -206,7 +206,7 @@ test('Bad keyword', async t => {
   await eventLoopIteration();
   book.addAssets(AmountMath.make(simoleanKit.brand, 123n), donorSeat);
 
-  book.lockOraclePriceForRound();
+  book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
 
   const zcfSeat = await makeSeatWithAssets(
@@ -248,7 +248,7 @@ test('getOffers w/discount', async t => {
   await eventLoopIteration();
   book.addAssets(AmountMath.make(simoleanKit.brand, 123n), donorSeat);
 
-  book.lockOraclePriceForRound();
+  book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
 
   const zcfSeat = await makeSeatWithAssets(
