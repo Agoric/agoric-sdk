@@ -1,3 +1,4 @@
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
@@ -130,6 +131,69 @@ export const makeWalletFactoryDriver = async (
         .then(([walletPresence, isNew]) =>
           makeWalletDriver(walletAddress, walletPresence, isNew),
         );
+    },
+  };
+};
+
+/**
+ * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
+ * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
+ * @param {string[]} oracleAddresses
+ */
+export const makePriceFeedDriver = async (
+  storage,
+  agoricNamesRemotes,
+  walletFactoryDriver,
+  oracleAddresses,
+) => {
+  // XXX assumes this one feed
+  const priceFeedName = 'ATOM-USD price feed';
+
+  const oracleWallets = await Promise.all(
+    oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
+  );
+
+  const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
+  const adminOfferId = 'acceptOracleInvitation';
+
+  // accept invitations (TODO move into driver)
+  await Promise.all(
+    oracleWallets.map(w =>
+      w.executeOffer({
+        id: adminOfferId,
+        invitationSpec: {
+          source: 'purse',
+          instance: priceFeedInstance,
+          description: 'oracle invitation',
+        },
+        proposal: {},
+      }),
+    ),
+  );
+
+  // zero is the initial lastReportedRoundId so causes an error: cannot report on previous rounds
+  let roundId = 1n;
+  return {
+    /** @param {number} price */
+    async setPrice(price) {
+      await Promise.all(
+        oracleWallets.map(w =>
+          w.executeOfferMaker(
+            Offers.fluxAggregator.PushPrice,
+            {
+              offerId: `push-${price}-${Date.now()}`,
+              roundId,
+              unitPrice: BigInt(price * 1_000_000),
+            },
+            adminOfferId,
+          ),
+        ),
+      );
+      // prepare for next round
+      oracleWallets.push(NonNullish(oracleWallets.shift()));
+      roundId += 1n;
+      // TODO confirm the new price is written to storage
     },
   };
 };
