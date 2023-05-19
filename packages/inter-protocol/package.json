@@ -72,6 +72,8 @@
     "files": [
       "test/**/test-*.js"
     ],
+    "concurrency": 2,
+    "workerThreads": false,
     "timeout": "10m"
   },
   "publishConfig": {
