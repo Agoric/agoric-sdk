@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.2.3...@agoric/cache@0.3.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* emit smallcaps-format data in all marshallers
+* remove storeName parameter
+
+### Features
+
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric-sdk/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric-sdk/issues/6822)
+
+
+### Miscellaneous Chores
+
+* remove storeName parameter ([452f9bc](https://github.com/Agoric/agoric-sdk/commit/452f9bc680d4f54bed5608eb0d7cf67d80d87ba0))
+
+
+
 ### [0.2.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.2.3...@agoric/cache@0.2.4) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/cache

@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.3...@agoric/vat-data@0.5.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vat-data:** deprecate kinds in favor of Far Classes (#6106)
+
+### Features
+
+* **store:** M.splitArray and M.splitRecord ([#6597](https://github.com/Agoric/agoric-sdk/issues/6597)) ([e7427e3](https://github.com/Agoric/agoric-sdk/commit/e7427e386bcbfbe99312b41342b1fa2e722c57c7))
+* **types:** infer this.state in far classes ([11b35d3](https://github.com/Agoric/agoric-sdk/commit/11b35d38448c9665a6db5a919b37744d2d929a53))
+* **vat-data:** export overlooked `provideDurableWeakSetStore` ([b804736](https://github.com/Agoric/agoric-sdk/commit/b804736497525da3fd8cb96e892d06cd2a68ea25))
+
+
+### Bug Fixes
+
+* **types:** makeStoreUtils return types ([bd07ba0](https://github.com/Agoric/agoric-sdk/commit/bd07ba024734a383ae7554f1f3f85c62b1c86093))
+* **vat-data:** normalize kindName mangling ([5bf0088](https://github.com/Agoric/agoric-sdk/commit/5bf0088cf26cc9e2b8d1d4188e9de427045b7b72))
+* prepare for patterns to schematize storage ([#6819](https://github.com/Agoric/agoric-sdk/issues/6819)) ([f0bd3d6](https://github.com/Agoric/agoric-sdk/commit/f0bd3d62c9e480b102fc077997c65d89c0488fa8))
+* rename from FarClass to ExoClass, etc ([#6323](https://github.com/Agoric/agoric-sdk/issues/6323)) ([da96c7c](https://github.com/Agoric/agoric-sdk/commit/da96c7c3c902a5e266baeedf23df02481f2e9c9d))
+* rename vivify to prepare ([#6825](https://github.com/Agoric/agoric-sdk/issues/6825)) ([9261e42](https://github.com/Agoric/agoric-sdk/commit/9261e42e677a3fc31f52defc8fc7ae800f098838))
+* without assertKeyPattern ([#7035](https://github.com/Agoric/agoric-sdk/issues/7035)) ([c9fcd7f](https://github.com/Agoric/agoric-sdk/commit/c9fcd7f82757732435cd96f3377e4fbfb6586ce7))
+* **types:** far class maker params ([91e8fce](https://github.com/Agoric/agoric-sdk/commit/91e8fcecc9c45d3c8725489656f393704738e32a))
+* **vat-data:** deprecate kinds in favor of Far Classes ([#6106](https://github.com/Agoric/agoric-sdk/issues/6106)) ([b63360b](https://github.com/Agoric/agoric-sdk/commit/b63360b416b06cb654d5fc51428a3252e1f0b34f))
+
+
+
 ### [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.4...@agoric/vat-data@0.4.5) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/vat-data

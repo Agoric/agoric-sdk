@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.21](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.20...@agoric/access-token@0.4.21) (2023-05-19)
+
+
+### Bug Fixes
+
+* **agoric-cli:** begin separation of deploy host and script ([b091cad](https://github.com/Agoric/agoric-sdk/commit/b091cadbc652128e34d6225b6875baa5f1a9a4c7))
+
+
+
 ### [0.4.20](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.19...@agoric/access-token@0.4.20) (2022-10-05)
 
 **Note:** Version bump only for package @agoric/access-token

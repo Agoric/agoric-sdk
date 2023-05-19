@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.15.3...@agoric/ertp@0.16.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename 'fit' to 'mustMatch'
+
+### Features
+
+* **ERTP:** hasIssuer(baggage) ([a2c0283](https://github.com/Agoric/agoric-sdk/commit/a2c02839fb2a657b896b83c3da3dad0cb4692502))
+* NotifierShape ([1b53522](https://github.com/Agoric/agoric-sdk/commit/1b535224231463a521f42c96d30018812e923f7b))
+* RatioShape ([3efc7de](https://github.com/Agoric/agoric-sdk/commit/3efc7de9f13be002fa4080bb1dc0a05520b0bbf5))
+* **store:** M.splitArray and M.splitRecord ([#6597](https://github.com/Agoric/agoric-sdk/issues/6597)) ([e7427e3](https://github.com/Agoric/agoric-sdk/commit/e7427e386bcbfbe99312b41342b1fa2e722c57c7))
+
+
+### Bug Fixes
+
+* **ERTP:** `getCurrentAmountNotifier` returns a `LatestTopic` ([735d005](https://github.com/Agoric/agoric-sdk/commit/735d005ec4f4087a4055d48ff1dd1801c9a3d836))
+* collection type param defaults ([7c529b0](https://github.com/Agoric/agoric-sdk/commit/7c529b0c84a6cc76ac81a455b7b3bb8185ecbbfa))
+* incomparables have no min or max ([#6764](https://github.com/Agoric/agoric-sdk/issues/6764)) ([229708b](https://github.com/Agoric/agoric-sdk/commit/229708bcc66afa53dbab929ce1826787942179f7))
+* remove deprecated issuer payment methods ([#7113](https://github.com/Agoric/agoric-sdk/issues/7113)) ([978894a](https://github.com/Agoric/agoric-sdk/commit/978894a87b526efe9c87b2832030b7beee907b31))
+* **zoe:** payments more recoverable ([#7112](https://github.com/Agoric/agoric-sdk/issues/7112)) ([ce7244d](https://github.com/Agoric/agoric-sdk/commit/ce7244d6cf23f57e6de73b5d119e9681456fded7))
+* missing zcfMint options ([753ea03](https://github.com/Agoric/agoric-sdk/commit/753ea03d713f791bebeea82422d659ffc46bca80))
+* prepare for patterns to schematize storage ([#6819](https://github.com/Agoric/agoric-sdk/issues/6819)) ([f0bd3d6](https://github.com/Agoric/agoric-sdk/commit/f0bd3d62c9e480b102fc077997c65d89c0488fa8))
+* rename from FarClass to ExoClass, etc ([#6323](https://github.com/Agoric/agoric-sdk/issues/6323)) ([da96c7c](https://github.com/Agoric/agoric-sdk/commit/da96c7c3c902a5e266baeedf23df02481f2e9c9d))
+* rename vivify to prepare ([#6825](https://github.com/Agoric/agoric-sdk/issues/6825)) ([9261e42](https://github.com/Agoric/agoric-sdk/commit/9261e42e677a3fc31f52defc8fc7ae800f098838))
+* swingset should define these types, not zoe/ERTP ([35a977b](https://github.com/Agoric/agoric-sdk/commit/35a977b2fa3c03bd5292718e318a26e897ff3d04))
+
+
+### Miscellaneous Chores
+
+* rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
+
+
+
 ### [0.15.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.15.4...@agoric/ertp@0.15.5) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/ertp

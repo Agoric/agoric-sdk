@@ -3,6 +3,54 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.9.1...@agoric/governance@0.10.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* emit smallcaps-format data in all marshallers
+* **governance:** remove getContractGovernor
+* rename 'fit' to 'mustMatch'
+
+### Features
+
+* **auction:** add an auctioneer to manage vault liquidation ([#7000](https://github.com/Agoric/agoric-sdk/issues/7000)) ([398b70f](https://github.com/Agoric/agoric-sdk/commit/398b70f7e028f957afc1582f0ee31eb2574c94d0)), closes [#6992](https://github.com/Agoric/agoric-sdk/issues/6992) [#7047](https://github.com/Agoric/agoric-sdk/issues/7047) [#7074](https://github.com/Agoric/agoric-sdk/issues/7074)
+* **committee:** durable facets ([e8f6279](https://github.com/Agoric/agoric-sdk/commit/e8f6279c3e9381f87340f99d5a419f6015d33c64))
+* **contractHelper:** support upgradable contracts ([1baec94](https://github.com/Agoric/agoric-sdk/commit/1baec94da8f1d1f259ba63ed2cc1894403609219))
+* **governance:** compatibility with upgrade ([1912d18](https://github.com/Agoric/agoric-sdk/commit/1912d18a98cc3fbbc6756c12c8b843bc76de0ad6))
+* **governance:** label voteCounter with deadline ([7e4ae92](https://github.com/Agoric/agoric-sdk/commit/7e4ae92aa2a8a4146629c996b16ac02947e1aa0e))
+* **governance:** vote counters for 2 or more options ([#6515](https://github.com/Agoric/agoric-sdk/issues/6515)) ([7997111](https://github.com/Agoric/agoric-sdk/commit/7997111665d21e660b9639300d01cc9b7bfa4cb8))
+* **governor:** saves instance kit ([305354d](https://github.com/Agoric/agoric-sdk/commit/305354d12a379ed82c49c2f1ade1b579eaca7383))
+* **governor:** upgradable ([9a1a9c1](https://github.com/Agoric/agoric-sdk/commit/9a1a9c117e3819115544f729c6774b5071083458))
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric-sdk/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric-sdk/issues/6822)
+* label governed contracts ([d60e015](https://github.com/Agoric/agoric-sdk/commit/d60e015581148d8222b3a30b9a990b484f78e9dc))
+* **price:** addOracles by EC ([9b6dbc5](https://github.com/Agoric/agoric-sdk/commit/9b6dbc5816d9eadaf5800090d060dda73a0d2e8d))
+* puppetGovernance setup tools ([7ed591b](https://github.com/Agoric/agoric-sdk/commit/7ed591b7f96abbe8a0aedc10b2d10a229942b6c0))
+* **store:** M.splitArray and M.splitRecord ([#6597](https://github.com/Agoric/agoric-sdk/issues/6597)) ([e7427e3](https://github.com/Agoric/agoric-sdk/commit/e7427e386bcbfbe99312b41342b1fa2e722c57c7))
+* **types:** paramterize Instance ([8d1832a](https://github.com/Agoric/agoric-sdk/commit/8d1832a8001ccd98339d68856b0756cad25462d4))
+
+
+### Bug Fixes
+
+* **governance:** governor adminFacet handling ([785950a](https://github.com/Agoric/agoric-sdk/commit/785950ac02dbff9c9948f11d38f35924b0f36a9b))
+* handle branded TimestampRecord in solo/store/agoric-cli/governance ([8369dd6](https://github.com/Agoric/agoric-sdk/commit/8369dd6a47e7e6c1c799a131fc38f340f0018b38))
+* nextAuction timing when startFrequency is reduced ([#7415](https://github.com/Agoric/agoric-sdk/issues/7415)) ([ad87770](https://github.com/Agoric/agoric-sdk/commit/ad87770a9b629c089937e48d26601441ae949e47))
+* rename from FarClass to ExoClass, etc ([#6323](https://github.com/Agoric/agoric-sdk/issues/6323)) ([da96c7c](https://github.com/Agoric/agoric-sdk/commit/da96c7c3c902a5e266baeedf23df02481f2e9c9d))
+* update all clients of @agoric/time to handle the new home ([5c4fb24](https://github.com/Agoric/agoric-sdk/commit/5c4fb241940c74be6b081718b9350bceba95b9cd))
+* update types/dependencies for new @agoric/time ([418545a](https://github.com/Agoric/agoric-sdk/commit/418545ae88085de6e7fde415baa7de0a3f3056a4))
+* use `subscribeEach` to get reconnect benefits ([fb24132](https://github.com/Agoric/agoric-sdk/commit/fb24132f9b4e117e56bae2803994e57c188344f3))
+* **governApi:** harden returns ([eee09d4](https://github.com/Agoric/agoric-sdk/commit/eee09d4d2c29a962006cb52d82e568e4bd8896d8))
+* **tools:** puppetContractGovernor types ([5947838](https://github.com/Agoric/agoric-sdk/commit/5947838da2a99e5c71cff968b3c86d948b9f2b3a))
+* **types:** fix some governance types ([a681988](https://github.com/Agoric/agoric-sdk/commit/a681988da45859374e2a6f9bb731ccb5391aa754))
+
+
+### Miscellaneous Chores
+
+* **governance:** remove getContractGovernor ([92fa9a2](https://github.com/Agoric/agoric-sdk/commit/92fa9a262b1b190d8535f826197a5df0c1ba9958))
+* rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
+
+
+
 ### [0.9.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.9.2...@agoric/governance@0.9.3) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/governance

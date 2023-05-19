@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap-lockdown",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "description": "Endo/lockdown initialization bundle for xsnap workers",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -19,7 +19,6 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0"
   },
-  "dependencies": {},
   "devDependencies": {
     "@endo/bundle-source": "^2.5.1",
     "@endo/init": "^0.5.56",

@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.2...@agoric/casting@0.4.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* emit smallcaps-format data in all marshallers
+* **AMM:**  remove the AMM and cleanup bootstrap etc. dependencies (#7074)
+* rename 'fit' to 'mustMatch'
+
+### Features
+
+* **internal:** makeFakeStorageKit supports "get" and "entries" ([6a69aab](https://github.com/Agoric/agoric-sdk/commit/6a69aab5cb54faae5af631bbc2281e4fc4ede8e0))
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric-sdk/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric-sdk/issues/6822)
+* **AMM:**  remove the AMM and cleanup bootstrap etc. dependencies ([#7074](https://github.com/Agoric/agoric-sdk/issues/7074)) ([ed5ee58](https://github.com/Agoric/agoric-sdk/commit/ed5ee58a276fce3c55f19e4f6f662ed579896c2c)), closes [#7047](https://github.com/Agoric/agoric-sdk/issues/7047)
+* **casting:** handle noData value encoding ([530bc41](https://github.com/Agoric/agoric-sdk/commit/530bc41854cc7f5e5749e97e87fabc6163a17864))
+* assertNetworkConfig ([9762b19](https://github.com/Agoric/agoric-sdk/commit/9762b19b25ebcb4678faa389d39c4bab91e0c25c))
+* getEachIterable skip height fetch ([77b1bb5](https://github.com/Agoric/agoric-sdk/commit/77b1bb589e90462bc7514347b8c62c236d72922e))
+* getLatestIterable skip height fetch ([aff3354](https://github.com/Agoric/agoric-sdk/commit/aff335417d9553182d50a5b84a4aa7c7fb6ae430))
+* getReverseIterable skip height fetch ([edbc8ec](https://github.com/Agoric/agoric-sdk/commit/edbc8ec2fab4a71e2675f5cc608f25d27b43b524))
+* vstorageKeySpecToPath ([9db1fbb](https://github.com/Agoric/agoric-sdk/commit/9db1fbb1328c28282db972b3e130e2ee3515b87d))
+
+
+### Bug Fixes
+
+* **casting:** use new subscriber tools ([cb1f739](https://github.com/Agoric/agoric-sdk/commit/cb1f739c36c28befa2ab097bfc9b86686dbe57c3))
+* require chainName ([5c5e661](https://github.com/Agoric/agoric-sdk/commit/5c5e661f444add3e1544c931c475a3a266a080de))
+
+
+### Miscellaneous Chores
+
+* rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
+
+
+
 ### [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.3...@agoric/casting@0.3.4) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/casting

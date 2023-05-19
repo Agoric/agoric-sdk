@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.4...@agoric/deploy-script-support@0.10.0) (2023-05-19)
+
+
+### Features
+
+* **core-proposals:** use bundle hash for label ([2eec093](https://github.com/Agoric/agoric-sdk/commit/2eec0939bd87bfcc48634ab75e2ba830cdb321e3))
+* **deploy-script-support:** Publish bundles to chain if possible ([e8209da](https://github.com/Agoric/agoric-sdk/commit/e8209daec69fc6fd60f5d865cf29271eb106a995))
+* **deploy-script-support:** reenable for `agoric run init-core.js` without `ag-solo` ([2b2bc96](https://github.com/Agoric/agoric-sdk/commit/2b2bc96780b00d9c964dba6e6c5de36acd4a83c6))
+
+
+### Bug Fixes
+
+* **deploy-script-support:** avoid pulling in notifiers ([#7522](https://github.com/Agoric/agoric-sdk/issues/7522)) ([c73675d](https://github.com/Agoric/agoric-sdk/commit/c73675dad025b6600f0eafe9f8e768086e50b626))
+* **deploy-script-support:** update permits for `vatAdminSvc` ([73fef25](https://github.com/Agoric/agoric-sdk/commit/73fef256ab9abda1bda7e0619e8eee08c19f8883))
+* avoid using top-level `require` ([57ca2db](https://github.com/Agoric/agoric-sdk/commit/57ca2dbfbadb373f97d43b2fb4e90302c9149976))
+* change manifestInstallRef to manifestBundleRef ([4b87694](https://github.com/Agoric/agoric-sdk/commit/4b8769494eec1ce6bb5beda295389e8b982a9f37))
+* remove unused overridded restoreRef, fix default version ([7f1cd48](https://github.com/Agoric/agoric-sdk/commit/7f1cd488e2aa7f89473b2187016f7f0dcbc989e8))
+* rename makeEnactCoreProposalsFromBundleName to ..BundleRef ([7403f06](https://github.com/Agoric/agoric-sdk/commit/7403f06f58f0f50ecd154ad076a0a82317f3018b))
+* replace unsafe then with E.when ([#6684](https://github.com/Agoric/agoric-sdk/issues/6684)) ([d7a749e](https://github.com/Agoric/agoric-sdk/commit/d7a749eec4ddec9ba39bbc65434f03ec113cae7c))
+* replace zoe.install with zoe.installBundleID ([8a91b1b](https://github.com/Agoric/agoric-sdk/commit/8a91b1b06bf1a62c08156e595cf46f5194f73337)), closes [#6826](https://github.com/Agoric/agoric-sdk/issues/6826)
+* **deploy-script-support:** Use versioned bundleSource ([41af48e](https://github.com/Agoric/agoric-sdk/commit/41af48e0d44e0615a53d5e3fe9f019895a58f96d))
+
+
+
 ### [0.9.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.5...@agoric/deploy-script-support@0.9.6) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

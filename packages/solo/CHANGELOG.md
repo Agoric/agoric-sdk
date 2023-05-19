@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.3...@agoric/solo@0.10.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **solo:** separate boot-solo.js out of boot.js (CONT.)
+
+### Features
+
+* **solo:** leverage `agoric-sdk/bin/agd` ([06783a5](https://github.com/Agoric/agoric-sdk/commit/06783a5401c2b9a06104248a17a2bb91fe80ec54))
+* **telemetry:** SLOGSENDER_FAIL_ON_ERROR ([db79fca](https://github.com/Agoric/agoric-sdk/commit/db79fcad8bc784d300acfd994ceab9a2b9c2a567))
+* convert swing-store from LMDB to Sqlite ([579a6c7](https://github.com/Agoric/agoric-sdk/commit/579a6c796a47092c4ee880316c7530d07d92c961))
+* refactor SwingStore APIs to cleanly distinguish kernel facet from host facet ([7126822](https://github.com/Agoric/agoric-sdk/commit/71268220d659469cd583c9c510ed8c1a1661f282))
+
+
+### Bug Fixes
+
+* handle branded TimestampRecord in solo/store/agoric-cli/governance ([8369dd6](https://github.com/Agoric/agoric-sdk/commit/8369dd6a47e7e6c1c799a131fc38f340f0018b38))
+* **solo:** avoid UpdateCount reliance ([782c5a6](https://github.com/Agoric/agoric-sdk/commit/782c5a6d1bc2cb5c4e9695e933b82873d0fc4a17))
+* **solo:** devnet faucet is now a web form ([#6688](https://github.com/Agoric/agoric-sdk/issues/6688)) ([f1ff7b9](https://github.com/Agoric/agoric-sdk/commit/f1ff7b99bfea6841e7627987bd482b8242caf207))
+* **solo:** minor tweaks to `ag-solo`s CapTP service ([58d1501](https://github.com/Agoric/agoric-sdk/commit/58d1501214a3dd1d44e6824f8179c8324a88a367))
+* **solo:** separate boot-solo.js out of boot.js (CONT.) ([8217767](https://github.com/Agoric/agoric-sdk/commit/821776779a000a4814eb6143aab61b6b456be640))
+* **telemetry:** upgrade otel deps ([dc48759](https://github.com/Agoric/agoric-sdk/commit/dc4875992937f9648381efae70818fa767d4b901))
+* CI failures in other packages ([071bf89](https://github.com/Agoric/agoric-sdk/commit/071bf89a337f39b3cb73ef60649fbe47825806bc))
+* more await weeding ([#6745](https://github.com/Agoric/agoric-sdk/issues/6745)) ([19855de](https://github.com/Agoric/agoric-sdk/commit/19855de77cca7a96c1c3a42f090502d11ba36989))
+* **solo:** unmangle assertion failure condition ([0aafc66](https://github.com/Agoric/agoric-sdk/commit/0aafc66e4072ef2347099560943fbd59476be854))
+
+
+
 ### [0.9.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.4...@agoric/solo@0.9.5) (2023-02-17)
 
 

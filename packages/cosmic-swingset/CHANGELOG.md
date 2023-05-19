@@ -3,6 +3,88 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.41.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.39.2...@agoric/cosmic-swingset@0.41.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* test-vaults-config -> itest-vaults-config to avoid conflict
+* move swingset state dir
+* emit smallcaps-format data in all marshallers
+* remove storeName parameter
+
+### Features
+
+* Add SwingSet configuration to purge vstorage within (re-)bootstrap ([f248e91](https://github.com/Agoric/agoric-sdk/commit/f248e9116512374fb95f789b26e27b66cd5c34ca)), closes [#7681](https://github.com/Agoric/agoric-sdk/issues/7681)
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric-sdk/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric-sdk/issues/6822)
+* extend Prometheus kernel stats ([44a934f](https://github.com/Agoric/agoric-sdk/commit/44a934f0d0a5177000b5bf081ae27e35a05c9aef)), closes [#7092](https://github.com/Agoric/agoric-sdk/issues/7092) [#7092](https://github.com/Agoric/agoric-sdk/issues/7092)
+* move swingset state dir ([eddb46b](https://github.com/Agoric/agoric-sdk/commit/eddb46bd0e41340aec7d420adc37074fbca1b177))
+* **cosmic-swingset:** Add a config property for exporting storage to bootstrap ([c065f3b](https://github.com/Agoric/agoric-sdk/commit/c065f3b2be675513343a70853ea607750d13776b)), closes [#7156](https://github.com/Agoric/agoric-sdk/issues/7156)
+* **cosmic-swingset:** add after-commit action ([970a53f](https://github.com/Agoric/agoric-sdk/commit/970a53f827ded21b27525f6b0042bbc124c62d48))
+* **cosmic-swingset:** Add context info to actionQueue items ([ed47435](https://github.com/Agoric/agoric-sdk/commit/ed4743519e81dbb05b6136de1f94bae0ae0f87c8))
+* **cosmic-swingset:** add kernel-db exporter ([df304d5](https://github.com/Agoric/agoric-sdk/commit/df304d585928bfe3e7b9bc12ed9b1668726f54ec))
+* **cosmic-swingset:** basic snapshot wiring ([b1072d8](https://github.com/Agoric/agoric-sdk/commit/b1072d8b1ddabbb5f2835eb503c945fed3b6b080))
+* **cosmic-swingset:** execute export in a subprocess ([05e2b15](https://github.com/Agoric/agoric-sdk/commit/05e2b15a3f5b749ae95d0e1f3eb96fc0ec0d7467))
+* **cosmic-swingset:** leave inbound in actionQueue ([a32299d](https://github.com/Agoric/agoric-sdk/commit/a32299df308eb869def870cca93f0b89e37e9110))
+* **cosmic-swingset:** process highPriorityQueue actions ([182a96e](https://github.com/Agoric/agoric-sdk/commit/182a96e169c8cac7f31fbce014783fd6db72b64c))
+* tweak state-sync logging ([#7468](https://github.com/Agoric/agoric-sdk/issues/7468)) ([9ec9ce2](https://github.com/Agoric/agoric-sdk/commit/9ec9ce277897c47df8b64856eabd3119f89416ce))
+* **cosmic-swingset:** add inboundNum to inbound slog events ([1f04418](https://github.com/Agoric/agoric-sdk/commit/1f044183fdc3430c26b5cf1c011445297a996393))
+* **cosmic-swingset:** add kernel-db importer ([00fab12](https://github.com/Agoric/agoric-sdk/commit/00fab12e464e5604cb3e5eb697fd02565ea78fe7))
+* **cosmic-swingset:** explicit verbose option for export db ([a2dabd1](https://github.com/Agoric/agoric-sdk/commit/a2dabd1672c580e1f421336f2ab34e2694ed5557))
+* **cosmic-swingset:** export swingStore kvData to vstorage ([be68431](https://github.com/Agoric/agoric-sdk/commit/be684315dc68ecf0cb603a8eb38ddd5418e996a6))
+* **cosmic-swingset:** launch-chain add shutdown ([01bd686](https://github.com/Agoric/agoric-sdk/commit/01bd686c4e7ba177e90135c283c1b89025534e7d))
+* **cosmic-swingset:** leverage `agoric-sdk/bin/agd` for lazy builds ([c2dd1d6](https://github.com/Agoric/agoric-sdk/commit/c2dd1d6f941b9a03b82b9bdfbb12e1c6e72b0784))
+* **cosmic-swingset:** More complete vstorage access ([2d886de](https://github.com/Agoric/agoric-sdk/commit/2d886dee4b6518f176fc844d560422fe0fb53ffd))
+* **cosmic-swingset:** poll timer after swingset quiescent ([c6df9ad](https://github.com/Agoric/agoric-sdk/commit/c6df9ad0c504722dbb3e586d1819a1fdee613b48))
+* **cosmic-swingset:** remove unnecessary explicit activityhash ([5dcc44d](https://github.com/Agoric/agoric-sdk/commit/5dcc44d31be0c8a95a5749d768791fa35b72dbd3))
+* **cosmic-swingset:** update scenario2 to post-Pismo ([715a389](https://github.com/Agoric/agoric-sdk/commit/715a389597903211e5106f539ef4c490b8c9e08f))
+* **cosmic-swingset:** wait for after commit stats ([5f29966](https://github.com/Agoric/agoric-sdk/commit/5f29966568bb7abb3147dc70a26b2121e7e4b753))
+* **cosmic-swingset:** wire snapshot restoring in chain-main ([9d053b7](https://github.com/Agoric/agoric-sdk/commit/9d053b7381280c8d7afc35fb1bcbf6dd18886738))
+* **cosmic-swingset:** wire snapshot taking in chain-main ([22bc1d5](https://github.com/Agoric/agoric-sdk/commit/22bc1d54a7582d9490959dfe204838293412b537))
+* boot-oracles ([ce8f8de](https://github.com/Agoric/agoric-sdk/commit/ce8f8de65ad4c14b4e8d699cd721683cfa1cc495))
+* convert swing-store from LMDB to Sqlite ([579a6c7](https://github.com/Agoric/agoric-sdk/commit/579a6c796a47092c4ee880316c7530d07d92c961))
+* export buildSwingset ([28eae2b](https://github.com/Agoric/agoric-sdk/commit/28eae2b55632b50c2868615e22a80d7fcb8cb1c5))
+* **telemetry:** SLOGSENDER_FAIL_ON_ERROR ([db79fca](https://github.com/Agoric/agoric-sdk/commit/db79fcad8bc784d300acfd994ceab9a2b9c2a567))
+* refactor SwingStore APIs to cleanly distinguish kernel facet from host facet ([7126822](https://github.com/Agoric/agoric-sdk/commit/71268220d659469cd583c9c510ed8c1a1661f282))
+* **economy-config:** allow override of PRIMARY_ADDRESS ([06119b8](https://github.com/Agoric/agoric-sdk/commit/06119b81005c61641781614fab2c206f13b43ff8))
+
+
+### Bug Fixes
+
+* clearStorageSubtrees should not exclude exportStorageSubtrees ([9c6ceb9](https://github.com/Agoric/agoric-sdk/commit/9c6ceb91d1a7334483f9d0143fab75e7c2d4ccb1))
+* test-vaults-config -> itest-vaults-config to avoid conflict ([db8f915](https://github.com/Agoric/agoric-sdk/commit/db8f915f579293d373d9f395dae28da383fab8a3))
+* **cosmic-swingset:** `setterMethod` for surgical storage event emission ([7b2938a](https://github.com/Agoric/agoric-sdk/commit/7b2938a5209172f1f15248449b306e097158c3e9))
+* **cosmic-swingset:** avoid overriding Makefile vat config ([f0ce811](https://github.com/Agoric/agoric-sdk/commit/f0ce811ae20f43c7897b7b3554802a464f82032e))
+* **cosmic-swingset:** correct typings for bufferedStorage ([c8f3623](https://github.com/Agoric/agoric-sdk/commit/c8f362326053fa9e3f38d300c336918f101a4db0))
+* **cosmic-swingset:** early done check in makeQueue ([de1a353](https://github.com/Agoric/agoric-sdk/commit/de1a35310f0af4829f01356c5c0933fcc45baf78))
+* **cosmic-swingset:** enforce no parallel consume for actionQueue ([0d99438](https://github.com/Agoric/agoric-sdk/commit/0d9943860668744548de1218d070093e436bed8a))
+* **cosmic-swingset:** IbcATOM -> ATOM ([03e202c](https://github.com/Agoric/agoric-sdk/commit/03e202c4e2bdd97c4df80ea93e4c78209363a4ce))
+* **cosmic-swingset:** move makeBufferedStorage() out of swingset ([c148774](https://github.com/Agoric/agoric-sdk/commit/c1487747a64c6a64ccefcc477a008bd929f766bc))
+* **cosmic-swingset:** no actionQueue.consumeAll in hangover recovery ([#6921](https://github.com/Agoric/agoric-sdk/issues/6921)) ([d3c6e8a](https://github.com/Agoric/agoric-sdk/commit/d3c6e8aec6e8bd47b8dc249135dc68b949b8e321))
+* **cosmic-swingset:** Provide blockTime to bootstrap ([#7125](https://github.com/Agoric/agoric-sdk/issues/7125)) ([748d52c](https://github.com/Agoric/agoric-sdk/commit/748d52cf888981c8c48c26a807fe5abf12ed4130))
+* **cosmic-swingset:** Remove unused getKeys in bufferedStorage ([0d5aea7](https://github.com/Agoric/agoric-sdk/commit/0d5aea77e9ceb8649da298237035701d18f35bd0))
+* **cosmic-swingset:** remove unused saved blockTime ([37858cb](https://github.com/Agoric/agoric-sdk/commit/37858cba6b6799782d544c2317a860bf355f741f))
+* **cosmic-swingset:** shutdown controller cleanly only on interrupt ([f64340e](https://github.com/Agoric/agoric-sdk/commit/f64340e67d83cf9b26c1a33f2b782764244efcf3))
+* **cosmic-swingset:** shutdown controller on exit ([c5410dd](https://github.com/Agoric/agoric-sdk/commit/c5410ddf8d4355433ec099317f91a19b61b954d7))
+* **cosmic-swingset:** silence incorrect kernel-stats warnings ([431e347](https://github.com/Agoric/agoric-sdk/commit/431e34783dc71ec07bcff00af1092c90c73738e4))
+* **cosmic-swingset:** type of makeInstallationPublisher ([804502e](https://github.com/Agoric/agoric-sdk/commit/804502e6049168fc237e5661d9e834710b158cb4))
+* **cosmic-swingset:** use `@endo/init/unsafe-fast.js` for chain ([81e9412](https://github.com/Agoric/agoric-sdk/commit/81e94120bb897dafb0194a9e52b722acff6b1678))
+* **cosmic-swingset:** Use BigInt for chainQueue bounds ([40a8abb](https://github.com/Agoric/agoric-sdk/commit/40a8abb5aeac9237613fd50e4bbacb33f8057ed9))
+* **vats:** move vat-ibc/vat-network from config to network-proposal.js ([68c8363](https://github.com/Agoric/agoric-sdk/commit/68c8363dea5aa4f2f1846e053ccd68d4e6a9131c)), closes [#7044](https://github.com/Agoric/agoric-sdk/issues/7044)
+* align testnet -> agoric start tooling ([ead89fb](https://github.com/Agoric/agoric-sdk/commit/ead89fb49b4095f326f4bbab52ac79c9dd7d0e2f))
+* CI failures in other packages ([071bf89](https://github.com/Agoric/agoric-sdk/commit/071bf89a337f39b3cb73ef60649fbe47825806bc))
+* cosmic_swingset_inbound_queue_length is a gauge ([c7f5144](https://github.com/Agoric/agoric-sdk/commit/c7f51441a49b70bd033a69ab7b10ee4ddc7bc1cb))
+* rename docker image root ([#7186](https://github.com/Agoric/agoric-sdk/issues/7186)) ([ab2efa6](https://github.com/Agoric/agoric-sdk/commit/ab2efa64b44fb410592b6dfa2a992296fd8b51d4))
+* **telemetry:** upgrade otel deps ([dc48759](https://github.com/Agoric/agoric-sdk/commit/dc4875992937f9648381efae70818fa767d4b901))
+* replace unsafe then with E.when ([#6684](https://github.com/Agoric/agoric-sdk/issues/6684)) ([d7a749e](https://github.com/Agoric/agoric-sdk/commit/d7a749eec4ddec9ba39bbc65434f03ec113cae7c))
+
+
+### Miscellaneous Chores
+
+* remove storeName parameter ([452f9bc](https://github.com/Agoric/agoric-sdk/commit/452f9bc680d4f54bed5608eb0d7cf67d80d87ba0))
+
+
+
 ## [0.40.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.39.3...@agoric/cosmic-swingset@0.40.0) (2023-02-17)
 
 

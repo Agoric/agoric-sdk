@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.25...@agoric/eslint-config@0.4.0) (2023-05-19)
+
+
+### Features
+
+* **eslint-config:** disable no-continue ([c89afca](https://github.com/Agoric/agoric-sdk/commit/c89afca17dbb6a750a1caa12a0daff91138d475b))
+
+
+
 ### [0.3.25](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.24...@agoric/eslint-config@0.3.25) (2022-09-20)
 
 **Note:** Version bump only for package @agoric/eslint-config

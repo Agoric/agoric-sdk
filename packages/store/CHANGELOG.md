@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.8.3...@agoric/store@0.9.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename 'fit' to 'mustMatch'
+
+### Features
+
+* **store:** reconcile with endo [#1554](https://github.com/Agoric/agoric-sdk/issues/1554) ([d39dafa](https://github.com/Agoric/agoric-sdk/commit/d39dafa00828d1be06b7bdcd1ef0632861a6632f))
+* generic check unguarded far class methods ([805326e](https://github.com/Agoric/agoric-sdk/commit/805326e062fb162a6ee6fb93ca76e9a53299cd98))
+* **farclass:** error message for missing `this` ([10b40d4](https://github.com/Agoric/agoric-sdk/commit/10b40d4e337e88c56f186266fdfb6cd9b35329f4))
+* **store:** M.splitArray and M.splitRecord ([#6597](https://github.com/Agoric/agoric-sdk/issues/6597)) ([e7427e3](https://github.com/Agoric/agoric-sdk/commit/e7427e386bcbfbe99312b41342b1fa2e722c57c7))
+* **types:** infer this.state in far classes ([11b35d3](https://github.com/Agoric/agoric-sdk/commit/11b35d38448c9665a6db5a919b37744d2d929a53))
+
+
+### Bug Fixes
+
+* adapt to deeplyFulfilled being async ([#6816](https://github.com/Agoric/agoric-sdk/issues/6816)) ([ec315e1](https://github.com/Agoric/agoric-sdk/commit/ec315e1634f6d5cdef1cddafc18777de7c04fecc))
+* arb passable tools ([#6296](https://github.com/Agoric/agoric-sdk/issues/6296)) ([d91ee8c](https://github.com/Agoric/agoric-sdk/commit/d91ee8c549020678dccf8480d4355f537c73843d))
+* collection type param defaults ([7c529b0](https://github.com/Agoric/agoric-sdk/commit/7c529b0c84a6cc76ac81a455b7b3bb8185ecbbfa))
+* handle branded TimestampRecord in solo/store/agoric-cli/governance ([8369dd6](https://github.com/Agoric/agoric-sdk/commit/8369dd6a47e7e6c1c799a131fc38f340f0018b38))
+* only the exo api change ([5cf3bf1](https://github.com/Agoric/agoric-sdk/commit/5cf3bf10a71dd02094365a66e87032e5d17d004f))
+* **store:** fix exo-tools TSC problem ([#7177](https://github.com/Agoric/agoric-sdk/issues/7177)) ([68094ec](https://github.com/Agoric/agoric-sdk/commit/68094ecd94c9b3934a5dc5dea39b167d373d9beb))
+* defendPrototypeKit with consolidated error checking ([#6668](https://github.com/Agoric/agoric-sdk/issues/6668)) ([c7d4223](https://github.com/Agoric/agoric-sdk/commit/c7d422343c9fdfd173b6e756ad2a02577d7c4574))
+* prepare for patterns to schematize storage ([#6819](https://github.com/Agoric/agoric-sdk/issues/6819)) ([f0bd3d6](https://github.com/Agoric/agoric-sdk/commit/f0bd3d62c9e480b102fc077997c65d89c0488fa8))
+* rename from FarClass to ExoClass, etc ([#6323](https://github.com/Agoric/agoric-sdk/issues/6323)) ([da96c7c](https://github.com/Agoric/agoric-sdk/commit/da96c7c3c902a5e266baeedf23df02481f2e9c9d))
+* sync with endo 1260 encodePassable ([#6260](https://github.com/Agoric/agoric-sdk/issues/6260)) ([0a1c89c](https://github.com/Agoric/agoric-sdk/commit/0a1c89cbf6838fe78e5db7fab7b29bf1eaede1de)), closes [#1260](https://github.com/Agoric/agoric-sdk/issues/1260)
+* typo in error message ([#6470](https://github.com/Agoric/agoric-sdk/issues/6470)) ([65d8e0a](https://github.com/Agoric/agoric-sdk/commit/65d8e0a5e1e94911e93ac52137316be1e50ae13d))
+* use atomicTransfers rather than stagings. ([#6577](https://github.com/Agoric/agoric-sdk/issues/6577)) ([65d3f14](https://github.com/Agoric/agoric-sdk/commit/65d3f14c8102993168d2568eed5e6acbcba0c48a))
+* without assertKeyPattern ([#7035](https://github.com/Agoric/agoric-sdk/issues/7035)) ([c9fcd7f](https://github.com/Agoric/agoric-sdk/commit/c9fcd7f82757732435cd96f3377e4fbfb6586ce7))
+
+
+### Miscellaneous Chores
+
+* rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
+
+
+
 ### [0.8.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.8.4...@agoric/store@0.8.5) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/store

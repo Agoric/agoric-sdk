@@ -1,6 +1,6 @@
 {
   "name": "@agoric/eslint-config",
-  "version": "0.3.25",
+  "version": "0.4.0",
   "description": "Rules used by the @agoric packages",
   "main": "./eslint-config.cjs",
   "repository": {
