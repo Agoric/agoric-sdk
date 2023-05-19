@@ -24,8 +24,8 @@
  */
 
 import { Fail } from '@agoric/assert';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { prepareBoardKit } from '../src/lib-board.js';
@@ -61,7 +61,6 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
 
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const reverse = {};
-  // TODO support vbankAsset which must recur
   const entries = ['brand', 'instance'].map(kind => {
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
     const parts = unmarshalFromVstorage(
@@ -74,7 +73,20 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
     }
     return [kind, Object.fromEntries(parts)];
   });
-  return { ...Object.fromEntries(entries), reverse };
+  const tables = Object.fromEntries(entries);
+  // XXX not part of reverse[]
+  const vbankAsset = Object.fromEntries(
+    unmarshalFromVstorage(
+      data,
+      `published.agoricNames.vbankAsset`,
+      fromCapData,
+    ).map(([_denom, info]) => [
+      info.issuerName,
+      { ...info, brand: tables.brand[info.issuerName] },
+    ]),
+  );
+  console.log('DEBUG vbankAsset', vbankAsset);
+  return { ...tables, reverse, vbankAsset };
 };
 harden(makeAgoricNamesRemotesFromFakeStorage);
 
