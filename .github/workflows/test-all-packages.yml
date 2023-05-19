@@ -155,6 +155,8 @@ jobs:
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -224,6 +226,8 @@ jobs:
 
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -256,6 +260,8 @@ jobs:
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -289,6 +295,8 @@ jobs:
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -320,6 +328,8 @@ jobs:
         run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -349,6 +359,8 @@ jobs:
         run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -379,6 +391,8 @@ jobs:
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js' | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -416,6 +430,8 @@ jobs:
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -444,6 +460,8 @@ jobs:
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js' | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -473,6 +491,8 @@ jobs:
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js' | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -504,6 +524,8 @@ jobs:
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -535,12 +557,15 @@ jobs:
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   test-docker-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       matrix:
         bootstrap-version: ['test', 'main']
@@ -554,5 +579,7 @@ jobs:
         run: docker run --env "DEST=0" docker-upgrade-test:latest
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}

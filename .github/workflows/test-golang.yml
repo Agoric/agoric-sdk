@@ -23,5 +23,7 @@ jobs:
         run: cd golang && go test -coverprofile=coverage.txt -covermode=atomic ./...
       - uses: ./.github/actions/post-test
         if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
