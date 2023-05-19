@@ -367,6 +367,7 @@ test('price drop', async t => {
     manualTimer,
     undefined,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -526,6 +527,7 @@ test('price falls precipitously', async t => {
     manualTimer,
     undefined,
     500n,
+    { startFrequency: 3600n },
   );
   // we start with time=0, price=2200
 
@@ -921,7 +923,6 @@ test('liquidate two loans', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
-  currentTime = now2;
   currentTime = await setClockAndAdvanceNTimes(manualTimer, 2, start2, 2n);
 
   // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
@@ -1012,6 +1013,7 @@ test('sell goods at auction', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -1185,6 +1187,7 @@ test('collect fees from loan', async t => {
     manualTimer,
     undefined,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -1429,6 +1432,7 @@ test('Auction sells all collateral w/shortfall', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -1588,12 +1592,11 @@ test('Auction sells all collateral w/shortfall', async t => {
   await aethVaultMetrics.assertChange({
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
-    totalDebt: { value: totalDebt },
     liquidatingCollateral: { value: 700n },
-    liquidatingDebt: { value: 5280n },
+    liquidatingDebt: { value: 5250n },
   });
 
-  shortfallBalance += 2095n;
+  shortfallBalance += 2065n;
   await m.assertChange({
     shortfallBalance: { value: shortfallBalance },
   });
@@ -1635,6 +1638,7 @@ test('liquidation Margin matters', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -1740,6 +1744,7 @@ test('reinstate vault', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -1941,6 +1946,7 @@ test('auction locks low price', async t => {
     manualTimer,
     undefined,
     500n,
+    { startFrequency: 3600n },
   );
   // we start with time=0, price=2200
 
@@ -2033,6 +2039,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -2236,7 +2243,7 @@ test('Bug 7346 excess collateral to holder', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n },
+    { discountStep: 500n, startFrequency: 3600n },
   );
 
   const {
@@ -2462,6 +2469,7 @@ test('refund to one of two loans', async t => {
     manualTimer,
     undefined,
     500n,
+    { startFrequency: 3600n },
   );
 
   const {
@@ -2647,7 +2655,7 @@ test('Bug 7784 reconstitute both', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n, lowestRate: 6500n },
+    { discountStep: 500n, lowestRate: 6500n, startFrequency: 3600n },
   );
 
   const {
@@ -3050,7 +3058,7 @@ test('Bug 7796 missing lockedPrice', async t => {
     shortfallBalance: run.makeEmpty(),
     allocations: {
       Aeth: aeth.make(310n),
-      Fee: run.makeEmpty(),
+      Fee: run.make(10_460n),
     },
   });
 });
