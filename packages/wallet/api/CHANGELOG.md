@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.0](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.13.3...@agoric/wallet-backend@0.14.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* emit smallcaps-format data in all marshallers
+
+### Features
+
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric/issues/6822)
+
+
+### Bug Fixes
+
+* use `subscribeEach` to get reconnect benefits ([fb24132](https://github.com/Agoric/agoric/commit/fb24132f9b4e117e56bae2803994e57c188344f3))
+* **ERTP:** `getCurrentAmountNotifier` returns a `LatestTopic` ([735d005](https://github.com/Agoric/agoric/commit/735d005ec4f4087a4055d48ff1dd1801c9a3d836))
+* code updates for new marshal ([292f971](https://github.com/Agoric/agoric/commit/292f971769db69e61782f96638c2f687c3f95ac2))
+* replace unsafe then with E.when ([#6684](https://github.com/Agoric/agoric/issues/6684)) ([d7a749e](https://github.com/Agoric/agoric/commit/d7a749eec4ddec9ba39bbc65434f03ec113cae7c))
+* update types/dependencies for new @agoric/time ([418545a](https://github.com/Agoric/agoric/commit/418545ae88085de6e7fde415baa7de0a3f3056a4))
+
+
+
 ### [0.13.5](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.13.4...@agoric/wallet-backend@0.13.5) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/wallet-backend

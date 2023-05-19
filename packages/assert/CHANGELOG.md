@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.5.1...@agoric/assert@0.6.0) (2023-05-19)
+
+
+### Features
+
+* **assert:** export assert.Fail from endo ([#6613](https://github.com/Agoric/agoric-sdk/issues/6613)) ([c863b17](https://github.com/Agoric/agoric-sdk/commit/c863b1708393f6102ce8174573aab4207c2ce71f))
+
+
+
 ### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.5.0...@agoric/assert@0.5.1) (2022-10-05)
 
 **Note:** Version bump only for package @agoric/assert

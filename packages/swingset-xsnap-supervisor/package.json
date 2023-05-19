@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-xsnap-supervisor",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Supervisor/Liveslots bundle for swingset xsnap workers",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -22,10 +22,9 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0"
   },
-  "dependencies": {},
   "devDependencies": {
-    "@agoric/assert": "^0.5.1",
-    "@agoric/swingset-liveslots": "^0.9.0",
+    "@agoric/assert": "^0.6.0",
+    "@agoric/swingset-liveslots": "^0.10.0",
     "@endo/bundle-source": "^2.5.1",
     "@endo/import-bundle": "^0.3.4",
     "@endo/init": "^0.5.56",

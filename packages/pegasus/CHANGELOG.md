@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.7.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.6...@agoric/pegasus@0.7.9) (2023-05-19)
+
+
+### Bug Fixes
+
+* use `subscribeEach` to get reconnect benefits ([fb24132](https://github.com/Agoric/agoric-sdk/commit/fb24132f9b4e117e56bae2803994e57c188344f3))
+* use atomicTransfers rather than stagings. ([#6577](https://github.com/Agoric/agoric-sdk/issues/6577)) ([65d3f14](https://github.com/Agoric/agoric-sdk/commit/65d3f14c8102993168d2568eed5e6acbcba0c48a))
+
+
+
 ### [0.7.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.7...@agoric/pegasus@0.7.8) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/pegasus

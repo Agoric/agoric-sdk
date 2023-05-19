@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-proto",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Protobuf stubs for the Agoric cosmos-sdk module",
   "keywords": [],
   "author": "Agoric",
