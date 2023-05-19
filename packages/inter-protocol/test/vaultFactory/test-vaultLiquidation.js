@@ -902,7 +902,7 @@ test('liquidate two loans', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
-  const { startTime: start2, time: now2 } = await startAuctionClock(
+  const { startTime: start2 } = await startAuctionClock(
     auctioneerKit,
     manualTimer,
   );
@@ -2993,19 +2993,14 @@ test('Bug 7796 missing lockedPrice', async t => {
   // that breaks the price capture. PriceLockPeriod is at its default of 3n.
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
-  let now = await setClockAndAdvanceNTimes(
-    manualTimer,
-    3n,
-    startTime,
-    TEN_MINUTES,
-  );
+  await setClockAndAdvanceNTimes(manualTimer, 3n, startTime, TEN_MINUTES);
 
   // price falls
   // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(9990n, run.brand, 1000n, aeth.brand));
   await eventLoopIteration();
 
-  now = await setClockAndAdvanceNTimes(
+  await setClockAndAdvanceNTimes(
     manualTimer,
     10n,
     TimeMath.addAbsRel(startTime, TimeMath.relValue(3600n)),
