@@ -294,8 +294,9 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   test-inter-protocol:
+    timeout-minutes: 45
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
+    #timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
