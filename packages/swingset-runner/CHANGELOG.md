@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.2...@agoric/swingset-runner@0.22.0) (2023-05-19)
+
+
+### Features
+
+* add APIs for tracking/debugging undesired object retention (aka "leaks") ([0a7221b](https://github.com/Agoric/agoric-sdk/commit/0a7221b3c04f3b2894c30346fa2ea6fb0130c046)), closes [#7318](https://github.com/Agoric/agoric-sdk/issues/7318)
+* convert swing-store from LMDB to Sqlite ([579a6c7](https://github.com/Agoric/agoric-sdk/commit/579a6c796a47092c4ee880316c7530d07d92c961))
+* Convert SwingSet to use smallcaps encoding for serialized data ([f289ec0](https://github.com/Agoric/agoric-sdk/commit/f289ec0868bf66ab3d48b32e5933ef12aa3a9edc)), closes [#6326](https://github.com/Agoric/agoric-sdk/issues/6326)
+* implement swingStore data export/import in support of state sync ([268e62f](https://github.com/Agoric/agoric-sdk/commit/268e62f8d68063de6416042ac1a8b94df89f3399)), closes [#6773](https://github.com/Agoric/agoric-sdk/issues/6773)
+* refactor SwingStore APIs to cleanly distinguish kernel facet from host facet ([7126822](https://github.com/Agoric/agoric-sdk/commit/71268220d659469cd583c9c510ed8c1a1661f282))
+
+
+### Bug Fixes
+
+* **swingset-runner:** Revert hard dep on canvas ([fff17fd](https://github.com/Agoric/agoric-sdk/commit/fff17fdbf25c85c2e8b86508a736d9860dc44727))
+* **swingset-runner:** Satisfy peer dependency of stat-logger with a dev dependency on canvas ([0f660a6](https://github.com/Agoric/agoric-sdk/commit/0f660a68054e031b875621654e1efca66b816d52))
+* **telemetry:** Missing after-commit rename from [#6881](https://github.com/Agoric/agoric-sdk/issues/6881) ([8e211f8](https://github.com/Agoric/agoric-sdk/commit/8e211f8862dea52b1d952c51760d6690a7604d30))
+* **zoe:** payments more recoverable ([#7112](https://github.com/Agoric/agoric-sdk/issues/7112)) ([ce7244d](https://github.com/Agoric/agoric-sdk/commit/ce7244d6cf23f57e6de73b5d119e9681456fded7))
+* CI failures in other packages ([071bf89](https://github.com/Agoric/agoric-sdk/commit/071bf89a337f39b3cb73ef60649fbe47825806bc))
+
+
+
 ### [0.21.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.3...@agoric/swingset-runner@0.21.4) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/swingset-runner

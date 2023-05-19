@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.8.1...@agoric/swing-store@0.9.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** start xsnap takes snapshot stream
+* **xsnap:** makeSnapshot yields snapshot data
+
+### Features
+
+* **swing-store:** enforce snapStore consistency ([b1343b7](https://github.com/Agoric/agoric-sdk/commit/b1343b72d743b707080e5da672fe1a43128e5d9e))
+* **SwingSet:** force reload from snapshot ([86de218](https://github.com/Agoric/agoric-sdk/commit/86de2188ce73ed9c3f5d48f7826b77106c1af864))
+* **swingset-tools:** add tool to extract bundles ([0144ec1](https://github.com/Agoric/agoric-sdk/commit/0144ec1efcdc41fa612b90883e634fb647d3d800))
+* **swingstore:** add support for b0- bundles ([4a3b320](https://github.com/Agoric/agoric-sdk/commit/4a3b32045a332f8a3ed1fe5e3ad74e8719c870e4)), closes [#7190](https://github.com/Agoric/agoric-sdk/issues/7190)
+* **xsnap:** makeSnapshot yields snapshot data ([348bbd2](https://github.com/Agoric/agoric-sdk/commit/348bbd2d9c251e7ec0f0aa109034d4bdb5ce89e4))
+* **xsnap:** start xsnap takes snapshot stream ([ed87de1](https://github.com/Agoric/agoric-sdk/commit/ed87de12e46095aa18f56b7d0118c6c76d5bef64))
+* Add incarnation number to the transcript store records ([5d64be7](https://github.com/Agoric/agoric-sdk/commit/5d64be7aa1fd222822b145240f541f5eabb01c43)), closes [#7482](https://github.com/Agoric/agoric-sdk/issues/7482)
+* convert swing-store from LMDB to Sqlite ([579a6c7](https://github.com/Agoric/agoric-sdk/commit/579a6c796a47092c4ee880316c7530d07d92c961))
+* eliminate ephemeralSwingStore in favor of Sqlite :memory: database ([0283233](https://github.com/Agoric/agoric-sdk/commit/0283233d5dff11bd343ecb436176973376e88142))
+* implement bundleStore ([34db767](https://github.com/Agoric/agoric-sdk/commit/34db7671daee5196c85f78ac82b90884e52fa555)), closes [#7089](https://github.com/Agoric/agoric-sdk/issues/7089)
+* implement swingStore data export/import in support of state sync ([268e62f](https://github.com/Agoric/agoric-sdk/commit/268e62f8d68063de6416042ac1a8b94df89f3399)), closes [#6773](https://github.com/Agoric/agoric-sdk/issues/6773)
+* Integrate kernel with bundleStore ([338556a](https://github.com/Agoric/agoric-sdk/commit/338556a7712ce676e15a97fc923439ca9c5c931a)), closes [#7197](https://github.com/Agoric/agoric-sdk/issues/7197)
+* move snapstore into SQLite database with the rest of the swingstore ([5578834](https://github.com/Agoric/agoric-sdk/commit/55788342bbffe253dd12e919e005e3d093fd6b65)), closes [#6742](https://github.com/Agoric/agoric-sdk/issues/6742)
+* refactor SwingStore APIs to cleanly distinguish kernel facet from host facet ([7126822](https://github.com/Agoric/agoric-sdk/commit/71268220d659469cd583c9c510ed8c1a1661f282))
+* relocate snapshot metadata from kvStore to snapStore ([4e0f679](https://github.com/Agoric/agoric-sdk/commit/4e0f679b5f8249e1e9098731a96cc0fd793d5d9d)), closes [#6742](https://github.com/Agoric/agoric-sdk/issues/6742)
+* use Sqlite save points for crank commit, integrate activity hash into swing-store ([6613d7e](https://github.com/Agoric/agoric-sdk/commit/6613d7eed8b2ee6f6fc06e1dc06747f80b0f44bd))
+
+
+### Bug Fixes
+
+* **swing-store:** add isCurrent SQLite CHECK ([90bd76c](https://github.com/Agoric/agoric-sdk/commit/90bd76c774810393fc8a1269976fd4d65b7d52ba))
+* **swing-store:** noteExport span init ([5ba0d31](https://github.com/Agoric/agoric-sdk/commit/5ba0d31e03a35e8ffec5d3cb198347571505046e))
+* **swing-store:** remove explicit wal_checkpoint ([efe6b7e](https://github.com/Agoric/agoric-sdk/commit/efe6b7e17b2a528b39ef30122a6cebb6a692fb96)), closes [#7069](https://github.com/Agoric/agoric-sdk/issues/7069)
+* **swing-store:** replace getAllState/etc with a debug facet ([886528c](https://github.com/Agoric/agoric-sdk/commit/886528c3044488da57a80bc47290b031fa0713ce))
+* **swing-store:** replace kvStore.getKeys() with getNextKey() ([4b2c29b](https://github.com/Agoric/agoric-sdk/commit/4b2c29b6881f1d0e9fb34ed8ba37ac4785468da8)), closes [#6468](https://github.com/Agoric/agoric-sdk/issues/6468)
+* **swing-store:** switch to internal line transform ([f4b964a](https://github.com/Agoric/agoric-sdk/commit/f4b964a5c02568cc8ac0ac0e8642eacb8ca17b72))
+* **swingset-tools:** extract vat transcript ([edbac04](https://github.com/Agoric/agoric-sdk/commit/edbac04166d0a8085c00d3d4194608377da9adc7))
+* CI failures in other packages ([071bf89](https://github.com/Agoric/agoric-sdk/commit/071bf89a337f39b3cb73ef60649fbe47825806bc))
+* eliminate snapStore `root` parameter ([f06a171](https://github.com/Agoric/agoric-sdk/commit/f06a17117ef391d46604a4bc34b185135396a7c5))
+* incorporate review feedback ([24896ee](https://github.com/Agoric/agoric-sdk/commit/24896ee9271131d68cd2815028f272fefd1818cd))
+
+
+
 ### [0.8.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.8.0...@agoric/swing-store@0.8.1) (2022-10-05)
 
 **Note:** Version bump only for package @agoric/swing-store

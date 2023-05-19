@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.4.0...@agoric/telemetry@0.6.0) (2023-05-19)
+
+
+### Features
+
+* **cosmic-swingset:** basic snapshot wiring ([b1072d8](https://github.com/Agoric/agoric-sdk/commit/b1072d8b1ddabbb5f2835eb503c945fed3b6b080))
+* **telemetry:** add shutdown ([84757ff](https://github.com/Agoric/agoric-sdk/commit/84757ff63c7f603954af9c6e85ce7a819938e5b0))
+* **telemetry:** do not carry span stack corruption across blocks ([16eaa99](https://github.com/Agoric/agoric-sdk/commit/16eaa99caef56b73159b321894aa2dca52846a29))
+* **telemetry:** Expose send errors in forceFlush ([7a9a8c6](https://github.com/Agoric/agoric-sdk/commit/7a9a8c6165d3cb1bc89289faddf355bc04cc9c1f))
+* **telemetry:** fail otel slog sender in more cases ([4549903](https://github.com/Agoric/agoric-sdk/commit/45499031cbb2417d58a50087b857600a96f87fe8))
+* **telemetry:** SLOGSENDER_FAIL_ON_ERROR ([db79fca](https://github.com/Agoric/agoric-sdk/commit/db79fcad8bc784d300acfd994ceab9a2b9c2a567))
+
+
+### Bug Fixes
+
+* **telemetry:** do not propagate errors through queue ([601d63b](https://github.com/Agoric/agoric-sdk/commit/601d63b53722bac479ad570e2f7dfc1016dae9c7))
+* **telemetry:** fix various edge cases ([c54d996](https://github.com/Agoric/agoric-sdk/commit/c54d9962deaaefec4f2c9680d58d625644ef9b69))
+* **telemetry:** handle missing syscalls ([0b8475b](https://github.com/Agoric/agoric-sdk/commit/0b8475be8616d81661962c9845315554e58a7f96))
+* **telemetry:** handle paging `create-vat` ([84a7557](https://github.com/Agoric/agoric-sdk/commit/84a75573520b5cc24ba7cc29e054a66d81f06339))
+* **telemetry:** handle smallcaps ([1adc8ce](https://github.com/Agoric/agoric-sdk/commit/1adc8ced2c5d65db8de4992d2273824f79020a2c))
+* **telemetry:** Missing after-commit rename from [#6881](https://github.com/Agoric/agoric-sdk/issues/6881) ([8e211f8](https://github.com/Agoric/agoric-sdk/commit/8e211f8862dea52b1d952c51760d6690a7604d30))
+* **telemetry:** partially undo [#6684](https://github.com/Agoric/agoric-sdk/issues/6684) ([b9fa85b](https://github.com/Agoric/agoric-sdk/commit/b9fa85b7307124e50cc3a84d3b694307cde55f54))
+* **telemetry:** silence pipe sender rejections ([e502f92](https://github.com/Agoric/agoric-sdk/commit/e502f9293ed92b8d705447271aa4f010c6c6dcb6))
+* **telemetry:** upgrade otel deps ([dc48759](https://github.com/Agoric/agoric-sdk/commit/dc4875992937f9648381efae70818fa767d4b901))
+* replace unsafe then with E.when ([#6684](https://github.com/Agoric/agoric-sdk/issues/6684)) ([d7a749e](https://github.com/Agoric/agoric-sdk/commit/d7a749eec4ddec9ba39bbc65434f03ec113cae7c))
+
+
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.4.0...@agoric/telemetry@0.5.0) (2023-02-17)
 
 

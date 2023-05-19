@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.17.0...@agoric/wallet@0.18.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* emit smallcaps-format data in all marshallers
+* **makeChainInfo:** rpc param as authoritative
+
+### Features
+
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric-sdk/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric-sdk/issues/6822)
+* **makeChainInfo:** optional apiAddrs ([6c59220](https://github.com/Agoric/agoric-sdk/commit/6c592203beb0624992aeb94be9cb5d85126cf040))
+* **makeChainInfo:** rpc param as authoritative ([23ed917](https://github.com/Agoric/agoric-sdk/commit/23ed9174053936b8a22219ce5f56a357b52764d5))
+* **wallet:** serve legacy wallet from solo HTTP ([4008b1c](https://github.com/Agoric/agoric-sdk/commit/4008b1ccc271b451ee63f9a4fcc06fb01b36a99e))
+* **wallet-ui:** add terms dialog on first pageview ([821a1aa](https://github.com/Agoric/agoric-sdk/commit/821a1aace936077ae88477eccdb5c28cf70b4c07))
+* **wallet-ui:** ammend terms text and link ([03b11d2](https://github.com/Agoric/agoric-sdk/commit/03b11d220c317184d57b941cee5911782cde711a))
+* **wallet-ui:** link out to ToS ([9b27ceb](https://github.com/Agoric/agoric-sdk/commit/9b27cebc9f1e44bcc2079d9fa3a14b11fab919e4))
+* omit "SEVERED: " in Wallet offers ([838f5d2](https://github.com/Agoric/agoric-sdk/commit/838f5d22d1e747bee2199b38c109b30e298a5fb8))
+
+
+### Bug Fixes
+
+* use `subscribeEach` to get reconnect benefits ([fb24132](https://github.com/Agoric/agoric-sdk/commit/fb24132f9b4e117e56bae2803994e57c188344f3))
+* **ERTP:** `getCurrentAmountNotifier` returns a `LatestTopic` ([735d005](https://github.com/Agoric/agoric-sdk/commit/735d005ec4f4087a4055d48ff1dd1801c9a3d836))
+* code updates for new marshal ([292f971](https://github.com/Agoric/agoric-sdk/commit/292f971769db69e61782f96638c2f687c3f95ac2))
+* replace unsafe then with E.when ([#6684](https://github.com/Agoric/agoric-sdk/issues/6684)) ([d7a749e](https://github.com/Agoric/agoric-sdk/commit/d7a749eec4ddec9ba39bbc65434f03ec113cae7c))
+* update types/dependencies for new @agoric/time ([418545a](https://github.com/Agoric/agoric-sdk/commit/418545ae88085de6e7fde415baa7de0a3f3056a4))
+* **smart-wallet:** reenable provisioning options ([55f3ab1](https://github.com/Agoric/agoric-sdk/commit/55f3ab1a0842ae2cc60a05b55e17120e964570b5))
+* **wallet-ui:** dont overrite all offers when adding new one ([6d4ef3a](https://github.com/Agoric/agoric-sdk/commit/6d4ef3a5cebf4f7f114788af8a9a8d020fd45684))
+
+
+
 ### [0.17.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.17.1...@agoric/wallet@0.17.2) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/wallet

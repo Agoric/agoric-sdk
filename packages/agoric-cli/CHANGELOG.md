@@ -3,6 +3,156 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.2...agoric@0.19.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* emit smallcaps-format data in all marshallers
+* **agoric-cli:** change meaning of `agoric run` to have no default VM connection
+* removes `inter liquidation status`
+* **auction:** Currency → Bid
+* --giveCurrency option becomes --give and likewise
+--wantCollateral -> --want. Use snake-case for options throughout to
+match cosmos-sdk style
+
+ - `bid` commands integrate `wallet send` step
+   - show bid result
+ - use only liveOffers for inter bid list by default
+   - to show all: --all
+ - fix: provide --allow-spend for tryExitOffer
+   unless/until we change the wallet contract
+ - don't show redundant result in error case
+ - trial: use offer safe want in by-price bids
+ - leave exit onDemand implicit
+ - refactor:
+   - factor out outputActionAndHint
+   - allow explicit io for execSwingsetTransaction
+     - combine options into one object
+   - factor out storedWalletState
+   - factor pollBlocks out of pollTx
+ - update tests
+
+feat: inter bid by-discount sends; --generate-only; list --all
+
+ - bid by-discount, like by-price, sends the tx
+   - factor out placeBid, SharedBidOpts, withSharedBidOptions
+ - bid list uses activeOffers unless --all is given
+ - support --generate-only
+ - use snake-case for option names; avoid [xx] optional syntax
+ - give PATH clue everywhere execFileSync is used
+ - test.todo()s
+ - code polish:
+   - expand file, function docs
+   - refactor: hoist bidInvitationShape
+* **agops:** unit price option as float
+* **agops:** ec command
+* rename 'fit' to 'mustMatch'
+* **chainlink:** 'data' string to 'unitPrice' bigint
+* **agoric-cli:** econCommitteeCharter subsumed psmCharter
+
+### Features
+
+* **ec:** find-continuing-id ([9c76bd3](https://github.com/Agoric/agoric-sdk/commit/9c76bd306db8013926106daaee9879bc01bc071d))
+* **oracle:** find-continuing-id ([4c7c345](https://github.com/Agoric/agoric-sdk/commit/4c7c345bb15421586cd483defc16f93471ac1ea4))
+* emit smallcaps-format data in all marshallers ([1753df8](https://github.com/Agoric/agoric-sdk/commit/1753df83465785b5ee71b250770c9b012d750ffc)), closes [#6822](https://github.com/Agoric/agoric-sdk/issues/6822)
+* publish GoodStuff brand for use by clients ([b2903ee](https://github.com/Agoric/agoric-sdk/commit/b2903ee0ac6a340f7b9f23c04f217913f156d1f2))
+* simple offer command for upgrade testing ([795719f](https://github.com/Agoric/agoric-sdk/commit/795719fe5287d663201a12a4509e00e18139fd22))
+* **agops:** ec command ([bdfb53d](https://github.com/Agoric/agoric-sdk/commit/bdfb53da979073e1f3703f06fd81e983307f70db))
+* **agops:** reserve command ([8d488ef](https://github.com/Agoric/agoric-sdk/commit/8d488ef60a957328995f282fc9c341a8fbadf1cb))
+* **agops:** unit price option as float ([08028e0](https://github.com/Agoric/agoric-sdk/commit/08028e035c9045230480b6a56efdbd34ad04a1fc))
+* **agoric-cli:** add `follow --first-value-only` or `-F` ([8dbd8bb](https://github.com/Agoric/agoric-sdk/commit/8dbd8bbedf29b25c08c1523c9cc9c98324e43216))
+* **agoric-cli:** add `ibc-setup` and `ibc-relayer` commands with docs ([2b90da3](https://github.com/Agoric/agoric-sdk/commit/2b90da332b19d924678b9784ee2262ca54021eec))
+* **agoric-cli:** change meaning of `agoric run` to have no default VM connection ([06fb05a](https://github.com/Agoric/agoric-sdk/commit/06fb05a4e47eaea157592c976d7a16aa011408d1))
+* **agoric-cli:** inter bid cancel ([684a2a3](https://github.com/Agoric/agoric-sdk/commit/684a2a38a1e5f7e57e1265d7ea1fea6e2d92bc9e))
+* **agoric-cli:** propose PriceLockPeriod change ([4afe441](https://github.com/Agoric/agoric-sdk/commit/4afe4419631af74d6e870bbb16fb2f35a68a5795))
+* **board-utils:** BoardRemote like Remotables ([3aa44de](https://github.com/Agoric/agoric-sdk/commit/3aa44debbdc955892611ba870478fb088395cf10))
+* **fluxAggregator:**  pushPrice roundId optional ([ca62d7a](https://github.com/Agoric/agoric-sdk/commit/ca62d7afc78c1b58445168db20583f5b5ccfb7b6))
+* **wallet:** extract-id ([ab9ac18](https://github.com/Agoric/agoric-sdk/commit/ab9ac189eae957ca41b624ba93e131bb87b0a4d1))
+* **wallet:** print-offer ([7f92fdf](https://github.com/Agoric/agoric-sdk/commit/7f92fdf43f10eb43b12edff843989a5763131392))
+* 'vaults adjust' command ([3c2f930](https://github.com/Agoric/agoric-sdk/commit/3c2f930e024d33922ba9ecc66421ae6fc5368caf))
+* 'vaults close' command ([cbfb862](https://github.com/Agoric/agoric-sdk/commit/cbfb862078851ba1c1f788522651987df86c2432))
+* agops auction proposeParamChange ([f9e1f80](https://github.com/Agoric/agoric-sdk/commit/f9e1f809daa9be4c72a86524faf74a89c9f4ff02))
+* agops ec: integrated sign, broadcast, await ([e13cf6c](https://github.com/Agoric/agoric-sdk/commit/e13cf6ca31a8a1dab4be3b138d12e6e1b49a190c))
+* agops vaults open ([4765644](https://github.com/Agoric/agoric-sdk/commit/476564471471e84e8add6224458bdaff92d15b68))
+* AGORIC_KEYRING_BACKGROUND convenience ([89ae6c5](https://github.com/Agoric/agoric-sdk/commit/89ae6c52f48fdce4dab6a4d43c6c7fbb3ad73c43))
+* board-utils ([4f80ad3](https://github.com/Agoric/agoric-sdk/commit/4f80ad3cac3e47a89834f7f98330a47141b6e235))
+* change offerArgs keyword from want to maxBuy, wire through CLI ([#7451](https://github.com/Agoric/agoric-sdk/issues/7451)) ([7cd7bb7](https://github.com/Agoric/agoric-sdk/commit/7cd7bb774981620f76b30aca217d8e5428f8987d))
+* clientSupport for bidding, reserve ([3a27543](https://github.com/Agoric/agoric-sdk/commit/3a27543e3fef3587d26fe3719bad758edebce275))
+* create new @agoric/time package ([a61a3fb](https://github.com/Agoric/agoric-sdk/commit/a61a3fbb7a5ccfe07c715a310baa88ada8e572b2)), closes [#6003](https://github.com/Agoric/agoric-sdk/issues/6003)
+* create new xsnap-lockdown package ([2af831d](https://github.com/Agoric/agoric-sdk/commit/2af831d9683a4080168ee267e8d57227d2167f37)), closes [#6596](https://github.com/Agoric/agoric-sdk/issues/6596)
+* extract swingset-xsnap-supervisor out to a separate package ([0024f01](https://github.com/Agoric/agoric-sdk/commit/0024f0128ff658c93468069b6fa5cc3bebfbdc78)), closes [#6596](https://github.com/Agoric/agoric-sdk/issues/6596)
+* inter auction status command ([3435835](https://github.com/Agoric/agoric-sdk/commit/343583501ed77874c1ac9621401399db71431cae))
+* inter vbank list: expose denom, boardId, decimalPlaces ([f4fb840](https://github.com/Agoric/agoric-sdk/commit/f4fb840c895d2b7704872b40a012f7f50cc3b8c3))
+* move liveslots and specific tests to a new package ([0921a89](https://github.com/Agoric/agoric-sdk/commit/0921a8903b72cfefdf05a5906bcfb826cac1cc2f)), closes [#6596](https://github.com/Agoric/agoric-sdk/issues/6596)
+* track publicSubscribers ([30cae51](https://github.com/Agoric/agoric-sdk/commit/30cae513a624a74f2df05b668f4eaa02d6d13656))
+* UX for `inter bid` ([52d93c3](https://github.com/Agoric/agoric-sdk/commit/52d93c33edbad2bebd54a6eb967853e7292de2e7))
+* **agops:** oracle commands ([428bfe2](https://github.com/Agoric/agoric-sdk/commit/428bfe2adc5c5f9a2a56366960869d011e0caaf3))
+* **agoric-cli:** generate `decentral-economy-config.json` ([db88a76](https://github.com/Agoric/agoric-sdk/commit/db88a760655e064be178229931b8414cd2510f4a))
+* **economy-config:** allow override of PRIMARY_ADDRESS ([06119b8](https://github.com/Agoric/agoric-sdk/commit/06119b81005c61641781614fab2c206f13b43ff8))
+* **oracle!:** roundId in price results ([e1f7488](https://github.com/Agoric/agoric-sdk/commit/e1f7488e52388b013343d6a6d0dd03ce5b2c9932))
+* **rpc:** publish latestRound ([9e2617b](https://github.com/Agoric/agoric-sdk/commit/9e2617b02c2be9465b6df328bbef8145a3ab8901))
+* **vaults:** parameterize collateralBrandKey ([ede7dea](https://github.com/Agoric/agoric-sdk/commit/ede7deaf44ad43170bc9b297460f8587183fb0d9))
+* **wallet:** show bank balances ([5a5cb26](https://github.com/Agoric/agoric-sdk/commit/5a5cb26034d8e858abbfa78b1fd2d0580a78dd8c))
+* vaults list command ([894c92f](https://github.com/Agoric/agoric-sdk/commit/894c92f9ee6331aba43aaeebd6c007dd03d53996))
+
+
+### Bug Fixes
+
+* **agops:** psm swap params ([3a21dd1](https://github.com/Agoric/agoric-sdk/commit/3a21dd1f310036cfcd9f611e5089e41621e692ae))
+* **agops:** space in amount format ([b3b84dd](https://github.com/Agoric/agoric-sdk/commit/b3b84dd0a30d21ed7bd2c936a2c450851f4a1a92))
+* **agoric-cli:** `agops simple` -> `agops test upgrade-contract` ([4606e06](https://github.com/Agoric/agoric-sdk/commit/4606e06641209efb05b596a8d2427357d122a69b))
+* **agoric-cli:** allow `follow` to work with smallcaps ([895e918](https://github.com/Agoric/agoric-sdk/commit/895e918e7c0cb0150c4cd69e72c40edd2d352f22))
+* **agoric-cli:** harden bridgeAction ([58208ac](https://github.com/Agoric/agoric-sdk/commit/58208ac3806e9860f825bb050b6d339ac2a0928e))
+* **agoric-cli:** repair an observed type confusion ([3f7bcbc](https://github.com/Agoric/agoric-sdk/commit/3f7bcbc0f1b0a4e5b00cfef9afa55cc33487d1b7))
+* **oracle:** parsing oracleAdminAcceptOfferId ([a166efa](https://github.com/Agoric/agoric-sdk/commit/a166efa83150a1931c8a96d40aa9a0d8a62bdc11))
+* **oracle:** pushPriceRound offerId ([a11787a](https://github.com/Agoric/agoric-sdk/commit/a11787a38c90ee7ff815a21200c5950c61a55c22))
+* handle branded TimestampRecord in solo/store/agoric-cli/governance ([8369dd6](https://github.com/Agoric/agoric-sdk/commit/8369dd6a47e7e6c1c799a131fc38f340f0018b38))
+* handle missing schedule fields in `inter auction status` ([d23c5a0](https://github.com/Agoric/agoric-sdk/commit/d23c5a006c81536f7754588f4a59175b7494cb43))
+* **agops:** collateralBrandKey option name ([164b871](https://github.com/Agoric/agoric-sdk/commit/164b87109b844d46bc0e9c23a6f56eed5f01f958))
+* **agops:** psm swap arguments ([49644bc](https://github.com/Agoric/agoric-sdk/commit/49644bc856f38d3ea0172718295ebbaded134f3b))
+* **agoric-cli:** add `registry.yaml` ([6cf1b0c](https://github.com/Agoric/agoric-sdk/commit/6cf1b0c4d94d92d9b7aed0a1072d0da064ead4e0))
+* **agoric-cli:** begin separation of deploy host and script ([b091cad](https://github.com/Agoric/agoric-sdk/commit/b091cadbc652128e34d6225b6875baa5f1a9a4c7))
+* **agoric-cli:** dont throw when reading history ([0e7efc0](https://github.com/Agoric/agoric-sdk/commit/0e7efc06bdd03ab222eb90a649b4ea90e8563200))
+* **agoric-cli:** econCommitteeCharter subsumed psmCharter ([f5b2db2](https://github.com/Agoric/agoric-sdk/commit/f5b2db2dfe7710bc2fa6b8b33055568ac2995a14))
+* **agoric-cli:** fix exec return type ([56786c2](https://github.com/Agoric/agoric-sdk/commit/56786c23107a6500fed04034ef6d29eebc1092d0))
+* **agoric-cli:** get vbank brand info from agoricNames ([5d3ab2f](https://github.com/Agoric/agoric-sdk/commit/5d3ab2f23066b16b0b90135c5da96c4356923873))
+* **agoric-cli:** handle agd not in $PATH ([3ad7887](https://github.com/Agoric/agoric-sdk/commit/3ad78870900da859124f79199fd2c971b9083204))
+* **agoric-cli:** IbcATOM -> ATOM ([c0df90d](https://github.com/Agoric/agoric-sdk/commit/c0df90d9965f91b4c37fd4b095c8cfa7e2fda364))
+* **agoric-cli:** pass agops perf --keyring-backend option correctly ([12bd366](https://github.com/Agoric/agoric-sdk/commit/12bd366602fefee1a66c16ae87719c14f10e5b41))
+* **agoric-cli:** pathResolve paths order ([a4e459d](https://github.com/Agoric/agoric-sdk/commit/a4e459da7748c67348c57bf70b9a108c8ec15158))
+* **agoric-cli:** skip initial octothorp ([cdf1536](https://github.com/Agoric/agoric-sdk/commit/cdf15361b43e938ae683c08d3472b1cae8a79be1))
+* **auction:** Currency → Bid ([650cf4c](https://github.com/Agoric/agoric-sdk/commit/650cf4c6527c92724dac7b4587bdbecd690a6abc))
+* **cli:** options validation ([cd5fc7d](https://github.com/Agoric/agoric-sdk/commit/cd5fc7d8597866de410c7f4658f39cdb85f24eeb))
+* **cli:** query AGORIC_NET for wallet show cmd ([a298823](https://github.com/Agoric/agoric-sdk/commit/a298823ec710cadbe22c9451318de85d1f3fd5f1))
+* **ec:** vote requires send-from option ([4f49cf4](https://github.com/Agoric/agoric-sdk/commit/4f49cf448bf64592b692a5e6e087e9affe8a61eb))
+* **format:** timestamp inference ([766bb27](https://github.com/Agoric/agoric-sdk/commit/766bb279e135f6c7cd78d3df81b508a0a728a02c))
+* agops oracle: no IO (errors) at module import ([107bf96](https://github.com/Agoric/agoric-sdk/commit/107bf964da906399f0fbefbf0581e0d2bd35f92e))
+* agops psm: not I/O (errors) until command action ([2a7fa8c](https://github.com/Agoric/agoric-sdk/commit/2a7fa8cfefd99bac2bf21b3bc4661de4deaf3dcd))
+* align testnet -> agoric start tooling ([ead89fb](https://github.com/Agoric/agoric-sdk/commit/ead89fb49b4095f326f4bbab52ac79c9dd7d0e2f))
+* review suggestions ([3f79840](https://github.com/Agoric/agoric-sdk/commit/3f79840a6505b1c8922b04dbb9c445c89ad5ba8e))
+* **wallet:** backcompat for published current ([4378fa9](https://github.com/Agoric/agoric-sdk/commit/4378fa9bde6bd70a2e487d4fc6db2f138c261517))
+* **wallet:** handling omission of send-from ([07cc618](https://github.com/Agoric/agoric-sdk/commit/07cc6186a60eb437007dd16f530454cd8a980254))
+* agops ec: no I/O (errors) until command action ([58b9d4e](https://github.com/Agoric/agoric-sdk/commit/58b9d4e063cd43a8c51a2b412d73f565fd0dd555))
+* agops reserve: no I/O (errors) until command action ([d83b07d](https://github.com/Agoric/agoric-sdk/commit/d83b07d26102d6d747904e4bfe5aed518e34eb04))
+* agops vaults: no I/O (errors) until command action ([9f10fbd](https://github.com/Agoric/agoric-sdk/commit/9f10fbd6c41030a5e80a1e6ca88424b814104708))
+* **cli:** keyringBackend option threading ([b5d37ce](https://github.com/Agoric/agoric-sdk/commit/b5d37ce5c251b8e7e2126f295b4d7dc61069d037))
+* **cli:** latest record for getCurrent ([c665a5f](https://github.com/Agoric/agoric-sdk/commit/c665a5f563289790329e694da485371dd3562449))
+* **cli:** marshaling repeated board values ([accbf31](https://github.com/Agoric/agoric-sdk/commit/accbf312ee19a7f24ba93554b3ee44b1d6c0bd8c))
+* **oracle:** default restartDelay parameter ([9d3a4cf](https://github.com/Agoric/agoric-sdk/commit/9d3a4cf488c9964ffb9aae0ad80b04fb9188f24f))
+* command injection ([123ed55](https://github.com/Agoric/agoric-sdk/commit/123ed550c0a7c69d3372e21cfc73f8cc0b018bb2))
+* psm vote arguments ([3d892ff](https://github.com/Agoric/agoric-sdk/commit/3d892ff00f25eb6bf9d7b51a3db4f7baa0fc1d43))
+* rename docker image root ([#7186](https://github.com/Agoric/agoric-sdk/issues/7186)) ([ab2efa6](https://github.com/Agoric/agoric-sdk/commit/ab2efa64b44fb410592b6dfa2a992296fd8b51d4))
+* style ([f16cfd6](https://github.com/Agoric/agoric-sdk/commit/f16cfd6816e5a4b2cce37da32fce568e6f737362))
+
+
+### Miscellaneous Chores
+
+* rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
+* **chainlink:** 'data' string to 'unitPrice' bigint ([a8c836c](https://github.com/Agoric/agoric-sdk/commit/a8c836cb70a033d78199372669f6f95314de4d8f))
+
+
+
 ### [0.18.4](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.3...agoric@0.18.4) (2023-02-17)
 
 **Note:** Version bump only for package agoric

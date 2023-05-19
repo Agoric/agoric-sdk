@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.13.2...@agoric/xsnap@0.14.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** start xsnap takes snapshot stream
+* **xsnap:** makeSnapshot yields snapshot data
+* **xsnap:** Update Moddable SDK and xsnap-native
+* **xsnap:** Update Moddable SDK and xsnap-native (#6920)
+
+### Features
+
+* **xsnap:** Handle snapshot written size in command response ([6dfe7b0](https://github.com/Agoric/agoric-sdk/commit/6dfe7b0461a6c45b00b80cbb847985dbce1709e3))
+* **xsnap:** makeSnapshot yields snapshot data ([348bbd2](https://github.com/Agoric/agoric-sdk/commit/348bbd2d9c251e7ec0f0aa109034d4bdb5ce89e4))
+* **xsnap:** makeSnapshotStream over process pipe ([c0be80d](https://github.com/Agoric/agoric-sdk/commit/c0be80d5964748e2dabe1903bef5b7b1c6eb8e85))
+* **xsnap:** start xsnap takes snapshot stream ([ed87de1](https://github.com/Agoric/agoric-sdk/commit/ed87de12e46095aa18f56b7d0118c6c76d5bef64))
+* **xsnap:** stream start snapshot over pipe ([3f77ff9](https://github.com/Agoric/agoric-sdk/commit/3f77ff90e918280fb07055c602b56871f342365d))
+* **xsnap:** Update Moddable SDK and xsnap-native ([2095474](https://github.com/Agoric/agoric-sdk/commit/2095474ed69ff0e6aa3a4fa7edcefe988011513d))
+* **xsnap:** Update Moddable SDK and xsnap-native ([#6920](https://github.com/Agoric/agoric-sdk/issues/6920)) ([ddb745b](https://github.com/Agoric/agoric-sdk/commit/ddb745bb1a940cd81dae34c642eb357faca0150b))
+* **xsnap:** use XS native harden ([037167f](https://github.com/Agoric/agoric-sdk/commit/037167fd9d071f8525401b15e13809ebf910f106))
+* create new xsnap-lockdown package ([2af831d](https://github.com/Agoric/agoric-sdk/commit/2af831d9683a4080168ee267e8d57227d2167f37)), closes [#6596](https://github.com/Agoric/agoric-sdk/issues/6596)
+
+
+### Bug Fixes
+
+* **xsnap:** add untracked build-env file ([223a74b](https://github.com/Agoric/agoric-sdk/commit/223a74bd0fb6139e6240c57d63297080293cfcd5))
+* **xsnap:** cleanly close using message ([ae54724](https://github.com/Agoric/agoric-sdk/commit/ae54724e7c1882d5dd235f2207dd0a1a7794d35a))
+* **xsnap:** makeSnapshot synchronously takes baton ([8d511e8](https://github.com/Agoric/agoric-sdk/commit/8d511e82b50a4226d3da22dc3c6d0df95609dfaf))
+
+
+
 ### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.13.2...@agoric/xsnap@0.13.3) (2023-02-17)
 
 

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.5.0...@agoric/web-components@0.6.0) (2023-05-19)
+
+
+### Features
+
+* **web-components:** allow custom import context ([2f4ba3a](https://github.com/Agoric/agoric-sdk/commit/2f4ba3ac143e690a479b103f2585d6598ade0f0e))
+* **web-components:** read purses from bank instead of smart wallet ([#6861](https://github.com/Agoric/agoric-sdk/issues/6861)) ([f9a3126](https://github.com/Agoric/agoric-sdk/commit/f9a31269026855fcbf4e464840e9316e0e179adc))
+* **web-components:** read wallet offer public subscribers ([7b76238](https://github.com/Agoric/agoric-sdk/commit/7b76238b16134649cd5312ed0cdc2353a6901dc7))
+
+
+
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.5.1...@agoric/web-components@0.5.2) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/web-components

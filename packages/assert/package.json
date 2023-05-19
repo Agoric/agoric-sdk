@@ -1,6 +1,6 @@
 {
   "name": "@agoric/assert",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Assert expression support that protects sensitive data",
   "type": "module",
   "main": "src/assert.js",

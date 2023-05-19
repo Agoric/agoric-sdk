@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.28](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.27...@agoric/stat-logger@0.4.28) (2023-05-19)
+
+
+### Bug Fixes
+
+* update vega to get rid of override mistake problem ([f96d16b](https://github.com/Agoric/agoric-sdk/commit/f96d16bde7da6e34ec68caa7fa9a945416329ed8)), closes [#2373](https://github.com/Agoric/agoric-sdk/issues/2373)
+* **stat-logger:** Clarify that peerDependencies are optional ([8021703](https://github.com/Agoric/agoric-sdk/commit/80217034317645c0d2836c413cd48192e9b21eb6))
+
+
+
 ### [0.4.27](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.26...@agoric/stat-logger@0.4.27) (2022-09-20)
 
 

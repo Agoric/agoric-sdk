@@ -1,6 +1,6 @@
 {
   "name": "@agoric/ssh-node",
-  "version": "2.5.1",
+  "version": "3.0.0",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
   "private": true,
@@ -19,7 +19,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.5.1",
+    "@agoric/assert": "^0.6.0",
     "@endo/init": "^0.5.56",
     "@endo/marshal": "^0.8.5",
     "chalk": "^5.2.0",
