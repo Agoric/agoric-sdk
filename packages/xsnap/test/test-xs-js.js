@@ -167,6 +167,7 @@ test('round-trip byte sequences via JSON including string literals', async t => 
       .fill(0)
       .map((_, i) => `\\x${i.toString(16).padStart(2, '0')}`)
       .join('');
+    // @ts-expect-error Left side of comma operator is unused and has no side effects.
     // eslint-disable-next-line no-eval
     const bstring2 = (1, eval)(`"${joctets}"`);
     send(bstring1 === bstring2);
