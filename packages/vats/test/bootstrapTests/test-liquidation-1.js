@@ -5,10 +5,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
-import {
-  makeParseAmount,
-  Offers,
-} from '@agoric/inter-protocol/src/clientSupport.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import process from 'process';
 import {
   likePayouts,
@@ -128,6 +125,12 @@ test.after.always(t => {
 });
 
 // Reference: Flow 1 from https://github.com/Agoric/agoric-sdk/issues/7123
+/**
+ *
+ * @param {import('ava').ExecutionContext<Awaited<ReturnType<typeof makeLiquidationTestContext>>>} t
+ * @param {{collateralBrandKey: string, managerIndex: number}} case
+ * @param {*} _expected
+ */
 const checkFlow1 = async (
   t,
   { collateralBrandKey, managerIndex },
@@ -187,7 +190,6 @@ const checkFlow1 = async (
     //  Place bids
     // ---------------
 
-    const parseAmount = makeParseAmount(agoricNamesRemotes, Error);
     await buyer.sendOffer(
       Offers.psm.swap(
         agoricNamesRemotes,
@@ -207,7 +209,6 @@ const checkFlow1 = async (
       offerId: `${collateralBrandKey}-bid1`,
       ...setup.bids[0],
       maxBuy,
-      parseAmount,
     });
 
     t.like(readLatest('published.wallet.agoric1buyer'), {
@@ -221,7 +222,6 @@ const checkFlow1 = async (
       offerId: `${collateralBrandKey}-bid2`,
       ...setup.bids[1],
       maxBuy,
-      parseAmount,
     });
     t.like(readLatest('published.wallet.agoric1buyer'), {
       status: {
@@ -234,7 +234,6 @@ const checkFlow1 = async (
       offerId: `${collateralBrandKey}-bid3`,
       ...setup.bids[2],
       maxBuy,
-      parseAmount,
     });
     t.like(readLatest('published.wallet.agoric1buyer'), {
       status: {
