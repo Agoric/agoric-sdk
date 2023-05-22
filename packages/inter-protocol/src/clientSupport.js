@@ -207,6 +207,47 @@ const makePsmSwapOffer = ({ brand }, instance, opts) => {
 };
 
 /**
+ * @param {{
+ *   brand: Record<string, Brand>,
+ *   vbankAsset: Record<string, { brand: Brand, displayInfo: DisplayInfo }>,
+ * }} agoricNames
+ * @param {(msg: string) => Error} makeError error constructor
+ * @returns {(a: string) => Amount<'nat'>}
+ */
+export const makeParseAmount =
+  (agoricNames, makeError = msg => RangeError(msg)) =>
+  opt => {
+    assert.typeof(opt, 'string', 'parseAmount expected string');
+    const m = opt.match(/^(?<value>[\d_]+(\.[\d_]+)?)(?<brand>[A-Z]\w*?)$/);
+    if (!m || !m.groups) {
+      throw makeError(`invalid amount: ${opt}`);
+    }
+    const anyBrand = agoricNames.brand[m.groups.brand];
+    if (!anyBrand) {
+      throw makeError(`unknown brand: ${m.groups.brand}`);
+    }
+    const assetDesc = Object.values(agoricNames.vbankAsset).find(
+      d => d.brand === anyBrand,
+    );
+    if (!assetDesc) {
+      throw makeError(`unknown brand: ${m.groups.brand}`);
+    }
+    const { displayInfo } = assetDesc;
+    if (!displayInfo.decimalPlaces || displayInfo.assetKind !== 'nat') {
+      throw makeError(`bad brand: ${displayInfo}`);
+    }
+    const value = BigInt(
+      Number(m.groups.value.replace(/_/g, '')) *
+        10 ** displayInfo.decimalPlaces,
+    );
+    /** @type {Brand<'nat'>} */
+    // @ts-expect-error dynamic cast
+    const natBrand = anyBrand;
+    const amt = { value, brand: natBrand };
+    return amt;
+  };
+
+/**
  * @param {Record<string, Brand>} _brands
  * @param {{
  *   offerId: string,
@@ -333,48 +374,6 @@ const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
     proposal: {},
   };
 };
-
-// TODO DRY with CLI wallet.js
-/**
- * @param {{
- *   brand: Record<string, Brand>,
- *   vbankAsset: Record<string, { brand: Brand, displayInfo: DisplayInfo }>,
- * }} agoricNames
- * @param {(msg: string) => Error} makeError error constructor
- * @returns {(a: string) => Amount<'nat'>}
- */
-export const makeParseAmount =
-  (agoricNames, makeError = msg => RangeError(msg)) =>
-  opt => {
-    assert.typeof(opt, 'string', 'parseAmount expected string');
-    const m = opt.match(/^(?<value>[\d_]+(\.[\d_]+)?)(?<brand>[A-Z]\w*?)$/);
-    if (!m || !m.groups) {
-      throw makeError(`invalid amount: ${opt}`);
-    }
-    const anyBrand = agoricNames.brand[m.groups.brand];
-    if (!anyBrand) {
-      throw makeError(`unknown brand: ${m.groups.brand}`);
-    }
-    const assetDesc = Object.values(agoricNames.vbankAsset).find(
-      d => d.brand === anyBrand,
-    );
-    if (!assetDesc) {
-      throw makeError(`unknown brand: ${m.groups.brand}`);
-    }
-    const { displayInfo } = assetDesc;
-    if (!displayInfo.decimalPlaces || displayInfo.assetKind !== 'nat') {
-      throw makeError(`bad brand: ${displayInfo}`);
-    }
-    const value = BigInt(
-      Number(m.groups.value.replace(/_/g, '')) *
-        10 ** displayInfo.decimalPlaces,
-    );
-    /** @type {Brand<'nat'>} */
-    // @ts-expect-error dynamic cast
-    const natBrand = anyBrand;
-    const amt = { value, brand: natBrand };
-    return amt;
-  };
 
 export const Offers = {
   auction: {
