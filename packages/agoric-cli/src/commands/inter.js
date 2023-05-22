@@ -7,10 +7,7 @@
 import { CommanderError, InvalidArgumentError } from 'commander';
 // TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
-import {
-  Offers,
-  makeParseAmount,
-} from '@agoric/inter-protocol/src/clientSupport.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@agoric/store';
 
@@ -418,14 +415,7 @@ inter auction status
       async ({ generateOnly, dryRun, ...opts }) => {
         const tools = await tryMakeUtils();
 
-        const parseAmount = makeParseAmount(
-          tools.agoricNames,
-          msg => new InvalidArgumentError(msg),
-        );
-        const offer = Offers.auction.Bid(tools.agoricNames.brand, {
-          ...opts,
-          parseAmount,
-        });
+        const offer = Offers.auction.Bid(tools.agoricNames, opts);
 
         if (generateOnly) {
           outputActionAndHint(
@@ -466,14 +456,7 @@ inter auction status
       async ({ generateOnly, ...opts }) => {
         const tools = await tryMakeUtils();
 
-        const parseAmount = makeParseAmount(
-          tools.agoricNames,
-          msg => new InvalidArgumentError(msg),
-        );
-        const offer = Offers.auction.Bid(tools.agoricNames.brand, {
-          ...opts,
-          parseAmount,
-        });
+        const offer = Offers.auction.Bid(tools.agoricNames, opts);
         if (generateOnly) {
           outputActionAndHint(
             { method: 'executeOffer', offer },

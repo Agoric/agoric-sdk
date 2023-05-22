@@ -248,13 +248,12 @@ export const makeParseAmount =
   };
 
 /**
- * @param {Record<string, Brand>} _brands
+ * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand' | 'vbankAsset'>} agoricNames
  * @param {{
  *   offerId: string,
  *   give: string,
  *   maxBuy: string,
  *   wantMinimum?: string,
- *   parseAmount: (x: string) => Amount<'nat'>,
  * } & ({
  *   price: number,
  * } | {
@@ -262,14 +261,13 @@ export const makeParseAmount =
  * })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
-const makeBidOffer = (_brands, opts) => {
-  assert.typeof(opts.parseAmount, 'function');
+const makeBidOffer = (agoricNames, opts) => {
   assertAllDefined({
     offerId: opts.offerId,
     give: opts.give,
     maxBuy: opts.maxBuy,
   });
-  const { parseAmount } = opts;
+  const parseAmount = makeParseAmount(agoricNames);
   const proposal = {
     give: { Bid: parseAmount(opts.give) },
     ...(opts.wantMinimum
