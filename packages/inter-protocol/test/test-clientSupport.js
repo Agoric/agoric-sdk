@@ -2,8 +2,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { withAmountUtils } from './supports.js';
 import { makeParseAmount, Offers } from '../src/clientSupport.js';
+import { withAmountUtils } from './supports.js';
 
 const ist = withAmountUtils(makeIssuerKit('IST'));
 const atom = withAmountUtils(makeIssuerKit('ATOM'));
