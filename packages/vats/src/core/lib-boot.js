@@ -12,7 +12,7 @@ import { makePromiseSpace } from './promise-space.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @typedef {true | string | { [key: string]: BootstrapManifestPermit }} BootstrapManifestPermit
+ * @typedef {true | string | { [key: string]: BootstrapManifestPermit | undefined }} BootstrapManifestPermit
  */
 
 /**

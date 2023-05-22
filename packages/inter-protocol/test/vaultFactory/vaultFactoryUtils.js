@@ -59,7 +59,7 @@ export const defaultParamValues = debtBrand =>
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
  * @param {Amount | undefined} unitAmountIn
- * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [actionParamArgs]
+ * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
  */
 export const setupElectorateReserveAndAuction = async (
   t,

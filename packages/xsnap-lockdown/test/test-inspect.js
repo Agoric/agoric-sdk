@@ -90,6 +90,7 @@ test('unconfined inspect', async t => {
     const [toEval, toRender] = Array.isArray(testCase)
       ? testCase
       : [testCase, testCase];
+    // @ts-expect-error Left side of comma operator is unused and has no side effects.
     // eslint-disable-next-line no-eval
     const evaled = (1, eval)(`(${toEval})`);
     // t.log(evaled);

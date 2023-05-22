@@ -300,7 +300,7 @@ harden(startPSM);
  * TODO: address redundancy with publishInterchainAssetFromBank
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces & ChainStorageVatParams} powers
- * @param {{options?: { anchorOptions?: AnchorOptions } }} [config]
+ * @param {{options: { anchorOptions?: AnchorOptions } }} config
  */
 export const makeAnchorAsset = async (
   {

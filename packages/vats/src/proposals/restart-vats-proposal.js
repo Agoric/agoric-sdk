@@ -61,7 +61,6 @@ export const restartVats = async ({ consume }, { options }) => {
     // TODO document that privateArgs cannot contain promises
     // TODO try making all the contract starts take resolved values
     const privateArgs = await deeplyFulfilledObject(
-      // @ts-expect-error cast
       harden(instancePrivateArgs.get(instance) || {}),
     );
 

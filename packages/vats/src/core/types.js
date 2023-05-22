@@ -76,18 +76,18 @@
  */
 
 /**
+ * @template T
  * @typedef {object} Producer<T>
  * @property {(v: ERef<T>) => void} resolve
  * @property {(r: unknown) => void} reject
  * @property {(reason?: unknown) => void} reset
- * @template T
  */
 /**
  * @typedef {{ bundleName?: string, bundleID?: string }} VatSourceRef
  */
 /**
- * @typedef {(name: string, sourceRef?: VatSourceRef) => T} VatLoader<T>
  * @template T
+ * @typedef {(name: string, sourceRef?: VatSourceRef) => T} VatLoader<T>
  */
 
 /**
