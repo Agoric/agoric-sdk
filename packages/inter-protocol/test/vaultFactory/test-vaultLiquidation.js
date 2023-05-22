@@ -159,7 +159,7 @@ const setupServices = async (
     quoteInterval,
     unitAmountIn,
     {
-      StartFreuency: startFrequency,
+      StartFrequency: startFrequency,
       LowestRate: lowestRate,
       DiscountStep: discountStep,
     },

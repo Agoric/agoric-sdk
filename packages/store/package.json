@@ -38,12 +38,12 @@
     "@endo/marshal": "^0.8.5",
     "@endo/pass-style": "^0.1.3",
     "@endo/patterns": "^0.2.2",
-    "@endo/promise-kit": "^0.2.56",
-    "@fast-check/ava": "^1.1.3"
+    "@endo/promise-kit": "^0.2.56"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.32.0",
     "@agoric/time": "^0.3.0",
+    "@fast-check/ava": "^1.1.3",
     "ava": "^5.2.0"
   },
   "files": [

@@ -5,7 +5,7 @@ import { E, Far } from '@endo/far';
 import {
   makeNetworkProtocol,
   makeLoopbackProtocolHandler,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
+} from '@agoric/vats/src/network/index.js';
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';

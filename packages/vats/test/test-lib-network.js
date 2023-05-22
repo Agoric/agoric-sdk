@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/far';
@@ -11,7 +11,7 @@ import {
   makeLoopbackProtocolHandler,
   makeNetworkProtocol,
   makeRouter,
-} from '../src/vats/network/index.js';
+} from '../src/network/index.js';
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
