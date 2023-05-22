@@ -39,8 +39,10 @@ export const makeOracleCommand = (logger, io = {}) => {
     env = process.env,
     stdout = process.stdout,
   } = io;
-  const oracle = new Command('oracle').description('Oracle commands').usage(
-    `
+  const oracle = new Command('oracle')
+    .description('Oracle commands')
+    .usage(
+      `
   WALLET=my-wallet
   export AGORIC_NET=ollinet
 
@@ -60,7 +62,14 @@ export const makeOracleCommand = (logger, io = {}) => {
   # sign and send
   agoric wallet send --from $WALLET --offer offer-12.json
   `,
-  );
+    )
+    .option(
+      '--keyring-backend <os|file|test>',
+      `keyring's backend (os|file|test) (default "${
+        env.AGORIC_KEYRING_BACKEND || 'os'
+      }")`,
+      env.AGORIC_KEYRING_BACKEND,
+    );
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
