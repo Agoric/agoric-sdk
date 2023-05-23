@@ -62,7 +62,7 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
-const { details: X, Fail } = assert;
+const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
@@ -917,7 +917,18 @@ export const prepareVaultManagerKit = (
               transfers.length,
             );
 
-            facets.helper.sendToReserve(collatRemaining, liqSeat);
+            const collateralInLiqSeat =
+              liqSeat.getCurrentAllocation().Collateral;
+            facets.helper.sendToReserve(collateralInLiqSeat, liqSeat);
+            debugger;
+
+            if (!AmountMath.isEqual(collateralInLiqSeat, collatRemaining)) {
+              console.error(
+                `🚨 Excess collateral remaining sent to reserve. Expected ${q(
+                  collatRemaining,
+                )}, sent ${q(collateralInLiqSeat)}`,
+              );
+            }
             facets.helper.markDoneLiquidating(totalDebt, totalCollateral, {
               ...accounting,
               shortfall: shortfallToReserve,

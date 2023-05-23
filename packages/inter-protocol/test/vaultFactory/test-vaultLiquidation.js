@@ -2818,7 +2818,7 @@ test('Bug 7784 reconstitute both', async t => {
     ...reserveInitialState(run.makeEmpty()),
     shortfallBalance: run.make(5_525n),
     allocations: {
-      Aeth: aeth.make(1_109n),
+      Aeth: aeth.make(1_419n),
       Fee: run.makeEmpty(),
     },
   });
