@@ -305,38 +305,9 @@ const makeAddCollateralOffer = (brands, opts) => {
   return offerSpec;
 };
 
-/**
- *
- * @param {Record<string, Brand>} _brands
- * @param {{
- *   offerId: string,
- *   roundId?: bigint,
- *   unitPrice: bigint,
- * }} opts
- * @param {string} previousOffer
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
- */
-const makePushPriceOffer = (_brands, opts, previousOffer) => {
-  return {
-    id: opts.offerId,
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer,
-      invitationMakerName: 'PushPrice',
-      invitationArgs: harden([
-        { unitPrice: opts.unitPrice, roundId: opts.roundId },
-      ]),
-    },
-    proposal: {},
-  };
-};
-
 export const Offers = {
   auction: {
     Bid: makeBidOffer,
-  },
-  fluxAggregator: {
-    PushPrice: makePushPriceOffer,
   },
   psm: {
     // lowercase because it's not an invitation name. Instead it's an abstraction over two invitation makers.
