@@ -61,6 +61,8 @@ const contractRoots = {
 
 const trace = makeTracer('TestST', false);
 
+const SECONDS_PER_MINUTE = 60n;
+const SECONDS_PER_HOUR = 60n * SECONDS_PER_MINUTE;
 const SECONDS_PER_DAY = SECONDS_PER_YEAR / 365n;
 const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7n;
 
@@ -127,10 +129,7 @@ test.before(async t => {
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} runInitialLiquidity
- * @param {object} actionParams
- * @param {bigint} [actionParams.startFrequency]
- * @param {bigint} [actionParams.discountStep]
- * @param {bigint} [actionParams.lowestRate]
+ * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [auctionParams]
  */
 const setupServices = async (
   t,
@@ -139,12 +138,7 @@ const setupServices = async (
   timer = buildManualTimer(),
   quoteInterval = 1n,
   runInitialLiquidity,
-  // FIXME: should be an AuctionParams
-  { startFrequency, discountStep, lowestRate } = {
-    startFrequency: undefined,
-    discountStep: undefined,
-    lowestRate: undefined,
-  },
+  auctionParams = {},
 ) => {
   const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
     t.context;
@@ -158,11 +152,7 @@ const setupServices = async (
     priceOrList,
     quoteInterval,
     unitAmountIn,
-    {
-      StartFreuency: startFrequency,
-      LowestRate: lowestRate,
-      DiscountStep: discountStep,
-    },
+    auctionParams,
   );
 
   const { consume } = space;
@@ -363,6 +353,7 @@ test('price drop', async t => {
     manualTimer,
     undefined,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -522,6 +513,7 @@ test('price falls precipitously', async t => {
     manualTimer,
     undefined,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
   // we start with time=0, price=2200
 
@@ -896,7 +888,7 @@ test('liquidate two loans', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
-  const { startTime: start2, time: now2 } = await startAuctionClock(
+  const { startTime: start2 } = await startAuctionClock(
     auctioneerKit,
     manualTimer,
   );
@@ -917,7 +909,6 @@ test('liquidate two loans', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
-  currentTime = now2;
   currentTime = await setClockAndAdvanceNTimes(manualTimer, 2, start2, 2n);
 
   // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
@@ -1008,6 +999,7 @@ test('sell goods at auction', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1181,6 +1173,7 @@ test('collect fees from loan', async t => {
     manualTimer,
     undefined,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1425,6 +1418,7 @@ test('Auction sells all collateral w/shortfall', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1584,12 +1578,11 @@ test('Auction sells all collateral w/shortfall', async t => {
   await aethVaultMetrics.assertChange({
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
-    totalDebt: { value: totalDebt },
     liquidatingCollateral: { value: 700n },
-    liquidatingDebt: { value: 5280n },
+    liquidatingDebt: { value: 5250n },
   });
 
-  shortfallBalance += 2095n;
+  shortfallBalance += 2065n;
   await m.assertChange({
     shortfallBalance: { value: shortfallBalance },
   });
@@ -1631,6 +1624,7 @@ test('liquidation Margin matters', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1736,6 +1730,7 @@ test('reinstate vault', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1937,6 +1932,7 @@ test('auction locks low price', async t => {
     manualTimer,
     undefined,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
   // we start with time=0, price=2200
 
@@ -2029,6 +2025,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2232,7 +2229,7 @@ test('Bug 7346 excess collateral to holder', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n },
+    { DiscountStep: 500n, StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2458,6 +2455,7 @@ test('refund to one of two loans', async t => {
     manualTimer,
     undefined,
     500n,
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2643,7 +2641,7 @@ test('Bug 7784 reconstitute both', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n, lowestRate: 6500n },
+    { DiscountStep: 500n, LowestRate: 6500n, StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2822,6 +2820,231 @@ test('Bug 7784 reconstitute both', async t => {
     allocations: {
       Aeth: aeth.make(1_109n),
       Fee: run.makeEmpty(),
+    },
+  });
+});
+
+// This test fails if `auctionDriver.capturePrices()` is moved from line 253 in
+// https://github.com/Agoric/agoric-sdk/blob/bf4b59f2128aca73d786429c6ef4a7c9cdfb6700/packages/inter-protocol/src/auction/scheduler.js
+// to line 310, which matches the code before #7803
+test('Bug 7796 missing lockedPrice', async t => {
+  const { zoe, aeth, run, rates: defaultRates } = t.context;
+
+  const rates = harden({
+    ...defaultRates,
+    liquidationPenalty: makeRatio(1n, run.brand),
+    liquidationMargin: run.makeRatio(150n),
+    mintFee: run.makeRatio(50n, 10_000n),
+  });
+  t.context.rates = rates;
+
+  const manualTimer = buildManualTimer();
+  const TEN_MINUTES = 10n * SECONDS_PER_MINUTE;
+  const services = await setupServices(
+    t,
+    makeRatio(1234n, run.brand, 100n, aeth.brand),
+    aeth.make(1000n),
+    manualTimer,
+    SECONDS_PER_WEEK,
+    500n,
+    {
+      DiscountStep: 500n,
+      StartFrequency: SECONDS_PER_HOUR,
+      ClockStep: TEN_MINUTES,
+    },
+  );
+
+  const {
+    vaultFactory: { aethVaultManager, aethCollateralManager },
+    auctioneerKit: auctKit,
+    priceAuthority,
+    reserveKit: { reserveCreatorFacet, reservePublicFacet },
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+
+  const cm = await E(aethVaultManager).getPublicFacet();
+  const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
+  await aethVaultMetrics.assertInitial({
+    // present
+    numActiveVaults: 0,
+    numLiquidatingVaults: 0,
+    totalCollateral: aeth.make(0n),
+    totalDebt: run.make(0n),
+    retainedCollateral: aeth.make(0n),
+
+    // running
+    numLiquidationsCompleted: 0,
+    numLiquidationsAborted: 0,
+    totalOverageReceived: run.make(0n),
+    totalProceedsReceived: run.make(0n),
+    totalCollateralSold: aeth.make(0n),
+    liquidatingCollateral: aeth.make(0n),
+    liquidatingDebt: run.make(0n),
+    totalShortfallReceived: run.make(0n),
+  });
+
+  const openVault = (collateral, want) =>
+    E(zoe).offer(
+      E(aethCollateralManager).makeVaultInvitation(),
+      harden({
+        give: { Collateral: collateral },
+        want: { Minted: want },
+      }),
+      harden({
+        Collateral: aeth.mint.mintPayment(collateral),
+      }),
+    );
+
+  const aliceWantMinted = run.make(100_000n);
+  const collateral = aeth.make(15_000n);
+  /** @type {UserSeat<VaultKit>} */
+  const aliceVaultSeat = await openVault(collateral, aliceWantMinted);
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await legacyOfferResult(aliceVaultSeat);
+  let aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 1,
+    totalCollateral: { value: 15_000n },
+    totalDebt: { value: 100_500n },
+  });
+
+  const bobWantMinted = run.make(103_000n);
+  /** @type {UserSeat<VaultKit>} */
+  const bobVaultSeat = await openVault(collateral, bobWantMinted);
+  const {
+    vault: bobVault,
+    publicNotifiers: { vault: bobNotifier },
+  } = await legacyOfferResult(bobVaultSeat);
+  const bobUpdate = await E(bobNotifier).getUpdateSince();
+  t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
+
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 2,
+    totalCollateral: { value: 30_000n },
+    totalDebt: { value: 204_015n },
+  });
+
+  const carolWantMinted = run.make(105_000n);
+  /** @type {UserSeat<VaultKit>} */
+  const carolVaultSeat = await openVault(collateral, carolWantMinted);
+  const {
+    vault: carolVault,
+    publicNotifiers: { vault: carolNotifier },
+  } = await legacyOfferResult(carolVaultSeat);
+  const carolUpdate = await E(carolNotifier).getUpdateSince();
+  t.is(carolUpdate.value.vaultState, Phase.ACTIVE);
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 3,
+    totalCollateral: { value: 45_000n },
+    totalDebt: { value: 309_540n },
+  });
+
+  const { Minted: aliceLentAmount } = await E(
+    aliceVaultSeat,
+  ).getFinalAllocation();
+  const aliceProceeds = await E(aliceVaultSeat).getPayouts();
+  t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
+
+  const aliceRunLent = await aliceProceeds.Minted;
+  t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), aliceWantMinted);
+
+  // BIDDERs place BIDs //////////////////////////
+  const bidderSeat1 = await bidDiscount(
+    t,
+    zoe,
+    auctKit,
+    aeth,
+    run.make(80_000n),
+    aeth.make(1000_000n),
+    makeRatio(90n, run.brand),
+  );
+  const bidderSeat2 = await bidPrice(
+    t,
+    zoe,
+    auctKit,
+    aeth,
+    run.make(90_000n),
+    aeth.make(100_000n),
+    makeRatio(900n, run.brand, 100n, aeth.brand),
+  );
+  const bidderSeat3 = await bidDiscount(
+    t,
+    zoe,
+    auctKit,
+    aeth,
+    run.make(150_000n),
+    aeth.make(1000_000n),
+    makeRatio(85n, run.brand),
+  );
+
+  // Before the price falls, we'll do a blank round of the auction to see if
+  // that breaks the price capture. PriceLockPeriod is at its default of 3n.
+
+  const { startTime } = await startAuctionClock(auctKit, manualTimer);
+  await setClockAndAdvanceNTimes(manualTimer, 3n, startTime, TEN_MINUTES);
+
+  // price falls
+  // @ts-expect-error setupServices() should return the right type
+  await priceAuthority.setPrice(makeRatio(9990n, run.brand, 1000n, aeth.brand));
+  await eventLoopIteration();
+
+  await setClockAndAdvanceNTimes(
+    manualTimer,
+    10n,
+    TimeMath.addAbsRel(startTime, TimeMath.relValue(3600n)),
+    TEN_MINUTES,
+  );
+
+  await aethVaultMetrics.assertChange({
+    liquidatingDebt: { value: 309_540n },
+    liquidatingCollateral: { value: 45_000n },
+    numActiveVaults: 0,
+    numLiquidatingVaults: 3,
+  });
+
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
+
+  await aethVaultMetrics.assertChange({
+    liquidatingDebt: { value: 0n },
+    totalDebt: { value: 0n },
+    liquidatingCollateral: { value: 0n },
+    totalCollateral: { value: 0n },
+    totalOverageReceived: { value: 10_460n },
+    totalCollateralSold: { value: 36_571n },
+    totalProceedsReceived: { value: 320_000n },
+    numLiquidatingVaults: 0,
+    numLiquidationsCompleted: 3,
+  });
+
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(3_514n));
+  t.deepEqual(await E(aliceVault).getCurrentDebt(), run.makeEmpty());
+  t.deepEqual(await E(bobVault).getCollateralAmount(), aeth.make(3169n));
+  t.deepEqual(await E(bobVault).getCurrentDebt(), run.makeEmpty());
+  t.deepEqual(await E(carolVault).getCollateralAmount(), aeth.make(1_436n));
+  t.deepEqual(await E(carolVault).getCurrentDebt(), run.makeEmpty());
+
+  t.true(await E(bidderSeat3).hasExited());
+  await assertBidderPayout(t, bidderSeat3, run, 0n, aeth, 0n);
+  t.true(await E(bidderSeat1).hasExited());
+  await assertBidderPayout(t, bidderSeat1, run, 0n, aeth, 8897n);
+
+  t.true(await E(bidderSeat2).hasExited());
+  await assertBidderPayout(t, bidderSeat2, run, 0n, aeth, 10_010n);
+
+  const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
+    .metrics;
+  const m = await subscriptionTracker(t, metricsTopic);
+
+  await m.assertState({
+    ...reserveInitialState(run.makeEmpty()),
+    shortfallBalance: run.makeEmpty(),
+    allocations: {
+      Aeth: aeth.make(310n),
+      Fee: run.make(10_460n),
     },
   });
 });
