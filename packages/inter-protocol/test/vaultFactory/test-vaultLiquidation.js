@@ -61,9 +61,10 @@ const contractRoots = {
 
 const trace = makeTracer('TestST', false);
 
+const SECONDS_PER_MINUTE = 60n;
+const SECONDS_PER_HOUR = 60n * SECONDS_PER_MINUTE;
 const SECONDS_PER_DAY = SECONDS_PER_YEAR / 365n;
 const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7n;
-const TEN_MINUTES = 10n * 60n;
 
 // Define locally to test that vaultFactory uses these values
 export const Phase = /** @type {const} */ ({
@@ -128,11 +129,7 @@ test.before(async t => {
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} runInitialLiquidity
- * @param {object} actionParams
- * @param {bigint} [actionParams.startFrequency]
- * @param {bigint} [actionParams.discountStep]
- * @param {bigint} [actionParams.lowestRate]
- * @param {bigint} [actionParams.clockStep]
+ * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [auctionParams]
  */
 const setupServices = async (
   t,
@@ -141,13 +138,7 @@ const setupServices = async (
   timer = buildManualTimer(),
   quoteInterval = 1n,
   runInitialLiquidity,
-  // FIXME: should be an AuctionParams
-  { startFrequency, discountStep, lowestRate, clockStep } = {
-    startFrequency: undefined,
-    discountStep: undefined,
-    lowestRate: undefined,
-    clockStep: undefined,
-  },
+  auctionParams = {},
 ) => {
   const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
     t.context;
@@ -161,12 +152,7 @@ const setupServices = async (
     priceOrList,
     quoteInterval,
     unitAmountIn,
-    {
-      StartFrequency: startFrequency,
-      LowestRate: lowestRate,
-      DiscountStep: discountStep,
-      ClockStep: clockStep,
-    },
+    auctionParams,
   );
 
   const { consume } = space;
@@ -367,7 +353,7 @@ test('price drop', async t => {
     manualTimer,
     undefined,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -527,7 +513,7 @@ test('price falls precipitously', async t => {
     manualTimer,
     undefined,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
   // we start with time=0, price=2200
 
@@ -1013,7 +999,7 @@ test('sell goods at auction', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1187,7 +1173,7 @@ test('collect fees from loan', async t => {
     manualTimer,
     undefined,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1432,7 +1418,7 @@ test('Auction sells all collateral w/shortfall', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1638,7 +1624,7 @@ test('liquidation Margin matters', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1744,7 +1730,7 @@ test('reinstate vault', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -1946,7 +1932,7 @@ test('auction locks low price', async t => {
     manualTimer,
     undefined,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
   // we start with time=0, price=2200
 
@@ -2039,7 +2025,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2243,7 +2229,7 @@ test('Bug 7346 excess collateral to holder', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n, startFrequency: 3600n },
+    { DiscountStep: 500n, StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2469,7 +2455,7 @@ test('refund to one of two loans', async t => {
     manualTimer,
     undefined,
     500n,
-    { startFrequency: 3600n },
+    { StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2655,7 +2641,7 @@ test('Bug 7784 reconstitute both', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n, lowestRate: 6500n, startFrequency: 3600n },
+    { DiscountStep: 500n, LowestRate: 6500n, StartFrequency: SECONDS_PER_HOUR },
   );
 
   const {
@@ -2839,7 +2825,7 @@ test('Bug 7784 reconstitute both', async t => {
 });
 
 // This test fails if `auctionDriver.capturePrices()` is moved from line 253 in
-// https://github.com/Agoric/agoric-sdk/blob/master/packages/inter-protocol/src/auction/scheduler.js
+// https://github.com/Agoric/agoric-sdk/blob/bf4b59f2128aca73d786429c6ef4a7c9cdfb6700/packages/inter-protocol/src/auction/scheduler.js
 // to line 310, which matches the code before #7803
 test('Bug 7796 missing lockedPrice', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
@@ -2853,6 +2839,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   t.context.rates = rates;
 
   const manualTimer = buildManualTimer();
+  const TEN_MINUTES = 10n * SECONDS_PER_MINUTE;
   const services = await setupServices(
     t,
     makeRatio(1234n, run.brand, 100n, aeth.brand),
@@ -2860,7 +2847,11 @@ test('Bug 7796 missing lockedPrice', async t => {
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
-    { discountStep: 500n, startFrequency: 3600n, clockStep: TEN_MINUTES },
+    {
+      DiscountStep: 500n,
+      StartFrequency: SECONDS_PER_HOUR,
+      ClockStep: TEN_MINUTES,
+    },
   );
 
   const {
