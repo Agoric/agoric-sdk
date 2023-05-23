@@ -322,9 +322,9 @@ const assertBidderPayout = async (t, bidderSeat, run, curr, aeth, coll) => {
   t.is(bidderResult, 'Your bid has been accepted');
   const payouts = await E(bidderSeat).getPayouts();
   const { Collateral: bidderCollateral, Bid: bidderBid } = payouts;
-  curr === 0n ||
+  (!bidderBid && curr === 0n) ||
     (await assertPayoutAmount(t, run.issuer, bidderBid, run.make(curr)));
-  coll === 0n ||
+  (!bidderCollateral && coll === 0n) ||
     (await assertPayoutAmount(
       t,
       aeth.issuer,
@@ -2197,7 +2197,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
   t.true(await E(bidderSeat3).hasExited());
   await assertBidderPayout(t, bidderSeat3, run, 75n, aeth, 0n);
   await E(bidderSeat1).tryExit();
-  await assertBidderPayout(t, bidderSeat1, run, 0n, aeth, 35n);
+  await assertBidderPayout(t, bidderSeat1, run, 27n, aeth, 35n);
   await assertBidderPayout(t, bidderSeat2, run, 39n, aeth, 10n);
 
   const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
@@ -2398,7 +2398,7 @@ test('Bug 7346 excess collateral to holder', async t => {
   t.false(await E(bidderSeat3).hasExited());
   await E(bidderSeat3).tryExit();
   t.true(await E(bidderSeat3).hasExited());
-  await assertBidderPayout(t, bidderSeat3, run, 10_460n, aeth, 0n);
+  await assertBidderPayout(t, bidderSeat3, run, 10_460n, aeth, 16432n);
   t.true(await E(bidderSeat1).hasExited());
   await assertBidderPayout(t, bidderSeat1, run, 0n, aeth, 8897n);
 
@@ -2806,7 +2806,7 @@ test('Bug 7784 reconstitute both', async t => {
   t.deepEqual(await E(carolVault).getCurrentDebt(), run.makeEmpty());
 
   t.true(await E(bidderSeat3).hasExited());
-  await assertBidderPayout(t, bidderSeat3, run, 0n, aeth, 0n);
+  await assertBidderPayout(t, bidderSeat3, run, 0n, aeth, 10010n);
   t.true(await E(bidderSeat1).hasExited());
   await assertBidderPayout(t, bidderSeat1, run, 0n, aeth, 3575n);
 
@@ -3028,7 +3028,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   t.deepEqual(await E(carolVault).getCurrentDebt(), run.makeEmpty());
 
   t.true(await E(bidderSeat3).hasExited());
-  await assertBidderPayout(t, bidderSeat3, run, 0n, aeth, 0n);
+  await assertBidderPayout(t, bidderSeat3, run, 0n, aeth, 17664n);
   t.true(await E(bidderSeat1).hasExited());
   await assertBidderPayout(t, bidderSeat1, run, 0n, aeth, 8897n);
 
