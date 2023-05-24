@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.14.0...@agoric/inter-protocol@0.15.0) (2023-05-24)
+
+
+### Features
+
+* **clientSupport:** Offers.fluxAggregator.PushPrice ([486581c](https://github.com/Agoric/agoric-sdk/commit/486581c8ea07a621f18c0d485c7059fb3e87835a))
+
+
+
 ## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.1...@agoric/inter-protocol@0.14.0) (2023-05-19)
 
 
