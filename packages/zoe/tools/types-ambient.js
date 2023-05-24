@@ -23,7 +23,7 @@
  * The quoted result of trading `amountIn`
  * @property {import('@agoric/time/src/types').TimerService} timer
  * The service that gave the `timestamp`
- * @property {import('@agoric/time/src/types').TimestampRecord} timestamp
+ * @property {import('@agoric/time/src/types').Timestamp} timestamp
  * A timestamp according to `timer` for the quote
  * @property {any} [conditions]
  * Additional conditions for the quote
@@ -146,7 +146,7 @@
  * @callback PriceQuery
  * @param {PriceCalculator} calcAmountIn
  * @param {PriceCalculator} calcAmountOut
- * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: import('@agoric/time/src/types').TimestampRecord } | undefined}
+ * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: import('@agoric/time/src/types').Timestamp } | undefined}
  */
 
 /**

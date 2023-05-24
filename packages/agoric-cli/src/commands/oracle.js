@@ -2,22 +2,13 @@
 /* eslint-disable @jessie.js/no-nested-await */
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, setTimeout, process */
+/* global fetch */
 import { Fail } from '@agoric/assert';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';
-import * as cp from 'child_process';
 import { inspect } from 'util';
-import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
-import {
-  getCurrent,
-  makeWalletUtils,
-  outputAction,
-  sendAction,
-} from '../lib/wallet.js';
-import { bigintReplacer } from '../lib/format.js';
+import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { getCurrent, outputAction } from '../lib/wallet.js';
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
@@ -25,24 +16,10 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 
 /**
  * @param {import('anylogger').Logger} logger
- * @param {{
- *   delay?: (ms: number) => Promise<void>,
- *   execFileSync?: typeof import('child_process').execFileSync,
- *   env?: Record<string, string | undefined>,
- *   stdout?: Pick<import('stream').Writable,'write'>,
- * }} [io]
  */
-export const makeOracleCommand = (logger, io = {}) => {
-  const {
-    delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
-    execFileSync = cp.execFileSync,
-    env = process.env,
-    stdout = process.stdout,
-  } = io;
-  const oracle = new Command('oracle')
-    .description('Oracle commands')
-    .usage(
-      `
+export const makeOracleCommand = logger => {
+  const oracle = new Command('oracle').description('Oracle commands').usage(
+    `
   WALLET=my-wallet
   export AGORIC_NET=ollinet
 
@@ -62,18 +39,9 @@ export const makeOracleCommand = (logger, io = {}) => {
   # sign and send
   agoric wallet send --from $WALLET --offer offer-12.json
   `,
-    )
-    .option(
-      '--keyring-backend <os|file|test>',
-      `keyring's backend (os|file|test) (default "${
-        env.AGORIC_KEYRING_BACKEND || 'os'
-      }")`,
-      env.AGORIC_KEYRING_BACKEND,
-    );
+  );
 
   const rpcTools = async () => {
-    // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig(env);
     const utils = await makeRpcUtils({ fetch });
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
@@ -86,7 +54,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       return instance;
     };
 
-    return { ...utils, networkConfig, lookupPriceAggregatorInstance };
+    return { ...utils, lookupPriceAggregatorInstance };
   };
 
   oracle
@@ -175,15 +143,19 @@ export const makeOracleCommand = (logger, io = {}) => {
     .requiredOption('--price <number>', 'price', Number)
     .option('--roundId <number>', 'round', Number)
     .action(async function (opts) {
-      const { offerId } = opts;
       const unitPrice = scaleDecimals(opts.price);
       const roundId = 'roundId' in opts ? Nat(opts.roundId) : undefined;
-
-      const offer = Offers.fluxAggregator.PushPrice(
-        {},
-        { offerId, unitPrice, roundId },
-        opts.oracleAdminAcceptOfferId,
-      );
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      const offer = {
+        id: opts.offerId,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: opts.oracleAdminAcceptOfferId,
+          invitationMakerName: 'PushPrice',
+          invitationArgs: harden([{ unitPrice, roundId }]),
+        },
+        proposal: {},
+      };
 
       outputAction({
         method: 'executeOffer',
@@ -193,33 +165,27 @@ export const makeOracleCommand = (logger, io = {}) => {
       console.warn('Now execute the prepared offer');
     });
 
-  const findOracleCap = async (from, readLatestHead) => {
-    const current = await getCurrent(from, { readLatestHead });
-
-    const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
-    Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
-
-    for (const [offerId, { value }] of entries) {
-      /** @type {{ description: string, instance: unknown }[]} */
-      const [{ description }] = value;
-      if (description === 'oracle invitation') {
-        return offerId;
-      }
-    }
-  };
-
   oracle
     .command('find-continuing-id')
     .description('print id of specified oracle continuing invitation')
     .requiredOption('--from <address>', 'from address', String)
     .action(async opts => {
       const { readLatestHead } = await makeRpcUtils({ fetch });
+      const current = await getCurrent(opts.from, { readLatestHead });
 
-      const offerId = await findOracleCap(opts.from, readLatestHead);
-      if (!offerId) {
-        console.error('No continuing ids found');
+      const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
+      Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
+
+      for (const [offerId, { value }] of entries) {
+        /** @type {{ description: string, instance: unknown }[]} */
+        const [{ description }] = value;
+        if (description === 'oracle invitation') {
+          console.log(offerId);
+          return;
+        }
       }
-      console.log(offerId);
+
+      console.error('No continuing ids found');
     });
 
   oracle
@@ -242,141 +208,5 @@ export const makeOracleCommand = (logger, io = {}) => {
 
       console.log(inspect(capDatas[0], { depth: 10, colors: true }));
     });
-
-  /** @param {string} literalOrName */
-  const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, oracle.opts(), {
-      execFileSync,
-    });
-  const show = (info, indent = false) =>
-    stdout.write(
-      `${JSON.stringify(info, bigintReplacer, indent ? 2 : undefined)}\n`,
-    );
-  /** @param {bigint} secs */
-  const fmtSecs = secs => new Date(Number(secs) * 1000).toISOString();
-
-  oracle
-    .command('setPrice')
-    .description('set price by pushing from multiple operators')
-    .requiredOption(
-      '--pair [brandIn.brandOut]',
-      'token pair (brandIn.brandOut)',
-      s => s.split('.'),
-      ['ATOM', 'USD'],
-    )
-    .requiredOption(
-      '--keys [key1,key2,...]',
-      'key names of operators (comma separated)',
-      s => s.split(','),
-      ['gov1', 'gov2'],
-    )
-    .requiredOption('--price <number>', 'price', Number)
-    .action(
-      async (
-        /**
-         * @type {{
-         *  pair: [brandIn: string, brandOut: string],
-         *  keys: string[],
-         *  price: number,
-         * }}
-         */ { pair, keys, price },
-      ) => {
-        const { readLatestHead, networkConfig } = await rpcTools();
-        const wutil = await makeWalletUtils(
-          { fetch, execFileSync, delay },
-          networkConfig,
-        );
-        const unitPrice = scaleDecimals(price);
-
-        console.error(`${pair[0]}-${pair[1]}_price_feed: before setPrice`);
-
-        const readPrice = () =>
-          /** @type {Promise<PriceDescription>} */ (
-            readLatestHead(
-              `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,
-            ).catch(err => {
-              console.warn(`cannot get ${pair[0]}-${pair[1]}_price_feed`, err);
-              return undefined;
-            })
-          );
-
-        const r4 = x => Math.round(x * 10000) / 10000; // XXX 4 decimals arbitrary
-        const fmtFeed = ({
-          amountIn: { value: valueIn },
-          amountOut: { value: valueOut },
-          timestamp: { absValue: ts },
-        }) => ({
-          timestamp: fmtSecs(ts),
-          price: r4(Number(valueOut) / Number(valueIn)),
-        });
-        const before = await readPrice();
-        if (before) {
-          show(fmtFeed(before));
-        }
-
-        console.error(
-          'Choose lead oracle operator order based on latestRound...',
-        );
-        const keyOrder = keys.map(normalizeAddress);
-        const latestRoundP = readLatestHead(
-          `published.priceFeed.${pair[0]}-${pair[1]}_price_feed.latestRound`,
-        );
-        await Promise.race([
-          delay(5000),
-          latestRoundP.then(round => {
-            // @ts-expect-error XXX get type from contract
-            const { roundId, startedAt, startedBy } = round;
-            show({
-              startedAt: fmtSecs(startedAt.absValue),
-              roundId,
-              startedBy,
-            });
-            if (startedBy === keyOrder[0]) {
-              keyOrder.reverse();
-            }
-          }),
-        ]).catch(err => {
-          console.warn(err);
-        });
-
-        console.error('pushPrice from each:', keyOrder);
-        for await (const from of keyOrder) {
-          const oracleAdminAcceptOfferId = await findOracleCap(
-            from,
-            readLatestHead,
-          );
-          if (!oracleAdminAcceptOfferId) {
-            throw Error(`no oracle invitation found: ${from}`);
-          }
-          show({ from, oracleAdminAcceptOfferId });
-          const offerId = `pushPrice-${Date.now()}`;
-          const offer = Offers.fluxAggregator.PushPrice(
-            {},
-            { offerId, unitPrice },
-            oracleAdminAcceptOfferId,
-          );
-
-          const { home, keyringBackend: backend } = oracle.opts();
-          const tools = { ...networkConfig, execFileSync, delay, stdout };
-          const result = await sendAction(
-            { method: 'executeOffer', offer },
-            { keyring: { home, backend }, from, verbose: false, ...tools },
-          );
-          assert(result); // Not dry-run
-          const { timestamp, txhash, height } = result;
-          console.error('pushPrice', price, 'offer broadcast');
-          show({ timestamp, height, offerId: offer.id, txhash });
-          const found = await wutil.pollOffer(from, offer.id, result.height);
-          console.error('pushPrice', price, 'offer satisfied');
-          show(found);
-        }
-
-        const after = await readPrice();
-        if (after) {
-          console.error('price set:');
-          show(fmtFeed(after));
-        }
-      },
-    );
   return oracle;
 };
