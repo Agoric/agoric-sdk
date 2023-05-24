@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.14.0...@agoric/xsnap@0.14.1) (2023-05-24)
+
+
+### Bug Fixes
+
+* **xsnap:** agd checks 'xsnap -n' for agoric-upgrade-10 ([842b440](https://github.com/Agoric/agoric-sdk/commit/842b4402eb857d09856cd8a77159db3a464d86f9)), closes [#7012](https://github.com/Agoric/agoric-sdk/issues/7012)
+* **xsnap:** use newer xsnap-pub, with requirement for __has_builtin ([99de101](https://github.com/Agoric/agoric-sdk/commit/99de101cfe2a7d44464d64c8c55bbc71151b1f2f)), closes [#7829](https://github.com/Agoric/agoric-sdk/issues/7829)
+
+
+
 ## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.13.2...@agoric/xsnap@0.14.0) (2023-05-19)
 
 
