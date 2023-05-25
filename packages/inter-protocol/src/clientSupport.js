@@ -142,13 +142,13 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
+ * @param {({ wantMinted: number, giveMinted?: undefined } | { giveMinted: number, wantMinted?: undefined })} opts
  * @param {number} [fee=0]
  * @param {string} [anchor]
  * @returns {Proposal} XXX not a real proposal, uses BoardRemote
  */
 const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
-  const giving = opts.giveMinted ? 'minted' : 'anchor';
+  const giving = 'giveMinted' in opts ? 'minted' : 'anchor';
   const brand =
     giving === 'anchor'
       ? { in: brands[anchor], out: brands.IST }
@@ -173,14 +173,15 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 /**
  * @param {Instance} instance
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: number, feePct?: number } &
- *         ({ wantMinted: number | undefined, giveMinted: number | undefined, pair: [string, string] })} opts
+ * @param {{ offerId: string, feePct?: number, pair: [string, string] } &
+ *         ({ wantMinted: number } | { giveMinted: number })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makePsmSwapOffer = (instance, brands, opts) => {
-  const method = opts.wantMinted
-    ? 'makeWantMintedInvitation'
-    : 'makeGiveMintedInvitation'; // ref psm.js
+  const method =
+    'wantMinted' in opts
+      ? 'makeWantMintedInvitation'
+      : 'makeGiveMintedInvitation'; // ref psm.js
   const proposal = makePsmProposal(
     brands,
     opts,
