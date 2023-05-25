@@ -1,21 +1,25 @@
 // @ts-check
-/* eslint-disable import/no-extraneous-dependencies */
+import { promises as fs } from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { basename } from 'path';
+import { inspect } from 'util';
+
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, VBankAccount } from '@agoric/internal';
+import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  makeFakeStorageKit,
-  slotToRemotable,
-} from '@agoric/internal/src/storage-test-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+/* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
-import { promises as fs } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { boardSlottingMarshaller } from '../../tools/board-utils.js';
+import { TimeMath } from '@agoric/time';
+import {
+  boardSlottingMarshaller,
+  slotToBoardRemote,
+} from '../../tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
 E;
@@ -228,7 +232,7 @@ export const makeSwingsetTestKit = async (
   const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
-  const { fromCapData } = boardSlottingMarshaller(slotToRemotable);
+  const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
   const readLatest = path => {
     const data = unmarshalFromVstorage(storage.data, path, fromCapData);
@@ -276,6 +280,7 @@ export const makeSwingsetTestKit = async (
           // denom: 'ibc/toyatom',
           // type: 'VBANK_GET_BALANCE'
           case 'VBANK_GET_BALANCE': {
+            // TODO consider letting config specify vbank assets
             // empty balances for test.
             return '0';
           }
@@ -380,3 +385,4 @@ export const makeSwingsetTestKit = async (
     timer,
   };
 };
+/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
