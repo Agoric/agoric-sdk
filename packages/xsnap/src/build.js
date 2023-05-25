@@ -235,6 +235,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
         `MODDABLE=${ModdableSDK.MODDABLE}`,
         `GOAL=${goal}`,
         `XSNAP_VERSION=${pkg.version}`,
+        `CC=cc "-D__has_builtin(x)=1"`,
         '-f',
         'xsnap-worker.mk',
       ],
