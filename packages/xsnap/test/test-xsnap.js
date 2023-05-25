@@ -4,6 +4,7 @@ import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import { createHash } from 'crypto';
 import * as proc from 'child_process';
 import * as os from 'os';
 import fs from 'fs';
@@ -301,6 +302,55 @@ const writeAndReadSnapshot = async (t, snapshotUseFs) => {
 };
 test('write and read snapshot (use FS)', writeAndReadSnapshot, true);
 test('write and read snapshot (use stream)', writeAndReadSnapshot, false);
+
+test('produce golden snapshot hashes', async t => {
+  t.log(`\
+The snapshot hashes produced by this test were created from this package's
+version of xsnap compiled for and run on Agoric's supported (within-consensus)
+platforms.
+
+The snapshot will change (and the test will fail) if xsnap or this platform
+is not compatible with this predefined consensus.  This is likely to happen
+in the future when xsnap is upgraded, in which case there will need to be
+special accommodation for the new version, not just generating new golden
+hashes.
+`);
+  const toEvals = [
+    [`no evaluations`, ''],
+    [
+      `smallish safeInteger multiplication doesn't spill to XS_NUMBER_KIND`,
+      `globalThis.bazinga = 100; globalThis.bazinga *= 1_000_000;`,
+    ],
+  ];
+  for await (const [description, toEval] of toEvals) {
+    t.log(description);
+    const messages = [];
+    async function handleCommand(message) {
+      messages.push(decode(message));
+      return new Uint8Array();
+    }
+
+    const vat0 = await xsnap({
+      ...options(io),
+      handleCommand,
+      snapshotUseFs: false,
+    });
+    if (toEval) {
+      await vat0.evaluate(toEval);
+    }
+
+    const hash = createHash('sha256');
+    for await (const buf of vat0.makeSnapshotStream()) {
+      hash.update(buf);
+    }
+    await vat0.close();
+
+    const hexHash = hash.digest('hex');
+    t.log(`${description} produces golden hash ${hexHash}`);
+    t.snapshot(hexHash, description);
+    t.deepEqual(messages, [], `${description} messages`);
+  }
+});
 
 test('execute immediately after makeSnapshotStream', async t => {
   const messages = [];
