@@ -328,39 +328,58 @@ export const makeSwingsetTestKit = async (
 
   console.timeEnd('makeSwingsetTestKit');
 
-  let currentTime = 0;
-  const setTime = time => {
-    currentTime = time;
+  let currentTime = 0n;
+  /** @param {Timestamp} targetTime */
+  const jumpTimeTo = targetTime => {
+    targetTime = TimeMath.absValue(targetTime);
+    targetTime >= currentTime ||
+      Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
+    currentTime = targetTime;
+    trace('jumpTimeTo', currentTime);
     return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+  /** @param {Timestamp} targetTime */
+  const advanceTimeTo = async targetTime => {
+    targetTime = TimeMath.absValue(targetTime);
+    targetTime >= currentTime ||
+      Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
+    while (currentTime < targetTime) {
+      trace('stepping time from', currentTime, 'towards', targetTime);
+      currentTime += 1n;
+      // eslint-disable-next-line no-await-in-loop
+      await runUtils.runThunk(() => timer.poll(currentTime));
+    }
   };
   /**
    *
    * @param {number} n
    * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
    */
-  const advanceTime = (n, unit) => {
+  const advanceTimeBy = (n, unit) => {
     const multiplier = {
       seconds: 1,
       minutes: 60,
       hours: 60 * 60,
       days: 60 * 60 * 24,
     };
-    currentTime += multiplier[unit] * n;
-    return runUtils.runThunk(() => timer.poll(currentTime));
+    const targetTime = currentTime + BigInt(multiplier[unit] * n);
+    trace('advanceTimeBy', n, unit, 'to', targetTime);
+    return advanceTimeTo(targetTime);
   };
 
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
   return {
-    advanceTime,
-    swingStore,
+    advanceTimeBy,
+    advanceTimeTo,
     controller,
+    jumpTimeTo,
     readLatest,
     runUtils,
-    setTime,
     shutdown,
     storage,
+    swingStore,
     timer,
   };
 };
