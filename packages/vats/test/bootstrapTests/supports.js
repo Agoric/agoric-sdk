@@ -22,6 +22,8 @@ E;
 
 const sink = () => {};
 
+const trace = makeTracer('BSTSupport', false);
+
 /** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
 
 /** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
@@ -238,8 +240,11 @@ export const makeSwingsetTestKit = async (
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToRemotable);
 
-  const readLatest = path =>
-    unmarshalFromVstorage(storage.data, path, fromCapData);
+  const readLatest = path => {
+    const data = unmarshalFromVstorage(storage.data, path, fromCapData);
+    trace('readLatest', path, 'returning', inspect(data, false, 20, true));
+    return data;
+  };
 
   let lastNonce = 0n;
 

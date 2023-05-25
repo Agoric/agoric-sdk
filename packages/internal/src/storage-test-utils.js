@@ -1,6 +1,7 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
+import { makeTracer } from './debug.js';
 import {
   isStreamCell,
   makeChainStorageRoot,
@@ -9,6 +10,8 @@ import {
 import { bindAllMethods } from './method-tools.js';
 
 const { Fail } = assert;
+
+const trace = makeTracer('StorTU', false);
 
 /**
  * A map corresponding with a total function such that `get(key)`
@@ -142,6 +145,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       }
       case 'set':
       case 'setWithoutNotify': {
+        trace('toStorage set', message);
         /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
         const newEntries = message.args;
         for (const [key, value] of newEntries) {
@@ -154,6 +158,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         break;
       }
       case 'append': {
+        trace('toStorage append', message);
         /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
         const newEntries = message.args;
         for (const [key, value] of newEntries) {

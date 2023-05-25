@@ -85,7 +85,6 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
       { ...info, brand: tables.brand[info.issuerName] },
     ]),
   );
-  console.log('DEBUG vbankAsset', vbankAsset);
   return { ...tables, reverse, vbankAsset };
 };
 harden(makeAgoricNamesRemotesFromFakeStorage);
