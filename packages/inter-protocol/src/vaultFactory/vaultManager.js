@@ -499,6 +499,7 @@ export const prepareVaultManagerKit = (
         sendToReserve(penalty, seat, seatKeyword = 'Collateral') {
           const invitation =
             E(reservePublicFacet).makeAddCollateralInvitation();
+          trace('Sending to reserve: ', penalty);
 
           // don't wait for response
           void E.when(invitation, invite => {
@@ -675,6 +676,7 @@ export const prepareVaultManagerKit = (
               quoteAsRatio(oraclePriceAtStart.quoteAmount.value[0]),
             ),
           );
+          const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
 
           const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
           // Liquidation.md describes how to process liquidation proceeds
@@ -708,17 +710,21 @@ export const prepareVaultManagerKit = (
                 debtAmount,
                 vault.getCurrentDebt(),
               );
-              const debtInCollateral = ceilDivideBy(debtAmount, price);
-              const collatPostDebt = AmountMath.isGTE(vCollat, debtInCollateral)
-                ? AmountMath.subtract(vCollat, debtInCollateral)
+              // max return is vault value reduced by debt and penalty value
+              const debtCollat = ceilDivideBy(debtAmount, price);
+              const penaltyCollat = ceilMultiplyBy(debtAmount, debtPortion);
+              const lessCollat = AmountMath.add(debtCollat, penaltyCollat);
+
+              const maxCollat = AmountMath.isGTE(vCollat, lessCollat)
+                ? AmountMath.subtract(vCollat, lessCollat)
                 : AmountMath.makeEmptyFromAmount(vCollat);
               if (!AmountMath.isEmpty(leftToStage)) {
-                const collat = AmountMath.min(leftToStage, collatPostDebt);
-                leftToStage = AmountMath.subtract(leftToStage, collat);
+                const collatReturn = AmountMath.min(leftToStage, maxCollat);
+                leftToStage = AmountMath.subtract(leftToStage, collatReturn);
                 transfers.push([
                   liqSeat,
                   vault.getVaultSeat(),
-                  { Collateral: collat },
+                  { Collateral: collatReturn },
                 ]);
               }
               vaultsToLiquidate.push(vault);
@@ -847,7 +853,6 @@ export const prepareVaultManagerKit = (
 
             let collateralReduction = AmountMath.makeEmpty(collateralBrand);
             let shortfallToReserve = accounting.shortfall;
-            const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
             const reduceCollateral = amount =>
               (collateralReduction = AmountMath.add(
                 collateralReduction,
@@ -904,7 +909,7 @@ export const prepareVaultManagerKit = (
             }
 
             // Putting all the rearrangements after the loop ensures that errors
-            // in the calculations don't result in paying pack some vaults and
+            // in the calculations don't result in paying back some vaults and
             // leaving others hanging.
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
@@ -920,9 +925,13 @@ export const prepareVaultManagerKit = (
             const collateralInLiqSeat =
               liqSeat.getCurrentAllocation().Collateral;
             facets.helper.sendToReserve(collateralInLiqSeat, liqSeat);
-            debugger;
 
-            if (!AmountMath.isEqual(collateralInLiqSeat, collatRemaining)) {
+            if (
+              !AmountMath.isEqual(
+                collateralInLiqSeat,
+                AmountMath.add(collatRemaining, totalPenalty),
+              )
+            ) {
               console.error(
                 `🚨 Excess collateral remaining sent to reserve. Expected ${q(
                   collatRemaining,
@@ -934,6 +943,8 @@ export const prepareVaultManagerKit = (
               shortfall: shortfallToReserve,
             });
           }
+          // liqSeat should be empty at this point, except that funds are sent
+          // asynchronously to the reserve.
           liquidateAll();
           return facets.helper.writeMetrics();
         },
