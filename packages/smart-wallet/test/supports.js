@@ -1,6 +1,10 @@
-import * as ActionType from '@agoric/internal/src/action-types.js';
+import { Fail } from '@agoric/assert';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import * as ActionType from '@agoric/internal/src/action-types.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import {
   installBootContracts,
   makeAddressNameHubs,
@@ -8,17 +12,12 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import '@agoric/vats/src/core/types.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { E, Far } from '@endo/far';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
-import { Fail } from '@agoric/assert';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E, Far } from '@endo/far';
 
 export { ActionType };
 
@@ -148,31 +147,6 @@ export const makeMockTestSpace = async log => {
   ]);
 
   return space;
-};
-
-/**
- * @param {bigint} value
- * @param {{
- *   feeMintAccess: ERef<FeeMintAccess>,
- *   zoe: ERef<ZoeService>,
- * }} powers
- * @returns {Promise<Payment>}
- */
-export const mintCentralPayment = async (
-  value,
-  { feeMintAccess: feeMintAccessP, zoe },
-) => {
-  const feeMintAccess = await feeMintAccessP;
-
-  const centralSupply = await E(zoe).install(centralSupplyBundle);
-
-  const { creatorFacet: supplier } = await E(zoe).startInstance(
-    centralSupply,
-    {},
-    { bootstrapPaymentValue: value },
-    { feeMintAccess },
-  );
-  return E(supplier).getBootstrapPayment();
 };
 
 /**
