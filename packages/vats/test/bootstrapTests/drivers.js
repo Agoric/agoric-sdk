@@ -1,10 +1,13 @@
+// @ts-check
+import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
 /**
- * @param {ReturnType<typeof makeRunUtils>} runUtils
+ * @param {ReturnType<typeof import('./supports.js').makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  */
@@ -15,9 +18,11 @@ export const makeWalletFactoryDriver = async (
 ) => {
   const { EV } = runUtils;
 
+  /** @type {import('../../src/core/startWalletFactory.js').WalletFactoryStartResult} */
   const walletFactoryStartResult = await EV.vat('bootstrap').consumeItem(
     'walletFactoryStartResult',
   );
+  /** @type {ERef<BankManager>} */
   const bankManager = await EV.vat('bootstrap').consumeItem('bankManager');
   const namesByAddressAdmin = await EV.vat('bootstrap').consumeItem(
     'namesByAddressAdmin',
@@ -60,6 +65,7 @@ export const makeWalletFactoryDriver = async (
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
+    /** @param {string} offerId */
     tryExitOffer(offerId) {
       const capData = marshaller.toCapData(
         harden({
@@ -121,6 +127,8 @@ export const makeWalletFactoryDriver = async (
 
   return {
     /**
+     * Skip the provisionPool for tests
+     *
      * @param {string} walletAddress
      * @returns {Promise<ReturnType<typeof makeWalletDriver>>}
      */
@@ -194,6 +202,140 @@ export const makePriceFeedDriver = async (
       oracleWallets.push(NonNullish(oracleWallets.shift()));
       roundId += 1n;
       // TODO confirm the new price is written to storage
+    },
+  };
+};
+
+/**
+ * @param {import('./supports.js').SwingsetTestKit} testKit
+ * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
+ * @param {string[]} committeeAddresses
+ */
+export const makeGovernanceDriver = async (
+  testKit,
+  agoricNamesRemotes,
+  walletFactoryDriver,
+  committeeAddresses,
+) => {
+  const { EV } = testKit.runUtils;
+  const charterMembershipId = 'charterMembership';
+  const committeeMembershipId = 'committeeMembership';
+
+  /** @type {ERef<import('@agoric/time/src/types.js').TimerService>} */
+  const chainTimerService = await EV.vat('bootstrap').consumeItem(
+    'chainTimerService',
+  );
+
+  let invitationsAccepted = false;
+
+  const ecMembers = await Promise.all(
+    committeeAddresses.map(address =>
+      walletFactoryDriver.provideSmartWallet(address),
+    ),
+  );
+
+  const ensureInvitationsAccepted = async () => {
+    if (invitationsAccepted) {
+      return;
+    }
+    // accept charter invitations
+    {
+      const instance = agoricNamesRemotes.instance.econCommitteeCharter;
+      const promises = ecMembers.map(member =>
+        member.executeOffer({
+          id: charterMembershipId,
+          invitationSpec: {
+            source: 'purse',
+            instance,
+            description: 'charter member invitation',
+          },
+          proposal: {},
+        }),
+      );
+      await Promise.all(promises);
+    }
+    // accept committee invitations
+    {
+      const instance = agoricNamesRemotes.instance.economicCommittee;
+      const promises = ecMembers.map(member => {
+        const description =
+          member.getCurrentWalletRecord().purses[0].balance.value[0]
+            .description;
+        return member.executeOffer({
+          id: committeeMembershipId,
+          invitationSpec: {
+            source: 'purse',
+            instance,
+            description,
+          },
+          proposal: {},
+        });
+      });
+      await Promise.all(promises);
+    }
+    invitationsAccepted = true;
+  };
+
+  const proposeParams = async (instance, params, path) => {
+    const now = await EV(chainTimerService).getCurrentTimestamp();
+
+    await ecMembers[0].executeOffer({
+      id: 'propose',
+      invitationSpec: {
+        invitationMakerName: 'VoteOnParamChange',
+        previousOffer: charterMembershipId,
+        source: 'continuing',
+      },
+      offerArgs: {
+        deadline: SECONDS_PER_MINUTE + now.absValue,
+        instance,
+        params,
+        path,
+      },
+      proposal: {},
+    });
+  };
+
+  const enactLatestProposal = async () => {
+    const latestQuestionRecord = testKit.readLatest(
+      'published.committees.Economic_Committee.latestQuestion',
+    );
+
+    const chosenPositions = [latestQuestionRecord.positions[0]];
+
+    const promises = ecMembers.map(member =>
+      member.executeOffer({
+        id: 'voteInNewLimit',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: committeeMembershipId,
+          invitationMakerName: 'makeVoteInvitation',
+          // (positionList, questionHandle)
+          invitationArgs: harden([
+            chosenPositions,
+            latestQuestionRecord.questionHandle,
+          ]),
+        },
+        proposal: {},
+      }),
+    );
+    await Promise.all(promises);
+  };
+
+  return {
+    /**
+     *
+     * @param {Instance} instance
+     * @param {object} params
+     * @param {object} [path]
+     */
+    async changeParams(instance, params, path) {
+      instance || Fail`missing instance`;
+      await ensureInvitationsAccepted();
+      await proposeParams(instance, params, path);
+      await enactLatestProposal();
+      await testKit.advanceTimeBy(1, 'minutes');
     },
   };
 };
