@@ -26,7 +26,7 @@ E;
 
 const sink = () => {};
 
-const trace = makeTracer('BSTSupport', false);
+const trace = makeTracer('BSTSupport');
 
 /** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
 

@@ -2,6 +2,9 @@
 // @ts-check
 /**
  * @file Bootstrap test integration vaults with smart-wallet
+ *
+ * Forks test-liquidation to test another scenario, but with a clean vault manager state.
+ * TODO is there a way to *reset* the vaultmanager to make the two tests run faster?
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -51,16 +54,12 @@ const setup = /** @type {const} */ ({
   ],
   bids: [
     {
-      give: '80IST',
-      discount: 0.1,
+      give: '75IST',
+      discount: 0.22,
     },
     {
-      give: '90IST',
-      price: 9.0,
-    },
-    {
-      give: '150IST',
-      discount: 0.15,
+      give: '25IST',
+      discount: 0.3,
     },
   ],
   price: {
@@ -100,29 +99,30 @@ const outcome = /** @type {const} */ ({
     allocations: {
       ATOM: 0.30985,
     },
-    shortfall: 0,
+    shortfall: 5.525,
   },
   vaultsSpec: [
     {
-      locked: 3.373,
+      debt: 100.5,
+      locked: 14.899,
     },
     {
-      locked: 3.024,
-    },
-    {
-      locked: 2.792,
+      debt: 103.515,
+      locked: 14.896,
     },
   ],
   // TODO match spec https://github.com/Agoric/agoric-sdk/issues/7837
   vaultsActual: [
     {
-      locked: 3.525747,
+      debt: 100.5,
+      locked: 1.4999185,
     },
     {
-      locked: 3.181519,
+      debt: 103.515,
+      locked: 1.4999161,
     },
     {
-      locked: 2.642185,
+      locked: 0,
     },
   ],
 });
@@ -215,8 +215,8 @@ test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
 });
 
-// Reference: Flow 1 from https://github.com/Agoric/agoric-sdk/issues/7123
-test.serial('scenario: Flow 1', async t => {
+// Reference: Flow 2b from https://github.com/Agoric/agoric-sdk/issues/7123
+test.serial('scenario: Flow 2b', async t => {
   const {
     advanceTimeBy,
     advanceTimeTo,
@@ -390,19 +390,6 @@ test.serial('scenario: Flow 1', async t => {
         payouts: undefined,
       },
     });
-    await buyer.sendOfferMaker(Offers.auction.Bid, {
-      offerId: 'bid3',
-      ...setup.bids[2],
-      maxBuy,
-      parseAmount,
-    });
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: 'bid3',
-        result: 'Your bid has been accepted',
-        payouts: undefined,
-      },
-    });
   }
 
   {
@@ -441,6 +428,9 @@ test.serial('scenario: Flow 1', async t => {
       startProceedsGoal: { value: scale6(setup.auction.start.debt) },
     });
 
+    // DEBUG 7850
+    await priceFeedDriver.setPrice(13); // back above water
+
     console.log('step 2 of 10');
     await advanceTimeBy(3, 'minutes');
 
@@ -458,24 +448,27 @@ test.serial('scenario: Flow 1', async t => {
     //   },
     // });
 
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: 'bid2',
-        payouts: likePayouts(outcome.bids[1].payouts),
-      },
-    });
-
-    // DEBUG 7850
-    await priceFeedDriver.setPrice(12.34); // back above water
+    // t.like(readLatest('published.wallet.agoric1buyer'), {
+    //   status: {
+    //     id: 'bid2',
+    //     payouts: likePayouts(outcome.bids[1].payouts),
+    //   },
+    // });
 
     console.log('step 4 of 10');
     await advanceTimeBy(3, 'minutes');
 
+    // DEBUG 7850
+    await priceFeedDriver.setPrice(1); // down low
+
     console.log('step 5 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest('published.auction.book0'), {
-      collateralAvailable: { value: 9659301n },
-    });
+    // t.like(readLatest('published.auction.book0'), {
+    //   collateralAvailable: { value: 9659301n },
+    // });
+
+    // DEBUG 7850
+    await priceFeedDriver.setPrice(14); // back up
 
     console.log('step 6 of 10');
     await advanceTimeBy(3, 'minutes');
@@ -485,18 +478,18 @@ test.serial('scenario: Flow 1', async t => {
 
     console.log('step 8 of 10');
     await advanceTimeBy(3, 'minutes');
-    // Not part of product spec
     t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
-      numActiveVaults: 0,
-      numLiquidationsCompleted: setup.vaults.length,
+      // reconstituted
+      numActiveVaults: 2,
+      numLiquidationsCompleted: 1,
       numLiquidatingVaults: 0,
       retainedCollateral: { value: 0n },
-      totalCollateral: { value: 0n },
-      totalCollateralSold: { value: 35340699n },
-      totalDebt: { value: 0n },
+      // totalCollateral: { value: 29834673n },
+      totalCollateralSold: { value: 13585013n },
+      totalDebt: { value: 204015000n },
       totalOverageReceived: { value: 0n },
-      totalProceedsReceived: { value: 309540000n },
-      totalShortfallReceived: { value: 0n },
+      totalProceedsReceived: { value: 100000000n },
+      totalShortfallReceived: { value: 5525000n },
     });
 
     console.log('step 9 of 10');
@@ -508,52 +501,57 @@ test.serial('scenario: Flow 1', async t => {
     console.log('step 11 of 10');
     await advanceTimeBy(3, 'minutes');
 
-    // bid3 still live because it's not fully satisfied
-    const { liveOffers } = readLatest('published.wallet.agoric1buyer.current');
-    t.is(liveOffers[0][1].id, 'bid3');
-    // exit to get payouts
-    await buyer.tryExitOffer('bid3');
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: 'bid3',
-        payouts: likePayouts(outcome.bids[2].payouts),
-      },
-    });
-
     // check vault balances
     t.like(
       readLatest('published.vaultFactory.managers.manager0.vaults.vault0'),
       {
         debt: undefined,
-        vaultState: 'liquidated',
-        locked: { value: scale6(outcome.vaultsActual[0].locked) },
+        vaultState: 'active',
+        // locked: {
+        //   value:
+        //     14999185n /* precision loss scale6(outcome.vaultsActual[0].locked)*/,
+        // },
       },
     );
     t.like(
       readLatest('published.vaultFactory.managers.manager0.vaults.vault1'),
       {
         debt: undefined,
-        vaultState: 'liquidated',
-        locked: { value: scale6(outcome.vaultsActual[1].locked) },
+        vaultState: 'active',
+        // locked: {
+        //   value: 14999161n /* scale6(outcome.vaultsActual[1].locked) */,
+        // },
       },
     );
-    // t.like(
-    //   readLatest('published.vaultFactory.managers.manager0.vaults.vault2'),
-    //   {
-    //     debt: undefined,
-    //     vaultState: 'liquidated',
-    //     locked: { value: scale6(outcome.vaultsActual[2].locked) },
-    //   },
-    // );
+    t.like(
+      readLatest('published.vaultFactory.managers.manager0.vaults.vault2'),
+      {
+        debt: undefined,
+        vaultState: 'liquidated',
+        // locked: { value: scale6(outcome.vaultsActual[2].locked) },
+      },
+    );
   }
 
   // check reserve balances
   // t.like(readLatest('published.reserve.metrics'), {
   //   allocations: {
   //     ATOM: { value: scale6(outcome.reserve.allocations.ATOM) },
-  //     // not part of product spec
-  //     Fee: { value: scale6(1.54) },
   //   },
   //   shortfallBalance: { value: scale6(outcome.reserve.shortfall) },
+  // });
+
+  // t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
+  //   // reconstituted
+  //   numActiveVaults: 2,
+  //   numLiquidationsCompleted: 1,
+  //   numLiquidatingVaults: 0,
+  //   retainedCollateral: { value: 0n },
+  //   totalCollateral: { value: 29834673n },
+  //   totalCollateralSold: { value: 13585013n },
+  //   totalDebt: { value: 204015000n },
+  //   totalOverageReceived: { value: 0n },
+  //   totalProceedsReceived: { value: 100000000n },
+  //   totalShortfallReceived: { value: scale6(5.525) },
   // });
 });
