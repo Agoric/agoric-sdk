@@ -107,7 +107,7 @@ test.before(async t => {
       recordingPeriod: 6n,
     },
     minInitialDebt: 50n,
-    endorsedUi: undefined,
+    referencedUi: undefined,
     rates: defaultParamValues(run.brand),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
@@ -140,8 +140,15 @@ const setupServices = async (
   runInitialLiquidity,
   auctionParams = {},
 ) => {
-  const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
-    t.context;
+  const {
+    zoe,
+    run,
+    aeth,
+    interestTiming,
+    minInitialDebt,
+    referencedUi,
+    rates,
+  } = t.context;
   t.context.timer = timer;
 
   const { space } = await setupElectorateReserveAndAuction(
@@ -164,7 +171,7 @@ const setupServices = async (
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(
     space,
-    { interestTiming, options: { endorsedUi } },
+    { interestTiming, options: { referencedUi } },
     minInitialDebt,
   );
 

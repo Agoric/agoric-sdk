@@ -173,7 +173,7 @@ export const setupReserve = async ({
  * @param {object} config
  * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
- * @param {string} [config.options.endorsedUi]
+ * @param {string} [config.options.referencedUi]
  * @param {Amount<'nat'>} minInitialDebt
  */
 export const setupVaultFactoryArguments = async (
@@ -183,7 +183,7 @@ export const setupVaultFactoryArguments = async (
       chargingPeriod: SECONDS_PER_HOUR,
       recordingPeriod: SECONDS_PER_DAY,
     },
-    options: { endorsedUi } = {},
+    options: { referencedUi } = {},
   } = {},
   minInitialDebt,
 ) => {
@@ -237,7 +237,7 @@ export const setupVaultFactoryArguments = async (
     minInitialDebt,
     bootstrapPaymentValue: 0n,
     shortfallInvitationAmount,
-    endorsedUi,
+    referencedUi,
   });
 
   const vaultFactoryPrivateArgs = {
@@ -256,7 +256,7 @@ export const setupVaultFactoryArguments = async (
  * @param {object} config
  * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
- * @param {string} [config.options.endorsedUi]
+ * @param {string} [config.options.referencedUi]
  * @param {bigint} minInitialDebt
  */
 export const startVaultFactory = async (
