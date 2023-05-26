@@ -98,7 +98,7 @@ const outcome = /** @type {const} */ ({
   ],
   reserve: {
     allocations: {
-      ATOM: 0.30985,
+      ATOM: 0.309852,
     },
     shortfall: 0,
   },
@@ -113,16 +113,16 @@ const outcome = /** @type {const} */ ({
       locked: 2.792,
     },
   ],
-  // TODO match spec https://github.com/Agoric/agoric-sdk/issues/7837
+  // TODO match or update spec https://github.com/Agoric/agoric-sdk/issues/7837
   vaultsActual: [
     {
-      locked: 3.525747,
+      locked: 3.425146,
     },
     {
-      locked: 3.181519,
+      locked: 3.0779,
     },
     {
-      locked: 2.642185,
+      locked: 2.846403,
     },
   ],
 });
