@@ -5,6 +5,8 @@ import { E } from '@endo/far';
 import path from 'path';
 import { withAmountUtils } from './supports.js';
 
+const automaticRefundPath = '../../zoe/src/contracts/automaticRefund.js';
+
 /**
  * @param {import('ava').ExecutionContext} t
  * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
@@ -26,6 +28,12 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   /** @type {Promise<Installation<import('../src/walletFactory.js').prepare>>} */
   const installation = E(zoe).install(bundle);
+
+  const automaticRefundBundle = await bundleCache.load(
+    `${dirname}/${automaticRefundPath}`,
+    'automaticRefund',
+  );
+  const automaticRefundInstallation = E(zoe).install(automaticRefundBundle);
   //#endregion
 
   // copied from makeClientBanks()
@@ -73,5 +81,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       walletBridgeManager && (obj => E(walletBridgeManager).toBridge(obj)),
     consume,
     simpleProvideWallet,
+    automaticRefundInstallation,
   };
 };

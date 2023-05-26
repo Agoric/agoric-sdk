@@ -132,6 +132,7 @@ export const makeMockTestSpace = async log => {
       Far(
         'mockBankManager',
         /** @type {any} */ ({
+          addAsset: fakeBankKit.addAsset,
           getBankForAddress: _a => fakeBankKit.bank,
         }),
       ),

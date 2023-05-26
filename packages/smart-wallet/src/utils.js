@@ -142,3 +142,31 @@ export const objectMapStoragePath = subscribers => {
     ),
   );
 };
+
+/**
+ * @param {string} id
+ * @param {{Collateral: Brand, Minted: Brand}} brand
+ * @param {import('./invitations').InvitationSpec} [invitationSpec]
+ */
+export const makePreFlightOffer = (id, brand, invitationSpec) => {
+  const unobtanium = { Minted: { brand: brand.Minted, value: 1_000_000n } };
+
+  /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+  const offer = {
+    id,
+    // XXX too much overlap with Offers.vaults.OpenVault?
+    invitationSpec: invitationSpec || {
+      source: 'agoricContract',
+      instancePath: ['VaultFactory'],
+      callPipe: [
+        ['getCollateralManager', [brand.Collateral]],
+        ['makeVaultInvitation'],
+      ],
+    },
+    proposal: {
+      want: unobtanium,
+      give: { Collateral: { brand: brand.Collateral, value: 1n } },
+    },
+  };
+  return offer;
+};

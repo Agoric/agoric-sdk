@@ -13,6 +13,7 @@ import {
 } from './supports.js';
 
 import '@agoric/vats/src/core/types.js';
+import { makePreFlightOffer } from '../src/utils.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;
@@ -219,3 +220,66 @@ test.todo(
   // executeOffer to buy the junk (which can't resolve)
   // exit the offer "oh I don't want to buy junk!"
 );
+
+test('pre-flight offer prompts vbank purse allocation', async t => {
+  const owner = 'agoric1preFlight';
+  const {
+    simpleProvideWallet,
+    sendToBridge,
+    consume,
+    automaticRefundInstallation,
+  } = t.context;
+  const board = await consume.board;
+  await simpleProvideWallet(owner);
+
+  const tok1 = await consume.testFirstAnchorKit;
+  await E(consume.bankManager).addAsset('uausd', 'AUSD', 'Anchor USD', tok1);
+  const { instance } = await E(consume.zoe).startInstance(
+    automaticRefundInstallation,
+    { KW: tok1.issuer },
+  );
+  /** @type {import('../src/invitations.js').InvitationSpec} */
+  const invitationSpec = {
+    source: 'contract',
+    instance,
+    publicInvitationMaker: 'makeInvitation',
+  };
+
+  const offerSpec = makePreFlightOffer(
+    'pre-flight-offer-id',
+    { Collateral: tok1.brand, Minted: tok1.brand },
+    invitationSpec,
+  );
+  const ctx = makeImportContext();
+  const brandBoardId = await E(board).getId(tok1.brand);
+  const instanceBoardId = await E(board).getId(instance);
+  ctx.ensureBoardId(brandBoardId, tok1.brand);
+  ctx.ensureBoardId(instanceBoardId, instance);
+
+  const bank1 = await E(consume.bankManager).getBankForAddress(owner);
+  // @ts-expect-error
+  t.deepEqual(bank1.getAllocatedPurseBrandsForTest(), []);
+
+  assert(t.context.sendToBridge);
+  const validMsg = {
+    type: ActionType.WALLET_SPEND_ACTION,
+    owner,
+    // consider a helper for each action type
+    spendAction: JSON.stringify(
+      ctx.fromBoard.toCapData(
+        harden({ method: 'executeOffer', offer: offerSpec }),
+      ),
+    ),
+    blockTime: 0,
+    blockHeight: 0,
+  };
+
+  assert(sendToBridge);
+  await t.throwsAsync(t.context.sendToBridge(validMsg), {
+    message:
+      /Withdrawal of {[^}]+} failed because the purse only contained {[^}]+}/,
+  });
+
+  // @ts-expect-error
+  t.deepEqual(bank1.getAllocatedPurseBrandsForTest(), [tok1.brand]);
+});
