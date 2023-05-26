@@ -645,6 +645,11 @@ export const prepareVaultManagerKit = (
           vaultData,
           totalCollateral,
         ) {
+          trace('distributeProceeds', {
+            proceeds,
+            totalDebt,
+            totalCollateral,
+          });
           const { state, facets } = this;
           const { collateralBrand, debtBrand, liquidatingVaults } = this.state;
 
@@ -662,10 +667,12 @@ export const prepareVaultManagerKit = (
           const mintedProceeds =
             proceeds.Minted || AmountMath.makeEmpty(debtBrand);
           const accounting = liquidationResults(totalDebt, mintedProceeds);
+          // Try to repro
+          const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
 
           /** @type {Array<Vault>} */
           const vaultsToLiquidate = [];
-          const liquidateAll = () => {
+          const markAllVaultsLiquidated = () => {
             for (const vault of vaultsToLiquidate) {
               vault.liquidated();
               liquidatingVaults.delete(vault);
@@ -707,7 +714,6 @@ export const prepareVaultManagerKit = (
             const transfers = [];
             let leftToStage = distributableCollateral;
 
-            const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
             // iterate from best to worst, returning collateral until it has
             // been exhausted. Vaults after that get nothing.
             for (const [vault, amounts] of bestToWorst) {
@@ -931,7 +937,7 @@ export const prepareVaultManagerKit = (
               shortfall: shortfallToReserve,
             });
           }
-          liquidateAll();
+          markAllVaultsLiquidated();
           return facets.helper.writeMetrics();
         },
       },
