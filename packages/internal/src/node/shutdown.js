@@ -9,11 +9,7 @@ export const makeFreshShutdown = (verbose = true) => {
   let shuttingDown = false;
   /** @type {NodeJS.SignalsListener & NodeJS.BeforeExitListener} */
   const shutdown = code => {
-    const sig = typeof code === 'string' && code.startsWith('SIG');
     const isSigInt = code === 'SIGINT';
-    if (sig) {
-      process.exitCode = 98;
-    }
     if (shuttingDown) {
       return;
     }
