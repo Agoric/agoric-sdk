@@ -30,6 +30,7 @@ import {
   outputActionAndHint,
   sendAction,
 } from '../lib/wallet.js';
+import { makePreFlightOffer } from '@agoric/smart-wallet/src/utils.js';
 
 const { values } = Object;
 
@@ -333,10 +334,17 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean?} dryRun
+   * @param {boolean?} [dryRun]
+   * @param {string?} [label]
    */
-  const placeBid = async (from, offer, tools, dryRun = false) => {
-    const { networkConfig, agoricNames, pollOffer } = tools;
+  const executeOffer = async (
+    from,
+    offer,
+    tools,
+    dryRun = false,
+    label = 'bid',
+  ) => {
+    const { networkConfig, pollOffer } = tools;
     const io = { ...networkConfig, execFileSync, delay, stdout };
 
     const { home, keyringBackend: backend } = interCmd.opts();
@@ -349,10 +357,86 @@ inter auction status
     }
 
     assert(result); // Not dry-run
+    assert(result); // Not dry-run
     const { timestamp, txhash, height } = result;
-    console.error('bid is broadcast:');
+    console.error(`${label} is broadcast:`);
     show({ timestamp, height, offerId: offer.id, txhash });
-    const found = await pollOffer(from, offer.id, height);
+    return pollOffer(from, offer.id, height);
+  };
+
+  /**
+   * @param {{
+   *   from: string,
+   *   all?: boolean,
+   * }} opts
+   */
+  const listBids = async opts => {
+    const { agoricNames, readLatestHead, storedWalletState } =
+      await tryMakeUtils();
+
+    const [current, state] = await Promise.all([
+      getCurrent(opts.from, { readLatestHead }),
+      storedWalletState(opts.from),
+    ]);
+    const entries = opts.all
+      ? state.offerStatuses.entries()
+      : current.liveOffers;
+    const found = [];
+    for (const [id, spec] of entries) {
+      const offerStatus = state.offerStatuses.get(id) || spec;
+      harden(offerStatus); // coalesceWalletState should do this
+      // console.debug(offerStatus.invitationSpec);
+      if (!matches(offerStatus.invitationSpec, bidInvitationShape)) continue;
+
+      const bid = coerceBid(offerStatus, agoricNames, console.warn);
+      if (!bid) continue;
+
+      found.push(fmtBid(bid, values(agoricNames.vbankAsset)));
+    }
+    return found;
+  };
+
+  /**
+   * @param {string} from
+   * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+   * @param {Awaited<ReturnType<tryMakeUtils>>} tools
+   * @param {boolean?} dryRun
+   * @param {boolean?} [preFlight]
+   */
+  const placeBid = async (
+    from,
+    offer,
+    tools,
+    dryRun = false,
+    preFlight = false,
+  ) => {
+    const { agoricNames } = tools;
+
+    // pre-flight offer to ensure presence of collateral brand purse
+    if (preFlight) {
+      const id = `pre-${offer.id}`; // collision-proof unless the user overrides --offer-id
+      assert(offer.proposal.give);
+      const brand = {
+        // @ts-expect-error cast
+        Collateral: offer.offerArgs.maxBuy.brand,
+        Minted: offer.proposal.give.Bid.brand,
+      };
+      console.log('@@@', brand);
+      const preOffer = makePreFlightOffer(id, brand);
+      await executeOffer(from, preOffer, tools, dryRun, 'pre-flight');
+    } else {
+      const bids = await listBids({ from });
+      if (bids.length === 0) {
+        throw new InvalidArgumentError(
+          `no bids found; use --pre-flight to prepare for bidding`,
+        );
+      }
+    }
+
+    const found = await executeOffer(from, offer, tools, dryRun);
+    if (!found) {
+      return;
+    }
     // TODO: command to wait 'till bid exits?
     const bid = coerceBid(found, agoricNames, console.warn);
     if (!bid) {
@@ -376,6 +460,7 @@ inter auction status
    *   wantMinimum?: string,
    *   offerId: string,
    *   from: string,
+   *   preFlight?: boolean,
    *   generateOnly?: boolean,
    *   dryRun?: boolean,
    * }} SharedBidOpts
@@ -401,6 +486,7 @@ inter auction status
         'only transact a bid that supplies this much collateral',
       )
       .option('--offer-id <string>', 'Offer id', String, `bid-${now()}`)
+      .option('--pre-flight', 'do a "pre-flight" transaction only needed once')
       .option('--generate-only', 'print wallet action only')
       .option('--dry-run', 'dry run only');
 
@@ -433,7 +519,7 @@ inter auction status
           return;
         }
 
-        await placeBid(opts.from, offer, tools, dryRun);
+        await placeBid(opts.from, offer, tools, dryRun, opts.preFlight);
       },
     );
 
@@ -479,7 +565,7 @@ inter auction status
           );
           return;
         }
-        await placeBid(opts.from, offer, tools);
+        await placeBid(opts.from, offer, tools, opts.dryRun, opts.preFlight);
       },
     );
 
@@ -569,39 +655,10 @@ $ inter bid list --from my-acct
       normalizeAddress,
     )
     .option('--all', 'show exited bids as well')
-    .action(
-      /**
-       * @param {{
-       *   from: string,
-       *   all?: boolean,
-       * }} opts
-       */
-      async opts => {
-        const { agoricNames, readLatestHead, storedWalletState } =
-          await tryMakeUtils();
-
-        const [current, state] = await Promise.all([
-          getCurrent(opts.from, { readLatestHead }),
-          storedWalletState(opts.from),
-        ]);
-        const entries = opts.all
-          ? state.offerStatuses.entries()
-          : current.liveOffers;
-        for (const [id, spec] of entries) {
-          const offerStatus = state.offerStatuses.get(id) || spec;
-          harden(offerStatus); // coalesceWalletState should do this
-          // console.debug(offerStatus.invitationSpec);
-          if (!matches(offerStatus.invitationSpec, bidInvitationShape))
-            continue;
-
-          const bid = coerceBid(offerStatus, agoricNames, console.warn);
-          if (!bid) continue;
-
-          const info = fmtBid(bid, values(agoricNames.vbankAsset));
-          show(info);
-        }
-      },
-    );
+    .action(async opts => {
+      const bids = await listBids(opts);
+      bids.forEach(bid => show(bid));
+    });
 
   const assetCmd = interCmd
     .command('vbank')
