@@ -1,6 +1,7 @@
 // @ts-check
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
-import { E, Far } from '@endo/far';
+import { deeplyFulfilledObject } from '@agoric/internal';
+import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
 import {
   IterableEachTopicI,
   makeNotifierKit,
@@ -10,8 +11,8 @@ import {
 } from '@agoric/notifier';
 import { M, provideLazy } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { E, Far } from '@endo/far';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { BridgeHandlerI, BridgeScopedManagerI } from './bridge.js';
 import {
   makeVirtualPurseKitIKit,
@@ -404,6 +405,14 @@ const prepareBank = (
   const makeBalanceUpdater = prepareBalanceUpdater(zone);
   const makeBankPurseController = prepareBankPurseController(zone);
 
+  // Using a `purseProvider` singleton requires a single map with composite keys
+  // (which we emulate, since we know both address and denom are JSONable).  If
+  // we decide to partition the provider and use `brandToVPurse` directly, we'd
+  // need ephemera for each `makeBank` call.
+  const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
+  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<string, VirtualPurse>} */
+  const purseProvider = makeAtomicProvider(addressDenomToPurse);
+
   const makeBank = zone.exoClass(
     'Bank',
     BankI,
@@ -443,6 +452,7 @@ const prepareBank = (
           this.state.assetSubscriber,
         );
       },
+      /** @param {Brand} brand */
       async getPurse(brand) {
         const {
           bankChannel,
@@ -451,54 +461,55 @@ const prepareBank = (
           brandToAssetRecord,
           denomToAddressUpdater,
         } = this.state;
-
         if (brandToVPurse.has(brand)) {
           return brandToVPurse.get(brand);
         }
 
-        /** @param {ERef<VirtualPurse>} purseP */
-        const keepPurse = async purseP => {
-          const purse = await purseP;
-          // Need to recheck as we may have raced with another call.
-          if (brandToVPurse.has(brand)) {
-            return brandToVPurse.get(brand);
+        const assetRecord = brandToAssetRecord.get(brand);
+        // Create a composite key that doesn't rely on the contents of the
+        // address and denom, only that they are strings.
+        const providerKey = JSON.stringify([address, assetRecord.denom]);
+
+        /** @type {() => Promise<VirtualPurse>} */
+        const makePurse = async () => {
+          if (!bankChannel) {
+            // Just emulate with a real purse.
+            return E(assetRecord.issuer).makeEmptyPurse();
           }
-          brandToVPurse.init(brand, purse);
-          return purse;
+          const addressToUpdater = denomToAddressUpdater.get(assetRecord.denom);
+
+          /** @type {PublishKit<Amount>} */
+          const { publisher, subscriber } = makePublishKit();
+          const balanceUpdater = makeBalanceUpdater(brand, publisher);
+          addressToUpdater.init(address, balanceUpdater);
+          // Get the initial balance.
+          const balanceString = await bankChannel.toBridge({
+            type: 'VBANK_GET_BALANCE',
+            address,
+            denom: assetRecord.denom,
+          });
+          balanceUpdater.update(balanceString);
+
+          // Create and return the virtual purse.
+          const vpc = makeBankPurseController(
+            bankChannel,
+            assetRecord.denom,
+            brand,
+            address,
+            subscriber,
+          );
+          return makeVirtualPurse(vpc, assetRecord);
         };
 
-        const assetRecord = brandToAssetRecord.get(brand);
-        if (!bankChannel) {
-          // Just emulate with a real purse.
-          return keepPurse(E(assetRecord.issuer).makeEmptyPurse());
-        }
-
-        const addressToUpdater = denomToAddressUpdater.get(assetRecord.denom);
-
-        /** @type {PublishKit<Amount>} */
-        const { publisher, subscriber } = makePublishKit();
-        const balanceUpdater = makeBalanceUpdater(brand, publisher);
-
-        // Abort if we lost the race to another call.
-        addressToUpdater.init(address, balanceUpdater);
-
-        // Get the initial balance.
-        const balanceString = await bankChannel.toBridge({
-          type: 'VBANK_GET_BALANCE',
-          address,
-          denom: assetRecord.denom,
-        });
-        balanceUpdater.update(balanceString);
-
-        // Create and return the virtual purse.
-        const vpc = makeBankPurseController(
-          bankChannel,
-          assetRecord.denom,
-          brand,
-          address,
-          subscriber,
+        return purseProvider.provideAsync(
+          providerKey,
+          makePurse,
+          async (_key, purse) => {
+            // Move it from the provider to this Exo's storage
+            brandToVPurse.init(brand, purse);
+            addressDenomToPurse.delete(providerKey);
+          },
         );
-        return keepPurse(makeVirtualPurse(vpc, assetRecord));
       },
     },
   );
