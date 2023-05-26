@@ -27,7 +27,7 @@ agoric wallet send --offer "$OFFER" --from gov1 --keyring-backend="test"
 bin/agops vaults list --from gov1 --keyring-backend="test"
 
 # in another terminal watch:
-agoric follow :published.vaultFactory.manager0.vaults.vault0
+agoric follow :published.vaultFactory.managers.manager0.vaults.vault0
 
 # adjust
 OFFER=$(mktemp -t agops.XXX)
