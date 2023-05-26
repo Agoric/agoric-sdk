@@ -2004,9 +2004,9 @@ test('governance publisher', async t => {
   t.deepEqual(Object.keys(current), [
     'ChargingPeriod',
     'Electorate',
-    'ReferencedUI',
     'MinInitialDebt',
     'RecordingPeriod',
+    'ReferencedUI',
     'ShortfallInvitation',
   ]);
   t.like(current, {
