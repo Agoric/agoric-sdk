@@ -650,6 +650,7 @@ export const prepareVaultManagerKit = (
             totalDebt,
             totalCollateral,
           });
+          Fail`what happens?`;
           const { state, facets } = this;
           const { collateralBrand, debtBrand, liquidatingVaults } = this.state;
 

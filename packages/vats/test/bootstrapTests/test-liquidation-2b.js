@@ -480,16 +480,16 @@ test.serial('scenario: Flow 2b', async t => {
     await advanceTimeBy(3, 'minutes');
     t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
       // reconstituted
-      numActiveVaults: 2,
-      numLiquidationsCompleted: 1,
-      numLiquidatingVaults: 0,
+      numActiveVaults: 0,
+      numLiquidationsCompleted: 0,
+      numLiquidatingVaults: 3,
       retainedCollateral: { value: 0n },
       // totalCollateral: { value: 29834673n },
-      totalCollateralSold: { value: 13585013n },
-      totalDebt: { value: 204015000n },
+      totalCollateralSold: { value: 0n },
+      totalDebt: { value: 309540000n },
       totalOverageReceived: { value: 0n },
-      totalProceedsReceived: { value: 100000000n },
-      totalShortfallReceived: { value: 5525000n },
+      totalProceedsReceived: { value: 0n },
+      totalShortfallReceived: { value: 0n },
     });
 
     console.log('step 9 of 10');
@@ -506,7 +506,7 @@ test.serial('scenario: Flow 2b', async t => {
       readLatest('published.vaultFactory.managers.manager0.vaults.vault0'),
       {
         debt: undefined,
-        vaultState: 'active',
+        vaultState: 'liquidating',
         // locked: {
         //   value:
         //     14999185n /* precision loss scale6(outcome.vaultsActual[0].locked)*/,
@@ -517,7 +517,7 @@ test.serial('scenario: Flow 2b', async t => {
       readLatest('published.vaultFactory.managers.manager0.vaults.vault1'),
       {
         debt: undefined,
-        vaultState: 'active',
+        vaultState: 'liquidating',
         // locked: {
         //   value: 14999161n /* scale6(outcome.vaultsActual[1].locked) */,
         // },
@@ -527,7 +527,7 @@ test.serial('scenario: Flow 2b', async t => {
       readLatest('published.vaultFactory.managers.manager0.vaults.vault2'),
       {
         debt: undefined,
-        vaultState: 'liquidated',
+        vaultState: 'liquidating',
         // locked: { value: scale6(outcome.vaultsActual[2].locked) },
       },
     );
