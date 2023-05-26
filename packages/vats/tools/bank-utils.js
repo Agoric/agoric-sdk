@@ -40,11 +40,17 @@ export const makeFakeBankKit = issuerKits => {
     });
   };
 
+  const allocatedPurseBrands = [];
+
   /** @type {import('../src/vat-bank.js').Bank} */
   const bank = Far('mock bank', {
     /** @param {Brand} brand */
-    getPurse: async brand => purses.get(brand),
+    getPurse: async brand => {
+      allocatedPurseBrands.push(brand);
+      return purses.get(brand);
+    },
     getAssetSubscription: () => subscription,
+    getAllocatedPurseBrandsForTest: () => harden([...allocatedPurseBrands]),
   });
 
   return { addAsset, assetPublication: publication, bank };
