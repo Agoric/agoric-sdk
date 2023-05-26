@@ -405,6 +405,10 @@ const prepareBank = (
   const makeBalanceUpdater = prepareBalanceUpdater(zone);
   const makeBankPurseController = prepareBankPurseController(zone);
 
+  // Using a `purseProvider` singleton requires a single map with composite keys
+  // (which we emulate, since we know both address and denom are JSONable).  If
+  // we decide to partition the provider and use `brandToVPurse` directly, we'd
+  // need ephemera for each `makeBank` call.
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
   /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<string, VirtualPurse>} */
   const purseProvider = makeAtomicProvider(addressDenomToPurse);
@@ -462,7 +466,9 @@ const prepareBank = (
         }
 
         const assetRecord = brandToAssetRecord.get(brand);
-        const providerKey = `${address}:${assetRecord.denom}`;
+        // Create a composite key that doesn't rely on the contents of the
+        // address and denom, only that they are strings.
+        const providerKey = JSON.stringify([address, assetRecord.denom]);
 
         /** @type {() => Promise<VirtualPurse>} */
         const makePurse = async () => {
