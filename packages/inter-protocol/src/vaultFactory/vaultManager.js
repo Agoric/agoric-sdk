@@ -629,6 +629,14 @@ export const prepareVaultManagerKit = (
           return E(metricsTopicKit.recorder).write(payload);
         },
 
+        /**
+         * @param {AmountKeywordRecord} proceeds
+         * @param {Amount<'nat'>} totalDebt
+         * @param {{ quoteAmount: any; quotePayment?: ERef<Payment<"set">>; }} oraclePriceAtStart
+         * @param {ZCFSeat} liqSeat
+         * @param {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} vaultData
+         * @param {Amount<'nat'>} totalCollateral
+         */
         distributeProceeds(
           proceeds,
           totalDebt,
@@ -676,7 +684,6 @@ export const prepareVaultManagerKit = (
             ),
           );
 
-          const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
           // Liquidation.md describes how to process liquidation proceeds
           const bestToWorst = [...vaultData.entries()].reverse();
           if (AmountMath.isEmpty(accounting.shortfall)) {
@@ -700,6 +707,7 @@ export const prepareVaultManagerKit = (
             const transfers = [];
             let leftToStage = distributableCollateral;
 
+            const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
             // iterate from best to worst, returning collateral until it has
             // been exhausted. Vaults after that get nothing.
             for (const [vault, amounts] of bestToWorst) {
