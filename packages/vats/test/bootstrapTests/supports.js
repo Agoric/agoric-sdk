@@ -248,6 +248,13 @@ export const makeSwingsetTestKit = async (
   const bridgeOutbound = (bridgeId, obj) => {
     switch (bridgeId) {
       case BridgeId.BANK: {
+        trace(
+          'bridgeOutbound BANK',
+          obj.type,
+          obj.recipient,
+          obj.amount,
+          obj.denom,
+        );
         // bridgeOutbound bank : {
         //   moduleName: 'vbank/reserve',
         //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
