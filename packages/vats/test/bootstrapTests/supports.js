@@ -1,26 +1,32 @@
 // @ts-check
-/* eslint-disable import/no-extraneous-dependencies */
+import { promises as fs } from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { basename } from 'path';
+import { inspect } from 'util';
+
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, VBankAccount } from '@agoric/internal';
-import {
-  makeFakeStorageKit,
-  slotToRemotable,
-} from '@agoric/internal/src/storage-test-utils.js';
+import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
+import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+/* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
-import { promises as fs } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
-import { boardSlottingMarshaller } from '../../tools/board-utils.js';
+import { TimeMath } from '@agoric/time';
+import {
+  boardSlottingMarshaller,
+  slotToBoardRemote,
+} from '../../tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
 E;
 
 const sink = () => {};
+
+const trace = makeTracer('BSTSupport', false);
 
 /** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
 
@@ -169,123 +175,6 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
   return harden({ runThunk, EV });
 };
 
-/**
- * @param {ReturnType<typeof makeRunUtils>} runUtils
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
- */
-export const makeWalletFactoryDriver = async (
-  runUtils,
-  storage,
-  agoricNamesRemotes,
-) => {
-  const { EV } = runUtils;
-
-  const walletFactoryStartResult = await EV.vat('bootstrap').consumeItem(
-    'walletFactoryStartResult',
-  );
-  const bankManager = await EV.vat('bootstrap').consumeItem('bankManager');
-  const namesByAddressAdmin = await EV.vat('bootstrap').consumeItem(
-    'namesByAddressAdmin',
-  );
-
-  const marshaller = boardSlottingMarshaller(slotToRemotable);
-
-  /**
-   * @param {string} walletAddress
-   * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
-   * @param {boolean} isNew
-   */
-  const makeWalletDriver = (walletAddress, walletPresence, isNew) => ({
-    isNew,
-
-    /**
-     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
-     * @returns {Promise<void>}
-     */
-    executeOffer(offer) {
-      const offerCapData = marshaller.toCapData(
-        harden({
-          method: 'executeOffer',
-          offer,
-        }),
-      );
-      return EV(walletPresence).handleBridgeAction(offerCapData, true);
-    },
-    /**
-     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
-     * @returns {Promise<void>}
-     */
-    sendOffer(offer) {
-      const offerCapData = marshaller.toCapData(
-        harden({
-          method: 'executeOffer',
-          offer,
-        }),
-      );
-
-      return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
-    },
-    tryExitOffer(offerId) {
-      const capData = marshaller.toCapData(
-        harden({
-          method: 'tryExitOffer',
-          offerId,
-        }),
-      );
-      return EV(walletPresence).handleBridgeAction(capData, true);
-    },
-    /**
-     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
-     * @param {M} makeOffer
-     * @param {Parameters<M>[1]} firstArg
-     * @param {Parameters<M>[2]} [secondArg]
-     * @returns {Promise<void>}
-     */
-    executeOfferMaker(makeOffer, firstArg, secondArg) {
-      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
-      return this.executeOffer(offer);
-    },
-    /**
-     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
-     * @param {M} makeOffer
-     * @param {Parameters<M>[1]} firstArg
-     * @param {Parameters<M>[2]} [secondArg]
-     * @returns {Promise<void>}
-     */
-    sendOfferMaker(makeOffer, firstArg, secondArg) {
-      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
-      return this.sendOffer(offer);
-    },
-    /**
-     * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
-     */
-    getLatestUpdateRecord() {
-      const fromCapData = (...args) =>
-        Reflect.apply(marshaller.fromCapData, marshaller, args);
-      return unmarshalFromVstorage(
-        storage.data,
-        `published.wallet.${walletAddress}`,
-        fromCapData,
-      );
-    },
-  });
-
-  return {
-    /**
-     * @param {string} walletAddress
-     */
-    async provideSmartWallet(walletAddress) {
-      const bank = await EV(bankManager).getBankForAddress(walletAddress);
-      return EV(walletFactoryStartResult.creatorFacet)
-        .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
-        .then(([walletPresence, isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence, isNew),
-        );
-    },
-  };
-};
-
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vats/decentral-itest-vaults-config.json',
@@ -309,19 +198,9 @@ export const getNodeTestVaultsConfig = async (
     config.coreProposals = config.coreProposals.filter(
       v => v !== '@agoric/pegasus/scripts/init-core.js',
     );
-    for (const p of config.coreProposals) {
-      if (
-        typeof p === 'object' &&
-        p.module === '@agoric/inter-protocol/scripts/add-collateral-core.js' &&
-        p.entrypoint === 'defaultProposalBuilder'
-      ) {
-        // set vault interestRateValue high to accelerate liquidation
-        p.args[0].interestRateValue = 10 * 100; // 10x APR
-      }
-    }
   }
 
-  const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;
+  const testConfigPath = `${bundleDir}/${basename(specifier)}`;
   await fs.writeFile(testConfigPath, JSON.stringify(config), 'utf-8');
   return testConfigPath;
 };
@@ -353,10 +232,13 @@ export const makeSwingsetTestKit = async (
   const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
-  const { fromCapData } = boardSlottingMarshaller(slotToRemotable);
+  const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
-  const readLatest = path =>
-    unmarshalFromVstorage(storage.data, path, fromCapData);
+  const readLatest = path => {
+    const data = unmarshalFromVstorage(storage.data, path, fromCapData);
+    trace('readLatest', path, 'returning', inspect(data, false, 20, true));
+    return data;
+  };
 
   let lastNonce = 0n;
 
@@ -370,6 +252,13 @@ export const makeSwingsetTestKit = async (
   const bridgeOutbound = (bridgeId, obj) => {
     switch (bridgeId) {
       case BridgeId.BANK: {
+        trace(
+          'bridgeOutbound BANK',
+          obj.type,
+          obj.recipient,
+          obj.amount,
+          obj.denom,
+        );
         // bridgeOutbound bank : {
         //   moduleName: 'vbank/reserve',
         //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
@@ -391,6 +280,7 @@ export const makeSwingsetTestKit = async (
           // denom: 'ibc/toyatom',
           // type: 'VBANK_GET_BALANCE'
           case 'VBANK_GET_BALANCE': {
+            // TODO consider letting config specify vbank assets
             // empty balances for test.
             return '0';
           }
@@ -440,39 +330,59 @@ export const makeSwingsetTestKit = async (
 
   console.timeEnd('makeSwingsetTestKit');
 
-  let currentTime = 0;
-  const setTime = time => {
-    currentTime = time;
+  let currentTime = 0n;
+  /** @param {Timestamp} targetTime */
+  const jumpTimeTo = targetTime => {
+    targetTime = TimeMath.absValue(targetTime);
+    targetTime >= currentTime ||
+      Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
+    currentTime = targetTime;
+    trace('jumpTimeTo', currentTime);
     return runUtils.runThunk(() => timer.poll(currentTime));
+  };
+  /** @param {Timestamp} targetTime */
+  const advanceTimeTo = async targetTime => {
+    targetTime = TimeMath.absValue(targetTime);
+    targetTime >= currentTime ||
+      Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
+    while (currentTime < targetTime) {
+      trace('stepping time from', currentTime, 'towards', targetTime);
+      currentTime += 1n;
+      // eslint-disable-next-line no-await-in-loop
+      await runUtils.runThunk(() => timer.poll(currentTime));
+    }
   };
   /**
    *
    * @param {number} n
    * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
    */
-  const advanceTime = (n, unit) => {
+  const advanceTimeBy = (n, unit) => {
     const multiplier = {
       seconds: 1,
       minutes: 60,
       hours: 60 * 60,
       days: 60 * 60 * 24,
     };
-    currentTime += multiplier[unit] * n;
-    return runUtils.runThunk(() => timer.poll(currentTime));
+    const targetTime = currentTime + BigInt(multiplier[unit] * n);
+    trace('advanceTimeBy', n, unit, 'to', targetTime);
+    return advanceTimeTo(targetTime);
   };
 
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
   return {
-    advanceTime,
-    swingStore,
+    advanceTimeBy,
+    advanceTimeTo,
     controller,
+    jumpTimeTo,
     readLatest,
     runUtils,
-    setTime,
     shutdown,
     storage,
+    swingStore,
     timer,
   };
 };
+/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */

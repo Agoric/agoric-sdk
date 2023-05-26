@@ -10,8 +10,10 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
+import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
-import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
+import { makeSwingsetTestKit } from './supports.js';
+import { makeWalletFactoryDriver } from './drivers.js';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
@@ -99,6 +101,7 @@ test.serial('re-bootstrap', async t => {
   const assertWalletCount = (walletsProvisioned, message) => {
     // eslint-disable-next-line no-unused-vars
     const metrics = oldContext.readLatest('published.provisionPool.metrics');
+    // FIXME make wallet provisioning use the provisionPool
     // disabled while wallet provisioning bypasses provisionPool
     // t.like(metrics, { walletsProvisioned }, message);
   };
@@ -394,11 +397,15 @@ test.serial('adjust balance of vault opened before restart', async t => {
 
 // charge interest to force a liquidation and verify it starts
 test.serial('force liquidation', async t => {
-  const { advanceTime, readCollateralMetrics, readRewardPoolBalance } =
-    t.context.shared;
+  const {
+    advanceTimeBy,
+    jumpTimeTo,
+    readCollateralMetrics,
+    readRewardPoolBalance,
+  } = t.context.shared;
 
   // advance a year to drive interest charges
-  await advanceTime(365, 'days');
+  await jumpTimeTo(SECONDS_PER_YEAR);
   // accrues massively
   t.is(readRewardPoolBalance(), 683693581n);
   t.like(readCollateralMetrics(0), {
@@ -408,12 +415,12 @@ test.serial('force liquidation', async t => {
 
   // liquidation will have been skipped because time skipped ahead
   // so now advance slowly
-  await advanceTime(1, 'hours');
+  await advanceTimeBy(1, 'hours');
   t.like(readCollateralMetrics(0), {
     numActiveVaults: 2,
     numLiquidatingVaults: 0,
   });
-  await advanceTime(1, 'hours');
+  await advanceTimeBy(1, 'hours');
   t.like(readCollateralMetrics(0), {
     liquidatingCollateral: { value: 9_000_000n },
     liquidatingDebt: { value: 696_421_994n },
@@ -421,7 +428,7 @@ test.serial('force liquidation', async t => {
     numLiquidatingVaults: 1,
   });
 
-  await advanceTime(1, 'hours');
+  await advanceTimeBy(1, 'hours');
   t.like(readCollateralMetrics(0), {
     numActiveVaults: 1,
     numLiquidatingVaults: 1,

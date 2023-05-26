@@ -157,7 +157,12 @@ const setWakeupsForNextAuction = async (
     E(timer).getCurrentTimestamp(),
   ]);
 
-  trace('SCHEDULE', now.absValue, nextAuctionSchedule);
+  trace(
+    'setWakeupsForNextAuction at',
+    now.absValue,
+    'with',
+    nextAuctionSchedule,
+  );
   if (!nextAuctionSchedule) {
     // There should always be a nextAuctionSchedule. If there isn't, give up for now.
     cancelWakeups(timer);
