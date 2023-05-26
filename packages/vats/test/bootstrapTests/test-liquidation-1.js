@@ -5,25 +5,19 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/assert';
 import {
   makeParseAmount,
   Offers,
 } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
-  SECONDS_PER_HOUR,
-  SECONDS_PER_MINUTE,
-} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
-import {
-  makeGovernanceDriver,
-  makePriceFeedDriver,
-  makeWalletFactoryDriver,
-} from './drivers.js';
-import { makeSwingsetTestKit } from './supports.js';
+  likePayouts,
+  makeLiquidationTestContext,
+  scale6,
+} from './liquidation.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
+ * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeLiquidationTestContext>>>}
  */
 const test = anyTest;
 
@@ -128,88 +122,8 @@ const outcome = /** @type {const} */ ({
 });
 //#endregion
 
-const scale6 = x => BigInt(Math.round(x * 1_000_000));
-const DebtLimitValue = scale6(100_000);
-
-const likePayouts = ({ Bid, Collateral }) => ({
-  Collateral: {
-    value: scale6(Collateral),
-  },
-  Bid: {
-    value: scale6(Bid),
-  },
-});
-
-const makeDefaultTestContext = async t => {
-  console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
-    configSpecifier: '@agoric/vats/decentral-main-vaults-config.json',
-  });
-
-  const { runUtils, storage } = swingsetTestKit;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
-
-  // Wait for ATOM to make it into agoricNames
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
-
-  // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
-  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
-  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
-
-  const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
-    storage,
-    agoricNamesRemotes,
-  );
-  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
-
-  const governanceDriver = await makeGovernanceDriver(
-    swingsetTestKit,
-    agoricNamesRemotes,
-    walletFactoryDriver,
-    // TODO read from the config file
-    [
-      'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
-      'agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5',
-      'agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a',
-    ],
-  );
-  console.timeLog('DefaultTestContext', 'governanceDriver');
-
-  const priceFeedDriver = await makePriceFeedDriver(
-    storage,
-    agoricNamesRemotes,
-    walletFactoryDriver,
-    // TODO read from the config file
-    [
-      'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
-      'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
-      'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
-      'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
-      'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
-    ],
-  );
-
-  console.timeLog('DefaultTestContext', 'priceFeedDriver');
-
-  console.timeEnd('DefaultTestContext');
-
-  return {
-    ...swingsetTestKit,
-    agoricNamesRemotes,
-    governanceDriver,
-    priceFeedDriver,
-    walletFactoryDriver,
-  };
-};
-
 test.before(async t => {
-  t.context = await makeDefaultTestContext(t);
+  t.context = await makeLiquidationTestContext(t);
 });
 test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
@@ -221,92 +135,13 @@ test.serial('scenario: Flow 1', async t => {
     advanceTimeBy,
     advanceTimeTo,
     agoricNamesRemotes,
-    governanceDriver,
+    setupStartingState,
     priceFeedDriver,
     readLatest,
     walletFactoryDriver,
   } = t.context;
 
-  // price feed logic treats zero time as "unset" so advance to nonzero
-  await advanceTimeBy(1, 'seconds');
-
-  await priceFeedDriver.setPrice(12.34);
-
-  // raise the VaultFactory DebtLimit
-  await governanceDriver.changeParams(
-    agoricNamesRemotes.instance.VaultFactory,
-    {
-      DebtLimit: {
-        brand: agoricNamesRemotes.brand.IST,
-        value: DebtLimitValue,
-      },
-    },
-    {
-      paramPath: {
-        key: {
-          collateralBrand: agoricNamesRemotes.brand.ATOM,
-        },
-      },
-    },
-  );
-
-  // raise the PSM MintLimit
-  await governanceDriver.changeParams(
-    agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-    {
-      MintLimit: {
-        brand: agoricNamesRemotes.brand.IST,
-        value: DebtLimitValue, // reuse
-      },
-    },
-  );
-
-  // confirm Relevant Governance Parameter Assumptions
-  t.like(readLatest('published.vaultFactory.managers.manager0.governance'), {
-    current: {
-      DebtLimit: { value: { value: DebtLimitValue } },
-      InterestRate: {
-        type: 'ratio',
-        value: { numerator: { value: 1n }, denominator: { value: 100n } },
-      },
-      LiquidationMargin: {
-        type: 'ratio',
-        value: { numerator: { value: 150n }, denominator: { value: 100n } },
-      },
-      LiquidationPadding: {
-        type: 'ratio',
-        value: { numerator: { value: 25n }, denominator: { value: 100n } },
-      },
-      LiquidationPenalty: {
-        type: 'ratio',
-        value: { numerator: { value: 1n }, denominator: { value: 100n } },
-      },
-      MintFee: {
-        type: 'ratio',
-        value: { numerator: { value: 50n }, denominator: { value: 10_000n } },
-      },
-    },
-  });
-  t.like(readLatest('published.auction.governance'), {
-    current: {
-      AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
-      ClockStep: {
-        type: 'relativeTime',
-        value: { relValue: 3n * SECONDS_PER_MINUTE },
-      },
-      DiscountStep: { type: 'nat', value: 500n }, // 5%
-      LowestRate: { type: 'nat', value: 6500n }, // 65%
-      PriceLockPeriod: {
-        type: 'relativeTime',
-        value: { relValue: SECONDS_PER_HOUR / 2n },
-      },
-      StartFrequency: {
-        type: 'relativeTime',
-        value: { relValue: SECONDS_PER_HOUR },
-      },
-      StartingRate: { type: 'nat', value: 10500n }, // 105%
-    },
-  });
+  await setupStartingState();
 
   const minter = await walletFactoryDriver.provideSmartWallet('agoric1minter');
 
@@ -464,9 +299,6 @@ test.serial('scenario: Flow 1', async t => {
         payouts: likePayouts(outcome.bids[1].payouts),
       },
     });
-
-    // DEBUG 7850
-    await priceFeedDriver.setPrice(12.34); // back above water
 
     console.log('step 4 of 10');
     await advanceTimeBy(3, 'minutes');
