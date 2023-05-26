@@ -92,7 +92,7 @@ const outcome = /** @type {const} */ ({
   ],
   reserve: {
     allocations: {
-      ATOM: 0.30985,
+      ATOM: 0.309852,
     },
     shortfall: 0,
   },
