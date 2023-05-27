@@ -39,7 +39,7 @@ the Inter Protocol Whitepaper, v0.8.
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
 | MinInitialDebt     | Amount            |     |
-| EndorsedUi         | String            | No  |
+| ReferencedUI       | String            | No  |
 | ChargingPeriod     | RelativeTime      |     |
 | RecordingPeriod    | RelativeTime      |     |
 

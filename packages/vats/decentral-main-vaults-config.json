@@ -12,7 +12,7 @@
           "econCommitteeOptions": {
             "committeeSize": 6
           },
-          "endorsedUi": "NO ENDORSED UI",
+          "referencedUi": "NO REFERENCED UI",
           "minInitialPoolLiquidity": "0"
         }
       ]

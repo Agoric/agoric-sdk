@@ -169,7 +169,7 @@ test('governance params', async t => {
   t.like(before.value.current, {
     ChargingPeriod: { type: 'nat', value: 2n },
     Electorate: { type: 'invitation' },
-    EndorsedUI: { type: 'string', value: 'NO ENDORSEMENT' },
+    ReferencedUI: { type: 'string', value: 'NO REFERENCE' },
     MinInitialDebt: { type: 'amount' },
     RecordingPeriod: { type: 'nat', value: 6n },
     ShortfallInvitation: { type: 'invitation' },

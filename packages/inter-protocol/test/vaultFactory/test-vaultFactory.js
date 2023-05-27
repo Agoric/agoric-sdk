@@ -110,7 +110,7 @@ test.before(async t => {
       recordingPeriod: 6n,
     },
     minInitialDebt: 50n,
-    endorsedUi: undefined,
+    referencedUi: undefined,
     rates: defaultParamValues(run.brand),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
@@ -143,8 +143,15 @@ const setupServices = async (
   runInitialLiquidity,
   startFrequency = undefined,
 ) => {
-  const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
-    t.context;
+  const {
+    zoe,
+    run,
+    aeth,
+    interestTiming,
+    minInitialDebt,
+    referencedUi,
+    rates,
+  } = t.context;
   t.context.timer = timer;
 
   const runPayment = await getRunFromFaucet(t, runInitialLiquidity);
@@ -191,7 +198,7 @@ const setupServices = async (
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(
     space,
-    { interestTiming, options: { endorsedUi } },
+    { interestTiming, options: { referencedUi } },
     minInitialDebt,
   );
 
@@ -1976,7 +1983,7 @@ test('governance publisher', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.endorsedUi = 'abracadabra';
+  t.context.referencedUi = 'abracadabra';
 
   const services = await setupServices(
     t,
@@ -1997,15 +2004,15 @@ test('governance publisher', async t => {
   t.deepEqual(Object.keys(current), [
     'ChargingPeriod',
     'Electorate',
-    'EndorsedUI',
     'MinInitialDebt',
     'RecordingPeriod',
+    'ReferencedUI',
     'ShortfallInvitation',
   ]);
   t.like(current, {
     ChargingPeriod: { type: 'nat', value: 2n },
     Electorate: { type: 'invitation' },
-    EndorsedUI: { type: 'string', value: 'abracadabra' },
+    ReferencedUI: { type: 'string', value: 'abracadabra' },
     MinInitialDebt: { type: 'amount' },
     RecordingPeriod: { type: 'nat', value: 10n },
     ShortfallInvitation: { type: 'invitation' },

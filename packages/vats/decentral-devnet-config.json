@@ -13,7 +13,7 @@
           "econCommitteeOptions": {
             "committeeSize": 3
           },
-          "endorsedUi": "bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e",
+          "referencedUi": "bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e",
           "minInitialPoolLiquidity": "0"
         }
       ]

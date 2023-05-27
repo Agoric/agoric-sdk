@@ -42,9 +42,9 @@ test.before(async t => {
 });
 //#endregion
 
-test('inter-protocol vaults proposal handles endorsedUi option', async t => {
+test('inter-protocol vaults proposal handles referencedUi option', async t => {
   const proposalModule = '@agoric/inter-protocol/scripts/init-core.js';
-  const endorsedUi =
+  const referencedUi =
     'bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e';
 
   t.log('loading', configSpecifier);
@@ -63,7 +63,7 @@ test('inter-protocol vaults proposal handles endorsedUi option', async t => {
     getManifestCall: {
       0: 'getManifestForInterProtocol',
       1: {
-        endorsedUi,
+        referencedUi,
         minInitialPoolLiquidity: 0n,
       },
     },
