@@ -1899,9 +1899,10 @@ test('reinstate vault', async t => {
   t.deepEqual(aliceUpdate.value.locked, aeth.make(0n));
 
   // Reduce Bob's collateral by liquidation penalty
+  // bob's share is 7 * 158/258, which rounds up to 5
   const recoveredBobCollateral = AmountMath.subtract(
     bobCollateralAmount,
-    aeth.make(1n),
+    aeth.make(5n),
   );
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
@@ -1915,7 +1916,7 @@ test('reinstate vault', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
   await m.assertLike({
     allocations: {
-      Aeth: aeth.make(8n),
+      Aeth: aeth.make(12n),
       Fee: run.makeEmpty(),
     },
   });
@@ -2863,9 +2864,9 @@ test('Bug 7784 reconstitute both', async t => {
     numLiquidationsAborted: 2,
   });
 
-  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(14_998n));
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(14_899n));
   t.deepEqual(await E(aliceVault).getCurrentDebt(), run.make(100_500n));
-  t.deepEqual(await E(bobVault).getCollateralAmount(), aeth.make(14_998n));
+  t.deepEqual(await E(bobVault).getCollateralAmount(), aeth.make(14_896n));
   t.deepEqual(await E(bobVault).getCurrentDebt(), run.make(103_515n));
   t.deepEqual(await E(carolVault).getCollateralAmount(), aeth.makeEmpty());
   t.deepEqual(await E(carolVault).getCurrentDebt(), run.makeEmpty());
@@ -2883,7 +2884,7 @@ test('Bug 7784 reconstitute both', async t => {
     ...reserveInitialState(run.makeEmpty()),
     shortfallBalance: run.make(5_525n),
     allocations: {
-      Aeth: aeth.make(1_419n),
+      Aeth: aeth.make(1_620n),
       Fee: run.makeEmpty(),
     },
   });
@@ -3155,4 +3156,144 @@ test('Bug 7796 missing lockedPrice', async t => {
       Fee: run.makeEmpty(),
     },
   });
+});
+
+test('Bug 7851 & no bidders', async t => {
+  const { zoe, aeth, run, rates: defaultRates } = t.context;
+
+  const rates = harden({
+    ...defaultRates,
+    liquidationPenalty: makeRatio(1n, run.brand),
+    liquidationMargin: run.makeRatio(150n),
+    mintFee: run.makeRatio(50n, 10_000n),
+  });
+  t.context.rates = rates;
+
+  const manualTimer = buildManualTimer();
+  const TEN_MINUTES = 10n * SECONDS_PER_MINUTE;
+  const services = await setupServices(
+    t,
+    makeRatio(1234n, run.brand, 100n, aeth.brand),
+    aeth.make(1000n),
+    manualTimer,
+    SECONDS_PER_WEEK,
+    500n,
+    {
+      DiscountStep: 500n,
+      StartFrequency: SECONDS_PER_HOUR,
+      ClockStep: TEN_MINUTES,
+    },
+  );
+
+  const {
+    vaultFactory: { aethVaultManager, aethCollateralManager },
+    auctioneerKit: auctKit,
+    priceAuthority,
+    reserveKit: { reserveCreatorFacet, reservePublicFacet },
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+
+  const cm = await E(aethVaultManager).getPublicFacet();
+  const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
+  await aethVaultMetrics.assertInitial({
+    // present
+    numActiveVaults: 0,
+    numLiquidatingVaults: 0,
+    totalCollateral: aeth.make(0n),
+    totalDebt: run.make(0n),
+    retainedCollateral: aeth.make(0n),
+
+    // running
+    numLiquidationsCompleted: 0,
+    numLiquidationsAborted: 0,
+    totalOverageReceived: run.make(0n),
+    totalProceedsReceived: run.make(0n),
+    totalCollateralSold: aeth.make(0n),
+    liquidatingCollateral: aeth.make(0n),
+    liquidatingDebt: run.make(0n),
+    totalShortfallReceived: run.make(0n),
+  });
+
+  const openVault = (collateral, want) =>
+    E(zoe).offer(
+      E(aethCollateralManager).makeVaultInvitation(),
+      harden({
+        give: { Collateral: collateral },
+        want: { Minted: want },
+      }),
+      harden({
+        Collateral: aeth.mint.mintPayment(collateral),
+      }),
+    );
+
+  const aliceWantMinted = run.make(100_000n);
+  const collateral = aeth.make(15_000n);
+  /** @type {UserSeat<VaultKit>} */
+  const aliceVaultSeat = await openVault(collateral, aliceWantMinted);
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await legacyOfferResult(aliceVaultSeat);
+  let aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+  await aethVaultMetrics.assertChange({
+    numActiveVaults: 1,
+    totalCollateral: { value: 15_000n },
+    totalDebt: { value: 100_500n },
+  });
+
+  const { Minted: aliceLentAmount } = await E(
+    aliceVaultSeat,
+  ).getFinalAllocation();
+  const aliceProceeds = await E(aliceVaultSeat).getPayouts();
+  t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
+
+  const aliceRunLent = await aliceProceeds.Minted;
+  t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), aliceWantMinted);
+
+  const { startTime } = await startAuctionClock(auctKit, manualTimer);
+  await setClockAndAdvanceNTimes(manualTimer, 3n, startTime, TEN_MINUTES);
+
+  // price falls
+  // @ts-expect-error setupServices() should return the right type
+  await priceAuthority.setPrice(makeRatio(9990n, run.brand, 1000n, aeth.brand));
+  await eventLoopIteration();
+
+  await setClockAndAdvanceNTimes(
+    manualTimer,
+    5n,
+    TimeMath.addAbsRel(startTime, TimeMath.relValue(3600n)),
+    TEN_MINUTES,
+  );
+
+  await aethVaultMetrics.assertChange({
+    liquidatingDebt: { value: 100_500n },
+    liquidatingCollateral: { value: 15_000n },
+    numActiveVaults: 0,
+    numLiquidatingVaults: 1,
+  });
+
+  trace('liquidated?');
+  await eventLoopIteration();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
+  debugger;
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(14_899n));
+  t.deepEqual(await E(aliceVault).getCurrentDebt(), run.make(100_500n));
+
+  const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
+    .metrics;
+  const m = await subscriptionTracker(t, metricsTopic);
+
+  await m.assertState({
+    ...reserveInitialState(run.makeEmpty()),
+    shortfallBalance: run.make(0n),
+    allocations: {
+      Aeth: aeth.make(101n),
+      Fee: run.makeEmpty(),
+    },
+  });
+
+  await aethVaultMetrics.assertNoUpdate();
 });
