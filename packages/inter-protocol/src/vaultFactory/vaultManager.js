@@ -678,7 +678,6 @@ export const prepareVaultManagerKit = (
           );
           const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
 
-          const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
           // Liquidation.md describes how to process liquidation proceeds
           const bestToWorst = [...vaultData.entries()].reverse();
           if (AmountMath.isEmpty(accounting.shortfall)) {
@@ -710,6 +709,12 @@ export const prepareVaultManagerKit = (
                 debtAmount,
                 vault.getCurrentDebt(),
               );
+
+              const price = makeRatioFromAmounts(
+                mintedProceeds,
+                collateralSold,
+              );
+
               // max return is vault value reduced by debt and penalty value
               const debtCollat = ceilDivideBy(debtAmount, price);
               const penaltyCollat = ceilMultiplyBy(debtAmount, debtPortion);
@@ -864,10 +869,16 @@ export const prepareVaultManagerKit = (
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
-              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
+
+              // according to #7123, Collateral for penalty =
+              //    vault debt / total debt * total liquidation penalty
+              const vaultPenalty = ceilMultiplyBy(
+                debtAmount,
+                makeRatioFromAmounts(totalPenalty, totalDebt),
+              );
               const collatPostPenalty = AmountMath.subtract(
                 vCollat,
-                ceilMultiplyBy(vaultPenalty, debtPortion),
+                vaultPenalty,
               );
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
               if (
