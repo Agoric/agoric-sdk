@@ -167,9 +167,21 @@ export const makeLiquidationTestContext = async t => {
     });
   };
 
+  const check = {
+    vaultNotification(vaultIndex, partial) {
+      const { readLatest } = swingsetTestKit;
+
+      const notification = readLatest(
+        `published.vaultFactory.managers.manager0.vaults.vault${vaultIndex}`,
+      );
+      t.like(notification, partial);
+    },
+  };
+
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
+    check,
     governanceDriver,
     priceFeedDriver,
     setupStartingState,

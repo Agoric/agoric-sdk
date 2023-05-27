@@ -126,6 +126,7 @@ test.serial('scenario: Flow 2b', async t => {
     advanceTimeBy,
     advanceTimeTo,
     agoricNamesRemotes,
+    check,
     setupStartingState,
     priceFeedDriver,
     readLatest,
@@ -151,21 +152,13 @@ test.serial('scenario: Flow 2b', async t => {
   }
 
   // Verify starting balances
-  t.like(readLatest('published.vaultFactory.managers.manager0.vaults.vault0'), {
-    debtSnapshot: { debt: { value: scale6(setup.vaults[0].debt) } },
-    locked: { value: scale6(setup.vaults[0].atom) },
-    vaultState: 'active',
-  });
-  t.like(readLatest('published.vaultFactory.managers.manager0.vaults.vault1'), {
-    debtSnapshot: { debt: { value: scale6(setup.vaults[1].debt) } },
-    locked: { value: scale6(setup.vaults[1].atom) },
-    vaultState: 'active',
-  });
-  t.like(readLatest('published.vaultFactory.managers.manager0.vaults.vault2'), {
-    debtSnapshot: { debt: { value: scale6(setup.vaults[2].debt) } },
-    locked: { value: scale6(setup.vaults[2].atom) },
-    vaultState: 'active',
-  });
+  for (let i = 0; i < setup.vaults.length; i += 1) {
+    check.vaultNotification(i, {
+      debtSnapshot: { debt: { value: scale6(setup.vaults[i].debt) } },
+      locked: { value: scale6(setup.vaults[i].atom) },
+      vaultState: 'active',
+    });
+  }
 
   const buyer = await walletFactoryDriver.provideSmartWallet('agoric1buyer');
   {
@@ -276,35 +269,28 @@ test.serial('scenario: Flow 2b', async t => {
     console.log('step 11 of 10');
     await advanceTimeBy(3, 'minutes');
 
-    // check vault balances
-    t.like(
-      readLatest('published.vaultFactory.managers.manager0.vaults.vault0'),
-      {
-        debt: undefined,
-        vaultState: 'active',
-        locked: {
-          value: scale6(outcome.vaultsActual[0].locked),
-        },
+    // TODO express spec up top in a way it can be passed in here
+    check.vaultNotification(0, {
+      debt: undefined,
+      vaultState: 'active',
+      locked: {
+        value: scale6(outcome.vaultsActual[0].locked),
       },
-    );
-    t.like(
-      readLatest('published.vaultFactory.managers.manager0.vaults.vault1'),
-      {
-        debt: undefined,
-        vaultState: 'active',
-        locked: {
-          value: scale6(outcome.vaultsActual[1].locked),
-        },
+    });
+    check.vaultNotification(1, {
+      debt: undefined,
+      vaultState: 'active',
+      locked: {
+        value: scale6(outcome.vaultsActual[1].locked),
       },
-    );
-    t.like(
-      readLatest('published.vaultFactory.managers.manager0.vaults.vault2'),
-      {
-        debt: undefined,
-        vaultState: 'liquidated',
-        locked: { value: scale6(outcome.vaultsActual[2].locked) },
+    });
+    check.vaultNotification(2, {
+      debt: undefined,
+      vaultState: 'liquidated',
+      locked: {
+        value: scale6(outcome.vaultsActual[2].locked),
       },
-    );
+    });
   }
 
   // check reserve balances
