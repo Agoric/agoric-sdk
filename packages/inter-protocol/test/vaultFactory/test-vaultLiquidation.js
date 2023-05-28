@@ -18,8 +18,13 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { NonNullish } from '@agoric/assert';
 
-import { SECONDS_PER_YEAR } from '../../src/interest.js';
-import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
+import {
+  SECONDS_PER_DAY as ONE_DAY,
+  SECONDS_PER_HOUR as ONE_HOUR,
+  SECONDS_PER_MINUTE as ONE_MINUTE,
+  SECONDS_PER_WEEK as ONE_WEEK,
+  startVaultFactory,
+} from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import {
   reserveInitialState,
@@ -60,11 +65,6 @@ const contractRoots = {
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
 const trace = makeTracer('TestST', false);
-
-const SECONDS_PER_MINUTE = 60n;
-const SECONDS_PER_HOUR = 60n * SECONDS_PER_MINUTE;
-const SECONDS_PER_DAY = SECONDS_PER_YEAR / 365n;
-const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7n;
 
 // Define locally to test that vaultFactory uses these values
 export const Phase = /** @type {const} */ ({
@@ -360,7 +360,7 @@ test('price drop', async t => {
     manualTimer,
     undefined,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -520,7 +520,7 @@ test('price falls precipitously', async t => {
     manualTimer,
     undefined,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
   // we start with time=0, price=2200
 
@@ -664,8 +664,8 @@ test('liquidate two loans', async t => {
   // Interest is charged daily, and auctions are every week, so we'll charge
   // interest a few times before the second auction.
   t.context.interestTiming = {
-    chargingPeriod: SECONDS_PER_DAY,
-    recordingPeriod: SECONDS_PER_DAY,
+    chargingPeriod: ONE_DAY,
+    recordingPeriod: ONE_DAY,
   };
 
   const manualTimer = buildManualTimer();
@@ -674,7 +674,7 @@ test('liquidate two loans', async t => {
     makeRatio(100n, run.brand, 10n, aeth.brand),
     aeth.make(1n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
   );
 
@@ -937,12 +937,7 @@ test('liquidate two loans', async t => {
   });
 
   currentTime = now3;
-  currentTime = await setClockAndAdvanceNTimes(
-    manualTimer,
-    2,
-    start3,
-    SECONDS_PER_DAY,
-  );
+  currentTime = await setClockAndAdvanceNTimes(manualTimer, 2, start3, ONE_DAY);
   trace(t, 'finished auctions', currentTime);
 
   bobUpdate = await E(bobNotifier).getUpdateSince();
@@ -984,8 +979,8 @@ test('sell goods at auction', async t => {
   // Interest is charged daily, and auctions are every week, so we'll charge
   // interest a few times before the second auction.
   t.context.interestTiming = {
-    chargingPeriod: SECONDS_PER_DAY,
-    recordingPeriod: SECONDS_PER_DAY,
+    chargingPeriod: ONE_DAY,
+    recordingPeriod: ONE_DAY,
   };
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/Minted rate
@@ -1004,9 +999,9 @@ test('sell goods at auction', async t => {
     makeRatio(100n, run.brand, 10n, aeth.brand),
     aeth.make(1n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -1180,7 +1175,7 @@ test('collect fees from loan', async t => {
     manualTimer,
     undefined,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -1413,8 +1408,8 @@ test('Auction sells all collateral w/shortfall', async t => {
 
   // Interest is charged daily, and auctions are every week
   t.context.interestTiming = {
-    chargingPeriod: SECONDS_PER_DAY,
-    recordingPeriod: SECONDS_PER_DAY,
+    chargingPeriod: ONE_DAY,
+    recordingPeriod: ONE_DAY,
   };
 
   const manualTimer = buildManualTimer();
@@ -1423,9 +1418,9 @@ test('Auction sells all collateral w/shortfall', async t => {
     makeRatio(100n, run.brand, 10n, aeth.brand),
     aeth.make(1n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -1629,9 +1624,9 @@ test('liquidation Margin matters', async t => {
     makeRatio(1234n, run.brand, 100n, aeth.brand),
     aeth.make(1n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -1735,9 +1730,9 @@ test('reinstate vault', async t => {
     makeRatio(1500n, run.brand, 100n, aeth.brand),
     aeth.make(1n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -1940,7 +1935,7 @@ test('auction locks low price', async t => {
     manualTimer,
     undefined,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
   // we start with time=0, price=2200
 
@@ -2031,9 +2026,9 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     makeRatio(1250n, run.brand, 100n, aeth.brand),
     aeth.make(1000n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -2258,9 +2253,9 @@ test('Bug 7346 excess collateral to holder', async t => {
     makeRatio(1234n, run.brand, 100n, aeth.brand),
     aeth.make(1_000_000n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500_000n,
-    { DiscountStep: 500n, StartFrequency: SECONDS_PER_HOUR },
+    { DiscountStep: 500n, StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -2520,7 +2515,7 @@ test('refund to one of two loans', async t => {
     manualTimer,
     undefined,
     500n,
-    { StartFrequency: SECONDS_PER_HOUR },
+    { StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -2705,9 +2700,9 @@ test('Bug 7784 reconstitute both', async t => {
     makeRatio(1234n, run.brand, 100n, aeth.brand),
     aeth.make(1000n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
-    { DiscountStep: 500n, LowestRate: 6500n, StartFrequency: SECONDS_PER_HOUR },
+    { DiscountStep: 500n, LowestRate: 6500n, StartFrequency: ONE_HOUR },
   );
 
   const {
@@ -2906,17 +2901,17 @@ test('Bug 7796 missing lockedPrice', async t => {
   t.context.rates = rates;
 
   const manualTimer = buildManualTimer();
-  const TEN_MINUTES = 10n * SECONDS_PER_MINUTE;
+  const TEN_MINUTES = 10n * ONE_MINUTE;
   const services = await setupServices(
     t,
     makeRatio(1234n, run.brand, 100n, aeth.brand),
     aeth.make(1_000_000n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500_000n,
     {
       DiscountStep: 500n,
-      StartFrequency: SECONDS_PER_HOUR,
+      StartFrequency: ONE_HOUR,
       ClockStep: TEN_MINUTES,
     },
   );
@@ -3081,7 +3076,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   now = await setClockAndAdvanceNTimes(
     manualTimer,
     10n,
-    TimeMath.addAbsRel(now, TimeMath.relValue(3600n)),
+    TimeMath.addAbsRel(now, TimeMath.relValue(ONE_HOUR)),
     TEN_MINUTES,
   );
 
@@ -3170,18 +3165,17 @@ test('Bug 7851 & no bidders', async t => {
   t.context.rates = rates;
 
   const manualTimer = buildManualTimer();
-  const TEN_MINUTES = 10n * SECONDS_PER_MINUTE;
   const services = await setupServices(
     t,
     makeRatio(1234n, run.brand, 100n, aeth.brand),
     aeth.make(1000n),
     manualTimer,
-    SECONDS_PER_WEEK,
+    ONE_WEEK,
     500n,
     {
       DiscountStep: 500n,
-      StartFrequency: SECONDS_PER_HOUR,
-      ClockStep: TEN_MINUTES,
+      StartFrequency: ONE_HOUR,
+      ClockStep: 10n * ONE_MINUTE,
     },
   );
 
@@ -3252,7 +3246,7 @@ test('Bug 7851 & no bidders', async t => {
   t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), aliceWantMinted);
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
-  await setClockAndAdvanceNTimes(manualTimer, 3n, startTime, TEN_MINUTES);
+  await setClockAndAdvanceNTimes(manualTimer, 3n, startTime, 10n * ONE_MINUTE);
 
   // price falls
   // @ts-expect-error setupServices() should return the right type
@@ -3263,7 +3257,7 @@ test('Bug 7851 & no bidders', async t => {
     manualTimer,
     5n,
     TimeMath.addAbsRel(startTime, TimeMath.relValue(3600n)),
-    TEN_MINUTES,
+    10n * ONE_MINUTE,
   );
 
   await aethVaultMetrics.assertChange({
@@ -3276,7 +3270,6 @@ test('Bug 7851 & no bidders', async t => {
   trace('liquidated?');
   await eventLoopIteration();
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
-  debugger;
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(14_899n));
