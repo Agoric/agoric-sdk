@@ -3214,9 +3214,13 @@ test('Bug 7851 & no bidders', async t => {
     );
 
   const aliceWantMinted = run.make(100_000n);
-  const collateral = aeth.make(15_000n);
+  const aliceDebt = 100_500n;
+  const collateral = 15_000n;
   /** @type {UserSeat<VaultKit>} */
-  const aliceVaultSeat = await openVault(collateral, aliceWantMinted);
+  const aliceVaultSeat = await openVault(
+    aeth.make(collateral),
+    aliceWantMinted,
+  );
   const {
     vault: aliceVault,
     publicNotifiers: { vault: aliceNotifier },
@@ -3225,8 +3229,8 @@ test('Bug 7851 & no bidders', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
   await aethVaultMetrics.assertChange({
     numActiveVaults: 1,
-    totalCollateral: { value: 15_000n },
-    totalDebt: { value: 100_500n },
+    totalCollateral: { value: collateral },
+    totalDebt: { value: aliceDebt },
   });
 
   const { Minted: aliceLentAmount } = await E(
@@ -3249,13 +3253,13 @@ test('Bug 7851 & no bidders', async t => {
   await setClockAndAdvanceNTimes(
     manualTimer,
     5n,
-    TimeMath.addAbsRel(startTime, TimeMath.relValue(3600n)),
+    TimeMath.addAbsRel(startTime, TimeMath.relValue(ONE_HOUR)),
     10n * ONE_MINUTE,
   );
 
   await aethVaultMetrics.assertChange({
-    liquidatingDebt: { value: 100_500n },
-    liquidatingCollateral: { value: 15_000n },
+    liquidatingDebt: { value: aliceDebt },
+    liquidatingCollateral: { value: collateral },
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
   });
@@ -3265,8 +3269,10 @@ test('Bug 7851 & no bidders', async t => {
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
-  t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(14_899n));
-  t.deepEqual(await E(aliceVault).getCurrentDebt(), run.make(100_500n));
+  const penalty = 101n;
+  const collateralReduced = aeth.make(collateral - penalty);
+  t.deepEqual(await E(aliceVault).getCollateralAmount(), collateralReduced);
+  t.deepEqual(await E(aliceVault).getCurrentDebt(), run.make(aliceDebt));
 
   const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
     .metrics;
@@ -3276,7 +3282,7 @@ test('Bug 7851 & no bidders', async t => {
     ...reserveInitialState(run.makeEmpty()),
     shortfallBalance: run.make(0n),
     allocations: {
-      Aeth: aeth.make(101n),
+      Aeth: aeth.make(penalty),
       Fee: run.makeEmpty(),
     },
   });
