@@ -1,7 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { heapZone } from '../heap.js';
 
 import { makeMint } from './makeMint.js';
+import { prepareIssuerKit } from './makeMintExo.js';
 
 const qualifyImplementation = (label, maker) => {
   test(`makeMint: ${label}`, t => {
@@ -15,3 +17,7 @@ const qualifyImplementation = (label, maker) => {
 };
 
 qualifyImplementation('objects-as-closures', makeMint);
+
+// implements the same API
+const makeIssuerKit = prepareIssuerKit(heapZone);
+qualifyImplementation('exo', () => makeIssuerKit().mint);
