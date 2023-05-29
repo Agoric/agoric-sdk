@@ -1,8 +1,13 @@
-const makeMint = () => {
+/* eslint-disable import/no-extraneous-dependencies */
+import { makeWeakMap } from 'jessie.js';
+import { Nat } from '@endo/nat';
+
+export const makeMint = () => {
   const ledger = makeWeakMap();
 
   const issuer = harden({
-    makeEmptyPurse: () => mint.makePurse(0),
+    // eslint-disable-next-line no-use-before-define
+    makeEmptyPurse: () => mint.makePurse(0n),
   });
 
   const mint = harden({
