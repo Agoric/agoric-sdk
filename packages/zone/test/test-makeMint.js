@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { heapZone } from '../heap.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '../durable.js';
 
 import { makeMint } from './makeMint.js';
 import { prepareIssuerKit } from './makeMintExo.js';
@@ -19,5 +20,6 @@ const qualifyImplementation = (label, maker) => {
 qualifyImplementation('objects-as-closures', makeMint);
 
 // implements the same API
-const makeIssuerKit = prepareIssuerKit(heapZone);
+const zone = makeDurableZone(makeScalarBigMapStore('Test Baggage'));
+const makeIssuerKit = prepareIssuerKit(zone);
 qualifyImplementation('exo', () => makeIssuerKit().mint);

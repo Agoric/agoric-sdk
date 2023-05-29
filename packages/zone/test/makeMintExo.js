@@ -45,8 +45,8 @@ export const prepareIssuerKit = zone => {
     'Mint',
     undefined, // TODO: interface guard kit
     () => ({
-      /** @type {WeakMap<unknown, bigint>} */
-      ledger: makeWeakMap(),
+      /** @type {WeakMapStore<unknown, bigint>} */
+      ledger: zone.weakMapStore('ledger'),
     }),
     {
       issuer: {
@@ -61,7 +61,7 @@ export const prepareIssuerKit = zone => {
           const { issuer } = this.facets;
           const { ledger } = this.state;
           const purse = makePurse(issuer, ledger);
-          ledger.set(purse, initialBalance);
+          ledger.init(purse, initialBalance);
           return purse;
         },
       },
