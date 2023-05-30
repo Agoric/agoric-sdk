@@ -62,7 +62,7 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
-const { details: X, Fail } = assert;
+const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
@@ -499,6 +499,7 @@ export const prepareVaultManagerKit = (
         sendToReserve(penalty, seat, seatKeyword = 'Collateral') {
           const invitation =
             E(reservePublicFacet).makeAddCollateralInvitation();
+          trace('Sending to reserve: ', penalty);
 
           // don't wait for response
           void E.when(invitation, invite => {
@@ -675,8 +676,8 @@ export const prepareVaultManagerKit = (
               quoteAsRatio(oraclePriceAtStart.quoteAmount.value[0]),
             ),
           );
+          const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
 
-          const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
           // Liquidation.md describes how to process liquidation proceeds
           const bestToWorst = [...vaultData.entries()].reverse();
           if (AmountMath.isEmpty(accounting.shortfall)) {
@@ -708,17 +709,27 @@ export const prepareVaultManagerKit = (
                 debtAmount,
                 vault.getCurrentDebt(),
               );
-              const debtInCollateral = ceilDivideBy(debtAmount, price);
-              const collatPostDebt = AmountMath.isGTE(vCollat, debtInCollateral)
-                ? AmountMath.subtract(vCollat, debtInCollateral)
+
+              const price = makeRatioFromAmounts(
+                mintedProceeds,
+                collateralSold,
+              );
+
+              // max return is vault value reduced by debt and penalty value
+              const debtCollat = ceilDivideBy(debtAmount, price);
+              const penaltyCollat = ceilMultiplyBy(debtAmount, debtPortion);
+              const lessCollat = AmountMath.add(debtCollat, penaltyCollat);
+
+              const maxCollat = AmountMath.isGTE(vCollat, lessCollat)
+                ? AmountMath.subtract(vCollat, lessCollat)
                 : AmountMath.makeEmptyFromAmount(vCollat);
               if (!AmountMath.isEmpty(leftToStage)) {
-                const collat = AmountMath.min(leftToStage, collatPostDebt);
-                leftToStage = AmountMath.subtract(leftToStage, collat);
+                const collatReturn = AmountMath.min(leftToStage, maxCollat);
+                leftToStage = AmountMath.subtract(leftToStage, collatReturn);
                 transfers.push([
                   liqSeat,
                   vault.getVaultSeat(),
-                  { Collateral: collat },
+                  { Collateral: collatReturn },
                 ]);
               }
               vaultsToLiquidate.push(vault);
@@ -847,7 +858,6 @@ export const prepareVaultManagerKit = (
 
             let collateralReduction = AmountMath.makeEmpty(collateralBrand);
             let shortfallToReserve = accounting.shortfall;
-            const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
             const reduceCollateral = amount =>
               (collateralReduction = AmountMath.add(
                 collateralReduction,
@@ -859,10 +869,16 @@ export const prepareVaultManagerKit = (
             /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
             for (const [vault, balance] of bestToWorst) {
               const { collateralAmount: vCollat, debtAmount } = balance;
-              const vaultPenalty = ceilMultiplyBy(debtAmount, penaltyRate);
+
+              // according to #7123, Collateral for penalty =
+              //    vault debt / total debt * total liquidation penalty
+              const vaultPenalty = ceilMultiplyBy(
+                debtAmount,
+                makeRatioFromAmounts(totalPenalty, totalDebt),
+              );
               const collatPostPenalty = AmountMath.subtract(
                 vCollat,
-                ceilMultiplyBy(vaultPenalty, debtPortion),
+                vaultPenalty,
               );
               const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
               if (
@@ -904,7 +920,7 @@ export const prepareVaultManagerKit = (
             }
 
             // Putting all the rearrangements after the loop ensures that errors
-            // in the calculations don't result in paying pack some vaults and
+            // in the calculations don't result in paying back some vaults and
             // leaving others hanging.
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
@@ -917,12 +933,29 @@ export const prepareVaultManagerKit = (
               transfers.length,
             );
 
-            facets.helper.sendToReserve(collatRemaining, liqSeat);
+            const collateralInLiqSeat =
+              liqSeat.getCurrentAllocation().Collateral;
+            facets.helper.sendToReserve(collateralInLiqSeat, liqSeat);
+
+            if (
+              !AmountMath.isEqual(
+                collateralInLiqSeat,
+                AmountMath.add(collatRemaining, totalPenalty),
+              )
+            ) {
+              console.error(
+                `🚨 Excess collateral remaining sent to reserve. Expected ${q(
+                  collatRemaining,
+                )}, sent ${q(collateralInLiqSeat)}`,
+              );
+            }
             facets.helper.markDoneLiquidating(totalDebt, totalCollateral, {
               ...accounting,
               shortfall: shortfallToReserve,
             });
           }
+          // liqSeat should be empty at this point, except that funds are sent
+          // asynchronously to the reserve.
           liquidateAll();
           return facets.helper.writeMetrics();
         },

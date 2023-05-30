@@ -82,7 +82,7 @@ const outcome = /** @type {const} */ ({
   reserve: {
     allocations: {
       // TODO match spec 1.61921
-      ATOM: 1.107181,
+      ATOM: 1.619207,
     },
     shortfall: 5.525,
   },

@@ -432,7 +432,7 @@ test.serial('force liquidation', async t => {
   t.like(readCollateralMetrics(0), {
     numActiveVaults: 1,
     numLiquidatingVaults: 1,
-    numLiquidationsAborted: 0,
+    numLiquidationsAborted: 1,
     numLiquidationsCompleted: 0,
   });
 });
