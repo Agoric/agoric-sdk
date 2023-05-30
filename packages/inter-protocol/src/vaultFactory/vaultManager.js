@@ -37,17 +37,13 @@ import {
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
   atomicRearrange,
-  ceilDivideBy,
   ceilMultiplyBy,
   floorDivideBy,
-  floorMultiplyBy,
   getAmountIn,
   getAmountOut,
   makeEphemeraProvider,
   makeRatio,
-  makeRatioFromAmounts,
   makeRecorderTopic,
-  multiplyRatios,
   offerTo,
   SubscriberShape,
   TopicsRecordShape,
@@ -61,12 +57,15 @@ import {
   quoteAsRatio,
 } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
+import {
+  calculateDistributionPlan,
+  getLiquidatableVaults,
+} from './liquidation.js';
 import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
-const { details: X, Fail, quote: q } = assert;
+const { details: X, Fail } = assert;
 
 const trace = makeTracer('VM');
 
@@ -157,10 +156,6 @@ const trace = makeTracer('VM');
  *   lockedQuote: PriceQuote | undefined,
  * }} MutableState
  */
-
-/** @param {Pick<PriceDescription, 'amountIn' | 'amountOut'>} quoteAmount */
-const quoteAsRatio = quoteAmount =>
-  makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);
 
 /**
  * @type {(brand: Brand) => {
@@ -588,25 +583,6 @@ export const prepareVaultManagerKit = (
             console.error('🚨 failed to report liquidation shortfall', err);
           });
         },
-        /**
-         * If interest was charged between liquidating and liquidated, erase it.
-         *
-         * @param {Amount<'nat'>} priorDebtAmount
-         * @param {Amount<'nat'>} currentDebt
-         */
-        subtractPhantomInterest(priorDebtAmount, currentDebt) {
-          const { state } = this;
-          const difference = AmountMath.subtract(currentDebt, priorDebtAmount);
-
-          if (!AmountMath.isEmpty(difference)) {
-            state.totalDebt = AmountMath.subtract(state.totalDebt, difference);
-          }
-        },
-        markRestoreDebt(debt) {
-          const { state } = this;
-
-          state.totalDebt = AmountMath.add(state.totalDebt, debt);
-        },
         writeMetrics() {
           const { state } = this;
           const { collateralBrand, retainedCollateralSeat, metricsTopicKit } =
@@ -661,7 +637,6 @@ export const prepareVaultManagerKit = (
           totalCollateral,
         ) {
           const { state, facets } = this;
-          const { collateralBrand, debtBrand, liquidatingVaults } = this.state;
 
           const { Collateral: collateralProceeds } = proceeds;
           /** @type {Amount<'nat'>} */
@@ -674,307 +649,69 @@ export const prepareVaultManagerKit = (
             collateralSold,
           );
 
-          const mintedProceeds =
-            proceeds.Minted || AmountMath.makeEmpty(debtBrand);
-          const accounting = liquidationResults(totalDebt, mintedProceeds);
-
           const penaltyRate = facets.self
             .getGovernedParams()
             .getLiquidationPenalty();
-          // charged in collateral
-          const totalPenalty = ceilMultiplyBy(
-            totalDebt,
-            multiplyRatios(
-              penaltyRate,
-              quoteAsRatio(oraclePriceAtStart.quoteAmount.value[0]),
-            ),
-          );
-          const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
-
-          // Liquidation.md describes how to process liquidation proceeds
           const bestToWorst = [...vaultData.entries()].reverse();
 
-          const runFlow1 = () => {
-            // Flow #1: no shortfall
-            const collateralToDistribute = AmountMath.isGTE(
-              collateralProceeds,
-              totalPenalty,
-            );
+          const plan = calculateDistributionPlan(
+            proceeds,
+            totalDebt,
+            totalCollateral,
+            oraclePriceAtStart,
+            liqSeat,
+            bestToWorst,
+            penaltyRate,
+          );
+          trace('PLAN', plan);
 
-            const distributableCollateral = collateralToDistribute
-              ? AmountMath.subtract(collateralProceeds, totalPenalty)
-              : AmountMath.makeEmptyFromAmount(collateralProceeds);
-
-            facets.helper.burnToCoverDebt(totalDebt, mintedProceeds, liqSeat);
-            facets.helper.sendToReserve(accounting.overage, liqSeat, 'Minted');
-
-            // return remaining funds to vaults before closing
-
-            /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
-            const transfers = [];
-            let leftToStage = distributableCollateral;
-
-            // iterate from best to worst, returning collateral until it has
-            // been exhausted. Vaults after that get nothing.
-            for (const [vault, amounts] of bestToWorst) {
-              const { collateralAmount: vCollat, debtAmount } = amounts;
-              facets.helper.subtractPhantomInterest(
-                debtAmount,
-                vault.getCurrentDebt(),
-              );
-
-              const price = makeRatioFromAmounts(
-                mintedProceeds,
-                collateralSold,
-              );
-
-              // max return is vault value reduced by debt and penalty value
-              const debtCollat = ceilDivideBy(debtAmount, price);
-              const penaltyCollat = ceilMultiplyBy(debtAmount, debtPortion);
-              const lessCollat = AmountMath.add(debtCollat, penaltyCollat);
-
-              const maxCollat = AmountMath.isGTE(vCollat, lessCollat)
-                ? AmountMath.subtract(vCollat, lessCollat)
-                : AmountMath.makeEmptyFromAmount(vCollat);
-              if (!AmountMath.isEmpty(leftToStage)) {
-                const collatReturn = AmountMath.min(leftToStage, maxCollat);
-                leftToStage = AmountMath.subtract(leftToStage, collatReturn);
-                transfers.push([
-                  liqSeat,
-                  vault.getVaultSeat(),
-                  { Collateral: collatReturn },
-                ]);
-              }
-            }
-            if (transfers.length > 0) {
-              atomicRearrange(zcf, harden(transfers));
-            }
-
-            const forReserve = collateralToDistribute
-              ? AmountMath.add(leftToStage, totalPenalty)
-              : collateralProceeds;
-            facets.helper.sendToReserve(forReserve, liqSeat);
-
-            facets.helper.markCollateralLiquidated(
-              totalCollateral,
-              vaultData.getSize(),
-            );
-
-            facets.helper.markDoneLiquidating(
-              totalDebt,
-              totalCollateral,
-              accounting,
-            );
-          };
-
-          const runFlow2a = () => {
-            // charge penalty if proceeds are sufficient
-            const penaltyInMinted = ceilMultiplyBy(totalDebt, penaltyRate);
-            const recoveredDebt = AmountMath.min(
-              AmountMath.add(totalDebt, penaltyInMinted),
-              mintedProceeds,
-            );
-
-            facets.helper.burnToCoverDebt(
-              recoveredDebt,
-              mintedProceeds,
-              liqSeat,
-            );
-
-            const coverDebt = AmountMath.isGTE(mintedProceeds, recoveredDebt);
-            const distributable = coverDebt
-              ? AmountMath.subtract(mintedProceeds, recoveredDebt)
-              : AmountMath.makeEmptyFromAmount(mintedProceeds);
-            let mintedRemaining = distributable;
-
-            const vaultPortion = makeRatioFromAmounts(
-              distributable,
-              totalCollateral,
-            );
-            /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
-            const transfers = [];
-
-            // iterate from best to worst returning remaining funds to vaults
-            /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
-            for (const [vault, balance] of bestToWorst) {
-              // from best to worst, return minted above penalty if any remains
-              const { collateralAmount: vCollat, debtAmount } = balance;
-              const vaultShare = floorMultiplyBy(vCollat, vaultPortion);
-              facets.helper.subtractPhantomInterest(
-                debtAmount,
-                vault.getCurrentDebt(),
-              );
-
-              if (!AmountMath.isEmpty(mintedRemaining)) {
-                const mintedToReturn = AmountMath.isGTE(
-                  mintedRemaining,
-                  vaultShare,
-                )
-                  ? vaultShare
-                  : mintedRemaining;
-                mintedRemaining = AmountMath.subtract(
-                  mintedRemaining,
-                  mintedToReturn,
-                );
-                const seat = vault.getVaultSeat();
-                transfers.push([liqSeat, seat, { Minted: mintedToReturn }]);
-              }
-            }
-
-            if (transfers.length > 0) {
-              atomicRearrange(zcf, harden(transfers));
-            }
-
-            facets.helper.markCollateralLiquidated(
-              totalCollateral,
-              vaultData.getSize(),
-            );
-
-            facets.helper.markDoneLiquidating(
-              totalDebt,
-              totalCollateral,
-              accounting,
-            );
-          };
-
-          const runFlow2b = () => {
-            facets.helper.burnToCoverDebt(totalDebt, mintedProceeds, liqSeat);
-            facets.helper.sendToReserve(accounting.overage, liqSeat, 'Minted');
-
-            // reconstitute vaults until collateral is insufficient
-            let reconstituteVaults = AmountMath.isGTE(
-              collateralProceeds,
-              totalPenalty,
-            );
-
-            // charge penalty if proceeds are sufficient
-            const distributableCollateral = reconstituteVaults
-              ? AmountMath.subtract(collateralProceeds, totalPenalty)
-              : AmountMath.makeEmptyFromAmount(collateralProceeds);
-
-            let collatRemaining = distributableCollateral;
-            /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
-            const transfers = [];
-            let liquidated = 0;
-            /** @type {Array<Vault>} */
-            const vaultsToReinstate = [];
-            const reinstateAll = () => {
-              const { prioritizedVaults } = collateralEphemera(collateralBrand);
-              for (const vault of vaultsToReinstate) {
-                const vaultId = vault.abortLiquidation();
-                prioritizedVaults.addVault(vaultId, vault);
-                liquidatingVaults.delete(vault);
-              }
-            };
-
-            let collateralReduction = AmountMath.makeEmpty(collateralBrand);
-            let shortfallToReserve = accounting.shortfall;
-            const reduceCollateral = amount =>
-              (collateralReduction = AmountMath.add(
-                collateralReduction,
-                amount,
-              ));
-
-            // iterate from best to worst attempting to reconstitute, by
-            // returning remaining funds to vaults
-            /** @type {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} */
-            for (const [vault, balance] of bestToWorst) {
-              const { collateralAmount: vCollat, debtAmount } = balance;
-
-              // according to #7123, Collateral for penalty =
-              //    vault debt / total debt * total liquidation penalty
-              const vaultPenalty = ceilMultiplyBy(
-                debtAmount,
-                makeRatioFromAmounts(totalPenalty, totalDebt),
-              );
-              const collatPostPenalty = AmountMath.subtract(
-                vCollat,
-                vaultPenalty,
-              );
-              const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
-              if (
-                reconstituteVaults &&
-                !AmountMath.isEmpty(collatPostPenalty) &&
-                AmountMath.isGTE(collatRemaining, collatPostPenalty) &&
-                AmountMath.isGTE(totalDebt, debtAmount)
-              ) {
-                collatRemaining = AmountMath.subtract(
-                  collatRemaining,
-                  collatPostPenalty,
-                );
-                shortfallToReserve = AmountMath.isGTE(
-                  shortfallToReserve,
-                  debtAmount,
-                )
-                  ? AmountMath.subtract(shortfallToReserve, debtAmount)
-                  : AmountMath.makeEmptyFromAmount(shortfallToReserve);
-                const seat = vault.getVaultSeat();
-                // must reinstate after atomicRearrange(), so we record them.
-                vaultsToReinstate.push(vault);
-                reduceCollateral(vaultDebt);
-                transfers.push([
-                  liqSeat,
-                  seat,
-                  { Collateral: collatPostPenalty },
-                ]);
-              } else {
-                reconstituteVaults = false;
-                liquidated += 1;
-                facets.helper.subtractPhantomInterest(
-                  debtAmount,
-                  vault.getCurrentDebt(),
-                );
-
-                reduceCollateral(vCollat);
-              }
-            }
-
-            // Putting all the rearrangements after the loop ensures that errors
-            // in the calculations don't result in paying back some vaults and
-            // leaving others hanging.
-            if (transfers.length > 0) {
-              atomicRearrange(zcf, harden(transfers));
-            }
-            reinstateAll();
-
-            facets.helper.markCollateralLiquidated(
-              collateralReduction,
-              liquidated,
-              transfers.length,
-            );
-
-            const collateralInLiqSeat =
-              liqSeat.getCurrentAllocation().Collateral;
-            facets.helper.sendToReserve(collateralInLiqSeat, liqSeat);
-
-            if (
-              !AmountMath.isEqual(
-                collateralInLiqSeat,
-                AmountMath.add(collatRemaining, totalPenalty),
-              )
-            ) {
-              console.error(
-                `🚨 Excess collateral remaining sent to reserve. Expected ${q(
-                  collatRemaining,
-                )}, sent ${q(collateralInLiqSeat)}`,
-              );
-            }
-            facets.helper.markDoneLiquidating(totalDebt, totalCollateral, {
-              ...accounting,
-              shortfall: shortfallToReserve,
-            });
-          };
-
-          if (AmountMath.isEmpty(accounting.shortfall)) {
-            // Flow #1: no shortfall
-            runFlow1();
-          } else if (AmountMath.isEmpty(collateralProceeds)) {
-            // Flow #2a
-            runFlow2a();
-          } else {
-            // Flow #2b: There's unsold collateral; some vaults may be revived.
-            runFlow2b();
+          // Putting all the rearrangements after the loop ensures that errors
+          // in the calculations don't result in paying back some vaults and
+          // leaving others hanging.
+          if (plan.transfers.length > 0) {
+            atomicRearrange(zcf, plan.transfers);
           }
+
+          // was reinstateAll
+          const { prioritizedVaults } = collateralEphemera(
+            totalCollateral.brand,
+          );
+          for (const vault of plan.vaultsToReinstate) {
+            const vaultId = vault.abortLiquidation();
+            prioritizedVaults.addVault(vaultId, vault);
+            state.liquidatingVaults.delete(vault);
+          }
+
+          if (!AmountMath.isEmpty(plan.phantomInterest)) {
+            state.totalDebt = AmountMath.subtract(
+              state.totalDebt,
+              plan.phantomInterest,
+            );
+          }
+
+          facets.helper.burnToCoverDebt(
+            plan.debtToBurn,
+            plan.mintedProceeds,
+            liqSeat,
+          );
+          // prior behavior is to send Minted unconditionally
+          facets.helper.sendToReserve(plan.mintedForReserve, liqSeat, 'Minted');
+          // but collateral conditionally
+          if (!AmountMath.isEmpty(plan.collateralForReserve)) {
+            facets.helper.sendToReserve(plan.collateralForReserve, liqSeat);
+          }
+
+          facets.helper.markCollateralLiquidated(
+            totalCollateral,
+            plan.liquidationsCompleted,
+            plan.liquidationsAborted,
+          );
+
+          facets.helper.markDoneLiquidating(
+            totalDebt,
+            totalCollateral,
+            plan.accounting,
+          );
 
           // liqSeat should be empty at this point, except that funds are sent
           // asynchronously to the reserve.
