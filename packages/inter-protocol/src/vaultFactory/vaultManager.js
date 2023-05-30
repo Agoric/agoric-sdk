@@ -638,6 +638,14 @@ export const prepareVaultManagerKit = (
           return E(metricsTopicKit.recorder).write(payload);
         },
 
+        /**
+         * @param {AmountKeywordRecord} proceeds
+         * @param {Amount<'nat'>} totalDebt
+         * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
+         * @param {ZCFSeat} liqSeat
+         * @param {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} vaultData
+         * @param {Amount<'nat'>} totalCollateral
+         */
         distributeProceeds(
           proceeds,
           totalDebt,
@@ -688,9 +696,9 @@ export const prepareVaultManagerKit = (
 
           // Liquidation.md describes how to process liquidation proceeds
           const bestToWorst = [...vaultData.entries()].reverse();
-          if (AmountMath.isEmpty(accounting.shortfall)) {
-            // Flow #1: no shortfall
 
+          const runFlow1 = () => {
+            // Flow #1: no shortfall
             const collateralToDistribute = AmountMath.isGTE(
               collateralProceeds,
               totalPenalty,
@@ -761,9 +769,9 @@ export const prepareVaultManagerKit = (
               totalCollateral,
               accounting,
             );
-          } else if (AmountMath.isEmpty(collateralProceeds)) {
-            // Flow #2a
+          };
 
+          const runFlow2a = () => {
             // charge penalty if proceeds are sufficient
             const penaltyInMinted = ceilMultiplyBy(totalDebt, penaltyRate);
             const recoveredDebt = AmountMath.min(
@@ -832,9 +840,9 @@ export const prepareVaultManagerKit = (
               totalCollateral,
               accounting,
             );
-          } else {
-            // Flow #2b: There's unsold collateral; some vaults may be revived.
+          };
 
+          const runFlow2b = () => {
             facets.helper.burnToCoverDebt(totalDebt, mintedProceeds, liqSeat);
             facets.helper.sendToReserve(accounting.overage, liqSeat, 'Minted');
 
@@ -961,7 +969,19 @@ export const prepareVaultManagerKit = (
               ...accounting,
               shortfall: shortfallToReserve,
             });
+          };
+
+          if (AmountMath.isEmpty(accounting.shortfall)) {
+            // Flow #1: no shortfall
+            runFlow1();
+          } else if (AmountMath.isEmpty(collateralProceeds)) {
+            // Flow #2a
+            runFlow2a();
+          } else {
+            // Flow #2b: There's unsold collateral; some vaults may be revived.
+            runFlow2b();
           }
+
           // liqSeat should be empty at this point, except that funds are sent
           // asynchronously to the reserve.
           liquidateAll();
