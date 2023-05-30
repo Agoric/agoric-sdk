@@ -1748,6 +1748,8 @@ test('manager notifiers, with snapshot', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+
+    lockedQuote: null,
   });
 
   trace('1. Create a vault with ample collateral');
