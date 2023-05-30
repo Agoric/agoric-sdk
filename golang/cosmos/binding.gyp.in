@@ -2,6 +2,9 @@
   "targets": [
     {
       "target_name": "agcosmosdaemon",
+      'variables': {
+        "target_lib": "lib<(_target_name).so",
+      },
       "cflags!": [ "-fno-exceptions" ],
       "cflags_cc!": [ "-fno-exceptions" ],
       "xcode_settings": {
@@ -18,17 +21,39 @@
         "<!@(node -p \"require('napi-thread-safe-callback').include\")"
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
-      "libraries": [ "-Wl,-rpath,<!(pwd)/build", "<!(pwd)/build/libagcosmosdaemon.so" ],
+      "libraries": [
+        "<(target_lib)"
+      ],
       "conditions": [
         ['OS=="mac"', {
           'cflags+': ['-fvisibility=hidden'],
           'xcode_settings': {
             'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES', # -fvisibility=hidden
-          }
+          },
+          'libraries+': [
+            "-Wl,-rpath,@loader_path/..",
+          ],
+          'postbuilds': [
+            {
+              'postbuild_name': 'Add prefix @rpath/<(target_lib)',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '<(target_lib)',
+                '@rpath/<(target_lib)',
+                '<(PRODUCT_DIR)/<(_target_name).node',
+              ],
+            },
+          ],
         }],
         ['OS=="win"', {
-          'defines': [ '_HAS_EXCEPTIONS=1' ]
-        }]
+          'defines': [ '_HAS_EXCEPTIONS=1' ],
+        }],
+        ['OS=="linux"', {
+          'libraries+': [
+            "-Wl,-rpath,'$$ORIGIN/..'",
+          ],
+        }],
       ]
     },
   ],

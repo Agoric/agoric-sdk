@@ -76,7 +76,6 @@ compile-helper: go-mod-cache
 
 compile-libdaemon: go-mod-cache
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
-	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id $$PWD/build/libagcosmosdaemon.so build/libagcosmosdaemon.so
 
 go-mod-cache: ../../go.sum
 	@echo "--> Download go modules to local cache"
