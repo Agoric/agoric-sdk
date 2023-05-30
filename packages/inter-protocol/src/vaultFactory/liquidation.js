@@ -144,7 +144,7 @@ const setWakeups = ({
  * @param {TimerWaker} reschedulerWaker
  * @returns {Promise<void>}
  */
-const setWakeupsForNextAuction = async (
+export const setWakeupsForNextAuction = async (
   auctioneerPublicFacet,
   timer,
   priceLockWaker,
@@ -180,13 +180,14 @@ const setWakeupsForNextAuction = async (
     params,
   });
 };
+harden(setWakeupsForNextAuction);
 
 /**
  * @param {Amount<'nat'>} debt
  * @param {Amount<'nat'>} minted
  * @returns {{ overage: Amount<'nat'>, shortfall: Amount<'nat'>, toBurn: Amount<'nat'>}}
  */
-const liquidationResults = (debt, minted) => {
+export const liquidationResults = (debt, minted) => {
   if (AmountMath.isEmpty(minted)) {
     return {
       overage: minted,
@@ -209,6 +210,7 @@ const liquidationResults = (debt, minted) => {
     shortfall,
   };
 };
+harden(liquidationResults);
 
 /**
  * Watch governed params for change
@@ -260,7 +262,7 @@ export const watchForGovernanceChange = (
  *    totalCollateral: Amount<'nat'>,
  *    liqSeat: ZCFSeat}}
  */
-const getLiquidatableVaults = (
+export const getLiquidatableVaults = (
   zcf,
   collateralizationDetails,
   prioritizedVaults,
@@ -303,9 +305,4 @@ const getLiquidatableVaults = (
 
   return { vaultData, totalDebt, totalCollateral, liqSeat };
 };
-
-harden(setWakeupsForNextAuction);
-harden(liquidationResults);
 harden(getLiquidatableVaults);
-
-export { setWakeupsForNextAuction, liquidationResults, getLiquidatableVaults };
