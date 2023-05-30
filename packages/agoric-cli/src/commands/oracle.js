@@ -128,37 +128,6 @@ export const makeOracleCommand = (logger, io = {}) => {
     });
 
   oracle
-    .command('pushPrice')
-    .description('add a current price sample to a priceAggregator')
-    .option('--offerId <string>', 'Offer id', String, `pushPrice-${Date.now()}`)
-    .requiredOption(
-      '--oracleAdminAcceptOfferId <number>',
-      'offer that had continuing invitation result',
-      Number,
-    )
-    .requiredOption('--price <number>', 'price (format TODO)', String)
-    .action(async function (opts) {
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: opts.oracleAdminAcceptOfferId,
-          invitationMakerName: 'PushPrice',
-          invitationArgs: harden([opts.price]),
-        },
-        proposal: {},
-      };
-
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
-
-      console.warn('Now execute the prepared offer');
-    });
-
-  oracle
     .command('pushPriceRound')
     .description('add a price for a round to a fluxAggregator')
     .option(
