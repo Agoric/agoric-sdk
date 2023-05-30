@@ -188,7 +188,7 @@ export interface TimerWaker {
    * The timestamp passed to `wake()` is the time that the call was scheduled
    * to occur.
    */
-  wake: (timestamp: Timestamp) => void;
+  wake: (timestamp: TimestampRecord) => void;
 }
 
 export interface TimerRepeater {

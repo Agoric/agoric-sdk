@@ -166,7 +166,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {object} param0
    * @param {Ratio} [param0.overridePrice]
-   * @param {import('@agoric/time/src/types').Timestamp} [param0.timestamp]
+   * @param {import('@agoric/time/src/types').TimestampRecord} [param0.timestamp]
    */
   const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
