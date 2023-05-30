@@ -662,15 +662,6 @@ export const prepareVaultManagerKit = (
             proceeds.Minted || AmountMath.makeEmpty(debtBrand);
           const accounting = liquidationResults(totalDebt, mintedProceeds);
 
-          /** @type {Array<Vault>} */
-          const vaultsToLiquidate = [];
-          const liquidateAll = () => {
-            for (const vault of vaultsToLiquidate) {
-              vault.liquidated();
-              liquidatingVaults.delete(vault);
-            }
-          };
-
           const penaltyRate = facets.self
             .getGovernedParams()
             .getLiquidationPenalty();
@@ -738,7 +729,6 @@ export const prepareVaultManagerKit = (
                   { Collateral: collatReturn },
                 ]);
               }
-              vaultsToLiquidate.push(vault);
             }
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
@@ -813,7 +803,6 @@ export const prepareVaultManagerKit = (
                 const seat = vault.getVaultSeat();
                 transfers.push([liqSeat, seat, { Minted: mintedToReturn }]);
               }
-              vaultsToLiquidate.push(vault);
             }
 
             if (transfers.length > 0) {
@@ -921,7 +910,6 @@ export const prepareVaultManagerKit = (
                 );
 
                 reduceCollateral(vCollat);
-                vaultsToLiquidate.push(vault);
               }
             }
 
@@ -974,8 +962,6 @@ export const prepareVaultManagerKit = (
 
           // liqSeat should be empty at this point, except that funds are sent
           // asynchronously to the reserve.
-          liquidateAll();
-          return facets.helper.writeMetrics();
         },
       },
 
@@ -1340,14 +1326,26 @@ export const prepareVaultManagerKit = (
           );
 
           trace(`LiqV after long wait`, proceeds);
-          return helper.distributeProceeds(
-            proceeds,
-            totalDebt,
-            storedCollateralQuote,
-            liqSeat,
-            vaultData,
-            totalCollateral,
-          );
+          try {
+            // distributeProceeds may reconstitute vaults, removing them from liquidatingVaults
+            await helper.distributeProceeds(
+              proceeds,
+              totalDebt,
+              storedCollateralQuote,
+              liqSeat,
+              vaultData,
+              totalCollateral,
+            );
+          } catch (err) {
+            console.error('🚨 Error distributing proceeds:', err);
+          }
+          // for all non-reconstituted vaults, transition to 'liquidated' state
+          for (const vault of liquidatingVaults.values()) {
+            vault.liquidated();
+            liquidatingVaults.delete(vault);
+          }
+
+          await facets.helper.writeMetrics();
         },
       },
     },
