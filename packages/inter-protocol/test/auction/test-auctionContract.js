@@ -1113,12 +1113,15 @@ test.serial('add assets to open auction', async t => {
   const liqSeat2 = await driver.depositCollateral(
     collateral.make(2000n),
     collateral,
+    { goal: bid.make(1000n) },
   );
   const resultL2 = await E(liqSeat2).getOfferResult();
   t.is(resultL2, 'deposited');
   await bookTracker.assertChange({
     collateralAvailable: { value: 2500n },
     startCollateral: { value: 3000n },
+    startProceedsGoal: bid.make(1250n),
+    remainingProceedsGoal: bid.make(1250n),
   });
 
   await driver.advanceTo(180n);
@@ -1139,6 +1142,8 @@ test.serial('add assets to open auction', async t => {
     currentPriceLevel: null,
     startPrice: null,
     startCollateral: { value: 0n },
+    remainingProceedsGoal: null,
+    startProceedsGoal: null,
   });
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 210n },
