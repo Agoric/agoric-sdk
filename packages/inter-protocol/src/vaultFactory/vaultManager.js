@@ -496,13 +496,15 @@ export const prepareVaultManagerKit = (
           // don't wait for response
           void E.when(invitation, invite => {
             const proposal = { give: { Collateral: penalty } };
-            void offerTo(
+            return offerTo(
               zcf,
               invite,
               { [seatKeyword]: 'Collateral' },
               proposal,
               seat,
             );
+          }).catch(reason => {
+            console.error('sendToReserve failed', reason);
           });
         },
         /** @type {(collatSold: Amount<'nat'>, completed: number, aborted?: number) => void} */
