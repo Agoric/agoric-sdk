@@ -711,6 +711,7 @@ test('liquidate two loans', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   // initial loans /////////////////////////////////////
@@ -868,6 +869,13 @@ test('liquidate two loans', async t => {
   );
   let currentTime = now1;
 
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(7_000_000n),
+    ),
+  });
+
   // expect Alice to be liquidated because her collateral is too low.
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
@@ -885,6 +893,7 @@ test('liquidate two loans', async t => {
     totalDebt: { value: totalDebt },
     liquidatingCollateral: { value: 700n },
     liquidatingDebt: { value: 5282n },
+    lockedQuote: null,
   });
 
   shortfallBalance += 137n;
@@ -918,6 +927,13 @@ test('liquidate two loans', async t => {
 
   currentTime = await setClockAndAdvanceNTimes(manualTimer, 2, start2, 2n);
 
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(7_000_000n),
+    ),
+  });
+
   // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
@@ -927,13 +943,18 @@ test('liquidate two loans', async t => {
     manualTimer,
   );
 
-  totalDebt += 13n;
+  totalDebt += 7n;
+  await aethVaultMetrics.assertChange({
+    totalDebt: { value: totalDebt },
+  });
+  totalDebt += 6n;
   await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: 680n },
     liquidatingCollateral: { value: 100n },
     totalDebt: { value: totalDebt },
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
+    lockedQuote: null,
   });
 
   currentTime = now3;
@@ -1210,6 +1231,7 @@ test('collect fees from loan', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   // initial loans /////////////////////////////////////
@@ -1344,6 +1366,12 @@ test('collect fees from loan', async t => {
     AmountMath.add(aliceWantMinted, run.make(250n)),
     'Debt remains while liquidating',
   );
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(4_000_000n),
+    ),
+  });
 
   currentTime = await setClockAndAdvanceNTimes(manualTimer, 2, startTime, 2n);
   trace(`advanced time to `, currentTime);
@@ -1368,6 +1396,7 @@ test('collect fees from loan', async t => {
     // running
     liquidatingCollateral: { value: 700n },
     liquidatingDebt: { value: 5250n },
+    lockedQuote: null,
   });
 
   await aethVaultMetrics.assertChange({
@@ -1456,6 +1485,7 @@ test('Auction sells all collateral w/shortfall', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   // ALICE's loan ////////////////////////////////////////////
@@ -1566,6 +1596,13 @@ test('Auction sells all collateral w/shortfall', async t => {
   );
   let currentTime = now1;
 
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(7_000_000n),
+    ),
+  });
+
   // expect Alice to be liquidated because her collateral is too low.
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
@@ -1582,6 +1619,7 @@ test('Auction sells all collateral w/shortfall', async t => {
     numLiquidatingVaults: 1,
     liquidatingCollateral: { value: 700n },
     liquidatingDebt: { value: 5250n },
+    lockedQuote: null,
   });
 
   shortfallBalance += 2065n;
@@ -1762,6 +1800,7 @@ test('reinstate vault', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   // ALICE takes out a loan ////////////////////////
@@ -1867,10 +1906,18 @@ test('reinstate vault', async t => {
   const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
 
   await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(4_000_000n),
+    ),
+  });
+
+  await aethVaultMetrics.assertChange({
     numActiveVaults: 0,
     liquidatingDebt: { value: 258n },
     liquidatingCollateral: { value: 63n },
     numLiquidatingVaults: 2,
+    lockedQuote: null,
   });
 
   await setClockAndAdvanceNTimes(manualTimer, 2n, startTime, 2n);
@@ -2058,6 +2105,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   const openVault = (collateral, want) =>
@@ -2163,6 +2211,13 @@ test('Bug 7422 vault reinstated with no assets', async t => {
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
 
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(999_000n),
+    ),
+  });
+
   await setClockAndAdvanceNTimes(manualTimer, 2n, startTime, 2n);
 
   await aethVaultMetrics.assertChange({
@@ -2170,6 +2225,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     liquidatingCollateral: { value: 45n },
     numActiveVaults: 0,
     numLiquidatingVaults: 3,
+    lockedQuote: null,
   });
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -2285,6 +2341,7 @@ test('Bug 7346 excess collateral to holder', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   const openVault = (collateral, want) =>
@@ -2405,6 +2462,13 @@ test('Bug 7346 excess collateral to holder', async t => {
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
 
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(9_990_000n),
+    ),
+  });
+
   await setClockAndAdvanceNTimes(manualTimer, 10n, startTime, 2n);
 
   // Penalty is 1% of the debt valued at auction start price = proceeds/9.99
@@ -2415,6 +2479,7 @@ test('Bug 7346 excess collateral to holder', async t => {
     liquidatingCollateral: { value: totalCollateral },
     numActiveVaults: 0,
     numLiquidatingVaults: 3,
+    lockedQuote: null,
   });
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -2732,6 +2797,7 @@ test('Bug 7784 reconstitute both', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   const openVault = (collateral, want) =>
@@ -2829,6 +2895,13 @@ test('Bug 7784 reconstitute both', async t => {
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
 
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(9_990_000n),
+    ),
+  });
+
   await setClockAndAdvanceNTimes(manualTimer, 8n, startTime, 2n);
 
   await aethVaultMetrics.assertChange({
@@ -2836,6 +2909,7 @@ test('Bug 7784 reconstitute both', async t => {
     liquidatingCollateral: { value: 45_000n },
     numActiveVaults: 0,
     numLiquidatingVaults: 3,
+    lockedQuote: null,
   });
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -2943,6 +3017,7 @@ test('Bug 7796 missing lockedPrice', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   const openVault = (collateral, want) =>
@@ -3059,6 +3134,13 @@ test('Bug 7796 missing lockedPrice', async t => {
   // that breaks the price capture. PriceLockPeriod is at its default of 3n.
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
+
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(12_340_000n),
+    ),
+  });
   let now = await setClockAndAdvanceNTimes(
     manualTimer,
     3n,
@@ -3084,10 +3166,14 @@ test('Bug 7796 missing lockedPrice', async t => {
   const penaltyAeth = 309_850n;
 
   await aethVaultMetrics.assertChange({
+    lockedQuote: { denominator: { value: 9_990_000n } },
+  });
+  await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: totalDebt },
     liquidatingCollateral: { value: totalCollateral },
     numActiveVaults: 0,
     numLiquidatingVaults: 3,
+    lockedQuote: null,
   });
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -3206,6 +3292,7 @@ test('Bug 7851 & no bidders', async t => {
     liquidatingCollateral: aeth.make(0n),
     liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
+    lockedQuote: null,
   });
 
   const openVault = (collateral, want) =>
@@ -3251,6 +3338,12 @@ test('Bug 7851 & no bidders', async t => {
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
   await setClockAndAdvanceNTimes(manualTimer, 3n, startTime, 10n * ONE_MINUTE);
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(12_340_000n),
+    ),
+  });
 
   // price falls
   // @ts-expect-error setupServices() should return the right type
@@ -3265,10 +3358,14 @@ test('Bug 7851 & no bidders', async t => {
   );
 
   await aethVaultMetrics.assertChange({
+    lockedQuote: { denominator: { value: 9_990_000n } },
+  });
+  await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: aliceDebt },
     liquidatingCollateral: { value: collateral },
     numActiveVaults: 0,
     numLiquidatingVaults: 1,
+    lockedQuote: null,
   });
 
   trace('liquidated?');

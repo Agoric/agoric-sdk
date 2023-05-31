@@ -23,7 +23,7 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-test('storage keys', async t => {
+test.only('storage keys', async t => {
   const { aeth, run } = t.context;
   const d = await makeManagerDriver(t);
 
@@ -58,6 +58,7 @@ test('storage keys', async t => {
     [
       'liquidatingCollateral',
       'liquidatingDebt',
+      'lockedQuote',
       'numActiveVaults',
       'numLiquidatingVaults',
       'numLiquidationsAborted',

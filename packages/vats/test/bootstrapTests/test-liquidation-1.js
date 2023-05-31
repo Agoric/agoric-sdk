@@ -247,6 +247,7 @@ test.serial('scenario: Flow 1', async t => {
     t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
       numActiveVaults: setup.vaults.length,
       numLiquidatingVaults: 0,
+      lockedQuote: null,
     });
 
     // advance time to start an auction
@@ -259,6 +260,7 @@ test.serial('scenario: Flow 1', async t => {
         value: scale6(setup.auction.start.collateral),
       },
       liquidatingDebt: { value: scale6(setup.auction.start.debt) },
+      lockedQuote: null,
     });
 
     console.log('step 1 of 10');

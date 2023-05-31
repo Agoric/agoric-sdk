@@ -73,6 +73,8 @@ const trace = makeTracer('VM');
 /**
  * @typedef {object} MetricsNotification
  *
+ * @property {Ratio | null} lockedQuote      priceQuote that will be used for liquidation.
+ *                                   Non-null from priceLock time until liquidation has taken place.
  * @property {number}         numActiveVaults          present count of vaults
  * @property {number}         numLiquidatingVaults  present count of liquidating vaults
  * @property {Amount<'nat'>}  totalCollateral    present sum of collateral across all vaults
@@ -609,6 +611,11 @@ export const prepareVaultManagerKit = (
             retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
             AmountMath.makeEmpty(collateralBrand, 'nat');
 
+          const quote = state.lockedQuote;
+          const lockedQuoteRatio = quote
+            ? quoteAsRatio(quote.quoteAmount.value[0])
+            : null;
+
           /** @type {MetricsNotification} */
           const payload = harden({
             numActiveVaults: prioritizedVaults.getCount(),
@@ -625,6 +632,7 @@ export const prepareVaultManagerKit = (
             totalOverageReceived: state.totalOverageReceived,
             totalProceedsReceived: state.totalProceedsReceived,
             totalShortfallReceived: state.totalShortfallReceived,
+            lockedQuote: lockedQuoteRatio,
           });
 
           return E(metricsTopicKit.recorder).write(payload);
@@ -1231,7 +1239,7 @@ export const prepareVaultManagerKit = (
         },
 
         lockOraclePrices() {
-          const { state } = this;
+          const { state, facets } = this;
           const { storedCollateralQuote } = collateralEphemera(
             state.collateralBrand,
           );
@@ -1244,6 +1252,7 @@ export const prepareVaultManagerKit = (
           );
 
           state.lockedQuote = storedCollateralQuote;
+          facets.helper.writeMetrics();
           return storedCollateralQuote;
         },
         /**
