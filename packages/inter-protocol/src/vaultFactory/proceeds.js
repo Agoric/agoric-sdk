@@ -17,8 +17,6 @@ import { liquidationResults } from './liquidation.js';
  *   collateralSold: Amount<'nat'>,
  *   collatRemaining: Amount<'nat'>,
  *   debtToBurn: Amount<'nat'>,
- *   liquidationsAborted: number,
- *   liquidationsCompleted: number,
  *   mintedForReserve: Amount<'nat'>,
  *   mintedProceeds: Amount<'nat'>,
  *   phantomInterest: Amount<'nat'>,
@@ -70,6 +68,7 @@ export const calculateDistributionPlan = ({
     totalDebt,
     multiplyRatios(penaltyRate, quoteAsRatio(oraclePriceAtStart)),
   );
+
   const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
 
   // We mutate the plan so that at any point if there's an error the plan can be returned and executed.
@@ -82,9 +81,6 @@ export const calculateDistributionPlan = ({
     collateralSold,
     collatRemaining: emptyCollateral,
     debtToBurn: emptyMinted,
-    // XXX these two counts are implied by the execution of the plan, not the plan itself
-    liquidationsAborted: 0,
-    liquidationsCompleted: 0,
     mintedForReserve: emptyMinted,
     mintedProceeds,
     phantomInterest: emptyMinted,
@@ -113,7 +109,6 @@ export const calculateDistributionPlan = ({
     );
 
     plan.debtToBurn = totalDebt;
-    plan.mintedProceeds = mintedProceeds;
     plan.mintedForReserve = accounting.overage;
 
     // return remaining funds to vaults before closing
@@ -147,7 +142,6 @@ export const calculateDistributionPlan = ({
     plan.collateralForReserve = hasCollateralToDistribute
       ? AmountMath.add(leftToStage, totalPenalty)
       : collateralProceeds;
-    plan.liquidationsCompleted = vaultBalances.length;
   };
 
   const runFlow2a = () => {
@@ -182,7 +176,6 @@ export const calculateDistributionPlan = ({
         plan.transfersToVault.push([vaultIndex, { Minted: mintedToReturn }]);
       }
     }
-    plan.liquidationsCompleted = vaultBalances.length;
   };
 
   const runFlow2b = () => {
@@ -217,12 +210,15 @@ export const calculateDistributionPlan = ({
       const vaultPenalty = ceilMultiplyBy(debtAmount, debtPortion);
       const collatPostPenalty = subtractToEmpty(vCollat, vaultPenalty);
       const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
-      if (
+
+      // Should we continue reconstituting vaults?
+      reconstituteVaults =
         reconstituteVaults &&
         !AmountMath.isEmpty(collatPostPenalty) &&
         AmountMath.isGTE(plan.collatRemaining, collatPostPenalty) &&
-        AmountMath.isGTE(totalDebt, debtAmount)
-      ) {
+        AmountMath.isGTE(totalDebt, debtAmount);
+
+      if (reconstituteVaults) {
         plan.collatRemaining = AmountMath.subtract(
           plan.collatRemaining,
           collatPostPenalty,
@@ -236,15 +232,11 @@ export const calculateDistributionPlan = ({
           { Collateral: collatPostPenalty },
         ]);
       } else {
-        reconstituteVaults = false;
-        plan.liquidationsCompleted += 1;
         updatePhantomInterest(balance.debtAmount, balance.currentDebt);
 
         reduceCollateral(vCollat);
       }
     }
-
-    plan.liquidationsAborted = plan.transfersToVault.length;
 
     plan.collateralForReserve = AmountMath.add(
       plan.collatRemaining,
