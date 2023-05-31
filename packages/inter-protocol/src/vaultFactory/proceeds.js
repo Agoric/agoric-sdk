@@ -35,22 +35,23 @@ import { liquidationResults } from './liquidation.js';
 /**
  * Liquidation.md describes how to process liquidation proceeds
  *
- * @param {AmountKeywordRecord} proceeds
- * @param {Amount<'nat'>} totalDebt
- * @param {Amount<'nat'>} totalCollateral
- * @param {PriceDescription} oraclePriceAtStart
- * @param {Array<{ collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>, currentDebt: Amount<'nat'> }>} vaultBalances ordered best to worst collateralized
- * @param {Ratio} penaltyRate
+ * @param {object} inputs
+ * @param {AmountKeywordRecord} inputs.proceeds
+ * @param {Amount<'nat'>} inputs.totalDebt
+ * @param {Amount<'nat'>} inputs.totalCollateral
+ * @param {PriceDescription} inputs.oraclePriceAtStart
+ * @param {Array<{ collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>, currentDebt: Amount<'nat'> }>} inputs.vaultBalances ordered best to worst collateralized
+ * @param {Ratio} inputs.penaltyRate
  * @returns {DistributionPlan}
  */
-export const calculateDistributionPlan = (
+export const calculateDistributionPlan = ({
   proceeds,
   totalDebt,
   totalCollateral,
   oraclePriceAtStart,
   vaultBalances,
   penaltyRate,
-) => {
+}) => {
   const emptyCollateral = AmountMath.makeEmptyFromAmount(totalCollateral);
   const emptyMinted = AmountMath.makeEmptyFromAmount(totalDebt);
 

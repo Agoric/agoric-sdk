@@ -18,7 +18,7 @@ const test = unknownTest;
  * @param {bigint} currN
  * @returns {any}
  */
-const makeVaultBalances = (debtN, collN, currN = debtN) => {
+const makeVaultBalance = (debtN, collN, currN = debtN) => {
   return {
     debtAmount: debt.make(debtN),
     collateralAmount: coll.make(collN),
@@ -41,18 +41,10 @@ test('price drop', async t => {
     totalDebt,
     totalCollateral,
     oraclePriceAtStart: price,
-    collateralInLiqSeat: coll.makeEmpty(),
-    bestToWorst: [makeVaultBalances(0n, 0n)],
+    vaultBalances: [makeVaultBalance(0n, 0n)],
     penaltyRate: makeRatio(10n, debt.brand, 100n),
   };
-  const plan = calculateDistributionPlan(
-    inputs.proceeds,
-    inputs.totalDebt,
-    inputs.totalCollateral,
-    inputs.oraclePriceAtStart,
-    inputs.bestToWorst,
-    inputs.penaltyRate,
-  );
+  const plan = calculateDistributionPlan(inputs);
   t.deepEqual(plan, {
     accounting: {
       overage: debt.makeEmpty(),
