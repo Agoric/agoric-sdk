@@ -694,9 +694,13 @@ export const prepareVaultManagerKit = (
             plan.mintedProceeds,
             liqSeat,
           );
-          // prior behavior is to send Minted unconditionally
-          facets.helper.sendToReserve(plan.mintedForReserve, liqSeat, 'Minted');
-          // but collateral conditionally
+          if (!AmountMath.isEmpty(plan.mintedForReserve)) {
+            facets.helper.sendToReserve(
+              plan.mintedForReserve,
+              liqSeat,
+              'Minted',
+            );
+          }
           if (!AmountMath.isEmpty(plan.collateralForReserve)) {
             facets.helper.sendToReserve(plan.collateralForReserve, liqSeat);
           }

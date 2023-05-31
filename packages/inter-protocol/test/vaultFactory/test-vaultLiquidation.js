@@ -492,8 +492,8 @@ test('price drop', async t => {
 
   await m.assertLike({
     allocations: {
-      Aeth: aeth.makeEmpty(),
-      Fee: run.makeEmpty(),
+      Aeth: undefined,
+      Fee: undefined,
     },
   });
 });
@@ -981,7 +981,7 @@ test('liquidate two loans', async t => {
   await m.assertLike({
     allocations: {
       Aeth: aeth.make(8n),
-      Fee: run.makeEmpty(),
+      Fee: undefined,
     },
   });
 });
@@ -1950,7 +1950,7 @@ test('reinstate vault', async t => {
   await m.assertLike({
     allocations: {
       Aeth: aeth.make(12n),
-      Fee: run.makeEmpty(),
+      Fee: undefined,
     },
   });
 });
@@ -2526,7 +2526,6 @@ test('Bug 7346 excess collateral to holder', async t => {
     shortfallBalance: run.makeEmpty(),
     allocations: {
       Aeth: aeth.make(309_852n),
-      Fee: run.makeEmpty(),
     },
   });
 });
@@ -2729,7 +2728,7 @@ test('refund to one of two loans', async t => {
   await m.assertLike({
     allocations: {
       Aeth: aeth.make(9n),
-      Fee: run.makeEmpty(),
+      Fee: undefined,
     },
   });
 });
@@ -2939,7 +2938,6 @@ test('Bug 7784 reconstitute both', async t => {
     shortfallBalance: run.make(5_525n),
     allocations: {
       Aeth: aeth.make(1_620n),
-      Fee: run.makeEmpty(),
     },
   });
 });
@@ -3218,7 +3216,6 @@ test('Bug 7796 missing lockedPrice', async t => {
     shortfallBalance: run.makeEmpty(),
     allocations: {
       Aeth: aeth.make(309_852n),
-      Fee: run.makeEmpty(),
     },
   });
 });
@@ -3370,7 +3367,6 @@ test('Bug 7851 & no bidders', async t => {
     shortfallBalance: run.make(0n),
     allocations: {
       Aeth: aeth.make(penalty),
-      Fee: run.makeEmpty(),
     },
   });
 
