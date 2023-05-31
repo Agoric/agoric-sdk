@@ -152,7 +152,7 @@ const validatedBrand = (mint, debt) => {
  *  poolIncrementSeat: ZCFSeat,
  *  seatAllocationKeyword: Keyword }} powers
  * @param {{
- *  interestRate: Ratio,
+ *  stabilityFee: Ratio,
  *  chargingPeriod: RelativeTime,
  *  recordingPeriod: RelativeTime}} params
  * @param {{
@@ -166,7 +166,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   const brand = validatedBrand(powers.mint, prior.totalDebt);
 
   const interestCalculator = makeInterestCalculator(
-    params.interestRate,
+    params.stabilityFee,
     params.chargingPeriod,
     params.recordingPeriod,
   );

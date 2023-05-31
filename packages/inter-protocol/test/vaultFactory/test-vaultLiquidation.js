@@ -653,7 +653,7 @@ test('liquidate two loans', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 40% interest / year
-    interestRate: run.makeRatio(40n),
+    stabilityFee: run.makeRatio(40n),
     liquidationMargin: run.makeRatio(103n),
   });
   t.context.rates = rates;
@@ -1004,7 +1004,7 @@ test('sell goods at auction', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 200% interest
-    interestRate: run.makeRatio(200n),
+    stabilityFee: run.makeRatio(200n),
     liquidationMargin: run.makeRatio(103n),
   });
   t.context.rates = rates;
@@ -1423,7 +1423,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 40% interest / year
-    interestRate: run.makeRatio(40n),
+    stabilityFee: run.makeRatio(40n),
     liquidationMargin: run.makeRatio(130n),
   });
   t.context.rates = rates;
@@ -1643,7 +1643,7 @@ test('liquidation Margin matters', async t => {
 
   const rates = harden({
     ...defaultRates,
-    interestRate: run.makeRatio(0n),
+    stabilityFee: run.makeRatio(0n),
     liquidationMargin: run.makeRatio(150n),
   });
   t.context.rates = rates;
@@ -1747,7 +1747,7 @@ test('reinstate vault', async t => {
 
   const rates = harden({
     ...defaultRates,
-    interestRate: run.makeRatio(0n),
+    stabilityFee: run.makeRatio(0n),
     liquidationMargin: run.makeRatio(150n),
   });
   t.context.rates = rates;

@@ -123,7 +123,7 @@ export const makeLiquidationTestContext = async t => {
     t.like(readLatest('published.vaultFactory.managers.manager0.governance'), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
-        InterestRate: {
+        StabilityFee: {
           type: 'ratio',
           value: { numerator: { value: 1n }, denominator: { value: 100n } },
         },

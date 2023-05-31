@@ -375,7 +375,7 @@ test('interest on multiple vaults', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
   const rates = {
     ...defaultRates,
-    interestRate: makeRatio(5n, run.brand),
+    stabilityFee: makeRatio(5n, run.brand),
   };
   t.context.rates = rates;
   // charging period is 1 week. Clock ticks by days
@@ -904,7 +904,7 @@ test('adjust balances after interest charges', async t => {
   };
   t.context.rates = {
     ...t.context.rates,
-    interestRate: run.makeRatio(20n),
+    stabilityFee: run.makeRatio(20n),
   };
 
   const services = await setupServices(
@@ -1603,7 +1603,7 @@ test('addVaultType: extra, unexpected params', async t => {
 
   const params = { ...defaultParamValues(aeth.brand), shoeSize: 10 };
   const extraParams = { ...params, shoeSize: 10 };
-  const { interestRate: _1, ...missingParams } = {
+  const { stabilityFee: _1, ...missingParams } = {
     ...defaultParamValues(aeth.brand),
     shoeSize: 10,
   };
@@ -1613,7 +1613,7 @@ test('addVaultType: extra, unexpected params', async t => {
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
     {
       message:
-        /initialParamValues: .* - Must have missing properties \["interestRate"\]/,
+        /initialParamValues: .* - Must have missing properties \["stabilityFee"\]/,
     },
   );
 
@@ -1679,7 +1679,7 @@ test('manager notifiers, with snapshot', async t => {
   };
   t.context.rates = {
     ...t.context.rates,
-    interestRate: run.makeRatio(20n),
+    stabilityFee: run.makeRatio(20n),
   };
 
   const services = await setupServices(
@@ -2000,15 +2000,15 @@ test('governance publisher', async t => {
   // can't deepEqual because of non-literal objects so check keys and then partial shapes
   t.deepEqual(Object.keys(current), [
     'DebtLimit',
-    'InterestRate',
     'LiquidationMargin',
     'LiquidationPadding',
     'LiquidationPenalty',
     'MintFee',
+    'StabilityFee',
   ]);
   t.like(current, {
     DebtLimit: { type: 'amount' },
-    InterestRate: { type: 'ratio' },
+    StabilityFee: { type: 'ratio' },
     LiquidationMargin: { type: 'ratio' },
     LiquidationPadding: { type: 'ratio' },
     LiquidationPenalty: { type: 'ratio' },

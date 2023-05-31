@@ -23,7 +23,7 @@ const trace = makeTracer('TestVault', false);
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
  * @property {Function} advanceRecordingPeriod
- * @property {Function} setInterestRate
+ * @property {Function} setStabilityFee
  */
 let testJig;
 /** @param {TestContext} jig */
