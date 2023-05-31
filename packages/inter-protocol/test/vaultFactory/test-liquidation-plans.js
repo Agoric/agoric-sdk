@@ -1,7 +1,6 @@
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeTracer } from '@agoric/internal';
-import { AmountMath } from '@agoric/ertp';
 import { SECONDS_PER_DAY } from '../../src/proposals/econ-behaviors.js';
 import {
   makeAuctioneerDriver,
@@ -53,6 +52,7 @@ test('basic', async t => {
 
   const v1 = await md.makeVaultDriver(v1collat, v1debt);
   const v2 = await md.makeVaultDriver(aeth.units(0.25), run.units(1));
+  const v3 = await md.makeVaultDriver(aeth.units(0.25), run.units(1));
 
   // bump LiquidationMargin so they are under
   await md.setGovernedParam('LiquidationMargin', run.makeRatio(20n, 1n), {
@@ -66,10 +66,34 @@ test('basic', async t => {
   await ad.advanceTimerByStartFrequency();
   await ad.advanceTimerByStartFrequency();
 
+  /**
+   * Vault Manager is designed to tolerate an incomplete plan, in case
+   * calculateDistributionPlan encounters an error during its calculation. We
+   * don't have a way to induce such errors in CI so we've done so manually in
+   * dev and verified this function recovers as expected.
+   *
+   * TODO consider having "test.skip" with directions for what throws to insert
+   *
+   * These are the cases we tested manually:
+   * - Failure at the start of a flow
+   * - Failure within the 2b flow
+   *
+   * These are the states we verified:
+   * - All vaults to be liquidated are liquidated (none reinstated)
+   * - Metrics of liquidation counts update correctly
+   *
+   * Failure to return a plan is not handled because `calculateDistributionPlan`
+   * has a try/catch within it that ensures it returns *some* plan. We
+   * considered falling back if it does fail, but the fallback would have to do
+   * the same work that had just failed.
+   */
   await v1.notified('active', {
     locked: v1collat,
   });
   await v2.notified('liquidated', {
+    locked: aeth.makeEmpty(),
+  });
+  await v3.notified('liquidated', {
     locked: aeth.makeEmpty(),
   });
 });
