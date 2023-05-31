@@ -514,17 +514,6 @@ export const prepareVaultManagerKit = (
             console.error('sendToReserve failed', reason);
           });
         },
-        /** @type {(collatSold: Amount<'nat'>, completed: number, aborted?: number) => void} */
-        markCollateralLiquidated(collatSold, completed, aborted = 0) {
-          const { state } = this;
-
-          state.totalCollateral = AmountMath.subtract(
-            state.totalCollateral,
-            collatSold,
-          );
-          state.numLiquidationsCompleted += completed;
-          state.numLiquidationsAborted += aborted;
-        },
         markLiquidating(debt, collateral) {
           const { state } = this;
 
@@ -619,6 +608,10 @@ export const prepareVaultManagerKit = (
         },
 
         /**
+         * This is designed to tolerate an incomplete plan, in case calculateDistributionPlan encounters
+         * an error during its calculation. We don't have a way to induce such errors in CI so we've
+         * done so manually in dev and verified this function recovers as expected.
+         *
          * @param {AmountKeywordRecord} proceeds
          * @param {Amount<'nat'>} totalDebt
          * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
@@ -698,6 +691,7 @@ export const prepareVaultManagerKit = (
           const { prioritizedVaults } = collateralEphemera(
             totalCollateral.brand,
           );
+          state.numLiquidationsAborted += plan.vaultsToReinstate.length;
           for (const vaultIndex of plan.vaultsToReinstate) {
             const vault = vaults[vaultIndex];
             const vaultId = vault.abortLiquidation();
@@ -739,11 +733,12 @@ export const prepareVaultManagerKit = (
             );
           }
 
-          facets.helper.markCollateralLiquidated(
-            totalCollateral,
-            plan.liquidationsCompleted,
-            plan.liquidationsAborted,
-          );
+          // 'totalCollateralSold' is only for this liquidation event
+          // 'state.totalCollateralSold' represents all active vaults
+          const actualCollateralSold = plan.actualCollateralSold;
+          state.totalCollateral = AmountMath.isEmpty(actualCollateralSold)
+            ? AmountMath.subtract(state.totalCollateral, totalCollateral)
+            : AmountMath.subtract(state.totalCollateral, actualCollateralSold);
 
           facets.helper.markDoneLiquidating(
             totalDebt,
@@ -1065,6 +1060,7 @@ export const prepareVaultManagerKit = (
 
           const liqMargin = self.getGovernedParams().getLiquidationMargin();
 
+          // totals *among* vaults being liquidated
           const { totalDebt, totalCollateral, vaultData, liqSeat } =
             getLiquidatableVaults(
               zcf,
@@ -1130,7 +1126,9 @@ export const prepareVaultManagerKit = (
           } catch (err) {
             console.error('🚨 Error distributing proceeds:', err);
           }
+
           // for all non-reconstituted vaults, transition to 'liquidated' state
+          state.numLiquidationsCompleted += liquidatingVaults.getSize();
           for (const vault of liquidatingVaults.values()) {
             vault.liquidated();
             liquidatingVaults.delete(vault);

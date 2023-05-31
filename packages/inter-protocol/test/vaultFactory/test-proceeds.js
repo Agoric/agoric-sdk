@@ -56,8 +56,6 @@ test('price drop', async t => {
     actualCollateralSold: coll.makeEmpty(),
     collateralSold: totalCollateral,
     debtToBurn: totalDebt,
-    liquidationsAborted: 0,
-    liquidationsCompleted: 1,
     mintedForReserve: debt.makeEmpty(),
     mintedProceeds: totalDebt,
     phantomInterest: debt.makeEmpty(),
