@@ -51,7 +51,8 @@ export const calculateDistributionPlan = (
   bestToWorst,
   penaltyRate,
 ) => {
-  const debtBrand = totalDebt.brand;
+  const emptyCollateral = AmountMath.makeEmptyFromAmount(totalCollateral);
+  const emptyMinted = AmountMath.makeEmptyFromAmount(totalDebt);
 
   const { Collateral: collateralProceeds } = proceeds;
   /** @type {Amount<'nat'>} */
@@ -60,7 +61,7 @@ export const calculateDistributionPlan = (
     collateralProceeds,
   );
 
-  const mintedProceeds = proceeds.Minted || AmountMath.makeEmpty(debtBrand);
+  const mintedProceeds = proceeds.Minted || emptyMinted;
   const accounting = liquidationResults(totalDebt, mintedProceeds);
 
   // charged in collateral
@@ -78,16 +79,16 @@ export const calculateDistributionPlan = (
   /** @type {DistributionPlan} */
   const plan = {
     accounting,
-    collateralForReserve: AmountMath.makeEmptyFromAmount(totalCollateral),
-    actualCollateralSold: AmountMath.makeEmptyFromAmount(totalCollateral),
+    collateralForReserve: emptyCollateral,
+    actualCollateralSold: emptyCollateral,
     collateralSold,
-    debtToBurn: AmountMath.makeEmptyFromAmount(totalDebt),
+    debtToBurn: emptyMinted,
     // XXX these two counts are implied by the execution of the plan, not the plan itself
     liquidationsAborted: 0,
     liquidationsCompleted: 0,
-    mintedForReserve: AmountMath.makeEmptyFromAmount(totalDebt),
+    mintedForReserve: emptyMinted,
     mintedProceeds,
-    phantomInterest: AmountMath.makeEmptyFromAmount(totalDebt),
+    phantomInterest: emptyMinted,
     transfers: [],
     vaultsToReinstate: [],
   };
@@ -112,7 +113,7 @@ export const calculateDistributionPlan = (
 
     const distributableCollateral = collateralToDistribute
       ? AmountMath.subtract(collateralProceeds, totalPenalty)
-      : AmountMath.makeEmptyFromAmount(collateralProceeds);
+      : emptyCollateral;
 
     plan.debtToBurn = totalDebt;
     plan.mintedProceeds = mintedProceeds;
@@ -137,7 +138,7 @@ export const calculateDistributionPlan = (
 
       const maxCollat = AmountMath.isGTE(vCollat, lessCollat)
         ? AmountMath.subtract(vCollat, lessCollat)
-        : AmountMath.makeEmptyFromAmount(vCollat);
+        : emptyCollateral;
       if (!AmountMath.isEmpty(leftToStage)) {
         const collatReturn = AmountMath.min(leftToStage, maxCollat);
         leftToStage = AmountMath.subtract(leftToStage, collatReturn);
@@ -168,7 +169,7 @@ export const calculateDistributionPlan = (
     const coverDebt = AmountMath.isGTE(mintedProceeds, recoveredDebt);
     const distributable = coverDebt
       ? AmountMath.subtract(mintedProceeds, recoveredDebt)
-      : AmountMath.makeEmptyFromAmount(mintedProceeds);
+      : emptyMinted;
     let mintedRemaining = distributable;
 
     const vaultPortion = makeRatioFromAmounts(distributable, totalCollateral);
@@ -203,7 +204,7 @@ export const calculateDistributionPlan = (
     // charge penalty if proceeds are sufficient
     const distributableCollateral = reconstituteVaults
       ? AmountMath.subtract(collateralProceeds, totalPenalty)
-      : AmountMath.makeEmptyFromAmount(collateralProceeds);
+      : emptyCollateral;
 
     let collatRemaining = distributableCollateral;
 
@@ -239,7 +240,7 @@ export const calculateDistributionPlan = (
         );
         shortfallToReserve = AmountMath.isGTE(shortfallToReserve, debtAmount)
           ? AmountMath.subtract(shortfallToReserve, debtAmount)
-          : AmountMath.makeEmptyFromAmount(shortfallToReserve);
+          : emptyMinted;
         const seat = vault.getVaultSeat();
         // must reinstate after atomicRearrange(), so we record them.
         plan.vaultsToReinstate.push(vault);
