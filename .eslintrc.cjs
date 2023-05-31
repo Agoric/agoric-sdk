@@ -4,18 +4,18 @@ const process = require('process');
 
 const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
-const notLoanDeprecated = [
+const loanContractDeprecated = [
   ['currency', 'brand, asset or another descriptor'],
   ['blacklist', 'denylist'],
   ['whitelist', 'allowlist'],
   ['RUN', 'IST', '/RUN/'],
 ];
-const allDeprecated = [...notLoanDeprecated, ['loan', 'debt']];
+const allDeprecated = [...loanContractDeprecated, ['loan', 'debt']];
 
 const deprecatedTerminology = Object.fromEntries(
   Object.entries({
     all: allDeprecated,
-    notLoan: notLoanDeprecated,
+    loanContract: loanContractDeprecated,
   }).map(([category, deprecated]) => [
     category,
     deprecated.flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
@@ -55,6 +55,21 @@ module.exports = {
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
 
+    // The rule is “safe await separator" which implements the architectural
+    // goal of “clearly separate an async function's synchronous prelude from
+    // the part that runs in a future turn”. That is our architectural rule. It
+    // can be trivially satisfied by inserting a non-nested `await null` in an
+    // appropriate place to ensure the rest of the async function runs in a
+    // future turn.  “sometimes synchronous" is a bug farm for particularly
+    // pernicious bugs in which you can combine two correct pieces of code to
+    // have emergent incorrect behavior.  It’s absolutely critical for shared
+    // service code. That means contracts, but it also means kernel components
+    // that are used by multiple clients. So we enable it throughout the repo
+    // and aim for no exceptions.
+    //
+    // TODO the default is 'warn', but upgrade this to 'error' when possible
+    // '@jessie.js/safe-await-separator': 'error',
+
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
@@ -78,31 +93,36 @@ module.exports = {
   overrides: [
     {
       // Tighten rules for exported code.
-      files: ['packages/*/src/**/*.js'],
+      files: [
+        'packages/*/src/**/*.js',
+        'packages/*/tools/**/*.js',
+        'packages/*/*.js',
+        'packages/wallet/api/src/**/*.js',
+      ],
       rules: {
-        // The rule is “no nested awaits” but the architectural goal is
-        // “no possibility of ‘awaits sometimes but not always’”. That is our
-        // architectural rule. If it’s too constraining you have to fall back to
-        // promise.then or get a reviewed exception.  “sometimes awaits” is a
-        // bug farm for particularly pernicious bugs in which you can combine
-        // two correct pieces of code to have emergent incorrect behavior.
-        // It’s absolutely critical for shared service code. That means
-        // contracts, but it also means kernel components that are used by
-        // multiple clients. So we enable it throughout the repo and exceptions
-        // are code-reviewed.
-        '@jessie.js/no-nested-await': 'off', // remove after endojs/Jessie#107
-        // TODO(https://github.com/endojs/Jessie/issues/107): use the following
-        // instead, and upgrade to 'error' when possible
-        // '@jessie.js/safe-await-separator': 'warn',
-        // TODO upgrade this (or a subset) to 'error'
-        'no-restricted-syntax': ['warn', ...deprecatedTerminology.all],
+        'no-restricted-syntax': ['error', ...deprecatedTerminology.all],
+      },
+    },
+    {
+      files: [
+        'packages/**/demo/**/*.js',
+        'packages/*/test/**/*.js',
+        'packages/wallet/api/test/**/*.js',
+      ],
+      rules: {
+        // NOTE: This rule is enabled for the repository in general.  We turn it
+        // off for test code for now.
+        '@jessie.js/safe-await-separator': 'off',
       },
     },
     {
       // Allow "loan" contracts to mention the word "loan".
       files: ['packages/zoe/src/contracts/loan/*.js'],
       rules: {
-        'no-restricted-syntax': ['warn', ...deprecatedTerminology.notLoan],
+        'no-restricted-syntax': [
+          'error',
+          ...deprecatedTerminology.loanContract,
+        ],
       },
     },
     {
