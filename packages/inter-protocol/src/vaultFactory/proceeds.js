@@ -6,7 +6,7 @@ import {
   makeRatioFromAmounts,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { quoteAsRatio } from '../contractSupport.js';
+import { quoteAsRatio, subtractToEmpty } from '../contractSupport.js';
 import { liquidationResults } from './liquidation.js';
 
 /**
@@ -103,14 +103,11 @@ export const calculateDistributionPlan = (
 
   const runFlow1 = () => {
     // Flow #1: no shortfall
-    const collateralToDistribute = AmountMath.isGTE(
+
+    const distributableCollateral = subtractToEmpty(
       collateralProceeds,
       totalPenalty,
     );
-
-    const distributableCollateral = collateralToDistribute
-      ? AmountMath.subtract(collateralProceeds, totalPenalty)
-      : emptyCollateral;
 
     plan.debtToBurn = totalDebt;
     plan.mintedProceeds = mintedProceeds;
@@ -133,9 +130,7 @@ export const calculateDistributionPlan = (
       const penaltyCollat = ceilMultiplyBy(debtAmount, debtPortion);
       const lessCollat = AmountMath.add(debtCollat, penaltyCollat);
 
-      const maxCollat = AmountMath.isGTE(vCollat, lessCollat)
-        ? AmountMath.subtract(vCollat, lessCollat)
-        : emptyCollateral;
+      const maxCollat = subtractToEmpty(vCollat, lessCollat);
       if (!AmountMath.isEmpty(leftToStage)) {
         const collatReturn = AmountMath.min(leftToStage, maxCollat);
         leftToStage = AmountMath.subtract(leftToStage, collatReturn);
@@ -143,7 +138,10 @@ export const calculateDistributionPlan = (
       }
     }
 
-    plan.collateralForReserve = collateralToDistribute
+    const hasCollateralToDistribute = !AmountMath.isEmpty(
+      distributableCollateral,
+    );
+    plan.collateralForReserve = hasCollateralToDistribute
       ? AmountMath.add(leftToStage, totalPenalty)
       : collateralProceeds;
     plan.liquidationsCompleted = bestToWorst.length;
@@ -159,10 +157,7 @@ export const calculateDistributionPlan = (
 
     plan.debtToBurn = recoveredDebt;
 
-    const coverDebt = AmountMath.isGTE(mintedProceeds, recoveredDebt);
-    const distributable = coverDebt
-      ? AmountMath.subtract(mintedProceeds, recoveredDebt)
-      : emptyMinted;
+    const distributable = subtractToEmpty(mintedProceeds, recoveredDebt);
     let mintedRemaining = distributable;
 
     const vaultPortion = makeRatioFromAmounts(distributable, totalCollateral);
@@ -194,9 +189,10 @@ export const calculateDistributionPlan = (
     let reconstituteVaults = AmountMath.isGTE(collateralProceeds, totalPenalty);
 
     // charge penalty if proceeds are sufficient
-    const distributableCollateral = reconstituteVaults
-      ? AmountMath.subtract(collateralProceeds, totalPenalty)
-      : emptyCollateral;
+    const distributableCollateral = subtractToEmpty(
+      collateralProceeds,
+      totalPenalty,
+    );
 
     plan.collatRemaining = distributableCollateral;
 
@@ -216,9 +212,7 @@ export const calculateDistributionPlan = (
       // according to #7123, Collateral for penalty =
       //    vault debt / total debt * total liquidation penalty
       const vaultPenalty = ceilMultiplyBy(debtAmount, debtPortion);
-      const collatPostPenalty = AmountMath.isGTE(vCollat, vaultPenalty)
-        ? AmountMath.subtract(vCollat, vaultPenalty)
-        : emptyCollateral;
+      const collatPostPenalty = subtractToEmpty(vCollat, vaultPenalty);
       const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
       if (
         reconstituteVaults &&
@@ -230,9 +224,7 @@ export const calculateDistributionPlan = (
           plan.collatRemaining,
           collatPostPenalty,
         );
-        shortfallToReserve = AmountMath.isGTE(shortfallToReserve, debtAmount)
-          ? AmountMath.subtract(shortfallToReserve, debtAmount)
-          : emptyMinted;
+        shortfallToReserve = subtractToEmpty(shortfallToReserve, debtAmount);
         // must reinstate after atomicRearrange(), so we record them.
         plan.vaultsToReinstate.push(vault);
         reduceCollateral(vaultDebt);
