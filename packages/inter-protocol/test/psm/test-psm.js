@@ -37,6 +37,7 @@ import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
+  scale6,
   setUpZoeForTest,
   subscriptionKey,
   withAmountUtils,
@@ -51,8 +52,6 @@ const dirname = path.dirname(pathname);
 
 const psmRoot = `${dirname}/../../src/psm/psm.js`;
 const trace = makeTracer('TestPSM', false);
-
-const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 const BASIS_POINTS = 10000n;
 const WantMintedFeeBP = 1n;
@@ -313,7 +312,7 @@ test('simple trades', async t => {
   const { terms, minted, anchor } = t.context;
   const driver = await makePsmDriver(t);
 
-  const giveAnchor = AmountMath.make(anchor.brand, scale6(200));
+  const giveAnchor = anchor.units(200);
 
   const runPayouts = await driver.swapAnchorForMinted(giveAnchor);
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerMinted);
@@ -321,7 +320,7 @@ test('simple trades', async t => {
   t.deepEqual(actualRun, expectedRun);
   await driver.assertPoolBalance(giveAnchor);
 
-  const giveRun = AmountMath.make(minted.brand, scale6(100));
+  const giveRun = minted.units(100);
   trace('get minted', { giveRun, expectedRun, actualRun });
   const [runPayment, _moreRun] = await split(
     E(minted.issuer).makeEmptyPurse(),
@@ -430,8 +429,8 @@ test('mix of trades: failures do not prevent later service', async t => {
 
   const wantMinted = async (ix, give, want, ok, wants) => {
     t.log('wantMinted', ix, give, want, ok, wants);
-    const giveAnchor = AmountMath.make(anchor.brand, scale6(give));
-    const wantAmt = AmountMath.make(minted.brand, scale6(want));
+    const giveAnchor = anchor.units(give);
+    const wantAmt = minted.units(want);
     const seat = await driver.swapAnchorForMintedSeat(giveAnchor, wantAmt);
     if (!ok) {
       await t.throwsAsync(E(seat).getOfferResult());
@@ -450,9 +449,9 @@ test('mix of trades: failures do not prevent later service', async t => {
 
   const giveMinted = async (ix, give, want, ok, wants) => {
     t.log('giveMinted', ix, give, want, ok, wants);
-    const giveRun = AmountMath.make(minted.brand, scale6(give));
+    const giveRun = minted.units(give);
     const runPayment = await E(mintedPurse).withdraw(giveRun);
-    const wantAmt = AmountMath.make(anchor.brand, scale6(want));
+    const wantAmt = anchor.units(want);
     const seat = await driver.swapMintedForAnchorSeat(
       giveRun,
       runPayment,
@@ -503,7 +502,7 @@ test('anchor is 2x minted', async t => {
   const anchorPerMinted = makeRatio(200n, anchor.brand, 100n, minted.brand);
   const driver = await makePsmDriver(t, { anchorPerMinted });
 
-  const giveAnchor = AmountMath.make(anchor.brand, scale6(400));
+  const giveAnchor = anchor.units(400);
   const runPayouts = await driver.swapAnchorForMinted(giveAnchor);
 
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerMinted);
@@ -512,7 +511,7 @@ test('anchor is 2x minted', async t => {
 
   await driver.assertPoolBalance(giveAnchor);
 
-  const giveRun = AmountMath.make(minted.brand, scale6(100));
+  const giveRun = minted.units(100);
   trace('get minted ratio', { giveRun, expectedRun, actualRun });
   const [runPayment, _moreRun] = await split(
     E(minted.issuer).makeEmptyPurse(),
@@ -585,7 +584,7 @@ test('metrics, with snapshot', async t => {
       value: 0n,
     },
   });
-  const giveAnchor = anchor.make(scale6(200));
+  const giveAnchor = anchor.units(200);
 
   // grow the pool
   const mintedPayouts = await driver.swapAnchorForMinted(giveAnchor);
@@ -626,7 +625,7 @@ test('metrics, with snapshot', async t => {
   });
 
   // get anchor
-  const giveMinted = AmountMath.make(minted.brand, scale6(100));
+  const giveMinted = minted.units(100);
   const [runPayment, _moreRun] = await split(
     E(minted.issuer).makeEmptyPurse(),
     mintedPayouts.Out,
@@ -661,7 +660,7 @@ test('metrics, with snapshot', async t => {
 test('wrong give giveMintedInvitation', async t => {
   const { zoe, anchor } = t.context;
   const { publicFacet } = await makePsmDriver(t);
-  const giveAnchor = AmountMath.make(anchor.brand, scale6(200));
+  const giveAnchor = anchor.units(200);
   await t.throwsAsync(
     () =>
       E(zoe).offer(
@@ -708,7 +707,7 @@ test('wrong give wantMintedInvitation', async t => {
 test('extra give wantMintedInvitation', async t => {
   const { zoe, anchor } = t.context;
   const { publicFacet } = await makePsmDriver(t);
-  const giveAnchor = AmountMath.make(anchor.brand, scale6(200));
+  const giveAnchor = anchor.units(200);
   const mint = NonNullish(anchor.mint);
   await t.throwsAsync(
     () =>

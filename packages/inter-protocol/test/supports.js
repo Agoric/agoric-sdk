@@ -145,10 +145,13 @@ export const produceInstallations = (space, installations) => {
   }
 };
 
+export const scale6 = x => BigInt(Math.round(x * 1_000_000));
+
 /**
  * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit
  */
 export const withAmountUtils = kit => {
+  const decimalPlaces = kit.issuer.getDisplayInfo?.()?.decimalPlaces ?? 6;
   return {
     ...kit,
     /**
@@ -161,6 +164,11 @@ export const withAmountUtils = kit => {
      * @param {NatValue} [d]
      */
     makeRatio: (n, d) => makeRatio(n, kit.brand, d),
+    /**
+     * @param {number} n
+     */
+    units: n =>
+      AmountMath.make(kit.brand, BigInt(Math.round(n * 10 ** decimalPlaces))),
   };
 };
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
