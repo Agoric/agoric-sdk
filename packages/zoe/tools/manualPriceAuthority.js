@@ -88,3 +88,4 @@ export function makeManualPriceAuthority(options) {
     ...priceAuthority,
   });
 }
+/** @typedef {ReturnType<typeof makeManualPriceAuthority>} ManualPriceAuthority */
