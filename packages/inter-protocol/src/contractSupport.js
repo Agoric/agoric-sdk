@@ -29,6 +29,17 @@ export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
 
 /**
+ * @template {Amount} T
+ * @param {T} left
+ * @param {T} right
+ * @returns {T}
+ */
+export const subtractToEmpty = (left, right) =>
+  AmountMath.isGTE(right, left)
+    ? /** @type {T} */ (AmountMath.makeEmptyFromAmount(left))
+    : /** @type {T} */ (AmountMath.subtract(left, right));
+
+/**
  * Verifies that every key in the proposal is in the provided list
  *
  * @param {ProposalRecord} proposal
