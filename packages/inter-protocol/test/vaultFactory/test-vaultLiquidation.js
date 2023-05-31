@@ -193,7 +193,8 @@ const setupServices = async (
     rates,
   );
   /** @typedef {import('../../src/proposals/econ-behaviors.js').AuctioneerKit} AuctioneerKit */
-  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, AuctioneerKit, PriceAuthority, CollateralManager]} */
+  /** @typedef {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} ManualPriceAuthority */
+  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, AuctioneerKit, ManualPriceAuthority, CollateralManager]} */
   const [
     governorInstance,
     vaultFactory, // creator
@@ -208,7 +209,7 @@ const setupServices = async (
     E.get(consume.vaultFactoryKit).publicFacet,
     aethVaultManagerP,
     consume.auctioneerKit,
-    consume.priceAuthority,
+    /** @type {Promise<ManualPriceAuthority>} */ (consume.priceAuthority),
     E(aethVaultManagerP).getPublicFacet(),
   ]);
   trace(t, 'pa', {
@@ -428,7 +429,6 @@ test('price drop', async t => {
   );
   trace(t, 'pa2', priceAuthority);
 
-  // @ts-expect-error mock
   await priceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
   trace(t, 'price dropped a little');
   notification = await E(vaultNotifier).getUpdateSince();
@@ -573,7 +573,6 @@ test('price falls precipitously', async t => {
     'vault holds 4 Collateral',
   );
 
-  // @ts-expect-error it's a mock
   priceAuthority.setPrice(makeRatio(130n, run.brand, 1n, aeth.brand));
   await eventLoopIteration();
 
@@ -854,7 +853,6 @@ test('liquidate two loans', async t => {
     totalCollateral: { value: 800n },
   });
 
-  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(70n, run.brand, 10n, aeth.brand));
   trace(t, 'changed price to 7 RUN/Aeth');
 
@@ -1154,7 +1152,6 @@ test('sell goods at auction', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   // price falls
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(70n, run.brand, 10n, aeth.brand));
   await eventLoopIteration();
 
@@ -1336,11 +1333,9 @@ test('collect fees from loan', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   trace(t, 'alice reduce collateral');
 
-  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(7n, run.brand, 1n, aeth.brand));
   trace(t, 'changed price to 7');
 
-  // @ts-expect-error mock
   await priceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
   trace(t, 'price dropped a little');
   notification = await E(aliceNotifier).getUpdateSince();
@@ -1581,7 +1576,6 @@ test('Auction sells all collateral w/shortfall', async t => {
     totalCollateral: { value: 700n },
   });
 
-  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(70n, run.brand, 10n, aeth.brand));
   trace(t, 'changed price to 7 RUN/Aeth');
 
@@ -1724,7 +1718,6 @@ test('liquidation Margin matters', async t => {
   const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
 
   // price falls to 10.00. notice that no liquidation takes place.
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(1000n, run.brand, 100n, aeth.brand));
   await eventLoopIteration();
 
@@ -1736,7 +1729,6 @@ test('liquidation Margin matters', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   // price falls to 9.99. Now it liquidates.
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(999n, run.brand, 100n, aeth.brand));
   await eventLoopIteration();
 
@@ -1899,7 +1891,6 @@ test('reinstate vault', async t => {
   const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
 
   // price falls
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(400n, run.brand, 100n, aeth.brand));
   await eventLoopIteration();
 
@@ -1999,7 +1990,6 @@ test('auction locks low price', async t => {
   const wanted = 500n;
 
   // Lock in a low price (zero)
-  // @ts-expect-error it's a mock
   priceAuthority.setPrice(makeRatio(0n, run.brand, baseCollateral, aeth.brand));
   await eventLoopIteration();
 
@@ -2033,7 +2023,6 @@ test('auction locks low price', async t => {
   );
 
   // Bump back up to a high price
-  // @ts-expect-error it's a mock
   priceAuthority.setPrice(
     makeRatio(100n * wanted, run.brand, baseCollateral, aeth.brand),
   );
@@ -2205,7 +2194,6 @@ test('Bug 7422 vault reinstated with no assets', async t => {
   );
 
   // price falls
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(999n, run.brand, 1000n, aeth.brand));
   await eventLoopIteration();
 
@@ -2456,7 +2444,6 @@ test('Bug 7346 excess collateral to holder', async t => {
 
   // price falls
   const newPrice = makeRatio(9990n, run.brand, 1000n, aeth.brand);
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(newPrice);
   await eventLoopIteration();
 
@@ -2645,7 +2632,6 @@ test('refund to one of two loans', async t => {
   t.truthy(AmountMath.isEqual(lentAmount, aliceWantMinted));
   t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(400n));
 
-  // @ts-expect-error mock
   await priceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
   aliceNotification = await E(aliceVaultNotifier).getUpdateSince();
   t.is(aliceNotification.value.vaultState, Phase.ACTIVE);
@@ -2889,7 +2875,6 @@ test('Bug 7784 reconstitute both', async t => {
   );
 
   // price falls
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(9990n, run.brand, 1000n, aeth.brand));
   await eventLoopIteration();
 
@@ -3151,7 +3136,6 @@ test('Bug 7796 missing lockedPrice', async t => {
   trace('ADVANCING', now);
   // price falls
   const newPrice = makeRatio(9990n, run.brand, 1000n, aeth.brand);
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(newPrice);
   await eventLoopIteration();
 
@@ -3346,7 +3330,6 @@ test('Bug 7851 & no bidders', async t => {
   });
 
   // price falls
-  // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(9990n, run.brand, 1000n, aeth.brand));
   await eventLoopIteration();
 
