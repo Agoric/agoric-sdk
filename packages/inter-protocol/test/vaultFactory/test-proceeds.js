@@ -15,13 +15,15 @@ const test = unknownTest;
 /**
  * @param {bigint} debtN
  * @param {bigint} collN
+ * @param {bigint} currN
  * @returns {any}
  */
-const mockVaultEntry = (debtN, collN) => {
-  const debtAmount = debt.make(debtN);
-  const collateralAmount = coll.make(collN);
-  const vault = { getCurrentDebt: () => debtAmount };
-  return [vault, { debtAmount, collateralAmount }];
+const makeVaultBalances = (debtN, collN, currN = debtN) => {
+  return {
+    debtAmount: debt.make(debtN),
+    collateralAmount: coll.make(collN),
+    currentDebt: debt.make(currN),
+  };
 };
 
 test('price drop', async t => {
@@ -40,7 +42,7 @@ test('price drop', async t => {
     totalCollateral,
     oraclePriceAtStart: price,
     collateralInLiqSeat: coll.makeEmpty(),
-    bestToWorst: [mockVaultEntry(0n, 0n)],
+    bestToWorst: [makeVaultBalances(0n, 0n)],
     penaltyRate: makeRatio(10n, debt.brand, 100n),
   };
   const plan = calculateDistributionPlan(
@@ -62,6 +64,8 @@ test('price drop', async t => {
     actualCollateralSold: coll.makeEmpty(),
     collateralSold: totalCollateral,
     debtToBurn: totalDebt,
+    liquidationsAborted: 0,
+    liquidationsCompleted: 1,
     mintedForReserve: debt.makeEmpty(),
     mintedProceeds: totalDebt,
     phantomInterest: debt.makeEmpty(),
