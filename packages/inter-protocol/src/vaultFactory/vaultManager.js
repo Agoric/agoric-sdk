@@ -653,12 +653,28 @@ export const prepareVaultManagerKit = (
             .getLiquidationPenalty();
           const bestToWorst = [...vaultData.entries()].reverse();
 
+          // unzip the entry tuples
+          const vaults = [];
+          const vaultBalances = [];
+          for (const [vault, balances] of bestToWorst) {
+            vaults.push(vault);
+            vaultBalances.push({
+              debtAmount: balances.debtAmount,
+              collateralAmount: balances.collateralAmount,
+              // current debt will be higher than the debtAmount before auction
+              // if interest accrued during auction
+              currentDebt: vault.getCurrentDebt(),
+            });
+          }
+          harden(vaults);
+          harden(vaultBalances);
+
           const plan = calculateDistributionPlan(
             proceeds,
             totalDebt,
             totalCollateral,
             oraclePriceAtStart.quoteAmount.value[0],
-            bestToWorst,
+            vaultBalances,
             penaltyRate,
           );
           trace('PLAN', plan);
@@ -668,10 +684,10 @@ export const prepareVaultManagerKit = (
           // leaving others hanging.
           if (plan.transfersToVault.length > 0) {
             const transfers = plan.transfersToVault.map(
-              ([vault, amounts]) =>
+              ([vaultIndex, amounts]) =>
                 /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart} */ ([
                   liqSeat,
-                  vault.getVaultSeat(),
+                  vaults[vaultIndex].getVaultSeat(),
                   amounts,
                 ]),
             );
@@ -682,7 +698,8 @@ export const prepareVaultManagerKit = (
           const { prioritizedVaults } = collateralEphemera(
             totalCollateral.brand,
           );
-          for (const vault of plan.vaultsToReinstate) {
+          for (const vaultIndex of plan.vaultsToReinstate) {
+            const vault = vaults[vaultIndex];
             const vaultId = vault.abortLiquidation();
             prioritizedVaults.addVault(vaultId, vault);
             state.liquidatingVaults.delete(vault);
