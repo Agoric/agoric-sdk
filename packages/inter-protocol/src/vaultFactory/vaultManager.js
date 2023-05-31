@@ -57,15 +57,13 @@ import {
   quoteAsRatio,
 } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import {
-  calculateDistributionPlan,
-  getLiquidatableVaults,
-} from './liquidation.js';
+import { getLiquidatableVaults } from './liquidation.js';
 import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
+import { calculateDistributionPlan } from './proceeds.js';
 
-const { details: X, Fail } = assert;
+const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
@@ -627,6 +625,7 @@ export const prepareVaultManagerKit = (
          * @param {ZCFSeat} liqSeat
          * @param {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} vaultData
          * @param {Amount<'nat'>} totalCollateral
+         * @returns {void}
          */
         distributeProceeds(
           proceeds,
@@ -658,8 +657,7 @@ export const prepareVaultManagerKit = (
             proceeds,
             totalDebt,
             totalCollateral,
-            oraclePriceAtStart,
-            liqSeat,
+            oraclePriceAtStart.quoteAmount.value[0],
             bestToWorst,
             penaltyRate,
           );
@@ -668,8 +666,16 @@ export const prepareVaultManagerKit = (
           // Putting all the rearrangements after the loop ensures that errors
           // in the calculations don't result in paying back some vaults and
           // leaving others hanging.
-          if (plan.transfers.length > 0) {
-            atomicRearrange(zcf, plan.transfers);
+          if (plan.transfersToVault.length > 0) {
+            const transfers = plan.transfersToVault.map(
+              ([vault, amounts]) =>
+                /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart} */ ([
+                  liqSeat,
+                  vault.getVaultSeat(),
+                  amounts,
+                ]),
+            );
+            atomicRearrange(zcf, harden(transfers));
           }
 
           // was reinstateAll
@@ -701,8 +707,19 @@ export const prepareVaultManagerKit = (
               'Minted',
             );
           }
-          if (!AmountMath.isEmpty(plan.collateralForReserve)) {
-            facets.helper.sendToReserve(plan.collateralForReserve, liqSeat);
+
+          // send all that's left in the seat
+          const collateralInLiqSeat = liqSeat.getCurrentAllocation().Collateral;
+          if (!AmountMath.isEmpty(collateralInLiqSeat)) {
+            facets.helper.sendToReserve(collateralInLiqSeat, liqSeat);
+          }
+          // if it didn't match what was expected, report
+          if (!AmountMath.isEqual(collateralInLiqSeat, plan.collatRemaining)) {
+            console.error(
+              `⚠️ Excess collateral remaining sent to reserve. Expected ${q(
+                plan.collatRemaining,
+              )}, sent ${q(collateralInLiqSeat)}`,
+            );
           }
 
           facets.helper.markCollateralLiquidated(
@@ -1085,7 +1102,7 @@ export const prepareVaultManagerKit = (
           trace(`LiqV after long wait`, proceeds);
           try {
             // distributeProceeds may reconstitute vaults, removing them from liquidatingVaults
-            await helper.distributeProceeds(
+            helper.distributeProceeds(
               proceeds,
               totalDebt,
               storedCollateralQuote,

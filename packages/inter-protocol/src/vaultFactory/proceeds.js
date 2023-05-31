@@ -9,21 +9,21 @@ import {
 import { quoteAsRatio } from '../contractSupport.js';
 import { liquidationResults } from './liquidation.js';
 
-const { quote: q } = assert;
-
 /**
  * @typedef {{
  *   accounting: { overage: Amount<'nat'>, shortfall: Amount<'nat'> },
  *   collateralForReserve: Amount<'nat'>,
  *   actualCollateralSold: Amount<'nat'>,
  *   collateralSold: Amount<'nat'>,
+ *   collatRemaining: Amount<'nat'>,
  *   debtToBurn: Amount<'nat'>,
  *   liquidationsAborted: number,
  *   liquidationsCompleted: number,
  *   mintedForReserve: Amount<'nat'>,
  *   mintedProceeds: Amount<'nat'>,
  *   phantomInterest: Amount<'nat'>,
- *   transfers: import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[],
+ *   totalPenalty: Amount<'nat'>,
+ *   transfersToVault: Array<[Vault, AmountKeywordRecord]>,
  *   vaultsToReinstate: Array<Vault>
  * }} DistributionPlan
  *
@@ -36,8 +36,7 @@ const { quote: q } = assert;
  * @param {AmountKeywordRecord} proceeds
  * @param {Amount<'nat'>} totalDebt
  * @param {Amount<'nat'>} totalCollateral
- * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
- * @param {ZCFSeat} liqSeat
+ * @param {PriceDescription} oraclePriceAtStart
  * @param {Array<[Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}]>} bestToWorst
  * @param {Ratio} penaltyRate
  * @returns {DistributionPlan}
@@ -47,7 +46,6 @@ export const calculateDistributionPlan = (
   totalDebt,
   totalCollateral,
   oraclePriceAtStart,
-  liqSeat,
   bestToWorst,
   penaltyRate,
 ) => {
@@ -67,10 +65,7 @@ export const calculateDistributionPlan = (
   // charged in collateral
   const totalPenalty = ceilMultiplyBy(
     totalDebt,
-    multiplyRatios(
-      penaltyRate,
-      quoteAsRatio(oraclePriceAtStart.quoteAmount.value[0]),
-    ),
+    multiplyRatios(penaltyRate, quoteAsRatio(oraclePriceAtStart)),
   );
   const debtPortion = makeRatioFromAmounts(totalPenalty, totalDebt);
 
@@ -82,6 +77,7 @@ export const calculateDistributionPlan = (
     collateralForReserve: emptyCollateral,
     actualCollateralSold: emptyCollateral,
     collateralSold,
+    collatRemaining: emptyCollateral,
     debtToBurn: emptyMinted,
     // XXX these two counts are implied by the execution of the plan, not the plan itself
     liquidationsAborted: 0,
@@ -89,8 +85,9 @@ export const calculateDistributionPlan = (
     mintedForReserve: emptyMinted,
     mintedProceeds,
     phantomInterest: emptyMinted,
-    transfers: [],
+    transfersToVault: [],
     vaultsToReinstate: [],
+    totalPenalty,
   };
 
   /**
@@ -142,11 +139,7 @@ export const calculateDistributionPlan = (
       if (!AmountMath.isEmpty(leftToStage)) {
         const collatReturn = AmountMath.min(leftToStage, maxCollat);
         leftToStage = AmountMath.subtract(leftToStage, collatReturn);
-        plan.transfers.push([
-          liqSeat,
-          vault.getVaultSeat(),
-          { Collateral: collatReturn },
-        ]);
+        plan.transfersToVault.push([vault, { Collateral: collatReturn }]);
       }
     }
 
@@ -187,8 +180,7 @@ export const calculateDistributionPlan = (
           ? vaultShare
           : mintedRemaining;
         mintedRemaining = AmountMath.subtract(mintedRemaining, mintedToReturn);
-        const seat = vault.getVaultSeat();
-        plan.transfers.push([liqSeat, seat, { Minted: mintedToReturn }]);
+        plan.transfersToVault.push([vault, { Minted: mintedToReturn }]);
       }
     }
     plan.liquidationsCompleted = bestToWorst.length;
@@ -206,7 +198,7 @@ export const calculateDistributionPlan = (
       ? AmountMath.subtract(collateralProceeds, totalPenalty)
       : emptyCollateral;
 
-    let collatRemaining = distributableCollateral;
+    plan.collatRemaining = distributableCollateral;
 
     let shortfallToReserve = accounting.shortfall;
     const reduceCollateral = amount =>
@@ -231,21 +223,20 @@ export const calculateDistributionPlan = (
       if (
         reconstituteVaults &&
         !AmountMath.isEmpty(collatPostPenalty) &&
-        AmountMath.isGTE(collatRemaining, collatPostPenalty) &&
+        AmountMath.isGTE(plan.collatRemaining, collatPostPenalty) &&
         AmountMath.isGTE(totalDebt, debtAmount)
       ) {
-        collatRemaining = AmountMath.subtract(
-          collatRemaining,
+        plan.collatRemaining = AmountMath.subtract(
+          plan.collatRemaining,
           collatPostPenalty,
         );
         shortfallToReserve = AmountMath.isGTE(shortfallToReserve, debtAmount)
           ? AmountMath.subtract(shortfallToReserve, debtAmount)
           : emptyMinted;
-        const seat = vault.getVaultSeat();
         // must reinstate after atomicRearrange(), so we record them.
         plan.vaultsToReinstate.push(vault);
         reduceCollateral(vaultDebt);
-        plan.transfers.push([liqSeat, seat, { Collateral: collatPostPenalty }]);
+        plan.transfersToVault.push([vault, { Collateral: collatPostPenalty }]);
       } else {
         reconstituteVaults = false;
         plan.liquidationsCompleted += 1;
@@ -255,23 +246,13 @@ export const calculateDistributionPlan = (
       }
     }
 
-    plan.liquidationsAborted = plan.transfers.length;
+    plan.liquidationsAborted = plan.transfersToVault.length;
 
-    const collateralInLiqSeat = liqSeat.getCurrentAllocation().Collateral;
-    plan.collateralForReserve = collateralInLiqSeat;
+    plan.collateralForReserve = AmountMath.add(
+      plan.collatRemaining,
+      totalPenalty,
+    );
 
-    if (
-      !AmountMath.isEqual(
-        collateralInLiqSeat,
-        AmountMath.add(collatRemaining, totalPenalty),
-      )
-    ) {
-      console.error(
-        `⚠️ Excess collateral remaining sent to reserve. Expected ${q(
-          collatRemaining,
-        )}, sent ${q(collateralInLiqSeat)}`,
-      );
-    }
     plan.accounting.shortfall = shortfallToReserve;
   };
 
