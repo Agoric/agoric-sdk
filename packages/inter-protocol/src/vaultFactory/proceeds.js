@@ -267,7 +267,7 @@ export const calculateDistributionPlan = (
       )
     ) {
       console.error(
-        `🚨 Excess collateral remaining sent to reserve. Expected ${q(
+        `⚠️ Excess collateral remaining sent to reserve. Expected ${q(
           collatRemaining,
         )}, sent ${q(collateralInLiqSeat)}`,
       );
