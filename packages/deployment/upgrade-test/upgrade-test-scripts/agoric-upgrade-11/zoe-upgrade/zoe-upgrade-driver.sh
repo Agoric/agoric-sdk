@@ -12,7 +12,7 @@ agd --chain-id=agoriclocal \
   --title="Zoe Upgrade" --description="zoe upgrade test" \
   --deposit=10000000ubld \
   --gas=auto --gas-adjustment=1.2 \
-  --yes -o json --from=validator --keyring-backend=test -b sync
+  --yes -o json --from=validator --keyring-backend=test -b block
 
 agd --chain-id=agoriclocal query gov proposals --output json | \
         jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]';
