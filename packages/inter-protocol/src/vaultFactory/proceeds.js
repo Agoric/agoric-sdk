@@ -222,11 +222,10 @@ export const calculateDistributionPlan = (
 
       // according to #7123, Collateral for penalty =
       //    vault debt / total debt * total liquidation penalty
-      const vaultPenalty = ceilMultiplyBy(
-        debtAmount,
-        makeRatioFromAmounts(totalPenalty, totalDebt),
-      );
-      const collatPostPenalty = AmountMath.subtract(vCollat, vaultPenalty);
+      const vaultPenalty = ceilMultiplyBy(debtAmount, debtPortion);
+      const collatPostPenalty = AmountMath.isGTE(vCollat, vaultPenalty)
+        ? AmountMath.subtract(vCollat, vaultPenalty)
+        : emptyCollateral;
       const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
       if (
         reconstituteVaults &&
