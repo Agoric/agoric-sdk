@@ -31,7 +31,12 @@ import { liquidationResults } from './liquidation.js';
  */
 
 /**
- * Liquidation.md describes how to process liquidation proceeds
+ * Liquidation.md describes how to process liquidation proceeds.
+ *
+ * This function is complex and may fail. To defend against this possibility, it
+ * starts with a base plan and updates it. The updating is the complex portion
+ * and is wrapped in a try/catch. If at any point the plan revising fails, the
+ * plan is returned as is.
  *
  * @param {object} inputs
  * @param {AmountKeywordRecord} inputs.proceeds
