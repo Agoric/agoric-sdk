@@ -659,14 +659,14 @@ export const prepareVaultManagerKit = (
           harden(vaults);
           harden(vaultBalances);
 
-          const plan = calculateDistributionPlan(
+          const plan = calculateDistributionPlan({
             proceeds,
             totalDebt,
             totalCollateral,
-            oraclePriceAtStart.quoteAmount.value[0],
+            oraclePriceAtStart: oraclePriceAtStart.quoteAmount.value[0],
             vaultBalances,
             penaltyRate,
-          );
+          });
           trace('PLAN', plan);
 
           // Putting all the rearrangements after the loop ensures that errors
