@@ -55,7 +55,11 @@ import {
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { AuctionPFShape } from '../auction/auctioneer.js';
-import { checkDebtLimit, makeNatAmountShape } from '../contractSupport.js';
+import {
+  checkDebtLimit,
+  makeNatAmountShape,
+  quoteAsRatio,
+} from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
 import { calculateMinimumCollateralization, minimumPrice } from './math.js';

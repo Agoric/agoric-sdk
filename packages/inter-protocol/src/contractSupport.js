@@ -2,6 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { M } from '@agoric/store';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
 const { Fail, quote: q } = assert;
 
@@ -83,3 +84,7 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+
+/** @param {Pick<PriceDescription, 'amountIn' | 'amountOut'>} quoteAmount */
+export const quoteAsRatio = quoteAmount =>
+  makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);
