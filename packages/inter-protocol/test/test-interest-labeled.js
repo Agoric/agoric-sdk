@@ -50,12 +50,12 @@ test('too soon', async t => {
   );
   const debtStatus = {
     newDebt: 1000n,
-    latestInterestUpdate: 10n,
+    latestStabilityFeeUpdate: 10n,
     interest: 0n,
   };
   // no interest because the charging period hasn't elapsed
   t.deepEqual(calculator.calculate(debtStatus, 12n), {
-    latestInterestUpdate: 10n,
+    latestStabilityFeeUpdate: 10n,
     interest: 0n,
     newDebt: 1000n,
   });
@@ -67,12 +67,12 @@ test('basic charge 1 period', async t => {
   const calculator = makeInterestCalculator(annualRate, ONE_DAY, ONE_MONTH);
   const debtStatus = {
     newDebt: HUNDRED_THOUSAND,
-    latestInterestUpdate: 0n,
+    latestStabilityFeeUpdate: 0n,
     interest: 0n,
   };
   // 7n is daily interest of 2.5% APR on 100k. Compounding is in the noise.
   t.deepEqual(calculator.calculate(debtStatus, dayN(1n)), {
-    latestInterestUpdate: dayN(1n),
+    latestStabilityFeeUpdate: dayN(1n),
     interest: 7n,
     newDebt: 100007n,
   });
@@ -84,13 +84,13 @@ test('basic 2 charge periods', async t => {
   const calculator = makeInterestCalculator(annualRate, ONE_DAY, ONE_MONTH);
   const debtStatus = {
     newDebt: HUNDRED_THOUSAND,
-    latestInterestUpdate: dayN(1n),
+    latestStabilityFeeUpdate: dayN(1n),
     interest: 0n,
   };
   // 14n is 2x daily (from day 1 to day 3) interest of 2.5% APR on 100k.
   // Compounding is in the noise.
   t.deepEqual(calculator.calculate(debtStatus, dayN(3n)), {
-    latestInterestUpdate: dayN(3n),
+    latestStabilityFeeUpdate: dayN(3n),
     interest: 14n,
     newDebt: 100014n,
   });
@@ -102,14 +102,14 @@ test('partial periods', async t => {
   const calculator = makeInterestCalculator(annualRate, ONE_DAY, ONE_MONTH);
   const debtStatus = {
     newDebt: HUNDRED_THOUSAND,
-    latestInterestUpdate: 10n,
+    latestStabilityFeeUpdate: 10n,
     interest: 0n,
   };
   // just less than three days gets two days of interest (7n/day)
   t.deepEqual(
     calculator.calculate(debtStatus, TimeMath.subtractAbsRel(dayN(3n), 1n)),
     {
-      latestInterestUpdate: TimeMath.addAbsRel(dayN(2n), 10n),
+      latestStabilityFeeUpdate: TimeMath.addAbsRel(dayN(2n), 10n),
       interest: 14n,
       newDebt: 100014n,
     },
@@ -122,7 +122,7 @@ test('reportingPeriod: partial', async t => {
   const calculator = makeInterestCalculator(annualRate, ONE_DAY, ONE_MONTH);
   const debtStatus = {
     newDebt: HUNDRED_THOUSAND,
-    latestInterestUpdate: 10n,
+    latestStabilityFeeUpdate: 10n,
     interest: 0n,
   };
 
@@ -130,7 +130,7 @@ test('reportingPeriod: partial', async t => {
   t.deepEqual(
     calculator.calculateReportingPeriod(debtStatus, fromZero(ONE_MONTH)),
     {
-      latestInterestUpdate: 10n,
+      latestStabilityFeeUpdate: 10n,
       interest: 0n,
       newDebt: HUNDRED_THOUSAND,
     },
@@ -142,7 +142,7 @@ test('reportingPeriod: partial', async t => {
       fromZero(TimeMath.addRelRel(ONE_DAY, ONE_MONTH)),
     ),
     {
-      latestInterestUpdate: TimeMath.addAbsRel(10n, ONE_MONTH),
+      latestStabilityFeeUpdate: TimeMath.addAbsRel(10n, ONE_MONTH),
       interest: 210n,
       newDebt: 100210n,
     },
@@ -155,7 +155,7 @@ test('reportingPeriod: longer', async t => {
   const calculator = makeInterestCalculator(annualRate, ONE_MONTH, ONE_DAY);
   const debtStatus = {
     newDebt: HUNDRED_THOUSAND,
-    latestInterestUpdate: 10n,
+    latestStabilityFeeUpdate: 10n,
     interest: 0n,
   };
   // charge monthly, record daily. 2.5% APR compounded monthly rate is 204 BP.
@@ -166,7 +166,7 @@ test('reportingPeriod: longer', async t => {
       fromZero(TimeMath.addRelRel(ONE_DAY, ONE_MONTH)),
     ),
     {
-      latestInterestUpdate: TimeMath.addAbsRel(10n, ONE_MONTH),
+      latestStabilityFeeUpdate: TimeMath.addAbsRel(10n, ONE_MONTH),
       interest: 204n,
       newDebt: 100204n,
     },

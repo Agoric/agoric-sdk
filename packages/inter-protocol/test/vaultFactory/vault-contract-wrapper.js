@@ -59,7 +59,7 @@ export async function start(zcf, privateArgs, baggage) {
   let vaultCounter = 0;
 
   let currentInterest = makeRatio(5n, stableBrand); // 5%
-  let compoundedInterest = makeRatio(100n, stableBrand); // starts at 1.0, no interest
+  let compoundedStabilityFee = makeRatio(100n, stableBrand); // starts at 1.0, no interest
 
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
@@ -166,7 +166,7 @@ export async function start(zcf, privateArgs, baggage) {
     getCollateralQuote() {
       return Promise.reject(Error('Not implemented'));
     },
-    getCompoundedInterest: () => compoundedInterest,
+    getCompoundedStabilityFee: () => compoundedStabilityFee,
     scopeDescription: base => `VCW: ${base}`,
     handleBalanceChange: () => {
       console.warn('mock handleBalanceChange does nothing');
@@ -195,8 +195,8 @@ export async function start(zcf, privateArgs, baggage) {
       100n + currentInterest.numerator.value,
       currentInterest.numerator.brand,
     );
-    compoundedInterest = multiplyRatios(
-      compoundedInterest,
+    compoundedStabilityFee = multiplyRatios(
+      compoundedStabilityFee,
       currentInterestAsMultiplicand,
     );
   };

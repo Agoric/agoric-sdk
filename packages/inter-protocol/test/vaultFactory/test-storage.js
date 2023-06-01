@@ -48,7 +48,7 @@ test.only('storage keys', async t => {
     managerA,
     'asset',
     'mockChainStorageRoot.vaultFactory.managers.manager0',
-    ['compoundedInterest', 'latestInterestUpdate', 'stabilityFee'],
+    ['compoundedStabilityFee', 'latestStabilityFeeUpdate', 'stabilityFee'],
   );
   await assertTopicPathData(
     t,

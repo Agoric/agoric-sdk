@@ -131,15 +131,15 @@ harden(fromVaultKey);
  * For use by `normalizedCollRatioKey` and tests.
  *
  * @param {PriceQuote} quote
- * @param {Ratio} compoundedInterest
+ * @param {Ratio} compoundedStabilityFee
  * @param {Ratio} margin
  * @returns {number}
  */
-export const normalizedCollRatio = (quote, compoundedInterest, margin) => {
+export const normalizedCollRatio = (quote, compoundedStabilityFee, margin) => {
   const amountIn = getAmountIn(quote).value;
   const amountOut = getAmountOut(quote).value;
-  const interestNumerator = compoundedInterest.numerator.value;
-  const interestBase = compoundedInterest.denominator.value;
+  const interestNumerator = compoundedStabilityFee.numerator.value;
+  const interestBase = compoundedStabilityFee.denominator.value;
   const numerator = multiply(
     margin.numerator.value,
     multiply(amountIn, interestNumerator),
@@ -159,13 +159,17 @@ harden(normalizedCollRatio);
  * out the numerator and the denominator, and divide only once.
  *
  * @param {PriceQuote} quote
- * @param {Ratio} compoundedInterest
+ * @param {Ratio} compoundedStabilityFee
  * @param {Ratio} margin
  * @returns {string} lexically sortable string in which highest
  * debt-to-collateral is earliest
  */
-export const normalizedCollRatioKey = (quote, compoundedInterest, margin) => {
-  const collRatio = normalizedCollRatio(quote, compoundedInterest, margin);
+export const normalizedCollRatioKey = (
+  quote,
+  compoundedStabilityFee,
+  margin,
+) => {
+  const collRatio = normalizedCollRatio(quote, compoundedStabilityFee, margin);
   return `${encodeNumber(collRatio)}:`;
 };
 harden(normalizedCollRatioKey);

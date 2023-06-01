@@ -495,7 +495,7 @@ test('interest on multiple vaults', async t => {
     calculateCurrentDebt(
       bobUpdate.value.debtSnapshot.debt,
       bobUpdate.value.debtSnapshot.interest,
-      assetUpdate.value.compoundedInterest,
+      assetUpdate.value.compoundedStabilityFee,
     ),
     run.make(3200n + bobAddedDebt),
   );
@@ -506,7 +506,7 @@ test('interest on multiple vaults', async t => {
     calculateCurrentDebt(
       aliceUpdate.value.debtSnapshot.debt,
       aliceUpdate.value.debtSnapshot.interest,
-      assetUpdate.value.compoundedInterest,
+      assetUpdate.value.compoundedStabilityFee,
     ),
     run.make(4700n + aliceAddedDebt),
     `should have collected ${aliceAddedDebt}`,
