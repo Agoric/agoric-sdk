@@ -43,9 +43,9 @@ import { liquidationResults } from './liquidation.js';
  *
  * @param {object} inputs
  * @param {AmountKeywordRecord} inputs.proceeds
- * @param {Amount<'nat'>} inputs.totalDebt
- * @param {Amount<'nat'>} inputs.totalCollateral
- * @param {PriceDescription} inputs.oraclePriceAtStart
+ * @param {Amount<'nat'>} inputs.totalDebt > 0
+ * @param {Amount<'nat'>} inputs.totalCollateral > 0 and >= proceeds.Collateral
+ * @param {PriceDescription} inputs.oraclePriceAtStart > 0
  * @param {Array<VaultBalances>} inputs.vaultsBalances ordered best to worst collateralized
  * @param {Ratio} inputs.penaltyRate
  * @returns {DistributionPlan}
