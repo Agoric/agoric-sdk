@@ -63,7 +63,7 @@ export const makeCourierMaker =
           value: amount.value,
           remoteDenom: sendDenom,
           depositAddress,
-          memo
+          memo,
         });
 
         // Retain the payment.  We must not proceed on failure.
