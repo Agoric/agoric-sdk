@@ -19,7 +19,7 @@ import { liquidationResults } from './liquidation.js';
  *   debtToBurn: Amount<'nat'>,
  *   mintedForReserve: Amount<'nat'>,
  *   mintedProceeds: Amount<'nat'>,
- *   phantomInterest: Amount<'nat'>,
+ *   phantomDebt: Amount<'nat'>,
  *   totalPenalty: Amount<'nat'>,
  *   transfersToVault: Array<[number, AmountKeywordRecord]>,
  *   vaultsToReinstate: Array<number>
@@ -29,6 +29,8 @@ import { liquidationResults } from './liquidation.js';
  *
  * Vaults are referenced by index in the list sent to the calculator.
  */
+
+/** @typedef {{ collateral: Amount<'nat'>, presaleDebt:  Amount<'nat'>, currentDebt: Amount<'nat'> }} VaultBalances */
 
 /**
  * Liquidation.md describes how to process liquidation proceeds.
@@ -43,7 +45,7 @@ import { liquidationResults } from './liquidation.js';
  * @param {Amount<'nat'>} inputs.totalDebt
  * @param {Amount<'nat'>} inputs.totalCollateral
  * @param {PriceDescription} inputs.oraclePriceAtStart
- * @param {Array<{ collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>, currentDebt: Amount<'nat'> }>} inputs.vaultBalances ordered best to worst collateralized
+ * @param {Array<VaultBalances>} inputs.vaultsBalances ordered best to worst collateralized
  * @param {Ratio} inputs.penaltyRate
  * @returns {DistributionPlan}
  */
@@ -52,7 +54,7 @@ export const calculateDistributionPlan = ({
   totalDebt,
   totalCollateral,
   oraclePriceAtStart,
-  vaultBalances,
+  vaultsBalances,
   penaltyRate,
 }) => {
   const emptyCollateral = AmountMath.makeEmptyFromAmount(totalCollateral);
@@ -88,7 +90,7 @@ export const calculateDistributionPlan = ({
     debtToBurn: emptyMinted,
     mintedForReserve: emptyMinted,
     mintedProceeds,
-    phantomInterest: emptyMinted,
+    phantomDebt: emptyMinted,
     transfersToVault: [],
     vaultsToReinstate: [],
     totalPenalty,
@@ -97,12 +99,14 @@ export const calculateDistributionPlan = ({
   /**
    * If interest was charged between liquidating and liquidated, erase it.
    *
-   * @param {Amount<'nat'>} priorDebtAmount
-   * @param {Amount<'nat'>} currentDebt
+   * @param {VaultBalances} balances
    */
-  const updatePhantomInterest = (priorDebtAmount, currentDebt) => {
-    const difference = AmountMath.subtract(currentDebt, priorDebtAmount);
-    plan.phantomInterest = AmountMath.add(plan.phantomInterest, difference);
+  const updatePhantomDebt = ({ presaleDebt, currentDebt }) => {
+    if (AmountMath.isEqual(presaleDebt, currentDebt)) {
+      return;
+    }
+    const accrued = AmountMath.subtract(currentDebt, presaleDebt);
+    plan.phantomDebt = AmountMath.add(plan.phantomDebt, accrued);
   };
 
   const runFlow1 = () => {
@@ -122,15 +126,15 @@ export const calculateDistributionPlan = ({
 
     // iterate from best to worst, returning collateral until it has
     // been exhausted. Vaults after that get nothing.
-    for (const [vaultIndex, amounts] of vaultBalances.entries()) {
-      const { collateralAmount: vCollat, debtAmount } = amounts;
-      updatePhantomInterest(amounts.debtAmount, amounts.currentDebt);
+    for (const [vaultIndex, balances] of vaultsBalances.entries()) {
+      const { collateral: vCollat, presaleDebt } = balances;
+      updatePhantomDebt(balances);
 
       const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
 
       // max return is vault value reduced by debt and penalty value
-      const debtCollat = ceilDivideBy(debtAmount, price);
-      const penaltyCollat = ceilMultiplyBy(debtAmount, debtPortion);
+      const debtCollat = ceilDivideBy(presaleDebt, price);
+      const penaltyCollat = ceilMultiplyBy(presaleDebt, debtPortion);
       const lessCollat = AmountMath.add(debtCollat, penaltyCollat);
 
       const maxCollat = subtractToEmpty(vCollat, lessCollat);
@@ -165,13 +169,10 @@ export const calculateDistributionPlan = ({
     const vaultPortion = makeRatioFromAmounts(distributable, totalCollateral);
 
     // iterate from best to worst returning remaining funds to vaults
-    for (const [vaultIndex, balances] of vaultBalances.entries()) {
+    for (const [vaultIndex, balances] of vaultsBalances.entries()) {
       // from best to worst, return minted above penalty if any remains
-      const vaultShare = floorMultiplyBy(
-        balances.collateralAmount,
-        vaultPortion,
-      );
-      updatePhantomInterest(balances.debtAmount, balances.currentDebt);
+      const vaultShare = floorMultiplyBy(balances.collateral, vaultPortion);
+      updatePhantomDebt(balances);
 
       if (!AmountMath.isEmpty(mintedRemaining)) {
         const mintedToReturn = AmountMath.isGTE(mintedRemaining, vaultShare)
@@ -207,28 +208,28 @@ export const calculateDistributionPlan = ({
 
     // iterate from best to worst attempting to reconstitute, by
     // returning remaining funds to vaults
-    for (const [vaultIndex, balance] of vaultBalances.entries()) {
-      const { collateralAmount: vCollat, debtAmount } = balance;
+    for (const [vaultIndex, balances] of vaultsBalances.entries()) {
+      const { collateral: vCollat, presaleDebt } = balances;
 
       // according to #7123, Collateral for penalty =
       //    vault debt / total debt * total liquidation penalty
-      const vaultPenalty = ceilMultiplyBy(debtAmount, debtPortion);
+      const vaultPenalty = ceilMultiplyBy(presaleDebt, debtPortion);
       const collatPostPenalty = subtractToEmpty(vCollat, vaultPenalty);
-      const vaultDebt = floorMultiplyBy(debtAmount, debtPortion);
+      const vaultDebt = floorMultiplyBy(presaleDebt, debtPortion);
 
       // Should we continue reconstituting vaults?
       reconstituteVaults =
         reconstituteVaults &&
         !AmountMath.isEmpty(collatPostPenalty) &&
         AmountMath.isGTE(plan.collatRemaining, collatPostPenalty) &&
-        AmountMath.isGTE(totalDebt, debtAmount);
+        AmountMath.isGTE(totalDebt, presaleDebt);
 
       if (reconstituteVaults) {
         plan.collatRemaining = AmountMath.subtract(
           plan.collatRemaining,
           collatPostPenalty,
         );
-        shortfallToReserve = subtractToEmpty(shortfallToReserve, debtAmount);
+        shortfallToReserve = subtractToEmpty(shortfallToReserve, presaleDebt);
         // must reinstate after atomicRearrange(), so we record them.
         plan.vaultsToReinstate.push(vaultIndex);
         reduceCollateral(vaultDebt);
@@ -237,7 +238,7 @@ export const calculateDistributionPlan = ({
           { Collateral: collatPostPenalty },
         ]);
       } else {
-        updatePhantomInterest(balance.debtAmount, balance.currentDebt);
+        updatePhantomDebt(balances);
 
         reduceCollateral(vCollat);
       }

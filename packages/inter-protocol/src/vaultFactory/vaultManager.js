@@ -647,27 +647,27 @@ export const prepareVaultManagerKit = (
           const bestToWorst = [...vaultData.entries()].reverse();
 
           // unzip the entry tuples
-          const vaults = [];
-          const vaultBalances = [];
+          const vaults = /** @type {Vault[]} */ ([]);
+          const vaultsBalances =
+            /** @type {import('./proceeds.js').VaultBalances[]} */ ([]);
           for (const [vault, balances] of bestToWorst) {
             vaults.push(vault);
-            vaultBalances.push({
-              debtAmount: balances.debtAmount,
-              collateralAmount: balances.collateralAmount,
-              // current debt will be higher than the debtAmount before auction
-              // if interest accrued during auction
+            vaultsBalances.push({
+              collateral: balances.collateralAmount,
+              // if interest accrued during sale, the current debt will be higher
+              presaleDebt: balances.debtAmount,
               currentDebt: vault.getCurrentDebt(),
             });
           }
           harden(vaults);
-          harden(vaultBalances);
+          harden(vaultsBalances);
 
           const plan = calculateDistributionPlan({
             proceeds,
             totalDebt,
             totalCollateral,
             oraclePriceAtStart: oraclePriceAtStart.quoteAmount.value[0],
-            vaultBalances,
+            vaultsBalances,
             penaltyRate,
           });
           trace('PLAN', plan);
@@ -699,10 +699,10 @@ export const prepareVaultManagerKit = (
             state.liquidatingVaults.delete(vault);
           }
 
-          if (!AmountMath.isEmpty(plan.phantomInterest)) {
+          if (!AmountMath.isEmpty(plan.phantomDebt)) {
             state.totalDebt = AmountMath.subtract(
               state.totalDebt,
-              plan.phantomInterest,
+              plan.phantomDebt,
             );
           }
 
