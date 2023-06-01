@@ -6,6 +6,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeMarshal } from '@endo/marshal';
@@ -13,7 +14,8 @@ import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
-import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
+import { makeWalletFactoryDriver } from './drivers.js';
+import { makeSwingsetTestKit } from './supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
@@ -359,4 +361,24 @@ test('propose change to auction governance param', async t => {
   const changes = lastQuestion?.issue?.spec?.changes;
   t.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });
+});
+
+test('open vault day later', async t => {
+  const { advanceTimeTo, walletFactoryDriver } = t.context;
+
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1later');
+
+  await advanceTimeTo(SECONDS_PER_DAY);
+
+  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
+    offerId: 'open-vault',
+    collateralBrandKey,
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+
+  t.like(wd.getLatestUpdateRecord(), {
+    updated: 'offerStatus',
+    status: { id: 'open-vault', numWantsSatisfied: 1 },
+  });
 });

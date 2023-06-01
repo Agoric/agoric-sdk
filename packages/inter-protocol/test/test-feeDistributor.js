@@ -69,11 +69,11 @@ const assertPaymentArray = async (
 };
 
 const makeScenario = async t => {
-  const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
+  const { brands, moolaIssuer: issuer, moolaMint: stableMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
   const makeEmptyPayment = () =>
-    runMint.mintPayment(AmountMath.makeEmpty(brand));
+    stableMint.mintPayment(AmountMath.makeEmpty(brand));
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
   const amm = makeFakeFeeProducer(makeEmptyPayment);
   const timerService = buildManualTimer(t.log);
@@ -87,7 +87,7 @@ const makeScenario = async t => {
 
   return {
     timerService,
-    runMint,
+    stableMint,
     issuer,
     brand,
     amm,
@@ -102,7 +102,7 @@ const makeScenario = async t => {
 test('fee distribution', async t => {
   const {
     timerService,
-    runMint,
+    stableMint,
     issuer,
     brand,
     amm,
@@ -126,8 +126,8 @@ test('fee distribution', async t => {
     creatorFacet.makeDepositFacetDestination(feeDepositFacet);
   await creatorFacet.setDestinations({ Rewards: rewardsDestination });
 
-  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
-  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
+  vaultFactory.pushFees(stableMint.mintPayment(AmountMath.make(brand, 500n)));
+  amm.pushFees(stableMint.mintPayment(AmountMath.make(brand, 270n)));
 
   t.deepEqual(await getPayments(), []);
 
@@ -139,7 +139,7 @@ test('fee distribution', async t => {
 test('setKeywordShares', async t => {
   const {
     timerService,
-    runMint,
+    stableMint,
     issuer,
     brand,
     amm,
@@ -180,8 +180,8 @@ test('setKeywordShares', async t => {
     Reserve: reserveDestination,
   });
 
-  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
-  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
+  vaultFactory.pushFees(stableMint.mintPayment(AmountMath.make(brand, 500n)));
+  amm.pushFees(stableMint.mintPayment(AmountMath.make(brand, 270n)));
 
   t.deepEqual(await getPayments(), []);
 
@@ -192,11 +192,11 @@ test('setKeywordShares', async t => {
 });
 
 test('fee distribution, leftovers', async t => {
-  const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
+  const { brands, moolaIssuer: issuer, moolaMint: stableMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
   const makeEmptyPayment = () =>
-    runMint.mintPayment(AmountMath.makeEmpty(brand));
+    stableMint.mintPayment(AmountMath.makeEmpty(brand));
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
   const amm = makeFakeFeeProducer(makeEmptyPayment);
   const timerService = buildManualTimer(t.log);
@@ -222,8 +222,8 @@ test('fee distribution, leftovers', async t => {
     creatorFacet.makeDepositFacetDestination(feeDepositFacet);
   await creatorFacet.setDestinations({ Rewards: rewardsDestination });
 
-  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 12n)));
-  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 8n)));
+  vaultFactory.pushFees(stableMint.mintPayment(AmountMath.make(brand, 12n)));
+  amm.pushFees(stableMint.mintPayment(AmountMath.make(brand, 8n)));
 
   t.deepEqual(await getPayments(), []);
 
@@ -232,8 +232,8 @@ test('fee distribution, leftovers', async t => {
   await assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
 
   // Pay them again
-  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));
-  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 7n)));
+  vaultFactory.pushFees(stableMint.mintPayment(AmountMath.make(brand, 13n)));
+  amm.pushFees(stableMint.mintPayment(AmountMath.make(brand, 7n)));
 
   await timerService.tick();
 

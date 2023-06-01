@@ -74,7 +74,7 @@ export const krefOf = obj => {
   // objects created by our kslot().
   assert.equal(passStyleOf(obj), 'remotable', obj);
   const getKref = obj.getKref;
-  assert.typeof(getKref, 'function');
+  assert.typeof(getKref, 'function', 'object lacking getKref function');
   return getKref();
 };
 

@@ -132,7 +132,7 @@ export const defaultProposalBuilder = async (
   const {
     vaultFactoryControllerAddress = env.VAULT_FACTORY_CONTROLLER_ADDR,
     minInitialPoolLiquidity = env.MIN_INITIAL_POOL_LIQUIDITY,
-    endorsedUi,
+    referencedUi,
     anchorOptions: {
       anchorDenom = env.ANCHOR_DENOM,
       anchorDecimalPlaces = '6',
@@ -168,7 +168,7 @@ export const defaultProposalBuilder = async (
       {
         vaultFactoryControllerAddress,
         minInitialPoolLiquidity: optBigInt(minInitialPoolLiquidity),
-        endorsedUi,
+        referencedUi,
         anchorOptions,
         econCommitteeOptions,
         installKeys: {

@@ -14,13 +14,13 @@ import { setupReserveServices } from './setup.js';
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<FeeMintAccess>} feeMintAccessP
  * @param {*} faucetInstallation
- * @param {*} runInitialLiquidity
+ * @param {*} stableInitialLiquidity
  */
 const getRunFromFaucet = async (
   zoe,
   feeMintAccessP,
   faucetInstallation,
-  runInitialLiquidity,
+  stableInitialLiquidity,
 ) => {
   const feeMintAccess = await feeMintAccessP;
   // On-chain, there will be pre-existing RUN. The faucet replicates that
@@ -34,7 +34,7 @@ const getRunFromFaucet = async (
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: runInitialLiquidity },
+      want: { RUN: stableInitialLiquidity },
     }),
   );
 

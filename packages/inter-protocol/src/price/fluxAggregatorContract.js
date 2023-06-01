@@ -15,7 +15,7 @@ import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
 import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 
-const trace = makeTracer('FluxAgg');
+const trace = makeTracer('FluxAgg', false);
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService

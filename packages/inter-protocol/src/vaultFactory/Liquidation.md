@@ -13,7 +13,7 @@ There are two interesting exception cases. All the collateral might be sold
 without covering the debt (flow 2a), or there might not be enough bids to
 purchase all the collateral (flow 2b). In the first case, vault-holders don't
 get anything back, we burn the currency we received to cover a portion of the
-debt, any excess collateral is sent to the reserve, and we report a shortfall.
+debt, and we report a shortfall.
 
 In the second case, we can't tell whether it's due to a downturn in the
 market or a DoS attack on the exchange. In hopes that it's not the latter, we

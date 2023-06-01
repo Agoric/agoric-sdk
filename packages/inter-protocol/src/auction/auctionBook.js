@@ -514,7 +514,11 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               calcTargetRatio(),
             );
 
-            if (state.remainingProceedsGoal !== null) {
+            if (
+              state.remainingProceedsGoal !== null ||
+              // XXX use this as an indication that the auction is active
+              state.curAuctionPrice !== null
+            ) {
               const incrementToGoal = state.startProceedsGoal
                 ? AmountMath.subtract(nextProceedsGoal, state.startProceedsGoal)
                 : nextProceedsGoal;
@@ -625,7 +629,11 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             Fail`capturedPriceForRound must be set before each round`;
           assert(capturedPriceForRound);
 
-          trace('set startPrice', capturedPriceForRound);
+          trace(
+            'set startPrice',
+            capturedPriceForRound,
+            this.state.startProceedsGoal,
+          );
           this.state.remainingProceedsGoal = this.state.startProceedsGoal;
           this.state.curAuctionPrice = multiplyRatios(
             capturedPriceForRound,

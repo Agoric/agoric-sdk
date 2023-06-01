@@ -1,5 +1,6 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
@@ -24,6 +25,8 @@ const V3_NO_DATA_ERROR = 'No data present';
 
 /** @type {bigint} */
 export const ROUND_MAX = BigInt(2 ** 32 - 1);
+
+const trace = makeTracer('RoundsM', false);
 
 /**
  * @param {bigint} roundId
@@ -290,6 +293,7 @@ export const prepareRoundsManagerKit = baggage =>
          * @returns {OracleStatus} the new status
          */
         recordSubmission(submission, roundId, status) {
+          trace('recordSubmission', submission, roundId, status);
           const { helper } = this.facets;
           const { details } = this.state;
           helper.acceptingSubmissions(roundId) ||
@@ -670,6 +674,7 @@ export const prepareRoundsManagerKit = baggage =>
           status,
           { roundId: roundIdRaw = undefined, unitPrice: valueRaw },
         ) {
+          trace('handlePush', status, roundIdRaw, valueRaw);
           const value = Nat(valueRaw);
           const { minSubmissionValue, maxSubmissionValue, timerPresence } =
             this.state;
@@ -681,6 +686,7 @@ export const prepareRoundsManagerKit = baggage =>
             Fail`value above maxSubmissionValue ${q(maxSubmissionValue)}`;
 
           const blockTimestamp = await E(timerPresence).getCurrentTimestamp();
+          trace('handlePush blockTimestamp', blockTimestamp.absValue);
 
           let roundId;
           if (roundIdRaw === undefined) {
@@ -718,6 +724,8 @@ export const prepareRoundsManagerKit = baggage =>
 
           helper.updateRoundAnswer(roundId, blockTimestamp);
           helper.deleteRoundDetails(roundId);
+
+          trace('handlePush returning', settledStatus);
 
           return settledStatus;
         },

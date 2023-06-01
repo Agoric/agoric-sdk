@@ -609,10 +609,8 @@ test('notifications', async t => {
     'agorice1priceOracleB',
   );
 
-  const latestRoundSubscriber = await E(
-    aggregator.public,
-  ).getRoundStartNotifier();
-  const eachLatestRound = subscribeEach(latestRoundSubscriber)[
+  const publicTopics = await E(aggregator.public).getPublicTopics();
+  const eachLatestRound = subscribeEach(publicTopics.latestRound.subscriber)[
     Symbol.asyncIterator
   ]();
 
@@ -648,7 +646,7 @@ test('notifications', async t => {
   // A started last round so fails to start next round
   t.deepEqual(
     // subscribe fresh because the iterator won't advance yet
-    (await latestRoundSubscriber.subscribeAfter()).head.value,
+    (await publicTopics.latestRound.subscriber.subscribeAfter()).head.value,
     {
       roundId: 1n,
       startedAt: toTS(1n),

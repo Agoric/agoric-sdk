@@ -86,7 +86,7 @@ const defaultParamValues = debt =>
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
  * run: IssuerKit & import('../supports.js').AmountUtils,
- * runInitialLiquidity: Amount<'nat'>,
+ * stableInitialLiquidity: Amount<'nat'>,
  * timer: ReturnType<typeof buildManualTimer>,
  * zoe: ZoeService,
  * }} DriverContext
@@ -104,10 +104,10 @@ export const makeDriverContext = async ({
   },
 } = {}) => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const stableBrand = await E(runIssuer).getBrand();
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
   // @ts-expect-error missing mint
-  const run = withAmountUtils({ issuer: runIssuer, brand: stableBrand });
+  const run = withAmountUtils({ issuer: stableIssuer, brand: stableBrand });
   const aeth = withAmountUtils(makeIssuerKit('aEth'));
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 
@@ -129,7 +129,7 @@ export const makeDriverContext = async ({
     interestTiming,
     minInitialDebt: 50n,
     rates: defaultParamValues(run),
-    runInitialLiquidity: run.make(1_500_000_000n),
+    stableInitialLiquidity: run.make(1_500_000_000n),
     aethInitialLiquidity: AmountMath.make(aeth.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
@@ -238,11 +238,20 @@ const setupServices = async (t, initialPrice, priceBase) => {
   ).governorCreatorFacet;
   const vaultFactoryCreatorFacet = E(governorCreatorFacet).getCreatorFacet();
 
-  // Add a vault that will lend on aeth collateral
+  // Setup default first collateral
+  const aethKeyword = 'AEth';
   const aethVaultManagerP = E(vaultFactoryCreatorFacet).addVaultType(
     aeth.issuer,
-    'AEth',
+    aethKeyword,
     rates,
+  );
+  await E(E.get(consume.auctioneerKit).creatorFacet).addBrand(
+    aeth.issuer,
+    aethKeyword,
+  );
+  await E(E.get(consume.reserveKit).creatorFacet).addIssuer(
+    aeth.issuer,
+    aethKeyword,
   );
 
   /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
@@ -290,8 +299,9 @@ export const makeManagerDriver = async (
     priceAuthority,
     timer,
   } = services;
+  const publicTopics = await E(lender).getPublicTopics();
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(lender).getSubscriber(),
+    publicTopics.asset.subscriber,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
@@ -460,6 +470,9 @@ export const makeManagerDriver = async (
     },
     /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
+    // XXX the paramPath should be implied by the object `setGovernedParam` is being called on.
+    // e.g. the manager driver should know the paramPath is `{ key: { collateralBrand: aeth.brand } }`
+    // and the director driver should `{ key: 'governedParams }`
     /**
      * @param {string} name
      * @param {*} newValue

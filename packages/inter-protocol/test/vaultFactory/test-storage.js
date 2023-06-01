@@ -23,7 +23,7 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-test('storage keys', async t => {
+test.only('storage keys', async t => {
   const { aeth, run } = t.context;
   const d = await makeManagerDriver(t);
 
@@ -58,6 +58,7 @@ test('storage keys', async t => {
     [
       'liquidatingCollateral',
       'liquidatingDebt',
+      'lockedQuote',
       'numActiveVaults',
       'numLiquidatingVaults',
       'numLiquidationsAborted',
@@ -169,7 +170,7 @@ test('governance params', async t => {
   t.like(before.value.current, {
     ChargingPeriod: { type: 'nat', value: 2n },
     Electorate: { type: 'invitation' },
-    EndorsedUI: { type: 'string', value: 'NO ENDORSEMENT' },
+    ReferencedUI: { type: 'string', value: 'NO REFERENCE' },
     MinInitialDebt: { type: 'amount' },
     RecordingPeriod: { type: 'nat', value: 6n },
     ShortfallInvitation: { type: 'invitation' },

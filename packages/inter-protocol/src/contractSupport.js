@@ -1,9 +1,8 @@
 // @jessie-check
 
 import { AmountMath } from '@agoric/ertp';
-import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
 const { Fail, quote: q } = assert;
 
@@ -28,6 +27,17 @@ export const ratioPattern = harden({
  */
 export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
+
+/**
+ * @template {Amount} T
+ * @param {T} left
+ * @param {T} right
+ * @returns {T}
+ */
+export const subtractToEmpty = (left, right) =>
+  AmountMath.isGTE(right, left)
+    ? /** @type {T} */ (AmountMath.makeEmptyFromAmount(left))
+    : /** @type {T} */ (AmountMath.subtract(left, right));
 
 /**
  * Verifies that every key in the proposal is in the provided list
@@ -66,27 +76,6 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 };
 
 /**
- * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
- * @template T
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {MetricsPublisherKit<T>}
- */
-export const makeMetricsPublisherKit = (storageNode, marshaller) => {
-  assert(
-    storageNode && marshaller,
-    'makeMetricsPublisherKit missing storageNode or marshaller',
-  );
-  /** @type {import('@agoric/notifier').StoredPublisherKit<T>} */
-  const kit = makeStoredPublisherKit(storageNode, marshaller, 'metrics');
-  return {
-    metricsPublication: kit.publisher,
-    metricsSubscription: kit.subscriber,
-  };
-};
-harden(makeMetricsPublisherKit);
-
-/**
  * @template T
  * @typedef {object} MetricsPublisherKit<T>
  * @property {IterationObserver<T>} metricsPublication
@@ -101,30 +90,12 @@ harden(makeMetricsPublisherKit);
  */
 
 /**
- * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
- * @template T
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {MetricsPublishKit<T>}
- */
-export const makeMetricsPublishKit = (storageNode, marshaller) => {
-  assert(
-    storageNode && marshaller,
-    'makeMetricsPublisherKit missing storageNode or marshaller',
-  );
-  const metricsNode = E(storageNode).makeChildNode('metrics');
-  /** @type {StoredPublishKit<T>} */
-  const kit = makeStoredPublishKit(metricsNode, marshaller);
-  return {
-    metricsPublisher: kit.publisher,
-    metricsSubscriber: kit.subscriber,
-  };
-};
-harden(makeMetricsPublishKit);
-
-/**
  * @param {Brand} brand must be a 'nat' brand, not checked
  * @param {NatValue} [min]
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+
+/** @param {Pick<PriceDescription, 'amountIn' | 'amountOut'>} quoteAmount */
+export const quoteAsRatio = quoteAmount =>
+  makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);

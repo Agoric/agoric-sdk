@@ -142,13 +142,13 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
+ * @param {({ wantMinted: number, giveMinted?: undefined } | { giveMinted: number, wantMinted?: undefined })} opts
  * @param {number} [fee=0]
  * @param {string} [anchor]
  * @returns {Proposal} XXX not a real proposal, uses BoardRemote
  */
 const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
-  const giving = opts.giveMinted ? 'minted' : 'anchor';
+  const giving = 'giveMinted' in opts ? 'minted' : 'anchor';
   const brand =
     giving === 'anchor'
       ? { in: brands[anchor], out: brands.IST }
@@ -173,14 +173,15 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 /**
  * @param {Instance} instance
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: number, feePct?: number } &
- *         ({ wantMinted: number | undefined, giveMinted: number | undefined, pair: [string, string] })} opts
+ * @param {{ offerId: string, feePct?: number, pair: [string, string] } &
+ *         ({ wantMinted: number } | { giveMinted: number })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makePsmSwapOffer = (instance, brands, opts) => {
-  const method = opts.wantMinted
-    ? 'makeWantMintedInvitation'
-    : 'makeGiveMintedInvitation'; // ref psm.js
+  const method =
+    'wantMinted' in opts
+      ? 'makeWantMintedInvitation'
+      : 'makeGiveMintedInvitation'; // ref psm.js
   const proposal = makePsmProposal(
     brands,
     opts,
@@ -305,9 +306,80 @@ const makeAddCollateralOffer = (brands, opts) => {
   return offerSpec;
 };
 
+/**
+ *
+ * @param {Record<string, Brand>} _brands
+ * @param {{
+ *   offerId: string,
+ *   roundId?: bigint,
+ *   unitPrice: bigint,
+ * }} opts
+ * @param {string} previousOffer
+ * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ */
+const makePushPriceOffer = (_brands, opts, previousOffer) => {
+  return {
+    id: opts.offerId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer,
+      invitationMakerName: 'PushPrice',
+      invitationArgs: harden([
+        { unitPrice: opts.unitPrice, roundId: opts.roundId },
+      ]),
+    },
+    proposal: {},
+  };
+};
+
+// TODO DRY with CLI wallet.js
+/**
+ * @param {{
+ *   brand: Record<string, Brand>,
+ *   vbankAsset: Record<string, { brand: Brand, displayInfo: DisplayInfo }>,
+ * }} agoricNames
+ * @param {(msg: string) => Error} makeError error constructor
+ * @returns {(a: string) => Amount<'nat'>}
+ */
+export const makeParseAmount =
+  (agoricNames, makeError = msg => RangeError(msg)) =>
+  opt => {
+    assert.typeof(opt, 'string', 'parseAmount expected string');
+    const m = opt.match(/^(?<value>[\d_]+(\.[\d_]+)?)(?<brand>[A-Z]\w*?)$/);
+    if (!m || !m.groups) {
+      throw makeError(`invalid amount: ${opt}`);
+    }
+    const anyBrand = agoricNames.brand[m.groups.brand];
+    if (!anyBrand) {
+      throw makeError(`unknown brand: ${m.groups.brand}`);
+    }
+    const assetDesc = Object.values(agoricNames.vbankAsset).find(
+      d => d.brand === anyBrand,
+    );
+    if (!assetDesc) {
+      throw makeError(`unknown brand: ${m.groups.brand}`);
+    }
+    const { displayInfo } = assetDesc;
+    if (!displayInfo.decimalPlaces || displayInfo.assetKind !== 'nat') {
+      throw makeError(`bad brand: ${displayInfo}`);
+    }
+    const value = BigInt(
+      Number(m.groups.value.replace(/_/g, '')) *
+        10 ** displayInfo.decimalPlaces,
+    );
+    /** @type {Brand<'nat'>} */
+    // @ts-expect-error dynamic cast
+    const natBrand = anyBrand;
+    const amt = { value, brand: natBrand };
+    return amt;
+  };
+
 export const Offers = {
   auction: {
     Bid: makeBidOffer,
+  },
+  fluxAggregator: {
+    PushPrice: makePushPriceOffer,
   },
   psm: {
     // lowercase because it's not an invitation name. Instead it's an abstraction over two invitation makers.

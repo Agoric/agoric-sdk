@@ -9,7 +9,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 export async function start(zcf, { feeMintAccess }) {
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const stableMint = await zcf.registerFeeMint('RUN', feeMintAccess);
 
   function makeFaucetInvitation() {
     /** @param {ZCFSeat} seat */
@@ -17,11 +17,11 @@ export async function start(zcf, { feeMintAccess }) {
       assertProposalShape(seat, { want: { RUN: null } });
 
       const {
-        want: { RUN: runAmount },
+        want: { RUN: stableAmount },
       } = seat.getProposal();
-      runMint.mintGains(harden({ RUN: runAmount }), seat);
+      stableMint.mintGains(harden({ RUN: stableAmount }), seat);
       seat.exit();
-      return `success ${runAmount.value}`;
+      return `success ${stableAmount.value}`;
     }
 
     return zcf.makeInvitation(faucetHook, 'provide RUN');

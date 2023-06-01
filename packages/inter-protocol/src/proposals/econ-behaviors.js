@@ -17,6 +17,7 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
 
 const trace = makeTracer('RunEconBehaviors', true);
 
+export const SECONDS_PER_MINUTE = 60n;
 export const SECONDS_PER_HOUR = 60n * 60n;
 export const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
@@ -173,7 +174,7 @@ export const setupReserve = async ({
  * @param {object} config
  * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
- * @param {string} [config.options.endorsedUi]
+ * @param {string} [config.options.referencedUi]
  * @param {Amount<'nat'>} minInitialDebt
  */
 export const setupVaultFactoryArguments = async (
@@ -183,7 +184,7 @@ export const setupVaultFactoryArguments = async (
       chargingPeriod: SECONDS_PER_HOUR,
       recordingPeriod: SECONDS_PER_DAY,
     },
-    options: { endorsedUi } = {},
+    options: { referencedUi } = {},
   } = {},
   minInitialDebt,
 ) => {
@@ -237,7 +238,7 @@ export const setupVaultFactoryArguments = async (
     minInitialDebt,
     bootstrapPaymentValue: 0n,
     shortfallInvitationAmount,
-    endorsedUi,
+    referencedUi,
   });
 
   const vaultFactoryPrivateArgs = {
@@ -256,7 +257,7 @@ export const setupVaultFactoryArguments = async (
  * @param {object} config
  * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
- * @param {string} [config.options.endorsedUi]
+ * @param {string} [config.options.referencedUi]
  * @param {bigint} minInitialDebt
  */
 export const startVaultFactory = async (
@@ -411,7 +412,7 @@ export const startRewardDistributor = async ({
   const feeDistributorTerms = await deeplyFulfilledObject(
     harden({
       timerService,
-      collectionInterval: 60n * 60n, // 1 hour
+      collectionInterval: 1n * SECONDS_PER_HOUR,
       keywordShares: {
         RewardDistributor: 0n,
         Reserve: 1n,
@@ -518,18 +519,18 @@ export const startAuctioneer = async (
       },
     },
     issuer: {
-      consume: { [Stable.symbol]: runIssuerP },
+      consume: { [Stable.symbol]: stableIssuerP },
     },
   },
   {
     auctionParams = {
-      StartFrequency: 3600n,
-      ClockStep: 3n * 60n,
+      StartFrequency: 1n * SECONDS_PER_HOUR,
+      ClockStep: 3n * SECONDS_PER_MINUTE,
       StartingRate: 10500n,
       LowestRate: 6500n,
       DiscountStep: 500n,
       AuctionStartDelay: 2n,
-      PriceLockPeriod: 30n * 60n, // half an hour
+      PriceLockPeriod: SECONDS_PER_HOUR / 2n,
     },
   } = {},
 ) => {
@@ -538,11 +539,11 @@ export const startAuctioneer = async (
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
 
-  const [initialPoserInvitation, electorateInvitationAmount, runIssuer] =
+  const [initialPoserInvitation, electorateInvitationAmount, stableIssuer] =
     await Promise.all([
       poserInvitationP,
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-      runIssuerP,
+      stableIssuerP,
     ]);
 
   const timerBrand = await E(chainTimerService).getTimerBrand();
@@ -570,7 +571,7 @@ export const startAuctioneer = async (
       governedContractInstallation: auctionInstallation,
       governed: {
         terms: auctionTerms,
-        issuerKeywordRecord: { Bid: runIssuer },
+        issuerKeywordRecord: { Bid: stableIssuer },
         storageNode,
         marshaller,
         label: 'auctioneer',

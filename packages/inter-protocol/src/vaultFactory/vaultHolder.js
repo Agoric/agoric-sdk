@@ -3,10 +3,7 @@
  */
 import { AmountShape } from '@agoric/ertp';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import {
-  SubscriberShape,
-  TopicsRecordShape,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
@@ -22,7 +19,6 @@ const HolderI = M.interface('holder', {
   getCollateralAmount: M.call().returns(AmountShape),
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
-  getSubscriber: M.call().returns(SubscriberShape),
   getPublicTopics: M.call().returns(TopicsRecordShape),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
@@ -91,10 +87,6 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
         },
       },
       holder: {
-        /** @deprecated use getPublicTopics */
-        getSubscriber() {
-          return this.state.topicKit.subscriber;
-        },
         getPublicTopics() {
           const { topicKit } = this.state;
           return harden({

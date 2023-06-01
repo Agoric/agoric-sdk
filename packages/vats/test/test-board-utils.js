@@ -155,6 +155,7 @@ test('makeAgoricNamesRemotesFromFakeStorage', t => {
     'brand',
     'instance',
     'reverse',
+    'vbankAsset',
   ]);
   t.true(
     Object.keys(agoricNamesRemotes.reverse).every(k => k.startsWith('board0')),

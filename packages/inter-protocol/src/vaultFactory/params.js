@@ -25,13 +25,13 @@ export const INTEREST_RATE_KEY = 'InterestRate';
 export const MINT_FEE_KEY = 'MintFee';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
-export const ENDORSED_UI_KEY = 'EndorsedUI';
+export const REFERENCED_UI_KEY = 'ReferencedUI';
 
 export const vaultDirectorParamTypes = {
   [MIN_INITIAL_DEBT_KEY]: ParamTypes.AMOUNT,
   [CHARGING_PERIOD_KEY]: ParamTypes.NAT,
   [RECORDING_PERIOD_KEY]: ParamTypes.NAT,
-  [ENDORSED_UI_KEY]: ParamTypes.STRING,
+  [REFERENCED_UI_KEY]: ParamTypes.STRING,
 };
 harden(vaultDirectorParamTypes);
 
@@ -39,14 +39,14 @@ harden(vaultDirectorParamTypes);
  * @param {Amount<'set'>} electorateInvitationAmount
  * @param {Amount<'nat'>} minInitialDebt
  * @param {Amount<'set'>} shortfallInvitationAmount
- * @param {string} endorsedUi
+ * @param {string} referencedUi
  * @param {InterestTiming} interestTiming
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
   minInitialDebt,
   shortfallInvitationAmount,
-  endorsedUi,
+  referencedUi,
   interestTiming,
 ) => {
   return harden({
@@ -62,7 +62,7 @@ const makeVaultDirectorParams = (
       type: ParamTypes.INVITATION,
       value: shortfallInvitationAmount,
     },
-    [ENDORSED_UI_KEY]: { type: ParamTypes.STRING, value: endorsedUi },
+    [REFERENCED_UI_KEY]: { type: ParamTypes.STRING, value: referencedUi },
     [CHARGING_PERIOD_KEY]: {
       type: ParamTypes.NAT,
       value: TimeMath.relValue(interestTiming.chargingPeriod),
@@ -131,7 +131,7 @@ export const vaultParamPattern = M.splitRecord(
  *   reservePublicFacet: AssetReservePublicFacet,
  *   interestTiming: InterestTiming,
  *   shortfallInvitationAmount: Amount<'set'>,
- *   endorsedUi?: string,
+ *   referencedUi?: string,
  * }} opts
  */
 export const makeGovernedTerms = ({
@@ -144,7 +144,7 @@ export const makeGovernedTerms = ({
   reservePublicFacet,
   timer,
   shortfallInvitationAmount,
-  endorsedUi = 'NO ENDORSEMENT',
+  referencedUi = 'NO REFERENCE',
 }) => {
   return harden({
     auctioneerPublicFacet,
@@ -155,7 +155,7 @@ export const makeGovernedTerms = ({
       electorateInvitationAmount,
       minInitialDebt,
       shortfallInvitationAmount,
-      endorsedUi,
+      referencedUi,
       interestTiming,
     ),
     bootstrapPaymentValue,

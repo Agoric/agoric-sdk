@@ -19,7 +19,7 @@ const trace = makeTracer('TestVaultInterest', false);
  *
  * @typedef {object} TestContext
  * @property {ZCF} zcf
- * @property {ZCFMint} runMint
+ * @property {ZCFMint} stableMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
  * @property {Function} advanceRecordingPeriod
@@ -54,10 +54,10 @@ async function launch(zoeP, sourceRoot) {
     harden({ feeMintAccess }),
   );
   const {
-    runMint,
+    stableMint,
     collateralKit: { mint: collateralMint, brand: collaterlBrand },
   } = testJig;
-  const { brand: stableBrand } = runMint.getIssuerRecord();
+  const { brand: stableBrand } = stableMint.getIssuerRecord();
 
   const collateral50 = AmountMath.make(collaterlBrand, 50n);
   const proposal = harden({
@@ -82,8 +82,8 @@ test('charges', async t => {
   // Minted (charging 3 Minted fee), which uses an automatic market maker that
   // presents a fixed price of 4 Minted per Collateral.
   await E(creatorSeat).getOfferResult();
-  const { runMint, collateralKit, vault } = testJig;
-  const { brand: stableBrand } = runMint.getIssuerRecord();
+  const { stableMint, collateralKit, vault } = testJig;
+  const { brand: stableBrand } = stableMint.getIssuerRecord();
 
   const { brand: cBrand } = collateralKit;
 

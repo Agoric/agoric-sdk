@@ -200,7 +200,7 @@ export const getManifestForMain = (
     installKeys,
     vaultFactoryControllerAddress,
     minInitialPoolLiquidity,
-    endorsedUi,
+    referencedUi,
   },
 ) => {
   return {
@@ -214,7 +214,7 @@ export const getManifestForMain = (
     options: {
       vaultFactoryControllerAddress,
       minInitialPoolLiquidity,
-      endorsedUi,
+      referencedUi,
     },
   };
 };
@@ -226,7 +226,7 @@ export const getManifestForInterProtocol = (
     installKeys,
     vaultFactoryControllerAddress,
     minInitialPoolLiquidity,
-    endorsedUi,
+    referencedUi,
   },
 ) => {
   const econCommitteeManifest = getManifestForEconCommittee(
@@ -239,7 +239,7 @@ export const getManifestForInterProtocol = (
       installKeys,
       vaultFactoryControllerAddress,
       minInitialPoolLiquidity,
-      endorsedUi,
+      referencedUi,
     },
   );
   return {

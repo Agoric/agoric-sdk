@@ -90,20 +90,20 @@ sequenceDiagram
 participant caller
 participant reserveContract
 participant collateralSeat
-participant runMint
+participant stableMint
 participant runSeat
 participant zcf
 participant ammPublicFacet
 participant liquidityInvite
 
-caller ->> reserveContract: addLiquidityToAmmPool(collateralAmount, runAmount)
+caller ->> reserveContract: addLiquidityToAmmPool(collateralAmount, stableAmount)
 reserveContract ->> reserveContract: get collateralKeyword from collateralAmount.brand
 reserveContract ->> collateralSeat: get current allocation for collateralKeyword
 reserveContract ->> reserveContract: ensure  current allocation for collateralKeyword is >= collateralAmount
 
 
 note right of reserveContract: create the IST
-reserveContract ->> runMint: mintGains of runAmount, and get runSeat
+reserveContract ->> stableMint: mintGains of stableAmount, and get runSeat
 reserveContract ->> runSeat: increment collateralKeyword: collateralAmount
 reserveContract ->> collateralSeat: decrement collateralKeyword: collateralAmount
 reserveContract ->> zcf: reallocate(runSeat, collateralSeat)
@@ -112,7 +112,7 @@ note right of reserveContract: Add IST and collateral to the AMM
 reserveContract ->> ammPublicFacet: get invite for makeAddLiquidityAtRateInvitation
 reserveContract ->> reserveContract: create mapping, IST = central, collateralKeyword: secondary
 reserveContract ->> reserveContract: get liquidity brand for collateralKeyword
-reserveContract ->> reserveContract: terms mapping, give Central: runAmount, Secondary collateralAmount, want liquidity
+reserveContract ->> reserveContract: terms mapping, give Central: stableAmount, Secondary collateralAmount, want liquidity
 reserveContract ->> zcf: offer
 
 
