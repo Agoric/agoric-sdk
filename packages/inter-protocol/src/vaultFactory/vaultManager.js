@@ -687,7 +687,6 @@ export const prepareVaultManagerKit = (
             atomicRearrange(zcf, harden(transfers));
           }
 
-          // was reinstateAll
           const { prioritizedVaults } = collateralEphemera(
             totalCollateral.brand,
           );
