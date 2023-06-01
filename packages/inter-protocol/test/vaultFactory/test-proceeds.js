@@ -46,11 +46,8 @@ test('price drop', async t => {
   };
   const plan = calculateDistributionPlan(inputs);
   t.deepEqual(plan, {
-    accounting: {
-      overage: debt.makeEmpty(),
-      toBurn: debt.make(1680n),
-      shortfall: debt.makeEmpty(),
-    },
+    overage: debt.makeEmpty(),
+    shortfallToReserve: debt.makeEmpty(),
     collateralForReserve: coll.makeEmpty(),
     collatRemaining: coll.makeEmpty(),
     actualCollateralSold: coll.makeEmpty(),
