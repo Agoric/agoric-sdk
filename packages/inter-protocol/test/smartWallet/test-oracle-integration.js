@@ -279,7 +279,8 @@ test.serial('admin price', async t => {
 
   const paPublicFacet = E(zoe).getPublicFacet(governedPriceAggregator);
 
-  const latestRoundSubscriber = await E(paPublicFacet).getRoundStartNotifier();
+  const publicTopics = await E(paPublicFacet).getPublicTopics();
+  const latestRoundSubscriber = publicTopics.latestRound.subscriber;
 
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
     roundId: 1n,
