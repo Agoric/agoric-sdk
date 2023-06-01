@@ -15,7 +15,7 @@ import {
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
-const trace = makeTracer('TestLP');
+const trace = makeTracer('TestLP', false);
 
 test.before(async t => {
   // make interest slow because it's not the behavior under test
