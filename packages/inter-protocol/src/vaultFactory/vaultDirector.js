@@ -458,8 +458,6 @@ export const prepareVaultDirector = (
           return debtMint.getIssuerRecord().issuer;
         },
         /**
-         * @deprecated get from the CollateralManager directly
-         *
          * subscription for the paramManager for a particular vaultManager
          *
          * @param {{ collateralBrand: Brand }} selector
