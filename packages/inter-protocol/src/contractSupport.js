@@ -3,6 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
 const { Fail, quote: q } = assert;
@@ -128,3 +129,7 @@ harden(makeMetricsPublishKit);
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+
+/** @param {Pick<PriceDescription, 'amountIn' | 'amountOut'>} quoteAmount */
+export const quoteAsRatio = quoteAmount =>
+  makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);
