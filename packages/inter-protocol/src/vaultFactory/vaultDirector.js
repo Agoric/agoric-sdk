@@ -189,6 +189,29 @@ const prepareVaultDirector = (
     }
   };
 
+  /**
+   * Merge the manager and director params, and override return types as helpful
+   *
+   * @param {Brand} brand
+   */
+  const makeBrandParamManager = brand => {
+    const vaultParamManager = vaultParamManagers.get(brand);
+    return Far('vault manager param manager', {
+      // merge director and manager params
+      ...directorParamManager.readonly(),
+      ...vaultParamManager.readonly(),
+      // redeclare these getters as to specify the kind of the Amount
+      getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
+        directorParamManager.readonly().getMinInitialDebt
+      ),
+      getDebtLimit: /** @type {() => Amount<'nat'>} */ (
+        vaultParamManager.readonly().getDebtLimit
+      ),
+    });
+  };
+  /** @type {WeakMap<Brand, ReturnType<typeof makeBrandParamManager>>} */
+  const brandParamManagers = new WeakMap();
+
   const factoryPowers = {
     /**
      * Get read-only params for this manager and its director. This grants all
@@ -199,19 +222,13 @@ const prepareVaultDirector = (
      * @param {Brand} brand
      */
     getGovernedParams: brand => {
-      const vaultParamManager = vaultParamManagers.get(brand);
-      return Far('vault manager param manager', {
-        // merge director and manager params
-        ...directorParamManager.readonly(),
-        ...vaultParamManager.readonly(),
-        // redeclare these getters as to specify the kind of the Amount
-        getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
-          directorParamManager.readonly().getMinInitialDebt
-        ),
-        getDebtLimit: /** @type {() => Amount<'nat'>} */ (
-          vaultParamManager.readonly().getDebtLimit
-        ),
-      });
+      let pm = brandParamManagers.get(brand);
+      if (pm) {
+        return pm;
+      }
+      pm = makeBrandParamManager(brand);
+      brandParamManagers.set(brand, makeBrandParamManager(brand));
+      return pm;
     },
 
     /**
