@@ -189,7 +189,7 @@ const prepareVaultDirector = (
     }
   };
 
-  const factoryPowers = Far('vault factory powers', {
+  const factoryPowers = {
     /**
      * Get read-only params for this manager and its director. This grants all
      * managers access to params from all managers. It's not POLA but it's a
@@ -252,7 +252,8 @@ const prepareVaultDirector = (
     burnDebt: (toBurn, seat) => {
       debtMint.burnLosses(harden({ Minted: toBurn }), seat);
     },
-  });
+  };
+  harden(factoryPowers);
 
   const makeVaultManagerKit = prepareVaultManagerKit(baggage, {
     makeERecorderKit,
