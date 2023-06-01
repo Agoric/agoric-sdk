@@ -16,12 +16,12 @@ const test = unknownTest;
  * @param {bigint} debtN
  * @param {bigint} collN
  * @param {bigint} currN
- * @returns {any}
+ * @returns {import('../../src/vaultFactory/proceeds.js').VaultBalances}
  */
 const makeVaultBalance = (debtN, collN, currN = debtN) => {
   return {
-    debtAmount: debt.make(debtN),
-    collateralAmount: coll.make(collN),
+    collateral: coll.make(collN),
+    presaleDebt: debt.make(debtN),
     currentDebt: debt.make(currN),
   };
 };
@@ -41,7 +41,7 @@ test('price drop', async t => {
     totalDebt,
     totalCollateral,
     oraclePriceAtStart: price,
-    vaultBalances: [makeVaultBalance(0n, 0n)],
+    vaultsBalances: [makeVaultBalance(0n, 0n)],
     penaltyRate: makeRatio(10n, debt.brand, 100n),
   };
   const plan = calculateDistributionPlan(inputs);
@@ -58,7 +58,7 @@ test('price drop', async t => {
     debtToBurn: totalDebt,
     mintedForReserve: debt.makeEmpty(),
     mintedProceeds: totalDebt,
-    phantomInterest: debt.makeEmpty(),
+    phantomDebt: debt.makeEmpty(),
     totalPenalty: coll.make(42n),
     transfersToVault: [],
     vaultsToReinstate: [],
