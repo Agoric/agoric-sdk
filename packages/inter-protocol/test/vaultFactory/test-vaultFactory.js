@@ -482,9 +482,9 @@ test('interest on multiple vaults', async t => {
   // Advance 8 days, past one charging and recording period
   await manualTimer.tickN(8);
 
-  const assetUpdate = (
-    await E(E(aethCollateralManager).getSubscriber()).subscribeAfter()
-  ).head;
+  const publicTopics = await E(aethCollateralManager).getPublicTopics();
+  const assetUpdate = (await E(publicTopics.asset.subscriber).subscribeAfter())
+    .head;
 
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();

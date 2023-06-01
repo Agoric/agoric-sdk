@@ -290,8 +290,9 @@ export const makeManagerDriver = async (
     priceAuthority,
     timer,
   } = services;
+  const publicTopics = await E(lender).getPublicTopics();
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(lender).getSubscriber(),
+    publicTopics.asset.subscriber,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 

@@ -256,7 +256,6 @@ export const prepareVaultManagerKit = (
     {
       collateral: M.interface('collateral', {
         makeVaultInvitation: M.call().returns(M.promise()),
-        getSubscriber: M.call().returns(SubscriberShape),
         getMetrics: M.call().returns(SubscriberShape),
         getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
@@ -319,10 +318,6 @@ export const prepareVaultManagerKit = (
               },
             }),
           );
-        },
-        /** @deprecated use getPublicTopics */
-        getSubscriber() {
-          return this.state.assetTopicKit.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getMetrics() {

@@ -208,7 +208,6 @@ export const prepareFluxAggregatorKit = async (
       creator: M.interface('fluxAggregator creatorFacet', {}, { sloppy: true }),
       public: M.interface('fluxAggregator publicFacet', {
         getPriceAuthority: M.call().returns(M.any()),
-        getSubscriber: M.call().returns(SubscriberShape),
         getRoundStartNotifier: M.call().returns(SubscriberShape),
         getPublicTopics: M.call().returns({
           quotes: M.any(),
@@ -345,10 +344,6 @@ export const prepareFluxAggregatorKit = async (
       public: {
         getPriceAuthority() {
           return priceAuthority;
-        },
-        /** @deprecated use getPublicTopics */
-        getSubscriber: () => {
-          return priceKit.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getRoundStartNotifier() {
