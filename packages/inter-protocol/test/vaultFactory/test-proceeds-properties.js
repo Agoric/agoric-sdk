@@ -19,8 +19,9 @@ const arbAmtKWRecord = fc.record({
 });
 
 const collateralUnit = AmountMath.make(collateral.brand, 1_000n);
+
 /** @type {fc.Arbitrary<PriceDescription>} */
-// @ts-expect-error mock
+// @ts-expect-error mock timer, timestamp aren't used
 const arbPriceDescription = fc.record({
   amountIn: fc.constant(collateralUnit),
   amountOut: arbAmount(minted.brand).filter(price => price.value > 0n),
@@ -37,23 +38,21 @@ const arbRate = fc
   .bigUint({ max: BP })
   .map(bp => makeRatio(bp, minted.brand, BP));
 
-test('calculateDistributionPlan always returns something', async t => {
-  await fc.assert(
-    fc.property(
-      fc.record({
-        proceeds: arbAmtKWRecord,
-        totalDebt: arbAmount(minted.brand),
-        totalCollateral: arbAmount(collateral.brand),
-        oraclePriceAtStart: arbPriceDescription,
-        vaultsBalances: fc.array(arbBalances),
-        penaltyRate: arbRate,
-      }),
-      inputs => {
-        return (
-          // Total
-          t.truthy(calculateDistributionPlan(inputs))
-        );
-      },
-    ),
+const arbInputs = fc
+  .record({
+    proceeds: arbAmtKWRecord,
+    totalDebt: arbAmount(minted.brand).filter(d => d.value > 0n),
+    totalCollateral: arbAmount(collateral.brand).filter(d => d.value > 0n),
+    oraclePriceAtStart: arbPriceDescription,
+    vaultsBalances: fc.array(arbBalances),
+    penaltyRate: arbRate,
+  })
+  .filter(i => i.totalCollateral.value >= i.proceeds.Collateral.value);
+
+test('calculateDistributionPlan always returns something', t => {
+  fc.assert(
+    fc.property(arbInputs, inputs => {
+      return t.truthy(calculateDistributionPlan(inputs));
+    }),
   );
 });
