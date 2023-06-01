@@ -1,4 +1,4 @@
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
+import { assertRecord, assertRemotable, passStyleOf } from '@endo/marshal';
 
 import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
@@ -371,6 +371,18 @@ const AmountMath = {
       : isGTE(y, x)
       ? y
       : Fail`${x} and ${y} are incomparable`,
+  /**
+   * Subtract right from left, but if right is bigger, return empty.
+   *
+   * @template {Amount} T
+   * @param {T} left
+   * @param {T} right
+   * @returns {T}
+   */
+  subtractToEmpty: (left, right) =>
+    AmountMath.isGTE(right, left)
+      ? /** @type {T} */ (AmountMath.makeEmptyFromAmount(left))
+      : /** @type {T} */ (AmountMath.subtract(left, right)),
 };
 harden(AmountMath);
 

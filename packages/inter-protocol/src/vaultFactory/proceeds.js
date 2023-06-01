@@ -6,7 +6,7 @@ import {
   makeRatioFromAmounts,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { quoteAsRatio, subtractToEmpty } from '../contractSupport.js';
+import { quoteAsRatio } from '../contractSupport.js';
 import { liquidationResults } from './liquidation.js';
 
 /**
@@ -112,7 +112,7 @@ export const calculateDistributionPlan = ({
   const runFlow1 = () => {
     // Flow #1: no shortfall
 
-    const distributableCollateral = subtractToEmpty(
+    const distributableCollateral = AmountMath.subtractToEmpty(
       collateralProceeds,
       totalPenalty,
     );
@@ -137,7 +137,7 @@ export const calculateDistributionPlan = ({
       const penaltyCollat = ceilMultiplyBy(presaleDebt, debtPortion);
       const lessCollat = AmountMath.add(debtCollat, penaltyCollat);
 
-      const maxCollat = subtractToEmpty(vCollat, lessCollat);
+      const maxCollat = AmountMath.subtractToEmpty(vCollat, lessCollat);
       if (!AmountMath.isEmpty(leftToStage)) {
         const collatReturn = AmountMath.min(leftToStage, maxCollat);
         leftToStage = AmountMath.subtract(leftToStage, collatReturn);
@@ -163,7 +163,10 @@ export const calculateDistributionPlan = ({
 
     plan.debtToBurn = recoveredDebt;
 
-    const distributable = subtractToEmpty(mintedProceeds, recoveredDebt);
+    const distributable = AmountMath.subtractToEmpty(
+      mintedProceeds,
+      recoveredDebt,
+    );
     let mintedRemaining = distributable;
 
     const vaultPortion = makeRatioFromAmounts(distributable, totalCollateral);
@@ -192,7 +195,7 @@ export const calculateDistributionPlan = ({
     let reconstituteVaults = AmountMath.isGTE(collateralProceeds, totalPenalty);
 
     // charge penalty if proceeds are sufficient
-    const distributableCollateral = subtractToEmpty(
+    const distributableCollateral = AmountMath.subtractToEmpty(
       collateralProceeds,
       totalPenalty,
     );
@@ -214,7 +217,10 @@ export const calculateDistributionPlan = ({
       // according to #7123, Collateral for penalty =
       //    vault debt / total debt * total liquidation penalty
       const vaultPenalty = ceilMultiplyBy(presaleDebt, debtPortion);
-      const collatPostPenalty = subtractToEmpty(vCollat, vaultPenalty);
+      const collatPostPenalty = AmountMath.subtractToEmpty(
+        vCollat,
+        vaultPenalty,
+      );
       const vaultDebt = floorMultiplyBy(presaleDebt, debtPortion);
 
       // Should we continue reconstituting vaults?
@@ -229,8 +235,10 @@ export const calculateDistributionPlan = ({
           plan.collatRemaining,
           collatPostPenalty,
         );
-        shortfallToReserve = subtractToEmpty(shortfallToReserve, presaleDebt);
-        // must reinstate after atomicRearrange(), so we record them.
+        shortfallToReserve = AmountMath.subtractToEmpty(
+          shortfallToReserve,
+          presaleDebt,
+        );
         plan.vaultsToReinstate.push(vaultIndex);
         reduceCollateral(vaultDebt);
         plan.transfersToVault.push([
