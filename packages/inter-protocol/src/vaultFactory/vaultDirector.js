@@ -84,7 +84,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  */
-export const prepareVaultDirector = (
+const prepareVaultDirector = (
   baggage,
   zcf,
   directorParamManager,
