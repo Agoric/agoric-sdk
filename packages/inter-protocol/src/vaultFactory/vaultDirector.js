@@ -296,7 +296,6 @@ export const prepareVaultDirector = (
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
-        getMetrics: M.call().returns(SubscriberShape),
         getDebtIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
           SubscriberShape,
@@ -449,10 +448,6 @@ export const prepareVaultDirector = (
             Fail`Not a supported collateral type ${brandIn}`;
           /** @type {VaultManager} */
           return managerForCollateral(brandIn).getPublicFacet();
-        },
-        /** @deprecated use getPublicTopics */
-        getMetrics() {
-          return metricsKit.subscriber;
         },
         getDebtIssuer() {
           return debtMint.getIssuerRecord().issuer;

@@ -5,7 +5,6 @@ import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
   makeRecorderTopic,
-  SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
@@ -57,7 +56,6 @@ export const prepareAssetReserveKit = async (
       }),
       public: M.interface('AssetReserve public', {
         makeAddCollateralInvitation: M.call().returns(M.promise()),
-        getMetrics: M.call().returns(SubscriberShape),
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
       shortfallReportingFacet: M.interface('AssetReserve shortfall reporter', {
@@ -238,10 +236,6 @@ export const prepareAssetReserveKit = async (
             return 'added Collateral to the Reserve';
           };
           return zcf.makeInvitation(handler, 'Add Collateral');
-        },
-        /** @deprecated */
-        getMetrics() {
-          return this.state.metricsKit.subscriber;
         },
         getPublicTopics() {
           return {

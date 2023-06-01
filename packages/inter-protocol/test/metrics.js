@@ -72,15 +72,15 @@ export const subscriptionTracker = async (t, subscription) => {
 };
 
 /**
- * For public facets that have a `getMetrics` method.
+ * For public facets that have a `metrics` topic
  *
  * @template {object} N
  * @param {import('ava').ExecutionContext} t
- * @param {ERef<{getMetrics?: () => Subscriber<N>}>} publicFacet
+ * @param {ERef<{getPublicTopics?: () => {metrics: {subscriber: Subscriber<N>}}}>} publicFacet
  */
 export const metricsTracker = async (t, publicFacet) => {
-  const metricsSub = await E(publicFacet).getMetrics();
-  return subscriptionTracker(t, subscribeEach(metricsSub));
+  const publicTopics = await E(publicFacet).getPublicTopics();
+  return subscriptionTracker(t, subscribeEach(publicTopics.metrics.subscriber));
 };
 
 /**
