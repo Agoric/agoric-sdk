@@ -95,9 +95,9 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {{
- *  compoundedInterest: Ratio,
+ *  compoundedStabilityFee: Ratio,
  *  stabilityFee: Ratio,
- *  latestInterestUpdate: Timestamp,
+ *  latestStabilityFeeUpdate: Timestamp,
  * }} AssetState
  *
  * @typedef {{
@@ -138,8 +138,8 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {{
- *   compoundedInterest: Ratio,
- *   latestInterestUpdate: Timestamp,
+ *   compoundedStabilityFee: Ratio,
+ *   latestStabilityFeeUpdate: Timestamp,
  *   numLiquidationsCompleted: number,
  *   numLiquidationsAborted: number,
  *   totalCollateral: Amount<'nat'>,
@@ -230,8 +230,8 @@ export const prepareVaultManagerKit = (
     return harden({
       ...params,
       ...immutable,
-      compoundedInterest: makeRatio(100n, debtBrand), // starts at 1.0, no interest
-      latestInterestUpdate: startTimeStamp,
+      compoundedStabilityFee: makeRatio(100n, debtBrand), // starts at 1.0, no interest
+      latestStabilityFeeUpdate: startTimeStamp,
       numLiquidationsCompleted: 0,
       numLiquidationsAborted: 0,
       totalCollateral: zeroCollateral,
@@ -255,7 +255,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
-        getCompoundedInterest: M.call().returns(RatioShape),
+        getCompoundedStabilityFee: M.call().returns(RatioShape),
       }),
       helper: M.interface(
         'helper',
@@ -276,7 +276,7 @@ export const prepareVaultManagerKit = (
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
-        getCompoundedInterest: M.call().returns(RatioShape),
+        getCompoundedStabilityFee: M.call().returns(RatioShape),
         scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
@@ -319,8 +319,8 @@ export const prepareVaultManagerKit = (
           const ephemera = collateralEphemera(this.state.collateralBrand);
           return ephemera.storedQuotesNotifier;
         },
-        getCompoundedInterest() {
-          return this.state.compoundedInterest;
+        getCompoundedStabilityFee() {
+          return this.state.compoundedStabilityFee;
         },
         getPublicTopics() {
           const { assetTopicKit, metricsTopicKit } = this.state;
@@ -442,15 +442,15 @@ export const prepareVaultManagerKit = (
                 .getRecordingPeriod(),
             },
             {
-              latestInterestUpdate: state.latestInterestUpdate,
-              compoundedInterest: state.compoundedInterest,
+              latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
+              compoundedStabilityFee: state.compoundedStabilityFee,
               totalDebt: state.totalDebt,
             },
             updateTime,
           );
 
-          state.compoundedInterest = changes.compoundedInterest;
-          state.latestInterestUpdate = changes.latestInterestUpdate;
+          state.compoundedStabilityFee = changes.compoundedStabilityFee;
+          state.latestStabilityFeeUpdate = changes.latestStabilityFeeUpdate;
           state.totalDebt = changes.totalDebt;
 
           return facets.helper.assetNotify();
@@ -463,9 +463,9 @@ export const prepareVaultManagerKit = (
             .getStabilityFee();
           /** @type {AssetState} */
           const payload = harden({
-            compoundedInterest: state.compoundedInterest,
+            compoundedStabilityFee: state.compoundedStabilityFee,
             stabilityFee,
-            latestInterestUpdate: state.latestInterestUpdate,
+            latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
           });
           return assetTopicKit.recorder.write(payload);
         },
@@ -843,8 +843,8 @@ export const prepareVaultManagerKit = (
         /**
          * coefficient on existing debt to calculate new debt
          */
-        getCompoundedInterest() {
-          return this.state.compoundedInterest;
+        getCompoundedStabilityFee() {
+          return this.state.compoundedStabilityFee;
         },
         /**
          * Called by a vault when its balances change.
@@ -1053,7 +1053,7 @@ export const prepareVaultManagerKit = (
           const { self, helper } = facets;
           const {
             collateralBrand,
-            compoundedInterest,
+            compoundedStabilityFee,
             debtBrand,
             liquidatingVaults,
             lockedQuote,
@@ -1082,7 +1082,7 @@ export const prepareVaultManagerKit = (
               zcf,
               {
                 quote: lockedQuote,
-                interest: compoundedInterest,
+                interest: compoundedStabilityFee,
                 margin: liqMargin,
               },
               prioritizedVaults,
@@ -1167,11 +1167,11 @@ export const prepareVaultManagerKit = (
         helper.start();
         void state.assetTopicKit.recorder.write(
           harden({
-            compoundedInterest: state.compoundedInterest,
+            compoundedStabilityFee: state.compoundedStabilityFee,
             stabilityFee: factoryPowers
               .getGovernedParams(state.collateralBrand)
               .getStabilityFee(),
-            latestInterestUpdate: state.latestInterestUpdate,
+            latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
           }),
         );
 

@@ -86,7 +86,7 @@ const validTransitions = {
  * @property {() => Brand<'nat'>} getDebtBrand
  * @property {MintAndTransfer} mintAndTransfer
  * @property {(amount: Amount, seat: ZCFSeat) => void} burn
- * @property {() => Ratio} getCompoundedInterest
+ * @property {() => Ratio} getCompoundedStabilityFee
  * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
@@ -104,7 +104,7 @@ const validTransitions = {
  * Snapshot is of the debt and compounded interest when the principal was last changed.
  *
  * @typedef {{
- *   interestSnapshot: Ratio,
+ *   stabilityFeeSnapshot: Ratio,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
  *   outerUpdater: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification> | null,
@@ -132,7 +132,7 @@ const VaultStateShape = harden({
   phase: M.any(),
   storageNode: M.any(),
   vaultSeat: M.any(),
-  interestSnapshot: M.any(),
+  stabilityFeeSnapshot: M.any(),
   debtSnapshot: M.any(),
 });
 
@@ -174,7 +174,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
 
         // Two values from the same moment
-        interestSnapshot: manager.getCompoundedInterest(),
+        stabilityFeeSnapshot: manager.getCompoundedStabilityFee(),
         debtSnapshot: AmountMath.makeEmpty(manager.getDebtBrand()),
       });
     },
@@ -257,7 +257,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
           // update local state
           state.debtSnapshot = newDebt;
-          state.interestSnapshot = state.manager.getCompoundedInterest();
+          state.stabilityFeeSnapshot =
+            state.manager.getCompoundedStabilityFee();
         },
 
         /**
@@ -327,7 +328,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         getStateSnapshot(newPhase) {
           const { state, facets } = this;
 
-          const { debtSnapshot: debt, interestSnapshot: interest } = state;
+          const { debtSnapshot: debt, stabilityFeeSnapshot: interest } = state;
           /** @type {VaultNotification} */
           return harden({
             debtSnapshot: { debt, interest },
@@ -785,7 +786,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           helper.updateDebtSnapshot(self.getCurrentDebt());
           const {
             debtSnapshot: debt,
-            interestSnapshot: interest,
+            stabilityFeeSnapshot: interest,
             phase,
           } = state;
           if (outerUpdater) {
@@ -839,8 +840,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           const { state } = this;
           return calculateCurrentDebt(
             state.debtSnapshot,
-            state.interestSnapshot,
-            state.manager.getCompoundedInterest(),
+            state.stabilityFeeSnapshot,
+            state.manager.getCompoundedStabilityFee(),
           );
         },
 
@@ -857,7 +858,10 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         getNormalizedDebt() {
           const { state } = this;
           // @ts-expect-error cast
-          return reverseInterest(state.debtSnapshot, state.interestSnapshot);
+          return reverseInterest(
+            state.debtSnapshot,
+            state.stabilityFeeSnapshot,
+          );
         },
       },
     },
