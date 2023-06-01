@@ -319,9 +319,7 @@ const prepareVaultDirector = (
     baggage,
     'VaultDirector',
     {
-      creator: M.interface('creator', {
-        ...GovernorFacetShape,
-      }),
+      creator: M.interface('creator', GovernorFacetShape),
       machine: M.interface('machine', {
         addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
           M.promise(),
