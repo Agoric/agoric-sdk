@@ -153,6 +153,7 @@ export const calculateDistributionPlan = ({
       : collateralProceeds;
   };
 
+  // Flow 2a: all collateral was sold but debt was not covered
   const runFlow2a = () => {
     // charge penalty if proceeds are sufficient
     const penaltyInMinted = ceilMultiplyBy(totalDebt, penaltyRate);
@@ -184,6 +185,7 @@ export const calculateDistributionPlan = ({
     }
   };
 
+  // Flow 2b: collateral remains but debt was not covered
   const runFlow2b = () => {
     plan.debtToBurn = totalDebt;
     plan.mintedForReserve = accounting.overage;
@@ -212,7 +214,7 @@ export const calculateDistributionPlan = ({
       const { collateral: vCollat, presaleDebt } = balances;
 
       // according to #7123, Collateral for penalty =
-      //    vault debt / total debt * total liquidation penalty
+      //   total liquidation penalty * vault debt / total debt
       const vaultPenalty = ceilMultiplyBy(presaleDebt, debtPortion);
       const collatPostPenalty = subtractToEmpty(vCollat, vaultPenalty);
       const vaultDebt = floorMultiplyBy(presaleDebt, debtPortion);
@@ -257,7 +259,7 @@ export const calculateDistributionPlan = ({
       // Flow #1: no shortfall
       runFlow1();
     } else if (AmountMath.isEmpty(collateralProceeds)) {
-      // Flow #2a
+      // Flow 2a: all collateral was sold but debt was not covered
       runFlow2a();
     } else {
       // Flow #2b: There's unsold collateral; some vaults may be reinstated.
