@@ -123,14 +123,13 @@ export const calculateDistributionPlan = ({
     // return remaining funds to vaults before closing
 
     let leftToStage = distributableCollateral;
+    const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
 
     // iterate from best to worst, returning collateral until it has
     // been exhausted. Vaults after that get nothing.
     for (const [vaultIndex, balances] of vaultsBalances.entries()) {
       const { collateral: vCollat, presaleDebt } = balances;
       updatePhantomDebt(balances);
-
-      const price = makeRatioFromAmounts(mintedProceeds, collateralSold);
 
       // max return is vault value reduced by debt and penalty value
       const debtCollat = ceilDivideBy(presaleDebt, price);
