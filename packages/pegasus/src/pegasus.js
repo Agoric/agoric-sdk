@@ -461,7 +461,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {string} [memo] the memo to attach to ics transfer packet
      * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
      */
-    async makeInvitationToTransfer(pegP, depositAddress, memo) {
+    async makeInvitationToTransfer(pegP, depositAddress, memo = '') {
       // Verify the peg.
       const peg = await pegP;
       const denomState = pegToDenomState.get(peg);

@@ -34,7 +34,7 @@ const makeAsyncIteratorFromSubscription = sub =>
  * @param {import('ava').Assertions} t
  */
 async function testRemotePeg(t) {
-  t.plan(20);
+  t.plan(24);
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -95,17 +95,33 @@ async function testRemotePeg(t) {
           },
           async onReceive(_c, packetBytes) {
             const packet = JSON.parse(packetBytes);
-            t.deepEqual(
-              packet,
-              {
-                amount: '100000000000000000001',
-                denom: 'portdef/chanabc/uatom',
-                receiver: 'markaccount',
-                sender: 'pegasus',
-              },
-              'expected transfer packet',
-            );
-            return JSON.stringify({ result: 'AQ==' });
+            if (packet.memo != '') {
+              t.deepEqual(
+                packet,
+                {
+                  amount: '100000000000000000001',
+                  denom: 'portdef/chanabc/uatom',
+                  memo: 'I am a memo!',
+                  receiver: 'markaccount',
+                  sender: 'pegasus',
+                },
+                'expected transfer packet',
+              );
+              return JSON.stringify({ result: 'AQ==' });
+            } else {
+              t.deepEqual(
+                packet,
+                {
+                  amount: '100000000000000000001',
+                  denom: 'portdef/chanabc/uatom',
+                  memo: '',
+                  receiver: 'markaccount',
+                  sender: 'pegasus',
+                },
+                'expected transfer packet',
+              );
+              return JSON.stringify({ result: 'AQ==' });
+            }
           },
         });
       },
@@ -120,7 +136,7 @@ async function testRemotePeg(t) {
 
   // Get some local Atoms.
   const sendPacket = {
-    amount: '100000000000000000001',
+    amount: '200000000000000000002',
     denom: 'uatom',
     receiver: '0x1234',
     sender: 'FIXME:sender',
@@ -172,7 +188,7 @@ async function testRemotePeg(t) {
   const localAtomsAmount = await E(localPurseP).getCurrentAmount();
   t.deepEqual(
     localAtomsAmount,
-    { brand: localBrand, value: 100000000000000000001n },
+    { brand: localBrand, value: 200000000000000000002n },
     'we received the shadow atoms',
   );
 
@@ -195,7 +211,7 @@ async function testRemotePeg(t) {
   const localAtomsAmount2 = await E(localPurseP).getCurrentAmount();
   t.deepEqual(
     localAtomsAmount2,
-    { brand: localBrand, value: 100000000000000000171n },
+    { brand: localBrand, value: 200000000000000000172n },
     'we received more shadow atoms',
   );
 
@@ -219,7 +235,8 @@ async function testRemotePeg(t) {
     'rejecting transfers works',
   );
 
-  const localAtoms = await E(localPurseP).withdraw(localAtomsAmount);
+  // test sending with memo
+  const localAtoms = await E(localPurseP).withdraw({ brand: localBrand, value: 100000000000000000001n });
 
   const allegedName = await E(pegP).getAllegedName();
   t.is(allegedName, 'Gaia', 'alleged peg name is equal');
@@ -231,7 +248,7 @@ async function testRemotePeg(t) {
   const seat = await E(zoe).offer(
     transferInvitation,
     {
-      give: { Transfer: localAtomsAmount },
+      give: { Transfer: { brand: localBrand, value: 100000000000000000001n } },
     },
     { Transfer: localAtoms },
   );
@@ -246,6 +263,32 @@ async function testRemotePeg(t) {
 
   const stillIsLive = await E(localIssuerP).isLive(localAtoms);
   t.assert(!stillIsLive, 'payment is consumed');
+
+  // test sending without memo
+  const localAtoms2 = await E(localPurseP).withdraw({ brand: localBrand, value: 100000000000000000001n });
+
+  const transferInvitation2 = await E(pegasus).makeInvitationToTransfer(
+    pegP,
+    'markaccount',
+  );
+  const seat2 = await E(zoe).offer(
+    transferInvitation2,
+    {
+      give: { Transfer: { brand: localBrand, value: 100000000000000000001n } },
+    },
+    { Transfer: localAtoms2 },
+  );
+  const outcome2 = await seat2.getOfferResult();
+  t.is(outcome2, undefined, 'transfer is successful');
+
+  const paymentPs2 = await seat2.getPayouts();
+  const refundAmount2 = await E(localIssuerP).getAmountOf(paymentPs2.Transfer);
+
+  const isEmptyRefund2 = AmountMath.isEmpty(refundAmount2, localBrand);
+  t.assert(isEmptyRefund2, 'no refund from success');
+
+  const stillIsLive2 = await E(localIssuerP).isLive(localAtoms2);
+  t.assert(!stillIsLive2, 'payment is consumed');
 
   await E(connP).close();
   await t.throwsAsync(() => remoteDenomAit.next(), {

@@ -55,7 +55,12 @@ export const parseICS20TransferPacket = async packet => {
 
   assert.typeof(denom, 'string', X`Denom ${denom} must be a string`);
   assert.typeof(receiver, 'string', X`Receiver ${receiver} must be a string`);
-  memo === undefined || assert.typeof(memo, 'string', X`Memo ${memo} must be a string or 'undefined'`);
+  memo === undefined ||
+    assert.typeof(
+      memo,
+      'string',
+      X`Memo ${memo} must be a string or 'undefined'`,
+    );
 
   // amount is a string in JSON.
   assert.typeof(amount, 'string', X`Amount ${amount} must be a string`);
@@ -68,7 +73,7 @@ export const parseICS20TransferPacket = async packet => {
     depositAddress: receiver,
     remoteDenom: denom,
     value,
-    memo
+    memo,
   });
 };
 
@@ -95,7 +100,7 @@ export const makeICS20TransferPacket = async ({
     denom: remoteDenom,
     receiver: depositAddress,
     sender: DUMMY_SENDER_ADDRESS,
-    memo
+    memo,
   };
 
   return JSON.stringify(ics20);
