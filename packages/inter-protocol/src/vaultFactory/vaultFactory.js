@@ -13,9 +13,9 @@ import '@agoric/zoe/src/contracts/exported.js';
 
 // This contract wants to be managed by a contractGovernor, but it isn't
 // compatible with contractGovernor, since it has a separate paramManager for
-// each Vault. This requires it to manually replicate the API of contractHelper
-// to satisfy contractGovernor. It needs to return a creatorFacet with
-// { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
+// each VaultManager. This requires it to manually replicate the API of
+// contractHelper to satisfy contractGovernor. It needs to return a creatorFacet
+// with { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
