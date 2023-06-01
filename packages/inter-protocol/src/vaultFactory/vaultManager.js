@@ -528,9 +528,10 @@ export const prepareVaultManagerKit = (
          *
          * @param {Amount<'nat'>} debt
          * @param {Amount<'nat'>} collateral
-         * @param {{ overage: Amount<'nat'>, shortfall: Amount<'nat'> }} accounting
+         * @param {Amount<'nat'>} overage
+         * @param {Amount<'nat'>} shortfall
          */
-        markDoneLiquidating(debt, collateral, accounting) {
+        markDoneLiquidating(debt, collateral, overage, shortfall) {
           const { state } = this;
 
           // update liquidation state
@@ -546,7 +547,6 @@ export const prepareVaultManagerKit = (
 
           // record shortfall and proceeds
 
-          const { overage, shortfall } = accounting;
           // cumulative values
           state.totalOverageReceived = AmountMath.add(
             state.totalOverageReceived,
@@ -742,7 +742,8 @@ export const prepareVaultManagerKit = (
           facets.helper.markDoneLiquidating(
             totalDebt,
             totalCollateral,
-            plan.accounting,
+            plan.overage,
+            plan.shortfallToReserve,
           );
 
           // liqSeat should be empty at this point, except that funds are sent

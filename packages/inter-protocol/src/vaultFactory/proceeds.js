@@ -11,7 +11,8 @@ import { liquidationResults } from './liquidation.js';
 
 /**
  * @typedef {{
- *   accounting: { overage: Amount<'nat'>, shortfall: Amount<'nat'> },
+ *   overage: Amount<'nat'>,
+ *   shortfallToReserve: Amount<'nat'>,
  *   collateralForReserve: Amount<'nat'>,
  *   actualCollateralSold: Amount<'nat'>,
  *   collateralSold: Amount<'nat'>,
@@ -82,7 +83,8 @@ export const calculateDistributionPlan = ({
   // IOW the plan must always be in a valid state, though perhaps incomplete.
   /** @type {DistributionPlan} */
   const plan = {
-    accounting,
+    overage: accounting.overage,
+    shortfallToReserve: accounting.shortfall,
     collateralForReserve: emptyCollateral,
     actualCollateralSold: emptyCollateral,
     collateralSold,
@@ -178,9 +180,7 @@ export const calculateDistributionPlan = ({
       updatePhantomDebt(balances);
 
       if (!AmountMath.isEmpty(mintedRemaining)) {
-        const mintedToReturn = AmountMath.isGTE(mintedRemaining, vaultShare)
-          ? vaultShare
-          : mintedRemaining;
+        const mintedToReturn = AmountMath.min(mintedRemaining, vaultShare);
         mintedRemaining = AmountMath.subtract(mintedRemaining, mintedToReturn);
         plan.transfersToVault.push([vaultIndex, { Minted: mintedToReturn }]);
       }
@@ -258,7 +258,7 @@ export const calculateDistributionPlan = ({
       totalPenalty,
     );
 
-    plan.accounting.shortfall = shortfallToReserve;
+    plan.shortfallToReserve = shortfallToReserve;
   };
 
   try {
