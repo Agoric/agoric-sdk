@@ -77,8 +77,8 @@ export const setupReserveServices = async (
   const farZoeKit = await setUpZoeForTest({ feeIssuerConfig });
   const { feeMintAccessP, zoe } = farZoeKit;
 
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const stableBrand = await E(runIssuer).getBrand();
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
 
   // @ts-expect-error a non-promise can be used where a promise is expected.
   const spaces = await setupReserveBootstrap(t, timer, farZoeKit);
@@ -102,7 +102,7 @@ export const setupReserveServices = async (
   const faucetBundle = await provideBundle(t, faucetRoot, 'faucet');
   const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.IST.resolve(stableBrand);
-  issuer.produce.IST.resolve(runIssuer);
+  issuer.produce.IST.resolve(stableIssuer);
   const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(await feeMintAccess);
 

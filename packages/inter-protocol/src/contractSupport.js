@@ -1,9 +1,7 @@
 // @jessie-check
 
 import { AmountMath } from '@agoric/ertp';
-import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
-import { E } from '@endo/eventual-send';
 
 const { Fail, quote: q } = assert;
 
@@ -66,27 +64,6 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 };
 
 /**
- * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
- * @template T
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {MetricsPublisherKit<T>}
- */
-export const makeMetricsPublisherKit = (storageNode, marshaller) => {
-  assert(
-    storageNode && marshaller,
-    'makeMetricsPublisherKit missing storageNode or marshaller',
-  );
-  /** @type {import('@agoric/notifier').StoredPublisherKit<T>} */
-  const kit = makeStoredPublisherKit(storageNode, marshaller, 'metrics');
-  return {
-    metricsPublication: kit.publisher,
-    metricsSubscription: kit.subscriber,
-  };
-};
-harden(makeMetricsPublisherKit);
-
-/**
  * @template T
  * @typedef {object} MetricsPublisherKit<T>
  * @property {IterationObserver<T>} metricsPublication
@@ -99,28 +76,6 @@ harden(makeMetricsPublisherKit);
  * @property {Publisher<T>} metricsPublisher
  * @property {StoredSubscriber<T>} metricsSubscriber
  */
-
-/**
- * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
- * @template T
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {MetricsPublishKit<T>}
- */
-export const makeMetricsPublishKit = (storageNode, marshaller) => {
-  assert(
-    storageNode && marshaller,
-    'makeMetricsPublisherKit missing storageNode or marshaller',
-  );
-  const metricsNode = E(storageNode).makeChildNode('metrics');
-  /** @type {StoredPublishKit<T>} */
-  const kit = makeStoredPublishKit(metricsNode, marshaller);
-  return {
-    metricsPublisher: kit.publisher,
-    metricsSubscriber: kit.subscriber,
-  };
-};
-harden(makeMetricsPublishKit);
 
 /**
  * @param {Brand} brand must be a 'nat' brand, not checked

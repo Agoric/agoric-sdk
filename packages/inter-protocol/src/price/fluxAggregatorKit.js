@@ -5,11 +5,7 @@
  */
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import {
-  makeNotifierFromSubscriber,
-  observeNotifier,
-  SubscriberShape,
-} from '@agoric/notifier';
+import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   defineRecorderKit,
@@ -208,8 +204,6 @@ export const prepareFluxAggregatorKit = async (
       creator: M.interface('fluxAggregator creatorFacet', {}, { sloppy: true }),
       public: M.interface('fluxAggregator publicFacet', {
         getPriceAuthority: M.call().returns(M.any()),
-        getSubscriber: M.call().returns(SubscriberShape),
-        getRoundStartNotifier: M.call().returns(SubscriberShape),
         getPublicTopics: M.call().returns({
           quotes: M.any(),
           latestRound: M.any(),
@@ -345,14 +339,6 @@ export const prepareFluxAggregatorKit = async (
       public: {
         getPriceAuthority() {
           return priceAuthority;
-        },
-        /** @deprecated use getPublicTopics */
-        getSubscriber: () => {
-          return priceKit.subscriber;
-        },
-        /** @deprecated use getPublicTopics */
-        getRoundStartNotifier() {
-          return latestRoundKit.subscriber;
         },
         getPublicTopics() {
           return {

@@ -17,9 +17,13 @@ node "CloseVaultInvitation"
 node "Vat" {
     node VaultFactory {
         node "publicAPI" {
-            circle getCollaterals
-            circle makeVaultInvitation
-            circle getRunIssuer
+            circle getCollateralManager
+            circle getDebtIssuer
+            circle getSubscription
+            circle getPublicTopics
+            circle getElectorateSubscription
+            circle getGovernedParams
+            circle getInvitationAmount
         }
         node "creatorFacet" {
             circle makeAddTypeInvitation

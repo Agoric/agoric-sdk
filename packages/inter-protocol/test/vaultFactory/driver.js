@@ -86,7 +86,7 @@ const defaultParamValues = debt =>
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
  * run: IssuerKit & import('../supports.js').AmountUtils,
- * runInitialLiquidity: Amount<'nat'>,
+ * stableInitialLiquidity: Amount<'nat'>,
  * timer: ReturnType<typeof buildManualTimer>,
  * zoe: ZoeService,
  * }} DriverContext
@@ -104,10 +104,10 @@ export const makeDriverContext = async ({
   },
 } = {}) => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const stableBrand = await E(runIssuer).getBrand();
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
   // @ts-expect-error missing mint
-  const run = withAmountUtils({ issuer: runIssuer, brand: stableBrand });
+  const run = withAmountUtils({ issuer: stableIssuer, brand: stableBrand });
   const aeth = withAmountUtils(makeIssuerKit('aEth'));
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 
@@ -129,7 +129,7 @@ export const makeDriverContext = async ({
     interestTiming,
     minInitialDebt: 50n,
     rates: defaultParamValues(run),
-    runInitialLiquidity: run.make(1_500_000_000n),
+    stableInitialLiquidity: run.make(1_500_000_000n),
     aethInitialLiquidity: AmountMath.make(aeth.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
@@ -290,8 +290,9 @@ export const makeManagerDriver = async (
     priceAuthority,
     timer,
   } = services;
+  const publicTopics = await E(lender).getPublicTopics();
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(lender).getSubscriber(),
+    publicTopics.asset.subscriber,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 

@@ -69,8 +69,8 @@ const makeTestContext = async () => {
     await setUpZoeForTest();
   assert(vatAdminState);
 
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const stableBrand = await E(runIssuer).getBrand();
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
 
   const install = (src, dest) =>
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
@@ -133,7 +133,7 @@ const makeTestContext = async () => {
     feeMintAccess: await feeMintAccessP,
     vatAdminSvc,
     vatAdminState,
-    run: { issuer: runIssuer, brand: stableBrand },
+    run: { issuer: stableIssuer, brand: stableBrand },
     installation,
   };
 };
@@ -164,13 +164,13 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const emptyRunPayment = async () => {
     const {
       issuer: {
-        consume: { [Stable.symbol]: runIssuer },
+        consume: { [Stable.symbol]: stableIssuer },
       },
       brand: {
         consume: { [Stable.symbol]: stableBrand },
       },
     } = space;
-    return E(E(runIssuer).makeEmptyPurse()).withdraw(
+    return E(E(stableIssuer).makeEmptyPurse()).withdraw(
       AmountMath.make(await stableBrand, 0n),
     );
   };

@@ -22,15 +22,6 @@
  */
 
 /**
- * @typedef {object} Collateral
- * @property {Ratio} liquidationMargin
- * @property {Ratio} stabilityFee
- * @property {Ratio} marketPrice
- * @property {Ratio} interestRate
- * @property {Brand} brand
- */
-
-/**
  * @typedef {object} VaultManagerParamValues
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
@@ -108,7 +99,7 @@
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
  * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
- * @property {(runDebt: Amount) => Promise<Invitation>} makeInvitation
+ * @property {(debt: Amount) => Promise<Invitation>} makeInvitation
  */
 
 /**
