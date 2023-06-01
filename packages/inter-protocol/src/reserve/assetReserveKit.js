@@ -187,7 +187,7 @@ export const prepareAssetReserveKit = async (
           await zcf.saveIssuer(issuer, keyword);
         },
 
-        /** @deprecated use getPublicTopics metrics allocation */
+        /** XXX redundant with getPublicTopics metrics `allocation` */
         getAllocations() {
           return this.state.collateralSeat.getCurrentAllocation();
         },
