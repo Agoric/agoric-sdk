@@ -605,16 +605,13 @@ export const prepareVaultManagerKit = (
          * @param {AmountKeywordRecord} proceeds
          * @param {Amount<'nat'>} totalDebt
          * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
-         * @param {ZCFSeat} liqSeat
          * @param {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} vaultData
          * @param {Amount<'nat'>} totalCollateral
-         * @returns {void}
          */
-        distributeProceeds(
+        planProceedsDistribution(
           proceeds,
           totalDebt,
           oraclePriceAtStart,
-          liqSeat,
           vaultData,
           totalCollateral,
         ) {
@@ -637,11 +634,11 @@ export const prepareVaultManagerKit = (
           const bestToWorst = [...vaultData.entries()].reverse();
 
           // unzip the entry tuples
-          const vaults = /** @type {Vault[]} */ ([]);
+          const vaultsInPlan = /** @type {Vault[]} */ ([]);
           const vaultsBalances =
             /** @type {import('./proceeds.js').VaultBalances[]} */ ([]);
           for (const [vault, balances] of bestToWorst) {
-            vaults.push(vault);
+            vaultsInPlan.push(vault);
             vaultsBalances.push({
               collateral: balances.collateralAmount,
               // if interest accrued during sale, the current debt will be higher
@@ -649,7 +646,7 @@ export const prepareVaultManagerKit = (
               currentDebt: vault.getCurrentDebt(),
             });
           }
-          harden(vaults);
+          harden(vaultsInPlan);
           harden(vaultsBalances);
 
           const plan = calculateDistributionPlan({
@@ -660,8 +657,30 @@ export const prepareVaultManagerKit = (
             vaultsBalances,
             penaltyRate,
           });
-          trace('PLAN', plan);
+          return { plan, vaultsInPlan };
+        },
 
+        /**
+         * This is designed to tolerate an incomplete plan, in case calculateDistributionPlan encounters
+         * an error during its calculation. We don't have a way to induce such errors in CI so we've
+         * done so manually in dev and verified this function recovers as expected.
+         *
+         * @param {object} obj
+         * @param {import('./proceeds.js').DistributionPlan} obj.plan
+         * @param {Array<Vault>} obj.vaultsInPlan
+         * @param {ZCFSeat} obj.liqSeat
+         * @param {Amount<'nat'>} obj.totalCollateral
+         * @param {Amount<'nat'>} obj.totalDebt
+         * @returns {void}
+         */
+        distributeProceeds({
+          plan,
+          vaultsInPlan,
+          liqSeat,
+          totalCollateral,
+          totalDebt,
+        }) {
+          const { state, facets } = this;
           // Putting all the rearrangements after the loop ensures that errors
           // in the calculations don't result in paying back some vaults and
           // leaving others hanging.
@@ -670,7 +689,7 @@ export const prepareVaultManagerKit = (
               ([vaultIndex, amounts]) =>
                 /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart} */ ([
                   liqSeat,
-                  vaults[vaultIndex].getVaultSeat(),
+                  vaultsInPlan[vaultIndex].getVaultSeat(),
                   amounts,
                 ]),
             );
@@ -682,7 +701,7 @@ export const prepareVaultManagerKit = (
           );
           state.numLiquidationsAborted += plan.vaultsToReinstate.length;
           for (const vaultIndex of plan.vaultsToReinstate) {
-            const vault = vaults[vaultIndex];
+            const vault = vaultsInPlan[vaultIndex];
             const vaultId = vault.abortLiquidation();
             prioritizedVaults.addVault(vaultId, vault);
             state.liquidatingVaults.delete(vault);
@@ -1104,15 +1123,22 @@ export const prepareVaultManagerKit = (
 
           trace(`LiqV after long wait`, proceeds);
           try {
-            // distributeProceeds may reconstitute vaults, removing them from liquidatingVaults
-            helper.distributeProceeds(
+            const { plan, vaultsInPlan } = helper.planProceedsDistribution(
               proceeds,
               totalDebt,
               storedCollateralQuote,
-              liqSeat,
               vaultData,
               totalCollateral,
             );
+            trace('PLAN', plan);
+            // distributeProceeds may reconstitute vaults, removing them from liquidatingVaults
+            helper.distributeProceeds({
+              liqSeat,
+              plan,
+              totalCollateral,
+              totalDebt,
+              vaultsInPlan,
+            });
           } catch (err) {
             console.error('🚨 Error distributing proceeds:', err);
           }
