@@ -386,7 +386,6 @@ const prepareVaultDirector = (
         setOfferFilter: strings => zcf.setOfferFilter(strings),
       },
       machine: {
-        // TODO move this under governance #3924
         /**
          * @param {Issuer<'nat'>} collateralIssuer
          * @param {Keyword} collateralKeyword
