@@ -2,6 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { M } from '@agoric/store';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
 const { Fail, quote: q } = assert;
 
@@ -26,6 +27,17 @@ export const ratioPattern = harden({
  */
 export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
+
+/**
+ * @template {Amount} T
+ * @param {T} left
+ * @param {T} right
+ * @returns {T}
+ */
+export const subtractToEmpty = (left, right) =>
+  AmountMath.isGTE(right, left)
+    ? /** @type {T} */ (AmountMath.makeEmptyFromAmount(left))
+    : /** @type {T} */ (AmountMath.subtract(left, right));
 
 /**
  * Verifies that every key in the proposal is in the provided list
@@ -83,3 +95,7 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+
+/** @param {Pick<PriceDescription, 'amountIn' | 'amountOut'>} quoteAmount */
+export const quoteAsRatio = quoteAmount =>
+  makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);

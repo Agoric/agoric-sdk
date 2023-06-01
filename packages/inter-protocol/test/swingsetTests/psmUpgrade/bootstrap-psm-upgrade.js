@@ -13,7 +13,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { withAmountUtils } from '../../supports.js';
+import { scale6, withAmountUtils } from '../../supports.js';
 
 const trace = makeTracer('BootPSMUpg');
 
@@ -21,10 +21,8 @@ export const psmV1BundleName = 'psmV1';
 
 const anchor = withAmountUtils(makeIssuerKit('bucks'));
 
-const scale6 = x => BigInt(Math.round(x * 1_000_000));
-
-const firstGive = anchor.make(scale6(21));
-const secondGive = anchor.make(scale6(3));
+const firstGive = anchor.units(21);
+const secondGive = anchor.units(3);
 
 /** @typedef {import('../../../src/psm/psm.js').prepare} PsmSF */
 

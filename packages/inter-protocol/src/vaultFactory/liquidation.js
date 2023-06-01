@@ -144,7 +144,7 @@ const setWakeups = ({
  * @param {TimerWaker} reschedulerWaker
  * @returns {Promise<void>}
  */
-const setWakeupsForNextAuction = async (
+export const setWakeupsForNextAuction = async (
   auctioneerPublicFacet,
   timer,
   priceLockWaker,
@@ -180,35 +180,25 @@ const setWakeupsForNextAuction = async (
     params,
   });
 };
+harden(setWakeupsForNextAuction);
 
 /**
  * @param {Amount<'nat'>} debt
  * @param {Amount<'nat'>} minted
- * @returns {{ overage: Amount<'nat'>, shortfall: Amount<'nat'>, toBurn: Amount<'nat'>}}
+ * @returns {{ overage: Amount<'nat'>, shortfall: Amount<'nat'>}}
  */
-const liquidationResults = (debt, minted) => {
+export const liquidationResults = (debt, minted) => {
   if (AmountMath.isEmpty(minted)) {
-    return {
-      overage: minted,
-      toBurn: minted,
-      shortfall: debt,
-    };
+    return { overage: minted, shortfall: debt };
   }
 
   const [overage, shortfall] = AmountMath.isGTE(debt, minted)
     ? [AmountMath.makeEmptyFromAmount(debt), AmountMath.subtract(debt, minted)]
     : [AmountMath.subtract(minted, debt), AmountMath.makeEmptyFromAmount(debt)];
 
-  const toBurn = AmountMath.min(minted, debt);
-  // debt is fully accounted for, with toBurn and shortfall
-  assert(AmountMath.isEqual(debt, AmountMath.add(toBurn, shortfall)));
-
-  return {
-    overage,
-    toBurn,
-    shortfall,
-  };
+  return { overage, shortfall };
 };
+harden(liquidationResults);
 
 /**
  * Watch governed params for change
@@ -260,7 +250,7 @@ export const watchForGovernanceChange = (
  *    totalCollateral: Amount<'nat'>,
  *    liqSeat: ZCFSeat}}
  */
-const getLiquidatableVaults = (
+export const getLiquidatableVaults = (
   zcf,
   collateralizationDetails,
   prioritizedVaults,
@@ -303,9 +293,4 @@ const getLiquidatableVaults = (
 
   return { vaultData, totalDebt, totalCollateral, liqSeat };
 };
-
-harden(setWakeupsForNextAuction);
-harden(liquidationResults);
 harden(getLiquidatableVaults);
-
-export { setWakeupsForNextAuction, liquidationResults, getLiquidatableVaults };
