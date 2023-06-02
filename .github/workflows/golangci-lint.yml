@@ -22,12 +22,13 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '>=1.20'
+          cache: false
           check-latest: true
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           # golangci-lint version and command line arguments
-          version: latest
+          version: latest # if possible, don't pin to a specific version
           args: --timeout=3m
           # for pull requests, show only new issues
           only-new-issues: true
