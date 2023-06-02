@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.14.1...@agoric/vats@0.15.0) (2023-06-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename EndorsedUI to ReferencedUI
+
+### Features
+
+* **board-utils:** vbankAssets in makeAgoricNamesRemotesFromFakeStorage ([0a7bc2c](https://github.com/Agoric/agoric-sdk/commit/0a7bc2c806d80c93d20a9181d803ff9db0b709bd))
+* rename EndorsedUI to ReferencedUI ([8e904a9](https://github.com/Agoric/agoric-sdk/commit/8e904a9e379d69aa0c2a633ff2d6b3afb1b8005d))
+
+
+### Bug Fixes
+
+* **vat-bank:** getPurse race ([185a4f0](https://github.com/Agoric/agoric-sdk/commit/185a4f0ff14053dc85a30d383b55c9286532f0da))
+* **vat-bank:** use JSON for composite string keys ([5fc1179](https://github.com/Agoric/agoric-sdk/commit/5fc1179abf7d84d64b120a8df00f54d50217500b))
+* **vaults:** address a divide-by-zero; correct penalty w/no bidders ([5e8b363](https://github.com/Agoric/agoric-sdk/commit/5e8b3634bf399960b19378fd3b8ea720edcb0e37)), closes [#7785](https://github.com/Agoric/agoric-sdk/issues/7785)
+
+
+
+### [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.14.0...@agoric/vats@0.14.1) (2023-05-24)
+
+**Note:** Version bump only for package @agoric/vats
+
+
+
+
+
 ## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.13.0...@agoric/vats@0.14.0) (2023-05-19)
 
 

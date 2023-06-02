@@ -1,6 +1,6 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.2.5",
+  "version": "0.2.7",
   "description": "Deep equals",
   "type": "module",
   "main": "index.js",
@@ -30,7 +30,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@agoric/store": "^0.9.0",
+    "@agoric/store": "^0.9.2",
     "@endo/marshal": "^0.8.5"
   },
   "files": [

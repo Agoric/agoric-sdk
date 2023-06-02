@@ -189,6 +189,17 @@ if $BUILD_ONLY; then
   exit 0
 fi
 
+# the xsnap binary lives in a platform-specific directory
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     platform=lin;;
+    Darwin*)    platform=mac;;
+    *)          platform=win;;
+esac
+# check the xsnap version against our baked-in notion of what version we should be using
+xsnap_version=$("${thisdir}/../packages/xsnap/xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker" -n)
+[[ "${xsnap_version}" == "agoric-upgrade-10" ]] || fatal "xsnap out of date"
+
 # Run the built Cosmos daemon.
 # shellcheck disable=SC2031
 export PATH="$thisdir/../packages/cosmic-swingset/bin:$PATH"

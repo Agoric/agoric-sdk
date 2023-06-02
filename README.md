@@ -17,9 +17,10 @@ to use.
 ## Prerequisites
 
 * Git
-* Node.js LTS (version 14.15.0 or higher)
+* Node.js LTS (version 16.13.0 or higher)
   * we generally support the latest LTS release: use [nvm](https://github.com/nvm-sh/nvm) to keep your local system up-to-date
 * Yarn (`npm install -g yarn`)
+* gcc-10 or newer, or a compiler with `__has_builtin()`
 
 Any version of Yarn will do: the `.yarnrc` file should ensure that all
 commands use the specific checked-in version of Yarn (stored in

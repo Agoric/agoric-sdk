@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.20.0...agoric@0.21.0) (2023-06-02)
+
+
+### Features
+
+* **agoric-cli:** oracle setPrice: pushPrice from each operator ([9004c46](https://github.com/Agoric/agoric-sdk/commit/9004c46cf65a163795621a415a97fcaee47ac983))
+* **clientSupport:** Offers.fluxAggregator.PushPrice ([bae997a](https://github.com/Agoric/agoric-sdk/commit/bae997ae9d28bad0ec02896975044f27c64d123d))
+
+
+
+## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.19.0...agoric@0.20.0) (2023-05-24)
+
+
+### Features
+
+* **agoric-cli:** oracle setPrice: pushPrice from each operator ([0b30529](https://github.com/Agoric/agoric-sdk/commit/0b3052972cab287daa515de37e59a2caa10f3f04))
+* **clientSupport:** Offers.fluxAggregator.PushPrice ([486581c](https://github.com/Agoric/agoric-sdk/commit/486581c8ea07a621f18c0d485c7059fb3e87835a))
+
+
+
 ## [0.19.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.2...agoric@0.19.0) (2023-05-19)
 
 
