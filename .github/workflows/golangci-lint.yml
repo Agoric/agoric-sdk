@@ -22,12 +22,17 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '>=1.20'
+          cache: false
           check-latest: true
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           # golangci-lint version and command line arguments
-          version: latest
+          # v1.52.3 has a bug that causes it to fail depguard with:
+          # level=error msg="[linter] depguard: create analyzer:
+          # couldn't expand $gostd: could not read GOROOT directory:
+          # open src: no such file or directory\nmust have an Allow and/or Deny package list"
+          version: 'v1.52.2' # FIXME: change back to latest when it is fixed
           args: --timeout=3m
           # for pull requests, show only new issues
           only-new-issues: true
