@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet-backend",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "description": "Wallet backend",
   "type": "module",
   "scripts": {
@@ -14,22 +14,22 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/vats": "^0.14.1",
+    "@agoric/vats": "^0.15.0",
     "@endo/bundle-source": "^2.5.1",
     "@endo/init": "^0.5.56",
     "ava": "^5.2.0"
   },
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@agoric/cache": "^0.3.1",
-    "@agoric/ertp": "^0.16.1",
-    "@agoric/internal": "^0.3.1",
-    "@agoric/notifier": "^0.6.1",
-    "@agoric/smart-wallet": "^0.5.1",
-    "@agoric/store": "^0.9.1",
-    "@agoric/time": "^0.3.1",
-    "@agoric/vat-data": "^0.5.1",
-    "@agoric/zoe": "^0.26.1",
+    "@agoric/cache": "^0.3.2",
+    "@agoric/ertp": "^0.16.2",
+    "@agoric/internal": "^0.3.2",
+    "@agoric/notifier": "^0.6.2",
+    "@agoric/smart-wallet": "^0.5.2",
+    "@agoric/store": "^0.9.2",
+    "@agoric/time": "^0.3.2",
+    "@agoric/vat-data": "^0.5.2",
+    "@agoric/zoe": "^0.26.2",
     "@endo/eventual-send": "^0.17.2",
     "@endo/marshal": "^0.8.5",
     "@endo/nat": "^4.1.27",
