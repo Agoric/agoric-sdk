@@ -1,3 +1,4 @@
+/* eslint-env node */
 module.exports = {
   extends: [
     'airbnb-base',
@@ -10,6 +11,7 @@ module.exports = {
     'arrow-body-style': 'off',
     'arrow-parens': 'off',
     'no-continue': 'off',
+    'no-await-in-loop': 'off',
     'implicit-arrow-linebreak': 'off',
     'function-paren-newline': 'off',
     strict: 'off',
