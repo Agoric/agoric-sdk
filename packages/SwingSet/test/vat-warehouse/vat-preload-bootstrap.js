@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import { Far, E } from '@endo/far';
 
 export function buildRootObject() {

@@ -7,7 +7,6 @@ export async function makeWorkerOptions(managerType, bundleHandler) {
   if (managerType === 'local') {
     return harden({ type: 'local' });
   } else if (managerType === 'xsnap' || managerType === 'xs-worker') {
-    // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ type: 'xsnap', bundleIDs });
   }
@@ -27,7 +26,6 @@ export async function updateWorkerOptions(
   if (type === 'local') {
     return origWorkerOptions;
   } else if (type === 'xsnap') {
-    // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ ...origWorkerOptions, bundleIDs });
   }

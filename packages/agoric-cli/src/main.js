@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/no-nested-await */
 /* global process */
 import { Command } from 'commander';
 import path from 'path';

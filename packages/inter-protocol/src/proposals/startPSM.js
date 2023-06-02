@@ -369,12 +369,10 @@ export const makeAnchorAsset = async (
       makeScalarBigMapStore('Anchor balance payments', { durable: true }),
     );
     // XXX this rule should only apply to the 1st await
-    // eslint-disable-next-line @jessie.js/no-nested-await
     const anchorPaymentMap = await anchorBalancePayments;
 
     // TODO: validate that `metrics.anchorPoolBalance.value` is
     // pass-by-copy PureData (e.g., contains no remotables).
-    // eslint-disable-next-line @jessie.js/no-nested-await
     const pmt = await E(mint).mintPayment(
       AmountMath.make(brand, metrics.anchorPoolBalance.value),
     );

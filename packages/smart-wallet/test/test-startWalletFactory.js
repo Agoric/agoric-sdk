@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';

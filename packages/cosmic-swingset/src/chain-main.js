@@ -519,7 +519,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           });
         stateSyncExport = exportData;
 
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await new Promise((resolve, reject) => {
           tmpfs.dir(
             {

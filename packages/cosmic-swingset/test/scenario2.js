@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-disable no-await-in-loop */
 const { freeze, entries } = Object;
 
 const onlyStderr = ['ignore', 'ignore', 'inherit'];

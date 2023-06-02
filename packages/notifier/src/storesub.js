@@ -22,9 +22,7 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
   let finished = false;
   while (!finished) {
     // Allow nested awaits (in loop) because it's safe for each to run in a turn
-    // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
     const { value, done } = await iterator.next();
-    // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
     await consumeValue(value);
     finished = !!done;
   }

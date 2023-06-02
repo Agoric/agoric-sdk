@@ -25,10 +25,8 @@ test('heap exhaustion: orderly fail-stop', async t => {
   }
   `;
   for (const debug of [false, true]) {
-    // eslint-disable-next-line no-await-in-loop
     const vat = await xsnap({ ...options(io), meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
-    // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(vat.evaluate(grow), {
       code: ExitCode.E_NOT_ENOUGH_MEMORY,
     });
@@ -53,14 +51,11 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
   }
   `;
   for (const debug of [false, true]) {
-    // eslint-disable-next-line no-await-in-loop
     const vat = await xsnap({ ...options(io), meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
     t.log({ debug, qty: 31000 });
-    // eslint-disable-next-line no-await-in-loop
     await t.notThrowsAsync(vat.evaluate(grow(31000)));
     t.log({ debug, qty: 4000000000 });
-    // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(vat.evaluate(grow(4000000000)), {
       code: ExitCode.E_NO_MORE_KEYS,
     });
@@ -97,7 +92,6 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
         const vat = await xsnap({ ...opts, parserBufferSize });
         t.teardown(() => vat.terminate());
         const expected = failure ? [failure] : [qty * 4 + 2];
-        // eslint-disable-next-line no-await-in-loop
         await t.notThrowsAsync(vat.evaluate(grow(qty)));
         t.deepEqual(
           expected,
@@ -122,7 +116,6 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
     test(`large sizes - abort cluster: ${statement}`, async t => {
       const vat = await xsnap(options(io));
       t.teardown(() => vat.terminate());
-      // eslint-disable-next-line no-await-in-loop
       await t.throwsAsync(
         vat.evaluate(`
         (() => {

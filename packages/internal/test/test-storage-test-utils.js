@@ -40,7 +40,6 @@ test('makeFakeStorageKit', async t => {
     }),
   );
   for (const [label, val] of nonStrings) {
-    // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(
       // @ts-expect-error invalid value
       () => rootNode.setValue(val),

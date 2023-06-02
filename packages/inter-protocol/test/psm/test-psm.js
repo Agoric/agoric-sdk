@@ -480,18 +480,15 @@ test('mix of trades: failures do not prevent later service', async t => {
   for (const [kind, give, want, ok, wants] of trades) {
     switch (kind) {
       case 'give':
-        // eslint-disable-next-line no-await-in-loop
         await giveMinted(ix, give, want, ok, wants);
         break;
       case 'want':
-        // eslint-disable-next-line no-await-in-loop
         await wantMinted(ix, give, want, ok, wants);
         break;
       default:
         assert.fail(kind);
     }
     if (kind === 'give') {
-      // eslint-disable-next-line no-await-in-loop
     }
     ix += 1;
   }

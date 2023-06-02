@@ -17,7 +17,6 @@ export const invertPromiseSettlement = promise =>
 export const delayByTurns = async turnCount => {
   while (turnCount) {
     turnCount -= 1;
-    // eslint-disable-next-line no-await-in-loop
     await undefined;
   }
 };

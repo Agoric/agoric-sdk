@@ -132,7 +132,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       [invitation],
     );
     if (highPrioritySendersManager) {
-      // eslint-disable-next-line @jessie.js/no-nested-await -- after another await
       await E(highPrioritySendersManager).add(description, addr);
     }
     return `added ${addr}`;
@@ -147,7 +146,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     trace('removeOracle', addr);
     await E(faKit.creator).removeOracle(addr);
     if (highPrioritySendersManager) {
-      // eslint-disable-next-line @jessie.js/no-nested-await -- after another await
       await E(highPrioritySendersManager).remove(description, addr);
     }
     return `removed ${addr}`;

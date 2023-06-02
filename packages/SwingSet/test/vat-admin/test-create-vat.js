@@ -338,7 +338,6 @@ test('createVat holds refcount', async t => {
 
   async function stepUntil(predicate) {
     for (;;) {
-      // eslint-disable-next-line no-await-in-loop
       const more = await c.step();
       // const { refcount, refs } = findRefs(kvStore, held);
       // const rc = kvStore.get(`${held}.refCount`);

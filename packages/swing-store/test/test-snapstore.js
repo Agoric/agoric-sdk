@@ -103,7 +103,6 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     const { hash } = await store.saveSnapshot(
       'fakeVatID2',
       i,
@@ -133,7 +132,6 @@ test('snapStore prepare / commit delete is robust', async t => {
   t.is(sqlCountSnapshots.get(), 0);
 
   for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     const { hash } = await store.saveSnapshot(
       'fakeVatID4',
       i,

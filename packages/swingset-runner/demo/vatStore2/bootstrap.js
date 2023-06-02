@@ -38,7 +38,6 @@ export function buildRootObject() {
       for (let i = 0; i < 5; i += 1) {
         for (const { vat } of otherVats) {
           const zot = makeZot();
-          // eslint-disable-next-line no-await-in-loop
           const companion = await E(vat).introduce(zot);
           companions.push(companion);
           zots.push(zot);
@@ -64,10 +63,8 @@ export function buildRootObject() {
           }
           case 3: {
             const { vat, name } = otherVats[roll(otherVats.length)];
-            // eslint-disable-next-line no-await-in-loop
             const hasIt = await E(vat).doYouHave(companion);
             // prettier-ignore
-            // eslint-disable-next-line no-await-in-loop
             p(`vat ${name} ${hasIt ? 'has' : 'does not have'} ${await E(companion).getLabel()}`);
             break;
           }

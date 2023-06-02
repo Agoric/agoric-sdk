@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 /* global process */
-/* eslint-disable @jessie.js/no-nested-await -- test/build code */
 import * as childProcessTop from 'child_process';
 import fsTop from 'fs';
 import osTop from 'os';
@@ -182,7 +181,6 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       if (!commitHash) {
         // We need to glean the commitHash and url from Git.
         const sm = makeSubmodule(path, '?', { git });
-        // eslint-disable-next-line no-await-in-loop
         const [[{ hash }], url] = await Promise.all([
           sm.status(),
           sm.config('url'),
@@ -208,13 +206,10 @@ async function main(args, { env, stdout, spawn, fs, os }) {
         // ignore
       }
       if (!fs.existsSync(submodule.path)) {
-        // eslint-disable-next-line no-await-in-loop
         await submodule.clone();
       }
-      // eslint-disable-next-line no-await-in-loop
       await submodule.checkout(commitHash);
     } else {
-      // eslint-disable-next-line no-await-in-loop
       await submodule.init();
     }
   }
@@ -229,7 +224,6 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   const make = makeCLI(platform.make || 'make', { spawn });
   for (const goal of ModdableSDK.buildGoals) {
-    // eslint-disable-next-line no-await-in-loop
     await make.run(
       [
         `MODDABLE=${ModdableSDK.MODDABLE}`,

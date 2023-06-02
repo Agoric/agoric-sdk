@@ -1,5 +1,3 @@
-/* eslint-disable no-await-in-loop */
-/* eslint-disable @jessie.js/no-nested-await */
 // @ts-check
 /* eslint-disable func-names */
 /* global process */

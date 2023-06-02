@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-disable @jessie.js/no-nested-await */
 /* global Buffer, fetch, process */
 
 import { NonNullish } from '@agoric/assert';
@@ -136,7 +135,6 @@ export const makeVStorage = (powers, config = networkConfig) => {
         // console.debug('READING', { blockHeight });
         let values;
         try {
-          // eslint-disable-next-line no-await-in-loop
           ({ blockHeight, values } = await this.readAt(
             path,
             blockHeight && Number(blockHeight) - 1,

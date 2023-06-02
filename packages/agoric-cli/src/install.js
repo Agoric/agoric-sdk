@@ -61,7 +61,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const yarnInstallEachWorktree = async (phase, ...flags) => {
     for await (const workTree of workTrees) {
       log.info(`yarn install ${phase} in ${workTree}`);
-      // eslint-disable-next-line no-await-in-loop
       const yarnInstall = await pspawn(
         'yarn',
         [...linkFlags, 'install', ...flags],

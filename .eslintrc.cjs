@@ -4,18 +4,18 @@ const process = require('process');
 
 const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
-const loanContractDeprecated = [
+const deprecatedForLoanContract = [
   ['currency', 'brand, asset or another descriptor'],
   ['blacklist', 'denylist'],
   ['whitelist', 'allowlist'],
   ['RUN', 'IST', '/RUN/'],
 ];
-const allDeprecated = [...loanContractDeprecated, ['loan', 'debt']];
+const allDeprecated = [...deprecatedForLoanContract, ['loan', 'debt']];
 
 const deprecatedTerminology = Object.fromEntries(
   Object.entries({
     all: allDeprecated,
-    loanContract: loanContractDeprecated,
+    loanContract: deprecatedForLoanContract,
   }).map(([category, deprecated]) => [
     category,
     deprecated.flatMap(([bad, good, badRgx = `/${bad}/i`]) =>

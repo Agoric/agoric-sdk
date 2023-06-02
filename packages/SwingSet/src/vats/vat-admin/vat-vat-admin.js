@@ -229,18 +229,15 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   async function upgradeStaticVat(vatID, pauseTarget, bundleID, options) {
     if (pauseTarget) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await E(pauseTarget)
         .pauseService()
         .catch(() => true);
     }
     let status;
     try {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       status = await upgradeVat(vatID, bundleID, options);
     } catch (e) {
       if (pauseTarget) {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await E(pauseTarget)
           .resumeService()
           .catch(() => true);

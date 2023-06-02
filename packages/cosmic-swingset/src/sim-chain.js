@@ -1,5 +1,4 @@
 /* global process setTimeout clearTimeout */
-/* eslint-disable no-await-in-loop */
 import path from 'path';
 import fs from 'fs';
 import {

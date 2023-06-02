@@ -317,7 +317,6 @@ export async function main() {
 
   let config;
   if (configPath) {
-    // eslint-disable-next-line @jessie.js/no-nested-await
     config = await loadSwingsetConfigFile(configPath);
     if (config === null) {
       fail(`config file ${configPath} not found`);
@@ -419,13 +418,11 @@ export async function main() {
       slogEnv.OTEL_EXPORTER_OTLP_ENDPOINT = OTEL_EXPORTER_OTLP_ENDPOINT;
       slogOpts.serviceName = TELEMETRY_SERVICE_NAME;
     }
-    // eslint-disable-next-line @jessie.js/no-nested-await
     slogSender = await makeSlogSender(slogOpts);
     runtimeOptions.slogSender = slogSender;
   }
   let bootstrapResult;
   if (forceReset) {
-    // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       bootstrapArgv,
@@ -433,10 +430,8 @@ export async function main() {
       { verbose },
       runtimeOptions,
     );
-    // eslint-disable-next-line @jessie.js/no-nested-await
     await hostStorage.commit();
     if (initOnly) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await hostStorage.close();
       return;
     }
@@ -478,25 +473,20 @@ export async function main() {
   let crankNumber = 0;
   switch (command) {
     case 'run': {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await commandRun(0, blockMode);
       break;
     }
     case 'batch': {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await commandRun(batchSize, blockMode);
       break;
     }
     case 'step': {
       try {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         const steps = await controller.step();
         if (activityHash) {
           log(`activityHash: ${controller.getActivityhash()}`);
         }
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await hostStorage.commit();
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await hostStorage.close();
         log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
       } catch (err) {
@@ -562,7 +552,6 @@ export async function main() {
         help: 'Step the swingset one crank, without commit',
         action: async () => {
           try {
-            // eslint-disable-next-line @jessie.js/no-nested-await
             const steps = await controller.step();
             log(steps ? 'stepped one crank' : "didn't step, queue is empty");
             cli.displayPrompt();
@@ -580,7 +569,6 @@ export async function main() {
     statLogger.close();
   }
   if (slogSender) {
-    // eslint-disable-next-line @jessie.js/no-nested-await
     await slogSender.forceFlush();
   }
   await controller.shutdown();
@@ -606,7 +594,6 @@ export async function main() {
         [],
         'ignore',
       );
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       const [steps, deltaT] = await runBatch(0, true);
       const status = controller.kpStatus(roundResult);
       if (status === 'unresolved') {
@@ -644,7 +631,6 @@ export async function main() {
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       try {
-        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         const stepped = await controller.step();
         if (stepped < 1) {
           break;
@@ -669,7 +655,6 @@ export async function main() {
     }
     const commitStartTime = readClock();
     if (doCommit) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await hostStorage.commit();
     }
     const blockEndTime = readClock();
@@ -722,7 +707,6 @@ export async function main() {
     let steps;
     const runAll = stepLimit === 0;
     do {
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       steps = await runBlock(blockSize, doCommit);
       totalSteps += steps;
       stepLimit -= steps;
@@ -745,7 +729,6 @@ export async function main() {
 
     let [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await hostStorage.commit();
     }
     const cranks = getCrankNumber();
@@ -755,7 +738,6 @@ export async function main() {
       printMainStats(mainStats);
     }
     if (benchmarkRounds > 0) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const [moreSteps, moreDeltaT] = await runBenchmark(benchmarkRounds);
       totalSteps += moreSteps;
       deltaT += moreDeltaT;

@@ -58,7 +58,6 @@ const assertPaymentArray = async (
   const payments = await paymentsP;
   for (let i = 0; i < count; i += 1) {
     // XXX https://github.com/Agoric/agoric-sdk/issues/5527
-    // eslint-disable-next-line no-await-in-loop
     await assertPayoutAmount(
       t,
       issuer,

@@ -33,7 +33,6 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
 
   for (const bundlePath of rawArgs.slice(1)) {
     // AWAIT
-    // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
     const bundleText = await fs.readFile(bundlePath, 'utf-8');
     const bundle = parseLocatedJson(bundleText, bundlePath);
 
@@ -53,7 +52,6 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     });
 
     // AWAIT
-    // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
     const hashedBundle = await publishBundle(bundle, connectionSpec);
     process.stdout.write(`${JSON.stringify(hashedBundle)}\n`);
   }

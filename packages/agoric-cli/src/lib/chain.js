@@ -122,7 +122,6 @@ export const pollBlocks = opts => async lookup => {
     } = status;
     try {
       // see await null above
-      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
       const result = await lookup({ time, height });
       return result;
     } catch (_err) {
@@ -132,7 +131,6 @@ export const pollBlocks = opts => async lookup => {
         height,
         'retrying...',
       );
-      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
       await delay(period);
     }
   }

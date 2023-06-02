@@ -10,7 +10,6 @@ async function buildTrace(c, debug) {
   const states = []; // list of { dump, serialized }
   while (c.dump().runQueue.length && c.dump().gcActions.length) {
     states.push({ dump: debug.dump(), serialized: debug.serialize() });
-    // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
   states.push({ dump: debug.dump(), serialized: debug.serialize() });
@@ -58,15 +57,12 @@ test('transcript-one load', async t => {
   //                                JSON.stringify(states[j].dump)));
 
   for (let i = 0; i < states.length; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     const cfg = await loadBasedir(
       new URL('basedir-transcript', import.meta.url).pathname,
     );
     const { serialized } = states[i];
     const { kernelStorage: s, debug: d } = initSwingStore(null, { serialized });
-    // eslint-disable-next-line no-await-in-loop
     const c = await buildVatController(cfg, ['one'], { kernelStorage: s });
-    // eslint-disable-next-line no-await-in-loop
     const newstates = await buildTrace(c, d);
     // newstates.forEach((s,j) =>
     //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`,
