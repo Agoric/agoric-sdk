@@ -4,6 +4,7 @@ NODEJS_VERSION=v16
 GOLANG_VERSION=1.20.3
 GOLANG_DIR=golang/cosmos
 GOLANG_DAEMON=$GOLANG_DIR/build/agd
+XSNAP_VERSION=agoric-upgrade-10
 
 # Args are major, minor and patch version numbers
 function golang_version_check() {
