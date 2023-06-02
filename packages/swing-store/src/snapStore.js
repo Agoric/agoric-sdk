@@ -309,7 +309,6 @@ export function makeSnapStore(
       yield* output;
     } finally {
       gzReader.destroy();
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await finished(gzReader);
       const hash = hashStream.digest('hex');
       hash === snapshotID ||

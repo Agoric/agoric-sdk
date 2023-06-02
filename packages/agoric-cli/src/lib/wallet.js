@@ -247,7 +247,6 @@ export const makeWalletUtils = async (
     untilNumWantsSatisfied = false,
   ) => {
     const lookup = async () => {
-      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
       const { offerStatuses } = await storedWalletState(from, minHeight);
       const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
       if (!offerStatus) throw Error('retry');

@@ -91,7 +91,6 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
       const source = { bundleID };
       const staticOptions = { name, ...creationOptions };
-      // eslint-disable-next-line @jessie.js/no-nested-await,no-await-in-loop
       await optionRecorder.recordStatic(vatID, source, staticOptions);
 
       kernelKeeper.addToAcceptanceQueue(

@@ -119,17 +119,13 @@ export async function xsnap(options) {
     const cleanup = async () => fs.unlink(snapPath);
 
     try {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const tmpSnap = await fs.open(snapPath, 'w');
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await tmpSnap.writeFile(
         // @ts-expect-error incorrect typings, does support AsyncIterable
         snapshotStream,
       );
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await tmpSnap.close();
     } catch (e) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await cleanup();
       throw e;
     }
@@ -289,7 +285,6 @@ export async function xsnap(options) {
       if (loadSnapshotHandler) {
         const { cleanup } = loadSnapshotHandler;
         loadSnapshotHandler = undefined;
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await cleanup();
       }
       if (iteration.done) {
@@ -328,9 +323,7 @@ export async function xsnap(options) {
           )}`,
         );
       } else if (message[0] === QUERY) {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         const commandResult = await handleCommand(message.subarray(1));
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await messagesToXsnap.next([QUERY_RESPONSE_BUF, commandResult]);
       } else {
         // unrecognized responses also kill the process
@@ -444,7 +437,6 @@ export async function xsnap(options) {
 
       if (snapshotUseFs) {
         // TODO: Refactor to use tmpFile rather than tmpName.
-        // eslint-disable-next-line @jessie.js/no-nested-await
         snapPath = await ptmpName({
           template: `make-snapshot-${safeHintFromDescription(
             description,
@@ -461,7 +453,6 @@ export async function xsnap(options) {
         // then wait for the command response to pipe the file stream into the
         // output, causing the file read to begin.
 
-        // eslint-disable-next-line @jessie.js/no-nested-await
         const handle = await fs.open(snapPath, 'w+');
         // @ts-expect-error 'close' event added in Node 15.4
         handle.on('close', () => {
@@ -522,7 +513,6 @@ export async function xsnap(options) {
 
       yield* output;
     } finally {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await done;
       (piped && snapshotReadSize === snapshotSize) ||
         Fail`Snapshot size does not match. saved=${q(snapshotSize)}, read=${q(

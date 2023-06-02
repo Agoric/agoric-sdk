@@ -293,7 +293,6 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // another few turns. We wait some number of turns before using p1
         // again, to exercise as many race conditions as possible.
         for (let i = 0; i < stalls; i += 1) {
-          // eslint-disable-next-line no-await-in-loop
           await Promise.resolve();
         }
 

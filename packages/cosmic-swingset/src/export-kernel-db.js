@@ -144,11 +144,9 @@ export const initiateSwingStoreExport = (
     if (includeExportData) {
       log?.(`Writing Export Data`);
       const fileName = `export-data.jsonl`;
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const exportDataFile = await open(pathResolve(exportDir, fileName), 'wx');
       cleanup.push(async () => exportDataFile.close());
 
-      // eslint-disable-next-line @jessie.js/no-nested-await
       for await (const entry of swingStoreExporter.getExportData()) {
         await exportDataFile.write(`${JSON.stringify(entry)}\n`);
       }

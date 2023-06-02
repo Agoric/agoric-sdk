@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 

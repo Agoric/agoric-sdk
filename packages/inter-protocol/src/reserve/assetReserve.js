@@ -69,7 +69,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
     feeMint,
     makeRecorderKit,
-    // eslint-disable-next-line @jessie.js/no-nested-await -- spurious
     storageNode: await privateArgs.storageNode,
     zcf,
   });

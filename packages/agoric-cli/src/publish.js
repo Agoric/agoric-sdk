@@ -289,14 +289,12 @@ export const makeCosmosBundlePublisher = ({
       const endpoint = urlForRpcAddress(rpcAddress);
 
       // AWAIT
-      // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
       const stargateClient = await connectWithSigner(endpoint, wallet, {
         gasPrice: Agoric.gasPrice,
         registry,
       });
 
       // AWAIT
-      // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
       const result = await stargateClient
         .signAndBroadcast(from.address, encodeObjects, Agoric.fee)
         .catch(error => {
@@ -312,7 +310,6 @@ export const makeCosmosBundlePublisher = ({
       }
 
       // AWAIT
-      // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
       await E(leader).jitter('agoric CLI deploy');
     }
 

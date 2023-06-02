@@ -27,12 +27,10 @@ export function buildRootObject(vatPowers) {
     },
     async runProbes() {
       for (const item of ourStuff) {
-        // eslint-disable-next-line no-await-in-loop
         const what = await E(alice).probeWeakMap(item);
         testLog(`probe of ${item} returns ${what}`);
       }
       for (const item of theirStuff) {
-        // eslint-disable-next-line no-await-in-loop
         const what = await E(alice).probeWeakMap(item);
         testLog(`probe of ${item} returns ${what}`);
       }

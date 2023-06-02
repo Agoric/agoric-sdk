@@ -38,7 +38,6 @@ export const makeTestCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const networkConfig = await getNetworkConfig(env);
       return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
     } catch (err) {

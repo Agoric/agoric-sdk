@@ -404,7 +404,6 @@ async function runToGC() {
 
   let qty;
   for (qty = 0; !collected; qty += 1) {
-    // eslint-disable-next-line no-await-in-loop
     await new Promise(setImmediate);
     trashCan.push(Array(10_000).map(() => ({})));
   }
@@ -467,9 +466,7 @@ test('GC after snapshot vs restore', async t => {
   let iters = 0;
 
   while (workerGC === cloneGC && iters < 3) {
-    // eslint-disable-next-line no-await-in-loop
     workerGC = await nextGC(worker, opts);
-    // eslint-disable-next-line no-await-in-loop
     cloneGC = await nextGC(clone, optClone);
     iters += 1;
   }

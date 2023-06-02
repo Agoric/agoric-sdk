@@ -2,7 +2,6 @@
 // @ts-check
 // @jessie-check
 
-/* eslint-disable @jessie.js/no-nested-await */
 /* global fetch, setTimeout */
 
 import '@agoric/casting/node-fetch-shim.js';

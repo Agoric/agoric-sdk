@@ -1,5 +1,4 @@
 /* global globalThis */
-/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 /** global print */
 
 const { assign, freeze, keys } = Object;

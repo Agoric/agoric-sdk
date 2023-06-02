@@ -1,4 +1,3 @@
-/* eslint-disable no-lone-blocks, no-await-in-loop */
 // @ts-check
 /**
  * @file Bootstrap test integration vaults with smart-wallet

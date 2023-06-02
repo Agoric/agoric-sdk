@@ -335,7 +335,6 @@ const doInit =
     config.NETWORK_NAME = overrideNetworkName;
 
     while (!noninteractive) {
-      // eslint-disable-next-line no-await-in-loop
       const { ROLE, ...rest } = await askPlacement({ inquirer })(
         config.PLACEMENTS,
         config.ROLES,
@@ -351,7 +350,6 @@ const doInit =
         const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
         provider = PROVIDERS[PROVIDER];
       } else {
-        // eslint-disable-next-line no-await-in-loop
         const { PROVIDER } = await askProvider({ inquirer })(PROVIDERS);
         if (!PROVIDER) {
           continue;
@@ -375,7 +373,6 @@ const doInit =
         };
 
         if (provider.askDetails) {
-          // eslint-disable-next-line no-await-in-loop
           const { CANCEL, ...PLACEMENT_DETAILS } = await provider.askDetails(
             provider,
             myDetails,
@@ -402,7 +399,6 @@ const doInit =
 
       const dcs =
         provider.datacenters &&
-        // eslint-disable-next-line no-await-in-loop
         (await provider.datacenters(provider, PLACEMENT, myDetails));
       config.ROLES;
       const [_p, placement] = config.PLACEMENTS.find(
@@ -441,7 +437,6 @@ const doInit =
             }
             return ret;
           });
-        // eslint-disable-next-line no-await-in-loop
         const { DATACENTER, NUM_NODES, MORE } = await provider.askDatacenter(
           provider,
           PLACEMENT,
@@ -541,10 +536,8 @@ variable ${JSON.stringify(vname)} {
 
       // Create a placement-specific key file.
       const keyFile = `${PLACEMENT}-${config.SSH_PRIVATE_KEY_FILE}`;
-      // eslint-disable-next-line no-await-in-loop
       if (!(await rd.exists(keyFile))) {
         // Set empty password.
-        // eslint-disable-next-line no-await-in-loop
         await needDoRun([
           'ssh-keygen',
           '-N',
@@ -556,7 +549,6 @@ variable ${JSON.stringify(vname)} {
         ]);
       }
 
-      // eslint-disable-next-line no-await-in-loop
       await provider.createPlacementFiles(provider, PLACEMENT, clusterPrefix);
     }
 

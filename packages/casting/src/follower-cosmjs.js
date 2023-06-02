@@ -1,5 +1,4 @@
 /// <reference types="ses"/>
-/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await */
 
 import { E, Far } from '@endo/far';
 import * as tendermint34 from '@cosmjs/tendermint-rpc';

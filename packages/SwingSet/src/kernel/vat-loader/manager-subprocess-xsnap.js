@@ -165,7 +165,6 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `snapshot loaded. dispatch ready.`);
     } else {
       parentLog(vatID, `instructing worker to load bundle..`);
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const { reply: bundleReply } = await issueTagged([
         'setBundle',
         vatID,
@@ -189,7 +188,6 @@ export function makeXsSubprocessFactory({
       /** @type { WorkerResults } */
       let result;
       try {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         result = await issueTagged(['deliver', delivery]);
       } catch (err) {
         parentLog('issueTagged error:', err.code, err.message);

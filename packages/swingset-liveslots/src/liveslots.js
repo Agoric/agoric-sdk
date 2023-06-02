@@ -257,7 +257,6 @@ function build(
       // Yes, we know this is an await inside a loop.  Too bad.  (Also, it's a
       // `do {} while` loop, which means there's no conditional bypass of the
       // await.)
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await gcTools.gcAndFinalize();
 
       // possiblyDeadSet contains a baseref for everything (Presences,

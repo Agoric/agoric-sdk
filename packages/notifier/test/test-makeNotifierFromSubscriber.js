@@ -77,16 +77,13 @@ test('makeNotifierFromSubscriber(finishes) - getUpdateSince', async t => {
   let updateCount;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    // eslint-disable-next-line no-await-in-loop
     const result = await notifier.getUpdateSince(updateCount);
     ({ updateCount } = result);
     results.push(result.value);
-    // eslint-disable-next-line no-await-in-loop
     t.deepEqual(await notifier.getUpdateSince(), result);
     if (updateCount === undefined) {
       break;
     }
-    // eslint-disable-next-line no-await-in-loop
     await publishNextBatch();
   }
 
@@ -142,16 +139,13 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
   try {
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      // eslint-disable-next-line no-await-in-loop
       const result = await notifier.getUpdateSince(updateCount);
       ({ updateCount } = result);
       results.push(result.value);
-      // eslint-disable-next-line no-await-in-loop
       t.deepEqual(await notifier.getUpdateSince(), result);
       if (updateCount === undefined) {
         break;
       }
-      // eslint-disable-next-line no-await-in-loop
       await publishNextBatch();
     }
     throw Error('for-await-of completed successfully');
@@ -326,7 +320,6 @@ test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t =>
   while (updateCount) {
     finalResultP = notifier.getUpdateSince(updateCount);
     publishNextBatch();
-    // eslint-disable-next-line no-await-in-loop
     finalResult = await finalResultP;
     ({ updateCount } = finalResult);
     if (updateCount) {

@@ -168,7 +168,6 @@ export async function makeSwingsetController(
   writeSlogObject({ type: 'kernel-init-start' });
 
   writeSlogObject({ type: 'bundle-kernel-start' });
-  // eslint-disable-next-line @jessie.js/no-nested-await
   const { kernelBundle = await buildKernelBundle() } = runtimeOptions;
   writeSlogObject({ type: 'bundle-kernel-finish' });
 
@@ -474,7 +473,6 @@ export async function buildVatController(
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
   if (!swingsetIsInitialized(kernelStorage)) {
-    // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       argv,

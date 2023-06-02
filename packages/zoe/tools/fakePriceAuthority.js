@@ -254,10 +254,8 @@ export async function makeFakePriceAuthority(options) {
   async function* generateQuotes(amountIn, brandOut) {
     let record = await ticker.getUpdateSince();
     while (record.updateCount !== undefined) {
-      // eslint-disable-next-line no-await-in-loop
       const { value: timestamp } = record; // = await E(timer).getCurrentTimestamp();
       yield priceInQuote(amountIn, brandOut, timestamp);
-      // eslint-disable-next-line no-await-in-loop
       record = await ticker.getUpdateSince(record.updateCount);
     }
   }

@@ -371,7 +371,6 @@ export function makeVatWarehouse({
     const { enablePipelining = false } = options;
 
     if (options.useTranscript) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await replayTranscript(vatID, vatKeeper, manager);
     }
 
@@ -419,7 +418,6 @@ export function makeVatWarehouse({
         break;
       }
       logStartup(`provideVatKeeper for vat ${name} as vat ${vatID}`);
-      // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
       numPreloaded += 1;
     }
@@ -431,7 +429,6 @@ export function makeVatWarehouse({
         break;
       }
       logStartup(`provideVatKeeper for dynamic vat ${vatID}`);
-      // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
       numPreloaded += 1;
     }
@@ -670,7 +667,6 @@ export function makeVatWarehouse({
     // worker may or may not be online
     if (ephemeral.vats.has(vatID)) {
       try {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await evict(vatID);
       } catch (err) {
         console.debug('vat termination was already reported; ignoring:', err);

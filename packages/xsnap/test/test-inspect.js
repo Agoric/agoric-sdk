@@ -108,7 +108,6 @@ test('xsnap inspect', async t => {
     const [toEval, toRender] = Array.isArray(testCase)
       ? testCase
       : [testCase, testCase];
-    // eslint-disable-next-line no-await-in-loop
     const [[renderedBox], shouldBeNull] = await w.run(
       // We need to box the value because `console.log` of plain strings won't
       // be passed through the inspector).
