@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.15.0...@agoric/inter-protocol@0.16.0) (2023-06-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **price:** rm deprecated getRoundStartNotifier
+* rm getMetrics from unpublished contracts
+* remove deprecated getSubscriber
+* **contractSupport:** rm unused metrics helpers
+* **vaults:** correct getDebtIssuer name
+* **vaults:** remove unused getCollaterals
+* rename EndorsedUI to ReferencedUI
+
+### Features
+
+* **board-utils:** vbankAssets in makeAgoricNamesRemotesFromFakeStorage ([0a7bc2c](https://github.com/Agoric/agoric-sdk/commit/0a7bc2c806d80c93d20a9181d803ff9db0b709bd))
+* **clientSupport:** Offers.fluxAggregator.PushPrice ([bae997a](https://github.com/Agoric/agoric-sdk/commit/bae997ae9d28bad0ec02896975044f27c64d123d))
+* **vaults:** don't send empty amounts to reserve ([74a881d](https://github.com/Agoric/agoric-sdk/commit/74a881d9f683212de40e8736235f1009c617fec9))
+* rename EndorsedUI to ReferencedUI ([8e904a9](https://github.com/Agoric/agoric-sdk/commit/8e904a9e379d69aa0c2a633ff2d6b3afb1b8005d))
+
+
+### Bug Fixes
+
+* **auction:** assets added after auction start don't set IST limit ([7916fcb](https://github.com/Agoric/agoric-sdk/commit/7916fcbe976fa8468400b3822875cfab303367a8))
+* **clientSupport:** makePsmProposal types ([7b6782c](https://github.com/Agoric/agoric-sdk/commit/7b6782c88d65e52dc79398e8402822efdffe3684))
+* **inter-protocol:** `start-local-chain.sh` uses correct config ([240f58e](https://github.com/Agoric/agoric-sdk/commit/240f58e880e16ee4580a7db142ba6de64429ef16))
+* **vaultManager:** remaining vaults liquidated after proceeds ([5f83244](https://github.com/Agoric/agoric-sdk/commit/5f8324456306e3e2689c82827671243a0d031dee))
+* **vaults:** address a divide-by-zero; correct penalty w/no bidders ([5e8b363](https://github.com/Agoric/agoric-sdk/commit/5e8b3634bf399960b19378fd3b8ea720edcb0e37)), closes [#7785](https://github.com/Agoric/agoric-sdk/issues/7785)
+* **vaults:** handle failure sending to reserve ([3c043a5](https://github.com/Agoric/agoric-sdk/commit/3c043a577d18f1d202edcd013b77d5d92adf9d9f))
+* **vaults:** when vault penalty gt collateral ([a79eff9](https://github.com/Agoric/agoric-sdk/commit/a79eff92cadb4114b1be10ce51e3ad9794de668e))
+* **vaults!:** distribute all Collateral after liquidation ([d572ddf](https://github.com/Agoric/agoric-sdk/commit/d572ddf256e5405c0318678b00f4ba01eec18b11))
+* **vaults!:** reduce proceeds to vault holders by share of penalty ([0a46a7c](https://github.com/Agoric/agoric-sdk/commit/0a46a7c5ce6d9149ba06742a5917eb4f9c6e415b))
+
+
+### Miscellaneous Chores
+
+* **price:** rm deprecated getRoundStartNotifier ([10f50aa](https://github.com/Agoric/agoric-sdk/commit/10f50aa42883bf2d0c9a30fc2765b67adeb503ae))
+* remove deprecated getSubscriber ([36b4027](https://github.com/Agoric/agoric-sdk/commit/36b40274335479eebae286ce627e3197d4b2fd9c))
+* rm getMetrics from unpublished contracts ([7514f6c](https://github.com/Agoric/agoric-sdk/commit/7514f6c700b6c70cc350fba87341cb36573cc7d7))
+* **contractSupport:** rm unused metrics helpers ([8ba6d02](https://github.com/Agoric/agoric-sdk/commit/8ba6d02ed3e9d3669cf3ecf88efa70564d2523e9))
+* **vaults:** correct getDebtIssuer name ([f624252](https://github.com/Agoric/agoric-sdk/commit/f624252dd9ab6ac59cba606d750400ed7513fe7a))
+* **vaults:** remove unused getCollaterals ([f01ca33](https://github.com/Agoric/agoric-sdk/commit/f01ca3355f9708f68a000bbfc6cb67291198d73e))
+
+
+
 ## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.14.0...@agoric/inter-protocol@0.15.0) (2023-05-24)
 
 

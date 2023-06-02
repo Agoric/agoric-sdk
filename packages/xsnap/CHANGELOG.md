@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.14.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.14.1...@agoric/xsnap@0.14.2) (2023-06-02)
+
+
+### Bug Fixes
+
+* **xsnap:** update Moddable SDK to fix BigInt arithmetic ([a71f2f2](https://github.com/Agoric/agoric-sdk/commit/a71f2f2c76ed6da9c9fac25e1aa8974d1451588c))
+
+
+
 ### [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.14.0...@agoric/xsnap@0.14.1) (2023-05-24)
 
 
