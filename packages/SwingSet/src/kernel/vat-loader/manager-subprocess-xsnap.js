@@ -187,6 +187,7 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `sending delivery`, delivery);
       /** @type { WorkerResults } */
       let result;
+      await null;
       try {
         result = await issueTagged(['deliver', delivery]);
       } catch (err) {

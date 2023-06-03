@@ -283,6 +283,7 @@ export const connectFaucet = async ({
       entries(FaucetPurseDetail).map(async ([issuerName, record]) => {
         /** @param {string} name */
         const provideIssuerKit = async name => {
+          await null;
           switch (name) {
             case Stable.symbol:
               return stableIssuerKit;

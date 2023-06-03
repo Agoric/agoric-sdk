@@ -316,6 +316,7 @@ export async function main() {
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   let config;
+  await null;
   if (configPath) {
     config = await loadSwingsetConfigFile(configPath);
     if (config === null) {
@@ -551,6 +552,7 @@ export async function main() {
       cli.defineCommand('step', {
         help: 'Step the swingset one crank, without commit',
         action: async () => {
+          await null;
           try {
             const steps = await controller.step();
             log(steps ? 'stepped one crank' : "didn't step, queue is empty");
@@ -587,6 +589,7 @@ export async function main() {
     const rawStatsPre = controller.getStats();
     let totalSteps = 0;
     let totalDeltaT = 0n;
+    await null;
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
         launchIndirectly ? 'launcher' : 'bootstrap',
@@ -628,6 +631,7 @@ export async function main() {
       blockHeight: blockNumber,
       blockTime: blockStartTime,
     });
+    await null;
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       try {
@@ -706,6 +710,7 @@ export async function main() {
     let totalSteps = 0;
     let steps;
     const runAll = stepLimit === 0;
+    await null;
     do {
       steps = await runBlock(blockSize, doCommit);
       totalSteps += steps;

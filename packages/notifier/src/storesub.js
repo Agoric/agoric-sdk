@@ -20,8 +20,8 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
   const iterator = subscribeEach(subscriber)[Symbol.asyncIterator]();
 
   let finished = false;
+  await null;
   while (!finished) {
-    // Allow nested awaits (in loop) because it's safe for each to run in a turn
     const { value, done } = await iterator.next();
     await consumeValue(value);
     finished = !!done;

@@ -151,6 +151,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
 
   const exists = async file => {
+    await null;
     try {
       await fs.stat(file);
       return true;
@@ -173,6 +174,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const agServer = `_agstate/agoric-servers/${profileName}`;
 
+    await null;
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
       // rm is available on all the unix-likes, so use it for speed.
@@ -246,6 +248,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const { cosmosChain, cosmosChainBuild } = getSDKBinaries(sdkPrefixes);
+    await null;
     if (popts.pull || popts.rebuild) {
       if (popts.dockerTag) {
         const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
@@ -448,6 +451,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const agServer = `_agstate/agoric-servers/${profileName}-${portNum}`;
 
     const { cosmosClientBuild } = getSDKBinaries(sdkPrefixes);
+    await null;
     if (popts.pull || popts.rebuild) {
       if (popts.dockerTag) {
         const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
@@ -685,6 +689,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
+    await null;
     if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SOLO_IMAGE]);
       if (exitStatus) {
@@ -724,6 +729,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
     const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
 
+    await null;
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
       // rm is available on all the unix-likes, so use it for speed.

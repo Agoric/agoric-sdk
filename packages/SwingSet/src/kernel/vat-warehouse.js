@@ -665,6 +665,7 @@ export function makeVatWarehouse({
    */
   async function stopWorker(vatID) {
     // worker may or may not be online
+    await null;
     if (ephemeral.vats.has(vatID)) {
       try {
         await evict(vatID);

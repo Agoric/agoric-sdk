@@ -397,6 +397,7 @@ export default function buildKernel(
     assert(vatWarehouse.lookup(vatID));
     // Ensure that the vatSlogger is available before clist translation.
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
+    await null;
     try {
       /** @type { VatDeliveryResult } */
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
@@ -1340,6 +1341,7 @@ export default function buildKernel(
       Fail`Kernel reentrancy is forbidden`;
     }
     processQueueRunning = Error('here');
+    await null;
     try {
       const result = await processor(message);
       processQueueRunning = undefined;
@@ -1752,6 +1754,7 @@ export default function buildKernel(
       throw Error('must do kernel.start() before step()');
     }
     kernelKeeper.startCrank();
+    await null;
     try {
       kernelKeeper.establishCrankSavepoint('start');
       const { processor, message } = getNextMessageAndProcessor();
@@ -1785,6 +1788,7 @@ export default function buildKernel(
       throw Error('must do kernel.start() before run()');
     }
     let count = 0;
+    await null;
     for (;;) {
       kernelKeeper.startCrank();
       try {

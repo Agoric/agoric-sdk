@@ -49,7 +49,8 @@ export const getNetworkConfig = async env => {
 };
 
 /** @type {MinimalNetworkConfig} */
-export const networkConfig = await getNetworkConfig(process.env);
+const networkConfig = await getNetworkConfig(process.env);
+export { networkConfig };
 // console.warn('networkConfig', networkConfig);
 
 /**
@@ -131,6 +132,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
       const parts = [];
       // undefined the first iteration, to query at the highest
       let blockHeight;
+      await null;
       do {
         // console.debug('READING', { blockHeight });
         let values;
@@ -240,6 +242,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {MinimalNetworkConfig} config
  */
 export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+  await null;
   try {
     const vstorage = makeVStorage({ fetch }, config);
     const fromBoard = makeFromBoard();

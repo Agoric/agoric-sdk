@@ -333,6 +333,7 @@ export const makeScheduler = async (
       // NB: may be fired with the initial params as well
       async updateState(_newState) {
         trace('received param update', _newState);
+        await null;
         if (!nextSchedule) {
           trace('repairing nextSchedule and restarting');
           ({ nextSchedule } = await initializeNextSchedule());

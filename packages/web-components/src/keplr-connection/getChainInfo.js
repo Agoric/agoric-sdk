@@ -4,6 +4,7 @@ import { Errors } from './errors.js';
 export const getChainInfo = async networkConfig => {
   let chainId;
   let rpcs;
+  await null;
   try {
     const res = await fetch(networkConfig);
     const { chainName, rpcAddrs } = await res.json();

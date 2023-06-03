@@ -29,6 +29,7 @@ async function addChain(basedir, chainConfig, force = false) {
   const url = new URL(actualConfig, `file://${process.cwd()}`);
   console.log('downloading netconfig from', url.href);
   let netconf;
+  await null;
   if (url.protocol === 'file:') {
     const f = fs.readFileSync(url.pathname, 'utf-8');
     netconf = JSON.parse(f);

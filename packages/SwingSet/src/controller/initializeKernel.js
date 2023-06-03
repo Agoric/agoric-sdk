@@ -63,6 +63,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   let gotVatAdminRootKref;
 
   // generate the genesis vats
+  await null;
   if (config.vats) {
     for (const name of Object.keys(config.vats)) {
       const {

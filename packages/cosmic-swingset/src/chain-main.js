@@ -494,6 +494,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   }
 
   async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
+    await null;
     switch (request) {
       case 'restore': {
         const exportDir = requestArgs[0];
