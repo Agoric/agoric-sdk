@@ -31,6 +31,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     chainID,
   };
 
+  await null;
   for (const bundlePath of rawArgs.slice(1)) {
     // AWAIT
     const bundleText = await fs.readFile(bundlePath, 'utf-8');

@@ -35,6 +35,7 @@ const main = async (progname, rawArgs, powers) => {
   const program = new Command();
 
   async function isNotBasedir() {
+    await null;
     try {
       await fs.stat(STAMP);
       return false;

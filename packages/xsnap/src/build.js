@@ -175,6 +175,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     },
   ];
 
+  await null;
   if (args.includes('--show-env')) {
     for (const submodule of submodules) {
       const { path, envPrefix, commitHash } = submodule;

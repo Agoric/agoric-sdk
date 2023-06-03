@@ -423,6 +423,7 @@ const publishBundle = async (
     )}, publishBundle supports only "endoZipBase64" with "endoZipBase64Sha512"`;
   }
 
+  await null;
   if (connectionSpec === undefined && getDefaultConnection !== undefined) {
     connectionSpec = await getDefaultConnection();
   }

@@ -138,6 +138,7 @@ export function makeStartXSnap(options) {
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     const snapshotLoadOpts = getSnapshotLoadOptions(initDetails);
+    await null;
     if (snapshotLoadOpts) {
       const xs = await doXSnap({
         name,

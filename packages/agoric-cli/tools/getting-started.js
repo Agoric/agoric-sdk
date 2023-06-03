@@ -93,6 +93,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     }
   };
 
+  await null;
   try {
     process.on('SIGINT', runFinalizers);
     process.on('exit', runFinalizers);

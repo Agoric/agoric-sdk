@@ -4,6 +4,7 @@
  * @returns {Promise<import("../types-internal").WorkerOptions>}
  */
 export async function makeWorkerOptions(managerType, bundleHandler) {
+  await null;
   if (managerType === 'local') {
     return harden({ type: 'local' });
   } else if (managerType === 'xsnap' || managerType === 'xs-worker') {
@@ -23,6 +24,7 @@ export async function updateWorkerOptions(
   { bundleHandler },
 ) {
   const { type } = origWorkerOptions;
+  await null;
   if (type === 'local') {
     return origWorkerOptions;
   } else if (type === 'xsnap') {

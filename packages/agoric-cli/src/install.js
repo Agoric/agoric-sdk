@@ -287,6 +287,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   await Promise.all(
     [...sdkPackageToPath.entries()].map(async ([pjName, dir]) => {
       const SUBOPTIMAL = false;
+      await null;
       if (SUBOPTIMAL) {
         // This use of yarn is noisy and slow.
         await pspawn('yarn', [...linkFlags, 'unlink', pjName]);

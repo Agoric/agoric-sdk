@@ -262,6 +262,7 @@ const buildSwingset = async (
     async function deliverInboundToMbx(sender, messages, ack) {
       Array.isArray(messages) || Fail`inbound given non-Array: ${messages}`;
       // console.debug(`deliverInboundToMbx`, messages, ack);
+      await null;
       if (mb.deliverInbound(sender, messages, ack)) {
         await processKernel();
       }
@@ -316,6 +317,7 @@ const buildSwingset = async (
   const queuedMoveTimeForward = withInputQueue(
     async function moveTimeForward() {
       const now = Date.now();
+      await null;
       try {
         if (timer.poll(now)) {
           await processKernel();
@@ -489,6 +491,7 @@ const start = async (basedir, argv) => {
   let hostport;
   await Promise.all(
     connections.map(async c => {
+      await null;
       switch (c.type) {
         case 'chain-cosmos-sdk':
           {

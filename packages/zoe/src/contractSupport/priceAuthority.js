@@ -336,6 +336,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
         deadline,
         Far('wakeObj', {
           async wake(timestamp) {
+            await null;
             try {
               const quoteP = createQuote(calcAmountOut => ({
                 amountIn,

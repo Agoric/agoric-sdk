@@ -93,6 +93,7 @@ export function makeLocalVatManagerFactory({
       return vatNS;
     }
 
+    await null;
     if (enableSetup) {
       const vatNS = await buildVatNamespace({}, {});
       const setup = vatNS.default;

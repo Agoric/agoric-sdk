@@ -251,12 +251,10 @@ function build(
     const importsToRetire = new Set();
     const exportsToRetire = new Set();
     let doMore;
+    await null;
     do {
       doMore = false;
 
-      // Yes, we know this is an await inside a loop.  Too bad.  (Also, it's a
-      // `do {} while` loop, which means there's no conditional bypass of the
-      // await.)
       await gcTools.gcAndFinalize();
 
       // possiblyDeadSet contains a baseref for everything (Presences,

@@ -94,6 +94,7 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
 
   const tickN = async (nTimes, msg) => {
     nTimes >= 1 || Fail`invariant nTimes >= 1`;
+    await null;
     for (let i = 0; i < nTimes; i += 1) {
       await tick(msg);
     }

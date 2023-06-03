@@ -422,6 +422,7 @@ export async function xsnap(options) {
     let snapshotReadSize = 0;
     /** @type {number | undefined} */
     let snapshotSize;
+    await null;
     try {
       /** @type {string} */
       let snapPath;

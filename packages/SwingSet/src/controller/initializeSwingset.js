@@ -34,8 +34,10 @@ const { keys, values, fromEntries } = Object;
  * @returns {Promise<Record<string, V>>}
  * @template V
  */
-const allValues = async obj =>
-  fromEntries(zip(keys(obj), await Promise.all(values(obj))));
+const allValues = async obj => {
+  const vs = await Promise.all(values(obj));
+  return fromEntries(zip(keys(obj), vs));
+};
 
 const bundleRelative = rel =>
   bundleSource(new URL(rel, import.meta.url).pathname);
@@ -171,6 +173,7 @@ export function loadBasedir(basedir, options = {}) {
  *    determined.
  */
 async function resolveSpecFromConfig(referrer, specPath) {
+  await null;
   try {
     return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
   } catch (e) {
@@ -231,6 +234,7 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
  *    invalid.
  */
 export async function loadSwingsetConfigFile(configPath) {
+  await null;
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const referrer = new URL(

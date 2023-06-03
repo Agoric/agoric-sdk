@@ -228,6 +228,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   }
 
   async function upgradeStaticVat(vatID, pauseTarget, bundleID, options) {
+    await null;
     if (pauseTarget) {
       await E(pauseTarget)
         .pauseService()

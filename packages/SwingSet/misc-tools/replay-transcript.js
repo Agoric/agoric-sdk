@@ -290,6 +290,7 @@ async function replay(transcriptFile) {
   /** @type {WorkerData[]} */
   const workers = [];
 
+  await null;
   if (worker === 'xs-worker') {
     /** @type {import('../src/types-external.js').Bundle[] | undefined} */
     let overrideBundles;
@@ -422,6 +423,7 @@ async function replay(transcriptFile) {
     completeWorkerStep(workerData);
     workers.push(workerData);
     updateWorkersSynced();
+    const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
     const managerOptions =
       /** @type {import('../src/types-internal.js').ManagerOptions} */ (
         /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
@@ -430,7 +432,7 @@ async function replay(transcriptFile) {
           useTranscript: true,
           workerOptions: {
             type: worker === 'xs-worker' ? 'xsnap' : worker,
-            bundleIDs: await bundleHandler.getCurrentBundleIDs(),
+            bundleIDs: currentBundleIDs,
           },
         })
       );

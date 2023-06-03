@@ -353,6 +353,7 @@ export async function makeHTTPListener(
 
     ws.on('message', async message => {
       let obj = {};
+      await null;
       try {
         obj = JSON.parse(message);
         const res = await inboundCommand(obj, meta, id);

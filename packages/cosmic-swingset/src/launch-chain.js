@@ -131,6 +131,7 @@ export async function buildSwingset(
       swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
     // Find the entrypoints for all the core proposals.
+    await null;
     if (coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
         coreProposals,
@@ -529,6 +530,7 @@ export async function launch({
      */
     async function processActions(inboundQueue) {
       let keepGoing = true;
+      await null;
       for (const { action, context } of inboundQueue.consumeAll()) {
         const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
         inboundQueueMetrics.decStat();

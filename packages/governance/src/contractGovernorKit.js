@@ -76,6 +76,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
         async provideApiGovernance() {
           const { timer } = powers;
           const { creatorFacet } = this.state;
+          await null;
           if (!apiGovernance) {
             trace('awaiting governed API dependencies');
             const [governedApis, governedNames] = await Promise.all([

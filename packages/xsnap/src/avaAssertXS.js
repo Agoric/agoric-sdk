@@ -299,6 +299,7 @@ function makeTester(htest, out) {
       expectation,
       message = `should reject like ${expectation}`,
     ) {
+      await null;
       try {
         await (typeof thrower === 'function' ? thrower() : thrower);
         assert(false, message);
@@ -309,6 +310,7 @@ function makeTester(htest, out) {
     },
     /** @type {(thrower: () => Promise<unknown>, message?: string) => Promise<void> } */
     async notThrowsAsync(nonThrower, message) {
+      await null;
       try {
         await (typeof nonThrower === 'function' ? nonThrower() : nonThrower);
       } catch (ex) {
@@ -334,6 +336,7 @@ const test = (label, run, htestOpt) => {
   htest.queue(label, async () => {
     const out = tapFormat(htest.send);
     const t = makeTester(htest, out);
+    await null;
     try {
       // out.diagnostic('start', label);
       await run(t);

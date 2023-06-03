@@ -4,9 +4,12 @@
 
 /* global fetch, setTimeout */
 
+import '@endo/init/pre.js';
+
 import '@agoric/casting/node-fetch-shim.js';
 import '@endo/init';
-import '@endo/init/pre.js';
+
+import { E } from '@endo/far';
 
 import { execFileSync } from 'child_process';
 import path from 'path';
@@ -73,13 +76,11 @@ program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
 program.addCommand(makeInterCommand(procIO, { fetch }));
 program.addCommand(makeTestCommand(procIO, { fetch }));
 
-try {
-  await program.parseAsync(process.argv);
-} catch (err) {
+E.when(program.parseAsync(process.argv), undefined, err => {
   if (err instanceof CommanderError) {
     console.error(err.message);
   } else {
     console.error(err); // CRASH! show stack trace
   }
   process.exit(1);
-}
+});
