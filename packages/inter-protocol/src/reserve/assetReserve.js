@@ -66,10 +66,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   };
   trace('awaiting takeFeeMint');
   const feeMint = await takeFeeMint();
+  const storageNode = await privateArgs.storageNode;
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
     feeMint,
     makeRecorderKit,
-    storageNode: await privateArgs.storageNode,
+    storageNode,
     zcf,
   });
 
