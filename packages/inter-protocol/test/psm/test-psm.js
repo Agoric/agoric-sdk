@@ -488,8 +488,6 @@ test('mix of trades: failures do not prevent later service', async t => {
       default:
         assert.fail(kind);
     }
-    if (kind === 'give') {
-    }
     ix += 1;
   }
 });

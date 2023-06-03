@@ -363,7 +363,10 @@ export const makeAnchorAsset = async (
     slotToBoardRemote,
   );
   const metricsKey = `${stablePsmKey}.${keyword}.metrics`;
-  if (toSlotReviver.has(metricsKey)) {
+  const maybeReviveMetrics = async () => {
+    if (!toSlotReviver.has(metricsKey)) {
+      return;
+    }
     const metrics = toSlotReviver.getItem(metricsKey);
     produceAnchorBalancePayments.resolve(
       makeScalarBigMapStore('Anchor balance payments', { durable: true }),
@@ -377,7 +380,8 @@ export const makeAnchorAsset = async (
       AmountMath.make(brand, metrics.anchorPoolBalance.value),
     );
     anchorPaymentMap.init(brand, pmt);
-  }
+  };
+  await maybeReviveMetrics();
 
   await Promise.all([
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, kit.issuer),
