@@ -67,8 +67,8 @@ module.exports = {
     // that are used by multiple clients. So we enable it throughout the repo
     // and aim for no exceptions.
     //
-    // TODO the default is 'warn', but upgrade this to 'error' when possible
-    // '@jessie.js/safe-await-separator': 'error',
+    // The default is 'warn', but we want to enforce 'error'.
+    '@jessie.js/safe-await-separator': 'error',
 
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
@@ -107,6 +107,7 @@ module.exports = {
       files: [
         'packages/**/demo/**/*.js',
         'packages/*/test/**/*.js',
+        'packages/*/test/**/*.test.js',
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
