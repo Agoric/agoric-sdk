@@ -7,18 +7,18 @@ ENV UPGRADE_TO=agoric-upgrade-8 THIS_NAME=agoric-upgrade-7-2 BOOTSTRAP_MODE=${BO
 RUN echo "${BOOTSTRAP_MODE}"
 RUN mkdir -p /usr/src/agoric-sdk/upgrade-test-scripts
 WORKDIR /usr/src/agoric-sdk/
-COPY ./*.sh ./upgrade-test-scripts/
+COPY ./start_ag0.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_ag0.sh
 
-ARG BOOTSTRAP_MODE
 ## this is agoric-upgrade-8 aka pismoA
 FROM ghcr.io/agoric/agoric-sdk:29 as agoric-upgrade-8
 ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-8 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 WORKDIR /usr/src/agoric-sdk/
 
-COPY ./*.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-7-2 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
@@ -32,7 +32,7 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-8-1 UPGRADE_TO=agoric-upgrade-9 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./*.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
@@ -46,7 +46,7 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-9 UPGRADE_TO=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./*.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8-1 /root/.agoric /root/.agoric
 WORKDIR /usr/src/agoric-sdk/
@@ -62,7 +62,7 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./*.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-9 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
@@ -77,7 +77,7 @@ ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 # this boot doesn't need an upgrade
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./*.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-10 /root/.agoric /root/.agoric
 RUN apt install -y tmux
