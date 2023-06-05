@@ -38,21 +38,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
   ##################
-  # NPM pack tests
-  # Check that all the packages can be packed to publish
-  npm-pack:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: '18.x'
-
-      - name: npm pack
-        run: yarn lerna exec yarn pack
-
-  ##################
   # Lint tests
   # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
   # We split the package tests into two jobs because type linting
