@@ -26,6 +26,21 @@ make build
 make run
 ```
 
+This will start a container with tmux, with the first window `0` being chain logs `agd start` and the second and current window `1` being a bash shell. You can navigate using `bind-key+B N` (assuming `bind-key` is CTRL/CMD) and N is the window. For more shortcuts see [tmux shortcuts & cheatsheet](https://gist.github.com/MohamedAlaa/2961058#list-all-shortcuts).
+
+The container and chain will halt once you detach from the session.
+
+### Using tmux control mode
+
+If you use [iTerm you can use tmux with native integration](https://iterm2.com/documentation-tmux-integration.html), called control mode, which will make your tmux session appear as a physical window. Pass `TMUX_CC=1`:
+
+```shell
+TMUX_CC=1 make run
+```
+
+**Note:** If your terminal does not support control mode, do not use this. It will show raw control codes, garbling your terminal.
+
+### Troubleshooting
 If you get an error about port 26656 already in use, you have a local chain running on your OS.
 
 If you run into other problems, you might have a local `agoric-sdk:latest` that
