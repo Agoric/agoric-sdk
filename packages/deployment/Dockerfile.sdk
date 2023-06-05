@@ -3,7 +3,7 @@
 FROM golang:1.20 as cosmos-go
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
-COPY go.mod go.sum ../../
+COPY golang/cosmos/go.mod golang/cosmos/go.sum ./
 RUN go mod download
 
 COPY golang/cosmos ./
