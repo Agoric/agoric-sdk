@@ -48,6 +48,7 @@
   "files": [
     "LICENSE*",
     "api.js",
+    "build.env",
     "src"
   ],
   "publishConfig": {

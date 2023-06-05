@@ -29,9 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # FIXME: Use this to enable NPM deploys...
-        # cli: [link-cli, local-npm]
-        cli: [link-cli]
+        cli: [link-cli, local-npm]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -89,6 +87,8 @@ jobs:
         if: ${{ matrix.cli == 'local-npm' }}
         run: |
           tmp_registry_log=`mktemp`
+          dist_tag=agblah
+
           nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
           # Wait for `verdaccio` to boot
           grep -q 'http address' <(tail -f $tmp_registry_log)
@@ -103,14 +103,23 @@ jobs:
 
           npm whoami
 
+          # Publish the packages to our local service.
           yarn lerna publish --conventional-prerelease --canary --exact \
-            --dist-tag=blah --preid=dev-$(git rev-parse --short=7 HEAD) \
+            --dist-tag=$dist_tag --preid=dev-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
 
-          yarn global add agoric@blah </dev/null
+          # Git dirty check.
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Git status is dirty, aborting."
+            git status
+            exit 1
+          fi
+
+          # Install the Agoric CLI on this machine's $PATH.
+          yarn global add agoric@$dist_tag </dev/null
 
           # Use the locally-installed dist-tag.
-          echo 'AGORIC_INSTALL_OPTIONS=["blah"]' >> $GITHUB_ENV
+          echo "AGORIC_INSTALL_OPTIONS=[\"$dist_tag\"]" >> $GITHUB_ENV
           echo 'AGORIC_START_OPTIONS=["--rebuild"]' >> $GITHUB_ENV
           echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
 
