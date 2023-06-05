@@ -38,6 +38,8 @@ If you use [iTerm you can use tmux with native integration](https://iterm2.com/d
 TMUX_CC=1 make run
 ```
 
+**Note:** If your terminal does not support control mode, do not use this. It will show raw control codes, garbling your terminal.
+
 ### Troubleshooting
 If you get an error about port 26656 already in use, you have a local chain running on your OS.
 
