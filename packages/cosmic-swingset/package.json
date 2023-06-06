@@ -4,7 +4,7 @@
   "description": "Agoric's Cosmos blockchain integration",
   "type": "module",
   "bin": {
-    "ag-chain-cosmos": "./src/entrypoint.js"
+    "ag-chain-cosmos": "src/entrypoint.js"
   },
   "main": "src/chain-main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",

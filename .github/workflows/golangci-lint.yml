@@ -24,15 +24,15 @@ jobs:
           go-version: '>=1.20'
           cache: false
           check-latest: true
+        # https://github.com/golangci/golangci-lint/issues/3862#issuecomment-1572973588
+      - run: echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          # golangci-lint version and command line arguments
-          # v1.52.3 has a bug that causes it to fail depguard with:
-          # level=error msg="[linter] depguard: create analyzer:
-          # couldn't expand $gostd: could not read GOROOT directory:
-          # open src: no such file or directory\nmust have an Allow and/or Deny package list"
-          version: 'v1.52.2' # FIXME: change back to latest when it is fixed
+          version: latest
           args: --timeout=3m
           # for pull requests, show only new issues
-          only-new-issues: true
+          # Too bad it's incompatible with working-directory.
+          # only-new-issues: true
+          only-new-issues: false
+          working-directory: ./golang/cosmos

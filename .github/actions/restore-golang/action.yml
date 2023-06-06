@@ -18,6 +18,7 @@ runs:
         submodules: 'true'
     - uses: actions/setup-go@v4
       with:
+        cache-dependency-path: golang/cosmos/go.sum
         go-version: ${{ inputs.go-version }}
     - uses: kenchan0130/actions-system-info@master
       id: system-info
@@ -26,10 +27,11 @@ runs:
       uses: actions/cache@v3
       with:
         path: ${{ env.GOPATH }}/pkg/mod
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-${{ hashFiles('go.sum') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-${{ hashFiles('golang/**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-
     - name: go mod download
+      working-directory: ./golang/cosmos
       run: go mod download
       shell: bash
       if: steps.cache.outputs.cache-hit != 'true'

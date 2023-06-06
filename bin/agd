@@ -148,7 +148,7 @@ fi
     print=()
   fi
   print+=( -print )
-  src=$(find go.* "$GOLANG_DIR" \( -name '*.go' -o -name 'go.*' \) "${print[@]}" | head -1 || true)
+  src=$(find "$GOLANG_DIR" \( -name '*.go' -o -name 'go.*' \) "${print[@]}" | head -1 || true)
   test -z "$src" || {
     echo "At least $src is newer than $stamp"
 
