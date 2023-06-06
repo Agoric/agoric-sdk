@@ -67,7 +67,6 @@ async function setupVatController(t) {
     await c.run();
     while (inputQueue.length) {
       inputQueue.shift()();
-      // eslint-disable-next-line no-await-in-loop
       await c.run();
     }
   };

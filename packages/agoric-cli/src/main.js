@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/no-nested-await */
 /* global process */
 import { Command } from 'commander';
 import path from 'path';
@@ -36,6 +35,7 @@ const main = async (progname, rawArgs, powers) => {
   const program = new Command();
 
   async function isNotBasedir() {
+    await null;
     try {
       await fs.stat(STAMP);
       return false;

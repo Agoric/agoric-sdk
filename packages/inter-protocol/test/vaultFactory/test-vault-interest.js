@@ -103,7 +103,6 @@ test('charges', async t => {
   let interest = 0n;
   for (const [i, charge] of [4n, 4n, 4n, 4n].entries()) {
     // XXX https://github.com/Agoric/agoric-sdk/issues/5527
-    // eslint-disable-next-line no-await-in-loop
     await testJig.advanceRecordingPeriod();
     interest += charge;
     t.is(
@@ -142,7 +141,6 @@ test('charges', async t => {
 
   for (const [i, charge] of [22n, 27n, 34n].entries()) {
     // XXX https://github.com/Agoric/agoric-sdk/issues/5527
-    // eslint-disable-next-line no-await-in-loop
     await testJig.advanceRecordingPeriod();
     interest += charge;
     t.is(

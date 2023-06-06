@@ -77,7 +77,6 @@ test('state-sync reload', async t => {
   // current transcript of just d20 = 'load-snapshot' and d21 =
   // 'message' (count -> 7)
   for (let i = 1; i <= 7; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     const res = await doCount(c1);
     t.is(res, i);
   }

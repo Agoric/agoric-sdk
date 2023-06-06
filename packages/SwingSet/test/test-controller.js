@@ -361,15 +361,12 @@ test.serial('bootstrap export', async t => {
   // or the temporary acceptance queue, so we use this helper function
   async function stepGC() {
     while (c.dump().gcActions.length) {
-      // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
     while (c.dump().reapQueue.length) {
-      // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
     while (c.dump().acceptanceQueue.length) {
-      // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
     await c.step(); // the non- GC action
@@ -377,7 +374,6 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().log, []);
   for (let i = 0; i < 7; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     await stepGC(); // vat starts
   }
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');

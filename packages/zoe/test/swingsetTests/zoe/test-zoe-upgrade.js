@@ -1,5 +1,3 @@
-/* eslint-disable no-await-in-loop */
-
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
 import { buildVatController } from '@agoric/swingset-vat';

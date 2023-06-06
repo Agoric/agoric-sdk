@@ -62,7 +62,6 @@ export const ensureOracleBrands = async (
     let b = await brand;
     if (!b) {
       // not 1st await
-      // eslint-disable-next-line @jessie.js/no-nested-await
       b = await E(agoricNames).provideInertBrand(
         name,
         harden({ decimalPlaces: parseInt(decimals, 10) }),

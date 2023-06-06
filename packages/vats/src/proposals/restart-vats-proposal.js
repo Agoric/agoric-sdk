@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 // @ts-check
 
 import { Fail } from '@agoric/assert';

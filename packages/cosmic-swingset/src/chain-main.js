@@ -494,6 +494,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   }
 
   async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
+    await null;
     switch (request) {
       case 'restore': {
         const exportDir = requestArgs[0];
@@ -519,7 +520,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           });
         stateSyncExport = exportData;
 
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await new Promise((resolve, reject) => {
           tmpfs.dir(
             {

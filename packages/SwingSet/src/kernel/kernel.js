@@ -397,9 +397,9 @@ export default function buildKernel(
     assert(vatWarehouse.lookup(vatID));
     // Ensure that the vatSlogger is available before clist translation.
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
+    await null;
     try {
       /** @type { VatDeliveryResult } */
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
       // const [ ok, problem, usage ] = deliveryResult;
@@ -424,7 +424,6 @@ export default function buildKernel(
         //   Kinds, and we're not going to use the worker
         //
         // So in all cases, our caller should abandon the worker.
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await vatWarehouse.stopWorker(vatID);
         // TODO: does stopWorker work if the worker process just died?
         status.deliveryError = deliveryResult[1];
@@ -696,7 +695,6 @@ export default function buildKernel(
     // supervisor bundles are bad.
 
     try {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.createDynamicVat(vatID);
     } catch (err) {
       console.log('error during createDynamicVat', err);
@@ -834,7 +832,6 @@ export default function buildKernel(
     const abortUpgrade = async (badDeliveryResults, errorCapData) => {
       // get rid of the worker, so the next delivery to this vat will
       // re-create one from the previous state
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.stopWorker(vatID);
 
       // notify vat-admin of the failed upgrade without revealing error details
@@ -897,7 +894,6 @@ export default function buildKernel(
         `WARNING: vat ${vatID} failed to upgrade from incarnation ${oldIncarnation} (BOYD)`,
       );
       const { info: errorCapData } = boydResults.terminate;
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const results = await abortUpgrade(boydResults, errorCapData);
       return results;
     }
@@ -961,7 +957,6 @@ export default function buildKernel(
         `WARNING: vat ${vatID} failed to upgrade from incarnation ${oldIncarnation} (startVat)`,
       );
       const { info: errorCapData } = startVatResults.terminate;
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const results = await abortUpgrade(startVatResults, errorCapData);
       return results;
     }
@@ -1279,7 +1274,6 @@ export default function buildKernel(
     } else {
       const vatID = crankResults.didDelivery;
       if (vatID) {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await vatWarehouse.maybeSaveSnapshot(vatID);
       }
     }
@@ -1312,7 +1306,6 @@ export default function buildKernel(
       kdebug(`vat terminated: ${JSON.stringify(info)}`);
       kernelSlog.terminateVat(vatID, reject, info);
       // this deletes state, rejects promises, notifies vat-admin
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await terminateVat(vatID, reject, info);
     }
 
@@ -1348,8 +1341,8 @@ export default function buildKernel(
       Fail`Kernel reentrancy is forbidden`;
     }
     processQueueRunning = Error('here');
+    await null;
     try {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const result = await processor(message);
       processQueueRunning = undefined;
       return result;
@@ -1650,7 +1643,6 @@ export default function buildKernel(
 
       const bundle = kernelKeeper.getBundle(source.bundleID);
       assert(bundle);
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
         endowments: harden({ ...vatEndowments, console: devConsole, assert }),
@@ -1762,12 +1754,12 @@ export default function buildKernel(
       throw Error('must do kernel.start() before step()');
     }
     kernelKeeper.startCrank();
+    await null;
     try {
       kernelKeeper.establishCrankSavepoint('start');
       const { processor, message } = getNextMessageAndProcessor();
       // process a single message
       if (message) {
-        // eslint-disable-next-line @jessie.js/no-nested-await
         await tryProcessMessage(processor, message);
         if (kernelPanic) {
           throw kernelPanic;
@@ -1796,6 +1788,7 @@ export default function buildKernel(
       throw Error('must do kernel.start() before run()');
     }
     let count = 0;
+    await null;
     for (;;) {
       kernelKeeper.startCrank();
       try {
@@ -1806,7 +1799,6 @@ export default function buildKernel(
         }
         count += 1;
         /** @type { PolicyInput } */
-        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         const policyInput = await tryProcessMessage(processor, message);
         if (kernelPanic) {
           throw kernelPanic;

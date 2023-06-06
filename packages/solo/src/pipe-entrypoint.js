@@ -33,6 +33,7 @@ const main = async () => {
     deliverator(...as).then(() => send('go'));
   });
 
+  await null;
   switch (method) {
     case 'connectToFakeChain': {
       const [basedir, GCI, delay] = margs;

@@ -42,6 +42,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     return fs.writeFile(fileName, contents);
   };
 
+  await null;
   if (appFile) {
     log(`read ${appFile}`);
     const appToml = await fs.readFile(appFile, 'utf-8');

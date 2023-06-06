@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/no-nested-await -- demo file */
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { split, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import {
@@ -284,6 +283,7 @@ export const connectFaucet = async ({
       entries(FaucetPurseDetail).map(async ([issuerName, record]) => {
         /** @param {string} name */
         const provideIssuerKit = async name => {
+          await null;
           switch (name) {
             case Stable.symbol:
               return stableIssuerKit;

@@ -60,6 +60,7 @@ const start = async zcf => {
   const publicFacet = Far('publicFacet', {
     /** @param {OracleQuery} query */
     async query(query) {
+      await null;
       try {
         assert(!revoked, revokedMsg);
         const noFee = AmountMath.makeEmpty(feeBrand);
@@ -77,6 +78,7 @@ const start = async zcf => {
     async makeQueryInvitation(query) {
       /** @type {OfferHandler} */
       const doQuery = async querySeat => {
+        await null;
         try {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);

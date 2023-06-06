@@ -93,7 +93,6 @@ export const makeOfferExecutor = ({
         // No explicit signal to user that we reached here but if anything above
         // failed they'd get an 'error' status update.
 
-        // eslint-disable-next-line @jessie.js/no-nested-await -- unconditional
         seatRef = await E(zoe).offer(
           invitation,
           proposal,

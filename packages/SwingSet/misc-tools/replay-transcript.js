@@ -290,6 +290,7 @@ async function replay(transcriptFile) {
   /** @type {WorkerData[]} */
   const workers = [];
 
+  await null;
   if (worker === 'xs-worker') {
     /** @type {import('../src/types-external.js').Bundle[] | undefined} */
     let overrideBundles;
@@ -422,6 +423,7 @@ async function replay(transcriptFile) {
     completeWorkerStep(workerData);
     workers.push(workerData);
     updateWorkersSynced();
+    const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
     const managerOptions =
       /** @type {import('../src/types-internal.js').ManagerOptions} */ (
         /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
@@ -430,7 +432,7 @@ async function replay(transcriptFile) {
           useTranscript: true,
           workerOptions: {
             type: worker === 'xs-worker' ? 'xsnap' : worker,
-            bundleIDs: await bundleHandler.getCurrentBundleIDs(),
+            bundleIDs: currentBundleIDs,
           },
         })
       );
@@ -482,7 +484,6 @@ async function replay(transcriptFile) {
             deliveryTimeTotal,
             firstTranscriptNum,
           } = workerData;
-          // eslint-disable-next-line no-await-in-loop
           await manager.shutdown();
           console.log(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
@@ -648,7 +649,6 @@ async function replay(transcriptFile) {
         }
         if (argv.forcedReloadFromSnapshot) {
           for (const snapshotID of uniqueSnapshotIDs) {
-            // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
               { ...data, snapshotID },
               argv.keepWorkerHashDifference && divergent,
@@ -722,7 +722,6 @@ async function replay(transcriptFile) {
 
         if (argv.forcedReloadFromSnapshot) {
           for (const snapshotID of uniqueSnapshotIDs) {
-            // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
               {
                 snapshotID,
@@ -737,7 +736,6 @@ async function replay(transcriptFile) {
           argv.loadSnapshots?.[transcriptNum] || [],
         );
         for (const snapshotID of loadSnapshots) {
-          // eslint-disable-next-line no-await-in-loop
           await loadSnapshot(
             {
               snapshotID,

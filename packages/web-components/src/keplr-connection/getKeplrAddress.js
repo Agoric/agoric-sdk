@@ -15,7 +15,6 @@ export const getKeplrAddress = async chainId => {
   const keplr = window.keplr;
 
   try {
-    // eslint-disable-next-line @jessie.js/no-nested-await
     await keplr.enable(chainId);
   } catch {
     throw Error(Errors.enableKeplr);

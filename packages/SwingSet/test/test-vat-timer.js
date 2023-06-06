@@ -1163,7 +1163,6 @@ test('iterator', async t => {
     if (state.currentWakeup && state.currentHandler) {
       state.currentHandler.wake(state.now);
     }
-    // eslint-disable-next-line no-await-in-loop
     await waitUntilQuiescent();
   }
   await p6a;
@@ -1194,7 +1193,6 @@ const drainForOf = async (n, results) => {
 const drainManual = async (n, results) => {
   const iter = n[Symbol.asyncIterator]();
   for (;;) {
-    // eslint-disable-next-line no-await-in-loop
     const res = await iter.next();
     if (res.done) {
       results.push({ returnValue: res.value });

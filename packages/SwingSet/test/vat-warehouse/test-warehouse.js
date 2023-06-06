@@ -78,7 +78,6 @@ async function runSteps(c, t) {
   for (const { vat, online } of steps) {
     t.log('sending to vat', vat);
     c.queueToVatRoot(vat, 'append', [1]);
-    // eslint-disable-next-line no-await-in-loop
     await c.run();
     t.log(
       'max:',

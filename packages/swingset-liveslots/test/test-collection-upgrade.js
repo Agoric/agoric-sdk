@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await, no-shadow */
 import test from 'ava';
 import '@endo/init/debug.js';
 

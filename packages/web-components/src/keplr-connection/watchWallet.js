@@ -51,7 +51,6 @@ export const watchWallet = async (leader, address, context, rpcs) => {
   /** @type {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>} */
   const currentFollower = await followPublished(`wallet.${address}.current`);
   try {
-    // eslint-disable-next-line @jessie.js/no-nested-await
     await assertHasData(currentFollower);
   } catch {
     // XXX: We can technically show vbank purses without a smart wallet

@@ -213,7 +213,6 @@ export const makeBootstrap = (
     awaitVatObject: async ({ presence, path = [], rawOutput = false }) => {
       let value = await decodePassable(presence);
       for (const key of path) {
-        // eslint-disable-next-line no-await-in-loop
         value = await value[key];
       }
       return rawOutput ? value : encodePassable(value);

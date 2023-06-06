@@ -43,7 +43,6 @@ export function buildRootObject(_vatPowers, vatParameters) {
           critical = criticalVatKey;
         }
         // prettier-ignore
-        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         const vat = await E(vatMaker).createVatByName(
           bundleName,
           { vatParameters: harden(subvatParameters), critical },
