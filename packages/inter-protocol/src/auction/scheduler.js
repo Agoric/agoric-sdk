@@ -149,18 +149,7 @@ export const makeScheduler = async (
       auctionState = AuctionState.WAITING;
       auctionDriver.finalize();
 
-      if (nextSchedule) {
-        // only recalculate the next schedule at this point if the lock time has
-        // not been reached.
-        const nextLock = nextSchedule.lockTime;
-        if (nextLock && TimeMath.compareAbs(now, nextLock) < 0) {
-          const afterNow = TimeMath.addAbsRel(
-            now,
-            TimeMath.coerceRelativeTimeRecord(1n, timerBrand),
-          );
-          nextSchedule = safelyComputeRoundTiming(params, afterNow);
-        }
-      } else {
+      if (!nextSchedule) {
         console.error(
           '🛠️ finishAuctionRound without scheduling the next; repair with new auctioneer params',
         );
