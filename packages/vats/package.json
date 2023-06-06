@@ -65,6 +65,8 @@
   "files": [
     "CHANGELOG.md",
     "src/",
+    "scripts/",
+    "tools/",
     "*.json",
     "globals.d.ts",
     "exported.js"
