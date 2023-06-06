@@ -1,8 +1,10 @@
 // @ts-check
-import { promises as fs } from 'fs';
+/* global process */
+import * as fsAmbient from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename } from 'path';
 import { inspect } from 'util';
+import childProcessAmbient from 'child_process';
 
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
@@ -191,7 +193,7 @@ export const getNodeTestVaultsConfig = async (
   config.defaultManagerType = 'local';
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
-  await fs.mkdir(bundleDir, { recursive: true });
+  await fsAmbient.promises.mkdir(bundleDir, { recursive: true });
 
   if (config.coreProposals) {
     // remove Pegasus because it relies on IBC to Golang that isn't running
@@ -201,8 +203,105 @@ export const getNodeTestVaultsConfig = async (
   }
 
   const testConfigPath = `${bundleDir}/${basename(specifier)}`;
-  await fs.writeFile(testConfigPath, JSON.stringify(config), 'utf-8');
+  await fsAmbient.promises.writeFile(
+    testConfigPath,
+    JSON.stringify(config),
+    'utf-8',
+  );
   return testConfigPath;
+};
+
+/**
+ * @param {object} powers
+ * @param {Pick<typeof import('node:child_process'), 'execFileSync' >} powers.childProcess
+ * @param {typeof import('node:fs/promises')} powers.fs
+ */
+const makeProposalExtractor = ({ childProcess, fs }) => {
+  const getPkgPath = (pkg, fileName = '') =>
+    new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
+
+  const runPackageScript = async (pkg, name, env) => {
+    console.warn(pkg, 'running package script:', name);
+    const pkgPath = getPkgPath(pkg);
+    return childProcess.execFileSync('yarn', ['run', name], {
+      cwd: pkgPath,
+      env,
+    });
+  };
+
+  const loadJSON = async filePath =>
+    harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
+
+  // XXX parses the output to find the files but could write them to a path that can be traversed
+  /** @param {string} txt */
+  const parseProposalParts = txt => {
+    const evals = [
+      ...txt.matchAll(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/g),
+    ].map(m => {
+      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
+      const { permit, script } = m.groups;
+      return { permit, script };
+    });
+    evals.length ||
+      Fail`No swingset-core-eval found in proposal output: ${txt}`;
+
+    const bundles = [
+      ...txt.matchAll(/swingset install-bundle @([^\n]+)/gm),
+    ].map(([, bundle]) => bundle);
+    bundles.length || Fail`No bundles found in proposal output: ${txt}`;
+
+    return { evals, bundles };
+  };
+
+  /**
+   * @param {object} options
+   * @param {string} options.package
+   * @param {string} options.packageScriptName
+   * @param {Record<string, string>} [options.env]
+   */
+  const buildAndExtract = async ({
+    package: packageName,
+    packageScriptName,
+    env = {},
+  }) => {
+    const scriptEnv = Object.assign(Object.create(process.env), env);
+    // XXX use '@agoric/inter-protocol'?
+    const out = await runPackageScript(
+      packageName,
+      packageScriptName,
+      scriptEnv,
+    );
+    const built = parseProposalParts(out.toString());
+
+    const loadAndRmPkgFile = async fileName => {
+      const filePath = getPkgPath(packageName, fileName);
+      const content = await fs.readFile(filePath, 'utf8');
+      await fs.rm(filePath);
+      return content;
+    };
+
+    const evalsP = Promise.all(
+      built.evals.map(async ({ permit, script }) => {
+        const [permits, code] = await Promise.all([
+          loadAndRmPkgFile(permit),
+          loadAndRmPkgFile(script),
+        ]);
+        return { json_permits: permits, js_code: code };
+      }),
+    );
+
+    const bundlesP = Promise.all(
+      built.bundles.map(
+        async bundleFile =>
+          /** @type {Promise<EndoZipBase64Bundle>} */ (loadJSON(bundleFile)),
+      ),
+    );
+    return Promise.all([evalsP, bundlesP]).then(([evals, bundles]) => ({
+      evals,
+      bundles,
+    }));
+  };
+  return buildAndExtract;
 };
 
 /**
@@ -328,6 +427,11 @@ export const makeSwingsetTestKit = async (
 
   const runUtils = makeRunUtils(controller, t.log);
 
+  const buildProposal = makeProposalExtractor({
+    childProcess: childProcessAmbient,
+    fs: fsAmbient.promises,
+  });
+
   console.timeEnd('makeSwingsetTestKit');
 
   let currentTime = 0n;
@@ -374,6 +478,7 @@ export const makeSwingsetTestKit = async (
   return {
     advanceTimeBy,
     advanceTimeTo,
+    buildProposal,
     controller,
     jumpTimeTo,
     readLatest,

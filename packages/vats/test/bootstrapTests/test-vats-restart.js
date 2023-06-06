@@ -1,18 +1,15 @@
 // @ts-check
-/* global process */
 /**
  * @file Bootstrap test of restarting (almost) all vats
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import * as processAmbient from 'child_process';
-import * as fsAmbient from 'fs';
 import { Fail } from '@agoric/assert';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
-import { makeSwingsetTestKit } from './supports.js';
 import { makeWalletFactoryDriver } from './drivers.js';
+import { makeSwingsetTestKit } from './supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}
@@ -24,99 +21,6 @@ const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
-
-/**
- * @param {object} powers
- * @param {Pick<typeof import('node:child_process'), 'execFileSync' >} powers.childProcess
- * @param {typeof import('node:fs/promises')} powers.fs
- */
-const makeProposalExtractor = ({ childProcess, fs }) => {
-  const getPkgPath = (pkg, fileName = '') =>
-    new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
-
-  const runPackageScript = async (pkg, name, env) => {
-    console.warn(pkg, 'running package script:', name);
-    const pkgPath = getPkgPath(pkg);
-    return childProcess.execFileSync('yarn', ['run', name], {
-      cwd: pkgPath,
-      env,
-    });
-  };
-
-  const loadJSON = async filePath =>
-    harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
-
-  // XXX parses the output to find the files but could write them to a path that can be traversed
-  /** @param {string} txt */
-  const parseProposalParts = txt => {
-    const evals = [
-      ...txt.matchAll(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/g),
-    ].map(m => {
-      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
-      const { permit, script } = m.groups;
-      return { permit, script };
-    });
-    evals.length ||
-      Fail`No swingset-core-eval found in proposal output: ${txt}`;
-
-    const bundles = [
-      ...txt.matchAll(/swingset install-bundle @([^\n]+)/gm),
-    ].map(([, bundle]) => bundle);
-    bundles.length || Fail`No bundles found in proposal output: ${txt}`;
-
-    return { evals, bundles };
-  };
-
-  /**
-   * @param {object} options
-   * @param {string} options.package
-   * @param {string} options.packageScriptName
-   * @param {Record<string, string>} [options.env]
-   */
-  const buildAndExtract = async ({
-    package: packageName,
-    packageScriptName,
-    env = {},
-  }) => {
-    const scriptEnv = Object.assign(Object.create(process.env), env);
-    // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(
-      packageName,
-      packageScriptName,
-      scriptEnv,
-    );
-    const built = parseProposalParts(out.toString());
-
-    const loadAndRmPkgFile = async fileName => {
-      const filePath = getPkgPath(packageName, fileName);
-      const content = await fs.readFile(filePath, 'utf8');
-      await fs.rm(filePath);
-      return content;
-    };
-
-    const evalsP = Promise.all(
-      built.evals.map(async ({ permit, script }) => {
-        const [permits, code] = await Promise.all([
-          loadAndRmPkgFile(permit),
-          loadAndRmPkgFile(script),
-        ]);
-        return { json_permits: permits, js_code: code };
-      }),
-    );
-
-    const bundlesP = Promise.all(
-      built.bundles.map(
-        async bundleFile =>
-          /** @type {Promise<EndoZipBase64Bundle>} */ (loadJSON(bundleFile)),
-      ),
-    );
-    return Promise.all([evalsP, bundlesP]).then(([evals, bundles]) => ({
-      evals,
-      bundles,
-    }));
-  };
-  return buildAndExtract;
-};
 
 const makeTestContext = async t => {
   console.time('DefaultTestContext');
@@ -150,16 +54,10 @@ const makeTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
-  const buildProposal = makeProposalExtractor({
-    childProcess: processAmbient,
-    fs: fsAmbient.promises,
-  });
-
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
-    buildProposal,
   };
 };
 
