@@ -1,9 +1,8 @@
 import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far } from '@endo/far';
-import { heapZone } from '../heap.js';
-import { virtualZone } from '../virtual.js';
+import { makeHeapZone } from '../heap.js';
+import { makeVirtualZone } from '../virtual.js';
 import { makeDurableZone } from '../durable.js';
 
 /** @typedef {import('../src/index.js').Zone} Zone */
@@ -35,6 +34,8 @@ const testOnce = (label, rootZone, heapOnlyZone = false) => {
   });
 };
 
+const heapZone = makeHeapZone();
+const virtualZone = makeVirtualZone();
 testOnce('heapZone', heapZone, true);
 testOnce('virtualZone', virtualZone);
 

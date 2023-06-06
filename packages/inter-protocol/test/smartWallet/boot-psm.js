@@ -33,7 +33,7 @@ import {
   WALLET_FACTORY_MANIFEST,
 } from '@agoric/vats/src/core/startWalletFactory.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { Stable, Stake } from '../../src/tokens.js';
 import {
   ECON_COMMITTEE_MANIFEST,
@@ -212,7 +212,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       devices,
       produce,
       consume,
-      zone: heapZone,
+      zone: makeHeapZone(),
       ...spaces,
       // ISSUE: needed? runBehaviors,
       // These module namespaces might be useful for core eval governance.

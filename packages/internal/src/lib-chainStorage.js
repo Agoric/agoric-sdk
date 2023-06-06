@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@endo/far';
-import { M, heapZone } from '@agoric/zone';
+import { M, makeHeapZone } from '@agoric/zone';
 import * as cb from './callback.js';
 
 const { Fail } = assert;
@@ -207,7 +207,7 @@ export const prepareChainStorageNode = zone => {
   return makeChainStorageNode;
 };
 
-const makeHeapChainStorageNode = prepareChainStorageNode(heapZone);
+const makeHeapChainStorageNode = prepareChainStorageNode(makeHeapZone());
 
 /**
  * Create a heap-based root storage node for a given backing function and root path.

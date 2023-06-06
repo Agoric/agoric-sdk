@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { observeIteration } from '@agoric/notifier';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { buildRootObject } from '../src/vat-bank.js';
 import {
   mintInitialSupply,
@@ -64,7 +64,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
         PROVISIONER_INDEX: 1,
       },
     },
-    zone: heapZone,
+    zone: makeHeapZone(),
     consume,
     produce,
     devices: /** @type {any} */ ({}),
@@ -97,7 +97,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);
 
-  const zone = heapZone;
+  const zone = makeHeapZone();
   await Promise.all([
     produceDiagnostics({ produce }),
     produceStartUpgradable({ zone, consume, produce, ...spaces }),

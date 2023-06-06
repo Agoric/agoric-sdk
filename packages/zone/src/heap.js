@@ -30,10 +30,12 @@ const detachedHeapStores = Far('heapStores', {
 });
 
 /**
- * @param {string} baseLabel
+ * Create a heap (in-memory) zone that uses the default exo and store implementations.
+ *
+ * @param {string} [baseLabel]
  * @returns {import('.').Zone}
  */
-const makeHeapZone = baseLabel => {
+export const makeHeapZone = (baseLabel = 'heapZone') => {
   const { makeOnce, makeOnceWrapper } = makeOnceKit(
     baseLabel,
     detachedHeapStores,
@@ -56,12 +58,6 @@ const makeHeapZone = baseLabel => {
     weakSetStore: makeOnceWrapper(detachedHeapStores.weakSetStore),
   });
 };
-
-/**
- * A heap (in-memory) zone that uses the default exo and store implementations.
- *
- * @type {import('.').Zone}
- */
-export const heapZone = makeHeapZone('heapZone');
+harden(makeHeapZone);
 
 export { M };

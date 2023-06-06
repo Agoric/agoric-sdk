@@ -10,7 +10,7 @@ import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { deeplyFulfilled } from '@endo/marshal';
 
 const { Fail, quote: q } = assert;
@@ -369,4 +369,4 @@ export const prepareNameHubKit = zone => {
  *
  * @returns {import('./types.js').NameHubKit}
  */
-export const makeNameHubKit = prepareNameHubKit(heapZone);
+export const makeNameHubKit = prepareNameHubKit(makeHeapZone());
