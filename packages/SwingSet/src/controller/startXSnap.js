@@ -138,8 +138,8 @@ export function makeStartXSnap(options) {
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     const snapshotLoadOpts = getSnapshotLoadOptions(initDetails);
+    await null;
     if (snapshotLoadOpts) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const xs = await doXSnap({
         name,
         handleCommand,
@@ -147,7 +147,6 @@ export function makeStartXSnap(options) {
         ...meterOpts,
         ...xsnapOpts,
       });
-      // eslint-disable-next-line @jessie.js/no-nested-await
       await xs.isReady();
       return xs;
     }
@@ -164,7 +163,6 @@ export function makeStartXSnap(options) {
       bundles = overrideBundles; // ignore the usual bundles
     } else {
       const bundlePs = bundleIDs.map(id => bundleHandler.getBundle(id));
-      // eslint-disable-next-line @jessie.js/no-nested-await
       bundles = await Promise.all(bundlePs);
     }
 
@@ -173,7 +171,6 @@ export function makeStartXSnap(options) {
       if (moduleFormat !== 'getExport' && moduleFormat !== 'nestedEvaluate') {
         throw Fail`unexpected moduleFormat: ${moduleFormat}`;
       }
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }
     return worker;

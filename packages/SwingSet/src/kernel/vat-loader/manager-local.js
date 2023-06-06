@@ -93,8 +93,8 @@ export function makeLocalVatManagerFactory({
       return vatNS;
     }
 
+    await null;
     if (enableSetup) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
       const vatNS = await buildVatNamespace({}, {});
       const setup = vatNS.default;
       setup || Fail`vat source bundle lacks (default) setup() function`;

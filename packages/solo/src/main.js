@@ -55,6 +55,7 @@ start
 `);
   }
 
+  await null;
   switch (argv[0]) {
     case 'setup': {
       const { netconfig } = parseArgs(argv.slice(1));

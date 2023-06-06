@@ -60,7 +60,6 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
     const path = `${DIR}/${dir}package.json`;
     log('rewriting ', path);
 
-    // eslint-disable-next-line no-await-in-loop
     const contents = await fs.readFile(path, 'utf-8');
     const pkg = JSON.parse(contents.replace(/@DIR@/g, DIR));
     if (dir === '') {
@@ -74,7 +73,6 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
     pkg.name = `${DIR}${pkg.name.substr(topLevelName.length)}`;
     const json = JSON.stringify(pkg, undefined, 2);
 
-    // eslint-disable-next-line no-await-in-loop
     await fs.writeFile(path, json);
   }
 

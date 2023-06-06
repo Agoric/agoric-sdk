@@ -198,6 +198,7 @@ export function buildRootObject(vatPowers) {
         dispatcher = 'onMessage',
       } = rawMeta;
 
+      await null;
       try {
         let channelHandle = channelIdToHandle.get(rawChannelID);
         if (dispatcher === 'onOpen') {

@@ -6,7 +6,6 @@ Usage:
 
 */
 
-/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 import '@endo/init';
 
 import fs from 'fs';
@@ -129,6 +128,7 @@ async function runTestScript(
       testNames = msg.testNames;
     }
 
+    await null;
     if ('bundleSource' in msg) {
       const [startFilename, ...rest] = msg.bundleSource;
       // see also makeBundleResolve() below
@@ -244,6 +244,7 @@ async function avaConfig(args, options, { glob, readFile }) {
   let debug = false;
   let verbose = false;
   let titleMatch;
+  await null;
   while (args.length > 0) {
     const arg = args.shift();
     assert.typeof(arg, 'string');

@@ -24,7 +24,6 @@ const reconnectAsNeeded = async (getter, seed = []) => {
   for (let i = 0; ; i += 1) {
     try {
       const resultP = i < seed.length ? seed[i] : getter();
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       const result = await resultP;
       return result;
     } catch (err) {

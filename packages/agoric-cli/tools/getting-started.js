@@ -93,6 +93,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     }
   };
 
+  await null;
   try {
     process.on('SIGINT', runFinalizers);
     process.on('exit', runFinalizers);
@@ -196,7 +197,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       urlReq.on('error', err => urlResolve(`Cannot connect to ${url}: ${err}`));
       urlReq.end();
       const urlTimeout = setTimeout(urlResolve, 3000, 'timeout');
-      // eslint-disable-next-line no-await-in-loop
       const urlDone = await urlP;
       clearTimeout(urlTimeout);
       t.is(urlDone, code, `${url} gave status ${code}`);

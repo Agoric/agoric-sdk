@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { BridgeId } from '@agoric/internal';

@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
@@ -62,10 +61,8 @@ const waitForStatus =
     const serviceArgs = service ? [`-eservice=${service}`] : [];
     let retryNum = 0;
     for (;;) {
-      // eslint-disable-next-line no-await-in-loop
       await doRetry(retryNum);
       let buf = '';
-      // eslint-disable-next-line no-await-in-loop
       const code = await running.doRun(
         setup.playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
         undefined,

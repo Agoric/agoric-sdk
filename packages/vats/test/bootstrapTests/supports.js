@@ -348,7 +348,6 @@ export const makeSwingsetTestKit = async (
     while (currentTime < targetTime) {
       trace('stepping time from', currentTime, 'towards', targetTime);
       currentTime += 1n;
-      // eslint-disable-next-line no-await-in-loop
       await runUtils.runThunk(() => timer.poll(currentTime));
     }
   };

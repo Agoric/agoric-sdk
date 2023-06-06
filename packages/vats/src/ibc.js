@@ -359,6 +359,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     ...protocol,
     async fromBridge(obj) {
       console.info('IBC fromBridge', obj);
+      await null;
       switch (obj.event) {
         case 'channelOpenTry': {
           // They're (more or less politely) asking if we are listening, so make an attempt.

@@ -177,7 +177,6 @@ export async function connectToChain(
       const thisRpcHref = rpcHrefs[rpcHrefIndex];
 
       // tryOnce will either throw if cancelled (which rejects this promise),
-      // eslint-disable-next-line no-await-in-loop
       const ret = await tryOnce(thisRpcHref);
       if (ret !== undefined) {
         // Or returns non-undefined, which we should resolve.
@@ -186,7 +185,6 @@ export async function connectToChain(
       }
 
       // It was undefined, so wait, then retry.
-      // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, 5000));
       rpcHrefIndex = (rpcHrefIndex + 1) % rpcHrefs.length;
     }
@@ -661,7 +659,6 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       let retry = true;
       for await (const _ of whileTrue(() => retry)) {
         retry = false;
-        // eslint-disable-next-line no-await-in-loop
         const { stderr, stdout } = await runHelper([
           ...txArgs,
           `--sequence=${sequenceNumber}`,

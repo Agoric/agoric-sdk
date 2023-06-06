@@ -151,6 +151,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
 
   const exists = async file => {
+    await null;
     try {
       await fs.stat(file);
       return true;
@@ -173,6 +174,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const agServer = `_agstate/agoric-servers/${profileName}`;
 
+    await null;
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
       // rm is available on all the unix-likes, so use it for speed.
@@ -246,6 +248,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const { cosmosChain, cosmosChainBuild } = getSDKBinaries(sdkPrefixes);
+    await null;
     if (popts.pull || popts.rebuild) {
       if (popts.dockerTag) {
         const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
@@ -308,7 +311,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     // Get or create the essential addresses.
     const addrs = {};
     for (const keyName of ['provision', 'delegate0']) {
-      /* eslint-disable no-await-in-loop */
       let statusOut = showKey(keyName);
       const exitStatusOut = await statusOut[0];
       if (exitStatusOut) {
@@ -449,6 +451,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const agServer = `_agstate/agoric-servers/${profileName}-${portNum}`;
 
     const { cosmosClientBuild } = getSDKBinaries(sdkPrefixes);
+    await null;
     if (popts.pull || popts.rebuild) {
       if (popts.dockerTag) {
         const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
@@ -555,7 +558,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     for await (const _ of untilTrue(() => hasGci)) {
       process.stdout.write('.');
 
-      // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve, reject) => {
         fs.stat(gciFile).then(
           _2 => {
@@ -590,7 +592,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     let bestRpcAddr;
     for await (const _ of untilTrue(() => bestRpcAddr)) {
       for await (const rpcAddr of rpcAddrs) {
-        // eslint-disable-next-line no-await-in-loop
         exitStatus = await keysSpawn([
           'query',
           'swingset',
@@ -639,7 +640,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           ];
           for (/* await */ const cmd of provCmds) {
             const statusOut = capture(keysSpawn, cmd, true);
-            // eslint-disable-next-line no-await-in-loop
             exitStatus = await statusOut[0];
             if (!exitStatus) {
               const json = statusOut[1].replace(/^gas estimate: \d+$/m, '');
@@ -664,7 +664,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         }
       }
       if (!bestRpcAddr) {
-        // eslint-disable-next-line no-await-in-loop
         await delay(2000);
       }
     }
@@ -690,6 +689,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
+    await null;
     if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SOLO_IMAGE]);
       if (exitStatus) {
@@ -729,6 +729,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
     const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
 
+    await null;
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
       // rm is available on all the unix-likes, so use it for speed.

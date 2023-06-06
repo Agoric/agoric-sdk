@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-disable @jessie.js/no-nested-await */
 /* global Buffer, fetch, process */
 
 import { NonNullish } from '@agoric/assert';
@@ -50,7 +49,8 @@ export const getNetworkConfig = async env => {
 };
 
 /** @type {MinimalNetworkConfig} */
-export const networkConfig = await getNetworkConfig(process.env);
+const networkConfig = await getNetworkConfig(process.env);
+export { networkConfig };
 // console.warn('networkConfig', networkConfig);
 
 /**
@@ -132,11 +132,11 @@ export const makeVStorage = (powers, config = networkConfig) => {
       const parts = [];
       // undefined the first iteration, to query at the highest
       let blockHeight;
+      await null;
       do {
         // console.debug('READING', { blockHeight });
         let values;
         try {
-          // eslint-disable-next-line no-await-in-loop
           ({ blockHeight, values } = await this.readAt(
             path,
             blockHeight && Number(blockHeight) - 1,
@@ -242,6 +242,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {MinimalNetworkConfig} config
  */
 export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+  await null;
   try {
     const vstorage = makeVStorage({ fetch }, config);
     const fromBoard = makeFromBoard();

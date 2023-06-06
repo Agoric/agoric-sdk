@@ -61,11 +61,16 @@ export const main = async (argv, { readFile, stdout }) => {
 
 if (isEntrypoint(import.meta.url)) {
   /* global process */
-  main([...process.argv], {
-    readFile: (await import('fs/promises')).readFile,
-    stdout: process.stdout,
-  }).catch(err => {
-    process.exitCode = 1;
-    console.error(err);
-  });
+  farExports.E.when(
+    import('fs/promises'),
+    fsp =>
+      main([...process.argv], {
+        readFile: fsp.readFile,
+        stdout: process.stdout,
+      }),
+    err => {
+      process.exitCode = 1;
+      console.error(err);
+    },
+  );
 }

@@ -251,9 +251,7 @@ const setClockAndAdvanceNTimes = async (timer, times, start, incr = 1n) => {
   // first time through is at START, then n TIMES more plus INCR
   for (let i = 0; i <= times; i += 1) {
     trace('advancing clock to ', currentTime);
-    // eslint-disable-next-line no-await-in-loop
     await timer.advanceTo(TimeMath.absValue(currentTime));
-    // eslint-disable-next-line no-await-in-loop
     await eventLoopIteration();
     currentTime = TimeMath.addAbsRel(currentTime, TimeMath.relValue(incr));
   }

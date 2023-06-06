@@ -4,6 +4,7 @@ import '@endo/init';
 import process from 'process';
 import fs from 'fs';
 import { isSwingStore, openSwingStore } from '@agoric/swing-store';
+import { E } from '@endo/far';
 
 const argv = process.argv.splice(2);
 const dirPath = argv[0];
@@ -53,6 +54,7 @@ if (!vatIDToExtract) {
   const { snapPos, hash } = info;
   const snapshot = snapStore.loadSnapshot(vatIDToExtract);
   const fn = `${vatIDToExtract}-${snapPos}-${hash}.xss`;
-  await fs.promises.writeFile(fn, snapshot);
-  console.log(`wrote snapshot to ${fn}`);
+  E.when(fs.promises.writeFile(fn, snapshot), () =>
+    console.log(`wrote snapshot to ${fn}`),
+  );
 }
