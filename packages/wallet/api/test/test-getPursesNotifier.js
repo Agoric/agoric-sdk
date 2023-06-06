@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import {
   makeNameHubKit,
   prepareMixinMyAddress,
@@ -13,7 +13,7 @@ import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
-const mixinMyAddress = prepareMixinMyAddress(heapZone);
+const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin } = makeNameHubKit();

@@ -7,7 +7,7 @@ import {
   produceStartGovernedUpgradable,
   produceDiagnostics,
 } from '@agoric/vats/src/core/basic-behaviors.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
 import {
@@ -43,6 +43,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const log = () => null;
 
   const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const zone = makeHeapZone();
 
   // @ts-expect-error xxx
   const { consume, produce, instance } = await makeSpace(log, bundleCache);
@@ -52,7 +53,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   // @ts-expect-error Doesnt actually require all bootstrap powers
   await produceDiagnostics({ consume, produce });
   // @ts-expect-error Doesnt actually require all bootstrap powers
-  await produceStartUpgradable({ zone: heapZone, consume, produce });
+  await produceStartUpgradable({ zone, consume, produce });
 
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;
@@ -82,7 +83,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     consume,
     // @ts-expect-error Doesnt actually require all bootstrap powers
     produce,
-    zone: heapZone,
+    zone,
     installation: {
       // @ts-expect-error Doesnt actually require all bootstrap powers
       consume: { contractGovernor },

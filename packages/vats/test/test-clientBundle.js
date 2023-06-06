@@ -5,7 +5,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { Stake } from '@agoric/inter-protocol/src/tokens.js';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
@@ -150,7 +150,7 @@ test('connectFaucet produces payments', async t => {
 test('myAddressNameAdmin mixin', async t => {
   const addr = 'agoric123';
   const kit = makeNameHubKit();
-  const mixinMyAddress = prepareMixinMyAddress(heapZone);
+  const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
   const my = mixinMyAddress(kit.nameAdmin, addr);
   t.is(my.getMyAddress(), addr);
 });
