@@ -16,8 +16,8 @@ import {
 
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
-/** @typedef {import('@opentelemetry/api-metrics').MetricAttributes} Attributes */
-/** @typedef {import('@opentelemetry/api-metrics').Histogram} Histogram */
+/** @typedef {import('@opentelemetry/api').MetricAttributes} Attributes */
+/** @typedef {import('@opentelemetry/api').Histogram} Histogram */
 
 import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
 
@@ -111,7 +111,7 @@ export function getTelemetryProviders(powers = {}) {
 }
 
 /**
- * @param {import('@opentelemetry/api-metrics').Meter} metricMeter
+ * @param {import('@opentelemetry/api').Meter} metricMeter
  * @param {string} name
  */
 function createHistogram(metricMeter, name) {
@@ -121,8 +121,8 @@ function createHistogram(metricMeter, name) {
 
 /**
  * @param {{
- *   metricMeter: import('@opentelemetry/api-metrics').Meter,
- *   attributes?: import('@opentelemetry/api-metrics').MetricAttributes,
+ *   metricMeter: import('@opentelemetry/api').Meter,
+ *   attributes?: import('@opentelemetry/api').MetricAttributes,
  * }} param0
  */
 export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
@@ -284,7 +284,7 @@ export function makeInboundQueueMetrics(initialLength) {
 /**
  * @param {object} param0
  * @param {any} param0.controller
- * @param {import('@opentelemetry/api-metrics').Meter} param0.metricMeter
+ * @param {import('@opentelemetry/api').Meter} param0.metricMeter
  * @param {Console} param0.log
  * @param {Attributes} [param0.attributes]
  * @param {any} [param0.inboundQueueMetrics]
