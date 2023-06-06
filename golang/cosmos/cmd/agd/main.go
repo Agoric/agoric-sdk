@@ -17,13 +17,12 @@ func main() {
 		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
 		args = append(args, os.Args[1:]...)
 
-		logger.Info("Start chain delegating to JS executable", "args", args)
-
-		binary, lookErr := FindBinary(args[0])
+		binary, lookErr := FindCosmicSwingsetBinary()
 		if lookErr != nil {
 			panic(lookErr)
 		}
 
+		logger.Info("Start chain delegating to JS executable", "binary", binary, "args", args)
 		execErr := syscall.Exec(binary, args, os.Environ())
 		if execErr != nil {
 			panic(execErr)
