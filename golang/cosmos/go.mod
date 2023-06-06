@@ -1,4 +1,4 @@
-module github.com/Agoric/agoric-sdk
+module github.com/Agoric/agoric-sdk/golang/cosmos
 
 go 1.20
 
@@ -150,6 +150,6 @@ replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.
 replace github.com/cosmos/gaia/v7 => github.com/Agoric/ag0/v7 v7.0.2-alpha.agoric.1
 
 // For testing against a local cosmos-sdk or tendermint
-// replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
+// replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
 
-// replace github.com/tendermint/tendermint => ../forks/tendermint
+// replace github.com/tendermint/tendermint => ../../../forks/tendermint

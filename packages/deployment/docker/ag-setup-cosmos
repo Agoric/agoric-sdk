@@ -25,6 +25,7 @@ exec docker run --rm $TTY $FLAGS \
   --volume=ag-setup-cosmos-chains:/data/chains \
   --volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos \
   --volume=/var/run/docker.sock:/var/run/docker.sock \
+  --env AGD_HOME=/root/.ag-chain-cosmos \
   --env AG_SETUP_COSMOS_NAME=$NETWORK_NAME \
   --env AG_SETUP_COSMOS_HOME=$SETUP_HOME \
   --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
