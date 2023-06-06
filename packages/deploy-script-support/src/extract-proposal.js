@@ -35,6 +35,11 @@ const pathResolve = (...paths) => {
   }
 };
 
+const findModule = (initDir, srcSpec) =>
+  srcSpec.match(/^(\.\.?)?\//)
+    ? pathResolve(initDir, srcSpec)
+    : req.resolve(srcSpec);
+
 /**
  * Format core proposals to be run at bootstrap:
  * SwingSet `bundles` configuration
@@ -99,12 +104,12 @@ export const extractCoreProposalBundles = async (
       const thisProposalBundleHandles = new Set();
       assert(getSequenceForProposal);
       const thisProposalSequence = getSequenceForProposal(i);
-      const initPath = pathResolve(dirname, module);
+      const initPath = findModule(dirname, module);
       const initDir = path.dirname(initPath);
       /** @type {Record<string, import('./externalTypes.js').ProposalBuilder>} */
       const ns = await import(initPath);
       const install = (srcSpec, bundlePath) => {
-        const absoluteSrc = pathResolve(initDir, srcSpec);
+        const absoluteSrc = findModule(initDir, srcSpec);
         const bundleHandle = {};
         const absolutePaths = { source: absoluteSrc };
         if (bundlePath) {
