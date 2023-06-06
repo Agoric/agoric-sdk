@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -57,7 +57,7 @@ export const makeBootstrap = (
   bootManifest,
   behaviors,
   modules,
-  zone = heapZone,
+  zone = makeHeapZone(),
 ) => {
   const { keys } = Object;
   const extra = setDiff(keys(bootManifest), keys(behaviors));

@@ -81,6 +81,14 @@ export const makeExoUtils = VatData => {
     );
   harden(prepareKindMulti);
 
+  /**
+   * TODO reuse types ClassContext, ClassContextKit, etc from @endo/exo
+   *
+   * @callback RevokeExo
+   * @param {object} exo
+   * @returns {boolean}
+   */
+
   // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
@@ -88,8 +96,16 @@ export const makeExoUtils = VatData => {
    * @param {string} tag
    * @param {any} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
-   * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
+   * @param {T & ThisType<{
+   *   self: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} methods
+   * @param {DefineKindOptions<{
+   *   self: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} [options]
    * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
@@ -107,8 +123,16 @@ export const makeExoUtils = VatData => {
    * @param {string} tag
    * @param {any} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{ facets: T, state: ReturnType<I> }> } facets
-   * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
+   * @param {T & ThisType<{
+   *   facets: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }> } facets
+   * @param {DefineKindOptions<{
+   *   facets: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} [options]
    * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
    */
   const defineVirtualExoClassKit = (
@@ -132,8 +156,16 @@ export const makeExoUtils = VatData => {
    * @param {DurableKindHandle} kindHandle
    * @param {any} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
-   * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
+   * @param {T & ThisType<{
+   *   self: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} methods
+   * @param {DefineKindOptions<{
+   *   self: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} [options]
    * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
    */
   const defineDurableExoClass = (
@@ -157,8 +189,16 @@ export const makeExoUtils = VatData => {
    * @param {DurableKindHandle} kindHandle
    * @param {any} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{ facets: T, state: ReturnType<I>}> } facets
-   * @param {DefineKindOptions<{ facets: T, state: ReturnType<I>}>} [options]
+   * @param {T & ThisType<{
+   *   facets: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }> } facets
+   * @param {DefineKindOptions<{
+   *   facets: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} [options]
    * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
    */
   const defineDurableExoClassKit = (
@@ -183,8 +223,16 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {any} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
-   * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
+   * @param {T & ThisType<{
+   *   self: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} methods
+   * @param {DefineKindOptions<{
+   *   self: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} [options]
    * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
    */
   const prepareExoClass = (
@@ -212,8 +260,16 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {any} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{ facets: T, state: ReturnType<I> }> } facets
-   * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
+   * @param {T & ThisType<{
+   *   facets: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }> } facets
+   * @param {DefineKindOptions<{
+   *   facets: T,
+   *   state: ReturnType<I>,
+   *   revoke: RevokeExo,
+   * }>} [options]
    * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
    */
   const prepareExoClassKit = (

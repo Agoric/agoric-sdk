@@ -42,6 +42,7 @@ const missing = /** @type {const} */ ([
   'details',
   'Fail',
   'quote',
+  'bare',
   'makeAssert',
 ]).filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {

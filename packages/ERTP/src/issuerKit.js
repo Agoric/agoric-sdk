@@ -3,6 +3,7 @@
 import { assert } from '@agoric/assert';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
@@ -10,6 +11,7 @@ import { preparePaymentLedger } from './paymentLedger.js';
 
 import './types-ambient.js';
 
+/** @typedef {import('@agoric/zone').Zone} Zone */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
@@ -24,7 +26,7 @@ import './types-ambient.js';
 /**
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
- * @param {Baggage} issuerBaggage
+ * @param {Zone} issuerZone
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
@@ -36,7 +38,7 @@ import './types-ambient.js';
  */
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
-  issuerBaggage,
+  issuerZone,
   optShutdownWithFailure = undefined,
 ) => {
   assert.typeof(name, 'string');
@@ -56,7 +58,7 @@ const setupIssuerKit = (
   /** @type {PaymentLedger<K>} */
   // @ts-expect-error could be instantiated with different subtype of AssetKind
   const { issuer, mint, brand, mintRecoveryPurse } = preparePaymentLedger(
-    issuerBaggage,
+    issuerZone,
     name,
     assetKind,
     cleanDisplayInfo,
@@ -94,7 +96,8 @@ export const prepareIssuerKit = (
   optShutdownWithFailure = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
-  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
+  const issuerZone = makeDurableZone(issuerBaggage);
+  return setupIssuerKit(issuerRecord, issuerZone, optShutdownWithFailure);
 };
 harden(prepareIssuerKit);
 
@@ -150,7 +153,8 @@ export const makeDurableIssuerKit = (
 ) => {
   const issuerData = harden({ name, assetKind, displayInfo, elementShape });
   issuerBaggage.init(INSTANCE_KEY, issuerData);
-  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
+  const issuerZone = makeDurableZone(issuerBaggage);
+  return setupIssuerKit(issuerData, issuerZone, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 

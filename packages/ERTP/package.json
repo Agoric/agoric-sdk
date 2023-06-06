@@ -44,6 +44,7 @@
     "@agoric/store": "^0.9.2",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vat-data": "^0.5.2",
+    "@agoric/zone": "^0.2.2",
     "@endo/eventual-send": "^0.17.2",
     "@endo/far": "^0.2.18",
     "@endo/marshal": "^0.8.5",
