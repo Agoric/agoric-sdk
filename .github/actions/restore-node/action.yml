@@ -48,6 +48,8 @@ runs:
             if (result) {
               branch = result[1];
             }
+          } else if (github.event_name === 'schedule') {
+            branch = 'master';
           }
           console.log(branch);
           return branch;
