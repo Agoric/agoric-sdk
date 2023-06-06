@@ -56,10 +56,13 @@ export const detachedVirtualStores = Far('virtualStores', {
 });
 
 /**
- * @param {string} baseLabel
+ * A zone that utilizes external storage to reduce the memory footprint of the
+ * current vat.
+ *
+ * @param {string} [baseLabel]
  * @returns {import('.').Zone}
  */
-const makeVirtualZone = baseLabel => {
+export const makeVirtualZone = (baseLabel = 'virtualZone') => {
   const { makeOnce, makeOnceWrapper } = makeOnceKit(
     baseLabel,
     detachedVirtualStores,
@@ -82,13 +85,5 @@ const makeVirtualZone = baseLabel => {
     weakSetStore: makeOnceWrapper(detachedVirtualStores.weakSetStore),
   });
 };
-
-/**
- * A zone that utilizes external storage to reduce the memory footprint of the
- * current vat.
- *
- * @type {import('.').Zone}
- */
-export const virtualZone = makeVirtualZone('virtualZone');
 
 export { M };

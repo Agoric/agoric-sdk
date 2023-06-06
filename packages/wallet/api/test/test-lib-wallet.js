@@ -21,14 +21,14 @@ import {
 } from '@agoric/vats/src/nameHub.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
-const mixinMyAddress = prepareMixinMyAddress(heapZone);
+const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin } = makeNameHubKit();

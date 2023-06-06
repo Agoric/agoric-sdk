@@ -35,7 +35,7 @@ import {
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -216,7 +216,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       devices,
       produce,
       consume,
-      zone: heapZone,
+      zone: makeHeapZone(),
       ...spaces,
       // ISSUE: needed? runBehaviors,
       // These module namespaces might be useful for core eval governance.

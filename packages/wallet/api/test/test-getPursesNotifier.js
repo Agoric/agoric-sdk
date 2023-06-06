@@ -6,7 +6,7 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import {
   makeNameHubKit,
   prepareMixinMyAddress,
@@ -15,7 +15,7 @@ import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
-const mixinMyAddress = prepareMixinMyAddress(heapZone);
+const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin } = makeNameHubKit();

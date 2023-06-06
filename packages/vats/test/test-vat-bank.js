@@ -7,7 +7,7 @@ import { fakeVomKit } from './setup-vat-data.js';
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
@@ -20,7 +20,7 @@ const provideBaggage = key => {
 test('provideAssetSubscription - MapStore insertion order preserved', async t => {
   const zones = {
     durableZone: makeDurableZone(provideBaggage('key order')),
-    heapZone,
+    heapZone: makeHeapZone(),
   };
   for (const [name, zone] of Object.entries(zones)) {
     const ids = harden(['a', 'b', 'c', 'd', 'e']);

@@ -8,7 +8,7 @@ import {
   produceDiagnostics,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
@@ -41,6 +41,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const log = () => null;
 
   const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const zone = makeHeapZone();
 
   const { consume, produce } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
@@ -49,7 +50,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   // @ts-expect-error Doesnt actually require all bootstrap powers
   await produceDiagnostics({ consume, produce });
   // @ts-expect-error Doesnt actually require all bootstrap powers
-  await produceStartUpgradable({ zone: heapZone, consume, produce });
+  await produceStartUpgradable({ zone, consume, produce });
 
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;
@@ -75,7 +76,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     consume,
     // @ts-expect-error Doesnt actually require all bootstrap powers
     produce,
-    zone: heapZone,
+    zone,
     installation: {
       // @ts-expect-error Doesnt actually require all bootstrap powers
       consume: { contractGovernor },

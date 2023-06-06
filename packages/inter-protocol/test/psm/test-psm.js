@@ -32,7 +32,7 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,
@@ -750,9 +750,10 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
 
   // Prep bootstrap space
   {
+    const zone = makeHeapZone();
     await produceDiagnostics({ produce });
     // @ts-expect-error Doesnt actually require all bootstrap powers
-    await produceStartUpgradable({ zone: heapZone, consume, produce });
+    await produceStartUpgradable({ zone, consume, produce });
 
     const {
       installs,
