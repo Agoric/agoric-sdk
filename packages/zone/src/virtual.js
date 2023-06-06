@@ -1,3 +1,4 @@
+// @ts-check
 // @jessie-check
 
 import {
@@ -12,6 +13,8 @@ import {
 } from '@agoric/vat-data';
 
 import { Far } from '@endo/far';
+
+import { makeOnceKit } from './make-once.js';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
@@ -53,18 +56,39 @@ export const detachedVirtualStores = Far('virtualStores', {
 });
 
 /**
+ * @param {string} baseLabel
+ * @returns {import('.').Zone}
+ */
+const makeVirtualZone = baseLabel => {
+  const { makeOnce, makeOnceWrapper } = makeOnceKit(
+    baseLabel,
+    detachedVirtualStores,
+  );
+  return Far('heapZone', {
+    exo: makeOnceWrapper(defineVirtualExo),
+    exoClass: makeOnceWrapper(defineVirtualExoClass),
+    exoClassKit: makeOnceWrapper(defineVirtualExoClassKit),
+    subZone: (label, _options) => {
+      return makeOnce(label, () => makeVirtualZone(`${baseLabel}.${label}`));
+    },
+
+    makeOnce,
+    detached: detachedVirtualStores.detached,
+    isStorable: detachedVirtualStores.isStorable,
+
+    mapStore: makeOnceWrapper(detachedVirtualStores.mapStore),
+    setStore: makeOnceWrapper(detachedVirtualStores.setStore),
+    weakMapStore: makeOnceWrapper(detachedVirtualStores.weakMapStore),
+    weakSetStore: makeOnceWrapper(detachedVirtualStores.weakSetStore),
+  });
+};
+
+/**
  * A zone that utilizes external storage to reduce the memory footprint of the
  * current vat.
  *
  * @type {import('.').Zone}
  */
-export const virtualZone = Far('virtualZone', {
-  exo: defineVirtualExo,
-  exoClass: defineVirtualExoClass,
-  exoClassKit: defineVirtualExoClassKit,
-  subZone: (_label, _options = {}) => virtualZone,
-
-  ...detachedVirtualStores,
-});
+export const virtualZone = makeVirtualZone('virtualZone');
 
 export { M };

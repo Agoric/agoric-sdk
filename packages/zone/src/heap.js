@@ -1,3 +1,4 @@
+// @ts-check
 // @jessie-check
 
 import {
@@ -13,11 +14,13 @@ import {
 
 import { Far } from '@endo/far';
 
+import { makeOnceKit } from './make-once.js';
+
 /**
  * @type {import('.').Stores}
  */
-const heapStores = Far('heapStores', {
-  detached: () => heapStores,
+const detachedHeapStores = Far('heapStores', {
+  detached: () => detachedHeapStores,
   isStorable: _specimen => true,
 
   setStore: makeScalarSetStore,
@@ -27,16 +30,38 @@ const heapStores = Far('heapStores', {
 });
 
 /**
+ * @param {string} baseLabel
+ * @returns {import('.').Zone}
+ */
+const makeHeapZone = baseLabel => {
+  const { makeOnce, makeOnceWrapper } = makeOnceKit(
+    baseLabel,
+    detachedHeapStores,
+  );
+  return Far('heapZone', {
+    exo: makeOnceWrapper(makeExo),
+    exoClass: makeOnceWrapper(defineExoClass),
+    exoClassKit: makeOnceWrapper(defineExoClassKit),
+    subZone: (label, _options) => {
+      return makeOnce(label, () => makeHeapZone(`${baseLabel}.${label}`));
+    },
+
+    makeOnce,
+    detached: detachedHeapStores.detached,
+    isStorable: detachedHeapStores.isStorable,
+
+    mapStore: makeOnceWrapper(detachedHeapStores.mapStore),
+    setStore: makeOnceWrapper(detachedHeapStores.setStore),
+    weakMapStore: makeOnceWrapper(detachedHeapStores.weakMapStore),
+    weakSetStore: makeOnceWrapper(detachedHeapStores.weakSetStore),
+  });
+};
+
+/**
  * A heap (in-memory) zone that uses the default exo and store implementations.
  *
  * @type {import('.').Zone}
  */
-export const heapZone = Far('heapZone', {
-  exoClass: defineExoClass,
-  exoClassKit: defineExoClassKit,
-  exo: makeExo,
-  subZone: (_label, _options) => heapZone,
-  ...heapStores,
-});
+export const heapZone = makeHeapZone('heapZone');
 
 export { M };
