@@ -95,7 +95,7 @@ async function testRemotePeg(t) {
           },
           async onReceive(_c, packetBytes) {
             const packet = JSON.parse(packetBytes);
-            if (packet.memo != '') {
+            if (packet.memo) {
               t.deepEqual(
                 packet,
                 {
@@ -236,7 +236,10 @@ async function testRemotePeg(t) {
   );
 
   // test sending with memo
-  const localAtoms = await E(localPurseP).withdraw({ brand: localBrand, value: 100000000000000000001n });
+  const localAtoms = await E(localPurseP).withdraw({
+    brand: localBrand,
+    value: 100000000000000000001n,
+  });
 
   const allegedName = await E(pegP).getAllegedName();
   t.is(allegedName, 'Gaia', 'alleged peg name is equal');
@@ -265,7 +268,10 @@ async function testRemotePeg(t) {
   t.assert(!stillIsLive, 'payment is consumed');
 
   // test sending without memo
-  const localAtoms2 = await E(localPurseP).withdraw({ brand: localBrand, value: 100000000000000000001n });
+  const localAtoms2 = await E(localPurseP).withdraw({
+    brand: localBrand,
+    value: 100000000000000000001n,
+  });
 
   const transferInvitation2 = await E(pegasus).makeInvitationToTransfer(
     pegP,
