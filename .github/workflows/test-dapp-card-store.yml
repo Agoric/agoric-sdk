@@ -3,6 +3,8 @@ name: Test Dapp Card Store
 on:
   pull_request:
   merge_group:
+  schedule:
+    - cron: '17 6 * * *'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

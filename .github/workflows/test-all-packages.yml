@@ -7,6 +7,9 @@ on:
   merge_group:
   push:
     branches: [master]
+  schedule:
+    # We start a little earlier to give our build cache time to populate.
+    - cron: '47 5 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
