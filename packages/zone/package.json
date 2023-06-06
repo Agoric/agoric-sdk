@@ -7,8 +7,8 @@
   "main": "./src/index.js",
   "scripts": {
     "build": "exit 0",
-    "test": "true || ava",
-    "test:c8": "true || c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -28,6 +28,10 @@
     "@agoric/store": "^0.9.2",
     "@agoric/vat-data": "^0.5.2",
     "@endo/far": "^0.2.19"
+  },
+  "devDependencies": {
+    "@agoric/swingset-vat": "^0.32.2",
+    "ava": "^5.3.0"
   },
   "publishConfig": {
     "access": "public"

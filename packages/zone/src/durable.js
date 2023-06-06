@@ -1,3 +1,4 @@
+// @ts-check
 // @jessie-check
 
 import {
@@ -14,6 +15,8 @@ import {
 } from '@agoric/vat-data';
 
 import { Far } from '@endo/far';
+
+import { makeOnceKit } from './make-once.js';
 
 const { Fail } = assert;
 
@@ -55,10 +58,16 @@ export const detachedDurableStores = attachDurableStores(() =>
  * Create a zone whose objects persist between Agoric vat upgrades.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {string} [baseLabel]
  * @returns {import('.').Zone}
  */
-export const makeDurableZone = baggage => {
+export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   baggage || Fail`baggage required`;
+
+  const attachedStores = attachDurableStores(() => baggage);
+
+  const { makeOnce, makeOnceWrapper } = makeOnceKit(baseLabel, attachedStores);
+
   /** @type {import('.').Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {import('.').Zone['exoClassKit']} */
@@ -66,20 +75,28 @@ export const makeDurableZone = baggage => {
   /** @type {import('.').Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
 
-  const attachedStores = attachDurableStores(() => baggage);
-
   /** @type {import('.').Zone['subZone']} */
   const subZone = (label, options = {}) => {
-    const subBaggage = provideDurableMapStore(baggage, label, options);
-    return makeDurableZone(subBaggage);
+    const subBaggage = makeOnce(label, () =>
+      provideDurableMapStore(baggage, label, options),
+    );
+    return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
 
   return Far('durableZone', {
-    exo,
-    exoClass,
-    exoClassKit,
+    exo: makeOnceWrapper(exo),
+    exoClass: makeOnceWrapper(exoClass),
+    exoClassKit: makeOnceWrapper(exoClassKit),
     subZone,
-    ...attachedStores,
+
+    makeOnce,
+    detached: attachedStores.detached,
+    isStorable: attachedStores.isStorable,
+
+    mapStore: makeOnceWrapper(attachedStores.mapStore),
+    setStore: makeOnceWrapper(attachedStores.setStore),
+    weakMapStore: makeOnceWrapper(attachedStores.weakMapStore),
+    weakSetStore: makeOnceWrapper(attachedStores.weakSetStore),
   });
 };
 harden(makeDurableZone);
