@@ -50,6 +50,7 @@
     "@endo/marshal": "^0.8.5",
     "@endo/nat": "^4.1.27",
     "@endo/promise-kit": "^0.2.56",
+    "@endo/ses-ava": "^0.2.40",
     "@endo/zip": "^0.2.31",
     "ansi-styles": "^6.2.1",
     "anylogger": "^0.21.0",
@@ -59,7 +60,6 @@
     "tmp": "^0.2.1"
   },
   "peerDependencies": {
-    "@endo/ses-ava": "^0.2.40",
     "ava": "^5.2.0"
   },
   "files": [

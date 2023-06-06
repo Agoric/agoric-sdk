@@ -41,7 +41,8 @@
   },
   "files": [
     "*.js",
-    "NEWS.md"
+    "NEWS.md",
+    "src"
   ],
   "publishConfig": {
     "access": "public"
