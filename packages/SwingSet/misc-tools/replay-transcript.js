@@ -238,9 +238,10 @@ async function makeBundles() {
     }/src/controller/initializeSwingset.js`,
     import.meta.url,
   );
-
-  const srcGE = rel =>
-    bundleSource(new URL(rel, controllerUrl).pathname, 'getExport');
+  const srcGE = async rel =>
+    bundleSource(new URL(rel, controllerUrl).pathname, {
+      format: 'nestedEvaluate',
+    });
   const lockdown = await srcGE(
     '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
   );
