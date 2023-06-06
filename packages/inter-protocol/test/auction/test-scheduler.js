@@ -676,8 +676,10 @@ test('change Schedule', async t => {
   const timerBrand = await timer.getTimerBrand();
 
   const startFreq = 360n;
-  const lockPeriod = 20n;
-  const startDelay = 5n;
+  const lockPeriodT = 20n;
+  const lockPeriod = TimeMath.coerceRelativeTimeRecord(lockPeriodT, timerBrand);
+  const startDelayT = 5n;
+  const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
   const clockStep = 60n;
 
   const fakeAuctioneer = makeFakeAuctioneer();
@@ -693,9 +695,9 @@ test('change Schedule', async t => {
   /** @type {import('../../src/auction/params.js').AuctionParams} */
   defaultParams = {
     ...defaultParams,
-    PriceLockPeriod: lockPeriod,
+    PriceLockPeriod: lockPeriodT,
     StartFrequency: startFreq,
-    AuctionStartDelay: startDelay,
+    AuctionStartDelay: startDelayT,
     ClockStep: clockStep,
     StartingRate: 100n,
     LowestRate: 40n,
@@ -733,6 +735,7 @@ test('change Schedule', async t => {
   t.is(schedule.liveAuctionSchedule, null);
 
   const lockTime = 345n;
+  const nominalStartTime = 360n;
   const startTime = 365n;
   const endTime = 665n;
 
@@ -741,28 +744,30 @@ test('change Schedule', async t => {
     endTime: TimeMath.coerceTimestampRecord(endTime, timerBrand),
     steps: 5n,
     endRate: 50n,
-    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    startDelay,
     clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
     lockTime: TimeMath.coerceTimestampRecord(lockTime, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
   await timer.advanceTo(lockTime);
+  await timer.advanceTo(nominalStartTime);
   await timer.advanceTo(startTime);
   await timer.advanceTo(endTime);
   schedule = scheduler.getSchedule();
 
   const secondStart = startTime + startFreq;
+  const secondNominalStart = startTime + startFreq - startDelayT;
   const secondEnd = endTime + startFreq;
   const expected2ndSchedule = {
     startTime: TimeMath.coerceTimestampRecord(secondStart, timerBrand),
     endTime: TimeMath.coerceTimestampRecord(secondEnd, timerBrand),
     steps: 5n,
     endRate: 50n,
-    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
+    startDelay,
     clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
     lockTime: TimeMath.coerceTimestampRecord(
-      secondStart - lockPeriod,
+      secondStart - lockPeriodT,
       timerBrand,
     ),
   };
@@ -778,28 +783,305 @@ test('change Schedule', async t => {
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   await paramManager.getParams();
 
-  await timer.advanceTo(705n);
-  await timer.advanceTo(secondStart);
+  await timer.advanceTo(expected2ndSchedule.lockTime);
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected2ndSchedule);
 
   const remainder = (secondEnd + newFreq) % newFreq;
-  const thirdStart = secondEnd + newFreq - remainder + startDelay;
-  schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
-  t.deepEqual(schedule.nextAuctionSchedule, {
+  const thirdStartT = secondEnd + newFreq - remainder + startDelayT;
+  const thirdStart = TimeMath.coerceTimestampRecord(thirdStartT, timerBrand);
+
+  await timer.advanceTo(secondNominalStart);
+  await timer.advanceTo(secondStart);
+
+  assert(schedule.nextAuctionSchedule);
+  const thirdLock = TimeMath.subtractAbsRel(thirdStart, lockPeriod);
+  const thirdStep = TimeMath.coerceRelativeTimeRecord(40n, timerBrand);
+  const thirdNominalStart = TimeMath.subtractAbsRel(thirdStart, startDelay);
+  const thirdEnd = TimeMath.addAbsRel(
+    thirdStart,
+    TimeMath.addRelRel(thirdStep, thirdStep),
+  );
+  const thirdEndT = thirdEnd.absValue;
+
+  const expected3rdSchedule = {
     startTime: TimeMath.coerceTimestampRecord(thirdStart, timerBrand),
-    endTime: TimeMath.coerceTimestampRecord(
-      thirdStart + 2n * newStep,
-      timerBrand,
-    ),
+    endTime: TimeMath.coerceTimestampRecord(thirdEnd, timerBrand),
     steps: 2n,
     endRate: 80n,
-    startDelay: TimeMath.coerceRelativeTimeRecord(5n, timerBrand),
-    clockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
+    startDelay,
+    clockStep: thirdStep,
+    lockTime: thirdLock,
+  };
+
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
+
+  await timer.advanceTo(secondStart + newStep);
+  await timer.advanceTo(secondStart + 2n * newStep);
+  await timer.advanceTo(expected2ndSchedule.endTime);
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+
+  await timer.advanceTo(thirdLock);
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+  await timer.advanceTo(thirdNominalStart);
+
+  const fourthRemainder = (thirdEndT + newFreq) % newFreq;
+  const fourthStartT = thirdEndT + newFreq - fourthRemainder + startDelayT;
+  const fourthStart = TimeMath.coerceTimestampRecord(fourthStartT, timerBrand);
+
+  await timer.advanceTo(thirdStart);
+
+  assert(schedule.nextAuctionSchedule);
+  const fourthLock = TimeMath.subtractAbsRel(fourthStart, lockPeriod);
+  const fourthStep = TimeMath.coerceRelativeTimeRecord(40n, timerBrand);
+  const fourthEnd = TimeMath.addAbsRel(
+    fourthStart,
+    TimeMath.addRelRel(fourthStep, fourthStep),
+  );
+
+  const expected4thSchedule = {
+    startTime: TimeMath.coerceTimestampRecord(fourthStart, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(fourthEnd, timerBrand),
+    steps: 2n,
+    endRate: 80n,
+    startDelay,
+    clockStep: fourthStep,
+    lockTime: fourthLock,
+  };
+
+  await timer.advanceTo(TimeMath.addAbsRel(thirdStart, newStep));
+  await timer.advanceTo(expected3rdSchedule.endTime);
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected4thSchedule);
+});
+
+test('change Schedule late', async t => {
+  const { zcf, zoe } = await setupZCFTest();
+  const installations = await setUpInstallations(zoe);
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  const timer = buildManualTimer();
+  const timerBrand = await timer.getTimerBrand();
+
+  const startFreq = 360n;
+  const lockPeriodT = 20n;
+  const lockPeriod = TimeMath.coerceRelativeTimeRecord(lockPeriodT, timerBrand);
+  const startDelayT = 5n;
+  const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
+  const clockStep = 60n;
+
+  const fakeAuctioneer = makeFakeAuctioneer();
+  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
+  const publisherKit = makeGovernancePublisherFromFakes();
+
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
+  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
+  // start hourly, request 6 steps down every 10 minutes, so duration would be
+  // 1 hour. Instead, cut the auction short.
+
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  defaultParams = {
+    ...defaultParams,
+    PriceLockPeriod: lockPeriodT,
+    StartFrequency: startFreq,
+    AuctionStartDelay: startDelayT,
+    ClockStep: clockStep,
+    StartingRate: 100n,
+    LowestRate: 40n,
+    DiscountStep: 10n,
+  };
+
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
+  await timer.advanceTo(127n);
+  await eventLoopIteration();
+
+  const paramManager = await makeAuctioneerParamManager(
+    publisherKit,
+    zcf,
+    paramValues,
+  );
+  // XXX let the value be set async. A concession to upgradability
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  await paramManager.getParams();
+
+  const { subscriber } = makePublishKit();
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+    // @ts-expect-error Oops. wrong kind of subscriber.
+    subscriber,
+  );
+  let schedule = scheduler.getSchedule();
+  t.is(schedule.liveAuctionSchedule, null);
+
+  const lockTime = 345n;
+  const nominalStartTime = 360n;
+  const startTime = 365n;
+  const endTime = 665n;
+
+  const firstSchedule = {
+    startTime: TimeMath.coerceTimestampRecord(startTime, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(endTime, timerBrand),
+    steps: 5n,
+    endRate: 50n,
+    startDelay,
+    clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
+    lockTime: TimeMath.coerceTimestampRecord(lockTime, timerBrand),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
+
+  await timer.advanceTo(lockTime);
+  await eventLoopIteration();
+  await timer.advanceTo(nominalStartTime);
+  await eventLoopIteration();
+  await timer.advanceTo(startTime);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, firstSchedule);
+  await timer.advanceTo(endTime);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, null);
+
+  const secondStart = startTime + startFreq; // 725
+  const secondNominalStart = startTime + startFreq - startDelayT;
+  const secondEnd = endTime + startFreq;
+  const expected2ndSchedule = {
+    startTime: TimeMath.coerceTimestampRecord(secondStart, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(secondEnd, timerBrand),
+    steps: 5n,
+    endRate: 50n,
+    startDelay,
+    clockStep: TimeMath.coerceRelativeTimeRecord(60n, timerBrand),
     lockTime: TimeMath.coerceTimestampRecord(
-      thirdStart - lockPeriod,
+      secondStart - lockPeriodT,
       timerBrand,
     ),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, expected2ndSchedule);
+
+  await timer.advanceTo(expected2ndSchedule.lockTime.absValue);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, null);
+  t.deepEqual(schedule.nextAuctionSchedule, expected2ndSchedule);
+
+  const thirdStartT = secondStart + startFreq; // 1085
+  const thirdStart = TimeMath.coerceTimestampRecord(thirdStartT, timerBrand);
+
+  await timer.advanceTo(secondNominalStart);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
+
+  const thirdLock = TimeMath.subtractAbsRel(thirdStart, lockPeriod);
+  const thirdStep = TimeMath.coerceRelativeTimeRecord(60n, timerBrand);
+  const thirdNominalStart = TimeMath.subtractAbsRel(thirdStart, startDelay);
+  const thirdEnd = TimeMath.addAbsRel(
+    thirdStart,
+    TimeMath.coerceRelativeTimeRecord(5n * clockStep, timerBrand),
+  );
+  const thirdEndT = thirdEnd.absValue;
+
+  const expected3rdSchedule = {
+    clockStep: thirdStep,
+    endRate: 50n,
+    endTime: TimeMath.coerceTimestampRecord(thirdEnd, timerBrand),
+    lockTime: thirdLock,
+    startDelay,
+    startTime: TimeMath.coerceTimestampRecord(thirdStart, timerBrand),
+    steps: 5n,
+  };
+
+  await timer.advanceTo(secondStart);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+
+  // Update parameters when the 2nd auction has started. ///////////////
+  // This means the 3rd auction should proceed as scheduled, //////////
+  // followed by the fourth //////////////////////////////////////////
+  const newFreq = 100n;
+  const newStep = 40n;
+  await paramManager.updateParams({
+    StartFrequency: TimeMath.coerceRelativeTimeRecord(newFreq, timerBrand),
+    ClockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
   });
+  // XXX let the value be set async. A concession to upgradability
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  await paramManager.getParams();
+
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
+
+  await timer.advanceTo(secondStart + clockStep);
+  await eventLoopIteration();
+  await timer.advanceTo(secondStart + 2n * clockStep);
+  await eventLoopIteration();
+
+  await timer.advanceTo(expected2ndSchedule.endTime);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
+
+  await timer.advanceTo(thirdLock);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
+  await timer.advanceTo(thirdNominalStart);
+  await eventLoopIteration();
+
+  const fourthRemainder = (thirdEndT + newFreq) % newFreq;
+  const fourthStartT = thirdEndT + newFreq - fourthRemainder + startDelayT;
+  const fourthStart = TimeMath.coerceTimestampRecord(fourthStartT, timerBrand);
+
+  await timer.advanceTo(thirdStart);
+  await eventLoopIteration();
+
+  assert(schedule.nextAuctionSchedule);
+  const fourthLock = TimeMath.subtractAbsRel(fourthStart, lockPeriod);
+  const fourthStep = TimeMath.coerceRelativeTimeRecord(40n, timerBrand);
+  const fourthEnd = TimeMath.addAbsRel(
+    fourthStart,
+    TimeMath.addRelRel(fourthStep, fourthStep),
+  );
+
+  const expected4thSchedule = {
+    startTime: TimeMath.coerceTimestampRecord(fourthStart, timerBrand),
+    endTime: TimeMath.coerceTimestampRecord(fourthEnd, timerBrand),
+    steps: 2n,
+    endRate: 80n,
+    startDelay,
+    clockStep: fourthStep,
+    lockTime: fourthLock,
+  };
+
+  await timer.advanceTo(TimeMath.addAbsRel(thirdStart, newStep));
+  await eventLoopIteration();
+  await timer.advanceTo(expected3rdSchedule.endTime);
+  await eventLoopIteration();
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.nextAuctionSchedule, expected4thSchedule);
+  t.deepEqual(schedule.liveAuctionSchedule, null);
 });
 
 test('schedule anomalies', async t => {
