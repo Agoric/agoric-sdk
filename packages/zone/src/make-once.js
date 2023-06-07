@@ -4,8 +4,9 @@ const { Fail } = assert;
 /**
  * @param {string} baseLabel
  * @param {import('.').Stores} stores
+ * @param {MapStore<string, any>} [backingStore]
  */
-export const makeOnceKit = (baseLabel, stores) => {
+export const makeOnceKit = (baseLabel, stores, backingStore) => {
   const usedKeys = stores.detached().setStore(`${baseLabel} used keys`);
 
   /**
@@ -14,7 +15,7 @@ export const makeOnceKit = (baseLabel, stores) => {
    * @param {(key: string) => V} maker
    * @returns {V}
    */
-  const makeOnceUnvalidated = (key, maker) => {
+  const onlyOnce = (key, maker) => {
     typeof key === 'string' || Fail`key ${key} must be a string`;
     typeof maker === 'function' || Fail`maker ${maker} must be a function`;
     !usedKeys.has(key) ||
@@ -29,14 +30,17 @@ export const makeOnceKit = (baseLabel, stores) => {
   };
 
   /**
+   * Ensure the wrapped function is only called once per incarnation.  It is
+   * expected to update the backing store directly.
+   *
    * @template {(key: string, ...rest: unknown[]) => any} T
-   * @param {T} fn
+   * @param {T} provider
    * @returns {T}
    */
-  const makeOnceWrapper = fn => {
-    /** @type {(...args: Parameters<T>) => T} */
+  const wrapProvider = provider => {
+    /** @type {(...args: Parameters<T>) => ReturnType<T>} */
     const wrapper = (key, ...rest) =>
-      makeOnceUnvalidated(key, () => fn(key, ...rest));
+      onlyOnce(key, () => provider(key, ...rest));
     return /** @type {T} */ (wrapper);
   };
 
@@ -48,7 +52,7 @@ export const makeOnceKit = (baseLabel, stores) => {
    * subzone,key pair, it must have been left there by a previous incarnation and
    * `makeOnce` will simply return it. If not, then `maker(key)` is called to
    * determine the initial value of that slot, which will normally be preserved
-   * by similar calls to `once` in future incarnations --- though that will be
+   * by similar calls to `makeOnce` in future incarnations --- though that will be
    * up to them.
    *
    * Also ensures the maker returns a storable value.
@@ -59,12 +63,16 @@ export const makeOnceKit = (baseLabel, stores) => {
    * @returns {V} The value of the key's slot.
    */
   const makeOnce = (key, maker) => {
-    const value = makeOnceUnvalidated(key, maker);
+    if (backingStore && backingStore.has(key)) {
+      return backingStore.get(key);
+    }
+    const value = onlyOnce(key, maker);
     stores.isStorable(value) ||
       Fail`maker return value ${value} is not storable`;
+    backingStore && backingStore.init(key, value);
     return value;
   };
 
-  return harden({ makeOnce, makeOnceWrapper });
+  return harden({ makeOnce, wrapProvider });
 };
 harden(makeOnceKit);
