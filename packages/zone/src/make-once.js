@@ -10,23 +10,16 @@ export const makeOnceKit = (baseLabel, stores, backingStore) => {
   const usedKeys = stores.detached().setStore(`${baseLabel} used keys`);
 
   /**
-   * @template V
    * @param {string} key
-   * @param {(key: string) => V} maker
-   * @returns {V}
    */
-  const onlyOnce = (key, maker) => {
+  const assertOnlyOnce = key => {
     typeof key === 'string' || Fail`key ${key} must be a string`;
-    typeof maker === 'function' || Fail`maker ${maker} must be a function`;
     !usedKeys.has(key) ||
-      Fail`key ${key} has already been used once in this incarnation`;
+      Fail`key ${key} has already been used in this zone and incarnation`;
 
     // Mark this key as used.  We make no attempt to recover from invalid makers
     // or backingStores.
     usedKeys.add(key);
-
-    // Not provided previously, so make it.
-    return maker(key);
   };
 
   /**
@@ -39,8 +32,10 @@ export const makeOnceKit = (baseLabel, stores, backingStore) => {
    */
   const wrapProvider = provider => {
     /** @type {(...args: Parameters<T>) => ReturnType<T>} */
-    const wrapper = (key, ...rest) =>
-      onlyOnce(key, () => provider(key, ...rest));
+    const wrapper = (key, ...rest) => {
+      assertOnlyOnce(key);
+      return provider(key, ...rest);
+    };
     return /** @type {T} */ (wrapper);
   };
 
@@ -63,10 +58,11 @@ export const makeOnceKit = (baseLabel, stores, backingStore) => {
    * @returns {V} The value of the key's slot.
    */
   const makeOnce = (key, maker) => {
+    assertOnlyOnce(key);
     if (backingStore && backingStore.has(key)) {
       return backingStore.get(key);
     }
-    const value = onlyOnce(key, maker);
+    const value = maker(key);
     stores.isStorable(value) ||
       Fail`maker return value ${value} is not storable`;
     backingStore && backingStore.init(key, value);

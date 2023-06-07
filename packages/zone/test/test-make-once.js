@@ -1,4 +1,4 @@
-import { test } from './prepare-test-env-ava.js';
+import { test as rawTest } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { makeHeapZone } from '../heap.js';
@@ -7,39 +7,74 @@ import { makeDurableZone } from '../durable.js';
 
 /** @typedef {import('../src/index.js').Zone} Zone */
 
+/** @type {import('ava').TestFn<ReturnType<makeContext>>} */
+const test = rawTest;
+
+const makeContext = () => {
+  const heapZone = makeHeapZone();
+  const virtualZone = makeVirtualZone();
+  const rootBaggage = virtualZone.detached().mapStore('rootBaggage');
+  const rootDurableZone = makeDurableZone(rootBaggage);
+  return {
+    heapZone,
+    virtualZone,
+    rootBaggage,
+    rootDurableZone,
+  };
+};
+
+test.before(t => {
+  t.context = makeContext();
+});
+
 /**
- * @param {string} label
+ * @param {import('ava').Assertions} t
  * @param {Zone} rootZone
  * @param {boolean} [heapOnlyZone]
  */
-const testOnce = (label, rootZone, heapOnlyZone = false) => {
-  test(`${label} once`, t => {
-    const subZone = rootZone.subZone('sub');
-    const a = subZone.makeOnce('a', () => 'A');
-    t.is(a, 'A');
-    t.throws(() => subZone.makeOnce('a', () => 'A'));
-    const heapValue = harden({
-      hello() {
-        return 'world';
-      },
-    });
-    if (heapOnlyZone) {
-      t.is(
-        rootZone.makeOnce('heap', () => heapValue),
-        heapValue,
-      );
-    } else {
-      t.throws(() => rootZone.makeOnce('heap', () => heapValue));
-    }
+const testOnce = (t, rootZone, heapOnlyZone = false) => {
+  const subZone = rootZone.subZone('sub');
+  const a = subZone.makeOnce('a', () => 'A');
+  t.is(a, 'A');
+  t.throws(() => subZone.makeOnce('a', () => 'A'), {
+    message: /has already been used/,
   });
+  const heapValue = harden({
+    hello() {
+      return 'world';
+    },
+  });
+  if (heapOnlyZone) {
+    t.is(
+      rootZone.makeOnce('heap', () => heapValue),
+      heapValue,
+    );
+  } else {
+    t.throws(() => rootZone.makeOnce('heap', () => heapValue));
+  }
 };
 
-const heapZone = makeHeapZone();
-const virtualZone = makeVirtualZone();
-testOnce('heapZone', heapZone, true);
-testOnce('virtualZone', virtualZone);
+test('heapZone', t => {
+  const { heapZone } = t.context;
+  testOnce(t, heapZone, true);
+});
 
-const rootBaggage = virtualZone.detached().mapStore('rootBaggage');
-const rootDurableZone = makeDurableZone(rootBaggage);
-testOnce('durableZone', rootDurableZone);
-testOnce('durableZone second incarnation', makeDurableZone(rootBaggage));
+test('virtualZone', t => {
+  const { virtualZone } = t.context;
+  testOnce(t, virtualZone);
+});
+
+test('durableZone', t => {
+  const { rootBaggage, rootDurableZone } = t.context;
+  testOnce(t, rootDurableZone);
+  const secondDurableZone = makeDurableZone(rootBaggage);
+  testOnce(t, secondDurableZone);
+  const subDurableZone = makeDurableZone(rootBaggage).subZone('sub');
+  t.is(
+    subDurableZone.makeOnce('a', () => 'B'),
+    'A',
+  );
+  t.throws(() => subDurableZone.makeOnce('a', () => 'B'), {
+    message: /has already been used/,
+  });
+});
