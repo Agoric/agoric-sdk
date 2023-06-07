@@ -6,13 +6,13 @@ import {
 import { Far } from '@endo/marshal';
 import { reverseInterest } from '../../src/interest-math.js';
 
-export const makeCompoundedInterestProvider = brand => {
-  let compoundedInterest = makeRatio(100n, brand);
+export const makeCompoundedStabilityFeeProvider = brand => {
+  let compoundedStabilityFee = makeRatio(100n, brand);
   return {
-    getCompoundedInterest: () => compoundedInterest,
+    getCompoundedStabilityFee: () => compoundedStabilityFee,
     chargeHundredPercentInterest: () => {
-      compoundedInterest = makeRatio(
-        compoundedInterest.numerator.value * 2n,
+      compoundedStabilityFee = makeRatio(
+        compoundedStabilityFee.numerator.value * 2n,
         brand,
       );
     },
@@ -30,11 +30,11 @@ export const makeFakeVault = (
   vaultId,
   initDebt,
   initCollateral = AmountMath.make(initDebt.brand, 100n),
-  manager = makeCompoundedInterestProvider(initDebt.brand),
+  manager = makeCompoundedStabilityFeeProvider(initDebt.brand),
 ) => {
   let normalizedDebt = reverseInterest(
     initDebt,
-    manager.getCompoundedInterest(),
+    manager.getCompoundedStabilityFee(),
   );
   let collateral = initCollateral;
   const fakeSeat = {};
@@ -42,11 +42,11 @@ export const makeFakeVault = (
     getCollateralAmount: () => collateral,
     getNormalizedDebt: () => normalizedDebt,
     getCurrentDebt: () =>
-      floorMultiplyBy(normalizedDebt, manager.getCompoundedInterest()),
+      floorMultiplyBy(normalizedDebt, manager.getCompoundedStabilityFee()),
     setDebt: newDebt =>
       (normalizedDebt = reverseInterest(
         newDebt,
-        manager.getCompoundedInterest(),
+        manager.getCompoundedStabilityFee(),
       )),
     setCollateral: newCollateral => (collateral = newCollateral),
     getIdInManager: () => vaultId,

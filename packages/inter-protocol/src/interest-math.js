@@ -9,39 +9,39 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 /**
- * @param {Ratio} currentCompoundedInterest as coefficient
- * @param {Ratio} previousCompoundedInterest as coefficient
+ * @param {Ratio} currentCompoundedStabilityFee as coefficient
+ * @param {Ratio} previousCompoundedStabilityFee as coefficient
  * @returns {Ratio} additional compounding since the previous
  */
 const calculateRelativeCompounding = (
-  currentCompoundedInterest,
-  previousCompoundedInterest,
+  currentCompoundedStabilityFee,
+  previousCompoundedStabilityFee,
 ) => {
   // divide compounded interest by the snapshot
   return multiplyRatios(
-    currentCompoundedInterest,
-    invertRatio(previousCompoundedInterest),
+    currentCompoundedStabilityFee,
+    invertRatio(previousCompoundedStabilityFee),
   );
 };
 
 /**
  * @param {Amount<'nat'>} debtSnapshot
- * @param {Ratio} interestSnapshot as coefficient
- * @param {Ratio} currentCompoundedInterest as coefficient
+ * @param {Ratio} stabilityFeeSnapshot as coefficient
+ * @param {Ratio} currentCompoundedStabilityFee as coefficient
  * @returns {Amount<'nat'>}
  */
 export const calculateCurrentDebt = (
   debtSnapshot,
-  interestSnapshot,
-  currentCompoundedInterest,
+  stabilityFeeSnapshot,
+  currentCompoundedStabilityFee,
 ) => {
-  if (ratiosSame(interestSnapshot, currentCompoundedInterest)) {
+  if (ratiosSame(stabilityFeeSnapshot, currentCompoundedStabilityFee)) {
     return debtSnapshot;
   }
 
   const interestSinceSnapshot = calculateRelativeCompounding(
-    currentCompoundedInterest,
-    interestSnapshot,
+    currentCompoundedStabilityFee,
+    stabilityFeeSnapshot,
   );
 
   return multiplyBy(debtSnapshot, interestSinceSnapshot);
