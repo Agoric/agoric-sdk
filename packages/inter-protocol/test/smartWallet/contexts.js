@@ -11,7 +11,10 @@ import {
 import { heapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
+import {
+  createPriceFeed,
+  instanceNameFor,
+} from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
 
 // referenced by TS
@@ -42,7 +45,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   const bundleCache = await unsafeMakeBundleCache('bundles/');
 
-  const { consume, produce } = await makeSpace(log, bundleCache);
+  // @ts-expect-error xxx
+  const { consume, produce, instance } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
   await produceDiagnostics({ produce });
@@ -155,12 +159,20 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 
+    const mockPriceAuthorityAdmin = /** @type {any} */ ({
+      registerPriceAuthority() {
+        // noop mock
+      },
+    });
+    produce.priceAuthorityAdmin.resolve(mockPriceAuthorityAdmin);
+
     await createPriceFeed(
-      { consume, produce },
+      // @ts-expect-error xxx
+      { consume, produce, instance },
       {
         options: {
           priceFeedOptions: {
-            AGORIC_INSTANCE_NAME: `${inBrandName}-${outBrandName} price feed`,
+            AGORIC_INSTANCE_NAME: instanceNameFor(inBrandName, outBrandName),
             contractTerms: {
               minSubmissionCount: 2,
               minSubmissionValue: 1,

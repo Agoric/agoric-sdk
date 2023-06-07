@@ -39,9 +39,15 @@ export const makeLiquidationTestContext = async t => {
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
+  /** @type {import('../../tools/board-utils.js').AgoricNamesRemotes} */
+  const agoricNamesRemotes = {};
+  const refreshAgoricNamesRemotes = () => {
+    Object.assign(
+      agoricNamesRemotes,
+      makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage),
+    );
+  };
+  refreshAgoricNamesRemotes();
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
@@ -65,30 +71,43 @@ export const makeLiquidationTestContext = async t => {
   );
   console.timeLog('DefaultTestContext', 'governanceDriver');
 
-  const priceFeedDriver = await makePriceFeedDriver(
-    storage,
-    agoricNamesRemotes,
-    walletFactoryDriver,
-    // TODO read from the config file
-    [
-      'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
-      'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
-      'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
-      'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
-      'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
-    ],
-  );
+  /** @type {Record<string, Awaited<ReturnType<typeof makePriceFeedDriver>>>} */
+  const priceFeedDrivers = {};
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
 
   console.timeEnd('DefaultTestContext');
 
-  const setupStartingState = async () => {
+  /**
+   *
+   * @param {object} opts
+   * @param {string} opts.collateralBrandKey
+   * @param {number} opts.managerIndex
+   */
+  const setupStartingState = async ({ collateralBrandKey, managerIndex }) => {
+    const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
     const { advanceTimeBy, readLatest } = swingsetTestKit;
+
+    !priceFeedDrivers[collateralBrandKey] ||
+      Fail`setup for ${collateralBrandKey} already ran`;
+    priceFeedDrivers[collateralBrandKey] = await makePriceFeedDriver(
+      collateralBrandKey,
+      agoricNamesRemotes,
+      walletFactoryDriver,
+      // TODO read from the config file
+      [
+        'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
+        'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
+        'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
+        'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
+        'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
+      ],
+    );
+
     // price feed logic treats zero time as "unset" so advance to nonzero
     await advanceTimeBy(1, 'seconds');
 
-    await priceFeedDriver.setPrice(12.34);
+    await priceFeedDrivers[collateralBrandKey].setPrice(12.34);
 
     // raise the VaultFactory DebtLimit
     await governanceDriver.changeParams(
@@ -102,7 +121,7 @@ export const makeLiquidationTestContext = async t => {
       {
         paramPath: {
           key: {
-            collateralBrand: agoricNamesRemotes.brand.ATOM,
+            collateralBrand: agoricNamesRemotes.brand[collateralBrandKey],
           },
         },
       },
@@ -120,7 +139,7 @@ export const makeLiquidationTestContext = async t => {
     );
 
     // confirm Relevant Governance Parameter Assumptions
-    t.like(readLatest('published.vaultFactory.managers.manager0.governance'), {
+    t.like(readLatest(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
         InterestRate: {
@@ -168,11 +187,16 @@ export const makeLiquidationTestContext = async t => {
   };
 
   const check = {
-    vaultNotification(vaultIndex, partial) {
+    /**
+     * @param {number} managerIndex
+     * @param {number} vaultIndex
+     * @param {Record<string, any>} partial
+     */
+    vaultNotification(managerIndex, vaultIndex, partial) {
       const { readLatest } = swingsetTestKit;
 
       const notification = readLatest(
-        `published.vaultFactory.managers.manager0.vaults.vault${vaultIndex}`,
+        `published.vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
       t.like(notification, partial);
     },
@@ -183,7 +207,8 @@ export const makeLiquidationTestContext = async t => {
     agoricNamesRemotes,
     check,
     governanceDriver,
-    priceFeedDriver,
+    priceFeedDrivers,
+    refreshAgoricNamesRemotes,
     setupStartingState,
     walletFactoryDriver,
   };

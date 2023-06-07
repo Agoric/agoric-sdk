@@ -127,12 +127,12 @@ test.serial('scenario: Flow 2b', async t => {
     agoricNamesRemotes,
     check,
     setupStartingState,
-    priceFeedDriver,
+    priceFeedDrivers,
     readLatest,
     walletFactoryDriver,
   } = t.context;
 
-  await setupStartingState();
+  await setupStartingState({ collateralBrandKey: 'ATOM', managerIndex: 0 });
 
   const minter = await walletFactoryDriver.provideSmartWallet('agoric1minter');
 
@@ -152,7 +152,7 @@ test.serial('scenario: Flow 2b', async t => {
 
   // Verify starting balances
   for (let i = 0; i < setup.vaults.length; i += 1) {
-    check.vaultNotification(i, {
+    check.vaultNotification(0, i, {
       debtSnapshot: { debt: { value: scale6(setup.vaults[i].debt) } },
       locked: { value: scale6(setup.vaults[i].atom) },
       vaultState: 'active',
@@ -204,7 +204,7 @@ test.serial('scenario: Flow 2b', async t => {
     //  Change price to trigger liquidation
     // ---------------
 
-    await priceFeedDriver.setPrice(9.99);
+    await priceFeedDrivers.ATOM.setPrice(9.99);
 
     // check nothing liquidating yet
     /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} */
@@ -269,21 +269,21 @@ test.serial('scenario: Flow 2b', async t => {
     await advanceTimeBy(3, 'minutes');
 
     // TODO express spec up top in a way it can be passed in here
-    check.vaultNotification(0, {
+    check.vaultNotification(0, 0, {
       debt: undefined,
       vaultState: 'active',
       locked: {
         value: scale6(outcome.vaultsActual[0].locked),
       },
     });
-    check.vaultNotification(1, {
+    check.vaultNotification(0, 1, {
       debt: undefined,
       vaultState: 'active',
       locked: {
         value: scale6(outcome.vaultsActual[1].locked),
       },
     });
-    check.vaultNotification(2, {
+    check.vaultNotification(0, 2, {
       debt: undefined,
       vaultState: 'liquidated',
       locked: {
