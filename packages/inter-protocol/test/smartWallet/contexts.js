@@ -42,7 +42,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   const bundleCache = await unsafeMakeBundleCache('bundles/');
 
-  const { consume, produce } = await makeSpace(log, bundleCache);
+  // @ts-expect-error xxx
+  const { consume, produce, instance } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
   await produceDiagnostics({ produce });
@@ -155,8 +156,16 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 
+    const mockPriceAuthorityAdmin = /** @type {any} */ ({
+      registerPriceAuthority() {
+        // noop mock
+      },
+    });
+    produce.priceAuthorityAdmin.resolve(mockPriceAuthorityAdmin);
+
     await createPriceFeed(
-      { consume, produce },
+      // @ts-expect-error xxx
+      { consume, produce, instance },
       {
         options: {
           priceFeedOptions: {

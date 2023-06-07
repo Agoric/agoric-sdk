@@ -22,9 +22,10 @@ import {
 } from './contexts.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
- * & {consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']}>
- * }
+ * @typedef {Awaited<ReturnType<typeof makeDefaultTestContext>>
+  & { consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'] } } TestContext */
+/**
+ * @type {import('ava').TestFn<TestContext>}
  */
 const test = anyTest;
 
@@ -104,7 +105,7 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<*>} t
+ * @param {import('ava').ExecutionContext<TestContext>} t
  * @param {string[]} oracleAddresses
  */
 const setupFeedWithWallets = async (t, oracleAddresses) => {

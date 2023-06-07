@@ -1,10 +1,10 @@
 // @ts-nocheck -- lots of type errors. low prio b/c proposals are like scripts
-import { E } from '@endo/far';
-import {
-  makeStorageNodeChild,
-  assertPathSegment,
-} from '@agoric/internal/src/lib-chainStorage.js';
 import { makeTracer } from '@agoric/internal';
+import {
+  assertPathSegment,
+  makeStorageNodeChild,
+} from '@agoric/internal/src/lib-chainStorage.js';
+import { E } from '@endo/far';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
@@ -95,6 +95,7 @@ export const createPriceFeed = async (
       priceAuthorityAdmin,
       startGovernedUpgradable,
     },
+    instance: { produce: produceInstance },
   },
   {
     options: {
@@ -160,11 +161,27 @@ export const createPriceFeed = async (
     installation: priceAggregator,
   });
 
-  E(E(agoricNamesAdmin).lookupAdmin('instance'))
+  // Publish price feed in home.priceAuthority.
+  const forceReplace = true;
+  // Make sure this PA is registered before sharing the instance in agoricNames,
+  // which allows contracts that depend on the registry value to wait for it and
+  // prevent a race.
+  await E(priceAuthorityAdmin).registerPriceAuthority(
+    E(faKit.publicFacet).getPriceAuthority(),
+    brandIn,
+    brandOut,
+    forceReplace,
+  );
+
+  await E(E(agoricNamesAdmin).lookupAdmin('instance'))
     .update(AGORIC_INSTANCE_NAME, faKit.instance)
     .catch(err =>
       console.error(`🚨 failed to update ${AGORIC_INSTANCE_NAME}`, err),
     );
+  // being after the above awaits means that when this resolves, the consumer
+  // gets notified that the authority is in the registry and its instance is in
+  // agoricNames.
+  produceInstance[AGORIC_INSTANCE_NAME].resolve(faKit.instance);
 
   E(E.get(econCharterKit).creatorFacet).addInstance(
     faKit.instance,
@@ -172,15 +189,6 @@ export const createPriceFeed = async (
     AGORIC_INSTANCE_NAME,
   );
   trace('registered', AGORIC_INSTANCE_NAME, faKit.instance);
-
-  // Publish price feed in home.priceAuthority.
-  const forceReplace = true;
-  void E(priceAuthorityAdmin).registerPriceAuthority(
-    E(faKit.publicFacet).getPriceAuthority(),
-    brandIn,
-    brandOut,
-    forceReplace,
-  );
 
   /**
    * Initialize a new oracle and send an invitation to administer it.
@@ -231,6 +239,9 @@ export const getManifestForPriceFeed = async (
         priceAuthorityAdmin: t,
         startGovernedUpgradable: t,
       },
+      instance: {
+        produce: t,
+      },
     },
     [ensureOracleBrands.name]: {
       namedVat: {
@@ -242,6 +253,7 @@ export const getManifestForPriceFeed = async (
     },
   },
   installations: {
+    // ??? will every eval of price-feed-proposal install priceAggregator ?
     priceAggregator: restoreRef(priceFeedOptions.priceAggregatorRef),
   },
   options: {
