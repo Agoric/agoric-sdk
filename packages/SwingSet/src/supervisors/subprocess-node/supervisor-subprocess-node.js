@@ -109,7 +109,7 @@ function handleSetBundle(margs) {
     return result;
   }
   // this 'syscall' throws or returns data
-  const syscall = makeSupervisorSyscall(syscallToManager, true);
+  const syscall = makeSupervisorSyscall(syscallToManager);
   const vatPowers = {
     makeMarshal,
     testLog,

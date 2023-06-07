@@ -107,7 +107,6 @@ export function makeVatManagerFactory({
         managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
-        vatSyscallHandler,
       );
     }
 
