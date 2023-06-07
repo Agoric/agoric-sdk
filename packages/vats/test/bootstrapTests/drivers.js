@@ -145,28 +145,28 @@ export const makeWalletFactoryDriver = async (
 };
 
 /**
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
+ * @param {string} collateralBrandKey
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
  * @param {string[]} oracleAddresses
  */
 export const makePriceFeedDriver = async (
-  storage,
+  collateralBrandKey,
   agoricNamesRemotes,
   walletFactoryDriver,
   oracleAddresses,
 ) => {
-  // XXX assumes this one feed
-  const priceFeedName = instanceNameFor('ATOM', 'USD');
+  const priceFeedName = instanceNameFor(collateralBrandKey, 'USD');
 
   const oracleWallets = await Promise.all(
     oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
   );
 
   const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
-  const adminOfferId = 'acceptOracleInvitation';
+  priceFeedInstance || Fail`no price feed ${priceFeedName}`;
+  const adminOfferId = `accept-${collateralBrandKey}-oracleInvitation`;
 
-  // accept invitations (TODO move into driver)
+  // accept invitations
   await Promise.all(
     oracleWallets.map(w =>
       w.executeOffer({
