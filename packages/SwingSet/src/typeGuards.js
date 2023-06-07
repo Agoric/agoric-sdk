@@ -1,7 +1,12 @@
 // @jessie-check
 import { M } from '@agoric/store';
 
-export const ManagerType = M.or('xsnap', 'xs-worker', 'local');
+export const ManagerType = M.or(
+  'xsnap',
+  'xs-worker',
+  'node-subprocess',
+  'local',
+);
 
 const Bundle = M.splitRecord({ moduleType: M.string() });
 
