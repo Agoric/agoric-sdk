@@ -250,6 +250,7 @@ const prepareVaultDirector = (
     metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
   });
 
+  /** @param {(vm: VaultManager) => void} fn */
   const allManagersDo = fn => {
     for (const managerIndex of collateralManagers.values()) {
       const vm = vaultManagers.get(managerIndex).self;
@@ -424,6 +425,7 @@ const prepareVaultDirector = (
 
         makeLiquidationWaker() {
           return makeWaker('liquidationWaker', _timestamp => {
+            // XXX floating promise
             allManagersDo(vm => vm.liquidateVaults(auctioneer));
           });
         },

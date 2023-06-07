@@ -400,7 +400,7 @@ export const prepareVaultManagerKit = (
           // throw. See https://github.com/Agoric/agoric-sdk/issues/4317
           void observeNotifier(quoteNotifier, {
             updateState(value) {
-              trace('vaultManager got new collateral quote', value);
+              trace('storing new quote', value.quoteAmount.value);
               ephemera.storedCollateralQuote = value;
             },
             fail(reason) {
@@ -1036,7 +1036,7 @@ export const prepareVaultManagerKit = (
           if (!storedCollateralQuote)
             throw Fail`lockOraclePrices called before a collateral quote was available`;
           trace(
-            `lockPrice`,
+            `lockOraclePrices`,
             getAmountIn(storedCollateralQuote),
             getAmountOut(storedCollateralQuote),
           );
@@ -1046,7 +1046,7 @@ export const prepareVaultManagerKit = (
           return storedCollateralQuote;
         },
         /**
-         * @param {AuctioneerPublicFacet} auctionPF
+         * @param {ERef<AuctioneerPublicFacet>} auctionPF
          */
         async liquidateVaults(auctionPF) {
           const { state, facets } = this;
@@ -1060,11 +1060,19 @@ export const prepareVaultManagerKit = (
           } = state;
           trace(collateralBrand, 'considering liquidation');
 
+          if (!lockedQuote) {
+            // By design, the first cycle of auction may call this before a quote is locked
+            // because the schedule is global at the vaultDirector level, and if a manager
+            // starts after the price lock time there's nothing to be done.
+            // NB: this message should not log repeatedly.
+            console.error(
+              'Skipping liquidation because no quote is locked yet (may happen with new manager)',
+            );
+            return;
+          }
+
           const { prioritizedVaults } = collateralEphemera(collateralBrand);
-          assert(factoryPowers && prioritizedVaults && zcf);
-          lockedQuote ||
-            Fail`Must have locked a quote before liquidating vaults.`;
-          assert(lockedQuote); // redundant with previous line
+          prioritizedVaults || Fail`prioritizedVaults missing from ephemera`;
 
           const liqMargin = self.getGovernedParams().getLiquidationMargin();
 
