@@ -36,14 +36,11 @@ const detachedHeapStores = Far('heapStores', {
  * @returns {import('.').Zone}
  */
 export const makeHeapZone = (baseLabel = 'heapZone') => {
-  const { makeOnce, makeOnceWrapper } = makeOnceKit(
-    baseLabel,
-    detachedHeapStores,
-  );
+  const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);
   return Far('heapZone', {
-    exo: makeOnceWrapper(makeExo),
-    exoClass: makeOnceWrapper(defineExoClass),
-    exoClassKit: makeOnceWrapper(defineExoClassKit),
+    exo: wrapProvider(makeExo),
+    exoClass: wrapProvider(defineExoClass),
+    exoClassKit: wrapProvider(defineExoClassKit),
     subZone: (label, _options) => {
       return makeOnce(label, () => makeHeapZone(`${baseLabel}.${label}`));
     },
@@ -52,10 +49,10 @@ export const makeHeapZone = (baseLabel = 'heapZone') => {
     detached: detachedHeapStores.detached,
     isStorable: detachedHeapStores.isStorable,
 
-    mapStore: makeOnceWrapper(detachedHeapStores.mapStore),
-    setStore: makeOnceWrapper(detachedHeapStores.setStore),
-    weakMapStore: makeOnceWrapper(detachedHeapStores.weakMapStore),
-    weakSetStore: makeOnceWrapper(detachedHeapStores.weakSetStore),
+    mapStore: wrapProvider(detachedHeapStores.mapStore),
+    setStore: wrapProvider(detachedHeapStores.setStore),
+    weakMapStore: wrapProvider(detachedHeapStores.weakMapStore),
+    weakSetStore: wrapProvider(detachedHeapStores.weakSetStore),
   });
 };
 harden(makeHeapZone);

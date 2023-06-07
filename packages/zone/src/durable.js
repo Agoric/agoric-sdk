@@ -66,7 +66,11 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
 
   const attachedStores = attachDurableStores(() => baggage);
 
-  const { makeOnce, makeOnceWrapper } = makeOnceKit(baseLabel, attachedStores);
+  const { makeOnce, wrapProvider } = makeOnceKit(
+    baseLabel,
+    attachedStores,
+    baggage,
+  );
 
   /** @type {import('.').Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
@@ -75,28 +79,28 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   /** @type {import('.').Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
 
+  const mapStore = wrapProvider(attachedStores.mapStore);
+
   /** @type {import('.').Zone['subZone']} */
   const subZone = (label, options = {}) => {
-    const subBaggage = makeOnce(label, () =>
-      provideDurableMapStore(baggage, label, options),
-    );
+    const subBaggage = mapStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
 
   return Far('durableZone', {
-    exo: makeOnceWrapper(exo),
-    exoClass: makeOnceWrapper(exoClass),
-    exoClassKit: makeOnceWrapper(exoClassKit),
+    exo: wrapProvider(exo),
+    exoClass: wrapProvider(exoClass),
+    exoClassKit: wrapProvider(exoClassKit),
     subZone,
 
     makeOnce,
     detached: attachedStores.detached,
     isStorable: attachedStores.isStorable,
 
-    mapStore: makeOnceWrapper(attachedStores.mapStore),
-    setStore: makeOnceWrapper(attachedStores.setStore),
-    weakMapStore: makeOnceWrapper(attachedStores.weakMapStore),
-    weakSetStore: makeOnceWrapper(attachedStores.weakSetStore),
+    mapStore,
+    setStore: wrapProvider(attachedStores.setStore),
+    weakMapStore: wrapProvider(attachedStores.weakMapStore),
+    weakSetStore: wrapProvider(attachedStores.weakSetStore),
   });
 };
 harden(makeDurableZone);

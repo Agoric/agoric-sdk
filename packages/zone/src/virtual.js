@@ -63,14 +63,14 @@ export const detachedVirtualStores = Far('virtualStores', {
  * @returns {import('.').Zone}
  */
 export const makeVirtualZone = (baseLabel = 'virtualZone') => {
-  const { makeOnce, makeOnceWrapper } = makeOnceKit(
+  const { makeOnce, wrapProvider } = makeOnceKit(
     baseLabel,
     detachedVirtualStores,
   );
   return Far('heapZone', {
-    exo: makeOnceWrapper(defineVirtualExo),
-    exoClass: makeOnceWrapper(defineVirtualExoClass),
-    exoClassKit: makeOnceWrapper(defineVirtualExoClassKit),
+    exo: wrapProvider(defineVirtualExo),
+    exoClass: wrapProvider(defineVirtualExoClass),
+    exoClassKit: wrapProvider(defineVirtualExoClassKit),
     subZone: (label, _options) => {
       return makeOnce(label, () => makeVirtualZone(`${baseLabel}.${label}`));
     },
@@ -79,10 +79,10 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     detached: detachedVirtualStores.detached,
     isStorable: detachedVirtualStores.isStorable,
 
-    mapStore: makeOnceWrapper(detachedVirtualStores.mapStore),
-    setStore: makeOnceWrapper(detachedVirtualStores.setStore),
-    weakMapStore: makeOnceWrapper(detachedVirtualStores.weakMapStore),
-    weakSetStore: makeOnceWrapper(detachedVirtualStores.weakSetStore),
+    mapStore: wrapProvider(detachedVirtualStores.mapStore),
+    setStore: wrapProvider(detachedVirtualStores.setStore),
+    weakMapStore: wrapProvider(detachedVirtualStores.weakMapStore),
+    weakSetStore: wrapProvider(detachedVirtualStores.weakSetStore),
   });
 };
 
