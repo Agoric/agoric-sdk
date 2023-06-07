@@ -1,11 +1,11 @@
 // @jessie-check
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { E } from '@endo/far';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { E } from '@endo/far';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
@@ -219,6 +219,7 @@ export const addAssetToVault = async (
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
+    instance: { consume: consumeInstance },
   },
   {
     options: {
@@ -238,6 +239,12 @@ export const addAssetToVault = async (
     E(agoricNamesAdmin).lookupAdmin('issuer'),
     [keyword],
   );
+
+  // XXX copied from price-feed-proposal
+  const oracleInstanceName = `${oracleBrand}-USD price feed`;
+  // don't add the collateral offering to vaultFactory until its price feed is available
+  // eslint-disable-next-line no-restricted-syntax -- allow this computed property
+  await consumeInstance[oracleInstanceName];
 
   const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
@@ -320,6 +327,11 @@ export const getManifestForAddAssetToVault = (
         },
         brand: {
           consume: { [Stable.symbol]: true },
+        },
+        instance: {
+          // allow any instance because the AGORIC_INSTANCE_NAME of
+          // priceFeedOptions cannot be known statically.
+          consume: true,
         },
       },
     },
