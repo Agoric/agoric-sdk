@@ -72,7 +72,7 @@ const validTransitions = {
  *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
- * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
+ * @property {{debt: Amount<'nat'>, stabilityFee: Ratio}} debtSnapshot 'debt' at the point the compounded stabilityFee was 'stabilityFee'
  * @property {HolderPhase} vaultState
  */
 
@@ -328,10 +328,11 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         getStateSnapshot(newPhase) {
           const { state, facets } = this;
 
-          const { debtSnapshot: debt, stabilityFeeSnapshot: interest } = state;
+          const { debtSnapshot: debt, stabilityFeeSnapshot: stabilityFee } =
+            state;
           /** @type {VaultNotification} */
           return harden({
-            debtSnapshot: { debt, interest },
+            debtSnapshot: { debt, stabilityFee },
             locked: facets.self.getCollateralAmount(),
             // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
             // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
@@ -786,7 +787,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           helper.updateDebtSnapshot(self.getCurrentDebt());
           const {
             debtSnapshot: debt,
-            stabilityFeeSnapshot: interest,
+            stabilityFeeSnapshot: stabilityFee,
             phase,
           } = state;
           if (outerUpdater) {
@@ -796,7 +797,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             state.outerUpdater = null;
           }
           const transferState = {
-            debtSnapshot: { debt, interest },
+            debtSnapshot: { debt, stabilityFee },
             locked: self.getCollateralAmount(),
             vaultState: phase,
           };
