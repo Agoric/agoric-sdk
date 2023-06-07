@@ -6,6 +6,7 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
+import { instanceNameFor } from './price-feed-proposal.js';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
@@ -240,8 +241,7 @@ export const addAssetToVault = async (
     [keyword],
   );
 
-  // XXX copied from price-feed-proposal
-  const oracleInstanceName = `${oracleBrand}-USD price feed`;
+  const oracleInstanceName = instanceNameFor(oracleBrand, 'USD');
   // don't add the collateral offering to vaultFactory until its price feed is available
   // eslint-disable-next-line no-restricted-syntax -- allow this computed property
   await consumeInstance[oracleInstanceName];

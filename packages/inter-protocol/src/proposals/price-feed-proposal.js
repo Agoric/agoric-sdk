@@ -18,6 +18,9 @@ const sanitizePathSegment = name => {
   return candidate;
 };
 
+export const instanceNameFor = (inBrandName, outBrandName) =>
+  `${inBrandName}-${outBrandName} price feed`;
+
 /**
  * @typedef {{
  * brandIn?: ERef<Brand<'nat'> | undefined>,
@@ -314,7 +317,7 @@ export const startPriceFeeds = async (
     {
       options: {
         priceFeedOptions: {
-          AGORIC_INSTANCE_NAME: `${inBrandName}-${outBrandName} price feed`,
+          AGORIC_INSTANCE_NAME: instanceNameFor(inBrandName, outBrandName),
           contractTerms: {
             minSubmissionCount: 2,
             minSubmissionValue: 1,

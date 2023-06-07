@@ -3,17 +3,18 @@ import '@agoric/vats/src/core/types.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
-import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { TimeMath } from '@agoric/time';
-import { E } from '@endo/far';
-import { zip } from '@agoric/internal';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { buildRootObject } from './boot-psm.js';
+import { zip } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { TimeMath } from '@agoric/time';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E } from '@endo/far';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregatorKit.js';
+import { instanceNameFor } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
+import { buildRootObject } from './boot-psm.js';
 import {
   currentPurseBalance,
   importBootTestUtils,
@@ -122,7 +123,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
   /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>} */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
-    'ATOM-USD price feed',
+    instanceNameFor('ATOM', 'USD'),
   );
 
   return { oracleWallets, governedPriceAggregator };
@@ -464,7 +465,10 @@ test.serial('govern oracles list', async t => {
     t.is(usedInvitations.get('acceptVoterOID')?.value[0].description, 'Voter0');
   }
 
-  const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');
+  const feed = await E(agoricNames).lookup(
+    'instance',
+    instanceNameFor('ATOM', 'USD'),
+  );
   t.assert(feed);
 
   // Call for a vote to addOracles ////////////////////////////////
