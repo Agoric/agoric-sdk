@@ -22,7 +22,7 @@
       "entrypoint": "defaultProposalBuilder",
       "args": [
         {
-          "interestRateValue": 1000,
+          "stabilityFeeValue": 1000,
           "interchainAssetOptions": {
             "denom": "ibc/toyatom",
             "decimalPlaces": 6,

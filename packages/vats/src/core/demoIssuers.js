@@ -86,7 +86,7 @@ const defaultConfig = /** @type {const} */ ({
   initialMargin: [150n, PCT],
   liquidationMargin: [125n, PCT],
   liquidationPenalty: [10n, PCT],
-  interestRate: [250n, BASIS],
+  stabilityFee: [250n, BASIS],
   mintFee: [1n, BASIS],
 });
 
@@ -99,7 +99,7 @@ const defaultConfig = /** @type {const} */ ({
  *     initialMargin: Rational,
  *     liquidationMargin: Rational,
  *     liquidationPenalty: Rational,
- *     interestRate: Rational,
+ *     stabilityFee: Rational,
  *     mintFee: Rational,
  *     liquidationPadding?: Rational,
  *   },
@@ -451,7 +451,7 @@ export const poolRates = (issuerName, record, kits, central) => {
     initialMargin: toRatio(config.initialMargin, central.brand),
     liquidationMargin: toRatio(config.liquidationMargin, central.brand),
     liquidationPenalty: toRatio(config.liquidationPenalty, central.brand),
-    interestRate: toRatio(config.interestRate, central.brand),
+    stabilityFee: toRatio(config.stabilityFee, central.brand),
     mintFee: toRatio(config.mintFee, central.brand),
     // XXX not relevant to AMM pools but poolRates is also used for addVaultType
     liquidationPadding:
