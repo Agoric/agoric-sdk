@@ -14,28 +14,16 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeSubprocessFactory(tools) {
-  const { startSubprocessWorker, kernelKeeper, kernelSlog, testLog } = tools;
+  const { startSubprocessWorker, testLog } = tools;
 
-  function createFromBundle(
-    vatID,
-    bundle,
-    managerOptions,
-    liveSlotsOptions,
-    vatSyscallHandler,
-  ) {
-    const { compareSyscalls, useTranscript } = managerOptions;
+  function createFromBundle(vatID, bundle, managerOptions, liveSlotsOptions) {
     assert(!managerOptions.enableSetup, 'not supported at all');
-    assert(useTranscript, 'node-subprocess: useTranscript=false not supported');
-
-    const mk = makeManagerKit(
-      vatID,
-      kernelSlog,
-      kernelKeeper,
-      vatSyscallHandler,
-      true,
-      compareSyscalls,
-      useTranscript,
+    assert(
+      managerOptions.useTranscript,
+      'node-subprocess: useTranscript=false not supported',
     );
+
+    const mk = makeManagerKit();
 
     // start the worker and establish a connection
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();

@@ -1,4 +1,5 @@
 import os from 'os';
+import process from 'process';
 // eslint-disable-next-line import/order
 import { handleUnhandledRejections } from './unhandledRejectionDetector.js';
 
@@ -26,7 +27,7 @@ async function testPromiseWatcher(t) {
       upton: { sourceSpec: bfile('vat-upton.js') },
     },
   };
-
+  const workerType = process.env.SWINGSET_WORKER_TYPE || 'local';
   const unhandledRejections = [];
   handleUnhandledRejections(rej => unhandledRejections.push(rej));
 
@@ -67,7 +68,7 @@ async function testPromiseWatcher(t) {
     'p2-dk.rej rejected "err2" version v1 via VDO (rej)',
   ];
   t.deepEqual(c.dump().log, beforeReference);
-  if (os.platform() === 'darwin') {
+  if (os.platform() === 'darwin' && workerType === 'local') {
     // this will not work in CI but can at least validate things locally
     t.deepEqual(unhandledRejections, ['err2']);
   }
@@ -95,7 +96,7 @@ async function testPromiseWatcher(t) {
     'rp4-pw rejected "rerrafter" version v2 via watcher []',
     'rp4-dk rejected "rerrafter" version v2 via VDO',
   ]);
-  if (os.platform() === 'darwin') {
+  if (os.platform() === 'darwin' && workerType === 'local') {
     t.deepEqual(unhandledRejections, ['err2', 'err4']);
   }
 }
