@@ -1651,6 +1651,13 @@
   dependencies:
     fast-check "^3.0.0"
 
+"@fast-check/ava@^1.1.5":
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/@fast-check/ava/-/ava-1.1.5.tgz#b471ce5252a3d62eb9bc316f1b7b0a79a7c8341f"
+  integrity sha512-OopAjw8v6r3sEqR02O61r2yGoE4B1nWDRXAkB4tuK/v7qemkf86Fz+GRgBgAkSFql85VAeUq+wlx0F3Y7wJzzA==
+  dependencies:
+    fast-check "^3.0.0"
+
 "@gar/promisify@^1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
