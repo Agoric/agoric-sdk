@@ -11,7 +11,10 @@ import {
 import { heapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
+import {
+  createPriceFeed,
+  instanceNameFor,
+} from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
 
 // referenced by TS
@@ -169,7 +172,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       {
         options: {
           priceFeedOptions: {
-            AGORIC_INSTANCE_NAME: `${inBrandName}-${outBrandName} price feed`,
+            AGORIC_INSTANCE_NAME: instanceNameFor(inBrandName, outBrandName),
             contractTerms: {
               minSubmissionCount: 2,
               minSubmissionValue: 1,

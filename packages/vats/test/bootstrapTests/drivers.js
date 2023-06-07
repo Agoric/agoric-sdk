@@ -4,6 +4,7 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
+import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
 /**
@@ -156,7 +157,7 @@ export const makePriceFeedDriver = async (
   oracleAddresses,
 ) => {
   // XXX assumes this one feed
-  const priceFeedName = 'ATOM-USD price feed';
+  const priceFeedName = instanceNameFor('ATOM', 'USD');
 
   const oracleWallets = await Promise.all(
     oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
