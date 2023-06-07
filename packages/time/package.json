@@ -37,7 +37,7 @@
   "devDependencies": {
     "@endo/far": "^0.2.18",
     "@endo/init": "^0.5.56",
-    "ava": "^5.2.0"
+    "ava": "^5.3.0"
   },
   "files": [
     "*.js",
