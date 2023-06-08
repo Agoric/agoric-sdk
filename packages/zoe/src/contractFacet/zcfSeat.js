@@ -1,10 +1,10 @@
 import {
   makeScalarBigWeakMapStore,
-  provideDurableMapStore,
-  provideDurableWeakMapStore,
+  prepareExoClass,
   prepareExoClassKit,
   provide,
-  prepareExoClass,
+  provideDurableMapStore,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -19,6 +19,8 @@ import {
   SeatDataShape,
   SeatShape,
 } from '../typeGuards.js';
+import { makeAllocationMap } from './reallocate.js';
+import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
 const { Fail } = assert;
 
@@ -214,6 +216,10 @@ export const createSeatManager = (
 
         return isOfferSafe(state.proposal, reallocation);
       },
+      /**
+       * @deprecated switch to zcf.atomicRearrange()
+       * @param {AmountKeywordRecord} amountKeywordRecord
+       */
       incrementBy(amountKeywordRecord) {
         const { self } = this;
         assertActive(self);
@@ -227,6 +233,10 @@ export const createSeatManager = (
         );
         return amountKeywordRecord;
       },
+      /**
+       * @deprecated switch to zcf.atomicRearrange()
+       * @param {AmountKeywordRecord} amountKeywordRecord
+       */
       decrementBy(amountKeywordRecord) {
         const { self } = this;
         assertActive(self);
@@ -265,6 +275,7 @@ export const createSeatManager = (
   const ZcfSeatManagerIKit = harden({
     seatManager: M.interface('ZcfSeatManager', {
       makeZCFSeat: M.call(SeatDataShape).returns(M.remotable('zcfSeat')),
+      atomicRearrange: M.call(M.arrayOf(TransferPartShape)).returns(),
       reallocate: M.call(M.remotable('zcfSeat'), M.remotable('zcfSeat'))
         .rest(M.arrayOf(M.remotable('zcfSeat')))
         .returns(),
@@ -289,6 +300,91 @@ export const createSeatManager = (
           return zcfSeat;
         },
 
+        /**
+         * Rearrange the allocations according to the transfer descriptions.
+         * This is a set of changes to allocations that must satisfy several
+         * constraints. If these constraints are all met, then the reallocation
+         * happens atomically. Otherwise, it does not happen at all.
+         *
+         * The conditions
+         *    * All the mentioned seats are still live,
+         *    * No outstanding stagings for any of the mentioned seats. Stagings
+         *      have been deprecated in favor or atomicRearrange. To prevent
+         *      confusion, for each reallocation, it can only be expressed in
+         *      the old way or the new way, but not a mixture.
+         *    * Offer safety
+         *    * Overall conservation
+         *
+         * The overall transfer is expressed as an array of `TransferPart`. Each
+         * individual `TransferPart` is one of
+         * - A transfer from a `fromSeat` to a `toSeat`. Specify both toAmount
+         *     and fromAmount to change keywords, otherwise only fromAmount is required.
+         * - A taking from a `fromSeat`'s allocation. See the `fromOnly` helper.
+         * - A giving into a `toSeat`'s allocation. See the `toOnly` helper.
+         *
+         * @param {TransferPart[]} transfers
+         */
+        atomicRearrange(transfers) {
+          const newAllocations = makeAllocationMap(transfers);
+
+          // ////// All Seats are active /////////////////////////////////
+          newAllocations.forEach(([seat]) => {
+            assertActive(seat);
+            !seat.hasStagedAllocation() ||
+              Fail`Cannot mix atomicRearrange with seat stagings: ${seat}`;
+            zcfSeatToSeatHandle.has(seat) ||
+              Fail`The seat ${seat} was not recognized`;
+          });
+
+          // ////// Ensure that rights are conserved overall /////////////
+          const flattenAllocations = allocations =>
+            allocations.flatMap(Object.values);
+          const previousAmounts = flattenAllocations(
+            newAllocations.map(([seat]) => seat.getCurrentAllocation()),
+          );
+          const newAmounts = flattenAllocations(
+            newAllocations.map(([_, allocation]) => allocation),
+          );
+          assertRightsConserved(previousAmounts, newAmounts);
+
+          // ////// Ensure that offer safety holds ///////////////////////
+          newAllocations.forEach(([seat, allocation]) => {
+            isOfferSafe(seat.getProposal(), allocation) ||
+              Fail`Offer safety was violated by the proposed allocation: ${allocation}. Proposal was ${seat.getProposal()}`;
+          });
+
+          const seatHandleAllocations = newAllocations.map(
+            ([seat, allocation]) => {
+              const seatHandle = zcfSeatToSeatHandle.get(seat);
+              return { seatHandle, allocation };
+            },
+          );
+          try {
+            // No side effects above. All conditions checked which could have
+            // caused us to reject this reallocation. Notice that the current
+            // allocations are captured in seatHandleAllocations, so there must
+            // be no awaits between that assignment and here.
+            //
+            // COMMIT POINT
+            //
+            // The effects must succeed atomically. The call to
+            // replaceAllocations() will be processed in the order of updates
+            // from zcf to zoe, its effects must occur immediately in zoe on
+            // reception, and must not fail.
+            //
+            // Commit the new allocations (currentAllocation is replaced
+            // for each of the seats) and inform Zoe of the new allocation.
+
+            newAllocations.map(([seat, allocation]) =>
+              activeZCFSeats.set(seat, allocation),
+            );
+
+            E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
+          } catch (err) {
+            shutdownWithFailure(err);
+            throw err;
+          }
+        },
         reallocate(/** @type {ZCFSeat[]} */ ...seats) {
           seats.forEach(assertActive);
           seats.forEach(assertStagedAllocation);

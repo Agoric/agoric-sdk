@@ -687,7 +687,7 @@ export const prepareVaultManagerKit = (
           if (plan.transfersToVault.length > 0) {
             const transfers = plan.transfersToVault.map(
               ([vaultIndex, amounts]) =>
-                /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart} */ ([
+                /** @type {TransferPart} */ ([
                   liqSeat,
                   vaultsInPlan[vaultIndex].getVaultSeat(),
                   amounts,

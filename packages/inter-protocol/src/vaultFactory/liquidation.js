@@ -267,7 +267,7 @@ export const getLiquidatableVaults = (
   const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();
   let totalDebt = AmountMath.makeEmpty(debtBrand);
   let totalCollateral = AmountMath.makeEmpty(collateralBrand);
-  /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+  /** @type {TransferPart[]} */
   const transfers = [];
 
   for (const vault of vaultsToLiquidate.values()) {

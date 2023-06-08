@@ -545,7 +545,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
           const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
 
-          /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+          /** @type {TransferPart[]} */
           const transfers = harden([
             [clientSeat, vaultSeat, { Collateral: fp.give.Collateral }],
             [vaultSeat, clientSeat, { Collateral: fp.want.Collateral }],

@@ -10,15 +10,6 @@ export const TransferPartShape = M.splitArray(
 );
 
 /**
- * @typedef {[
- *   fromSeat?: ZCFSeat,
- *   toSeat?: ZCFSeat,
- *   fromAmounts?: AmountKeywordRecord,
- *   toAmounts?: AmountKeywordRecord
- * ]} TransferPart
- */
-
-/**
  * Asks Zoe (via zcf) to rearrange the allocations among the seats
  * mentioned. This is a set of changes to allocations that must satisfy
  * several constraints. If these constraints are all met, then the
@@ -51,6 +42,8 @@ export const TransferPartShape = M.splitArray(
  * See the helpers below, `fromOnly`, `toOnly`, and `atomicTransfer`,
  * which will remain helpers. These helper are for convenience
  * in expressing atomic rearrangements clearly.
+ *
+ * @deprecated use the zcf builtin instead
  *
  * @param {ZCF} zcf
  * @param {TransferPart[]} transfers
@@ -179,4 +172,4 @@ export const atomicTransfer = (
   toSeat = undefined,
   fromAmounts = undefined,
   toAmounts = undefined,
-) => atomicRearrange(zcf, harden([[fromSeat, toSeat, fromAmounts, toAmounts]]));
+) => zcf.atomicRearrange(harden([[fromSeat, toSeat, fromAmounts, toAmounts]]));

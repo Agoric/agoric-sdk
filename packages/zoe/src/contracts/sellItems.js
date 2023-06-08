@@ -11,7 +11,6 @@ import {
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
-  atomicRearrange,
 } from '../contractSupport/index.js';
 
 const { Fail } = assert;
@@ -107,8 +106,7 @@ const start = zcf => {
       Fail`More money (${totalCost}) is required to buy these items`;
 
     // Reallocate.
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         [buyerSeat, sellerSeat, { Money: providedMoney }],
         [sellerSeat, buyerSeat, { Items: wantedItems }],

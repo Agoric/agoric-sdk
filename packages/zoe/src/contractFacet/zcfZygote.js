@@ -245,6 +245,7 @@ export const makeZCFZygote = async (
   // accept raw functions. assert cannot be a valid passable! (It's a function
   // and has members.)
   const zcf = Remotable('Alleged: zcf', undefined, {
+    atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
     reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {

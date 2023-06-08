@@ -4,12 +4,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
-import {
-  atomicRearrange,
-  atomicTransfer,
-  fromOnly,
-  toOnly,
-} from './atomicTransfer.js';
+import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -57,8 +52,7 @@ export const satisfies = (zcf, seat, update) => {
 /** @type {Swap} */
 export const swap = (zcf, leftSeat, rightSeat) => {
   try {
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         [rightSeat, leftSeat, leftSeat.getProposal().want],
         [leftSeat, rightSeat, rightSeat.getProposal().want],
@@ -78,8 +72,7 @@ export const swap = (zcf, leftSeat, rightSeat) => {
 /** @type {SwapExact} */
 export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         fromOnly(rightSeat, rightSeat.getProposal().give),
         fromOnly(leftSeat, leftSeat.getProposal().give),

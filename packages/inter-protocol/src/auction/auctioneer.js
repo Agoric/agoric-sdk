@@ -97,7 +97,7 @@ const distributeProportionalShares = (
 
   const collShare = makeRatioFromAmounts(unsoldCollateral, totalCollDeposited);
   const currShare = makeRatioFromAmounts(proceeds, totalCollDeposited);
-  /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+  /** @type {TransferPart[]} */
   const transfers = [];
   let proceedsLeft = proceeds;
   let collateralLeft = unsoldCollateral;
@@ -255,7 +255,7 @@ export const distributeProportionalSharesWithLimits = (
   // collateral to reach their share. Then see what's left, and allocate it
   // among the remaining depositors. Escape to distributeProportionalShares if
   // anything doesn't work.
-  /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+  /** @type {TransferPart[]} */
   const transfers = [];
   let proceedsLeft = proceeds;
   let collateralLeft = unsoldCollateral;

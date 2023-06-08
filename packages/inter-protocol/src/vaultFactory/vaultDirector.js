@@ -196,7 +196,7 @@ const prepareVaultDirector = (
     mintAndTransfer: (mintReceiver, toMint, fee, nonMintTransfers) => {
       const kept = AmountMath.subtract(toMint, fee);
       debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
-      /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+      /** @type {TransferPart[]} */
       const transfers = [
         ...nonMintTransfers,
         [mintSeat, rewardPoolSeat, { Minted: fee }],
