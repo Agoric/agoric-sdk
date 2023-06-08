@@ -5,6 +5,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## Unreleased
 
+## Pismo-D
+
+* Soft patch for Cosmos Barberry fix (https://forum.cosmos.network/t/cosmos-sdk-security-advisory-barberry/)
+
 ## Pismo-C (agoric-upgrade-9)
 
 * SwingSet: improve transcript replay tools
