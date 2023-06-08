@@ -341,6 +341,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       name,
       meter, // stripped out and converted
       managerType, // TODO: not sure we want vats to be able to control this
+      nodeOptions, // TODO: ditto
       vatParameters, // stripped out and re-added
       enableSetup,
       enablePipelining,
@@ -368,6 +369,9 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     if (managerType) {
       managerTypes.includes(managerType) ||
         Fail`CreateVatOptions: bad managerType ${managerType}`;
+    }
+    if (managerType !== 'node-subprocess' && nodeOptions) {
+      Fail`CreateVatOptions: nodeOptions requires managerType='node-subprocess'`;
     }
     assertType('enableSetup', enableSetup, 'boolean');
     assertType('enablePipelining', enablePipelining, 'boolean');
