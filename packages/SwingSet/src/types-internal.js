@@ -39,6 +39,7 @@ export {};
  * @property { boolean } critical
  * @property { MeterID } [meterID] // property must be present, but can be undefined
  * @property { WorkerOptions } workerOptions
+ * @property { string[] } nodeOptions
  * @property { boolean } enableDisavow
  */
 
@@ -56,6 +57,7 @@ export {};
  *   setup?: unknown,
  *   retainSyscall?: boolean
  *   bundle?: Bundle,
+ *   nodeOptions?: string[],
  * }} ManagerOptions
  *
  * @typedef {(snapPos: number, ss: SnapStore, restartWorker?: boolean) => Promise<SnapshotResult>} MakeSnapshot

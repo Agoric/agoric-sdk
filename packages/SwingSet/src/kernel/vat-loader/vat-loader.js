@@ -20,6 +20,7 @@ export function makeVatLoader(stuff) {
   const allowedOptions = [
     'name',
     'workerOptions',
+    'nodeOptions',
     'meterID',
     'enableDisavow',
     'enableSetup',
@@ -84,6 +85,7 @@ export function makeVatLoader(stuff) {
     const {
       meterID,
       workerOptions,
+      nodeOptions = undefined,
       enableSetup = false,
       enableDisavow = false,
       enablePipelining = false,
@@ -119,12 +121,16 @@ export function makeVatLoader(stuff) {
       useTranscript,
       critical,
       name,
+      nodeOptions,
       ...overrideVatManagerOptions,
     };
     const liveSlotsOptions = {
       enableDisavow,
       relaxDurabilityRules: kernelKeeper.getRelaxDurabilityRules(),
     };
+    if (nodeOptions && workerOptions.type !== 'node-subprocess') {
+      Fail`nodeOptions requires managerType 'node-subprocess'`;
+    }
 
     const finish = starting && kernelSlog.startup(vatID);
     const manager = await vatManagerFactory(vatID, {

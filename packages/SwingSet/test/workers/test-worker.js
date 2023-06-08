@@ -28,42 +28,59 @@ async function makeController(managerType) {
   return c;
 }
 
-test('local vat manager', async t => {
-  const c = await makeController('local');
+async function workerTest(managerType, t) {
+  const c = await makeController(managerType);
   t.teardown(c.shutdown);
 
   await c.run();
   t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
   t.deepEqual(c.dump().log, ['testLog works']);
   t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
+}
+
+test('local vat manager', async t => {
+  await workerTest('local', t);
 });
 
 test('xsnap vat manager', async t => {
-  const c = await makeController('xsnap');
-  t.teardown(c.shutdown);
-
-  await c.run();
-  t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
-  t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
+  await workerTest('xsnap', t);
 });
 
 test('xs vat manager alias', async t => {
-  const c = await makeController('xs-worker');
-  t.teardown(c.shutdown);
-
-  await c.run();
-  t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
-  t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
+  await workerTest('xs-worker', t);
 });
 
 test('node-subprocess vat manager', async t => {
-  const c = await makeController('node-subprocess');
-  t.teardown(c.shutdown);
+  await workerTest('node-subprocess', t);
+});
 
+function nodeVatConfig(managerType) {
+  return {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourceSpec: new URL('bootstrap-node.js', import.meta.url).pathname,
+        creationOptions: {
+          managerType,
+          nodeOptions: ['--title=pretend'],
+        },
+      },
+    },
+  };
+}
+
+test('accept node command-line args for node worker', async t => {
+  const config = nodeVatConfig('node-subprocess');
+  const c = await buildVatController(config, []);
+  t.teardown(c.shutdown);
   await c.run();
   t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
-  t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
+  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), 'ok');
+});
+
+test('reject node command-line args for non-node worker', async t => {
+  const config = nodeVatConfig('xsnap');
+  await t.throwsAsync(() => buildVatController(config, []), {
+    message: "nodeOptions requires managerType 'node-subprocess'",
+  });
 });

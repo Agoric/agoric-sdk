@@ -194,9 +194,9 @@ async function handleCommand(command) {
 }
 
 async function loop() {
+  await 47; // I can wait for anything, so I choose 47.  It's the most ideal number.
   for (;;) {
     const command = fromParent.read();
-    // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
     await handleCommand(command);
   }
 }

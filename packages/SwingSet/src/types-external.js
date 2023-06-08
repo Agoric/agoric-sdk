@@ -308,7 +308,8 @@ export {};
  * config.vats[name].creationOptions: StaticVatOptions
  *
  * @typedef { { enableDisavow?: boolean } } OptEnableDisavow
- * @typedef { BaseVatOptions & OptManagerType & OptEnableDisavow } StaticVatOptions
+ * @typedef { { nodeOptions?: string[] } } OptNodeOptions
+ * @typedef { BaseVatOptions & OptManagerType & OptEnableDisavow & OptNodeOptions } StaticVatOptions
  *
  * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
