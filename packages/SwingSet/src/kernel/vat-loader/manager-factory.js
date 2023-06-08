@@ -48,6 +48,7 @@ export function makeVatManagerFactory({
       'reapInterval',
       'sourcedConsole',
       'name',
+      'nodeOptions',
     ]);
     const { setup, bundle, enableSetup = false } = managerOptions;
     assert(setup || bundle);

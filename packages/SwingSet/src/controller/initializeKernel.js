@@ -86,6 +86,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         'useTranscript',
         'critical',
         'reapInterval',
+        'nodeOptions',
       ]);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);

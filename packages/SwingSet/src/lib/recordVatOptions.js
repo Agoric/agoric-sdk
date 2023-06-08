@@ -14,6 +14,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       critical = false,
       meterID = undefined,
       managerType = kernelKeeper.getDefaultManagerType(),
+      nodeOptions = undefined,
       ...leftover
     } = options;
     const unused = Object.keys(leftover);
@@ -33,6 +34,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       reapInterval,
       critical,
       meterID,
+      nodeOptions,
     });
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     vatKeeper.setSourceAndOptions(source, vatOptions);

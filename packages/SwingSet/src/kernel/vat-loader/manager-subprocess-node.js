@@ -22,11 +22,23 @@ export function makeNodeSubprocessFactory(tools) {
       managerOptions.useTranscript,
       'node-subprocess: useTranscript=false not supported',
     );
+    const { name, nodeOptions } = managerOptions;
+
+    !nodeOptions ||
+      Array.isArray(nodeOptions) ||
+      Fail`nodeOptions must be an array`;
+
+    // Node worker subprocess adds `argName` as a dummy argument so that
+    // 'ps'shows which worker is for which vat
+    const argName = `${vatID}:${name !== undefined ? name : ''}`;
 
     const mk = makeManagerKit();
 
     // start the worker and establish a connection
-    const { fromChild, toChild, terminate, done } = startSubprocessWorker();
+    const { fromChild, toChild, terminate, done } = startSubprocessWorker(
+      argName,
+      nodeOptions,
+    );
 
     function sendToWorker(msg) {
       assert(Array.isArray(msg));
