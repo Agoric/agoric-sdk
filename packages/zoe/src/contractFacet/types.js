@@ -26,6 +26,7 @@
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  *
+ * @property {(transfers: TransferPart[]) => void} atomicRearrange - atomically reallocate amounts among seats.
  * @property {Reallocate} reallocate - reallocate amounts among seats.
  * Deprecated: Use atomicRearrange instead.
  * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
@@ -59,6 +60,9 @@
  */
 
 /**
+ * @deprecated reallocate() will be supported until at least 2023/09/01. It may
+ * be removed without further warning any time after 2023/11/01.
+ *
  * @typedef {(seat1: ZCFSeat, seat2: ZCFSeat, ...seatRest:
  * Array<ZCFSeat>) => void} Reallocate
  *
@@ -81,6 +85,15 @@
  * allocations will change. Since rights are conserved for the change,
  * overall rights will be unchanged, and a reallocation can only
  * effect offer safety for seats whose allocations change.
+ */
+
+/**
+ * @typedef {[
+ *   fromSeat?: ZCFSeat,
+ *   toSeat?: ZCFSeat,
+ *   fromAmounts?: AmountKeywordRecord,
+ *   toAmounts?: AmountKeywordRecord
+ * ]} TransferPart
  */
 
 /**
@@ -185,6 +198,14 @@
  */
 
 /**
+ * @deprecated Use atomicRearrange instead
+ *
+ * @callback DeprecatedIncrementDecrementBy
+ * @param {AmountKeywordRecord} amountKeywordRecord
+ * @returns {AmountKeywordRecord}
+ */
+
+/**
  * @typedef {object} ZCFSeat
  * @property {(completion?: Completion) => void} exit
  * @property {ZCFSeatFail} fail
@@ -198,9 +219,9 @@
  * @property {() => boolean} hasStagedAllocation
  * Deprecated: Use atomicRearrange instead
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
- * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
+ * @property {DeprecatedIncrementDecrementBy} incrementBy
  * Deprecated: Use atomicRearrange instead
- * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
+ * @property {DeprecatedIncrementDecrementBy} decrementBy
  * Deprecated: Use atomicRearrange instead
  * @property {() => void} clear
  * Deprecated: Use atomicRearrange instead

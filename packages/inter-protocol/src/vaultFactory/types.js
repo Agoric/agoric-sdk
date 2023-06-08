@@ -70,7 +70,7 @@
  * @param {ZCFSeat} mintReceiver
  * @param {Amount<'nat'>} toMint
  * @param {Amount<'nat'>} fee
- * @param {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} transfers
+ * @param {TransferPart[]} transfers
  * @returns {void}
  */
 
