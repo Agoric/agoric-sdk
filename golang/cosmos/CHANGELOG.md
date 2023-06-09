@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### Updated go.mod and go.sum to include the barberry fix
+
+
 ## [0.34.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.2...@agoric/cosmos@0.34.0) (2023-05-19)
 
 
