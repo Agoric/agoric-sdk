@@ -219,7 +219,9 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   async function* getExportData() {
     const kvPairs = sqlGetAllKVData.iterate();
     for (const kv of kvPairs) {
+      // @ts-expect-error yark.lock update causes "Object is of type 'unknown'"
       if (getKeyType(kv.key) === 'consensus') {
+        // @ts-expect-error yark.lock update causes "Object is of type 'unknown'"
         yield [`kv.${kv.key}`, kv.value];
       }
     }

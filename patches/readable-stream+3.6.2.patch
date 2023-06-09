@@ -1,0 +1,17 @@
+diff --git a/node_modules/readable-stream/errors.js b/node_modules/readable-stream/errors.js
+index 8471526..34307f3 100644
+--- a/node_modules/readable-stream/errors.js
++++ b/node_modules/readable-stream/errors.js
+@@ -21,6 +21,12 @@ function createErrorType(code, message, Base) {
+     }
+   }
+ 
++  Object.defineProperty(NodeError.prototype, 'name', {
++    value: Base.name,
++    writable: true,
++    enumerable: true,
++    configurable: true
++  });
+   NodeError.prototype.name = Base.name;
+   NodeError.prototype.code = code;
+ 
