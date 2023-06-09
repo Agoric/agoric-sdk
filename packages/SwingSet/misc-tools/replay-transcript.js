@@ -84,6 +84,11 @@ const argv = yargsParser(process.argv.slice(2), {
     // previous syscalls for the same metadata were recorded.
     'simulateVcSyscalls',
 
+    // Deliver all syscall responses in lockstep between concurrent workers.
+    // When this option is disabled, concurrent workers are only synchronized
+    // at delivery boundaries.
+    'synchronizeSyscalls',
+
     // Use a simplified snapstore which derives the snapshot filename from the
     // transcript and doesn't compress the snapshot
     'useCustomSnapStore',
@@ -137,6 +142,7 @@ const argv = yargsParser(process.argv.slice(2), {
     keepWorkerTransactionNums: [],
     skipExtraVcSyscalls: true,
     simulateVcSyscalls: true,
+    synchronizeSyscalls: false,
     useCustomSnapStore: false,
     recordXsnapTrace: false,
     useXsnapDebug: false,
@@ -542,7 +548,7 @@ async function replay(transcriptFile) {
 
   /**
    * @param {WorkerData} workerData
-   * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}
+   * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls<boolean>}
    */
   const makeCompareSyscalls = workerData => {
     const doCompare = (
@@ -618,8 +624,16 @@ async function replay(transcriptFile) {
         originalSyscall,
         newSyscall,
       });
-      workerData.timeOfLastCommand = performance.now();
-      return result;
+      const finish = () => {
+        workerData.timeOfLastCommand = performance.now();
+        return result;
+      };
+      if (argv.synchronizeSyscalls && result !== missingSyscall) {
+        completeWorkerStep(workerData);
+        return workersSynced.then(finish);
+      } else {
+        return finish();
+      }
     };
     return compareSyscalls;
   };
