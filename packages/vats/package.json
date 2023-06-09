@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vats",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "description": "Agoric's Vat library",
   "type": "module",
   "main": "./index.js",
@@ -31,8 +31,8 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/ertp": "^0.16.2",
-    "@agoric/governance": "^0.10.2",
-    "@agoric/inter-protocol": "^0.16.0",
+    "@agoric/governance": "^0.10.3",
+    "@agoric/inter-protocol": "^0.16.1",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/sharing-service": "^0.2.11",
@@ -51,9 +51,9 @@
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@agoric/cosmic-swingset": "^0.41.2",
-    "@agoric/deploy-script-support": "^0.10.2",
-    "@agoric/smart-wallet": "^0.5.2",
+    "@agoric/cosmic-swingset": "^0.41.3",
+    "@agoric/deploy-script-support": "^0.10.3",
+    "@agoric/smart-wallet": "^0.5.3",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@endo/bundle-source": "^2.5.1",
