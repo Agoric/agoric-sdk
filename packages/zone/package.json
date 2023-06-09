@@ -33,7 +33,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^16.13 || ^18.12"
   },
   "ava": {
     "files": [
