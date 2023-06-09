@@ -48,12 +48,7 @@ export const makeAllocationMap = transfers => {
     updateAllocations(seat, [newIncr, decr]);
   };
 
-  for (const [
-    fromSeat = undefined,
-    toSeat = undefined,
-    fromAmounts = undefined,
-    toAmounts = undefined,
-  ] of transfers) {
+  for (const [fromSeat, toSeat, fromAmounts, toAmounts] of transfers) {
     if (fromSeat) {
       if (!fromAmounts) {
         throw Fail`Transfer from ${fromSeat} must say how much`;

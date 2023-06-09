@@ -198,14 +198,6 @@
  */
 
 /**
- * @deprecated Use atomicRearrange instead
- *
- * @callback DeprecatedIncrementDecrementBy
- * @param {AmountKeywordRecord} amountKeywordRecord
- * @returns {AmountKeywordRecord}
- */
-
-/**
  * @typedef {object} ZCFSeat
  * @property {(completion?: Completion) => void} exit
  * @property {ZCFSeatFail} fail
@@ -219,9 +211,9 @@
  * @property {() => boolean} hasStagedAllocation
  * Deprecated: Use atomicRearrange instead
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
- * @property {DeprecatedIncrementDecrementBy} incrementBy
+ * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
  * Deprecated: Use atomicRearrange instead
- * @property {DeprecatedIncrementDecrementBy} decrementBy
+ * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
  * Deprecated: Use atomicRearrange instead
  * @property {() => void} clear
  * Deprecated: Use atomicRearrange instead
