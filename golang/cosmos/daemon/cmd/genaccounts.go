@@ -61,7 +61,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 				info, err := kb.Key(args[0])
 				if err != nil {
-					return fmt.Errorf("failed to get address from Keybase: %w", err)
+					return fmt.Errorf("failed to get address from Keybase: %s", err)
 				}
 
 				addr = info.GetAddress()
@@ -69,7 +69,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			coins, err := sdk.ParseCoinsNormalized(args[1])
 			if err != nil {
-				return fmt.Errorf("failed to parse coins: %w", err)
+				return fmt.Errorf("failed to parse coins: %s", err)
 			}
 
 			vestingStart, err := cmd.Flags().GetInt64(flagVestingStart)
@@ -87,7 +87,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			vestingAmt, err := sdk.ParseCoinsNormalized(vestingAmtStr)
 			if err != nil {
-				return fmt.Errorf("failed to parse vesting amount: %w", err)
+				return fmt.Errorf("failed to parse vesting amount: %s", err)
 			}
 
 			// create concrete account type based on input parameters
@@ -119,20 +119,20 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			}
 
 			if err := genAccount.Validate(); err != nil {
-				return fmt.Errorf("failed to validate new genesis account: %w", err)
+				return fmt.Errorf("failed to validate new genesis account: %s", err)
 			}
 
 			genFile := config.GenesisFile()
 			appState, genDoc, err := genutiltypes.GenesisStateFromGenFile(genFile)
 			if err != nil {
-				return fmt.Errorf("failed to unmarshal genesis state: %w", err)
+				return fmt.Errorf("failed to unmarshal genesis state: %s", err)
 			}
 
 			authGenState := authtypes.GetGenesisStateFromAppState(clientCtx.Codec, appState)
 
 			accs, err := authtypes.UnpackAccounts(authGenState.Accounts)
 			if err != nil {
-				return fmt.Errorf("failed to get accounts from any: %w", err)
+				return fmt.Errorf("failed to get accounts from any: %s", err)
 			}
 
 			if accs.Contains(addr) {
@@ -146,13 +146,13 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			genAccs, err := authtypes.PackAccounts(accs)
 			if err != nil {
-				return fmt.Errorf("failed to convert accounts into any's: %w", err)
+				return fmt.Errorf("failed to convert accounts into any's: %s", err)
 			}
 			authGenState.Accounts = genAccs
 
 			authGenStateBz, err := clientCtx.Codec.MarshalJSON(&authGenState)
 			if err != nil {
-				return fmt.Errorf("failed to marshal auth genesis state: %w", err)
+				return fmt.Errorf("failed to marshal auth genesis state: %s", err)
 			}
 
 			appState[authtypes.ModuleName] = authGenStateBz
@@ -164,14 +164,14 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			bankGenStateBz, err := clientCtx.Codec.MarshalJSON(bankGenState)
 			if err != nil {
-				return fmt.Errorf("failed to marshal bank genesis state: %w", err)
+				return fmt.Errorf("failed to marshal bank genesis state: %s", err)
 			}
 
 			appState[banktypes.ModuleName] = bankGenStateBz
 
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
-				return fmt.Errorf("failed to marshal application genesis state: %w", err)
+				return fmt.Errorf("failed to marshal application genesis state: %s", err)
 			}
 
 			genDoc.AppState = appStateJSON

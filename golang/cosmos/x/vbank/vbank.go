@@ -135,10 +135,10 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	case "VBANK_GET_BALANCE":
 		addr, err := sdk.AccAddressFromBech32(msg.Address)
 		if err != nil {
-			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
+			return "", fmt.Errorf("cannot convert %s to address: %s", msg.Address, err)
 		}
 		if err = sdk.ValidateDenom(msg.Denom); err != nil {
-			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+			return "", fmt.Errorf("invalid denom %s: %s", msg.Denom, err)
 		}
 		coin := keeper.GetBalance(ctx.Context, addr, msg.Denom)
 		packet := coin.Amount.String()
@@ -152,10 +152,10 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	case "VBANK_GRAB":
 		addr, err := sdk.AccAddressFromBech32(msg.Sender)
 		if err != nil {
-			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Sender, err)
+			return "", fmt.Errorf("cannot convert %s to address: %s", msg.Sender, err)
 		}
 		if err = sdk.ValidateDenom(msg.Denom); err != nil {
-			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+			return "", fmt.Errorf("invalid denom %s: %s", msg.Denom, err)
 		}
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
@@ -163,7 +163,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
 		if err := keeper.GrabCoins(ctx.Context, addr, coins); err != nil {
-			return "", fmt.Errorf("cannot grab %s coins: %w", coins.Sort().String(), err)
+			return "", fmt.Errorf("cannot grab %s coins: %s", coins.Sort().String(), err)
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
@@ -180,10 +180,10 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	case "VBANK_GIVE":
 		addr, err := sdk.AccAddressFromBech32(msg.Recipient)
 		if err != nil {
-			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Recipient, err)
+			return "", fmt.Errorf("cannot convert %s to address: %s", msg.Recipient, err)
 		}
 		if err = sdk.ValidateDenom(msg.Denom); err != nil {
-			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+			return "", fmt.Errorf("invalid denom %s: %s", msg.Denom, err)
 		}
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
@@ -191,7 +191,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
 		if err := keeper.SendCoins(ctx.Context, addr, coins); err != nil {
-			return "", fmt.Errorf("cannot give %s coins: %w", coins.Sort().String(), err)
+			return "", fmt.Errorf("cannot give %s coins: %s", coins.Sort().String(), err)
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
@@ -212,7 +212,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
 		if err := keeper.StoreRewardCoins(ctx.Context, coins); err != nil {
-			return "", fmt.Errorf("cannot store reward %s coins: %w", coins.Sort().String(), err)
+			return "", fmt.Errorf("cannot store reward %s coins: %s", coins.Sort().String(), err)
 		}
 		if err != nil {
 			return "", err

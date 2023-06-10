@@ -147,7 +147,7 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 	}
 	bz, err := json.Marshal(&reply)
 	if err != nil {
-		return "", fmt.Errorf("cannot marshal %v: %w", reply, err)
+		return "", fmt.Errorf("cannot marshal %v: %s", reply, err)
 	}
 	return string(bz), nil
 }
@@ -157,11 +157,11 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
-		return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
+		return "", fmt.Errorf("cannot convert %s to address: %s", msg.Address, err)
 	}
 	denom := msg.Denom
 	if err = sdk.ValidateDenom(denom); err != nil {
-		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
+		return "", fmt.Errorf("invalid denom %s: %s", denom, err)
 	}
 	state := ch.keeper.GetAccountState(ctx, addr)
 	reply := msgAccountState{
@@ -174,7 +174,7 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	}
 	bz, err := json.Marshal(&reply)
 	if err != nil {
-		return "", fmt.Errorf("cannot marshal %v: %w", reply, err)
+		return "", fmt.Errorf("cannot marshal %v: %s", reply, err)
 	}
 	return string(bz), nil
 }
@@ -184,11 +184,11 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 func (ch portHandler) handleChangeLiened(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
-		return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
+		return "", fmt.Errorf("cannot convert %s to address: %s", msg.Address, err)
 	}
 	denom := msg.Denom
 	if err = sdk.ValidateDenom(denom); err != nil {
-		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
+		return "", fmt.Errorf("invalid denom %s: %s", denom, err)
 	}
 
 	newAmt, err := ch.keeper.ChangeLien(ctx, addr, denom, msg.Delta)
@@ -197,7 +197,7 @@ func (ch portHandler) handleChangeLiened(ctx sdk.Context, msg portMessage) (stri
 	}
 	bz, err := json.Marshal(&newAmt)
 	if err != nil {
-		return "", fmt.Errorf("cannot marshal %v: %w", newAmt, err)
+		return "", fmt.Errorf("cannot marshal %v: %s", newAmt, err)
 	}
 	return string(bz), nil
 }
