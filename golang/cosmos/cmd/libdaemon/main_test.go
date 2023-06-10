@@ -10,16 +10,23 @@ import (
 
 func TestErrorStackTraces(t *testing.T) {
 	err := sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "my error %d", 123)
-	expected := "fail: my error 123: insufficient fee"
+	expected := "my error 123: insufficient fee"
 
-	// Expected message only (what we want).
+	// Check that sdkerrors.Wrapf(...).Error() does not leak stack.
+	got := err.Error()
+	if got != expected {
+		t.Fatalf("err.Error() %q should be %q", got, expected)
+	}
+
+	// Check that fmt.Errorf("... %s").Error() does not leak stack.
+	expected = "fail: " + expected
 	stringified := fmt.Errorf("fail: %s", err)
-	got := stringified.Error()
+	got = stringified.Error()
 	if got != expected {
 		t.Fatalf("stringified.Error() %q should be %q", got, expected)
 	}
 
-	// Expected stack frame (though undesirable).
+	// Check that fmt.Errorf("... %w").Error() leaks stack.
 	wrapped := fmt.Errorf("fail: %w", err)
 	got = wrapped.Error()
 	expectedAndStack := expected + " ["
