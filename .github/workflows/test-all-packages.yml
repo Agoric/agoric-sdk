@@ -148,8 +148,6 @@ jobs:
         run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (web-components)
         run: cd packages/web-components && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (wallet-connection)
-        run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
