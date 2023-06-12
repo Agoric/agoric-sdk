@@ -1,7 +1,7 @@
 // @ts-check
 import { makeLeader } from '@agoric/casting';
 import { makeImportContext } from '@agoric/smart-wallet/src/marshal-contexts.js';
-import { getKeplrAddress } from './getKeplrAddress.js';
+import { getKeplrAddress } from '../getKeplrAddress.js';
 import { getChainInfo } from './getChainInfo.js';
 import { watchWallet } from './watchWallet.js';
 

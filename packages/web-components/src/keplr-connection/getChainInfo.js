@@ -1,5 +1,5 @@
 // @ts-check
-import { Errors } from './errors.js';
+import { Errors } from '../errors.js';
 
 export const getChainInfo = async networkConfig => {
   let chainId;

@@ -1,5 +1,4 @@
 // @ts-check
-
 export const Errors = {
   noKeplr: 'KEPLR_CONNECTION_ERROR_NO_KEPLR',
   enableKeplr: 'KEPLR_CONNECTION_ERROR_ENABLE_KEPLR',

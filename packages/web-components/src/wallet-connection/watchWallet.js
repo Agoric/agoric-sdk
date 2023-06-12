@@ -1,8 +1,6 @@
 // @ts-check
-import { makeFollower, iterateLatest } from '@agoric/casting';
 import { makeNotifierKit } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
-import { assertHasData } from '@agoric/smart-wallet/src/utils';
 import { Errors } from '../errors.js';
 import { queryBankBalances } from '../queryBankBalances.js';
 
@@ -21,17 +19,10 @@ import { queryBankBalances } from '../queryBankBalances.js';
 const POLL_INTERVAL_MS = 6000;
 
 /**
- * @param {ERef<import('@agoric/casting').Leader>} leader
+ * @param {any} chainStorageWatcher
  * @param {string} address
- * @param {import('@agoric/smart-wallet/src/marshal-contexts.js').ImportContext} context
- * @param {string[]} rpcs
  */
-export const watchWallet = async (leader, address, context, rpcs) => {
-  const followPublished = path =>
-    makeFollower(`:published.${path}`, leader, {
-      unserializer: context.fromMyWallet,
-    });
-
+export const watchWallet = async (chainStorageWatcher, address) => {
   const pursesNotifierKit = makeNotifierKit(
     /** @type {PurseInfo[] | null} */ (null),
   );
@@ -48,16 +39,6 @@ export const watchWallet = async (leader, address, context, rpcs) => {
     pursesNotifierKit.updater.updateState(harden(purses));
   };
 
-  /** @type {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>} */
-  const currentFollower = await followPublished(`wallet.${address}.current`);
-  try {
-    await assertHasData(currentFollower);
-  } catch {
-    // XXX: We can technically show vbank purses without a smart wallet
-    // existing, maybe don't throw but indicate no smart wallet in the result?
-    throw Error(Errors.noSmartWallet);
-  }
-
   const publicSubscriberPathsNotifierKit = makeNotifierKit(
     /** @type {  import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['offerToPublicSubscriberPaths'] | null } */ (
       null
@@ -65,18 +46,32 @@ export const watchWallet = async (leader, address, context, rpcs) => {
   );
 
   // NB: this watches '.current' but only notifies of changes to offerToPublicSubscriberPaths
-  const watchCurrent = async () => {
-    let lastPaths;
-    for await (const { value } of iterateLatest(currentFollower)) {
-      const { offerToPublicSubscriberPaths: currentPaths } = value;
-      // eslint-disable-next-line no-continue
-      if (currentPaths === lastPaths) continue;
+  await /** @type {Promise<void>} */ (
+    new Promise((res, rej) => {
+      let lastPaths;
+      chainStorageWatcher.watchLatest(
+        ['data', `published.wallet.${address}.current`],
+        value => {
+          const { offerToPublicSubscriberPaths: currentPaths } = value;
+          if (currentPaths === lastPaths) return;
 
-      publicSubscriberPathsNotifierKit.updater.updateState(
-        harden(currentPaths),
+          res();
+          publicSubscriberPathsNotifierKit.updater.updateState(
+            harden(currentPaths),
+          );
+        },
+        err => {
+          if (!lastPaths) {
+            rej();
+          } else {
+            throw Error(err);
+          }
+        },
       );
-    }
-  };
+    })
+  ).catch(() => {
+    throw Error(Errors.noSmartWallet);
+  });
 
   const watchChainBalances = () => {
     const brandToPurse = new Map();
@@ -104,28 +99,29 @@ export const watchWallet = async (leader, address, context, rpcs) => {
     };
 
     const watchBank = async () => {
-      const balances = await queryBankBalances(address, rpcs[0]);
+      const balances = await queryBankBalances(
+        address,
+        chainStorageWatcher.rpcAddr,
+      );
       bank = balances;
       possiblyUpdateBankPurses();
       setTimeout(watchBank, POLL_INTERVAL_MS);
     };
 
     const watchVbankAssets = async () => {
-      const vbankAssetsFollower = followPublished('agoricNames.vbankAsset');
-      for await (const { value } of iterateLatest(vbankAssetsFollower)) {
-        vbankAssets = value;
-        possiblyUpdateBankPurses();
-      }
+      chainStorageWatcher.watchLatest(
+        ['data', 'published.agoricNames.vbankAsset'],
+        value => {
+          vbankAssets = value;
+          possiblyUpdateBankPurses();
+        },
+      );
     };
 
     void watchVbankAssets();
     void watchBank();
   };
 
-  watchCurrent().catch(e => {
-    console.error('Error watching wallet current', e);
-    throw e;
-  });
   watchChainBalances();
 
   return {
