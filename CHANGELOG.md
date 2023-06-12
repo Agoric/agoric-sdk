@@ -70,6 +70,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     * Still based on cosmos/cosmos-sdk v0.45.11
     * Cosmovisor enhancements to handle Github zip archives
     * Various changes to support state sync
+    * Barberry security patch
 * Tendermint and IBC unchanged from pismoC release
 
 ## Pismo-C (agoric-upgrade-9)
