@@ -34,7 +34,6 @@ export default [
   "@agoric/swingset-xsnap-supervisor",
   "@agoric/telemetry",
   "@agoric/time",
-  "@agoric/ui-components",
   "@agoric/vat-data",
   "@agoric/vats",
   "@agoric/wallet",
