@@ -39,7 +39,6 @@ export default [
   "@agoric/vats",
   "@agoric/wallet",
   "@agoric/wallet-backend",
-  "@agoric/web-components",
   "@agoric/xsnap",
   "@agoric/xsnap-lockdown",
   "@agoric/zoe",
