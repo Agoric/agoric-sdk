@@ -416,10 +416,10 @@
     "@endo/zip" "^0.2.31"
     ses "^0.18.4"
 
-"@endo/eslint-plugin@^0.4.3":
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/@endo/eslint-plugin/-/eslint-plugin-0.4.3.tgz#aa53784b9f2f45a4384cb59efeabc33e2709ec75"
-  integrity sha512-VNQHwdGtdJokQshjWwJsd2xAZb8KDHd/kO7/yF+i214CukF4ODOH/k3UFR14MHCTiTisVwvAOSrhPbyUVN7Rew==
+"@endo/eslint-plugin@^0.4.4":
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/@endo/eslint-plugin/-/eslint-plugin-0.4.4.tgz#9392bd2de2900197d08bdce147b4e42d8de30e45"
+  integrity sha512-OSeDCxMHA23HsldUr/EdlP09vTFIST0yKJhjn+EUrhJIYklHq0VgO4C0eC4PKV0a5+xQT4C8/QrIt+vIp81BYw==
   dependencies:
     "@typescript-eslint/utils" "~5.53.0"
     requireindex "~1.1.0"
