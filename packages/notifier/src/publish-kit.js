@@ -1,9 +1,9 @@
 /// <reference types="ses"/>
 
-import { makePromiseKit } from '@endo/promise-kit';
-import { E, Far } from '@endo/far';
-import { M } from '@agoric/store';
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
+import { M } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import './types-ambient.js';
 
