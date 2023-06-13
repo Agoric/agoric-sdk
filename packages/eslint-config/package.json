@@ -22,7 +22,7 @@
     "lint": "exit 0"
   },
   "files": [
-    "eslint-config.json"
+    "eslint-config.*"
   ],
   "peerDependencies": {
     "@endo/eslint-plugin": "^0.4.4",
