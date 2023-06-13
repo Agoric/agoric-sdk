@@ -1,7 +1,7 @@
-// @ts-nocheck
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
 import { makePromiseKit } from '@endo/promise-kit';
+import { NonNullish } from '@agoric/assert';
 import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import {
   netstringEncoderStream,
@@ -18,10 +18,14 @@ function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
 }
 
+/** @typedef { import('child_process').IOType } IOType */
+/** @typedef { import('stream').Writable } Writable */
+
 // we send on fd3, and receive on fd4. We pass fd1/2 (stdout/err) through, so
 // console log/err from the child shows up normally. We don't use Node's
 // built-in serialization feature ('ipc') because the child process won't
 // always be Node.
+/** @type { IOType[] } */
 const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 
 export function startSubprocessWorker(
@@ -32,9 +36,11 @@ export function startSubprocessWorker(
   const proc = spawn(execPath, procArgs, { stdio });
 
   const toChild = arrayEncoderStream();
-  toChild.pipe(netstringEncoderStream()).pipe(proc.stdio[3]);
+  toChild
+    .pipe(netstringEncoderStream())
+    .pipe(/** @type {Writable} */ (proc.stdio[3]));
   // proc.stdio[4].setEncoding('utf-8');
-  const fromChild = proc.stdio[4]
+  const fromChild = NonNullish(proc.stdio[4])
     .pipe(netstringDecoderStream(netstringMaxChunkSize))
     .pipe(arrayDecoderStream());
 
@@ -59,11 +65,17 @@ export function startSubprocessWorker(
 
   // the Transform objects don't like being hardened, so we wrap the methods
   // that get used
+  /* @type {typeof fromChild} */
   const wrappedFromChild = {
-    on: (...args) => fromChild.on(...args),
+    on: (...args) =>
+      fromChild.on(.../** @type {Parameters<typeof fromChild['on']>} */ (args)),
   };
+  /* @type {typeof toChild} */
   const wrappedToChild = {
-    write: (...args) => toChild.write(...args),
+    write: (...args) =>
+      toChild.write(
+        .../** @type {Parameters<typeof toChild['write']>} */ (args),
+      ),
   };
 
   return harden({
