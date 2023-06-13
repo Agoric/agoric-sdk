@@ -40,6 +40,17 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+  dependency-graph:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install graphviz
+        run: sudo apt install -y graphviz
+
+      - name: Check for cycles
+        run: scripts/check-dependency-cycles.sh 4
+
   ##################
   # Lint tests
   # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
