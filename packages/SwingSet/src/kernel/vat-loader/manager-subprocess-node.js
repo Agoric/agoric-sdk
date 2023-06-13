@@ -28,15 +28,15 @@ export function makeNodeSubprocessFactory(tools) {
       Array.isArray(nodeOptions) ||
       Fail`nodeOptions must be an array`;
 
-    // Node worker subprocess adds `argName` as a dummy argument so that
+    // Node worker subprocess adds `nameDisplayArg` as a dummy argument so that
     // 'ps'shows which worker is for which vat
-    const argName = `${vatID}:${name !== undefined ? name : ''}`;
+    const nameDisplayArg = `${vatID}:${name !== undefined ? name : ''}`;
 
     const mk = makeManagerKit();
 
     // start the worker and establish a connection
     const { fromChild, toChild, terminate, done } = startSubprocessWorker(
-      argName,
+      nameDisplayArg,
       nodeOptions,
     );
 
