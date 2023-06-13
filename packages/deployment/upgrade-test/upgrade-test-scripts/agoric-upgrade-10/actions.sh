@@ -10,6 +10,9 @@ set -x
 # agoric wallet show --from $GOV1ADDR
 waitForBlock 20
 
+# user1 has no mailbox provisioned; later we test that this was discarded
+submitDeliverInbound user1
+
 # provision a new user wallet
 
 agd keys add user2 --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user2.out"
