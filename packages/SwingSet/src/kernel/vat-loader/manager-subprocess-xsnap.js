@@ -132,16 +132,16 @@ export function makeXsSubprocessFactory({
       kernelSlog.write({ type: 'heap-snapshot-load', vatID, ...snapshotInfo });
     }
 
-    // `startXSnap` adds `argName` as a dummy argument so that 'ps'
+    // `startXSnap` adds `nameDisplayArg` as a dummy argument so that 'ps'
     // shows which worker is for which vat, but is careful to prevent
     // a shell-escape attack
-    const argName = `${vatID}:${vatName !== undefined ? vatName : ''}`;
+    const nameDisplayArg = `${vatID}:${vatName !== undefined ? vatName : ''}`;
 
     /** @type {ReturnType<typeof makeRevokableHandleCommandKit> | undefined} */
     let handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
 
     // start the worker and establish a connection
-    let worker = await startXSnap(argName, {
+    let worker = await startXSnap(nameDisplayArg, {
       bundleIDs,
       handleCommand: handleCommandKit.handleCommand,
       metered,
@@ -256,7 +256,7 @@ export function makeXsSubprocessFactory({
       let snapshotResults;
       const closeP = worker.close();
       [worker, snapshotResults] = await Promise.all([
-        startXSnap(argName, {
+        startXSnap(nameDisplayArg, {
           bundleIDs,
           handleCommand: handleCommandKit.handleCommand,
           metered,

@@ -27,7 +27,7 @@ const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 export function startSubprocessWorker(
   execPath,
   procArgs = [],
-  { netsringMaxChunkSize } = {},
+  { netstringMaxChunkSize = undefined } = {},
 ) {
   const proc = spawn(execPath, procArgs, { stdio });
 
@@ -35,7 +35,7 @@ export function startSubprocessWorker(
   toChild.pipe(netstringEncoderStream()).pipe(proc.stdio[3]);
   // proc.stdio[4].setEncoding('utf-8');
   const fromChild = proc.stdio[4]
-    .pipe(netstringDecoderStream(netsringMaxChunkSize))
+    .pipe(netstringDecoderStream(netstringMaxChunkSize))
     .pipe(arrayDecoderStream());
 
   // fromChild.addListener('data', data => parentLog(`fd4 data`, data));
