@@ -84,3 +84,25 @@ pushPriceOnce () {
     echo "ERROR: pushPrice failed (using $nextOracle)"
   fi
 }
+
+# submit a DeliverInbound transaction
+#
+# see {agoric.swingset.MsgDeliverInbound} in swingset/msgs.proto
+# https://github.com/Agoric/agoric-sdk/blob/5cc5ec8836dcd0c6e11b10799966b6e74601295d/golang/cosmos/proto/agoric/swingset/msgs.proto#L23
+submitDeliverInbound() {
+  sender="${1:-user1}"
+
+  # ag-solo is a client that sends DeliverInbound transactions using a golang client
+  # @see {connectToChain} in chain-cosmos-sdk.js
+  # runHelper
+  # https://github.com/Agoric/agoric-sdk/blob/5cc5ec8836dcd0c6e11b10799966b6e74601295d/packages/solo/src/chain-cosmos-sdk.js
+
+  # The payload is JSON.stringify([messages, highestAck])
+  # https://github.com/Agoric/agoric-sdk/blob/5cc5ec8836dcd0c6e11b10799966b6e74601295d/packages/solo/src/chain-cosmos-sdk.js#L625
+  # for example, this json was captured from a running `agoric start local-solo`
+  json='[[[1,"1:0:deliver:ro+1:rp-44;#[\"getConfiguration\",[]]"]],0]'
+
+  agd tx swingset deliver "${json}" \
+      --chain-id="$CHAINID" -ojson --yes \
+      --from="$sender" --keyring-backend=test -b block
+}
