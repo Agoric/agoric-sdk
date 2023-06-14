@@ -4,6 +4,7 @@ import (
 	"os"
 	"syscall"
 
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
@@ -13,21 +14,24 @@ import (
 
 func main() {
 	// We need to delegate to our default app for running the actual chain.
-	daemoncmd.OnStartHook = func(logger log.Logger) {
-		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
-		args = append(args, os.Args[1:]...)
+	exitCode := 0
+	daemoncmd.OnStartHook = func(logger log.Logger, appOpts servertypes.AppOptions) error {
+		// We tried running start, which should never exit, so exit with non-zero
+		// code if we ever stop.
+		exitCode = 99
 
+		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
 		binary, lookErr := FindCosmicSwingsetBinary()
 		if lookErr != nil {
-			panic(lookErr)
+			return lookErr
 		}
+
+		args = append(args, os.Args[1:]...)
 
 		logger.Info("Start chain delegating to JS executable", "binary", binary, "args", args)
-		execErr := syscall.Exec(binary, args, os.Environ())
-		if execErr != nil {
-			panic(execErr)
-		}
+		return syscall.Exec(binary, args, os.Environ())
 	}
 
-	daemon.RunWithController(nil)
+	daemon.Run()
+	os.Exit(exitCode)
 }

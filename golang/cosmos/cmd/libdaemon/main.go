@@ -11,10 +11,11 @@ import "C"
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	log "github.com/tendermint/tendermint/libs/log"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
@@ -23,18 +24,10 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-type goReturn = struct {
-	str string
-	err error
-}
-
-const SwingSetPort = 123
-
-var replies = map[int]chan goReturn{}
-var lastReply = 0
+var controller vm.Target
 
 //export RunAgCosmosDaemon
-func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
@@ -43,30 +36,21 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 	gaia.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-chain-cosmos")
 	daemoncmd.AppName = "ag-chain-cosmos"
 
-	// FIXME: Decouple the sending logic from the Cosmos app.
-	sendToNode := func(needReply bool, str string) (string, error) {
-		var rPort int
-		if needReply {
-			lastReply++
-			rPort = lastReply
-			replies[rPort] = make(chan goReturn)
+	sendToVM := func (msg vm.Message) error {
+		// fmt.Fprintf(os.Stderr, "sendToVM: %v\n", msg)
+		var port C.int
+		if msg.Port == vm.BootstrapPort {
+			port = nodePort
+		} else {
+			port = C.int(msg.Port)
 		}
-
-		// Send the message
-		C.invokeSendFunc(toNode, nodePort, C.int(rPort), C.CString(str))
-		if !needReply {
-			// Return immediately
-			// fmt.Fprintln(os.Stderr, "Don't wait")
-			return "<no-reply-requested>", nil
+		code := int(C.invokeSendFunc(toNode, port, C.int(msg.ReplyPort), C.CString(msg.Data)))
+		if code != 0 {
+			return fmt.Errorf("sendToVM failed: %d", code)
 		}
-
-		// Block the sending goroutine while we wait for the reply
-		// fmt.Fprintln(os.Stderr, "Waiting for", rPort)
-		ret := <-replies[rPort]
-		delete(replies, rPort)
-		// fmt.Fprintln(os.Stderr, "Woken, got", ret)
-		return ret.str, ret.err
+		return nil
 	}
+	controller = vm.NewTarget(sendToVM)
 
 	args := make([]string, len(cosmosArgs))
 	for i, s := range cosmosArgs {
@@ -78,38 +62,31 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
 		exitCode := 0
-		daemoncmd.OnStartHook = func(logger log.Logger) {
+		daemoncmd.OnStartHook = func(log.Logger, servertypes.AppOptions) error {
 			// We tried running start, which should never exit, so exit with non-zero
 			// code if we ever stop.
 			exitCode = 99
+			return nil
 		}
-		daemon.RunWithController(sendToNode)
+		daemon.RunWithController(controller)
 		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(exitCode)
 	}()
 	// fmt.Fprintln(os.Stderr, "Done starting Cosmos")
-	return SwingSetPort
 }
 
 //export ReplyToGo
 func ReplyToGo(replyPort C.int, isError C.int, resp C.Body) C.int {
 	respStr := C.GoString(resp)
-	// fmt.Fprintln(os.Stderr, "Reply to Go", respStr)
-	returnCh := replies[int(replyPort)]
-	if returnCh == nil {
-		// Unexpected reply.
-		// This is okay, since the caller decides whether or
-		// not she wants to listen for replies.
-		return C.int(0)
-	}
-	// Wake up the waiting goroutine
-	ret := goReturn{}
+	msg := vm.Message{Port: vm.Port(replyPort), Data: respStr}
 	if int(isError) == 0 {
-		ret.str = respStr
+		msg.Kind = vm.Reply
 	} else {
-		ret.err = errors.New(respStr)
+		msg.Kind = vm.ReplyError
 	}
-	returnCh <- ret
+	if err := controller.Receive(msg); err != nil {
+		return C.int(1)
+	}
 	return C.int(0)
 }
 
@@ -120,19 +97,33 @@ type errorWrapper struct {
 //export SendToGo
 func SendToGo(port C.int, msg C.Body) C.Body {
 	msgStr := C.GoString(msg)
-	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
-	respStr, err := vm.ReceiveFromController(int(port), msgStr)
+	// fmt.Fprintln(os.Stderr, "Send to Go", port, msgStr)
+	sent := vm.Message{Port: vm.Port(port), Data: msgStr, Kind: vm.Send}
+	var respStr string
+	err := controller.Dispatch(sent, func(resp vm.Message) error {
+		// fmt.Fprintln(os.Stderr, "Received from controller", resp)
+		switch (resp.Kind) {
+			case vm.Reply:
+				respStr = resp.Data
+				return nil
+			case vm.ReplyError:
+				// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
+				errResp := errorWrapper{
+					Error: resp.Data,
+				}
+				respBytes, err := json.Marshal(&errResp)
+				if err != nil {
+					return err
+				}
+				// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
+				respStr = string(respBytes)
+				return nil
+			default:
+				return fmt.Errorf("unknown response kind %d", resp.Kind)
+			}
+		})
 	if err != nil {
-		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
-		errResp := errorWrapper{
-			Error: err.Error(),
-		}
-		respBytes, err := json.Marshal(&errResp)
-		if err != nil {
-			panic(err)
-		}
-		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
-		respStr = string(respBytes)
+		panic(err)
 	}
 	return C.CString(respStr)
 }

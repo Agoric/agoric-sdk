@@ -84,7 +84,7 @@ type snapshotAction struct {
 	Args        []json.RawMessage `json:"args,omitempty"`
 }
 
-func NewSwingsetSnapshotter(app *baseapp.BaseApp, exporter SwingStoreExporter, sendToController func(bool, string) (string, error)) SwingsetSnapshotter {
+func NewSwingsetSnapshotter(app *baseapp.BaseApp, exporter SwingStoreExporter, sendToController func(vm.Port, bool, string) (string, error)) SwingsetSnapshotter {
 	// The sendToController performed by this submodule are non-deterministic.
 	// This submodule will send messages to JS from goroutines at unpredictable
 	// times, but this is safe because when handling the messages, the JS side
@@ -98,7 +98,7 @@ func NewSwingsetSnapshotter(app *baseapp.BaseApp, exporter SwingStoreExporter, s
 		if err != nil {
 			return "", err
 		}
-		return sendToController(true, string(bz))
+		return sendToController(vm.BootstrapPort, true, string(bz))
 	}
 
 	return SwingsetSnapshotter{

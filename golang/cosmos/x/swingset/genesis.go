@@ -34,7 +34,7 @@ func DefaultGenesisState() *types.GenesisState {
 type bootstrapBlockAction struct {
 	Type        string `json:"type"`
 	BlockTime   int64  `json:"blockTime"`
-	StoragePort int    `json:"storagePort"`
+	StoragePort vm.Port    `json:"storagePort"`
 }
 
 func BootSwingset(ctx sdk.Context, keeper Keeper) error {
@@ -43,7 +43,7 @@ func BootSwingset(ctx sdk.Context, keeper Keeper) error {
 	action := &bootstrapBlockAction{
 		Type:        "BOOTSTRAP_BLOCK",
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: vm.GetPort("vstorage"),
+		StoragePort: keeper.VstoragePort,
 	}
 
 	_, err := keeper.BlockingSend(ctx, action)

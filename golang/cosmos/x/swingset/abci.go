@@ -15,7 +15,7 @@ import (
 
 type beginBlockAction struct {
 	Type        string       `json:"type"`
-	StoragePort int          `json:"storagePort"`
+	StoragePort vm.Port          `json:"storagePort"`
 	BlockHeight int64        `json:"blockHeight"`
 	BlockTime   int64        `json:"blockTime"`
 	ChainID     string       `json:"chainID"`
@@ -39,7 +39,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: vm.GetPort("vstorage"),
+		StoragePort: keeper.VstoragePort,
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),

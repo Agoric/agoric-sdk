@@ -25,7 +25,7 @@ type deliverInboundAction struct {
 	Peer        string          `json:"peer"`
 	Messages    [][]interface{} `json:"messages"`
 	Ack         uint64          `json:"ack"`
-	StoragePort int             `json:"storagePort"`
+	StoragePort vm.Port         `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
 }
@@ -58,7 +58,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		Peer:        msg.Submitter.String(),
 		Messages:    messages,
 		Ack:         msg.Ack,
-		StoragePort: vm.GetPort("vstorage"),
+		StoragePort: keeper.VstoragePort,
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}

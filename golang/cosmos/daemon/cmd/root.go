@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	"github.com/cosmos/cosmos-sdk/version"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -34,17 +35,18 @@ import (
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
 // Sender is a function that sends a request to the controller.
 type Sender func(needReply bool, str string) (string, error)
 
 var AppName = "agd"
-var OnStartHook func(log.Logger)
+var OnStartHook func(log.Logger, servertypes.AppOptions) error
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
-func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
+func NewRootCmd(controller vm.Target) (*cobra.Command, params.EncodingConfig) {
 	encodingConfig := gaia.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
@@ -58,7 +60,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   AppName,
-		Short: "Stargate Agoric App",
+		Short: "Agoric Cosmos App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -83,7 +85,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(sender, rootCmd, encodingConfig)
+	initRootCmd(controller, rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
 }
@@ -111,7 +113,7 @@ func initAppConfig() (string, interface{}) {
 	return serverconfig.DefaultConfigTemplate, *srvCfg
 }
 
-func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+func initRootCmd(controller vm.Target, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -129,7 +131,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 
 	ac := appCreator{
 		encCfg: encodingConfig,
-		sender: sender,
+		controller: controller,
 	}
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
@@ -146,6 +148,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	startCmd.Flags().Bool("split-vm", false, "Separate the " + version.AppName + " process from the Agoric VM")
 }
 
 func queryCommand() *cobra.Command {
@@ -203,7 +206,7 @@ func txCommand() *cobra.Command {
 
 type appCreator struct {
 	encCfg params.EncodingConfig
-	sender Sender
+	controller vm.Target
 }
 
 func (ac appCreator) newApp(
@@ -213,7 +216,9 @@ func (ac appCreator) newApp(
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	if OnStartHook != nil {
-		OnStartHook(logger)
+		if err := OnStartHook(logger, appOpts); err != nil {
+			panic(err)
+		}
 	}
 
 	var cache sdk.MultiStorePersistentCache
@@ -243,7 +248,7 @@ func (ac appCreator) newApp(
 	}
 
 	return gaia.NewAgoricApp(
-		ac.sender,
+		ac.controller,
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
@@ -284,7 +289,7 @@ func (ac appCreator) appExport(
 	}
 
 	gaiaApp := gaia.NewAgoricApp(
-		ac.sender,
+		ac.controller,
 		logger,
 		db,
 		traceStore,

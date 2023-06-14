@@ -66,6 +66,7 @@ type Keeper struct {
 	accountKeeper    types.AccountKeeper
 	bankKeeper       bankkeeper.Keeper
 	vstorageKeeper   vstoragekeeper.Keeper
+	VstoragePort		vm.Port
 	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
@@ -79,7 +80,8 @@ var _ ante.SwingsetKeeper = &Keeper{}
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
+	vstorageKeeper vstoragekeeper.Keeper, vstoragePort vm.Port,
+	feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -95,6 +97,7 @@ func NewKeeper(
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		vstorageKeeper:   vstorageKeeper,
+		VstoragePort:			vstoragePort,
 		feeCollectorName: feeCollectorName,
 		callToController: callToController,
 	}

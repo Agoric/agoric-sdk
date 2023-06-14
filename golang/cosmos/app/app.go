@@ -196,10 +196,10 @@ type GaiaApp struct { // nolint: golint
 	interfaceRegistry types.InterfaceRegistry
 
 	controllerInited bool
-	lienPort         int
-	vbankPort        int
-	vibcPort         int
-	vstoragePort     int
+	lienPort         vm.Port
+	vbankPort        vm.Port
+	vibcPort         vm.Port
+	vstoragePort     vm.Port
 
 	invCheckPeriod uint
 
@@ -270,10 +270,10 @@ func NewGaiaApp(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
-	defaultController := func(needReply bool, str string) (string, error) {
-		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
-		return "", nil
-	}
+	defaultController := vm.NewTarget(func(msg vm.Message) error {
+		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", msg)
+		return nil
+	})
 	return NewAgoricApp(
 		defaultController,
 		logger, db, traceStore, loadLatest, skipUpgradeHeights,
@@ -282,7 +282,7 @@ func NewGaiaApp(
 }
 
 func NewAgoricApp(
-	sendToController func(bool, string) (string, error),
+	controller vm.Target,
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
@@ -431,28 +431,28 @@ func NewAgoricApp(
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		// We use SwingSet-level metering to charge the user for the call.
 		app.MustInitController(ctx)
-		defer vm.SetControllerContext(ctx)()
-		return sendToController(true, str)
+		defer controller.SetContext(ctx)()
+		return controller.Call(vm.BootstrapPort, true, str)
 	}
 
 	app.VstorageKeeper = vstorage.NewKeeper(
 		keys[vstorage.StoreKey],
 	)
-	vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
-	app.vstoragePort = vm.GetPort("vstorage")
+	app.vstoragePort = controller.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
-		app.VstorageKeeper, vbanktypes.ReservePoolName,
+		app.VstorageKeeper, app.vstoragePort,
+		vbanktypes.ReservePoolName,
 		callToController,
 	)
 
 	app.SwingSetSnapshotter = swingsetkeeper.NewSwingsetSnapshotter(
 		bApp,
 		app.SwingSetKeeper,
-		sendToController,
+		controller.Call,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
@@ -465,7 +465,7 @@ func NewAgoricApp(
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper)
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
-	app.vibcPort = vm.RegisterPortHandler("vibc", vibcIBCModule)
+	app.vibcPort = controller.RegisterPortHandler("vibc", vibcIBCModule)
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -473,7 +473,7 @@ func NewAgoricApp(
 		app.SwingSetKeeper.PushAction,
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
-	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
+	app.vbankPort = controller.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// Lien keeper, and circular reference back to wrappedAccountKeeper
 	app.LienKeeper = lien.NewKeeper(
@@ -483,7 +483,7 @@ func NewAgoricApp(
 	)
 	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
 	lienModule := lien.NewAppModule(app.LienKeeper)
-	app.lienPort = vm.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
+	app.lienPort = controller.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -828,11 +828,11 @@ type cosmosInitAction struct {
 	Type        string          `json:"type"`
 	ChainID     string          `json:"chainID"`
 	Params      swingset.Params `json:"params"`
-	StoragePort int             `json:"storagePort"`
+	StoragePort vm.Port             `json:"storagePort"`
 	SupplyCoins sdk.Coins       `json:"supplyCoins"`
-	VibcPort    int             `json:"vibcPort"`
-	VbankPort   int             `json:"vbankPort"`
-	LienPort    int             `json:"lienPort"`
+	VibcPort    vm.Port             `json:"vibcPort"`
+	VbankPort   vm.Port             `json:"vbankPort"`
+	LienPort    vm.Port             `json:"lienPort"`
 }
 
 // Name returns the name of the App
