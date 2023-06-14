@@ -1,13 +1,13 @@
 export {};
 
 /**
- * The internal data that controls which worker we use (and how we use
- * it) is stored in a WorkerOptions record, which comes in "local" and
- * "xsnap" flavors.
+ * The internal data that controls which worker we use (and how we use it) is
+ * stored in a WorkerOptions record, which comes in "local", "node-subprocess",
+ * and "xsnap" flavors.
  *
  * @typedef { { type: 'local' } } LocalWorkerOptions
  * @typedef { { type: 'xsnap', bundleIDs: BundleID[] } } XSnapWorkerOptions
- * @typedef { { type: 'node-subprocess' } } NodeSubprocessWorkerOptions
+ * @typedef { { type: 'node-subprocess', nodeOptions?: string[] } } NodeSubprocessWorkerOptions
  *  bundleIDs indicate the SES lockdown and supervisor/liveslots bundles to
  *  evaluate into a new xsnap worker
  * @typedef { LocalWorkerOptions | XSnapWorkerOptions | NodeSubprocessWorkerOptions } WorkerOptions
@@ -39,7 +39,6 @@ export {};
  * @property { boolean } critical
  * @property { MeterID } [meterID] // property must be present, but can be undefined
  * @property { WorkerOptions } workerOptions
- * @property { string[] } nodeOptions
  * @property { boolean } enableDisavow
  */
 
@@ -57,7 +56,6 @@ export {};
  *   setup?: unknown,
  *   retainSyscall?: boolean
  *   bundle?: Bundle,
- *   nodeOptions?: string[],
  * }} ManagerOptions
  *
  * @typedef {(snapPos: number, ss: SnapStore, restartWorker?: boolean) => Promise<SnapshotResult>} MakeSnapshot
