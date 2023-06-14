@@ -379,6 +379,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          *  @param {ZCFSeat} seat
          *  @param {Ratio} price
          *  @param {Amount<'nat'>} maxBuy
+         *  @param {Timestamp} timestamp
          *  @param {object} opts
          *  @param {boolean} opts.trySettle
          *  @param {boolean} [opts.exitAfterBuy]
@@ -387,6 +388,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           seat,
           price,
           maxBuy,
+          timestamp,
           { trySettle, exitAfterBuy = false },
         ) {
           const { priceBook, curAuctionPrice } = this.state;
@@ -413,7 +415,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             seat.exit();
           } else {
             trace('added Offer ', price, stillWant.value);
-            priceBook.add(seat, price, stillWant, exitAfterBuy);
+            priceBook.add(seat, price, stillWant, exitAfterBuy, timestamp);
             helper.publishBidData();
           }
 
@@ -428,6 +430,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          *  @param {ZCFSeat} seat
          *  @param {Ratio} bidScaling
          *  @param {Amount<'nat'>} maxBuy
+         *  @param {Timestamp} timestamp
          *  @param {object} opts
          *  @param {boolean} opts.trySettle
          *  @param {boolean} [opts.exitAfterBuy]
@@ -436,6 +439,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           seat,
           bidScaling,
           maxBuy,
+          timestamp,
           { trySettle, exitAfterBuy = false },
         ) {
           trace(this.state.collateralBrand, 'accept scaledBid offer');
@@ -468,7 +472,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           ) {
             seat.exit();
           } else {
-            scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
+            scaledBidBook.add(
+              seat,
+              bidScaling,
+              stillWant,
+              exitAfterBuy,
+              timestamp,
+            );
             helper.publishBidData();
           }
 
@@ -688,8 +698,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @param {OfferSpec} offerSpec
          * @param {ZCFSeat} seat
          * @param {boolean} trySettle
+         * @param {Timestamp} timestamp
          */
-        addOffer(offerSpec, seat, trySettle) {
+        addOffer(offerSpec, seat, trySettle, timestamp) {
           const { bidBrand, collateralBrand } = this.state;
           const offerSpecShape = makeOfferSpecShape(bidBrand, collateralBrand);
 
@@ -705,6 +716,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               seat,
               offerSpec.offerPrice,
               offerSpec.maxBuy,
+              timestamp,
               {
                 trySettle,
                 exitAfterBuy,
@@ -715,6 +727,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               seat,
               offerSpec.offerBidScaling,
               offerSpec.maxBuy,
+              timestamp,
               {
                 trySettle,
                 exitAfterBuy,
