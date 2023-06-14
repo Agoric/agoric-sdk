@@ -21,7 +21,11 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
     if (unused.length) {
       Fail`OptionRecorder: ${vatID} unused options ${unused.join(',')}`;
     }
-    const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
+    const workerOptions = await makeWorkerOptions(
+      managerType,
+      bundleHandler,
+      nodeOptions,
+    );
     /** @type { import('../types-internal.js').RecordedVatOptions } */
     const vatOptions = harden({
       workerOptions,
@@ -34,7 +38,6 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       reapInterval,
       critical,
       meterID,
-      nodeOptions,
     });
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     vatKeeper.setSourceAndOptions(source, vatOptions);

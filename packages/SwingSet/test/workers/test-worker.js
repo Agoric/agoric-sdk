@@ -62,7 +62,7 @@ function nodeVatConfig(managerType) {
         sourceSpec: new URL('bootstrap-node.js', import.meta.url).pathname,
         creationOptions: {
           managerType,
-          nodeOptions: ['--title=pretend'],
+          nodeOptions: ['--inspect'],
         },
       },
     },

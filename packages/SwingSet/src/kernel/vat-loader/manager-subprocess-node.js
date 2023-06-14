@@ -22,7 +22,8 @@ export function makeNodeSubprocessFactory(tools) {
       managerOptions.useTranscript,
       'node-subprocess: useTranscript=false not supported',
     );
-    const { name, nodeOptions } = managerOptions;
+    const { name, workerOptions } = managerOptions;
+    const { nodeOptions } = workerOptions;
 
     !nodeOptions ||
       Array.isArray(nodeOptions) ||
