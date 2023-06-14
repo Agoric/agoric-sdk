@@ -29,6 +29,7 @@ const nextSequenceNumber = () => {
  *   wanted: Amount<'nat'>;
  *   seqNum: NatValue;
  *   received: Amount<'nat'>;
+ *   timestamp: Timestamp;
  * } & { exitAfterBuy: boolean } & (
  *     | { bidScaling: Pattern; price: undefined }
  *     | { bidScaling: undefined; price: Ratio }
@@ -69,8 +70,9 @@ export const prepareScaledBidBook = baggage =>
        * @param {Ratio} bidScaling
        * @param {Amount<'nat'>} wanted
        * @param {boolean} exitAfterBuy
+       * @param {Timestamp} timestamp
        */
-      add(seat, bidScaling, wanted, exitAfterBuy) {
+      add(seat, bidScaling, wanted, exitAfterBuy, timestamp) {
         const { bidScalingPattern, collateralBrand, records } = this.state;
         mustMatch(bidScaling, bidScalingPattern);
 
@@ -86,6 +88,7 @@ export const prepareScaledBidBook = baggage =>
           seqNum,
           wanted,
           exitAfterBuy,
+          timestamp,
         };
         records.init(key, harden(bidderRecord));
         return key;
@@ -102,6 +105,9 @@ export const prepareScaledBidBook = baggage =>
             bidScaling: r.bidScaling,
             wanted: r.wanted,
             exitAfterBuy: r.exitAfterBuy,
+            timestamp: r.timestamp,
+            balance: r.seat.getCurrentAllocation().Bid,
+            sequence: r.seqNum,
           });
         });
       },
@@ -172,8 +178,9 @@ export const preparePriceBook = baggage =>
        * @param {Ratio} price
        * @param {Amount<'nat'>} wanted
        * @param {boolean} exitAfterBuy
+       * @param {Timestamp} timestamp
        */
-      add(seat, price, wanted, exitAfterBuy) {
+      add(seat, price, wanted, exitAfterBuy, timestamp) {
         const { priceRatioPattern, collateralBrand, records } = this.state;
         mustMatch(price, priceRatioPattern);
 
@@ -189,6 +196,7 @@ export const preparePriceBook = baggage =>
           seqNum,
           wanted,
           exitAfterBuy,
+          timestamp,
         };
         records.init(key, harden(bidderRecord));
         return key;
@@ -204,6 +212,9 @@ export const preparePriceBook = baggage =>
             price: r.price,
             wanted: r.wanted,
             exitAfterBuy: r.exitAfterBuy,
+            timestamp: r.timestamp,
+            balance: r.seat.getCurrentAllocation().Bid,
+            sequence: r.seqNum,
           });
         });
       },

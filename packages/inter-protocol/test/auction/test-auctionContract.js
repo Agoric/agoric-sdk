@@ -938,10 +938,14 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
 
   /** @type {BookDataTracker} */
   const bookTracker = await driver.getBookDataTracker(collateral.brand);
-
-  await bookTracker.assertChange({
-    collateralAvailable: { value: 100n },
-    startCollateral: { value: 100n },
+  await bookTracker.assertInitial({
+    collateralAvailable: collateral.make(100n),
+    currentPriceLevel: null,
+    proceedsRaised: undefined,
+    remainingProceedsGoal: null,
+    startCollateral: collateral.make(100n),
+    startPrice: null,
+    startProceedsGoal: null,
   });
 
   await driver.updatePriceAuthority(
@@ -973,6 +977,22 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
 
   t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
+
+  const pricedSeat = await driver.bidForCollateralSeat(
+    bid.make(200n),
+    collateral.make(250n),
+    undefined,
+  );
+  const discountSeat1 = driver.bidForCollateralSeat(
+    bid.make(20n),
+    collateral.make(200n),
+    makeRatioFromAmounts(bid.make(50n), bid.make(100n)),
+  );
+  const discountSeat2 = driver.bidForCollateralSeat(
+    bid.make(40n),
+    collateral.make(2000n),
+    makeRatioFromAmounts(bid.make(80n), bid.make(100n)),
+  );
 
   await bookTracker.assertChange({
     startPrice: makeRatioFromAmounts(
@@ -1077,9 +1097,14 @@ test.serial('add assets to open auction', async t => {
   );
 
   const bookTracker = await driver.getBookDataTracker(collateral.brand);
-  await bookTracker.assertChange({
-    collateralAvailable: { value: 1000n },
-    startCollateral: { value: 1000n },
+  await bookTracker.assertInitial({
+    collateralAvailable: collateral.make(1000n),
+    currentPriceLevel: null,
+    proceedsRaised: undefined,
+    remainingProceedsGoal: null,
+    startCollateral: collateral.make(1000n),
+    startPrice: null,
+    startProceedsGoal: null,
   });
   const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
@@ -1219,12 +1244,14 @@ test.serial('multiple collaterals', async t => {
     price,
   );
   t.is(await E(bidderSeat1C).getOfferResult(), 'Your bid has been accepted');
+  const timestamp = driver.getTimerService().getCurrentTimestamp();
   collatBidTracker.assertChange({
     pricedBids: {
       0: {
         exitAfterBuy: false,
         wanted: collateral.make(300n),
         price,
+        timestamp,
       },
     },
   });
@@ -1243,6 +1270,7 @@ test.serial('multiple collaterals', async t => {
         exitAfterBuy: false,
         wanted: collateral.make(2000n),
         bidScaling: scale2C,
+        timestamp,
       },
     },
   });
@@ -1261,6 +1289,7 @@ test.serial('multiple collaterals', async t => {
         exitAfterBuy: false,
         wanted: asset.make(200n),
         bidScaling: scale1A,
+        timestamp,
       },
     },
   });
@@ -1278,6 +1307,7 @@ test.serial('multiple collaterals', async t => {
       0: {
         exitAfterBuy: false,
         wanted: asset.make(300n),
+        timestamp,
         price: price2A,
       },
     },
