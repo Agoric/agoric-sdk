@@ -45,7 +45,6 @@
     "@endo/far": "^0.2.18",
     "@endo/marshal": "^0.8.5",
     "@endo/nat": "^4.1.27",
-    "agoric": "^0.21.1",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
