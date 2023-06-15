@@ -46,6 +46,9 @@ case $VERSION_CODENAME in
   bullseye)
     VERSION_CODENAME=focal
     ;;
+  bookworm)
+    VERSION_CODENAME=jammy
+    ;;
 esac
 
 # Install Ansible.
