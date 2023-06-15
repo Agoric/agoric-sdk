@@ -50,10 +50,10 @@ type Target struct {
 	portToName map[Port]string
 	nameToPort map[string]Port
 	replies map[Port]chan goReturn
-	rawSend func (msg Message) error
+	send func (msg Message) error
 }
 
-func NewTarget(rawSend func (msg Message) error) Target {
+func NewTarget(send func (msg Message) error) Target {
 	lastPort := new(Port)
 	*lastPort = BootstrapPort
 	lastReply := new(Port)
@@ -66,7 +66,7 @@ func NewTarget(rawSend func (msg Message) error) Target {
 		portToName: make(map[Port]string),
 		nameToPort: make(map[string]Port),
 		replies: make(map[Port]chan goReturn),
-		rawSend: rawSend,
+		send: send,
 	}
 }
 
@@ -75,7 +75,10 @@ func (t Target) Send(msg Message) error {
 		// No port specified, so discard.
 		return nil
 	}
-	return t.rawSend(msg)
+	if t.send == nil {
+		return errors.New("target was given a nil send function")
+	}
+	return t.send(msg)
 }
 
 func (t Target) Call(port Port, needReply bool, data string) (string, error) {

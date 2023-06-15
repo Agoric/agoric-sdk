@@ -7,12 +7,14 @@ import (
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRootCmdConfig(t *testing.T) {
 
-	rootCmd, _ := cmd.NewRootCmd(nil)
+	rootCmd, _ := cmd.NewRootCmd(vm.NewTarget(nil))
+
 	rootCmd.SetArgs([]string{
 		"config",          // Test the config cmd
 		"keyring-backend", // key
