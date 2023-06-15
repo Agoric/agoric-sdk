@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { getMethodNames } from '@agoric/internal';
+import { getStringMethodNames } from '@agoric/internal';
 import { makeOffer } from '../makeOffer.js';
 
 import { setup } from '../setupBasicMints.js';
@@ -689,7 +689,7 @@ test(`zcf.makeEmptySeatKit`, async t => {
 });
 
 test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
-  const expectedMethods = [
+  const expectedStringMethods = [
     'exit',
     'fail',
     'getAmountAllocated',
@@ -707,7 +707,7 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(getMethodNames(seat), expectedMethods.sort());
+  t.deepEqual(getStringMethodNames(seat), expectedStringMethods.sort());
 });
 
 test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
