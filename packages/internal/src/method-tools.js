@@ -63,6 +63,18 @@ export const getMethodNames = val => {
 harden(getMethodNames);
 
 /**
+ * The subset of `getMethodNames` containing only string names, without symbols
+ *
+ * @template {PropertyKey} K
+ * @param {Record<K, any>} val
+ * @returns {string[]}
+ */
+export const getStringMethodNames = val =>
+  /** @type {string[]} */ (
+    getMethodNames(val).filter(name => typeof name === 'string')
+  );
+
+/**
  * TODO This function exists only to ease the
  * https://github.com/Agoric/agoric-sdk/pull/5970 transition, from all methods
  * being own properties to methods being inherited from a common prototype.
