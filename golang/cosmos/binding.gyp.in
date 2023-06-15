@@ -35,7 +35,7 @@
           ],
           'postbuilds': [
             {
-              'postbuild_name': 'Add prefix @rpath/<(target_lib)',
+              'postbuild_name': 'Adding @rpath prefix to <(target_lib)',
               'action': [
                 'install_name_tool',
                 '-change',
