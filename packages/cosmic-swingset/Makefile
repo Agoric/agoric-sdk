@@ -81,7 +81,7 @@ all: build-chain install-nobuild
 
 client: build-helper install-nobuild
 
-install-nobuild: install-local install-agd install-helper
+install-nobuild: install-local install-agd
 
 install: all install-nobuild
 
@@ -362,10 +362,6 @@ build-helper:
 install-agd:
 	mkdir -p "$(BIN)"
 	ln -sf "$(SDK_ROOT)/bin/agd" "$(BIN)/agd"
-
-install-helper:
-	mkdir -p "$(BIN)"
-	ln -sf "$(SDK_ROOT)/bin/agd" "$(BIN)/ag-cosmos-helper"
 
 install-local:
 	mkdir -p "$(BIN)"

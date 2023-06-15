@@ -77,7 +77,6 @@ WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 COPY --from=otel /otelcol-contrib /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/bin/agd /usr/local/bin/
-RUN ln -s /usr/src/agoric-sdk/bin/agd /usr/local/bin/ag-cosmos-helper
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/agoric-cli/bin/agoric /usr/local/bin/
