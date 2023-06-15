@@ -6,7 +6,7 @@ import path from 'path';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { passStyleOf, Far } from '@endo/marshal';
-import { getMethodNames } from '@agoric/internal';
+import { getStringMethodNames } from '@agoric/internal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';
@@ -124,7 +124,7 @@ test(`E(zoe).startInstance promise for installation`, async t => {
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
   facetHasMethods(t, result.publicFacet, ['makeInvitation']);
-  t.deepEqual(getMethodNames(result.adminFacet), [
+  t.deepEqual(getStringMethodNames(result.adminFacet), [
     'getVatShutdownPromise',
     'restartContract',
     'upgradeContract',
