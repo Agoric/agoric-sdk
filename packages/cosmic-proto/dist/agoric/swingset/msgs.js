@@ -446,7 +446,12 @@ export const MsgProvisionResponse = {
   },
 };
 function createBaseMsgInstallBundle() {
-  return { bundle: '', submitter: new Uint8Array() };
+  return {
+    bundle: '',
+    submitter: new Uint8Array(),
+    compressedBundle: new Uint8Array(),
+    uncompressedSize: Long.ZERO,
+  };
 }
 export const MsgInstallBundle = {
   encode(message, writer = _m0.Writer.create()) {
@@ -455,6 +460,12 @@ export const MsgInstallBundle = {
     }
     if (message.submitter.length !== 0) {
       writer.uint32(18).bytes(message.submitter);
+    }
+    if (message.compressedBundle.length !== 0) {
+      writer.uint32(26).bytes(message.compressedBundle);
+    }
+    if (!message.uncompressedSize.isZero()) {
+      writer.uint32(32).int64(message.uncompressedSize);
     }
     return writer;
   },
@@ -471,6 +482,12 @@ export const MsgInstallBundle = {
         case 2:
           message.submitter = reader.bytes();
           break;
+        case 3:
+          message.compressedBundle = reader.bytes();
+          break;
+        case 4:
+          message.uncompressedSize = reader.int64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -484,6 +501,12 @@ export const MsgInstallBundle = {
       submitter: isSet(object.submitter)
         ? bytesFromBase64(object.submitter)
         : new Uint8Array(),
+      compressedBundle: isSet(object.compressedBundle)
+        ? bytesFromBase64(object.compressedBundle)
+        : new Uint8Array(),
+      uncompressedSize: isSet(object.uncompressedSize)
+        ? Long.fromValue(object.uncompressedSize)
+        : Long.ZERO,
     };
   },
   toJSON(message) {
@@ -493,12 +516,27 @@ export const MsgInstallBundle = {
       (obj.submitter = base64FromBytes(
         message.submitter !== undefined ? message.submitter : new Uint8Array(),
       ));
+    message.compressedBundle !== undefined &&
+      (obj.compressedBundle = base64FromBytes(
+        message.compressedBundle !== undefined
+          ? message.compressedBundle
+          : new Uint8Array(),
+      ));
+    message.uncompressedSize !== undefined &&
+      (obj.uncompressedSize = (
+        message.uncompressedSize || Long.ZERO
+      ).toString());
     return obj;
   },
   fromPartial(object) {
     const message = createBaseMsgInstallBundle();
     message.bundle = object.bundle ?? '';
     message.submitter = object.submitter ?? new Uint8Array();
+    message.compressedBundle = object.compressedBundle ?? new Uint8Array();
+    message.uncompressedSize =
+      object.uncompressedSize !== undefined && object.uncompressedSize !== null
+        ? Long.fromValue(object.uncompressedSize)
+        : Long.ZERO;
     return message;
   },
 };
