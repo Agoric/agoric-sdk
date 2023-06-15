@@ -38,15 +38,12 @@ ldflags += -compressdwarf=false
 gcflags += -N -l
 endif
 
-ldflags_helper = $(ldflags) \
-		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-helper
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
-BUILD_FLAGS_HELPER :=  -buildmode=exe -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags_helper)'
 
 all: compile-chain
 
-compile-chain: compile-agd compile-helper compile-daemon
-compile-go: compile-agd compile-helper compile-libdaemon
+compile-chain: compile-agd compile-daemon
+compile-go: compile-agd compile-libdaemon
 compile-node: node-compile-gyp
 
 compile-daemon: compile-libdaemon node-compile-gyp
@@ -60,19 +57,16 @@ node-compile-gyp:
 	fi
 
 compile-agd: go-mod-cache
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/agd ./cmd/agd
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/agd ./cmd/agd
 
 install-agd: go-mod-cache
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/agd
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe ./cmd/agd
 
 # Only run from the package.json build:gyp script.
 compile-gyp:
 	cp binding.gyp.in binding.gyp
 	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
 	rm -f binding.gyp
-
-compile-helper: go-mod-cache
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/ag-cosmos-helper ./cmd/helper
 
 compile-libdaemon: go-mod-cache
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
