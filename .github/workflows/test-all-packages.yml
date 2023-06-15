@@ -119,35 +119,58 @@ jobs:
       #- name: yarn test (everything)
       #  run: yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (access-token)
+        if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (assert)
+        if: (success() || failure())
         run: cd packages/assert && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
+        if: (success() || failure())
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (ERTP)
+        if: (success() || failure())
         run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (governance)
+        if: (success() || failure())
         run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (import-manager)
+        if: (success() || failure())
         run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (notifier)
+        if: (success() || failure())
         run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (same-structure)
+        if: (success() || failure())
         run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sharing-service)
+        if: (success() || failure())
         run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
+        if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (spawner)
+        if: (success() || failure())
         run: cd packages/spawner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (stat-logger)
+        if: (success() || failure())
         run: cd packages/stat-logger && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (store)
+        if: (success() || failure())
         run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swing-store)
+        if: (success() || failure())
         run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
+        if: (success() || failure())
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -177,46 +200,73 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (agoric-cli)
+        if: (success() || failure())
         run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmos)
+        if: (success() || failure())
         run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cache)
+        if: (success() || failure())
         run: cd packages/cache && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (casting)
+        if: (success() || failure())
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
+        if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (pegasus)
+        if: (success() || failure())
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (smart-wallet)
+        if: (success() || failure())
         run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-runner)
+        if: (success() || failure())
         run: cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (telemetry)
+        if: (success() || failure())
         run: cd packages/telemetry && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deploy-script-support)
+        if: (success() || failure())
         run: cd packages/deploy-script-support && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet)
+        if: (success() || failure())
         run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet/api)
+        if: (success() || failure())
         run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (eslint-config)
+        if: (success() || failure())
         run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vat-data)
+        if: (success() || failure())
         run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (time)
+        if: (success() || failure())
         run: cd packages/time && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-liveslots)
+        if: (success() || failure())
         run: cd packages/swingset-liveslots && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-xsnap-supervisor)
+        if: (success() || failure())
         run: cd packages/swingset-xsnap-supervisor && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (zone)
+        if: (success() || failure())
         run: cd packages/zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
         # The meta-test!
       - name: Check for untested packages
+        if: (success() || failure())
         run: node ./scripts/check-untested-packages.mjs
 
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -250,7 +300,16 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
+        if: (success() || failure())
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -285,7 +344,16 @@ jobs:
         with:
           go-version: '1.20'
       - name: yarn test (cosmic-swingset)
+        if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -317,7 +385,16 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (inter-protocol)
+        if: (success() || failure())
         run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -348,7 +425,16 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (vats)
+        if: (success() || failure())
         run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -380,7 +466,16 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
+        if: (success() || failure())
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js' | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -411,15 +506,26 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
+        if: (success() || failure())
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[E-Ie-i]*.js' | $TEST_COLLECT
       - name: yarn test (xsnap-lockdown)
+        if: (success() || failure())
         run: cd packages/xsnap-lockdown && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (xsnap)
+        if: (success() || failure())
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       # explicitly test the XS worker, for visibility
       - name: yarn test (SwingSet XS Worker)
-        if: matrix.engine != 'xs'
+        if: (success() || failure()) && matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -449,7 +555,16 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
+        if: (success() || failure())
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js' | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -480,7 +595,16 @@ jobs:
       # END-TEST-BOILERPLATE
 
       - name: yarn test (SwingSet)
+        if: (success() || failure())
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js' | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -512,8 +636,17 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
+        if: (success() || failure())
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -545,8 +678,17 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
+        if: (success() || failure())
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -569,6 +711,14 @@ jobs:
         run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
         run: docker run --env "DEST=0" docker-upgrade-test:latest
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
