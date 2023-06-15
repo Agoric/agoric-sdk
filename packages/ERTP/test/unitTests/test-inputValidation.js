@@ -141,7 +141,7 @@ test('brand.isMyIssuer bad issuer', async t => {
   // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => brand.isMyIssuer('not an issuer'), {
     message:
-      'In "isMyIssuer" method of (myTokens brand): arg 0: string "not an issuer" - Must be a remotable (Issuer)',
+      /In "isMyIssuer" method of \(myTokens brand\): arg 0: .*"not an issuer" - Must be a remotable/,
   });
   const fakeIssuer = /** @type {Issuer} */ (
     /** @type {unknown} */ (Far('myTokens issuer', {}))

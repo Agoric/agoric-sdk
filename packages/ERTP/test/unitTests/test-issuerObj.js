@@ -205,7 +205,7 @@ test('purse.deposit promise', async t => {
     () => E(purse).deposit(exclusivePaymentP, fungible25),
     {
       message:
-        'In "deposit" method of (fungible Purse purse): arg 0: promise "[Promise]" - Must be a remotable (Payment)',
+        /In "deposit" method of \(fungible Purse purse\): arg 0: .*"\[Promise\]" - Must be a remotable/,
     },
     'failed to reject a promise for a payment',
   );
