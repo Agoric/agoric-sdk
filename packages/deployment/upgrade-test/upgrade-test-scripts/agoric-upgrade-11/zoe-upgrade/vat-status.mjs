@@ -96,10 +96,16 @@ const main = async (argv, { dbOpen, HOME }) => {
   console.log(incarnation);
 };
 
+processAmbient.exitCode = 1;
 main(processAmbient.argv, {
   dbOpen: dbOpenAmbient,
   HOME: processAmbient.env.HOME,
-}).catch(err => {
-  console.error(err);
-  processAmbient.exit(1);
-});
+}).then(
+  () => {
+    processAmbient.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    processAmbient.exit(processAmbient.exitCode || 1);
+  },
+);

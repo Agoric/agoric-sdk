@@ -240,19 +240,28 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   }
 }
 
-main(process.argv.slice(2), {
-  env: { ...process.env },
-  stdout: process.stdout,
-  spawn: childProcessTop.spawn,
-  fs: {
-    readFile: fsTop.promises.readFile,
-    existsSync: fsTop.existsSync,
-    rmdirSync: fsTop.rmdirSync,
+const run = () =>
+  main(process.argv.slice(2), {
+    env: { ...process.env },
+    stdout: process.stdout,
+    spawn: childProcessTop.spawn,
+    fs: {
+      readFile: fsTop.promises.readFile,
+      existsSync: fsTop.existsSync,
+      rmdirSync: fsTop.rmdirSync,
+    },
+    os: {
+      type: osTop.type,
+    },
+  });
+
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
   },
-  os: {
-    type: osTop.type,
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
   },
-}).catch(e => {
-  console.error(e);
-  process.exit(1);
-});
+);

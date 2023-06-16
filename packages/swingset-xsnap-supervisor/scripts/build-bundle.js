@@ -3,6 +3,7 @@ import '@endo/init';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import process from 'process';
 
 import bundleSource from '@endo/bundle-source';
 import { bundlePaths, hashPaths, entryPaths } from '../src/paths.js';
@@ -26,4 +27,13 @@ const run = async () => {
   console.log(`supervisor.bundle SHA256: ${sha256}`);
 };
 
-run().catch(err => console.log(err));
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);
