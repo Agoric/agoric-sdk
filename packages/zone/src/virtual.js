@@ -15,6 +15,7 @@ import {
 import { Far } from '@endo/far';
 
 import { makeOnceKit } from './make-once.js';
+import { agoricVatDataKeys as keys } from './keys.js';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
@@ -67,10 +68,10 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     baseLabel,
     detachedVirtualStores,
   );
-  return Far('heapZone', {
-    exo: wrapProvider(defineVirtualExo),
-    exoClass: wrapProvider(defineVirtualExoClass),
-    exoClassKit: wrapProvider(defineVirtualExoClassKit),
+  return Far('VirtualZone', {
+    exo: wrapProvider(defineVirtualExo, keys.exo),
+    exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
+    exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
     subZone: (label, _options) => {
       return makeOnce(label, () => makeVirtualZone(`${baseLabel}.${label}`));
     },
