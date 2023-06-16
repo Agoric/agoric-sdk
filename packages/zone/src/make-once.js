@@ -1,6 +1,7 @@
 // @ts-check
 const { Fail } = assert;
 
+/** @param {string} label */
 const defaultLabelToKeys = label => harden([label]);
 harden(defaultLabelToKeys);
 
