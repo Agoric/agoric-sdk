@@ -15,6 +15,7 @@ import {
 import { Far } from '@endo/far';
 
 import { makeOnceKit } from './make-once.js';
+import { agoricVatDataKeys as keys } from './keys.js';
 
 /**
  * @type {import('.').Stores}
@@ -38,9 +39,9 @@ const detachedHeapStores = Far('heapStores', {
 export const makeHeapZone = (baseLabel = 'heapZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);
   return Far('heapZone', {
-    exo: wrapProvider(makeExo),
-    exoClass: wrapProvider(defineExoClass),
-    exoClassKit: wrapProvider(defineExoClassKit),
+    exo: wrapProvider(makeExo, keys.exo),
+    exoClass: wrapProvider(defineExoClass, keys.exoClass),
+    exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
     subZone: (label, _options) => {
       return makeOnce(label, () => makeHeapZone(`${baseLabel}.${label}`));
     },

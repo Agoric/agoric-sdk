@@ -17,6 +17,7 @@ import {
 import { Far } from '@endo/far';
 
 import { makeOnceKit } from './make-once.js';
+import { agoricVatDataKeys as keys } from './keys.js';
 
 const { Fail } = assert;
 
@@ -88,9 +89,9 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   };
 
   return Far('durableZone', {
-    exo: wrapProvider(exo),
-    exoClass: wrapProvider(exoClass),
-    exoClassKit: wrapProvider(exoClassKit),
+    exo: wrapProvider(exo, keys.exo),
+    exoClass: wrapProvider(exoClass, keys.exoClass),
+    exoClassKit: wrapProvider(exoClassKit, keys.exoClassKit),
     subZone,
 
     makeOnce,

@@ -1,13 +1,22 @@
 // @ts-check
 const { Fail } = assert;
 
+/** @param {string} label */
+const defaultLabelToKeys = label => harden([label]);
+harden(defaultLabelToKeys);
+
 /**
- * @param {string} baseLabel
+ * @param {string} debugName Only used internally for diagnostics, not available to user code
  * @param {import('.').Stores} stores
  * @param {MapStore<string, any>} [backingStore]
  */
-export const makeOnceKit = (baseLabel, stores, backingStore) => {
-  const usedKeys = stores.detached().setStore(`${baseLabel} used keys`);
+export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
+  // We need a detached setStore so that it isn't persisted as part of the zone.
+  // That way, our usedKeys are only tracked for the current incarnation, which
+  // is what we want.  Using `debugName` in the label is good for diagnostics,
+  // and since it is only for a detached store, it should not be visible to the
+  // backing store.
+  const usedKeys = stores.detached().setStore(`${debugName} used keys`);
 
   /**
    * @param {string} key
@@ -28,13 +37,16 @@ export const makeOnceKit = (baseLabel, stores, backingStore) => {
    *
    * @template {(key: string, ...rest: unknown[]) => any} T
    * @param {T} provider
+   * @param {(label: string) => string[]} [labelToKeys]
    * @returns {T}
    */
-  const wrapProvider = provider => {
+  const wrapProvider = (provider, labelToKeys = defaultLabelToKeys) => {
     /** @type {(...args: Parameters<T>) => ReturnType<T>} */
-    const wrapper = (key, ...rest) => {
-      assertOnlyOnce(key);
-      return provider(key, ...rest);
+    const wrapper = (label, ...rest) => {
+      for (const key of labelToKeys(label)) {
+        assertOnlyOnce(key);
+      }
+      return provider(label, ...rest);
     };
     return /** @type {T} */ (wrapper);
   };
@@ -42,9 +54,9 @@ export const makeOnceKit = (baseLabel, stores, backingStore) => {
   /**
    * The best way to understand the purpose of `makeOnce` is to first understand
    * what `makeOnce` does on a durable zone. Used correctly, `makeOnce` should only
-   * be called at most once on any subzone,key pair during any vat incarnation.
+   * be called at most once on any zone,key pair during any vat incarnation.
    * Given that constraint, if there is already a value bound to that
-   * subzone,key pair, it must have been left there by a previous incarnation and
+   * zone,key pair, it must have been left there by a previous incarnation and
    * `makeOnce` will simply return it. If not, then `maker(key)` is called to
    * determine the initial value of that slot, which will normally be preserved
    * by similar calls to `makeOnce` in future incarnations --- though that will be
