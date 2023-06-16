@@ -1,5 +1,10 @@
 import { E } from '@endo/far';
-import { AssetKind, makeDurableIssuerKit, AmountMath } from '@agoric/ertp';
+import {
+  AssetKind,
+  makeDurableIssuerKit,
+  AmountMath,
+  prepareIssuerKit,
+} from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
@@ -117,7 +122,7 @@ export const makeZoeStorageManager = (
     'zoeMintBaggageSet',
   );
   for (const issuerBaggage of zoeMintBaggageSet.values()) {
-    zoeMintBaggageSet(issuerBaggage);
+    prepareIssuerKit(issuerBaggage);
   }
 
   const makeZoeMint = prepareExoClass(
