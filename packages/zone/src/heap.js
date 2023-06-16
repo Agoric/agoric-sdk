@@ -15,6 +15,7 @@ import {
 import { Far } from '@endo/far';
 
 import { makeOnceKit } from './make-once.js';
+import { agoricVatDataKeys as keys } from './keys.js';
 
 /**
  * @type {import('.').Stores}
