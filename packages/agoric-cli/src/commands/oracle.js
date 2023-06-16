@@ -7,6 +7,7 @@ import { Nat } from '@endo/nat';
 import { Command } from 'commander';
 import * as cp from 'child_process';
 import { inspect } from 'util';
+import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import {
@@ -75,7 +76,7 @@ export const makeOracleCommand = (logger, io = {}) => {
     const utils = await makeRpcUtils({ fetch });
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
-      const name = `${brandIn}-${brandOut} price feed`;
+      const name = instanceNameFor(brandIn, brandOut);
       const instance = utils.agoricNames.instance[name];
       if (!instance) {
         logger.debug('known instances:', utils.agoricNames.instance);

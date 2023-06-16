@@ -40,6 +40,17 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+  dependency-graph:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install graphviz
+        run: sudo apt install -y graphviz
+
+      - name: Check for cycles
+        run: scripts/check-dependency-cycles.sh 4
+
   ##################
   # Lint tests
   # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
@@ -135,10 +146,6 @@ jobs:
         run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swing-store)
         run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (web-components)
-        run: cd packages/web-components && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (wallet-connection)
-        run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
@@ -189,8 +196,6 @@ jobs:
         run: cd packages/telemetry && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deploy-script-support)
         run: cd packages/deploy-script-support && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (ui-components)
-        run: cd packages/ui-components && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet)
         run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet/api)

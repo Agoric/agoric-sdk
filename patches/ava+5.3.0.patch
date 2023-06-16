@@ -7,10 +7,10 @@ index 0000000..bee62d8
 +// XXX work around https://github.com/import-js/eslint-plugin-import/issues/1810
 +export {default} from './lib/worker/main.cjs';
 diff --git a/node_modules/ava/lib/cli.js b/node_modules/ava/lib/cli.js
-index afe5528..f748fec 100644
+index b613666..fbed443 100644
 --- a/node_modules/ava/lib/cli.js
 +++ b/node_modules/ava/lib/cli.js
-@@ -436,6 +436,10 @@ export default async function loadCli() { // eslint-disable-line complexity
+@@ -448,6 +448,10 @@ export default async function loadCli() { // eslint-disable-line complexity
  		workerArgv: argv['--'],
  	});
  

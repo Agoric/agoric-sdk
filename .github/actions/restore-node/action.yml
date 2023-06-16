@@ -37,15 +37,15 @@ runs:
         result-encoding: string
         script: |-
           let branch = 'NOPE';
-          if (context.payload.pull_request) {
+          if (context.eventName === 'schedule') {
+            branch = 'master';
+          } else if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
             const regex = /^\#endo-branch:\s+(\S+)/m;
             const result = regex.exec(body);
             if (result) {
               branch = result[1];
             }
-          } else if (github.event_name === 'schedule') {
-            branch = 'master';
           }
           console.log(branch);
           return branch;

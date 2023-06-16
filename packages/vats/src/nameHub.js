@@ -212,7 +212,6 @@ export const prepareNameHubKit = zone => {
           const { keyToAdmin, keyToValue } = this.state;
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
-            // XXX ts-ignore because @agoric/web-components lint fails
             /** @type {NameHub} */
             // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
             // @ts-ignore if an admin is present, it should be a namehub

@@ -13,7 +13,7 @@ import {
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import {
-  makeCompoundedInterestProvider,
+  makeCompoundedStabilityFeeProvider,
   makeFakeVault,
 } from './interestSupport.js';
 
@@ -199,7 +199,7 @@ test('stable ordering as interest accrues', async t => {
   const vaults = makePrioritizedVaults(store);
 
   const fakeVaultID1 = 'id-fakeVault1';
-  const m = makeCompoundedInterestProvider(stableBrand);
+  const m = makeCompoundedStabilityFeeProvider(stableBrand);
 
   // ACTUAL DEBTS AFTER 100% DAILY INTEREST
   // day 0

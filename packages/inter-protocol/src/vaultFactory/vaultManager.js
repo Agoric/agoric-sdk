@@ -95,16 +95,16 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {{
- *  compoundedInterest: Ratio,
- *  interestRate: Ratio,
- *  latestInterestUpdate: Timestamp,
+ *  compoundedStabilityFee: Ratio,
+ *  stabilityFee: Ratio,
+ *  latestStabilityFeeUpdate: Timestamp,
  * }} AssetState
  *
  * @typedef {{
  *  getChargingPeriod: () => RelativeTime,
  *  getRecordingPeriod: () => RelativeTime,
  *  getDebtLimit: () => Amount<'nat'>,
- *  getInterestRate: () => Ratio,
+ *  getStabilityFee: () => Ratio,
  *  getLiquidationPadding: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
@@ -138,8 +138,8 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {{
- *   compoundedInterest: Ratio,
- *   latestInterestUpdate: Timestamp,
+ *   compoundedStabilityFee: Ratio,
+ *   latestStabilityFeeUpdate: Timestamp,
  *   numLiquidationsCompleted: number,
  *   numLiquidationsAborted: number,
  *   totalCollateral: Amount<'nat'>,
@@ -230,8 +230,8 @@ export const prepareVaultManagerKit = (
     return harden({
       ...params,
       ...immutable,
-      compoundedInterest: makeRatio(100n, debtBrand), // starts at 1.0, no interest
-      latestInterestUpdate: startTimeStamp,
+      compoundedStabilityFee: makeRatio(100n, debtBrand), // starts at 1.0, no interest
+      latestStabilityFeeUpdate: startTimeStamp,
       numLiquidationsCompleted: 0,
       numLiquidationsAborted: 0,
       totalCollateral: zeroCollateral,
@@ -255,7 +255,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
-        getCompoundedInterest: M.call().returns(RatioShape),
+        getCompoundedStabilityFee: M.call().returns(RatioShape),
       }),
       helper: M.interface(
         'helper',
@@ -276,7 +276,7 @@ export const prepareVaultManagerKit = (
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
-        getCompoundedInterest: M.call().returns(RatioShape),
+        getCompoundedStabilityFee: M.call().returns(RatioShape),
         scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
@@ -319,8 +319,8 @@ export const prepareVaultManagerKit = (
           const ephemera = collateralEphemera(this.state.collateralBrand);
           return ephemera.storedQuotesNotifier;
         },
-        getCompoundedInterest() {
-          return this.state.compoundedInterest;
+        getCompoundedStabilityFee() {
+          return this.state.compoundedStabilityFee;
         },
         getPublicTopics() {
           const { assetTopicKit, metricsTopicKit } = this.state;
@@ -400,7 +400,7 @@ export const prepareVaultManagerKit = (
           // throw. See https://github.com/Agoric/agoric-sdk/issues/4317
           void observeNotifier(quoteNotifier, {
             updateState(value) {
-              trace('vaultManager got new collateral quote', value);
+              trace('storing new quote', value.quoteAmount.value);
               ephemera.storedCollateralQuote = value;
             },
             fail(reason) {
@@ -419,9 +419,9 @@ export const prepareVaultManagerKit = (
             updateTime,
           });
 
-          const interestRate = factoryPowers
+          const stabilityFee = factoryPowers
             .getGovernedParams(collateralBrand)
-            .getInterestRate();
+            .getStabilityFee();
 
           // Update state with the results of charging interest
 
@@ -433,7 +433,7 @@ export const prepareVaultManagerKit = (
               seatAllocationKeyword: 'Minted',
             },
             {
-              interestRate,
+              stabilityFee,
               chargingPeriod: factoryPowers
                 .getGovernedParams(collateralBrand)
                 .getChargingPeriod(),
@@ -442,15 +442,15 @@ export const prepareVaultManagerKit = (
                 .getRecordingPeriod(),
             },
             {
-              latestInterestUpdate: state.latestInterestUpdate,
-              compoundedInterest: state.compoundedInterest,
+              latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
+              compoundedStabilityFee: state.compoundedStabilityFee,
               totalDebt: state.totalDebt,
             },
             updateTime,
           );
 
-          state.compoundedInterest = changes.compoundedInterest;
-          state.latestInterestUpdate = changes.latestInterestUpdate;
+          state.compoundedStabilityFee = changes.compoundedStabilityFee;
+          state.latestStabilityFeeUpdate = changes.latestStabilityFeeUpdate;
           state.totalDebt = changes.totalDebt;
 
           return facets.helper.assetNotify();
@@ -458,14 +458,14 @@ export const prepareVaultManagerKit = (
         assetNotify() {
           const { state } = this;
           const { collateralBrand, assetTopicKit } = state;
-          const interestRate = factoryPowers
+          const stabilityFee = factoryPowers
             .getGovernedParams(collateralBrand)
-            .getInterestRate();
+            .getStabilityFee();
           /** @type {AssetState} */
           const payload = harden({
-            compoundedInterest: state.compoundedInterest,
-            interestRate,
-            latestInterestUpdate: state.latestInterestUpdate,
+            compoundedStabilityFee: state.compoundedStabilityFee,
+            stabilityFee,
+            latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
           });
           return assetTopicKit.recorder.write(payload);
         },
@@ -843,8 +843,8 @@ export const prepareVaultManagerKit = (
         /**
          * coefficient on existing debt to calculate new debt
          */
-        getCompoundedInterest() {
-          return this.state.compoundedInterest;
+        getCompoundedStabilityFee() {
+          return this.state.compoundedStabilityFee;
         },
         /**
          * Called by a vault when its balances change.
@@ -1036,7 +1036,7 @@ export const prepareVaultManagerKit = (
           if (!storedCollateralQuote)
             throw Fail`lockOraclePrices called before a collateral quote was available`;
           trace(
-            `lockPrice`,
+            `lockOraclePrices`,
             getAmountIn(storedCollateralQuote),
             getAmountOut(storedCollateralQuote),
           );
@@ -1046,25 +1046,33 @@ export const prepareVaultManagerKit = (
           return storedCollateralQuote;
         },
         /**
-         * @param {AuctioneerPublicFacet} auctionPF
+         * @param {ERef<AuctioneerPublicFacet>} auctionPF
          */
         async liquidateVaults(auctionPF) {
           const { state, facets } = this;
           const { self, helper } = facets;
           const {
             collateralBrand,
-            compoundedInterest,
+            compoundedStabilityFee,
             debtBrand,
             liquidatingVaults,
             lockedQuote,
           } = state;
           trace(collateralBrand, 'considering liquidation');
 
+          if (!lockedQuote) {
+            // By design, the first cycle of auction may call this before a quote is locked
+            // because the schedule is global at the vaultDirector level, and if a manager
+            // starts after the price lock time there's nothing to be done.
+            // NB: this message should not log repeatedly.
+            console.error(
+              'Skipping liquidation because no quote is locked yet (may happen with new manager)',
+            );
+            return;
+          }
+
           const { prioritizedVaults } = collateralEphemera(collateralBrand);
-          assert(factoryPowers && prioritizedVaults && zcf);
-          lockedQuote ||
-            Fail`Must have locked a quote before liquidating vaults.`;
-          assert(lockedQuote); // redundant with previous line
+          prioritizedVaults || Fail`prioritizedVaults missing from ephemera`;
 
           const liqMargin = self.getGovernedParams().getLiquidationMargin();
 
@@ -1074,7 +1082,7 @@ export const prepareVaultManagerKit = (
               zcf,
               {
                 quote: lockedQuote,
-                interest: compoundedInterest,
+                interest: compoundedStabilityFee,
                 margin: liqMargin,
               },
               prioritizedVaults,
@@ -1159,11 +1167,11 @@ export const prepareVaultManagerKit = (
         helper.start();
         void state.assetTopicKit.recorder.write(
           harden({
-            compoundedInterest: state.compoundedInterest,
-            interestRate: factoryPowers
+            compoundedStabilityFee: state.compoundedStabilityFee,
+            stabilityFee: factoryPowers
               .getGovernedParams(state.collateralBrand)
-              .getInterestRate(),
-            latestInterestUpdate: state.latestInterestUpdate,
+              .getStabilityFee(),
+            latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
           }),
         );
 

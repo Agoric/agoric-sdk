@@ -58,8 +58,12 @@ export const makeWeakMapStoreMethods = (
     },
 
     addAll: entries => {
-      if (isCopyMap(entries)) {
-        entries = getCopyMapEntries(entries);
+      if (typeof entries[Symbol.iterator] !== 'function') {
+        if (Object.isFrozen(entries) && isCopyMap(entries)) {
+          entries = getCopyMapEntries(entries);
+        } else {
+          Fail`provided data source is not iterable: ${entries}`;
+        }
       }
       for (const [key, value] of /** @type {Iterable<[K, V]>} */ (entries)) {
         // Don't assert that the key either does or does not exist.

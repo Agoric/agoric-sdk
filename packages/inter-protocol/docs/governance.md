@@ -51,16 +51,16 @@ the Inter Protocol Whitepaper, v0.8.
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
 | DebtLimit          | Amount            | Yes |
-| InterestRate       | Ratio             | Yes |
+| StabilityFee       | Ratio             | Yes |
 | LiquidationPadding | Ratio             |     |
 | LiquidationMargin  | Ratio             | Yes |
 | LiquidationPenalty | Ratio             | Yes |
-| LoanFee            | Ratio             | Yes |
+| MintFee            | Ratio             | Yes |
 
 From Inter Protocol Whitepaper, v0.8:  
 >Governance determines the approved collateral types: the crypto assets that can be used as collateral in vaults. In addition, it sets and manages the parameters associated with each collateral type based on the risk of the asset. These include the total debt limit, the collateralization ratio, the stability fee, and the liquidation penalty. 
 
-Note that the "stability fee" described in the Whitepaper comprises both InterestRate and LoanFee.
+Note that the "stability fee" described in the Whitepaper comprises both StabilityFee and MintFee.
 
 ### Parity Stability Mechanism (PSM)
 

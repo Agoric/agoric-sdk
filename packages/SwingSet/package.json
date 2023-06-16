@@ -60,7 +60,7 @@
     "tmp": "^0.2.1"
   },
   "peerDependencies": {
-    "ava": "^5.2.0"
+    "ava": "^5.3.0"
   },
   "files": [
     "bin/vat",

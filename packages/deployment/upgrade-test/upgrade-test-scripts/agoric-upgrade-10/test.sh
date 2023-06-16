@@ -2,6 +2,11 @@
 
 . ./upgrade-test-scripts/env_setup.sh
 
+# DeliverInbound from un-provisioned account is discarded
+# Note: sending to a provisioned account resulted in an .outbox of
+# [[1,"1:1:resolve:fulfill:rp+44:ro-20;#\"$0.Alleged: notifier\""]]
+test_val $(agd query swingset mailbox $USER1ADDR -o json | jq '.value |fromjson |.outbox') '[]' "DeliverInbound (getConfiguration) is discarded"
+
 # provision pool has right balance 
 test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ') "18750000"
 
