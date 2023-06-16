@@ -178,8 +178,8 @@ test.serial('scenario: Flow 1', async t => {
     const parseAmount = makeParseAmount(agoricNamesRemotes, Error);
     await buyer.sendOffer(
       Offers.psm.swap(
+        agoricNamesRemotes,
         agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        agoricNamesRemotes.brand,
         {
           offerId: 'print-ist',
           wantMinted: 1_000,

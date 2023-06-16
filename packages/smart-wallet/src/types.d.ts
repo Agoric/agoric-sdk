@@ -5,9 +5,11 @@
  * Downside is it can't reference any ambient types, which most of agoric-sdk type are presently.
  */
 
-import { ERef, FarRef } from '@endo/far';
+import type { ERef, FarRef } from '@endo/far';
 import type { CapData } from '@endo/marshal';
 import type { MsgWalletSpendAction } from '@agoric/cosmic-proto/swingset/msgs';
+import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
+import type { OfferSpec } from './offers.js';
 
 declare const CapDataShape: unique symbol;
 
@@ -74,3 +76,11 @@ export type WalletSpendActionMsg = {
  * the sending of the message (as is the case for WALLET_SPEND_ACTION).
  */
 export type WalletBridgeMsg = WalletActionMsg | WalletSpendActionMsg;
+
+/**
+ * Used for clientSupport helpers
+ */
+export type OfferMaker = (
+  agoricNames: AgoricNamesRemotes,
+  ...rest: any[]
+) => OfferSpec;
