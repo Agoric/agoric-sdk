@@ -59,7 +59,13 @@ const main = async () => {
   send('go');
 };
 
-main().catch(e => {
-  console.error(e);
-  process.exitCode = 1;
-});
+process.exitCode = 1;
+main().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);

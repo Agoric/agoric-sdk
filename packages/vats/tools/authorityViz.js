@@ -253,20 +253,31 @@ const main = async (args, { stdout, fsp, meta }) => {
   }
 };
 
-(async () => {
-  await Promise.all([
+const run = async () => {
+  const [fsp, metaResolve] = await Promise.all([
     import('fs/promises'),
     // eslint-disable-next-line import/no-extraneous-dependencies
     import('import-meta-resolve'),
-  ]).then(([fsp, metaResolve]) => {
-    return main(process.argv.slice(2), {
-      stdout: process.stdout,
-      fsp,
-      meta: {
-        resolve: metaResolve.resolve,
-        url: import.meta.url,
-        load: specifier => import(specifier),
-      },
-    });
+  ]);
+
+  return main(process.argv.slice(2), {
+    stdout: process.stdout,
+    fsp,
+    meta: {
+      resolve: metaResolve.resolve,
+      url: import.meta.url,
+      load: specifier => import(specifier),
+    },
   });
-})().catch(console.error);
+};
+
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);

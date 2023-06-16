@@ -38,7 +38,13 @@ async function run() {
   await hostStorage.commit();
 }
 
+process.exitCode = 1;
 run().then(
-  () => 0,
-  e => console.error(`${e}`, e),
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
 );
