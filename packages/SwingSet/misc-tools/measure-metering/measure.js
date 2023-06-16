@@ -6,6 +6,7 @@ import '../../tools/prepare-test-env.js';
 import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';
 import * as os from 'os';
+import process from 'process';
 import { buildVatController } from '../../src/index.js';
 import { kunser } from '../../src/lib/kmarshal.js';
 
@@ -140,4 +141,13 @@ async function run() {
   await c.shutdown();
 }
 
-run().catch(err => console.log('error in run:', err));
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);

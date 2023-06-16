@@ -789,7 +789,13 @@ async function run() {
   await replay(transcriptFile);
 }
 
-run().catch(err => {
-  console.log('RUN ERR', err);
-  process.exit(process.exitCode || 1);
-});
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);

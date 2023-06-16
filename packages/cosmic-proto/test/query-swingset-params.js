@@ -3,6 +3,7 @@ import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import { QueryClientImpl } from '@agoric/cosmic-proto/swingset/query.js';
 
 import { HttpClient, Tendermint34Client } from '@cosmjs/tendermint-rpc';
+import process from 'process';
 
 /**
  * Query swingset params
@@ -30,4 +31,13 @@ const testMain = async () => {
   console.log(JSON.stringify(params, null, 2));
 };
 
-testMain().catch((err) => console.error(err));
+process.exitCode = 1;
+testMain().then(
+  () => {
+    process.exitCode = 0;
+  },
+  (err) => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);

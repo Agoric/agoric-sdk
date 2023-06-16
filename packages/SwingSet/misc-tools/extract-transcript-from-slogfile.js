@@ -92,4 +92,13 @@ async function run() {
   fs.closeSync(fd);
 }
 
-run().catch(err => console.log('err', err));
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);
