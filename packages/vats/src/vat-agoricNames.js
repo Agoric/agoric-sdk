@@ -46,7 +46,7 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const makeNameHubKit = prepareNameHubKit(zone);
   const makeNatBrand = prepareNatBrand(zone);
 
-  const brandStore = zone.mapStore('brandStore');
+  const brandStore = zone.mapStore('Brand');
   const kit = provide(baggage, 'agoricNamesKit', makeNameHubKit);
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = kit;
 
