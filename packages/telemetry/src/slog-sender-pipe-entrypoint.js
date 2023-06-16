@@ -130,7 +130,13 @@ const main = async () => {
   );
 };
 
-main().catch(e => {
-  logger.error(e);
-  process.exitCode = 1;
-});
+process.exitCode = 1;
+main().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    logger.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);
