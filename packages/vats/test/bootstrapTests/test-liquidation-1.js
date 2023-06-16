@@ -190,8 +190,8 @@ const checkFlow1 = async (
     const parseAmount = makeParseAmount(agoricNamesRemotes, Error);
     await buyer.sendOffer(
       Offers.psm.swap(
+        agoricNamesRemotes,
         agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        agoricNamesRemotes.brand,
         {
           offerId: `print-${collateralBrandKey}-ist`,
           wantMinted: 1_000,
