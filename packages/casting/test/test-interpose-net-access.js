@@ -10,32 +10,12 @@ import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 import { QueryClientImpl } from '@agoric/cosmic-proto/vstorage/query.js';
 
 import { makeHttpClient } from '../src/makeHttpClient.js';
-import { captureIO, web1, web2 } from './net-access-fixture.js';
+import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = /** @type {any} */ (anyTest);
 
-/** @param {Map<string, any>} web */
-const replayIO = web => {
-  // tendermint-rpc generates ids using ambient access to Math.random()
-  // So we normalize them to sequence numbers.
-  let nextID = 0;
-  const normalizeID = data =>
-    data.replace(/\\"id\\":\d+/, `\\"id\\":${nextID}`);
-
-  /** @type {typeof window.fetch} */
-  // @ts-expect-error mock
-  const f = async (...args) => {
-    nextID += 1;
-    const key = normalizeID(JSON.stringify(args));
-    const data = web.get(key);
-    if (!data) throw Error(`no data for ${key}`);
-    return {
-      json: async () => data,
-    };
-  };
-  return f;
-};
+const RECORDING = false;
 
 const makeTestContext = async () => {
   return { fetch: globalThis.fetch };
@@ -93,8 +73,12 @@ const scenario2 = {
   ],
 };
 
-test('vstorage query: Children', async t => {
-  const fetchMock = replayIO(web2);
+test(`vstorage query: Children (RECORDING: ${RECORDING})`, async t => {
+  const { context: io } = t;
+
+  const { fetch: fetchMock, web } = io.recording
+    ? captureIO(io.fetch)
+    : { fetch: replayIO(web2), web: new Map() };
   const rpcClient = makeHttpClient(scenario2.endpoint, fetchMock);
 
   const tmClient = await Tendermint34Client.create(rpcClient);
@@ -103,25 +87,11 @@ test('vstorage query: Children', async t => {
   const queryService = new QueryClientImpl(rpc);
 
   const children = await queryService.Children({ path: '' });
+  if (io.recording) {
+    t.snapshot(web);
+  }
   t.deepEqual(children, {
     children: scenario2.children,
     pagination: undefined,
   });
-});
-
-// Fixtures for the tests above were captured via integration testing like...
-test.skip('vstorage query: Data (capture IO)', async t => {
-  const { context: io } = t;
-  const { fetch: fetchMock, web } = captureIO(io.fetch);
-  const rpcClient = makeHttpClient(scenario2.endpoint, fetchMock);
-
-  const tmClient = await Tendermint34Client.create(rpcClient);
-  const qClient = new QueryClient(tmClient);
-  const rpc = createProtobufRpcClient(qClient);
-  const queryService = new QueryClientImpl(rpc);
-
-  const data = await queryService.Data({ path: '' });
-  t.deepEqual(data, { value: '' });
-
-  t.snapshot(web);
 });
