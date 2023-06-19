@@ -6,11 +6,16 @@
 
 import { makeTracer, WalletName } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
-import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
-import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
+import {
+  makeScalarMapStore,
+  prepareExo,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
+import { makeExo } from '@endo/exo';
 import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 

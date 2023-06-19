@@ -1,6 +1,6 @@
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeExo } from '@agoric/store';
+import { makeExo } from '@endo/exo';
 
 import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 

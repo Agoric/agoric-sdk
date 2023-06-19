@@ -1,4 +1,6 @@
-import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
+import { keyEQ } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
