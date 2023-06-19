@@ -22,7 +22,7 @@ import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovern
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';

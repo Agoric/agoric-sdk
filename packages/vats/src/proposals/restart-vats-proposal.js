@@ -2,7 +2,7 @@
 
 import { Fail } from '@agoric/assert';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import { E, getInterfaceOf } from '@endo/far';
 
 const trace = makeTracer('RV');

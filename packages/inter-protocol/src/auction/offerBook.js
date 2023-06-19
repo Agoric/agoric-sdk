@@ -2,7 +2,7 @@
 // discount/markup from the current oracle price.
 
 import { AmountMath } from '@agoric/ertp';
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import { makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 
 import {

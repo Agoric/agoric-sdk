@@ -1,4 +1,4 @@
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';

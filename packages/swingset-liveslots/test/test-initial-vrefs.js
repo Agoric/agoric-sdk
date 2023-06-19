@@ -2,7 +2,7 @@ import test from 'ava';
 import '@endo/init/debug.js';
 
 import { Far } from '@endo/far';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { kunser } from './kmarshal.js';
 

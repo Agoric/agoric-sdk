@@ -7,7 +7,7 @@ backend.  Any passable object can be a cache key or a cache value.
 
 ```js
 import { makeCache, makeScalarStoreCoordinator } from '@agoric/cache';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 const store = makeScalarBigMapStore('cache');

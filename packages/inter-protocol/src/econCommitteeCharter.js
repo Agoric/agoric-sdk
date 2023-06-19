@@ -1,7 +1,7 @@
 // @jessie-check
 
 import '@agoric/governance/exported.js';
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import { TimestampShape } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import '@agoric/zoe/exported.js';

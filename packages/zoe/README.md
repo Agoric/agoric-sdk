@@ -77,7 +77,7 @@ The new bundle must export a `prepare` function in place of `start`. This is cal
 For example, suppose v1 code of a simple single-increment-counter contract anticipated extension of exported functionality and decided to track it by means of "codeVersion" data in baggage. v2 code could add multi-increment behavior like so:
 
 ```js
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 
 const { quote: q, Fail } = assert;

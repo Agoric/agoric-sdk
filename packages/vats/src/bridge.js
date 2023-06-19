@@ -1,6 +1,6 @@
 // @ts-check
 
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import '@agoric/store/exported.js';
 import { E } from '@endo/far';
 import './core/types.js';

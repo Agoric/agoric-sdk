@@ -1,7 +1,7 @@
 // Modeled on test-heap-classes.js
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import {
   makeKindHandle,
   makeScalarBigMapStore,

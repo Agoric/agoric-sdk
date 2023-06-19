@@ -6,7 +6,7 @@ import '@agoric/governance/exported.js';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import {
   prepareExoClassKit,
   provide,

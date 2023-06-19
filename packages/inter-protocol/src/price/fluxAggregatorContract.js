@@ -8,7 +8,7 @@ import {
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';

@@ -5,7 +5,7 @@ import bundleSource from '@endo/bundle-source';
 import { makeCache } from '@agoric/cache';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';

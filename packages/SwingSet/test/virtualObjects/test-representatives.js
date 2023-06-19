@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,

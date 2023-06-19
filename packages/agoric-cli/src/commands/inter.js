@@ -9,7 +9,7 @@ import { CommanderError, InvalidArgumentError } from 'commander';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
-import { M, matches } from '@agoric/store';
+import { M, matches } from '@endo/patterns';
 
 // XXX scare away ambient type zombies to fix ScheduleNotification.activeStartTime etc.
 // https://github.com/Agoric/agoric-sdk/issues/6512

@@ -1,4 +1,4 @@
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { TimestampShape } from '@agoric/time';
 import {
   InstanceHandleShape,

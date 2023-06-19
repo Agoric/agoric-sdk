@@ -4,7 +4,7 @@ import {
   ParamTypes,
 } from '@agoric/governance';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 
 /** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').AsyncSpecTuple} AsyncSpecTuple */
 /** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').SyncSpecTuple} SyncSpecTuple */

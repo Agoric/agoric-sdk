@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 
 /**
  * To be used only for 'helper' facets where the calls are from trusted code.

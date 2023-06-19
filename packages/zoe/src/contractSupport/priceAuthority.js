@@ -8,7 +8,7 @@ import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
 import { TimestampShape } from '@agoric/time';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 
 const trace = makeTracer('PA', false);
 

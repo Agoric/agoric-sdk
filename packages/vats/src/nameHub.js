@@ -3,7 +3,7 @@
 import { assert, NonNullish } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 
 import './types.js';
 import {
