@@ -4,7 +4,7 @@ ARG REGISTRY=ghcr.io
 
 # FIXME: Journalbeat compilation is currently broken, but non-essential.
 # Removed from the build.
-# FROM golang:1.20 AS go-build
+# FROM golang:1.20-bullseye AS go-build
 
 # WORKDIR /usr/src/journalbeat
 # RUN apt-get update -y && apt-get install -y libsystemd-dev
