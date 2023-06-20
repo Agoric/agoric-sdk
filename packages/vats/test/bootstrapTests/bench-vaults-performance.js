@@ -6,6 +6,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { PerformanceObserver, performance } from 'node:perf_hooks';
 import v8 from 'node:v8';
 import process from 'node:process';
+import fs from 'node:fs';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
@@ -22,8 +23,7 @@ import { makeWalletFactoryDriver } from './drivers.js';
 const test = anyTest;
 
 let snapshotNum = 0;
-const snapshotHeap = async step => {
-  console.log(`Snapshotting heap at step ${step}...`);
+const collectStats = async (step, dumpHeap) => {
   await eventLoopIteration();
   try {
     const t0 = performance.now();
@@ -34,26 +34,34 @@ const snapshotHeap = async step => {
     const heapStats = v8.getHeapStatistics();
     const t3 = performance.now();
 
-    // process.pid increments so these will be lexically sorted pathnames.
-    const heapSnapshot = `Heap-${process.pid}-${snapshotNum}-${step}.heapsnapshot`;
-    snapshotNum += 1;
-
-    v8.writeHeapSnapshot(heapSnapshot);
-    const heapSnapshotTime = performance.now() - t3;
-
-    console.log(`HEAP DETAILS at step${step} vaults: `, {
+    const memStats = {
       memoryUsage,
       heapStats,
-      heapSnapshot,
       statsTime: {
-        forcedGc: t1 - t0,
-        memoryUsage: t2 - t1,
-        heapStats: t3 - t2,
-        heapSnapshot: heapSnapshotTime,
+        forcedGcMs: t1 - t0,
+        memoryUsageMs: t2 - t1,
+        heapStatsMs: t3 - t2,
       },
-    });
+    };
+
+    if (dumpHeap) {
+      console.log(`Snapshotting heap at step ${step}...`);
+
+      // process.pid increments so these will be lexically sorted pathnames.
+      const heapSnapshot = `Heap-${process.pid}-${snapshotNum}-${step}.heapsnapshot`;
+      snapshotNum += 1;
+
+      v8.writeHeapSnapshot(heapSnapshot);
+      const heapSnapshotTime = performance.now() - t3;
+      memStats.heapSnapshot = heapSnapshot;
+      memStats.statsTime.heapSnapshot = heapSnapshotTime;
+    }
+
+    console.log(`Heap details at step ${step} vaults: `, memStats);
+    return memStats;
   } catch (err) {
     console.warn('Failed to gather memory stats', err);
+    return undefined;
   }
 };
 
@@ -103,18 +111,23 @@ const perfObserver = new PerformanceObserver(items => {
     const { vaultsOpened, round } = entry.detail;
     rows.push({
       name: `${round}:${vaultsOpened}`,
-      duration: entry.duration,
-      avgPerVault: entry.duration / vaultsOpened,
+      durationMs: entry.duration,
+      avgPerVaultMs: entry.duration / vaultsOpened,
     });
   });
 });
 perfObserver.observe({ entryTypes: ['measure'] });
 
-// NB: keep skipped in master because this is too long for CI
-// UNTIL: https://github.com/Agoric/agoric-sdk/issues/7279
-test.skip('stress vaults', async t => {
-  const { walletFactoryDriver } = t.context;
+const whereUrl = import.meta.url;
+const sdkPathStart = whereUrl.lastIndexOf('agoric-sdk/');
+const where = sdkPathStart > 0 ? whereUrl.substring(sdkPathStart) : whereUrl;
 
+async function stressVaults(t, dumpHeap) {
+  rows.length = 0;
+  const dumpTag = dumpHeap ? '-with-dump' : '';
+  const name = `stress-vaults${dumpTag}`;
+
+  const { walletFactoryDriver } = t.context;
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1open');
 
   /**
@@ -127,11 +140,11 @@ test.skip('stress vaults', async t => {
     assert.typeof(n, 'number');
     assert.typeof(r, 'number');
 
-    const offerId = `open-vault-${i}-of-${n}-round-${r}`;
+    const offerId = `open-vault-${i}-of-${n}-round-${r}${dumpTag}`;
     await wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId,
       collateralBrandKey,
-      wantMinted: 0.5,
+      wantMinted: 5,
       giveCollateral: 1.0,
     });
 
@@ -159,15 +172,41 @@ test.skip('stress vaults', async t => {
   };
 
   // clear out for a baseline
-  await snapshotHeap('start');
+  await collectStats('start', dumpHeap);
   // 10 is enough to compare retention in heaps
   await openN(10, 1);
-  await snapshotHeap('round1');
+  await collectStats('round1', dumpHeap);
   await openN(10, 2);
-  await snapshotHeap('round2');
+  const memStats = await collectStats('round2', dumpHeap);
 
   // let perfObserver get the last measurement
   await eventLoopIteration();
 
+  const benchmarkReport = {
+    ...rows[1],
+    memStats,
+    name,
+    test: t.title,
+    where,
+  };
+  fs.writeFileSync(
+    `benchmark-${name}.json`,
+    JSON.stringify(benchmarkReport, null, 2),
+  );
+
   console.table(rows);
+}
+
+// Note: it is probably not useful to enable both of the two following benchmark
+// tests at the same time.  Nothing bad per se will happen if you do, but it
+// will take longer to run with no particular benefit resulting.  However, if you run
+// both you *must* run them serially, so that their executions don't get
+// comingled and mess up the numbers.
+
+test.skip('stress vaults with heap snapshots', async t => {
+  await stressVaults(t, true);
+});
+
+test.serial('stress vaults', async t => {
+  await stressVaults(t, false);
 });
