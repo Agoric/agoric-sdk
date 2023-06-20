@@ -1,17 +1,29 @@
+import { Fail } from '@agoric/assert';
+
 /**
  * @param {string} managerType
  * @param {import("../controller/bundle-handler").BundleHandler} bundleHandler
+ * @param {string[]} [nodeOptions]
  * @returns {Promise<import("../types-internal").WorkerOptions>}
  */
-export async function makeWorkerOptions(managerType, bundleHandler) {
+export async function makeWorkerOptions(
+  managerType,
+  bundleHandler,
+  nodeOptions,
+) {
   await null;
+  if (nodeOptions && managerType !== 'node-subprocess') {
+    Fail`nodeOptions requires managerType 'node-subprocess'`;
+  }
   if (managerType === 'local') {
     return harden({ type: 'local' });
   } else if (managerType === 'xsnap' || managerType === 'xs-worker') {
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ type: 'xsnap', bundleIDs });
+  } else if (managerType === 'node-subprocess') {
+    return harden({ type: 'node-subprocess', nodeOptions });
   }
-  throw Error(`unknown managerType '${managerType}'`);
+  throw Fail`unknown managerType '${managerType}'`;
 }
 
 /**
@@ -27,9 +39,11 @@ export async function updateWorkerOptions(
   await null;
   if (type === 'local') {
     return origWorkerOptions;
+  } else if (type === 'node-subprocess') {
+    return origWorkerOptions;
   } else if (type === 'xsnap') {
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ ...origWorkerOptions, bundleIDs });
   }
-  throw Error(`unknown worker type '${type}'`);
+  throw Fail`unknown worker type '${type}'`;
 }

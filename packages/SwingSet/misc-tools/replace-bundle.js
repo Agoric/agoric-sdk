@@ -65,4 +65,13 @@ async function run() {
   log(`bundle ${bundleName} replaced`);
 }
 
-run().catch(console.error);
+process.exitCode = 1;
+run().then(
+  () => {
+    process.exitCode = 0;
+  },
+  err => {
+    console.error('Failed with', err);
+    process.exit(process.exitCode || 1);
+  },
+);

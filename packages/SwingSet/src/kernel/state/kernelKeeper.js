@@ -335,7 +335,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
 
   function insistManagerType(mt) {
-    assert(['local', 'xsnap', 'xs-worker'].includes(mt));
+    assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
   }
 
   function getDefaultManagerType() {

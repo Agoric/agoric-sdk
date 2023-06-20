@@ -17,7 +17,7 @@ export {};
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  *
- * @typedef { 'local' | 'xsnap' | 'xs-worker' } ManagerType
+ * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
  */
 
 /**
@@ -308,7 +308,8 @@ export {};
  * config.vats[name].creationOptions: StaticVatOptions
  *
  * @typedef { { enableDisavow?: boolean } } OptEnableDisavow
- * @typedef { BaseVatOptions & OptManagerType & OptEnableDisavow } StaticVatOptions
+ * @typedef { { nodeOptions?: string[] } } OptNodeOptions
+ * @typedef { BaseVatOptions & OptManagerType & OptEnableDisavow & OptNodeOptions } StaticVatOptions
  *
  * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
