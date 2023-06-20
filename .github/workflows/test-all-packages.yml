@@ -459,6 +459,8 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
+        id: restore-node
+      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
@@ -499,6 +501,8 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
+        id: restore-node
+      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
@@ -548,6 +552,8 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
+        id: restore-node
+      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
@@ -587,6 +593,8 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
+        id: restore-node
+      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
 
       - name: yarn test (SwingSet)
