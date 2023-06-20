@@ -1,12 +1,17 @@
 // @jessie-check
 import { M } from '@agoric/store';
 
-export const ManagerType = M.or('xsnap', 'xs-worker', 'local');
+export const ManagerType = M.or(
+  'xsnap',
+  'xs-worker',
+  'node-subprocess',
+  'local',
+);
 
 const Bundle = M.splitRecord({ moduleType: M.string() });
 
 const SwingsetConfigOptions = harden({
-  creationOptions: M.splitRecord({}, { critial: M.boolean() }),
+  creationOptions: M.splitRecord({}, { critical: M.boolean() }),
   parameters: M.recordOf(M.string(), M.any()),
 });
 
