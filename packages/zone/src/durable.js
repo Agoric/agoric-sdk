@@ -22,6 +22,21 @@ import { agoricVatDataKeys as keys } from './keys.js';
 const { Fail } = assert;
 
 /**
+ * A variant of `canBeDurable` that returns `false` instead of ever throwing.
+ *
+ * @param {unknown} specimen
+ * @returns {boolean}
+ */
+const isStorable = specimen => {
+  try {
+    return canBeDurable(specimen);
+  } catch (_e) {
+    return false;
+  }
+};
+harden(isStorable);
+
+/**
  * @param {() => import('@agoric/vat-data').Baggage} getBaggage
  */
 const attachDurableStores = getBaggage => {
@@ -42,7 +57,7 @@ const attachDurableStores = getBaggage => {
   return Far('durableStores', {
     // eslint-disable-next-line no-use-before-define
     detached: () => detachedDurableStores,
-    isStorable: canBeDurable,
+    isStorable,
     mapStore,
     setStore,
     weakMapStore,

@@ -2,7 +2,6 @@
 // @jessie-check
 
 import {
-  canBeDurable,
   defineVirtualExoClass,
   defineVirtualExoClassKit,
   makeScalarBigMapStore,
@@ -46,10 +45,43 @@ const defineVirtualExo = (
   return makeInstance();
 };
 
+/**
+ * This is a store that is used to check if a value can be stored in a virtual
+ * store.  It is not intended to be used for any other purpose.
+ */
+const checkVirtualStore = makeScalarBigMapStore('checkVirtualStore');
+
+/**
+ * Check if a value can be stored in a virtual store.
+ *
+ * FIXME: It would be nice if `@agoric/vat-data` exposed a way to do this
+ * without having to catch exceptions.
+ *
+ * @param {unknown} specimen
+ * @returns {boolean}
+ */
+const isStorable = specimen => {
+  const key = isStorable.name;
+  try {
+    if (checkVirtualStore.has(key)) {
+      // Be defensive in case the store wasn't cleaned up properly.
+      checkVirtualStore.set(key, specimen);
+    } else {
+      // Initialize the store with our specimen.
+      checkVirtualStore.init(key, specimen);
+    }
+    checkVirtualStore.delete(key);
+    return true;
+  } catch (_e) {
+    return false;
+  }
+};
+harden(isStorable);
+
 /** @type {import('.').Stores} */
 export const detachedVirtualStores = Far('virtualStores', {
   detached: () => detachedVirtualStores,
-  isStorable: canBeDurable,
+  isStorable,
   mapStore: makeScalarBigMapStore,
   setStore: makeScalarBigSetStore,
   weakMapStore: makeScalarBigWeakMapStore,
