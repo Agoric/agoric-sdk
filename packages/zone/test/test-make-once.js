@@ -44,6 +44,8 @@ const testOnce = (t, rootZone, heapOnlyZone = false) => {
       return 'world';
     },
   });
+  t.is(rootZone.isStorable(heapValue), heapOnlyZone);
+  t.is(subZone.isStorable(123), true);
   if (heapOnlyZone) {
     t.is(
       rootZone.makeOnce('heap', () => heapValue),
