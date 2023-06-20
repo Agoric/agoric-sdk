@@ -855,6 +855,10 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     });
   }
 
+  function getDatabase() {
+    return db;
+  }
+
   const transcriptStorePublic = {
     initTranscript: transcriptStore.initTranscript,
     rolloverSpan: transcriptStore.rolloverSpan,
@@ -903,6 +907,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   const debug = {
     serialize,
     dump,
+    getDatabase,
   };
   const internal = {
     snapStore,
