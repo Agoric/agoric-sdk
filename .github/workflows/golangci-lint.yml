@@ -36,3 +36,10 @@ jobs:
           # only-new-issues: true
           only-new-issues: false
           working-directory: ./golang/cosmos
+      - name: forbid %w error-wrapping format specifier
+        run: |
+          set -e
+          if find ./golang/cosmos -name '*.go' ! -name '*_test.go' -print0 | xargs -0 grep '%w'; then
+            echo "Found %w in ./golang/cosmos; please use %s instead."
+            exit 1
+          fi
