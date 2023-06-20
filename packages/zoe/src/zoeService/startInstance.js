@@ -43,6 +43,12 @@ export const makeStartInstance = (
     seatHandleToZoeSeatAdmin,
   );
 
+  const getFreshZcfBundleCap = async () => {
+    const settledBundleCap = await getZcfBundleCapP();
+    settledBundleCap !== undefined || Fail`the ZCF bundle cap was broken`;
+    return settledBundleCap;
+  };
+
   const InstanceAdminStateShape = harden({
     instanceStorage: M.remotable('ZoeInstanceStorageManager'),
     instanceAdmin: M.remotable('InstanceAdmin'),
@@ -178,12 +184,10 @@ export const makeStartInstance = (
     /**
      *
      * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
-     * @param {*} zcfBundleCap
      * @param {*} contractBundleCap
      */
-    (adminNode, zcfBundleCap, contractBundleCap) => ({
+    (adminNode, contractBundleCap) => ({
       adminNode,
-      zcfBundleCap,
       contractBundleCap,
     }),
     {
@@ -200,12 +204,13 @@ export const makeStartInstance = (
           privateArgs: newPrivateArgs,
         };
 
-        return E(state.adminNode).upgrade(state.zcfBundleCap, {
-          vatParameters,
-        });
+        return E.when(getFreshZcfBundleCap(), bCap =>
+          E(state.adminNode).upgrade(bCap, { vatParameters }),
+        );
       },
       async upgradeContract(contractBundleId, newPrivateArgs = undefined) {
         const { state } = this;
+
         const newContractBundleCap = await getBundleCapByIdNow(
           contractBundleId,
         );
@@ -213,9 +218,9 @@ export const makeStartInstance = (
           contractBundleCap: newContractBundleCap,
           privateArgs: newPrivateArgs,
         };
-        return E(state.adminNode).upgrade(state.zcfBundleCap, {
-          vatParameters,
-        });
+        return E.when(getFreshZcfBundleCap(), bCap =>
+          E(state.adminNode).upgrade(bCap, { vatParameters }),
+        );
       },
     },
   );
@@ -306,9 +311,6 @@ export const makeStartInstance = (
 
     instanceAdmin.initDelayedState(handleOfferObj, publicFacet);
 
-    const settledBundleCap = await getZcfBundleCapP();
-    settledBundleCap !== undefined || Fail`the bundle cap was broken`;
-
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
     return E.when(
@@ -324,11 +326,7 @@ export const makeStartInstance = (
           isLiveResult ||
           Fail`The contract did not correctly return a creatorInvitation`;
 
-        const adminFacet = makeAdminFacet(
-          adminNode,
-          harden(settledBundleCap),
-          contractBundleCap,
-        );
+        const adminFacet = makeAdminFacet(adminNode, contractBundleCap);
 
         // Actually returned to the user.
         return harden({
