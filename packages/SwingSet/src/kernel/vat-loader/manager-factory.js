@@ -1,12 +1,14 @@
 import { assert, Fail } from '@agoric/assert';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeLocalVatManagerFactory } from './manager-local.js';
+import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
 import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
 export function makeVatManagerFactory({
   allVatPowers,
   kernelKeeper,
   vatEndowments,
+  startSubprocessWorkerNode,
   startXSnap,
   gcTools,
   kernelSlog,
@@ -15,6 +17,13 @@ export function makeVatManagerFactory({
     allVatPowers,
     vatEndowments,
     gcTools,
+  });
+
+  const nodeSubprocessFactory = makeNodeSubprocessFactory({
+    startSubprocessWorker: startSubprocessWorkerNode,
+    kernelKeeper,
+    kernelSlog,
+    testLog: allVatPowers.testLog,
   });
 
   const xsWorkerFactory = makeXsSubprocessFactory({
@@ -85,6 +94,15 @@ export function makeVatManagerFactory({
       }
     } else if (type === 'local') {
       return localFactory.createFromBundle(
+        vatID,
+        managerOptions.bundle,
+        managerOptions,
+        liveSlotsOptions,
+      );
+    }
+
+    if (type === 'node-subprocess') {
+      return nodeSubprocessFactory.createFromBundle(
         vatID,
         managerOptions.bundle,
         managerOptions,

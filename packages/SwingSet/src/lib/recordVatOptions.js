@@ -14,13 +14,18 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       critical = false,
       meterID = undefined,
       managerType = kernelKeeper.getDefaultManagerType(),
+      nodeOptions = undefined,
       ...leftover
     } = options;
     const unused = Object.keys(leftover);
     if (unused.length) {
       Fail`OptionRecorder: ${vatID} unused options ${unused.join(',')}`;
     }
-    const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
+    const workerOptions = await makeWorkerOptions(
+      managerType,
+      bundleHandler,
+      nodeOptions,
+    );
     /** @type { import('../types-internal.js').RecordedVatOptions } */
     const vatOptions = harden({
       workerOptions,
