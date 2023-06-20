@@ -108,7 +108,10 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 /**
  * @typedef {object} ScaledBidData
  *
+ * @property {Amount<'nat'>} balance
  * @property {Ratio} bidScaling
+ * @property {NatValue} sequence
+ * @property {Timestamp} timestamp
  * @property {Amount<'nat'>} wanted
  * @property {boolean} exitAfterBuy
  */
@@ -116,7 +119,10 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 /**
  * @typedef {object} PricedBidData
  *
+ * @property {Amount<'nat'>} balance
  * @property {Ratio} price
+ * @property {NatValue} sequence
+ * @property {Timestamp} timestamp
  * @property {Amount<'nat'>} wanted
  * @property {boolean} exitAfterBuy
  */
