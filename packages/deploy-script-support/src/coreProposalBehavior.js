@@ -24,12 +24,12 @@ export const permits = {
  * definitions.
  *
  * @param {object} opts
- * @param {{ bundleName: string } | { bundleID: string }} opts.manifestBundleRef
+ * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: unknown) => Promise<unknown>} [opts.restoreRef]
+ * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.restoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
@@ -70,13 +70,15 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
+    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
     const defaultRestoreRef = async ref => {
       // extract-proposal.js creates these records, and bundleName is
       // the name under which the bundle was installed into
       // config.bundles
-      const p = ref.bundleName
-        ? E(vatAdminSvc).getBundleIDByName(ref.bundleName)
-        : ref.bundleID;
+      const p =
+        'bundleName' in ref
+          ? E(vatAdminSvc).getBundleIDByName(ref.bundleName)
+          : ref.bundleID;
       const bundleID = await p;
       const label = bundleID.slice(0, 8);
       return E(zoe).installBundleID(bundleID, label);
