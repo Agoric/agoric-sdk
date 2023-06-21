@@ -16,14 +16,13 @@ export {};
  */
 
 /**
- * @typedef BundleHandle
- * @property {string} [bundleName]
+ * @typedef {{ bundleName: string } | { bundleID: string} } ManifestBundleRef
  */
 
 /**
  * @callback PublishBundleRef
- * @param {ERef<BundleHandle>} bundle
- * @returns {Promise<BundleHandle>}
+ * @param {ERef<ManifestBundleRef>} bundle
+ * @returns {Promise<ManifestBundleRef>}
  */
 
 /**
@@ -31,7 +30,7 @@ export {};
  * @param {string} srcSpec
  * @param {string} bundlePath
  * @param {any} [opts]
- * @returns {BundleHandle}
+ * @returns {ManifestBundleRef}
  */
 
 /**
