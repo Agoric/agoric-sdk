@@ -1,0 +1,3 @@
+# benchmark reports and heap dumps
+benchmark-*.json
+Heap-*
