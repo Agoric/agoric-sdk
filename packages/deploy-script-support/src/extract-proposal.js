@@ -135,11 +135,20 @@ export const extractCoreProposalBundles = async (
       /** @type {import('./externalTypes.js').PublishBundleRef} */
       const publishRef = async handleP => {
         const handle = await handleP;
+        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+        // @ts-ignore xxx types
         bundleHandleToAbsolutePaths.has(handle) ||
           Fail`${handle} not in installed bundles`;
         return handle;
       };
-      const proposal = await ns[entrypoint]({ publishRef, install }, ...args);
+      const proposal = await ns[entrypoint](
+        {
+          publishRef,
+          // @ts-expect-error not statically verified to return a full obj
+          install,
+        },
+        ...args,
+      );
 
       // Add the proposal bundle handles in sorted order.
       const bundleSpecEntries = [...thisProposalBundleHandles.keys()]
