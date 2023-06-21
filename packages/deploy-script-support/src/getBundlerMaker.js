@@ -53,3 +53,4 @@ export const makeGetBundlerMaker =
     );
     return bundlerMaker;
   };
+/** @typedef {ReturnType<typeof makeGetBundlerMaker>} GetBundlerMaker */

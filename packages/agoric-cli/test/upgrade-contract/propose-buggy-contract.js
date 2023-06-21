@@ -3,6 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeHelpers } from '@agoric/deploy-script-support';
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec: './init-proposal.js',
@@ -14,6 +15,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const helperEndowments = {
     ...endowments,

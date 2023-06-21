@@ -73,7 +73,7 @@ export const extractCoreProposalBundles = async (
     .stat(dirname)
     .then(stbuf => (stbuf.isDirectory() ? dirname : path.dirname(dirname)));
 
-  /** @type {Map<{ bundleName?: string }, { source: string, bundle?: string }>} */
+  /** @type {Map<VatSourceRef, { source: string, bundle?: string }>} */
   const bundleHandleToAbsolutePaths = new Map();
 
   const bundleToSource = new Map();

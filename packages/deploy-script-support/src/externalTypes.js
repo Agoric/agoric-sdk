@@ -16,14 +16,9 @@ export {};
  */
 
 /**
- * @typedef BundleHandle
- * @property {string} [bundleName]
- */
-
-/**
  * @callback PublishBundleRef
- * @param {ERef<BundleHandle>} bundle
- * @returns {Promise<BundleHandle>}
+ * @param {ERef<VatSourceRef>} bundle
+ * @returns {Promise<VatSourceRef>}
  */
 
 /**
@@ -31,7 +26,7 @@ export {};
  * @param {string} srcSpec
  * @param {string} bundlePath
  * @param {any} [opts]
- * @returns {BundleHandle}
+ * @returns {ERef<VatSourceRef>}
  */
 
 /**
@@ -43,4 +38,42 @@ export {};
  * } powers
  * @param {...any} args
  * @returns {Promise<ProposalResult>}
+ */
+
+/**
+ * @typedef {{
+ *  bundleSource: typeof import('@endo/bundle-source').default,
+ *  now: () => number,
+ *  lookup: (...path: string[]) => unknown,
+ *  publishBundle: PublishBundleRef,
+ *  pathResolve: (...path: string[]) => string,
+ *  cacheDir: string,
+ * }} DeployScriptEndownments
+ */
+
+/**
+ * @typedef {{
+ * agoricNames: ERef<NameHub>,
+ * bank: ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
+ * board: ERef<import("@agoric/vats").Board>,
+ * faucet: unknown,
+ * myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
+ * namesByAddress: ERef<NameHub>,
+ * scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
+ * zoe: ERef<ZoeService>,
+ * }} CanonicalHome
+ */
+
+// TODO wallet as import('@agoric/wallet-backend/src/types').WalletAdmin once it's a module
+/**
+ * @typedef {CanonicalHome & {
+ * wallet?: any,
+ * }} AgSoloHome
+ */
+
+/**
+ * @callback DeployScriptFunction
+ * @param {Promise<CanonicalHome>} homeP
+ * @param {DeployScriptEndownments} endowments
+ * @returns {Promise<void>}
  */

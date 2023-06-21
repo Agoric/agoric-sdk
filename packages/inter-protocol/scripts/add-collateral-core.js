@@ -98,6 +98,7 @@ export const psmProposalBuilder = async (
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
 
@@ -107,6 +108,10 @@ export default async (homeP, endowments) => {
 
   await writeCoreProposal('gov-add-collateral', defaultProposalBuilder);
   await writeCoreProposal('gov-start-psm', opts =>
-    psmProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+    psmProposalBuilder({
+      ...opts,
+      // @ts-expect-error xxx
+      wrapInstall: tool.wrapInstall,
+    }),
   );
 };

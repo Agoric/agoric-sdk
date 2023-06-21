@@ -7,27 +7,21 @@ import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import { defangAndTrim, mergePermits, stringify } from './code-gen.js';
 import { makeCoreProposalBehavior, permits } from './coreProposalBehavior.js';
 
+/**
+ *
+ * @param {Promise<Record<string, unknown>>} homeP
+ * @param {{ bundleSource: import('@endo/bundle-source').default, pathResolve: typeof import('path').join}} endowments
+ * @param {object} helpers
+ * @param {import('./cachedBundleSpec.js').CacheAndGetBundleSpec} helpers.getBundleSpec
+ * @param {typeof console.log} [helpers.log]
+ * @param {typeof fs.promises.writeFile} [helpers.writeFile]
+ */
 export const makeWriteCoreProposal = (
   homeP,
   endowments,
-  {
-    getBundlerMaker,
-    getBundleSpec,
-    log = console.log,
-    writeFile = fs.promises.writeFile,
-  },
+  { getBundleSpec, log = console.log, writeFile = fs.promises.writeFile },
 ) => {
   const { bundleSource, pathResolve } = endowments;
-
-  let bundlerCache;
-  const getBundler = () => {
-    if (!bundlerCache) {
-      bundlerCache = E(getBundlerMaker()).makeBundler({
-        zoe: E.get(homeP).zoe,
-      });
-    }
-    return bundlerCache;
-  };
 
   const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
@@ -50,8 +44,21 @@ export const makeWriteCoreProposal = (
     };
   };
 
+  /** @type {ReturnType<import('./cachedBundleSpec.js').CacheAndGetBundleSpec>} */
+  // @ts-expect-error when it's returned it will have this type
   let mutex = Promise.resolve();
+  /**
+   *
+   * @param {string} filePrefix
+   * @param {import('./externalTypes.js').ProposalBuilder} proposalBuilder
+   */
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
+    /**
+     *
+     * @param {string} entrypoint
+     * @param {string} [bundlePath]
+     * @returns {Promise<import('agoric/src/publish.js').EndoZipBase64Sha512Bundle>}
+     */
     const getBundle = async (entrypoint, bundlePath) => {
       if (!bundlePath) {
         return bundleSource(pathResolve(entrypoint));
@@ -62,14 +69,19 @@ export const makeWriteCoreProposal = (
       return ns.default;
     };
 
-    // Install an entrypoint.
-    const install = async (entrypoint, bundlePath, opts) => {
+    /**
+     * Install an entrypoint.
+     *
+     * @param {string} entrypoint
+     * @param {string} [bundlePath]
+     */
+    const install = async (entrypoint, bundlePath) => {
       const bundle = getBundle(entrypoint, bundlePath);
 
       // Serialise the installations.
       mutex = E.when(mutex, () => {
         // console.log('installing', { filePrefix, entrypoint, bundlePath });
-        return getBundleSpec(bundle, getBundler, opts);
+        return getBundleSpec(bundle);
       });
       return mutex;
     };

@@ -30,6 +30,7 @@ const provideWhen = async (store, key, make) => {
   return value;
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const home = await homeP;
   const { zoe, scratch, board } = home;

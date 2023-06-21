@@ -50,6 +50,10 @@ const makeLazyObject = sourceObject => {
   return /** @type {T} */ (lazyObject);
 };
 
+/**
+ * @param {Promise<import('./externalTypes.js').AgSoloHome>} homePromise
+ * @param {import('./externalTypes.js').DeployScriptEndownments} endowments
+ */
 export const makeHelpers = async (homePromise, endowments) => {
   // Endowments provided via `agoric run` or `agoric deploy`.
   const {
@@ -138,7 +142,6 @@ export const makeHelpers = async (homePromise, endowments) => {
     get writeCoreProposal() {
       return makeWriteCoreProposal(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
-        getBundlerMaker: helpers.getBundlerMaker,
       });
     },
   });

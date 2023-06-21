@@ -180,6 +180,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
 
@@ -188,9 +189,11 @@ export default async (homeP, endowments) => {
   });
   await Promise.all([
     writeCoreProposal('gov-econ-committee', opts =>
+      // @ts-expect-error xxx
       committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
     writeCoreProposal('gov-amm-vaults-etc', opts =>
+      // @ts-expect-error xxx
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
   ]);

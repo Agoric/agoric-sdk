@@ -13,6 +13,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
   await writeCoreProposal('gov-network', defaultProposalBuilder);

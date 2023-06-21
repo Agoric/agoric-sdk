@@ -6,6 +6,9 @@ const { Fail } = assert;
  */
 export const makeCacheAndGetBundleSpec =
   (cacheDir, { now, fs, pathResolve }) =>
+  /**
+   * @param {Promise<import('agoric/src/publish').HashBundle>} bundleP
+   */
   async bundleP => {
     const bundle = await bundleP;
     const { endoZipBase64Sha512: hash } = bundle;
@@ -30,3 +33,4 @@ export const makeCacheAndGetBundleSpec =
     }
     return harden({ bundleID, fileName: cacheFile });
   };
+/** @typedef {ReturnType<typeof makeCacheAndGetBundleSpec>} CacheAndGetBundleSpec */
