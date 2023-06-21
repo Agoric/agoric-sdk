@@ -6,15 +6,17 @@ const BUILD_PARAMS_KEY = 'buildZoeParams';
 export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
   const shutdownZoeVat = vatPowers.exitVatWithFailure;
 
+  let zoeConfigFacet;
+
   if (zoeBaggage.has(BUILD_PARAMS_KEY)) {
     const { feeIssuerConfig, zcfSpec } = zoeBaggage.get(BUILD_PARAMS_KEY);
-    makeDurableZoeKit({
+    ({ zoeConfigFacet } = makeDurableZoeKit({
       // For now Zoe will rewire vatAdminSvc on its own
       shutdownZoeVat,
       feeIssuerConfig,
       zcfSpec,
       zoeBaggage,
-    });
+    }));
   }
 
   return Far('root', {
@@ -44,5 +46,6 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
         feeMintAccess,
       });
     },
+    getZoeConfigFacet: () => zoeConfigFacet,
   });
 }
