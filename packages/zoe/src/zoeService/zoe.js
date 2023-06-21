@@ -18,6 +18,7 @@ import '../internal-types.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
+import { M } from '@agoric/store';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -32,7 +33,7 @@ import { ZoeServiceI } from '../typeGuards.js';
 const { Fail } = assert;
 
 /**
- * Create an durable instance of Zoe.
+ * Create a durable instance of Zoe.
  *
  * @param {object} options
  * @param {Baggage} options.zoeBaggage - the baggage for Zoe durability. Must be provided by caller
@@ -52,6 +53,7 @@ const makeDurableZoeKit = ({
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
 }) => {
+  /** @type {BundleCap} */
   let zcfBundleCap;
 
   const saveBundleCap = () => {
@@ -168,6 +170,24 @@ const makeDurableZoeKit = ({
     });
   };
 
+  const ZoeConfigI = M.interface('ZoeConfigFacet', {
+    updateZcfBundleId: M.call(M.string()).returns(),
+  });
+
+  const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
+    updateZcfBundleId(bundleId) {
+      E.when(
+        getZcfBundleCap({ id: bundleId }, vatAdminSvc),
+        bundleCap => {
+          zcfBundleCap = bundleCap;
+        },
+        e => {
+          console.warn(`unable to update ZCF Bundle: `, e);
+        },
+      );
+    },
+  });
+
   /** @type {ZoeService} */
   const zoeService = prepareExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
     install(bundleId, bundleLabel) {
@@ -223,6 +243,7 @@ const makeDurableZoeKit = ({
 
   return harden({
     zoeService,
+    zoeConfigFacet,
     /** @type {FeeMintAccess} */
     // @ts-expect-error cast
     feeMintAccess: feeMintKit.feeMintAccess,
