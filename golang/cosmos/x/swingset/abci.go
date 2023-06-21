@@ -115,7 +115,7 @@ func AfterCommitBlock(keeper Keeper) error {
 	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
-		panic(fmt.Errorf("AFTER_COMMIT_BLOCK failed: %w. Swingset is in an irrecoverable inconsistent state", err))
+		panic(fmt.Errorf("AFTER_COMMIT_BLOCK failed: %s. Swingset is in an irrecoverable inconsistent state", err))
 	}
 	return err
 }
