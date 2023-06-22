@@ -31,7 +31,7 @@ export const makeReserveCommand = (_logger, io = {}) => {
       async ({ collateralBrand, ...opts }) => {
         const { agoricNames } = await makeRpcUtils({ fetch });
 
-        const offer = Offers.reserve.AddCollateral(agoricNames.brand, {
+        const offer = Offers.reserve.AddCollateral(agoricNames, {
           collateralBrandKey: collateralBrand,
           ...opts,
         });

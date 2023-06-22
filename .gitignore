@@ -63,7 +63,7 @@ dist
 .vscode/
 .idea/
 
-/packages.png
+/packages-graph*
 
 chaintest
 _testoutput.txt

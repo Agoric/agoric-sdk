@@ -25,7 +25,6 @@ import {
 import { getNetworkConfig } from '../lib/rpc.js';
 import {
   getCurrent,
-  makeParseAmount,
   makeWalletUtils,
   outputActionAndHint,
   sendAction,
@@ -415,14 +414,7 @@ inter auction status
       async ({ generateOnly, dryRun, ...opts }) => {
         const tools = await tryMakeUtils();
 
-        const parseAmount = makeParseAmount(
-          tools.agoricNames,
-          msg => new InvalidArgumentError(msg),
-        );
-        const offer = Offers.auction.Bid(tools.agoricNames.brand, {
-          ...opts,
-          parseAmount,
-        });
+        const offer = Offers.auction.Bid(tools.agoricNames, opts);
 
         if (generateOnly) {
           outputActionAndHint(
@@ -463,14 +455,7 @@ inter auction status
       async ({ generateOnly, ...opts }) => {
         const tools = await tryMakeUtils();
 
-        const parseAmount = makeParseAmount(
-          tools.agoricNames,
-          msg => new InvalidArgumentError(msg),
-        );
-        const offer = Offers.auction.Bid(tools.agoricNames.brand, {
-          ...opts,
-          parseAmount,
-        });
+        const offer = Offers.auction.Bid(tools.agoricNames, opts);
         if (generateOnly) {
           outputActionAndHint(
             { method: 'executeOffer', offer },
