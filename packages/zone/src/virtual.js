@@ -1,6 +1,7 @@
 // @ts-check
 // @jessie-check
 
+import { isPassable } from '@agoric/internal';
 import {
   defineVirtualExoClass,
   defineVirtualExoClassKit,
@@ -10,8 +11,6 @@ import {
   makeScalarBigWeakSetStore,
   M,
 } from '@agoric/vat-data';
-
-import { Far } from '@endo/far';
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
@@ -25,7 +24,7 @@ const initEmpty = harden(() => emptyRecord);
  *
  * @type {import('.').Zone['exo']}
  */
-const defineVirtualExo = (
+const makeVirtualExo = (
   label,
   interfaceGuard,
   methods,
@@ -45,43 +44,10 @@ const defineVirtualExo = (
   return makeInstance();
 };
 
-/**
- * This is a store that is used to check if a value can be stored in a virtual
- * store.  It is not intended to be used for any other purpose.
- */
-const checkVirtualStore = makeScalarBigMapStore('checkVirtualStore');
-
-/**
- * Check if a value can be stored in a virtual store.
- *
- * FIXME: It would be nice if `@agoric/vat-data` exposed a way to do this
- * without having to catch exceptions.
- *
- * @param {unknown} specimen
- * @returns {boolean}
- */
-const isStorable = specimen => {
-  const key = isStorable.name;
-  try {
-    if (checkVirtualStore.has(key)) {
-      // Be defensive in case the store wasn't cleaned up properly.
-      checkVirtualStore.set(key, specimen);
-    } else {
-      // Initialize the store with our specimen.
-      checkVirtualStore.init(key, specimen);
-    }
-    checkVirtualStore.delete(key);
-    return true;
-  } catch (_e) {
-    return false;
-  }
-};
-harden(isStorable);
-
 /** @type {import('.').Stores} */
-export const detachedVirtualStores = Far('virtualStores', {
+export const detachedVirtualStores = harden({
   detached: () => detachedVirtualStores,
-  isStorable,
+  isStorable: isPassable,
   mapStore: makeScalarBigMapStore,
   setStore: makeScalarBigSetStore,
   weakMapStore: makeScalarBigWeakMapStore,
@@ -100,13 +66,14 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     baseLabel,
     detachedVirtualStores,
   );
-  return Far('VirtualZone', {
-    exo: wrapProvider(defineVirtualExo, keys.exo),
+  const subZoneProvider = (label, _options) =>
+    makeVirtualZone(`${baseLabel}.${label}`);
+
+  return harden({
+    exo: wrapProvider(makeVirtualExo, keys.exo),
     exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
-    subZone: (label, _options) => {
-      return makeOnce(label, () => makeVirtualZone(`${baseLabel}.${label}`));
-    },
+    subZone: wrapProvider(subZoneProvider),
 
     makeOnce,
     detached: detachedVirtualStores.detached,
