@@ -9,10 +9,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
-import {
-  makeParseAmount,
-  Offers,
-} from '@agoric/inter-protocol/src/clientSupport.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeLiquidationTestContext, scale6 } from './liquidation.js';
 
 /**
@@ -166,11 +163,10 @@ test.serial('scenario: Flow 2b', async t => {
     //  Place bids
     // ---------------
 
-    const parseAmount = makeParseAmount(agoricNamesRemotes, Error);
     await buyer.sendOffer(
       Offers.psm.swap(
+        agoricNamesRemotes,
         agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        agoricNamesRemotes.brand,
         {
           offerId: 'print-ist',
           wantMinted: 1_000,
@@ -188,7 +184,6 @@ test.serial('scenario: Flow 2b', async t => {
         offerId,
         ...setup.bids[i],
         maxBuy,
-        parseAmount,
       });
       t.like(readLatest('published.wallet.agoric1buyer'), {
         status: {

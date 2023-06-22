@@ -9,7 +9,6 @@ import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
 
-const { values } = Object;
 const { Fail } = assert;
 const marshaller = boardSlottingMarshaller();
 
@@ -272,44 +271,3 @@ export const makeWalletUtils = async (
     pollOffer,
   };
 };
-
-/**
- * @param {{
- *   brand: Record<string, Brand>,
- *   vbankAsset: Record<string, { brand: Brand, displayInfo: DisplayInfo }>,
- * }} agoricNames
- * @param {(msg: string) => Error} makeError error constructor
- * @returns {(a: string) => Amount<'nat'>}
- */
-export const makeParseAmount =
-  (agoricNames, makeError = msg => RangeError(msg)) =>
-  opt => {
-    assert.typeof(opt, 'string', 'parseAmount expected string');
-    const m = opt.match(/^(?<value>[\d_]+(\.[\d_]+)?)(?<brand>[A-Z]\w*?)$/);
-    if (!m || !m.groups) {
-      throw makeError(`invalid amount: ${opt}`);
-    }
-    const anyBrand = agoricNames.brand[m.groups.brand];
-    if (!anyBrand) {
-      throw makeError(`unknown brand: ${m.groups.brand}`);
-    }
-    const assetDesc = values(agoricNames.vbankAsset).find(
-      d => d.brand === anyBrand,
-    );
-    if (!assetDesc) {
-      throw makeError(`unknown brand: ${m.groups.brand}`);
-    }
-    const { displayInfo } = assetDesc;
-    if (!displayInfo.decimalPlaces || displayInfo.assetKind !== 'nat') {
-      throw makeError(`bad brand: ${displayInfo}`);
-    }
-    const value = BigInt(
-      Number(m.groups.value.replace(/_/g, '')) *
-        10 ** displayInfo.decimalPlaces,
-    );
-    /** @type {Brand<'nat'>} */
-    // @ts-expect-error dynamic cast
-    const natBrand = anyBrand;
-    const amt = { value, brand: natBrand };
-    return amt;
-  };
