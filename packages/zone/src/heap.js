@@ -1,10 +1,9 @@
 // @ts-check
 // @jessie-check
 
+import { isPassable } from '@agoric/internal';
+import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
 import {
-  makeExo,
-  defineExoClass,
-  defineExoClassKit,
   makeScalarMapStore,
   makeScalarSetStore,
   makeScalarWeakMapStore,
@@ -12,17 +11,15 @@ import {
   M,
 } from '@agoric/store';
 
-import { Far } from '@endo/far';
-
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
 
 /**
  * @type {import('.').Stores}
  */
-const detachedHeapStores = Far('heapStores', {
+const detachedHeapStores = harden({
   detached: () => detachedHeapStores,
-  isStorable: _specimen => true,
+  isStorable: isPassable,
 
   setStore: makeScalarSetStore,
   mapStore: makeScalarMapStore,
@@ -38,13 +35,15 @@ const detachedHeapStores = Far('heapStores', {
  */
 export const makeHeapZone = (baseLabel = 'heapZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);
-  return Far('heapZone', {
+
+  const subZoneProvider = (label, _options) =>
+    makeHeapZone(`${baseLabel}.${label}`);
+
+  return harden({
     exo: wrapProvider(makeExo, keys.exo),
     exoClass: wrapProvider(defineExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
-    subZone: (label, _options) => {
-      return makeOnce(label, () => makeHeapZone(`${baseLabel}.${label}`));
-    },
+    subZone: wrapProvider(subZoneProvider),
 
     makeOnce,
     detached: detachedHeapStores.detached,
