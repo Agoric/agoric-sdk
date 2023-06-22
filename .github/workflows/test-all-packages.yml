@@ -49,7 +49,7 @@ jobs:
         run: sudo apt install -y graphviz
 
       - name: Check for cycles
-        run: scripts/check-dependency-cycles.sh 3
+        run: scripts/check-dependency-cycles.sh 2
 
   ##################
   # Lint tests
