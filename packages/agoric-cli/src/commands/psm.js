@@ -157,7 +157,7 @@ export const makePsmCommand = logger => {
       console.warn('running with options', opts);
       const { agoricNames, lookupPsmInstance } = await rpcTools();
       const instance = await lookupPsmInstance(opts.pair);
-      const offer = Offers.psm.swap(instance, agoricNames.brand, opts);
+      const offer = Offers.psm.swap(agoricNames, instance, opts);
       outputExecuteOfferAction(offer);
     });
 

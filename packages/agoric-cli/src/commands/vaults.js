@@ -63,7 +63,7 @@ export const makeVaultsCommand = logger => {
       logger.warn('running with options', opts);
       const { agoricNames } = await makeRpcUtils({ fetch });
 
-      const offer = Offers.vaults.OpenVault(agoricNames.brand, {
+      const offer = Offers.vaults.OpenVault(agoricNames, {
         giveCollateral: opts.giveCollateral,
         wantMinted: opts.wantMinted,
         offerId: opts.offerId,
@@ -104,7 +104,7 @@ export const makeVaultsCommand = logger => {
       );
 
       const offer = Offers.vaults.AdjustBalances(
-        agoricNames.brand,
+        agoricNames,
         {
           giveCollateral: opts.giveCollateral,
           wantCollateral: opts.wantCollateral,
@@ -145,7 +145,7 @@ export const makeVaultsCommand = logger => {
       );
 
       const offer = Offers.vaults.CloseVault(
-        agoricNames.brand,
+        agoricNames,
         {
           giveMinted: opts.giveMinted,
           offerId: opts.offerId,

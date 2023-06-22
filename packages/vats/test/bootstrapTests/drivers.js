@@ -77,25 +77,25 @@ export const makeWalletFactoryDriver = async (
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
-     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M offer maker function
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]
      * @returns {Promise<void>}
      */
     executeOfferMaker(makeOffer, firstArg, secondArg) {
-      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
+      const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.executeOffer(offer);
     },
     /**
-     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M offer maker function
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]
      * @returns {Promise<void>}
      */
     sendOfferMaker(makeOffer, firstArg, secondArg) {
-      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
+      const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.sendOffer(offer);
     },
 
