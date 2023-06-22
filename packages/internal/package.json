@@ -23,6 +23,7 @@
     "@agoric/zone": "^0.2.2",
     "@endo/far": "^0.2.19",
     "@endo/marshal": "^0.8.6",
+    "@endo/pass-style": "^0.1.4",
     "@endo/patterns": "^0.2.3",
     "@endo/promise-kit": "^0.2.57",
     "@endo/stream": "^0.3.26",
