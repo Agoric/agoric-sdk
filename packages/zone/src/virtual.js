@@ -45,14 +45,18 @@ const makeVirtualExo = (
 };
 
 /** @type {import('.').Stores} */
-export const detachedVirtualStores = harden({
-  detached: () => detachedVirtualStores,
-  isStorable: isPassable,
-  mapStore: makeScalarBigMapStore,
-  setStore: makeScalarBigSetStore,
-  weakMapStore: makeScalarBigWeakMapStore,
-  weakSetStore: makeScalarBigWeakSetStore,
-});
+export const detachedVirtualStores = makeVirtualExo(
+  'virtualStores',
+  undefined,
+  {
+    detached: () => detachedVirtualStores,
+    isStorable: isPassable,
+    mapStore: makeScalarBigMapStore,
+    setStore: makeScalarBigSetStore,
+    weakMapStore: makeScalarBigWeakMapStore,
+    weakSetStore: makeScalarBigWeakSetStore,
+  },
+);
 
 /**
  * A zone that utilizes external storage to reduce the memory footprint of the
@@ -69,7 +73,7 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
   const subZoneProvider = (label, _options) =>
     makeVirtualZone(`${baseLabel}.${label}`);
 
-  return harden({
+  return makeVirtualExo('virtualZone', undefined, {
     exo: wrapProvider(makeVirtualExo, keys.exo),
     exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),

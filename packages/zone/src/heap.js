@@ -17,7 +17,7 @@ import { agoricVatDataKeys as keys } from './keys.js';
 /**
  * @type {import('.').Stores}
  */
-const detachedHeapStores = harden({
+const detachedHeapStores = makeExo('heapStores', undefined, {
   detached: () => detachedHeapStores,
   isStorable: isPassable,
 
@@ -39,7 +39,7 @@ export const makeHeapZone = (baseLabel = 'heapZone') => {
   const subZoneProvider = (label, _options) =>
     makeHeapZone(`${baseLabel}.${label}`);
 
-  return harden({
+  return makeExo('heapZone', undefined, {
     exo: wrapProvider(makeExo, keys.exo),
     exoClass: wrapProvider(defineExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
