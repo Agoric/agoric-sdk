@@ -30,35 +30,29 @@ test.before(t => {
 /**
  * @param {import('ava').Assertions} t
  * @param {Zone} rootZone
- * @param {boolean} [heapOnlyZone]
  */
-const testOnce = (t, rootZone, heapOnlyZone = false) => {
+const testOnce = (t, rootZone) => {
   const subZone = rootZone.subZone('sub');
   const a = subZone.makeOnce('a', () => 'A');
   t.is(a, 'A');
   t.throws(() => subZone.makeOnce('a', () => 'A'), {
     message: /has already been used/,
   });
-  const heapValue = harden({
+  const nonPassable = harden({
     hello() {
       return 'world';
     },
   });
-  t.is(rootZone.isStorable(heapValue), heapOnlyZone);
+  t.is(rootZone.isStorable(nonPassable), false);
   t.is(subZone.isStorable(123), true);
-  if (heapOnlyZone) {
-    t.is(
-      rootZone.makeOnce('heap', () => heapValue),
-      heapValue,
-    );
-  } else {
-    t.throws(() => rootZone.makeOnce('heap', () => heapValue));
-  }
+  t.throws(() => rootZone.makeOnce('nonPassable', () => nonPassable), {
+    message: /is not storable/,
+  });
 };
 
 test('heapZone', t => {
   const { heapZone } = t.context;
-  testOnce(t, heapZone, true);
+  testOnce(t, heapZone);
 });
 
 test('virtualZone', t => {
