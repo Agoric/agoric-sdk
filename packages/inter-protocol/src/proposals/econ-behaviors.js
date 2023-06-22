@@ -6,8 +6,6 @@ import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import '@agoric/vats/exported.js';
-import '@agoric/vats/src/core/types.js';
 import { E } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '../tokens.js';
