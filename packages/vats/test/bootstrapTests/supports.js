@@ -1,6 +1,7 @@
 // @ts-check
 /* global process */
-import * as fsAmbient from 'fs';
+
+import { promises as fsAmbientPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename } from 'path';
 import { inspect } from 'util';
@@ -17,13 +18,21 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { TimeMath } from '@agoric/time';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+
+import * as processAmbient from 'child_process';
 import {
   boardSlottingMarshaller,
+  makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
+import { makeWalletFactoryDriver, makeZoeDriver } from './drivers.js';
 
 // to retain for ESlint, used by typedef
 E;
+
+// main/production config doesn't have initialPrice, upon which 'open vaults' depends
+const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
 
 const sink = () => {};
 
@@ -199,7 +208,7 @@ export const getNodeTestVaultsConfig = async (
   config.defaultManagerType = 'local';
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
-  await fsAmbient.promises.mkdir(bundleDir, { recursive: true });
+  await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
 
   if (config.coreProposals) {
     // remove Pegasus because it relies on IBC to Golang that isn't running
@@ -209,7 +218,7 @@ export const getNodeTestVaultsConfig = async (
   }
 
   const testConfigPath = `${bundleDir}/${basename(specifier)}`;
-  await fsAmbient.promises.writeFile(
+  await fsAmbientPromises.writeFile(
     testConfigPath,
     JSON.stringify(config),
     'utf-8',
@@ -434,7 +443,7 @@ export const makeSwingsetTestKit = async (
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
-    fs: fsAmbient.promises,
+    fs: fsAmbientPromises,
   });
 
   console.timeEnd('makeSwingsetTestKit');
@@ -493,4 +502,94 @@ export const makeSwingsetTestKit = async (
     timer,
   };
 };
+
 /** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
+
+export const makeTestContext = async t => {
+  console.time('DefaultTestContext');
+  /** @type {SwingsetTestKit} */
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+    configSpecifier: PLATFORM_CONFIG,
+  });
+
+  const { runUtils, storage } = swingsetTestKit;
+  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
+
+  // Wait for ATOM to make it into agoricNames
+  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+
+  await eventLoopIteration();
+
+  // has to be late enough for agoricNames data to have been published
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
+    swingsetTestKit.storage,
+  );
+  agoricNamesRemotes.brand.ATOM || Fail`ATOM brand not yet defined`;
+  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
+
+  const walletFactoryDriver = await makeWalletFactoryDriver(
+    runUtils,
+    storage,
+    agoricNamesRemotes,
+  );
+  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+
+  console.timeEnd('DefaultTestContext');
+
+  const buildProposal = makeProposalExtractor({
+    childProcess: processAmbient,
+    fs: fsAmbientPromises,
+  });
+
+  return {
+    ...swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    buildProposal,
+  };
+};
+
+export const makeZoeTestContext = async t => {
+  console.time('DefaultTestContext');
+  /** @type {SwingsetTestKit} */
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
+    configSpecifier: '@agoric/vats/decentral-demo-config.json',
+  });
+
+  const { controller, runUtils } = swingsetTestKit;
+  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
+
+  await eventLoopIteration();
+
+  // We don't need vaults, but this gets the brand, which is checked somewhere
+  // Wait for ATOM to make it into agoricNames
+  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+
+  // has to be late enough for agoricNames data to have been published
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
+    swingsetTestKit.storage,
+  );
+  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
+
+  const zoeDriver = await makeZoeDriver(swingsetTestKit);
+  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+
+  console.timeEnd('DefaultTestContext');
+
+  const buildProposal = makeProposalExtractor({
+    childProcess: processAmbient,
+    fs: fsAmbientPromises,
+  });
+
+  return {
+    ...swingsetTestKit,
+    controller,
+    agoricNamesRemotes,
+    zoeDriver,
+    buildProposal,
+  };
+};

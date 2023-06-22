@@ -5,6 +5,7 @@ import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-be
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
+
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
 /**
@@ -334,6 +335,93 @@ export const makeGovernanceDriver = async (
       await proposeParams(instance, params, path);
       await enactLatestProposal();
       await testKit.advanceTimeBy(1, 'minutes');
+    },
+  };
+};
+
+/**
+ * @param {import('./supports.js').SwingsetTestKit} testKit
+ */
+export const makeZoeDriver = async testKit => {
+  const { EV } = testKit.runUtils;
+  const zoe = await EV.vat('bootstrap').consumeItem('zoe');
+  const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
+  const storageNode = await EV(chainStorage).makeChildNode('prober-asid9a');
+  let creatorFacet;
+  let adminFacet;
+  let brand;
+  const sub = (a, v) => {
+    return { brand: a.brand, value: a.value - v };
+  };
+
+  return {
+    async instantiateProbeContract(probeContractBundle) {
+      const installation = await EV(zoe).install(probeContractBundle);
+      const startResults = await EV(zoe).startInstance(
+        installation,
+        undefined,
+        undefined,
+        { storageNode },
+        'probe',
+      );
+      ({ creatorFacet, adminFacet } = startResults);
+
+      const issuers = await EV(zoe).getIssuers(startResults.instance);
+      const brands = await EV(zoe).getBrands(startResults.instance);
+      brand = brands.Ducats;
+      return { creatorFacet, issuer: issuers.Ducats, brand };
+    },
+    async upgradeProbe(probeContractBundle) {
+      const fabricateBundleId = bundle => {
+        return `b1-${bundle.endoZipBase64Sha512}`;
+      };
+
+      await EV(adminFacet).upgradeContract(
+        fabricateBundleId(probeContractBundle),
+      );
+    },
+
+    verifyRealloc() {
+      return EV(creatorFacet).getAllocation();
+    },
+    async probeReallocation(value, payment) {
+      const stagingInv = await EV(creatorFacet).makeProbeStagingInvitation();
+
+      const stagingSeat = await EV(zoe).offer(
+        stagingInv,
+        { give: { Ducats: value } },
+        { Ducats: payment },
+      );
+      const helperPayments = await EV(stagingSeat).getPayouts();
+
+      const helperInv = await EV(creatorFacet).makeProbeHelperInvitation();
+      const helperSeat = await EV(zoe).offer(
+        helperInv,
+        { give: { Ducats: sub(value, 1n) } },
+        { Ducats: helperPayments.Ducats },
+      );
+      const internalPayments = await EV(helperSeat).getPayouts();
+
+      const internalInv = await EV(creatorFacet).makeProbeInternalInvitation();
+      const internalSeat = await EV(zoe).offer(
+        internalInv,
+        { give: { Ducats: sub(value, 2n) } },
+        { Ducats: internalPayments.Ducats },
+      );
+      const leftoverPayments = await EV(internalSeat).getPayouts();
+
+      return {
+        stagingResult: await EV(stagingSeat).getOfferResult(),
+        helperResult: await EV(helperSeat).getOfferResult(),
+        internalResult: await EV(internalSeat).getOfferResult(),
+        leftoverPayments,
+      };
+    },
+    async faucet() {
+      const faucetInv = await EV(creatorFacet).makeFaucetInvitation();
+      const seat = await EV(zoe).offer(faucetInv);
+
+      return EV(seat).getPayout('Ducats');
     },
   };
 };
