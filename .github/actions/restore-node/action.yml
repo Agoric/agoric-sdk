@@ -14,6 +14,11 @@ inputs:
     required: false
     default: '0'
 
+outputs:
+  endo-branch:
+    description: 'The branch of Endo used (NOPE if no override)'
+    value: ${{ steps.endo-branch.outputs.result }}
+
 runs:
   using: composite
   steps:
@@ -98,14 +103,18 @@ runs:
           sudo apt-get update
           sudo apt-get install libbsd-dev
         fi
-        yarn install
         # Replace the Endo packages with the ones built from the checked-out branch.
         if test -e ~/endo; then
-          scripts/replace-packages.sh ~/endo
-          rm -rf ~/endo
+          scripts/get-packed-versions.sh ~/endo | scripts/resolve-versions.sh
         fi
+        yarn install
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-installed
+        if test -e ~/endo; then
+          # Remove traces of the redirected `yarn install`.
+          git restore package.json yarn.lock
+          rm -rf ~/endo
+        fi
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn build
