@@ -1,6 +1,5 @@
 // @jessie-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Far } from '@endo/marshal';
 import { start } from './output.js';
 

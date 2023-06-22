@@ -1,6 +1,5 @@
 // @ts-nocheck
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
