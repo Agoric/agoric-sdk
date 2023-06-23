@@ -83,7 +83,6 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "concurrency": 2,
     "timeout": "20m",
     "workerThreads": false
   }
