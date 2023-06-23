@@ -1,6 +1,5 @@
 // @ts-nocheck
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env.js';
+import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 import path from 'path';
 
