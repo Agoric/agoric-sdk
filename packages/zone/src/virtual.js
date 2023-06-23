@@ -66,6 +66,11 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     baseLabel,
     detachedVirtualStores,
   );
+
+  /**
+   * @param {string} label
+   * @param {any} _options
+   */
   const subZoneProvider = (label, _options) =>
     makeVirtualZone(`${baseLabel}.${label}`);
 
