@@ -231,7 +231,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         return [addr, purse];
       }),
     );
-    Object.values(voterAddresses).forEach(addr => {
+    for (const addr of Object.values(voterAddresses)) {
       const { nameHub, nameAdmin: myAddressNameAdmin } = makeNameHubKit();
       const depositFacet = Far('depositFacet', {
         receive: pmt => {
@@ -242,7 +242,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       });
       myAddressNameAdmin.update('depositFacet', depositFacet);
       nameAdmin.update(addr, nameHub, myAddressNameAdmin);
-    });
+    }
     return purses;
   };
 
