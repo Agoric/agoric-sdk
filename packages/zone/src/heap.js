@@ -40,14 +40,14 @@ export const makeHeapZone = (baseLabel = 'heapZone') => {
    * @param {string} label
    * @param {any} _options
    */
-  const subZoneProvider = (label, _options) =>
+  const makeSubZone = (label, _options) =>
     makeHeapZone(`${baseLabel}.${label}`);
 
   return Far('heapZone', {
     exo: wrapProvider(makeExo, keys.exo),
     exoClass: wrapProvider(defineExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
-    subZone: wrapProvider(subZoneProvider),
+    subZone: wrapProvider(makeSubZone),
 
     makeOnce,
     detached: detachedHeapStores.detached,
