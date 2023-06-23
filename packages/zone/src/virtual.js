@@ -71,14 +71,14 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
    * @param {string} label
    * @param {any} _options
    */
-  const subZoneProvider = (label, _options) =>
+  const makeSubZone = (label, _options) =>
     makeVirtualZone(`${baseLabel}.${label}`);
 
   return Far('virtualZone', {
     exo: wrapProvider(makeVirtualExo, keys.exo),
     exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
-    subZone: wrapProvider(subZoneProvider),
+    subZone: wrapProvider(makeSubZone),
 
     makeOnce,
     detached: detachedVirtualStores.detached,
