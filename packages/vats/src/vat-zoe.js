@@ -10,6 +10,9 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
 
   if (zoeBaggage.has(BUILD_PARAMS_KEY)) {
     const { feeIssuerConfig, zcfSpec } = zoeBaggage.get(BUILD_PARAMS_KEY);
+    // The return value is `{ zoeService, zoeConfigFacet, feeMintAccess }`. This
+    // call only needs zoeConfigFacet because the others have been returned.
+    // zoeConfigFacet was added after the first release of Zoe on-chain.
     ({ zoeConfigFacet } = makeDurableZoeKit({
       // For now Zoe will rewire vatAdminSvc on its own
       shutdownZoeVat,
