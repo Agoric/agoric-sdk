@@ -136,7 +136,8 @@ const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods
 or with the zone API:
 
 ```js
-import { M, makeDurableZone } from '@agoric/zone';
+import { M } from '@endo/patterns';
+import { makeDurableZone } from '@agoric/zone';
 const FooI = M.interface('foo', fooMethodGuards);
 // someDurableMap should generally be reachable from baggage.
 const zone = makeDurableZone(someDurableMap);
