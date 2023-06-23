@@ -13,7 +13,7 @@ const { Fail } = assert;
  * each of the seats mentioned.
  *
  * @param {Array<TransferPart>} transfers
- * @returns {[ZCFSeat,AmountKeywordRecord][]}
+ * @returns {[ZCFSeat, AmountKeywordRecord][]}
  */
 export const makeAllocationMap = transfers => {
   /** @type {MapStore<ZCFSeat, [TransactionList, TransactionList]>} */
@@ -30,22 +30,18 @@ export const makeAllocationMap = transfers => {
     return pair;
   };
 
-  const updateAllocations = (seat, newAllocation) => {
-    allocations.set(seat, newAllocation);
-  };
-
   const decrementAllocation = (seat, decrement) => {
     const [incr, decr] = getAllocations(seat);
 
     const newDecr = [...decr, decrement];
-    updateAllocations(seat, [incr, newDecr]);
+    allocations.set(seat, [incr, newDecr]);
   };
 
   const incrementAllocation = (seat, increment) => {
     const [incr, decr] = getAllocations(seat);
 
     const newIncr = [...incr, increment];
-    updateAllocations(seat, [newIncr, decr]);
+    allocations.set(seat, [newIncr, decr]);
   };
 
   for (const [fromSeat, toSeat, fromAmounts, toAmounts] of transfers) {
@@ -84,8 +80,7 @@ export const makeAllocationMap = transfers => {
 
   /** @type {[ZCFSeat,AmountKeywordRecord][]} */
   const resultingAllocations = [];
-  for (const seat of allocations.keys()) {
-    const [incrList, decrList] = getAllocations(seat);
+  for (const [seat, [incrList, decrList]] of allocations.entries()) {
     let newAlloc = seat.getCurrentAllocation();
     for (const incr of incrList) {
       newAlloc = addToAllocation(newAlloc, incr);

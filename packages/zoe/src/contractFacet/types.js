@@ -60,8 +60,7 @@
  */
 
 /**
- * @deprecated reallocate() will be supported until at least 2023/09/01. It may
- * be removed without further warning any time after 2023/11/01.
+ * @deprecated reallocate(). Use zcf.atomicRearrange() instead
  *
  * @typedef {(seat1: ZCFSeat, seat2: ZCFSeat, ...seatRest:
  * Array<ZCFSeat>) => void} Reallocate

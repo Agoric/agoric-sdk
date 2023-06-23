@@ -328,35 +328,37 @@ export const createSeatManager = (
           const newAllocations = makeAllocationMap(transfers);
 
           // ////// All Seats are active /////////////////////////////////
-          newAllocations.forEach(([seat]) => {
+          for (const [seat] of newAllocations) {
             assertActive(seat);
             !seat.hasStagedAllocation() ||
               Fail`Cannot mix atomicRearrange with seat stagings: ${seat}`;
             zcfSeatToSeatHandle.has(seat) ||
               Fail`The seat ${seat} was not recognized`;
-          });
+          }
 
           // ////// Ensure that rights are conserved overall /////////////
-          const flattenAllocations = allocations =>
+
+          // convert array of keywordAmountRecords to 1-level array of Amounts
+          const flattenAmounts = allocations =>
             allocations.flatMap(Object.values);
-          const previousAmounts = flattenAllocations(
+          const previousAmounts = flattenAmounts(
             newAllocations.map(([seat]) => seat.getCurrentAllocation()),
           );
-          const newAmounts = flattenAllocations(
+          const newAmounts = flattenAmounts(
             newAllocations.map(([_, allocation]) => allocation),
           );
           assertRightsConserved(previousAmounts, newAmounts);
 
           // ////// Ensure that offer safety holds ///////////////////////
-          newAllocations.forEach(([seat, allocation]) => {
+          for (const [seat, allocation] of newAllocations) {
             isOfferSafe(seat.getProposal(), allocation) ||
               Fail`Offer safety was violated by the proposed allocation: ${allocation}. Proposal was ${seat.getProposal()}`;
-          });
+          }
 
           const seatHandleAllocations = newAllocations.map(
             ([seat, allocation]) => {
               const seatHandle = zcfSeatToSeatHandle.get(seat);
-              return { seatHandle, allocation };
+              return { allocation, seatHandle };
             },
           );
           try {
@@ -369,15 +371,15 @@ export const createSeatManager = (
             //
             // The effects must succeed atomically. The call to
             // replaceAllocations() will be processed in the order of updates
-            // from zcf to zoe, its effects must occur immediately in zoe on
+            // from ZCF to Zoe. Its effects must occur immediately in Zoe on
             // reception, and must not fail.
             //
             // Commit the new allocations (currentAllocation is replaced
             // for each of the seats) and inform Zoe of the new allocation.
 
-            newAllocations.forEach(([seat, allocation]) =>
-              activeZCFSeats.set(seat, allocation),
-            );
+            for (const [seat, allocation] of newAllocations) {
+              activeZCFSeats.set(seat, allocation);
+            }
 
             E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
           } catch (err) {
