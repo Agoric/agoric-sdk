@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { isPassable } from '@agoric/internal';
+import { Far } from '@endo/far';
 import {
   defineVirtualExoClass,
   defineVirtualExoClassKit,
@@ -9,11 +9,11 @@ import {
   makeScalarBigSetStore,
   makeScalarBigWeakMapStore,
   makeScalarBigWeakSetStore,
-  M,
 } from '@agoric/vat-data';
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
+import { isPassable } from './is-passable.js';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
@@ -45,7 +45,7 @@ const makeVirtualExo = (
 };
 
 /** @type {import('.').Stores} */
-export const detachedVirtualStores = harden({
+const detachedVirtualStores = Far('virtualStores', {
   detached: () => detachedVirtualStores,
   isStorable: isPassable,
   mapStore: makeScalarBigMapStore,
@@ -69,7 +69,7 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
   const subZoneProvider = (label, _options) =>
     makeVirtualZone(`${baseLabel}.${label}`);
 
-  return harden({
+  return Far('virtualZone', {
     exo: wrapProvider(makeVirtualExo, keys.exo),
     exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
     exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
@@ -85,5 +85,3 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     weakSetStore: wrapProvider(detachedVirtualStores.weakSetStore),
   });
 };
-
-export { M };
