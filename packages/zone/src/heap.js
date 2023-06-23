@@ -36,6 +36,10 @@ const detachedHeapStores = Far('heapStores', {
 export const makeHeapZone = (baseLabel = 'heapZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);
 
+  /**
+   * @param {string} label
+   * @param {any} _options
+   */
   const subZoneProvider = (label, _options) =>
     makeHeapZone(`${baseLabel}.${label}`);
 
