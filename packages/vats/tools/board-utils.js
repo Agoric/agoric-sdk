@@ -1,15 +1,10 @@
 // @ts-check
 /**
- * Should be a union with Remotable, but that's `any`, making this type meaningless
- *
- * @typedef {{ getBoardId: () => string }} BoardRemote
- */
-/**
  * @typedef {{
- *   brand: BoardRemote & Brand,
+ *   brand: import('@agoric/internal/src/marshal.js').BoardRemote & Brand,
  *   denom: string,
  *   displayInfo: DisplayInfo,
- *   issuer: BoardRemote & Issuer,
+ *   issuer: import('@agoric/internal/src/marshal.js').BoardRemote & Issuer,
  *   issuerName: string,
  *   proposedName: string,
  * }} VBankAssetDetail
@@ -23,31 +18,15 @@
  * }} AgoricNamesRemotes
  */
 
-import { Fail } from '@agoric/assert';
-import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import {
+  slotToBoardRemote,
+  unmarshalFromVstorage,
+} from '@agoric/internal/src/marshal.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { prepareBoardKit } from '../src/lib-board.js';
 
-/**
- * @param {*} slotInfo
- * @returns {BoardRemote}
- */
-export const makeBoardRemote = ({ boardId, iface }) => {
-  const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
-  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
-};
-
-export const slotToBoardRemote = (boardId, iface) =>
-  makeBoardRemote({ boardId, iface });
-
-export const boardValToSlot = val => {
-  if ('getBoardId' in val) {
-    return val.getBoardId();
-  }
-  Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
-};
+export * from '@agoric/internal/src/marshal.js';
 
 /**
  * @param {import("@agoric/internal/src/storage-test-utils.js").FakeStorageKit} fakeStorageKit
@@ -88,47 +67,6 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   return { ...tables, reverse, vbankAsset };
 };
 harden(makeAgoricNamesRemotesFromFakeStorage);
-
-/**
- * A marshaller which can serialize getBoardId() -bearing
- * Remotables. This allows the caller to pick their slots. The
- * deserializer is configurable: the default cannot handle
- * Remotable-bearing data.
- *
- * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<import('@endo/marshal').Marshal<string>, 'serialize' | 'unserialize'>}
- */
-export const boardSlottingMarshaller = (slotToVal = undefined) => {
-  return makeMarshal(boardValToSlot, slotToVal, {
-    serializeBodyFormat: 'smallcaps',
-  });
-};
-
-/**
- * Provide access to object graphs serialized in vstorage.
- *
- * @param {Array<[string, string]>} entries
- * @param {(slot: string, iface?: string) => any} [slotToVal]
- */
-export const makeHistoryReviver = (entries, slotToVal = undefined) => {
-  const board = boardSlottingMarshaller(slotToVal);
-  const vsMap = new Map(entries);
-  const fromCapData = (...args) =>
-    Reflect.apply(board.fromCapData, board, args);
-  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData);
-  const children = prefix => {
-    prefix.endsWith('.') || Fail`prefix must end with '.'`;
-    return harden([
-      ...new Set(
-        entries
-          .map(([k, _]) => k)
-          .filter(k => k.startsWith(prefix))
-          .map(k => k.slice(prefix.length).split('.')[0]),
-      ),
-    ]);
-  };
-  return harden({ getItem, children, has: k => vsMap.get(k) !== undefined });
-};
 
 /**
  * Make a board that uses durable storage, but with fake baggage which will fail upgrade.

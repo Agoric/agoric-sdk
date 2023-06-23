@@ -84,38 +84,6 @@ export const assertCapData = data => {
 harden(assertCapData);
 
 /**
- * Read and unmarshal a value from a map representation of vstorage data
- *
- * @param {Map<string, string>} data
- * @param {string} key
- * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
- * @param {number} [index=-1] index of the desired value in a deserialized stream cell
- */
-export const unmarshalFromVstorage = (data, key, fromCapData, index = -1) => {
-  const serialized = data.get(key) || Fail`no data for ${key}`;
-  assert.typeof(serialized, 'string');
-
-  const streamCell = JSON.parse(serialized);
-  if (!isStreamCell(streamCell)) {
-    throw Fail`not a StreamCell: ${streamCell}`;
-  }
-
-  const { values } = streamCell;
-  values.length > 0 || Fail`no StreamCell values: ${streamCell}`;
-
-  const marshalled = values.at(index);
-  assert.typeof(marshalled, 'string');
-
-  /** @type {import("@endo/marshal").CapData<string>} */
-  const capData = harden(JSON.parse(marshalled));
-  assertCapData(capData);
-
-  const unmarshalled = fromCapData(capData);
-  return unmarshalled;
-};
-harden(unmarshalFromVstorage);
-
-/**
  * @typedef {object} StoredFacet
  * @property {() => Promise<string>} getPath the chain storage path at which the node was constructed
  * @property {StorageNode['getStoreKey']} getStoreKey DEPRECATED use getPath

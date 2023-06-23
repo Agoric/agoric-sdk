@@ -2,7 +2,7 @@
 import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
