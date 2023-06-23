@@ -1,7 +1,8 @@
 // @ts-check
 
 import { E } from '@endo/far';
-import { M, makeHeapZone } from '@agoric/zone';
+import { M } from '@endo/patterns';
+import { makeHeapZone } from '@agoric/zone';
 import * as cb from './callback.js';
 
 const { Fail } = assert;
