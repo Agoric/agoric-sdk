@@ -375,7 +375,7 @@ export const createSeatManager = (
             // Commit the new allocations (currentAllocation is replaced
             // for each of the seats) and inform Zoe of the new allocation.
 
-            newAllocations.map(([seat, allocation]) =>
+            newAllocations.forEach(([seat, allocation]) =>
               activeZCFSeats.set(seat, allocation),
             );
 
