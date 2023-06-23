@@ -33,7 +33,6 @@ import {
   WALLET_FACTORY_MANIFEST,
 } from '@agoric/vats/src/core/startWalletFactory.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
 import { Stable, Stake } from '../../src/tokens.js';
 import {

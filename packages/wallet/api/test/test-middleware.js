@@ -1,6 +1,5 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { E, Far } from '@endo/far';
 import {
   makeExportContext,

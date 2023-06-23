@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -13,7 +12,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { TimeMath } from '@agoric/time';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-// eslint-disable-next-line import/no-extraneous-dependencies -- XXX refactor
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
