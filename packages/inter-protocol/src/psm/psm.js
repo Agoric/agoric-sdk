@@ -14,7 +14,6 @@ import {
 import { StorageNodeShape } from '@agoric/internal';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
-  atomicRearrange,
   atomicTransfer,
   ceilMultiplyBy,
   floorDivideBy,
@@ -270,8 +269,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
     AmountMath.isGTE(maxAnchor, wanted) ||
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         [seat, stage, { In: afterFee }, { Minted: afterFee }],
         [seat, feePool, { In: fee }, { Minted: fee }],
@@ -302,8 +300,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
     mintMinted(asStable);
     try {
-      atomicRearrange(
-        zcf,
+      zcf.atomicRearrange(
         harden([
           [seat, anchorPool, { In: given }, { Anchor: given }],
           [stage, seat, { Minted: afterFee }, { Out: afterFee }],
