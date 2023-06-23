@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { isPassable } from '@agoric/internal';
+import { Far } from '@endo/far';
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -12,11 +12,11 @@ import {
   provideDurableSetStore,
   provideDurableWeakMapStore,
   provideDurableWeakSetStore,
-  M,
 } from '@agoric/vat-data';
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
+import { isPassable } from './is-passable.js';
 
 const { Fail } = assert;
 
@@ -47,7 +47,7 @@ const attachDurableStores = getBaggage => {
     provideDurableWeakMapStore(getBaggage(), label, options);
 
   /** @type {import('.').Stores} */
-  return harden({
+  return Far('durableStores', {
     // eslint-disable-next-line no-use-before-define
     detached: () => detachedDurableStores,
     isStorable,
@@ -59,7 +59,7 @@ const attachDurableStores = getBaggage => {
 };
 
 /** @type {import('.').Stores} */
-export const detachedDurableStores = attachDurableStores(() =>
+const detachedDurableStores = attachDurableStores(() =>
   makeScalarMapStore('detached'),
 );
 
@@ -96,7 +96,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
 
-  return harden({
+  return Far('durableZone', {
     exo: wrapProvider(exo, keys.exo),
     exoClass: wrapProvider(exoClass, keys.exoClass),
     exoClassKit: wrapProvider(exoClassKit, keys.exoClassKit),
@@ -113,5 +113,3 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   });
 };
 harden(makeDurableZone);
-
-export { M };
