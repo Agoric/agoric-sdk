@@ -1,7 +1,5 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { E, Far } from '@endo/far';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 

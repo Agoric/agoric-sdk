@@ -1,8 +1,6 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init/debug.js';
 import anyTest from 'ava';
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';

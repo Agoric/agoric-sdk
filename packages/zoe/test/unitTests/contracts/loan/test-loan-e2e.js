@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import path from 'path';
 
 import '../../../../exported.js';

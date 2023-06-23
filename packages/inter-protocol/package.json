@@ -49,9 +49,10 @@
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/smart-wallet": "^0.5.3",
-    "@agoric/vats": "^0.15.1",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swingset-vat": "^0.32.2",
+    "@agoric/vats": "^0.15.1",
+    "@agoric/zone": "^0.2.2",
     "@endo/bundle-source": "^2.5.1",
     "@endo/init": "^0.5.56",
     "@endo/promise-kit": "^0.2.56",

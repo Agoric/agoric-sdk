@@ -1,5 +1,4 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order

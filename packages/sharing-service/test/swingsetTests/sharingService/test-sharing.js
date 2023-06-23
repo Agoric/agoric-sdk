@@ -1,8 +1,6 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
 const filename = new URL(import.meta.url).pathname;

@@ -1,7 +1,6 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';
 import { makeCache } from '@agoric/cache';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
@@ -12,15 +11,12 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 

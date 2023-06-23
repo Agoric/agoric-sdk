@@ -30,7 +30,6 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
 import { Stable } from '../../src/tokens.js';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
