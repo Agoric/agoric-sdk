@@ -6,7 +6,7 @@ module.exports = {
     'plugin:jsdoc/recommended',
     'prettier',
   ],
-  plugins: ['import'],
+  plugins: ['import', 'github'],
   rules: {
     'arrow-body-style': 'off',
     'arrow-parens': 'off',
@@ -48,6 +48,8 @@ module.exports = {
         },
       },
     ],
+
+    'github/array-foreach': 'warn',
 
     // Work around https://github.com/import-js/eslint-plugin-import/issues/1810
     'import/no-unresolved': ['error', { ignore: ['ava'] }],
