@@ -1,4 +1,4 @@
-/* global WeakRef, FinalizationRegistry */
+/* global WeakRef, FinalizationRegistry, setImmediate, process */
 
 // this file is loaded at the start of a new subprocess
 import '@endo/init';
@@ -6,6 +6,7 @@ import '@endo/init';
 import anylogger from 'anylogger';
 import fs from 'fs';
 import { Buffer } from 'buffer';
+import v8 from 'node:v8';
 
 import { assert, details as X, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
@@ -27,11 +28,36 @@ import {
 } from '../supervisor-helper.js';
 
 // eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
-  // console.error(`---worker: ${first}`, ...args);
+function workerLog(...args) {
+  // console.error(`---worker:`, ...args);
 }
 
 workerLog(`supervisor started`);
+
+const eventLoopIteration = async () =>
+  new Promise(resolve => setImmediate(resolve));
+harden(eventLoopIteration);
+
+let vatID;
+
+let snapshotNum = 0;
+const snapshotHeap = async () => {
+  workerLog(`Snapshotting heap ${snapshotNum}...`);
+  await eventLoopIteration();
+  try {
+    engineGC();
+
+    // process.pid increments so these will be lexically sorted pathnames.
+    const heapSnapshot = `Heap-${vatID || 'vXX'}-${
+      process.pid
+    }-${snapshotNum}.heapsnapshot`;
+    snapshotNum += 1;
+
+    v8.writeHeapSnapshot(heapSnapshot);
+  } catch (err) {
+    workerLog('Failed to take heap snapshot', err);
+  }
+};
 
 function makeNetstringReader({ fd, encoding }) {
   const input = Buffer.alloc(32 * 1024);
@@ -94,7 +120,8 @@ function handleStart(_margs) {
 }
 
 function handleSetBundle(margs) {
-  const [vatID, bundle, liveSlotsOptions] = margs;
+  const [, bundle, liveSlotsOptions] = margs;
+  vatID = margs[0];
 
   function testLog(...args) {
     sendUplink(['testLog', ...args]);
@@ -176,6 +203,10 @@ async function handleDeliver(margs) {
   insistVatDeliveryObject(vatDeliveryObject);
   const vatDeliveryResults = await dispatch(vatDeliveryObject);
   sendUplink(['deliverDone', vatDeliveryResults]);
+  if (vatDeliveryObject[0] !== 'bringOutYourDead') {
+    return;
+  }
+  await snapshotHeap();
 }
 
 async function handleCommand(command) {

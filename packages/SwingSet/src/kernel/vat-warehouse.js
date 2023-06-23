@@ -555,8 +555,10 @@ export function makeVatWarehouse({
    * is satisified
    *
    * @param {VatID} vatID
+   * @param {boolean} [forced]
+   *
    */
-  async function maybeSaveSnapshot(vatID) {
+  async function maybeSaveSnapshot(vatID, forced) {
     const recreate = true; // PANIC in the failure case
     const { manager } = await ensureVatOnline(vatID, recreate);
     if (!manager.makeSnapshot) {
@@ -577,7 +579,7 @@ export function makeVatWarehouse({
       reason = { snapshotInterval };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
-    if (!reason) {
+    if (!reason && !forced) {
       return false; // not time to make a snapshot
     }
 

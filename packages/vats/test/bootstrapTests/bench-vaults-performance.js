@@ -128,7 +128,11 @@ async function stressVaults(t, dumpHeap) {
   const name = `stress-vaults${dumpTag}`;
 
   const { walletFactoryDriver } = t.context;
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1open');
+  const wds = await Promise.all(
+    [...Array(5)].map(async (_, i) =>
+      walletFactoryDriver.provideSmartWallet(`agoric1open${i + 1}`),
+    ),
+  );
 
   /**
    * @param {number} i
@@ -141,6 +145,17 @@ async function stressVaults(t, dumpHeap) {
     assert.typeof(r, 'number');
 
     const offerId = `open-vault-${i}-of-${n}-round-${r}${dumpTag}`;
+    const wd = wds[r - 1];
+
+    const vatPos = await t.context.controller.debug.getAllVatPos();
+    t.context.controller.writeSlogObject({
+      type: 'open-vault-start',
+      round: r,
+      iteration: i,
+      iterationLength: n,
+      vatPos,
+    });
+
     await wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId,
       collateralBrandKey,
@@ -152,6 +167,17 @@ async function stressVaults(t, dumpHeap) {
       updated: 'offerStatus',
       status: { id: offerId, numWantsSatisfied: 1 },
     });
+
+    const endPos = await t.context.controller.debug.reapAll(vatPos);
+    await t.context.controller.run();
+
+    t.context.controller.writeSlogObject({
+      type: 'open-vault-finish',
+      round: r,
+      iteration: i,
+      iterationLength: n,
+      endPos,
+    });
   };
 
   /**
@@ -162,7 +188,9 @@ async function stressVaults(t, dumpHeap) {
     t.log(`opening ${n} vaults`);
     const range = [...Array(n)].map((_, i) => i + 1);
     performance.mark(`start-open`);
-    await Promise.all(range.map(i => openVault(i, n, r)));
+    for await (const i of range) {
+      await openVault(i, n, r);
+    }
     performance.mark(`end-open`);
     performance.measure(`open-${n}-round-${r}`, {
       start: 'start-open',
@@ -172,12 +200,14 @@ async function stressVaults(t, dumpHeap) {
   };
 
   // clear out for a baseline
-  await collectStats('start', dumpHeap);
-  // 10 is enough to compare retention in heaps
-  await openN(10, 1);
-  await collectStats('round1', dumpHeap);
-  await openN(10, 2);
-  const memStats = await collectStats('round2', dumpHeap);
+  dumpHeap && t.context.controller.debug.reapAll();
+  await t.context.controller.run();
+  let memStats = await collectStats('start', dumpHeap);
+  for (let i = 1; i <= wds.length; i += 1) {
+    // 10 is enough to compare retention in heaps
+    await openN(20, i);
+    memStats = await collectStats(`round${i}`, dumpHeap);
+  }
 
   // let perfObserver get the last measurement
   await eventLoopIteration();

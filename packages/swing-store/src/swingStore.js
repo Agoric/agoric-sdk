@@ -33,7 +33,7 @@ export const buffer = async inStream => {
 
 export function makeSnapStoreIO() {
   return {
-    measureSeconds: makeMeasureSeconds(performance.now),
+    measureSeconds: makeMeasureSeconds(performance.now.bind(performance)),
   };
 }
 

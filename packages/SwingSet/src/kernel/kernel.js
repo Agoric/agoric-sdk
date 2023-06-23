@@ -630,7 +630,9 @@ export default function buildKernel(
     const kd = harden([type]);
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, false); // no meter
+    const results = deliveryCrankResults(vatID, status, false); // no meter
+    await vatWarehouse.maybeSaveSnapshot(vatID, true);
+    return results;
   }
 
   /**
@@ -1604,6 +1606,36 @@ export default function buildKernel(
     return vatID;
   }
 
+  function getAllVatPos() {
+    return Object.fromEntries(
+      kernelKeeper
+        .getStaticVats()
+        .map(([, vatID]) => vatID)
+        .concat(kernelKeeper.getDynamicVats())
+        .map(
+          vatID =>
+            /** @type {const} */ ([
+              vatID,
+              kernelKeeper.provideVatKeeper(vatID).getTranscriptEndPosition(),
+            ]),
+        ),
+    );
+  }
+
+  async function reapAll(previousVatPos = {}) {
+    const currentVatPos = getAllVatPos();
+
+    for (const [vatID, endPos] of Object.entries(currentVatPos)) {
+      if (previousVatPos[vatID] !== endPos) {
+        kernelKeeper.scheduleReap(vatID);
+        // We just added one delivery
+        currentVatPos[vatID] += 1;
+      }
+    }
+
+    return harden(currentVatPos);
+  }
+
   // note: deviceEndowments.vatAdmin can move out here,
   // makeSwingsetController() calls buildKernel() and kernel.start() in
   // nearly rapid succession
@@ -2000,6 +2032,8 @@ export default function buildKernel(
     kpStatus,
     kpResolution,
     addDeviceHook,
+    getAllVatPos,
+    reapAll,
   });
 
   return kernel;

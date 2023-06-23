@@ -17,6 +17,8 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 /* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
+import { dir as tmpDir } from 'tmp';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 import { TimeMath } from '@agoric/time';
 import {
   boardSlottingMarshaller,
@@ -329,8 +331,37 @@ export const makeSwingsetTestKit = async (
 ) => {
   console.time('makeSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
-  const swingStore = initSwingStore();
+  const { path: dbDir, cleanup: dbDirCleanup } = await new Promise(
+    (resolve, reject) =>
+      tmpDir(
+        {
+          prefix: `agd-state-bootstrap-test-`,
+          keep: true,
+          unsafeCleanup: true,
+        },
+        (err, path, cleanup) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ path, cleanup });
+          }
+        },
+      ),
+  );
+  const swingStore = initSwingStore(dbDir);
   const { kernelStorage, hostStorage } = swingStore;
+
+  // After to not get deleted by reset
+  const slogSender = await makeSlogSender({
+    stateDir: dbDir,
+    env: {
+      SLOGSENDER_AGENT: 'process',
+      SLOGFILE: `${dbDir}/chain.slog`,
+      ...process.env,
+    },
+    serviceName: 'bootstrap-test',
+  });
+
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
   const readLatest = path => {
@@ -421,11 +452,15 @@ export const makeSwingsetTestKit = async (
     configPath,
     {},
     {},
-    { debugName: 'TESTBOOT' },
+    { debugName: 'TESTBOOT', slogSender },
   );
   console.timeLog('makeSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller, t.log);
+  const flushSlog = tryFlushSlogSender.bind(null, slogSender);
+  const runAndFlush = async (...args) =>
+    controller.run(...args).finally(flushSlog);
+
+  const runUtils = makeRunUtils({ ...controller, run: runAndFlush }, t.log);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -473,7 +508,12 @@ export const makeSwingsetTestKit = async (
   };
 
   const shutdown = async () =>
-    Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
+    Promise.all([
+      controller.shutdown(),
+      hostStorage.close(),
+      tryFlushSlogSender(slogSender),
+      // dbDirCleanup(),
+    ]).then(() => {});
 
   return {
     advanceTimeBy,
