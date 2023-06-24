@@ -169,10 +169,10 @@ const makeMultiCandidateVoteCounter = (
         chosenPositions.length <= maxChoices ||
           Fail`The number of choices exceeds the max choices.`;
 
-        chosenPositions.forEach(position => {
+        for (const position of chosenPositions) {
           positionIncluded(positions, position) ||
             Fail`The specified choice is not a legal position: ${position}.`;
-        });
+        }
 
         const completedBallot = harden({ chosen: chosenPositions, shares });
 
