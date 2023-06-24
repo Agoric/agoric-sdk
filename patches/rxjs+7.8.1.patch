@@ -1,5 +1,5 @@
 diff --git a/node_modules/rxjs/dist/cjs/internal/util/createErrorClass.js b/node_modules/rxjs/dist/cjs/internal/util/createErrorClass.js
-index 98a6e52..af7d91a 100644
+index 98a6e52..815dd25 100644
 --- a/node_modules/rxjs/dist/cjs/internal/util/createErrorClass.js
 +++ b/node_modules/rxjs/dist/cjs/internal/util/createErrorClass.js
 @@ -7,8 +7,18 @@ function createErrorClass(createImpl) {

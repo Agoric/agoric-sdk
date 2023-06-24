@@ -1,0 +1,44 @@
+diff --git a/node_modules/follow-redirects/index.js b/node_modules/follow-redirects/index.js
+index 3e199c1..c0335aa 100644
+--- a/node_modules/follow-redirects/index.js
++++ b/node_modules/follow-redirects/index.js
+@@ -578,15 +578,35 @@ function createErrorType(code, message, baseClass) {
+   // Create constructor
+   function CustomError(properties) {
+     Error.captureStackTrace(this, this.constructor);
+-    Object.assign(this, properties || {});
++    Object.defineProperties(
++      this,
++      Object.getOwnPropertyDescriptors(properties || {})
++    );
+     this.code = code;
+-    this.message = this.cause ? message + ": " + this.cause.message : message;
++    Object.defineProperty(this, 'message', {
++      value: this.cause ? message + ": " + this.cause.message : message,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    });
+   }
+ 
+   // Attach constructor and set default properties
+   CustomError.prototype = new (baseClass || Error)();
+-  CustomError.prototype.constructor = CustomError;
+-  CustomError.prototype.name = "Error [" + code + "]";
++  Object.defineProperties(CustomError.prototype, {
++    constructor: {
++      value: CustomError,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++    name: {
++      value: "Error [" + code + "]",
++      writable: true,
++      enumerable: true,
++      configurable: true
++    }
++  });
+   return CustomError;
+ }
+ 

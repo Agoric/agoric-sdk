@@ -1,0 +1,32 @@
+diff --git a/node_modules/commander/lib/error.js b/node_modules/commander/lib/error.js
+index e7cde9c..3a1b078 100644
+--- a/node_modules/commander/lib/error.js
++++ b/node_modules/commander/lib/error.js
+@@ -16,7 +16,12 @@ class CommanderError extends Error {
+     super(message);
+     // properly capture stack trace in Node.js
+     Error.captureStackTrace(this, this.constructor);
+-    this.name = this.constructor.name;
++    Object.defineProperty(this, 'name', {
++      value: this.constructor.name,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    });
+     this.code = code;
+     this.exitCode = exitCode;
+     this.nestedError = undefined;
+@@ -37,7 +42,12 @@ class InvalidArgumentError extends CommanderError {
+     super(1, 'commander.invalidArgument', message);
+     // properly capture stack trace in Node.js
+     Error.captureStackTrace(this, this.constructor);
+-    this.name = this.constructor.name;
++    Object.defineProperty(this, 'name', {
++      value: this.constructor.name,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    });
+   }
+ }
+ 
