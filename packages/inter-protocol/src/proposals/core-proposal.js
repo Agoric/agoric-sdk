@@ -37,7 +37,9 @@ export const storeInterContractStartKits = async ({
   const storeAll = async (storeP, kitPs) => {
     const store = await storeP;
     const kits = await Promise.all(kitPs);
-    kits.forEach(kit => store.init(kit.instance, kit));
+    for (const kit of kits) {
+      store.init(kit.instance, kit);
+    }
   };
 
   await storeAll(contractKits, [

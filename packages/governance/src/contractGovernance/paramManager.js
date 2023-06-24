@@ -366,10 +366,10 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     const prepared = await Promise.all(asyncResults);
 
     // actually update
-    paramNames.forEach((name, i) => {
+    for (const [i, name] of paramNames.entries()) {
       const setFn = setters[`update${name}`];
       setFn(prepared[i]);
-    });
+    }
     publish();
   };
 

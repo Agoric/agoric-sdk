@@ -45,7 +45,7 @@ test('Offers.auction.Bid', async t => {
     { cliArg: -0.1, offerBidScaling: makeRatio(110n, ist.brand, 100n) },
   ];
 
-  discounts.forEach(({ cliArg, offerBidScaling }) => {
+  for (const { cliArg, offerBidScaling } of discounts) {
     t.log('discount', cliArg * 100, '%');
     t.deepEqual(
       Offers.auction.Bid(agoricNames, {
@@ -70,7 +70,7 @@ test('Offers.auction.Bid', async t => {
         },
       },
     );
-  });
+  }
 
   const price = 7;
   const offerPrice = makeRatio(7n, ist.brand, 1n, atom.brand);
