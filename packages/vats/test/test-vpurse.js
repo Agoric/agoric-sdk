@@ -316,7 +316,7 @@ test('vpurse.deposit promise', async t => {
     () => E(vpurse).deposit(exclusivePaymentP, fungible25),
     {
       message:
-        /deposit does not accept promises|promise .* Must be a remotable/i,
+        /In "deposit" method of \(VirtualPurseKit purse\): arg 0: .*"\[Promise\]" - Must be a remotable/,
     },
     'failed to reject a promise for a payment',
   );
