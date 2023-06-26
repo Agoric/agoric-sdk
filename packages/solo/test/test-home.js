@@ -7,11 +7,25 @@ import { AmountMath } from '@agoric/ertp';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { Stable } from '@agoric/inter-protocol/src/tokens.js';
 
 import { makeFixture, E } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
+
+// XXX test depends on this exact value from the Inter Protocol economy,
+// by way of agoric-cli (which this test covertly depends upon)
+export const Stable = harden(
+  /** @type {const } */ ({
+    symbol: 'IST',
+    denom: 'uist',
+    proposedName: 'Agoric stable token',
+    assetKind: 'nat',
+    displayInfo: {
+      decimalPlaces: 6,
+      assetKind: 'nat',
+    },
+  }),
+);
 
 //#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
