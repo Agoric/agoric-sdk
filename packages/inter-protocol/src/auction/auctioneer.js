@@ -662,9 +662,6 @@ export const start = async (zcf, privateArgs, baggage) => {
       getBookDataUpdates(brand) {
         return books.get(brand).getDataUpdates();
       },
-      getBidDataUpdates(brand) {
-        return books.get(brand).getBidDataUpdates();
-      },
       getPublicTopics(brand) {
         if (brand) {
           return books.get(brand).getPublicTopics();
@@ -705,17 +702,16 @@ export const start = async (zcf, privateArgs, baggage) => {
 
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
-        const bNode = E(privateArgs.storageNode).makeChildNode(bookId);
-        const nodes = await Promise.all([
-          E(bNode).makeChildNode('schedule'),
-          E(bNode).makeChildNode('bids'),
-        ]);
+
+        const bookNode = E(privateArgs.storageNode).makeChildNode(bookId);
+        const scheduleNode = E(bookNode).makeChildNode('schedule');
+        const bidsNode = E(bookNode).makeChildNode('bids');
 
         const newBook = await makeAuctionBook(
           brands.Bid,
           brand,
           priceAuthority,
-          nodes,
+          [scheduleNode, bidsNode],
         );
 
         // These three store.init() calls succeed or fail atomically
