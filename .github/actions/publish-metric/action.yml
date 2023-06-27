@@ -1,0 +1,52 @@
+name: Publish Datadog Metric
+description: GitHub Action to publish a metric to DD.
+
+inputs:
+  datadog-token:
+    description: 'secret datadog API token'
+    required: true
+  metric:
+    description: 'metric name for datadog'
+    required: true
+  metric-value:
+    description: 'metric value for datadog'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Publish Given Metric to Datadog using API.
+      shell: bash
+      id: publish_metric
+      env:
+        DATADOG_API_KEY: ${{ inputs.datadog-token }}
+        VALUE: ${{ inputs.metric-value }}
+        METRIC: ${{ inputs.metric }}
+      run: |
+        export NOW="$(date +%s)"
+        curl -v POST "https://api.us3.datadoghq.com/api/v1/series" \
+        -H "Content-Type: application/json" \
+        -H "DD-API-KEY: $DATADOG_API_KEY" \
+        -d @- << EOF
+        {
+            "series": [{
+                "metric": "ci.${METRIC}",
+                "points": [
+                    [
+                        $NOW,
+                        $VALUE
+                    ]
+                ],
+                "tags": [ 
+                    "os:${{ runner.os }}",
+                    "arch:${{ runner.arch }}",
+                    "repo:${{ github.repository }}",
+                    "job:${{ github.job }}",
+                    "workflow:${{ github.workflow }}",
+                    "source:Github Actions",
+                    "branch:${GITHUB_REF##*/}"
+                ],
+                "type": "gauge"
+            }]
+        }
+        EOF

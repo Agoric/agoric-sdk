@@ -76,10 +76,9 @@ const build = async (log, zoe) => {
       const { voter } = E.get(E(seat).getOfferResult());
 
       const voteMap = new Map();
-      choices.forEach(entry => {
-        const [issue, position] = entry;
+      for (const [issue, position] of choices) {
         voteMap.set(issue.text, position);
-      });
+      }
       const votingObserver = Far('voting observer', {
         updateState: details => {
           const choice = voteMap.get(details.issue.text);

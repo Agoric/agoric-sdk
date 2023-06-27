@@ -1,3 +1,4 @@
+/* global globalThis */
 import '@endo/init/debug.js';
 
 import { spawn } from 'child_process';
@@ -130,6 +131,13 @@ test('create SES worker, save, restore, resume', async t => {
  * They are also sensitive to the XS code itself.
  */
 test('XS + SES snapshots are long-term deterministic', async t => {
+  const ENDO_BRANCH = globalThis.process?.env?.ENDO_BRANCH;
+  if (ENDO_BRANCH && ENDO_BRANCH !== 'NOPE') {
+    t.log(`Skipping test on ENDO_BRANCH=${ENDO_BRANCH}`);
+    t.pass();
+    return;
+  }
+
   const db = sqlite3(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
