@@ -3,8 +3,8 @@ import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { mustMatch } from '@agoric/store';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { mustMatch, makeScalarMapStore } from '@agoric/store';
+import { M, prepareExoClassKit, provide } from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
@@ -18,6 +18,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/captp';
 import { observeNotifier } from '@agoric/notifier';
+import { ToFarFunction } from '@endo/marshal';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
@@ -106,7 +107,7 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  *
  * @property {Ratio} bidScaling
  * @property {Amount<'nat'>} wanted
- * @property {Boolean} exitAfterBuy
+ * @property {boolean} exitAfterBuy
  */
 
 /**
@@ -114,7 +115,7 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  *
  * @property {Ratio} price
  * @property {Amount<'nat'>} wanted
- * @property {Boolean} exitAfterBuy
+ * @property {boolean} exitAfterBuy
  */
 
 /**
@@ -130,8 +131,11 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
-  const makeScaledBidBook = prepareScaledBidBook(baggage);
-  const makePriceBook = preparePriceBook(baggage);
+  const bidDataKits = provide(baggage, 'bidDataKits', () =>
+    makeScalarMapStore('BidDataKits'),
+  );
+  const makeScaledBidBook = prepareScaledBidBook(baggage, makeRecorderKit);
+  const makePriceBook = preparePriceBook(baggage, makeRecorderKit);
 
   const AuctionBookStateShape = harden({
     collateralBrand: M.any(),
@@ -143,7 +147,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     priceAuthority: M.any(),
     updatingOracleQuote: M.any(),
     bookDataKit: M.any(),
-    bidDataKit: M.any(),
+    bidDataKits: M.any(),
+    bidsDataKit: M.any(),
     priceBook: M.any(),
     scaledBidBook: M.any(),
     startCollateral: M.any(),
@@ -161,7 +166,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      * @param {Brand<'nat'>} bidBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {Array<StorageNode>} nodes
+     * @param {Array<ERef<StorageNode>>} nodes
      */
     (bidBrand, collateralBrand, pAuthority, nodes) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
@@ -177,27 +182,35 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       // returned to the funders.
       const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
       const { zcfSeat: bidHoldingSeat } = zcf.makeEmptySeatKit();
+      const [scheduleNode, bidsNode] = nodes;
 
       const bidAmountShape = makeNatAmountShape(bidBrand);
       const collateralAmountShape = makeNatAmountShape(collateralBrand);
+      const makeBidNode = ToFarFunction('makeBidNode', bidId =>
+        E(bidsNode).makeChildNode(`bids${bidId}`),
+      );
+
       const scaledBidBook = makeScaledBidBook(
         makeBrandedRatioPattern(bidAmountShape, bidAmountShape),
         collateralBrand,
+        makeBidNode,
       );
 
       const priceBook = makePriceBook(
         makeBrandedRatioPattern(bidAmountShape, collateralAmountShape),
         collateralBrand,
+        makeBidNode,
       );
 
-      const [scheduleNode, bidsNode] = nodes;
       const bookDataKit = makeRecorderKit(
+        // @ts-expect-error ERef<ScheduleNodes> should be acceptable
         scheduleNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
           M.any()
         ),
       );
-      const bidDataKit = makeRecorderKit(
+      const bidsDataKit = makeRecorderKit(
+        // @ts-expect-error ERef<ScheduleNodes> should be acceptable
         bidsNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */ (
           M.any()
@@ -216,7 +229,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         updatingOracleQuote: zeroRatio,
 
         bookDataKit,
-        bidDataKit,
+        bidDataKits,
+        bidsDataKit,
 
         priceBook,
         scaledBidBook,
@@ -479,19 +493,15 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               exitAfterBuy,
               timestamp,
             );
-            helper.publishBidData();
+            void helper.publishBidData();
           }
 
           void helper.publishBookData();
         },
         publishBidData() {
           const { state } = this;
-          // XXX should this be compressed somewhat? lots of redundant brands.
-          state.bidDataKit.recorder.write({
-            scaledBids: state.scaledBidBook.publishOffers(),
-            // @ts-expect-error how to convince TS these ratios are non-null?
-            pricedBids: state.priceBook.publishOffers(),
-          });
+          state.scaledBidBook.publishOffers();
+          state.priceBook.publishOffers();
         },
         publishBookData() {
           const { state } = this;
@@ -511,6 +521,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
+
           return state.bookDataKit.recorder.write(bookData);
         },
       },
@@ -761,16 +772,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         getDataUpdates() {
           return this.state.bookDataKit.subscriber;
         },
-        getBidDataUpdates() {
-          return this.state.bidDataKit.subscriber;
-        },
         getPublicTopics() {
           return {
             bookData: makeRecorderTopic(
               'Auction schedule',
               this.state.bookDataKit,
             ),
-            bids: makeRecorderTopic('Auction Bids', this.state.bidDataKit),
+            bids: makeRecorderTopic('Auction Bids', this.state.bidsDataKit),
           };
         },
       },
