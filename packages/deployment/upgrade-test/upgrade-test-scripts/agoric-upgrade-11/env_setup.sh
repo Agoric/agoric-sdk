@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # agoric-upgrade-11 specific env here...
-export USER2ADDR=$($binary keys show user2 -a --keyring-backend="test" 2> /dev/null)
+export USER3ADDR=$($binary keys show user3 -a --keyring-backend="test" 2> /dev/null)
 
 printKeys() {
   echo "========== GOVERNANCE KEYS =========="
@@ -15,8 +15,8 @@ printKeys() {
   cat ~/.agoric/validator.key || true
   echo "user1: $USER1ADDR"
   cat ~/.agoric/user1.key || true
-  echo "user2: $USER2ADDR"
-  cat ~/.agoric/user2.key || true
+  echo "user3: $USER3ADDR"
+  cat ~/.agoric/user3.key || true
   echo "========== GOVERNANCE KEYS =========="
 }
 

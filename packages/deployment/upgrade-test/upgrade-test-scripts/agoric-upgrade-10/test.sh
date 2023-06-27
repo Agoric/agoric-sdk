@@ -31,7 +31,7 @@ test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault1 -o jsonlines | jq -r '.locked.value') "0" "vault1 contains no collateral"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault1 -o jsonlines | jq -r '.debtSnapshot.debt.value') "0" "vault1 has no debt"
 
-# user2 vault2
+# user3 vault2
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.vaultState') "closed" "vault2 is closed"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.locked.value') "0" "vault2 contains no collateral"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.debtSnapshot.debt.value') "0" "vault2 has no debt"
