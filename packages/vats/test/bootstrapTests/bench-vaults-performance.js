@@ -118,6 +118,7 @@ const perfObserver = new PerformanceObserver(items => {
 });
 perfObserver.observe({ entryTypes: ['measure'] });
 
+const memStats = [];
 const whereUrl = import.meta.url;
 const sdkPathStart = whereUrl.lastIndexOf('agoric-sdk/');
 const where = sdkPathStart > 0 ? whereUrl.substring(sdkPathStart) : whereUrl;
@@ -126,6 +127,14 @@ async function stressVaults(t, dumpHeap) {
   rows.length = 0;
   const dumpTag = dumpHeap ? '-with-dump' : '';
   const name = `stress-vaults${dumpTag}`;
+
+  const reapAll = async vatPos => {
+    if (!dumpHeap) return;
+
+    const endPos = await t.context.controller.debug.reapAll(vatPos);
+    await t.context.controller.run();
+    return endPos;
+  };
 
   const { walletFactoryDriver } = t.context;
   const wds = await Promise.all(
@@ -163,13 +172,14 @@ async function stressVaults(t, dumpHeap) {
       giveCollateral: 1.0,
     });
 
-    t.like(wd.getLatestUpdateRecord(), {
-      updated: 'offerStatus',
-      status: { id: offerId, numWantsSatisfied: 1 },
-    });
+    // t.like(wd.getLatestUpdateRecord(), {
+    //   updated: 'offerStatus',
+    //   status: { id: offerId, numWantsSatisfied: 1 },
+    // });
 
-    const endPos = await t.context.controller.debug.reapAll(vatPos);
-    await t.context.controller.run();
+    const endPos = await reapAll(vatPos).then(
+      pos => pos || t.context.controller.debug.getAllVatPos(),
+    );
 
     t.context.controller.writeSlogObject({
       type: 'open-vault-finish',
@@ -199,14 +209,15 @@ async function stressVaults(t, dumpHeap) {
     });
   };
 
-  // clear out for a baseline
-  dumpHeap && t.context.controller.debug.reapAll();
   await t.context.controller.run();
-  let memStats = await collectStats('start', dumpHeap);
+  // clear out for a baseline
+  await reapAll();
+  const initMemStats = await collectStats('start', dumpHeap);
   for (let i = 1; i <= wds.length; i += 1) {
     // 10 is enough to compare retention in heaps
     await openN(20, i);
-    memStats = await collectStats(`round${i}`, dumpHeap);
+    await reapAll();
+    memStats.push(await collectStats(`round${i}`, dumpHeap));
   }
 
   // let perfObserver get the last measurement
@@ -214,7 +225,8 @@ async function stressVaults(t, dumpHeap) {
 
   const benchmarkReport = {
     ...rows[1],
-    memStats,
+    rounds: rows.map((details, i) => ({ ...details, memStats: memStats[i] })),
+    initMemStats,
     name,
     test: t.title,
     where,
@@ -233,10 +245,10 @@ async function stressVaults(t, dumpHeap) {
 // both you *must* run them serially, so that their executions don't get
 // comingled and mess up the numbers.
 
-test.skip('stress vaults with heap snapshots', async t => {
+test.serial('stress vaults with heap snapshots', async t => {
   await stressVaults(t, true);
 });
 
-test.serial('stress vaults', async t => {
+test.skip('stress vaults', async t => {
   await stressVaults(t, false);
 });

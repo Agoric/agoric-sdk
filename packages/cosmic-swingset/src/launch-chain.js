@@ -143,7 +143,7 @@ export async function buildSwingset(
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
 
-    if (bridgeOutbound) {
+    if (false && bridgeOutbound) {
       const batchChainStorage = (method, args) =>
         bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
 

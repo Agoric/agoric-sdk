@@ -7,7 +7,13 @@ export function makeStartSubprocessWorkerNode(startSubprocessWorker) {
       '../supervisors/subprocess-node/supervisor-subprocess-node.js',
       import.meta.url,
     ).pathname;
-    const args = nodeOptions ? [...nodeOptions] : [];
+    const args = [
+      '--jitless',
+      '--noexpose_wasm',
+      '--gc-global',
+      '--single-threaded-gc',
+      ...(nodeOptions || []),
+    ];
     args.push(supervisorCodePath);
     args.push(nameDisplayArg);
     return startSubprocessWorker(process.execPath, args);

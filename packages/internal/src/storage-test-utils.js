@@ -9,7 +9,7 @@ import {
 } from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
 const trace = makeTracer('StorTU', false);
 
@@ -87,6 +87,12 @@ const makeSlotStringUnserialize = () => {
 };
 export const slotStringUnserialize = makeSlotStringUnserialize();
 
+const validTestPath = /^published\.agoricNames\.(vbankAsset|brand|instance)/;
+const isTestPath = path => validTestPath.test(path);
+const assertTestPath = path => {
+  validTestPath.test(path) || Fail`Invalid vstorage path ${q(path)}`;
+};
+
 /**
  * For testing, creates a chainStorage root node over an in-memory map
  * and exposes both the map and the sequence of received messages.
@@ -101,6 +107,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   const data = new Map();
   /** @param {string} prefix */
   const getChildEntries = prefix => {
+    assertTestPath(prefix);
     assert(prefix.endsWith('.'));
     const childEntries = new Map();
     for (const [path, value] of data.entries()) {
@@ -121,7 +128,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   /** @param {import('../src/lib-chainStorage.js').StorageMessage} message */
   // eslint-disable-next-line consistent-return
   const toStorage = message => {
-    messages.push(message);
+    // messages.push(message);
     switch (message.method) {
       case 'getStoreKey': {
         const [key] = message.args;
@@ -129,6 +136,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       }
       case 'get': {
         const [key] = message.args;
+        assertTestPath(key);
         return data.has(key) ? data.get(key) : null;
       }
       case 'children': {
@@ -149,6 +157,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
         const newEntries = message.args;
         for (const [key, value] of newEntries) {
+          if (!isTestPath(key)) continue;
           if (value != null) {
             data.set(key, value);
           } else {
@@ -163,6 +172,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         const newEntries = message.args;
         for (const [key, value] of newEntries) {
           value != null || Fail`attempt to append with no value`;
+          if (!isTestPath(key)) continue;
           // In the absence of block boundaries, everything goes in a single StreamCell.
           const oldVal = data.get(key);
           let streamCell;
@@ -188,6 +198,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'size':
         // Intentionally incorrect because it counts non-child descendants,
         // but nevertheless supports a "has children" test.
+        throw Error(`can't read`);
         return [...data.keys()].filter(k => k.startsWith(`${message.args[0]}.`))
           .length;
       default:
@@ -222,12 +233,16 @@ export const makeMockChainStorageRoot = () => {
      */
     getBody: (path, marshaller = defaultMarshaller) => {
       data.size || Fail`no data in storage`;
+      assertTestPath(path);
       /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(data, path, fromCapData);
     },
-    keys: () => [...data.keys()],
+    keys: () => {
+      throw Error(`can't read`);
+      return [...data.keys()];
+    },
   });
 };
 /** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */

@@ -206,7 +206,7 @@ async function handleDeliver(margs) {
   if (vatDeliveryObject[0] !== 'bringOutYourDead') {
     return;
   }
-  await snapshotHeap();
+  return snapshotHeap();
 }
 
 async function handleCommand(command) {
