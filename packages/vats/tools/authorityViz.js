@@ -256,7 +256,6 @@ const main = async (args, { stdout, fsp, meta }) => {
 const run = async () => {
   const [fsp, metaResolve] = await Promise.all([
     import('fs/promises'),
-    // eslint-disable-next-line import/no-extraneous-dependencies
     import('import-meta-resolve'),
   ]);
 

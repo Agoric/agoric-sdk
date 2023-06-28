@@ -2,12 +2,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import '@agoric/vats/src/core/types.js';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { Stable } from '../../src/tokens.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { buildRootObject as buildPSMRootObject } from './boot-psm.js';
 import {

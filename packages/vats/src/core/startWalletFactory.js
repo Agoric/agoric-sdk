@@ -6,12 +6,12 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { Stable } from '@agoric/inter-protocol/src/tokens.js';
 import {
   makeHistoryReviver,
   makeBoardRemote,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
-import { Stable } from '../tokens.js';
 
 const trace = makeTracer('StartWF');
 

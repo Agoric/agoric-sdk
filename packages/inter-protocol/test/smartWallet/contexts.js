@@ -7,7 +7,6 @@ import {
   produceStartGovernedUpgradable,
   produceDiagnostics,
 } from '@agoric/vats/src/core/basic-behaviors.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';

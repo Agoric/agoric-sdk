@@ -1,11 +1,11 @@
 // @ts-check
-import { E, Far } from '@endo/far';
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
 import { WalletName } from '@agoric/internal';
+import { E, Far } from '@endo/far';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, makeScalarMapStore } from '@agoric/vat-data';
 import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
-import { Stable, Stake } from '../tokens.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 const { entries, fromEntries, keys } = Object;

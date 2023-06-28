@@ -4,7 +4,6 @@
 /* global process,Buffer */
 
 import fs from 'fs';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import ReadlineTransform from 'readline-transform';
 
 const [TRACE_FILE, FIRST_BLOCK_HEIGHT = 0, LAST_BLOCK_HEIGHT = Infinity] =

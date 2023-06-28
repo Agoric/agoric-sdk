@@ -5,7 +5,7 @@ import test from 'ava';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 
 import { AssetKind } from '@agoric/ertp';
-import { Stable, Stake } from '../src/tokens.js';
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
 
 test('token symbols are keywords', t => {
   t.notThrows(() => assertKeywordName(Stable.symbol));

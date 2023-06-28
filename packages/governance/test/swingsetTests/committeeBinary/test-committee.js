@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init/debug.js';
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
@@ -40,7 +39,7 @@ test.before(async t => {
   };
   const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
-    bundle: await bundleSource(bootstrapSource),
+    bundle: await bundleSource(bootstrapSource, { dev: true }),
     parameters: { contractBundles }, // argv will be added to this
   };
   const config = { bootstrap: 'bootstrap', vats };

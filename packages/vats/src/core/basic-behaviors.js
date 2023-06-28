@@ -2,6 +2,7 @@
 
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
 import {
   BridgeId,
   deeplyFulfilledObject,
@@ -15,7 +16,6 @@ import { Nat } from '@endo/nat';
 
 import { Fail, NonNullish } from '@agoric/assert';
 import { makeNameHubKit } from '../nameHub.js';
-import { Stable, Stake } from '../tokens.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 
