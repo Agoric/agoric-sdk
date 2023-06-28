@@ -21,7 +21,7 @@ In any case, for now, you will be needing to build the solo node from the source
 
 ### Build from source
 
-To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://agoric.com/documentation/getting-started/before-using-agoric.html) to install the Agoric SDK and its prerequisites.
+To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://docs.agoric.com/guides/getting-started/) to install the Agoric SDK and its prerequisites.
 
 You'll then need to install the following additional software:
 - [Golang](https://golang.org/doc/install) (you need at least version 1.17)
@@ -33,8 +33,8 @@ You'll then need to install the following additional software:
 Build the cosmic-swingset with:
 ```sh
 cd agoric-sdk/packages/cosmic-swingset
-npm install
-npm run build
+yarn install
+yarn build
 ```
 
 Add `$GOPATH/bin` (or `~/go/bin` if `GOPATH` is unset) to your shell's  `PATH`.
@@ -102,11 +102,9 @@ Wait about 5 seconds for the chain to produce its first block, then switch to an
 make scenario2-run-client BASE_PORT=8000
 ```
 
-You can communicate with the node by opening http://localhost:8000/
+You can communicate with the node by opening the http://localhost:8000/ (`agoric open`)
 
-You can start other solo nodes with `make scenario2-run-client BASE_PORT=8001` and `make scenario2-run-client BASE_PORT=8002` and communicate with them respectively with on http://localhost:8001/ and http://localhost:8002/
-
-
+You can start other solo nodes with `make scenario2-run-client BASE_PORT=8001 SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=9466` and `make scenario2-run-client BASE_PORT=8002 SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=9467` and communicate with them respectively with on http://localhost:8001/ (`agoric open --hostport 127.0.0.1:8001`) and http://localhost:8002/ (`agoric open --hostport 127.0.0.1:8002`)
   
 #### Scenario 1: your own local testnet (develop testnet provisioner)
 
