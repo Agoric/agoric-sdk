@@ -1,5 +1,4 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
@@ -8,7 +7,6 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf, Far } from '@endo/marshal';
 import { getStringMethodNames } from '@agoric/internal';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';
 
 import { setupZCFTest } from './zcf/setupZcfTest.js';

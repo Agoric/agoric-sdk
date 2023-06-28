@@ -1,5 +1,4 @@
 import { AmountMath } from '@agoric/ertp';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**

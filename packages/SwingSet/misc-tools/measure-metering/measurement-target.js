@@ -1,5 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
 import { Far } from '@endo/far';
+// XXX cyclic dependency; TODO move this tool out of swingset-vat
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 export function buildRootObject(vatPowers) {

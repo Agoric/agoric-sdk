@@ -1,12 +1,9 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
+import { unmarshalFromVstorage } from './marshal.js';
 import { makeTracer } from './debug.js';
-import {
-  isStreamCell,
-  makeChainStorageRoot,
-  unmarshalFromVstorage,
-} from './lib-chainStorage.js';
+import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 
 const { Fail } = assert;

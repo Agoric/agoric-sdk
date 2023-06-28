@@ -3,9 +3,7 @@
 import '@endo/init/debug.js';
 import { Buffer } from 'node:buffer';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import bundleSource from '@endo/bundle-source';
 

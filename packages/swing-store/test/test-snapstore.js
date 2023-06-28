@@ -5,9 +5,7 @@ import { Buffer } from 'node:buffer';
 import zlib from 'zlib';
 import sqlite3 from 'better-sqlite3';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 

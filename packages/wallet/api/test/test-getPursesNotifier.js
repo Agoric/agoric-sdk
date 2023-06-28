@@ -3,9 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { heapZone } from '@agoric/zone';
 import {
   makeNameHubKit,

@@ -13,11 +13,8 @@ import { promisify } from 'util';
 import { createHash } from 'crypto';
 import { Readable, finished as finishedCallback } from 'stream';
 import { performance } from 'perf_hooks';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import sqlite3 from 'better-sqlite3';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import yargsParser from 'yargs-parser';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';

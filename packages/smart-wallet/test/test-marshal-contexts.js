@@ -1,6 +1,5 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Far } from '@endo/far';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
