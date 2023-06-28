@@ -47,7 +47,6 @@ const FAKE_CHAIN_DELAY =
 const PORT = process.env.PORT || 8000;
 const HOST_PORT = process.env.HOST_PORT || PORT;
 const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
-const DEFAULT_NETCONFIG = 'https://testnet.agoric.net/network-config';
 
 const GAS_ADJUSTMENT = '1.2';
 
@@ -688,67 +687,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
   }
 
-  async function startTestnetDocker(profileName, startArgs, popts) {
-    await null;
-    if (popts.dockerTag && popts.pull) {
-      const exitStatus = await pspawn('docker', ['pull', SOLO_IMAGE]);
-      if (exitStatus) {
-        return exitStatus;
-      }
-    }
-
-    const port = startArgs[0] || PORT;
-    const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
-    const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
-
-    if (popts.reset) {
-      log(chalk.green(`removing ${agServer}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', agServer]);
-    }
-
-    const setupRun = (...bonusArgs) =>
-      pspawn('docker', [
-        'run',
-        `-p127.0.0.1:${HOST_PORT}:${port}`,
-        `--volume=${process.cwd()}:/usr/src/dapp`,
-        `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
-        `--rm`,
-        ...terminalOnlyFlags(`-it`),
-        SOLO_IMAGE,
-        `--webport=${port}`,
-        `--webhost=0.0.0.0`,
-        ...bonusArgs,
-      ]);
-
-    return setupRun('setup', `--netconfig=${netconfig}`);
-  }
-
-  async function startTestnetSdk(profileName, startArgs, popts) {
-    const port = startArgs[0] || PORT;
-    const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
-    const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
-
-    await null;
-    if (popts.reset) {
-      log(chalk.green(`removing ${agServer}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', agServer]);
-    }
-
-    const setupRun = (...bonusArgs) =>
-      pspawn(agSolo, [`--webport=${port}`, ...bonusArgs], {
-        env: { ...pspawnEnv, AG_SOLO_BASEDIR: agServer },
-      });
-
-    return setupRun('setup', `--netconfig=${netconfig}`);
-  }
-
   const profiles = {
     dev: startFakeChain,
     'local-chain': startLocalChain,
     'local-solo': startLocalSolo,
-    testnet: opts.dockerTag ? startTestnetDocker : startTestnetSdk,
   };
 
   const popts = opts;

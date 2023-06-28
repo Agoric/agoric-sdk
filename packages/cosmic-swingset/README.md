@@ -8,12 +8,6 @@ This repository currently hosts various pieces:
 - Code that runs the server-side Pixel Demo on the solo node
 - Code that runs in a web browser and interacts with the server-side of the Pixel Demo
 
-
-If you're coming to this repo with a [**provisioning code** from Agoric](https://testnet.agoric.com/), you can jump to the [relevant section](#with-a-provisioning-code-from-agoric).
-
-Otherwise, you can continue to the next section to choose one of the setups for the Pixel Demo.
-
-
 ## Different setups to run the Pixel Demo
 
 Running the demo requires a local solo node to serve as your access point.
@@ -236,26 +230,6 @@ ag-setup-cosmos bootstrap --bump
 # Will prompt you for confirmation.
 ag-setup-cosmos destroy
 ```
-
-## With a provisioning code from Agoric
-
-You can request a public testnet provisioning code from https://testnet.agoric.com/
-
-Once you have received the code run:
-```sh
-SOLO_NAME=han ./docker/ag-setup-solo --pull
-```
-
-where `han` is the name of your solo vat machine that follows the blockchain.
-
-This command will prompt you for the testnet provisioning code.
-
-Then connect to http://localhost:8000.
-
-If you don't have a provisioning code, or otherwise want to run the demo from the code in this directory,
-read [about the scenarios](#choose-a-scenario).
-
-
 
 # Acknowledgements
 

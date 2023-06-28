@@ -8,8 +8,6 @@ import fs from 'fs';
 import { Fail } from '@agoric/assert';
 import setGCIIngress from './set-gci-ingress.js';
 
-const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';
-
 /**
  * @param {string} basedir
  * @param {string} [chainConfig]
@@ -22,7 +20,8 @@ async function addChain(basedir, chainConfig, force = false) {
     if (fs.existsSync(cache)) {
       actualConfig = fs.readFileSync(cache, 'utf-8');
     } else {
-      actualConfig = DEFAULT_CHAIN_CONFIG;
+      console.error('Missing chain config');
+      return 1;
     }
   }
 
