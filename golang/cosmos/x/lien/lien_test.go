@@ -1,11 +1,11 @@
 package lien
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"testing"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -114,8 +114,8 @@ func (m *mockLienKeeper) GetDelegatorDelegations(ctx sdk.Context, delegator sdk.
 }
 
 func TestBadType(t *testing.T) {
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
 	keeper := mockLienKeeper{
 		states: map[string]types.AccountState{},
 	}
@@ -135,8 +135,8 @@ func TestBadType(t *testing.T) {
 }
 
 func TestGetAccountState(t *testing.T) {
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	keeper := mockLienKeeper{
 		states: map[string]types.AccountState{
@@ -177,8 +177,9 @@ func TestGetAccountState(t *testing.T) {
 }
 
 func TestGetAccountState_badRequest(t *testing.T) {
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
+
 	keeper := mockLienKeeper{
 		states: map[string]types.AccountState{},
 	}
@@ -214,8 +215,9 @@ func TestGetAccountState_badRequest(t *testing.T) {
 }
 
 func TestSetLiened_badAddr(t *testing.T) {
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
+
 	keeper := mockLienKeeper{}
 	ph := NewPortHandler(&keeper)
 	msg := portMessage{
@@ -235,8 +237,9 @@ func TestSetLiened_badAddr(t *testing.T) {
 }
 
 func TestSetLiened_badDenom(t *testing.T) {
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
+
 	keeper := mockLienKeeper{}
 	ph := NewPortHandler(&keeper)
 	msg := portMessage{
@@ -256,8 +259,9 @@ func TestSetLiened_badDenom(t *testing.T) {
 }
 
 func TestSetLiened(t *testing.T) {
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
+
 	keeper := mockLienKeeper{}
 	ph := NewPortHandler(&keeper)
 	msg := portMessage{
@@ -336,8 +340,8 @@ func TestGetStaking(t *testing.T) {
 	keeper.delegations[addr4.String()] = []stakingTypes.Delegation{}
 
 	ph := NewPortHandler(&keeper)
-	ctx := sdk.Context{}
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctx := sdk.Context{}.WithContext(context.Background())
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	pi := func(x int64) *sdk.Int {
 		n := i(x)

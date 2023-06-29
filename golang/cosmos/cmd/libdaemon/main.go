@@ -10,6 +10,7 @@ package main
 import "C"
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -44,7 +45,7 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 	daemoncmd.AppName = "ag-chain-cosmos"
 
 	// FIXME: Decouple the sending logic from the Cosmos app.
-	sendToNode := func(needReply bool, str string) (string, error) {
+	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
 		var rPort int
 		if needReply {
 			lastReply++
