@@ -1,6 +1,7 @@
 package vibc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -63,8 +64,9 @@ func NewIBCModule(keeper Keeper) IBCModule {
 	}
 }
 
-func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
+func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
+	ctx := sdk.UnwrapSDKContext(cctx)
 	keeper := ch.keeper
 
 	msg := new(portMessage)
@@ -82,11 +84,11 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		timeoutTimestamp := msg.Packet.TimeoutTimestamp
 		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
 			// Use the relative timeout if no absolute timeout is specifiied.
-			timeoutTimestamp = uint64(ctx.Context.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
+			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
 		}
 
 		seq, err := keeper.SendPacket(
-			ctx.Context,
+			ctx,
 			msg.Packet.SourcePort,
 			msg.Packet.SourceChannel,
 			msg.Packet.TimeoutHeight,
@@ -108,14 +110,14 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "receiveExecuted":
-		err = keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
+		err = keeper.WriteAcknowledgement(ctx, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "startChannelOpenInit":
 		err = keeper.ChanOpenInit(
-			ctx.Context, stringToOrder(msg.Order), msg.Hops,
+			ctx, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort,
 			msg.Packet.DestinationPort,
 			msg.Version,
@@ -125,19 +127,19 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "startChannelCloseInit":
-		err = keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
+		err = keeper.ChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "bindPort":
-		err = keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
+		err = keeper.BindPort(ctx, msg.Packet.SourcePort)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "timeoutExecuted":
-		err = keeper.TimeoutExecuted(ctx.Context, msg.Packet)
+		err = keeper.TimeoutExecuted(ctx, msg.Packet)
 		if err == nil {
 			ret = "true"
 		}

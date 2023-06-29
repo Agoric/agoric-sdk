@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -39,7 +40,7 @@ import (
 )
 
 // Sender is a function that sends a request to the controller.
-type Sender func(needReply bool, str string) (string, error)
+type Sender func(ctx context.Context, needReply bool, str string) (string, error)
 
 var AppName = "agd"
 var OnStartHook func(logger log.Logger)

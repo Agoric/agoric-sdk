@@ -5,6 +5,7 @@
 package lien
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -70,7 +71,8 @@ const (
 // Receives and processes a bridge message, returning the
 // JSON-encoded response or error.
 // See spec/02_messages.md for the messages and responses.
-func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, error) {
+func (ch portHandler) Receive(cctx context.Context, str string) (string, error) {
+	ctx := sdk.UnwrapSDKContext(cctx)
 	var msg portMessage
 	err := json.Unmarshal([]byte(str), &msg)
 	if err != nil {
@@ -78,13 +80,13 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 	}
 	switch msg.Type {
 	case LIEN_GET_ACCOUNT_STATE:
-		return ch.handleGetAccountState(ctx.Context, msg)
+		return ch.handleGetAccountState(ctx, msg)
 
 	case LIEN_GET_STAKING:
-		return ch.handleGetStaking(ctx.Context, msg)
+		return ch.handleGetStaking(ctx, msg)
 
 	case LIEN_CHANGE_LIENED:
-		return ch.handleChangeLiened(ctx.Context, msg)
+		return ch.handleChangeLiened(ctx, msg)
 	}
 	return "", fmt.Errorf("unrecognized type %s", msg.Type)
 }
