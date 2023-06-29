@@ -744,11 +744,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade10Handler(app, upgradeName),
+		upgrade11Handler(app, upgradeName, callToController),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade10Handler(app, upgradeNameTest),
+		upgrade11Handler(app, upgradeNameTest, callToController),
 	)
 
 	if loadLatest {
@@ -771,39 +771,48 @@ func NewAgoricApp(
 	return app
 }
 
-func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// swingsetUpgradeAction is the action to run swingset upgrade handlers.
+type swingsetUpgradeAction struct {
+	// Type must be enactUpgradePlanType
+	Type string `json:"type"`
+	// Plan is the upgrade plan
+	Plan upgradetypes.Plan `json:"plan"`
+}
+
+const enactUpgradePlanType = "ENACT_UPGRADE_PLAN"
+
+// swingsetUpgrade tells swingset to execute the upgrade plan.
+func swingsetUpgrade(ctx sdk.Context, plan upgradetypes.Plan, callToController func(ctx sdk.Context, str string) (string, error)) error {
+	action := swingsetUpgradeAction{
+		Type: enactUpgradePlanType,
+		Plan: plan,
+	}
+	bz, err := json.Marshal(action)
+	if err != nil {
+		return err
+	}
+	_, err = callToController(ctx, string(bz))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// upgrade11Handler performs standard upgrade actions plus custom actions for upgrade-11.
+func upgrade11Handler(app *GaiaApp, targetUpgrade string, callToController func(ctx sdk.Context, str string) (string, error)) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		// change bootrap gov parameter to correct vaults parameter
-
-		prevParams := app.SwingSetKeeper.GetParams(ctx)
-
-		ctx.Logger().Info("Pre-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
-
-		switch targetUpgrade {
-		case upgradeName:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-main-vaults-config.json"
-		case upgradeNameTest:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-test-vaults-config.json"
-		default:
-			return fromVm, fmt.Errorf("invalid upgrade name")
-		}
-
-		app.SwingSetKeeper.SetParams(ctx, prevParams)
-		ctx.Logger().Info("Post-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
-
-		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
-		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
-		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
-
+		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
 			return mvm, err
 		}
 
-		// Just run the SwingSet kernel to finish bootstrap and get ready to open for
-		// business.
-		stdlog.Println("Rebooting SwingSet")
-		return mvm, swingset.BootSwingset(ctx, app.SwingSetKeeper)
+		// Lastly, let Swingset reaction to the upgrade
+		err = swingsetUpgrade(ctx, plan, callToController)
+		if err != nil {
+			return mvm, err
+		}
+		return mvm, nil
 	}
 }
 
