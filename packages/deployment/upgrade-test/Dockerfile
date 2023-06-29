@@ -1,4 +1,4 @@
-ARG DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+ARG DEST_IMAGE=ghcr.io/agoric/agoric-sdk:dev
 ARG BOOTSTRAP_MODE=main
 # on agoric-uprade-7-2, with upgrade to agoric-upgrade-8
 FROM ghcr.io/agoric/ag0:agoric-upgrade-7-2 as agoric-upgrade-7-2
@@ -57,7 +57,7 @@ RUN . ./upgrade-test-scripts/start_to_to.sh
 
 ARG DEST_IMAGE
 #this is agoric-upgrade-10 / vaults
-FROM ${DEST_IMAGE} as agoric-upgrade-10
+FROM ghcr.io/agoric/agoric-sdk:34 as agoric-upgrade-10
 ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
