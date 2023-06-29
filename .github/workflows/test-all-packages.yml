@@ -719,10 +719,82 @@ jobs:
         uses: docker/setup-buildx-action@v2
       - name: docker build (sdk)
         run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
-      - name: docker build upgrade test
-        run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
+      - name: docker build upgrade test 7-2
+        uses: docker/build-push-action@v4
+        with:
+          context: packages/deployment/upgrade-test
+          push: false
+          tags: ghcr.io/agoric/upgrade-test:agoric-upgrade-7-2
+          target: agoric-upgrade-7-2
+          build-args: |
+            BOOTSTRAP_MODE=${{ matrix.bootstrap-version }}
+            DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: docker build upgrade test 8
+        uses: docker/build-push-action@v4
+        with:
+          context: packages/deployment/upgrade-test
+          push: false
+          tags: ghcr.io/agoric/upgrade-test:agoric-upgrade-8
+          target: agoric-upgrade-8
+          build-args: |
+            BOOTSTRAP_MODE=${{ matrix.bootstrap-version }}
+            DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: docker build upgrade test 8-1
+        uses: docker/build-push-action@v4
+        with:
+          context: packages/deployment/upgrade-test
+          push: false
+          tags: ghcr.io/agoric/upgrade-test:agoric-upgrade-8-1
+          target: agoric-upgrade-8-1
+          build-args: |
+            BOOTSTRAP_MODE=${{ matrix.bootstrap-version }}
+            DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: docker build upgrade test 9
+        uses: docker/build-push-action@v4
+        with:
+          context: packages/deployment/upgrade-test
+          push: false
+          tags: ghcr.io/agoric/upgrade-test:agoric-upgrade-9
+          target: agoric-upgrade-9
+          build-args: |
+            BOOTSTRAP_MODE=${{ matrix.bootstrap-version }}
+            DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: docker build upgrade test 10
+        uses: docker/build-push-action@v4
+        with:
+          context: packages/deployment/upgrade-test
+          push: false
+          tags: ghcr.io/agoric/upgrade-test:agoric-upgrade-10
+          target: agoric-upgrade-10
+          build-args: |
+            BOOTSTRAP_MODE=${{ matrix.bootstrap-version }}
+            DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: docker build upgrade test 11
+        uses: docker/build-push-action@v4
+        with:
+          context: packages/deployment/upgrade-test
+          push: false
+          tags: ghcr.io/agoric/upgrade-test:agoric-upgrade-11
+          target: agoric-upgrade-11
+          build-args: |
+            BOOTSTRAP_MODE=${{ matrix.bootstrap-version }}
+            DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # - name: docker build upgrade test
+      #   run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
-        run: docker run --env "DEST=0" docker-upgrade-test:latest
+        run: docker run --env "DEST=0" ghcr.io/agoric/upgrade-test:agoric-upgrade-11
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
