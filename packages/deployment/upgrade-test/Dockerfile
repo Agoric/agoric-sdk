@@ -59,7 +59,7 @@ ARG DEST_IMAGE
 #this is agoric-upgrade-10 / vaults
 FROM ghcr.io/agoric/agoric-sdk:34 as agoric-upgrade-10
 ARG BOOTSTRAP_MODE
-ENV THIS_NAME=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
+ENV THIS_NAME=agoric-upgrade-10 UPGRADE_TO=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
