@@ -1,6 +1,6 @@
 REPOSITORY = agoric/upgrade-test
 # use :dev (latest prerelease image) unless we build local sdk
-DEST_IMAGE = $(if $(findstring local_sdk,$(MAKECMDGOALS)),ghcr.io/agoric/agoric-sdk:latest,ghcr.io/agoric/agoric-sdk:dev)
+DEST_IMAGE ?= $(if $(findstring local_sdk,$(MAKECMDGOALS)),ghcr.io/agoric/agoric-sdk:latest,ghcr.io/agoric/agoric-sdk:dev)
 BOOTSTRAP_MODE?=main
 TARGET?=agoric-upgrade-11
 dockerLabel?=$(TARGET)
