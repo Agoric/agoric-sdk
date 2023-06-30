@@ -1,13 +1,17 @@
 // book of offers to buy liquidating vaults with prices in terms of
 // discount/markup from the current oracle price.
 
-import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/captp';
+import { AmountMath, BrandShape } from '@agoric/ertp';
+import { StorageNodeShape } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import {
   makeScalarBigMapStore,
+  makeScalarMapStore,
   prepareExoClass,
   provide,
 } from '@agoric/vat-data';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import {
   toBidScalingComparator,
@@ -39,10 +43,24 @@ const nextSequenceNumber = baggage => {
 
 const ScaledBidBookStateShape = harden({
   bidScalingPattern: M.any(),
-  collateralBrand: M.any(),
+  collateralBrand: BrandShape,
   records: M.any(),
-  makeBidNode: M.any(),
+  bidsNode: StorageNodeShape,
 });
+
+const makeBidNode = (bidsNode, bidId) =>
+  E(bidsNode).makeChildNode(`bid${bidId}`);
+
+const makeGetBidDataRecorder = (bidDataKits, bidDataKitPromises) => {
+  return key => {
+    if (bidDataKitPromises.has(key)) {
+      return E.get(bidDataKitPromises.get(key)).recorder;
+    }
+    return bidDataKits.get(key).recorder;
+  };
+};
+
+/** @typedef {ReturnType<import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit>} RecorderKit */
 
 /**
  * Prices in this book are expressed as percentage of the full oracle price
@@ -57,23 +75,28 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
   // each offer for uniqueness.
 
   const bidDataKits = baggage.get('bidDataKits');
+  /** @type {MapStore<string, Promise<RecorderKit>>} */
+  const bidDataKitPromises = makeScalarMapStore('bidDataKit Promises');
+  const getBidDataRecorder = makeGetBidDataRecorder(
+    bidDataKits,
+    bidDataKitPromises,
+  );
 
   return prepareExoClass(
     baggage,
     'scaledBidBook',
     undefined,
     /**
-     *
      * @param {Pattern} bidScalingPattern
      * @param {Brand} collateralBrand
-     * @param {(BigInteger) => Promise<StorageNode>} makeBidNode
+     * @param {StorageNode} bidsNode
      */
-    (bidScalingPattern, collateralBrand, makeBidNode) => ({
+    (bidScalingPattern, collateralBrand, bidsNode) => ({
       bidScalingPattern,
       collateralBrand,
       /** @type {MapStore<string, BidderRecord>} */
       records: makeScalarBigMapStore('scaledBidRecords', { durable: true }),
-      makeBidNode,
+      bidsNode,
     }),
     {
       /**
@@ -84,23 +107,29 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
        * @param {Timestamp} timestamp
        */
       add(seat, bidScaling, wanted, exitAfterBuy, timestamp) {
-        const { bidScalingPattern, collateralBrand, records, makeBidNode } =
+        const { bidScalingPattern, collateralBrand, records, bidsNode } =
           this.state;
         mustMatch(bidScaling, bidScalingPattern);
 
         const seqNum = nextSequenceNumber(baggage);
         const key = toScaledRateOfferKey(bidScaling, seqNum);
 
-        // @ts-expect-error makeRecorderKit accepts ERef<Node>
-        const bidDataKit = makeRecorderKit(makeBidNode(seqNum), M.any());
-        bidDataKits.init(key, bidDataKit);
+        /** @type {PromiseKit<RecorderKit>} */
+        const bidDataKitP = makePromiseKit();
+        bidDataKitPromises.init(key, bidDataKitP.promise);
+        E.when(makeBidNode(bidsNode, seqNum), childBidNode => {
+          const recorderKit = makeRecorderKit(childBidNode);
+          bidDataKits.init(key, recorderKit);
+          bidDataKitP.resolve(recorderKit);
+          bidDataKitPromises.delete(key);
+          return recorderKit;
+        });
 
-        const empty = AmountMath.makeEmpty(collateralBrand);
         /** @type {BidderRecord} */
         const bidderRecord = {
           bidScaling,
           price: undefined,
-          received: empty,
+          received: AmountMath.makeEmpty(collateralBrand),
           seat,
           seqNum,
           wanted,
@@ -108,7 +137,6 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
           timestamp,
         };
         records.init(key, harden(bidderRecord));
-        bidDataKits.init(seqNum);
         return key;
       },
       /** @param {Ratio} bidScaling */
@@ -119,7 +147,7 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
       publishOffer(record) {
         const key = toScaledRateOfferKey(record.bidScaling, record.seqNum);
 
-        bidDataKits.get(key).recorder.write(
+        return E(getBidDataRecorder(key)).write(
           harden({
             bidScaling: record.bidScaling,
             wanted: record.wanted,
@@ -161,7 +189,9 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
         for (const [key, { seat }] of records.entries()) {
           if (!seat.hasExited()) {
             seat.exit();
-            bidDataKits.delete(key);
+            if (bidDataKits.has(key)) {
+              bidDataKits.delete(key);
+            }
             records.delete(key);
           }
         }
@@ -175,9 +205,9 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
 
 const PriceBookStateShape = harden({
   priceRatioPattern: M.any(),
-  collateralBrand: M.any(),
+  collateralBrand: BrandShape,
   records: M.any(),
-  makeBidNode: M.any(),
+  bidsNode: StorageNodeShape,
 });
 
 /**
@@ -189,23 +219,28 @@ const PriceBookStateShape = harden({
  */
 export const preparePriceBook = (baggage, makeRecorderKit) => {
   const bidDataKits = baggage.get('bidDataKits');
+  /** @type {MapStore<string, Promise<RecorderKit>>} */
+  const bidDataKitPromises = makeScalarMapStore('bidDataKit Promises');
+  const getBidDataRecorder = makeGetBidDataRecorder(
+    bidDataKits,
+    bidDataKitPromises,
+  );
 
   return prepareExoClass(
     baggage,
     'priceBook',
     undefined,
     /**
-     *
      * @param {Pattern} priceRatioPattern
      * @param {Brand} collateralBrand
-     * @param {(BigInteger) => Promise<StorageNode>} makeBidNode
+     * @param {StorageNode} bidsNode
      */
-    (priceRatioPattern, collateralBrand, makeBidNode) => ({
+    (priceRatioPattern, collateralBrand, bidsNode) => ({
       priceRatioPattern,
       collateralBrand,
       /** @type {MapStore<string, BidderRecord>} */
       records: makeScalarBigMapStore('scaledBidRecords', { durable: true }),
-      makeBidNode,
+      bidsNode,
     }),
     {
       /**
@@ -216,33 +251,36 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
        * @param {Timestamp} timestamp
        */
       add(seat, price, wanted, exitAfterBuy, timestamp) {
-        const { priceRatioPattern, collateralBrand, records, makeBidNode } =
+        const { priceRatioPattern, collateralBrand, records, bidsNode } =
           this.state;
         mustMatch(price, priceRatioPattern);
 
         const seqNum = nextSequenceNumber(baggage);
         const key = toPriceOfferKey(price, seqNum);
 
-        // @ts-expect-error makeRecorderKit accepts ERef<Node>
-        const bidDataKit = makeRecorderKit(makeBidNode(seqNum), M.any());
-        bidDataKits.init(key, bidDataKit);
+        /** @type {PromiseKit<RecorderKit>} */
+        const bidDataKitP = makePromiseKit();
+        bidDataKitPromises.init(key, bidDataKitP.promise);
+        E.when(makeBidNode(bidsNode, seqNum), childBidNode => {
+          const recorderKit = makeRecorderKit(childBidNode);
+          bidDataKits.init(key, recorderKit);
+          bidDataKitP.resolve(recorderKit);
+          bidDataKitPromises.delete(key);
+          return recorderKit;
+        });
 
-        const empty = AmountMath.makeEmpty(collateralBrand);
-        records.init(
-          key,
-          harden({
-            bidScaling: undefined,
-            price,
-            received: empty,
-            seat,
-            seqNum,
-            wanted,
-            exitAfterBuy,
-            timestamp,
-          }),
-        );
-
-        bidDataKits.init(seqNum);
+        /** @type {BidderRecord} */
+        const bidderRecord = harden({
+          bidScaling: undefined,
+          price,
+          received: AmountMath.makeEmpty(collateralBrand),
+          seat,
+          seqNum,
+          wanted,
+          exitAfterBuy,
+          timestamp,
+        });
+        records.init(key, bidderRecord);
         return key;
       },
       offersAbove(price) {
@@ -252,7 +290,7 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
       publishOffer(record) {
         const key = toPriceOfferKey(record.price, record.seqNum);
 
-        bidDataKits.get(key).recorder.write(
+        return E(getBidDataRecorder(key)).write(
           harden({
             price: record.price,
             wanted: record.wanted,
@@ -293,7 +331,9 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
         for (const [key, { seat }] of records.entries()) {
           if (!seat.hasExited()) {
             seat.exit();
-            bidDataKits.delete(key);
+            if (bidDataKits.has(key)) {
+              bidDataKits.delete(key);
+            }
             records.delete(key);
           }
         }
