@@ -12,7 +12,7 @@ import "C"
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"net/rpc"
 	"os"
 	"path/filepath"
 
@@ -31,8 +31,25 @@ type goReturn = struct {
 
 const SwingSetPort = 123
 
-var replies = map[int]chan goReturn{}
-var lastReply = 0
+var vmClientCodec *vm.ClientCodec
+
+func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, daemoncmd.Sender) {
+	vmClientCodec = vm.NewClientCodec(context.Background(), sendFunc)
+	vmClient := rpc.NewClientWithCodec(vmClientCodec)
+
+	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
+		msg := vm.Message{
+			Port: nodePort,
+			NeedsReply: needReply,
+			Data: str,
+		}
+		var reply string
+		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		return reply, err
+	}
+
+	return vmClientCodec, sendToNode
+}
 
 //export RunAgCosmosDaemon
 func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
@@ -44,35 +61,23 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 	gaia.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-chain-cosmos")
 	daemoncmd.AppName = "ag-chain-cosmos"
 
-	// FIXME: Decouple the sending logic from the Cosmos app.
-	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
-		var rPort int
-		if needReply {
-			lastReply++
-			rPort = lastReply
-			replies[rPort] = make(chan goReturn)
-		}
+	var sendToNode daemoncmd.Sender
 
-		// Send the message
-		C.invokeSendFunc(toNode, nodePort, C.int(rPort), C.CString(str))
-		if !needReply {
-			// Return immediately
-			// fmt.Fprintln(os.Stderr, "Don't wait")
-			return "<no-reply-requested>", nil
-		}
-
-		// Block the sending goroutine while we wait for the reply
-		// fmt.Fprintln(os.Stderr, "Waiting for", rPort)
-		ret := <-replies[rPort]
-		delete(replies, rPort)
-		// fmt.Fprintln(os.Stderr, "Woken, got", ret)
-		return ret.str, ret.err
+	sendFunc := func(port int, reply int, str string) {
+		C.invokeSendFunc(toNode, C.int(port), C.int(reply), C.CString(str))
 	}
+
+	vmClientCodec, sendToNode = ConnectVMClientCodec(
+		context.Background(),
+		int(nodePort),
+		sendFunc,
+	)
 
 	args := make([]string, len(cosmosArgs))
 	for i, s := range cosmosArgs {
 		args[i] = C.GoString(s)
 	}
+
 	// fmt.Fprintln(os.Stderr, "Starting Cosmos", args)
 	os.Args = args
 	go func() {
@@ -95,22 +100,10 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 //export ReplyToGo
 func ReplyToGo(replyPort C.int, isError C.int, resp C.Body) C.int {
 	respStr := C.GoString(resp)
-	// fmt.Fprintln(os.Stderr, "Reply to Go", respStr)
-	returnCh := replies[int(replyPort)]
-	if returnCh == nil {
-		// Unexpected reply.
-		// This is okay, since the caller decides whether or
-		// not she wants to listen for replies.
-		return C.int(0)
+	// fmt.Printf("Reply to Go %d %s\n", replyPort, respStr)
+	if err := vmClientCodec.Receive(int(replyPort), int(isError) != 0, respStr); err != nil {
+		return C.int(1)
 	}
-	// Wake up the waiting goroutine
-	ret := goReturn{}
-	if int(isError) == 0 {
-		ret.str = respStr
-	} else {
-		ret.err = errors.New(respStr)
-	}
-	returnCh <- ret
 	return C.int(0)
 }
 
