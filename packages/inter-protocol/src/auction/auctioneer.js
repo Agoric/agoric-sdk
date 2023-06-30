@@ -703,9 +703,12 @@ export const start = async (zcf, privateArgs, baggage) => {
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
 
-        const bookNode = E(privateArgs.storageNode).makeChildNode(bookId);
-        const scheduleNode = E(bookNode).makeChildNode('schedule');
-        const bidsNode = E(bookNode).makeChildNode('bids');
+        const bookNodeP = E(privateArgs.storageNode).makeChildNode(bookId);
+        const [scheduleNode, bidsNode] = await Promise.all([
+          bookNodeP,
+          E(bookNodeP).makeChildNode('schedule'),
+          E(bookNodeP).makeChildNode('bids'),
+        ]);
 
         const newBook = await makeAuctionBook(
           brands.Bid,
