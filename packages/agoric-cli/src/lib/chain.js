@@ -38,6 +38,7 @@ harden(normalizeAddressWithOptions);
  * @param {ReadonlyArray<string>} swingsetArgs
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
+ *   fees?: string,
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
@@ -48,6 +49,7 @@ harden(normalizeAddressWithOptions);
 export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const {
     from,
+    fees,
     dryRun = false,
     verbose = true,
     keyring = undefined,
@@ -60,9 +62,11 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const backendOpt = keyring?.backend
     ? [`--keyring-backend=${keyring.backend}`]
     : [];
+  const feeOpt = fees ? ['--fees', fees] : [];
   const cmd = [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`].concat(
     homeOpt,
     backendOpt,
+    feeOpt,
     [`--from=${from}`, 'tx', 'swingset'],
     swingsetArgs,
   );

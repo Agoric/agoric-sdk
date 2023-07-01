@@ -206,6 +206,10 @@ export const makeInterCommand = (
     .description('Inter Protocol commands for liquidation bidding etc.')
     .option('--home <dir>', 'agd CosmosSDK application home directory')
     .option(
+      '--fees <amount>',
+      'set fees for transaction broadcast (e.g. 5000ubld)',
+    )
+    .option(
       '--keyring-backend <os|file|test>',
       `keyring's backend (os|file|test) (default "${
         env.AGORIC_KEYRING_BACKEND || 'os'
@@ -337,10 +341,10 @@ inter auction status
     const { networkConfig, agoricNames, pollOffer } = tools;
     const io = { ...networkConfig, execFileSync, delay, stdout };
 
-    const { home, keyringBackend: backend } = interCmd.opts();
+    const { home, keyringBackend: backend, fees } = interCmd.opts();
     const result = await sendAction(
       { method: 'executeOffer', offer },
-      { keyring: { home, backend }, from, verbose: false, dryRun, ...io },
+      { keyring: { home, backend }, from, fees, verbose: false, dryRun, ...io },
     );
     if (dryRun) {
       return;
