@@ -2,7 +2,6 @@ package vm
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -67,12 +66,4 @@ func UnregisterPortHandler(portNum int) error {
 	delete(portToName, portNum)
 	delete(nameToPort, name)
 	return nil
-}
-
-func ReceiveFromController(portNum int, msg string) (string, error) {
-	handler := portToHandler[portNum]
-	if handler == nil {
-		return "", fmt.Errorf("unregistered port %d", portNum)
-	}
-	return handler.Receive(controllerContext, msg)
 }

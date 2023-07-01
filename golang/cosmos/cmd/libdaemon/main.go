@@ -33,6 +33,7 @@ type goReturn = struct {
 const SwingSetPort = 123
 
 var vmClientCodec *vm.ClientCodec
+var agdServer *vm.AgdServer
 
 func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, daemoncmd.Sender) {
 	vmClientCodec = vm.NewClientCodec(context.Background(), sendFunc)
@@ -73,6 +74,7 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		int(nodePort),
 		sendFunc,
 	)
+	agdServer = vm.NewAgdServer()
 
 	args := make([]string, len(cosmosArgs))
 	for i, s := range cosmosArgs {
@@ -117,20 +119,27 @@ type errorWrapper struct {
 func SendToGo(port C.int, msg C.Body) C.Body {
 	msgStr := C.GoString(msg)
 	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
-	respStr, err := vm.ReceiveFromController(int(port), msgStr)
-	if err != nil {
-		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
-		errResp := errorWrapper{
-			Error: err.Error(),
-		}
-		respBytes, err := json.Marshal(&errResp)
-		if err != nil {
-			panic(err)
-		}
-		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
-		respStr = string(respBytes)
+	var respStr string
+	message := &vm.Message{
+		Port: int(port),
+		NeedsReply: true,
+		Data: msgStr,
 	}
-	return C.CString(respStr)
+	
+	err := agdServer.ReceiveMessage(message, &respStr)
+	if err == nil {
+		return C.CString(respStr)
+	}
+
+	// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
+	errResp := errorWrapper{
+		Error: err.Error(),
+	}
+	respBytes, err := json.Marshal(&errResp)
+	if err != nil {
+		panic(err)
+	}
+	return C.CString(string(respBytes))
 }
 
 // Do nothing in main.
