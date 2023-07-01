@@ -155,8 +155,23 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
+const (
+	// FlagSplitVm is the command-line flag for subcommands that can use a
+	// split-process Agoric VM.  The default is to use an embedded VM.
+	FlagSplitVm = "split-vm"
+)
+
+func addAgoricVMFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(
+		FlagSplitVm,
+		"",
+		"Specify the external Agoric VM program",
+	)
+}
+
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	addAgoricVMFlags(startCmd)
 }
 
 func queryCommand() *cobra.Command {
@@ -302,6 +317,7 @@ const (
 // cosmos-sdk to add a required "export-dir" command-line flag, and create the
 // genesis export in the specified directory.
 func extendCosmosExportCommand(cmd *cobra.Command, hasVMController bool) {
+	addAgoricVMFlags(cmd)
 	cmd.Flags().String(FlagExportDir, "", "The directory where to create the genesis export")
 	err := cmd.MarkFlagRequired(FlagExportDir)
 	if err != nil {
