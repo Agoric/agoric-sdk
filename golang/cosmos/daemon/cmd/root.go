@@ -43,8 +43,8 @@ import (
 type Sender func(ctx context.Context, needReply bool, str string) (string, error)
 
 var AppName = "agd"
-var OnStartHook func(logger log.Logger)
-var OnExportHook func(logger log.Logger)
+var OnStartHook func(log.Logger, servertypes.AppOptions) error
+var OnExportHook func(log.Logger, servertypes.AppOptions) error
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -62,7 +62,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   AppName,
-		Short: "Stargate Agoric App",
+		Short: "Agoric Cosmos App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -231,7 +231,9 @@ func (ac appCreator) newApp(
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	if OnStartHook != nil {
-		OnStartHook(logger)
+		if err := OnStartHook(logger, appOpts); err != nil {
+			panic(err)
+		}
 	}
 
 	var cache sdk.MultiStorePersistentCache
@@ -370,7 +372,9 @@ func (ac appCreator) appExport(
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
 	if OnExportHook != nil {
-		OnExportHook(logger)
+		if err := OnExportHook(logger, appOpts); err != nil {
+			return servertypes.ExportedApp{}, err
+		}
 	}
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
