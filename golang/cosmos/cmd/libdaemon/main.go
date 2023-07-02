@@ -35,11 +35,17 @@ const SwingSetPort = 123
 var vmClientCodec *vm.ClientCodec
 var agdServer *vm.AgdServer
 
+// ConnectVMClientCodec creates an RPC client codec and a sender to the
+// in-process implementation of the VM.
 func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, daemoncmd.Sender) {
 	vmClientCodec = vm.NewClientCodec(context.Background(), sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
 	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
+		if str == "shutdown" {
+			return "", vmClientCodec.Close()
+		}
+
 		msg := vm.Message{
 			Port: nodePort,
 			NeedsReply: needReply,

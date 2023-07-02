@@ -6,7 +6,9 @@ import (
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"os"
+	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cast"
 	"github.com/tendermint/tendermint/libs/log"
@@ -19,13 +21,54 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
+// TerminateSubprocessGracePeriod is how long we wait between closing the pipe
+// waiting for it to exit, then sending a termination signal.
+const TerminateSubprocessGracePeriod = 3 * time.Second
+
+// KillSubprocessGracePeriod is how long we wait between sending a subprocess a
+// termination signal, waiting for it to exit, then killing it.
+const KillSubprocessGracePeriod = 5 * time.Second
+
+// makeShutdown returns a function that terminates the vm.
+func makeShutdown(cmd *exec.Cmd, writer *os.File) func() error {
+	return func() error {
+		// Stop talking to the subprocess.
+		_ = writer.Close()
+		go func() {
+			// Wait a bit.
+			time.Sleep(TerminateSubprocessGracePeriod)
+			// Then punch it in the shoulder.
+			_ = cmd.Process.Signal(os.Interrupt)
+			// Wait a bit.
+			time.Sleep(KillSubprocessGracePeriod)
+			// Then blow it away.
+			_ = cmd.Process.Kill()
+		}()
+		// Wait for it to keel over.
+		return cmd.Wait()
+	}
+}
+
+
+// main is the entry point of the agd daemon.  It determines whether to
+// initialize JSON-RPC communications with the separate `--split-vm` VM process,
+// or just to give up control entirely to another binary.
 func main() {
 	var vmClient *rpc.Client
+	var shutdown func() error
 
 	nodePort := 1
 	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
 		if vmClient == nil {
 			return "", errors.New("sendToVM called without VM client set up")
+		}
+
+		if str == "shutdown" {
+			// We could ask nicely, but don't bother.
+			if shutdown != nil {
+				return "", shutdown()
+			}
+			return "", nil
 		}
 
 		msg := vm.Message{
@@ -38,7 +81,6 @@ func main() {
 		return reply, err
 	}
 
-	// We need to delegate to our default app for running the actual chain.
 	exitCode := 0
 	launchVM := func(logger log.Logger, appOpts servertypes.AppOptions) error {
 		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
@@ -50,12 +92,14 @@ func main() {
 			if lookErr != nil {
 				return lookErr
 			}
-	
+
+			// We completely delegate to our default app for running the actual chain.
 			logger.Info("agd delegating to JS executable", "binary", binary, "args", args)
 			return syscall.Exec(binary, args, os.Environ())
 		}
 
-		agdFromVM, vmToAgd, err := os.Pipe()
+		// Split the execution between us and the VM.
+		agdFromVm, vmToAgd, err := os.Pipe()
 		if err != nil {
 			return err
 		}
@@ -67,6 +111,8 @@ func main() {
 		// Start the command running, then continue.
 		args[0] = binary
 		cmd := NewVMCommand(logger, binary, args, vmFromAgd, vmToAgd)
+		shutdown = makeShutdown(cmd, agdToVm)
+
 		if err := cmd.Start(); err != nil {
 			return err
 		}
@@ -78,12 +124,14 @@ func main() {
 		}
 
 		// Multiplex bidirectional JSON-RPC over the pipes.
-		agvmConn := jsonrpcconn.NewConn(agdFromVM, agdToVm)
+		agvmConn := jsonrpcconn.NewConn(agdFromVm, agdToVm)
 		clientConn, serverConn := jsonrpcconn.ClientServerConn(agvmConn)
 
 		// Set up the VM server.
 		vmServer := rpc.NewServer()
-		vmServer.RegisterName("agd", vm.NewAgdServer())
+		if err := vmServer.RegisterName("agd", vm.NewAgdServer()); err != nil {
+			return err
+		}
 		go vmServer.ServeCodec(jsonrpc.NewServerCodec(serverConn))
 
 		// Set up the VM client.
@@ -91,7 +139,7 @@ func main() {
 
 		go func() {
 			// Premature exit from `agd start` should exit the process.
-			cmd.Wait()
+			_ = cmd.Wait()
 			os.Exit(exitCode)
 		}()
 
