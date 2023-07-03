@@ -21,7 +21,7 @@ cd "$NETWORK_NAME/setup"
 
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
 export AG_SETUP_COSMOS_STATE_SYNC_INTERVAL=20 
-AGORIC_SDK_PATH=${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
+SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
 if [ -d /usr/src/testnet-load-generator ]
 then
@@ -44,18 +44,22 @@ VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
-if [ -d /usr/src/testnet-load-generator ]
+loadgen="$PWD/testnet-load-genereator"
+if [ ! -d "$loadgen" ]; then
+  loadgen=/usr/src/testnet-load-generator
+fi
+if [ -d "$loadgen" ]
 then
-  /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh show-config > "$RESULTSDIR/network-config"
+  "$SDK_SRC/packages/deployment/scripts/setup.sh" show-config > "$RESULTSDIR/network-config"
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
-  cd /usr/src/testnet-load-generator
+  cd "$loadgen"
   SOLO_COINS=40000000000uist \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
-  SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER= \
+  SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER="" \
   SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
   AG_CHAIN_COSMOS_HOME=$HOME/.agoric \
-  SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
+  SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=$SDK_SRC OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --no-stage.save-storage \
     --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
     --stage.loadgen.faucet.interval=6 --stage.loadgen.faucet.limit=4 \

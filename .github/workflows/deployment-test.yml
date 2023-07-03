@@ -66,23 +66,13 @@ jobs:
           path: testnet-load-generator
           ref: ${{steps.get-loadgen-branch.outputs.result}}
 
-      - name: Put repos under /usr/src where scripts expect them
-        run: |
-          set -e
-          sudo mv "$GITHUB_WORKSPACE/testnet-load-generator" /usr/src/testnet-load-generator
-          sudo cp -a "$GITHUB_WORKSPACE" /usr/src/agoric-sdk
-          ln -s /usr/src/agoric-sdk/packages/deployment/bin/ag-setup-cosmos /usr/local/bin/ag-setup-cosmos
-        working-directory: /
-
       - name: Build cosmic-swingset dependencies
         run: |
           set -e
           cd packages/cosmic-swingset
           make install
-        working-directory: /usr/src/agoric-sdk
-      - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
+      - run: packages/deployment/scripts/integration-test.sh
         timeout-minutes: 90
-        working-directory: /usr/src/agoric-sdk
         env:
           NETWORK_NAME: chaintest
       - name: capture results
@@ -99,14 +89,13 @@ jobs:
 
           # Tear down the nodes.
           echo yes | packages/deployment/scripts/setup.sh destroy || true
-        working-directory: /usr/src/agoric-sdk
         env:
           NETWORK_NAME: chaintest
       - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
-          path: /usr/src/agoric-sdk/chaintest/results
+          path: chaintest/results
 
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
