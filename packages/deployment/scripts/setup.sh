@@ -11,8 +11,7 @@ export NETWORK_NAME
 export AG_SETUP_COSMOS_NAME=$NETWORK_NAME
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-"$PWD/$NETWORK_NAME/setup"}
 
-# Put our bindir into the PATH so that children can find ag-setup-cosmos.
+# Put GOBIN into the PATH so that children can find ag-setup-cosmos.
 export PATH="$thisdir/../bin:${GOBIN-${GOPATH-/usr/local}/bin}:$PATH"
 
-# Run our setup command.
 exec ag-setup-cosmos ${1+"$@"}
