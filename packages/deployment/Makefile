@@ -5,7 +5,7 @@ VERSION := $(shell node -e 'console.log(require("../../package.json").version??"
 
 TAG := $(if $(VERSION),$(VERSION),latest)
 GIT_REVISION := $(shell hash=$$(git rev-parse --short HEAD); \
-	dirty=`git diff --quiet || echo -dirty`; \
+	dirty=`git diff --quiet 2>/dev/null || echo -dirty`; \
 	echo "$$hash$$dirty")
 
 # Don't push alpha tags as ":$(TAG)".
