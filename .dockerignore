@@ -3,14 +3,15 @@
 docker
 packages/cosmic-swingset/t[0-9]
 packages/cosmic-swingset/t[0-9].*
-packages/cosmic-swingset/lib/lib*.h
-packages/cosmic-swingset/lib/lib*.so
+golang/cosmos/build
+packages/deployment
 packages/swingset-runner
 packages/stat-logger
 **/deployment.json
 **/vars.tf
 **/*.log
 **/build
+**/bundles
 **/__pycache__
 **/*.egg-info
 **/swingset-kernel-state
