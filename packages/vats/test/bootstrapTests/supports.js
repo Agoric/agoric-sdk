@@ -9,12 +9,11 @@ import childProcessAmbient from 'child_process';
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-/* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { TimeMath } from '@agoric/time';

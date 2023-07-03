@@ -1,5 +1,7 @@
 # Inter Protocol Liquidation Bidding Test Tool
 
+***Note: For information on bidding on mainnet, see [Bidding For Liquidated Collateral](https://docs.inter.trade/user-how-to/bidding-for-liquidated-collateral) on https://docs.inter.trade 
+
 The `agops` command (from the `agoric` package in `packages/agoric-cli`)
 supports the role of liquidation bidder using a unix command-line interface (CLI).
 

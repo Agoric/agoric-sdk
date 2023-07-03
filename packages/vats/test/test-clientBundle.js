@@ -1,13 +1,12 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { E, Far } from '@endo/far';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeHeapZone } from '@agoric/zone';
+import { Stake } from '@agoric/inter-protocol/src/tokens.js';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, feeIssuerConfig } from '../src/core/utils.js';
@@ -20,7 +19,6 @@ import {
   makeBoard,
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
-import { Stake } from '../src/tokens.js';
 import { buildRootObject as buildProvisioningRoot } from '../src/vat-provisioning.js';
 
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';

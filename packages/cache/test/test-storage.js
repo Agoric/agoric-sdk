@@ -1,6 +1,5 @@
 // Must be first to set up globals
 // import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies -- XXX
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 import test from 'ava';

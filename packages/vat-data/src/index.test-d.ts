@@ -1,4 +1,4 @@
-/* eslint-disable no-use-before-define, import/no-extraneous-dependencies */
+/* eslint-disable no-use-before-define */
 import { expectType } from 'tsd';
 import {
   defineKind,

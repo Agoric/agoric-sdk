@@ -1,7 +1,6 @@
 /* global FinalizationRegistry WeakRef */
 import '@endo/init/debug.js';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import * as proc from 'child_process';

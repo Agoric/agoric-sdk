@@ -1,5 +1,4 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';

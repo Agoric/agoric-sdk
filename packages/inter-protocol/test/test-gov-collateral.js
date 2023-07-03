@@ -22,11 +22,11 @@ import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/ex
 import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { TimeMath } from '@agoric/time';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { Stable } from '../src/tokens.js';
 import {
   setupBootstrap,
   setUpZoeForTest,

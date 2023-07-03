@@ -1,7 +1,6 @@
 /* global setTimeout, FinalizationRegistry, setImmediate, process */
 import '@endo/init/debug.js';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import { createHash } from 'crypto';
@@ -9,7 +8,6 @@ import * as proc from 'child_process';
 import * as os from 'os';
 import fs from 'fs';
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { tmpName } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';

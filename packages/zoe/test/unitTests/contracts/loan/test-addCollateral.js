@@ -1,7 +1,5 @@
 // @ts-nocheck
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import '../../../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';

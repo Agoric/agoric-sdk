@@ -1,5 +1,6 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
+import * as Tokens from '@agoric/inter-protocol/src/tokens.js';
 
 export const STAKING_MAX_VALIDATORS = 150;
 // Required for IBC connections not to time out.
@@ -13,38 +14,38 @@ export const ICA_HOST_ALLOW_MESSAGES = [
 ];
 
 const Stake = /** @type {const} */ ({
-  name: 'Agoric Staking Token',
+  name: Tokens.Stake.proposedName,
   description: 'The token used by delegates to stake on the Agoric chain',
   denom_units: [
     {
-      denom: 'ubld',
+      denom: Tokens.Stake.denom,
       exponent: 0,
     },
     {
       denom: 'bld',
-      exponent: 6,
+      exponent: Tokens.Stake.displayInfo.decimalPlaces,
     },
   ],
-  base: 'ubld',
+  base: Tokens.Stake.denom,
   display: 'bld',
-  symbol: 'BLD',
+  symbol: Tokens.Stake.symbol,
 });
 const Stable = /** @type {const} */ ({
-  name: 'Agoric stable token',
+  name: Tokens.Stable.proposedName,
   description: 'The stable token used by the Agoric chain',
   denom_units: [
     {
-      denom: 'uist',
+      denom: Tokens.Stable.denom,
       exponent: 0,
     },
     {
       denom: 'ist',
-      exponent: 6,
+      exponent: Tokens.Stable.displayInfo.decimalPlaces,
     },
   ],
-  base: 'uist',
+  base: Tokens.Stable.denom,
   display: 'ist',
-  symbol: 'IST',
+  symbol: Tokens.Stable.symbol,
 });
 export const DENOM_METADATA = /** @type {const} */ ([Stake, Stable]);
 
