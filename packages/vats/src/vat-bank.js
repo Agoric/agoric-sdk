@@ -614,7 +614,7 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {import('@endo/far').EOnly<DepositFacet>}
+       * @returns {ERef<import('@endo/far').EOnly<DepositFacet>>}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;
