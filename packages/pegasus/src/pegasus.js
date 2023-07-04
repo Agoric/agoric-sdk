@@ -459,9 +459,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {ERef<Peg>} pegP the peg over which to transfer
      * @param {DepositAddress} depositAddress the remote receiver's address
      * @param {string} [memo] the memo to attach to ics transfer packet
+     * @param {string} [sender] the sender to attach to ics transfer packet
      * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
      */
-    async makeInvitationToTransfer(pegP, depositAddress, memo = '') {
+    async makeInvitationToTransfer(pegP, depositAddress, memo = '', sender = 'pegasus') {
       // Verify the peg.
       const peg = await pegP;
       const denomState = pegToDenomState.get(peg);
@@ -483,7 +484,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
        */
       const offerHandler = zcfSeat => {
         assertProposalShape(zcfSeat, TRANSFER_PROPOSAL_SHAPE);
-        send(zcfSeat, depositAddress, memo);
+        send(zcfSeat, depositAddress, memo, sender);
       };
 
       return zcf.makeInvitation(offerHandler, `pegasus ${sendDenom} transfer`);
