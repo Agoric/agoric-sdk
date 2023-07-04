@@ -1,8 +1,6 @@
 // @ts-check
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
-// eslint-disable-next-line import/order
-import { fakeVomKit } from './setup-vat-data.js';
+import { reincarnate } from '@agoric/swingset-vat/tools/setup-vat-data.js';
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
@@ -15,6 +13,7 @@ import { prepareVirtualPurse } from '../src/virtual-purse.js';
 /** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */
 const test = rawTest;
 
+const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const makeTestContext = () => {
   return { baggage: fakeVomKit.cm.provideBaggage() };
 };

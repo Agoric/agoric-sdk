@@ -6,44 +6,10 @@
  * and stores.
  */
 
-import '@endo/init/pre-bundle-source.js';
+import '@endo/init/pre.js';
 
 import './install-ses-debug.js';
-import { makeFakeVirtualStuff } from '@agoric/swingset-liveslots/tools/fakeVirtualSupport.js';
+import { reincarnate } from './setup-vat-data.js';
 
-const { vom, cm, wpm } = makeFakeVirtualStuff();
-
-const {
-  defineKind,
-  defineKindMulti,
-  defineDurableKind,
-  defineDurableKindMulti,
-  makeKindHandle,
-  canBeDurable,
-} = vom;
-
-const {
-  makeScalarBigMapStore,
-  makeScalarBigWeakMapStore,
-  makeScalarBigSetStore,
-  makeScalarBigWeakSetStore,
-} = cm;
-
-const { watchPromise, providePromiseWatcher } = wpm;
-
-const VatData = harden({
-  defineKind,
-  defineKindMulti,
-  defineDurableKind,
-  defineDurableKindMulti,
-  makeKindHandle,
-  providePromiseWatcher,
-  watchPromise,
-  makeScalarBigMapStore,
-  makeScalarBigWeakMapStore,
-  makeScalarBigSetStore,
-  makeScalarBigWeakSetStore,
-  canBeDurable,
-});
-
-globalThis.VatData = VatData;
+// Install the VatData globals.
+reincarnate();

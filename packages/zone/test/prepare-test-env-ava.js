@@ -1,18 +1,11 @@
 export { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { reincarnate } from '@agoric/swingset-vat/tools/setup-vat-data.js';
 
-import { makeHeapZone } from '../src/heap.js';
-import { makeVirtualZone } from '../src/virtual.js';
-import { makeDurableZone } from '../src/durable.js';
+let incarnation = reincarnate({ relaxDurabilityRules: false });
+export const getBaggage = () => {
+  return incarnation.fakeVomKit.cm.provideBaggage();
+};
 
-export const makeContext = () => {
-  const heapZone = makeHeapZone();
-  const virtualZone = makeVirtualZone();
-  const rootBaggage = virtualZone.detached().mapStore('rootBaggage');
-  const rootDurableZone = makeDurableZone(rootBaggage);
-  return {
-    heapZone,
-    virtualZone,
-    rootBaggage,
-    rootDurableZone,
-  };
+export const nextLife = () => {
+  incarnation = reincarnate(incarnation);
 };

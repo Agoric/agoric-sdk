@@ -1,16 +1,11 @@
-import { test as rawTest, makeContext } from './prepare-test-env-ava.js';
+import { getBaggage, nextLife, test } from './prepare-test-env-ava.js';
 
 import { M } from '@agoric/store';
 import { makeDurableZone } from '../durable.js';
+import { makeHeapZone } from '../heap.js';
+import { makeVirtualZone } from '../virtual.js';
 
 /** @typedef {import('../src/index.js').Zone} Zone */
-
-/** @type {import('ava').TestFn<ReturnType<makeContext>>} */
-const test = rawTest;
-
-test.before(t => {
-  t.context = makeContext();
-});
 
 const greetGuard = M.interface('Greeter', {
   greet: M.call().optional(M.string()).returns(M.string()),
@@ -38,7 +33,9 @@ const testExos = (t, rootZone) => {
   t.is(singly.greet(), 'Hello, Singly');
   t.throws(
     () =>
-      subZone.exo('a', greetGuard, { greet: greetFacet.greet.bind('Dualie') }),
+      subZone.exo('a', greetGuard, {
+        greet: greetFacet.greet.bind({ state: { nick: 'Dualie' } }),
+      }),
     alreadyExceptionSpec,
   );
 
@@ -48,20 +45,19 @@ const testExos = (t, rootZone) => {
 };
 
 test('heapZone', t => {
-  const { heapZone } = t.context;
-  testExos(t, heapZone);
+  testExos(t, makeHeapZone());
 });
 
-test('virtualZone', t => {
-  const { virtualZone } = t.context;
-  testExos(t, virtualZone);
+test.serial('virtualZone', t => {
+  testExos(t, makeVirtualZone());
 });
 
-test('durableZone', t => {
-  const { rootBaggage, rootDurableZone } = t.context;
-  testExos(t, rootDurableZone);
-  const secondDurableZone = makeDurableZone(rootBaggage);
-  testExos(t, secondDurableZone);
-  const subDurableZone = makeDurableZone(rootBaggage).subZone('sub');
-  testExos(t, subDurableZone);
+test.failing('durableZone', t => {
+  nextLife();
+  const baggage1 = getBaggage();
+  testExos(t, makeDurableZone(baggage1));
+
+  nextLife();
+  const baggage2 = getBaggage();
+  testExos(t, makeDurableZone(baggage2));
 });

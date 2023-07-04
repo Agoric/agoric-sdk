@@ -1,8 +1,6 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
-// eslint-disable-next-line import/order
-import { fakeVomKit } from './setup-vat-data.js';
+import { reincarnate } from '@agoric/swingset-vat/tools/setup-vat-data.js';
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
@@ -11,6 +9,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
+const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
   const root = fakeVomKit.cm.provideBaggage();
   const zone = makeDurableZone(root);
