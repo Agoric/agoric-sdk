@@ -1,27 +1,11 @@
-import { test as rawTest } from './prepare-test-env-ava.js';
+import { test as rawTest, makeContext } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { makeHeapZone } from '../heap.js';
-import { makeVirtualZone } from '../virtual.js';
 import { makeDurableZone } from '../durable.js';
 
 /** @typedef {import('../src/index.js').Zone} Zone */
 
 /** @type {import('ava').TestFn<ReturnType<makeContext>>} */
 const test = rawTest;
-
-const makeContext = () => {
-  const heapZone = makeHeapZone();
-  const virtualZone = makeVirtualZone();
-  const rootBaggage = virtualZone.detached().mapStore('rootBaggage');
-  const rootDurableZone = makeDurableZone(rootBaggage);
-  return {
-    heapZone,
-    virtualZone,
-    rootBaggage,
-    rootDurableZone,
-  };
-};
 
 test.before(t => {
   t.context = makeContext();
