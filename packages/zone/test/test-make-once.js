@@ -1,13 +1,13 @@
 import {
-  test,
+  annihilate,
   getBaggage,
   nextLife,
-  annihilate,
+  test,
 } from './prepare-test-env-ava.js';
 
 import { makeDurableZone } from '../durable.js';
-import { makeVirtualZone } from '../virtual.js';
 import { makeHeapZone } from '../heap.js';
+import { makeVirtualZone } from '../virtual.js';
 
 /** @typedef {import('../src/index.js').Zone} Zone */
 
@@ -35,14 +35,11 @@ const testOnce = (t, rootZone) => {
 };
 
 test('heapZone', t => {
-  const zone = makeHeapZone();
-  testOnce(t, zone);
+  testOnce(t, makeHeapZone());
 });
 
 test.serial('virtualZone', t => {
-  nextLife();
-  const zone = makeVirtualZone();
-  testOnce(t, zone);
+  testOnce(t, makeVirtualZone());
 });
 
 test.serial('durableZone', t => {
