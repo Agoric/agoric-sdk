@@ -1,5 +1,9 @@
+import '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { reincarnate } from '@agoric/swingset-vat/tools/setup-vat-data.js';
+
 export { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+/** @type {ReturnType<typeof reincarnate>} */
 let incarnation;
 
 export const annihilate = () => {

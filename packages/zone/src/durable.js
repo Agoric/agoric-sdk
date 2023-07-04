@@ -34,8 +34,11 @@ harden(isStorable);
  */
 const attachDurableStores = getBaggage => {
   /** @type {import('.').Zone['mapStore']} */
-  const mapStore = (label, options) =>
-    provideDurableMapStore(getBaggage(), label, options);
+  const mapStore = (label, options) => {
+    const baggage = getBaggage();
+    const ret = provideDurableMapStore(baggage, label, options);
+    return ret;
+  };
   /** @type {import('.').Zone['setStore']} */
   const setStore = (label, options) =>
     provideDurableSetStore(getBaggage(), label, options);
