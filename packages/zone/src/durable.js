@@ -88,11 +88,11 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   /** @type {import('.').Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
 
-  const mapStore = wrapProvider(attachedStores.mapStore);
+  const subZoneStore = wrapProvider(attachedStores.mapStore, keys.zone);
 
   /** @type {import('.').Zone['subZone']} */
   const subZone = (label, options = {}) => {
-    const subBaggage = mapStore(label, options);
+    const subBaggage = subZoneStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
 
@@ -106,10 +106,10 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     detached: attachedStores.detached,
     isStorable: attachedStores.isStorable,
 
-    mapStore,
-    setStore: wrapProvider(attachedStores.setStore),
-    weakMapStore: wrapProvider(attachedStores.weakMapStore),
-    weakSetStore: wrapProvider(attachedStores.weakSetStore),
+    mapStore: wrapProvider(attachedStores.mapStore, keys.store),
+    setStore: wrapProvider(attachedStores.setStore, keys.store),
+    weakMapStore: wrapProvider(attachedStores.weakMapStore, keys.store),
+    weakSetStore: wrapProvider(attachedStores.weakSetStore, keys.store),
   });
 };
 harden(makeDurableZone);

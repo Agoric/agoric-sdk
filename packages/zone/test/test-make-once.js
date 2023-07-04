@@ -1,31 +1,15 @@
-import { test as rawTest } from './prepare-test-env-ava.js';
+import {
+  test,
+  getBaggage,
+  nextLife,
+  annihilate,
+} from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { makeHeapZone } from '../heap.js';
-import { makeVirtualZone } from '../virtual.js';
 import { makeDurableZone } from '../durable.js';
+import { makeVirtualZone } from '../virtual.js';
+import { makeHeapZone } from '../heap.js';
 
 /** @typedef {import('../src/index.js').Zone} Zone */
-
-/** @type {import('ava').TestFn<ReturnType<makeContext>>} */
-const test = rawTest;
-
-const makeContext = () => {
-  const heapZone = makeHeapZone();
-  const virtualZone = makeVirtualZone();
-  const rootBaggage = virtualZone.detached().mapStore('rootBaggage');
-  const rootDurableZone = makeDurableZone(rootBaggage);
-  return {
-    heapZone,
-    virtualZone,
-    rootBaggage,
-    rootDurableZone,
-  };
-};
-
-test.before(t => {
-  t.context = makeContext();
-});
 
 /**
  * @param {import('ava').Assertions} t
@@ -51,18 +35,23 @@ const testOnce = (t, rootZone) => {
 };
 
 test('heapZone', t => {
-  const { heapZone } = t.context;
-  testOnce(t, heapZone);
+  const zone = makeHeapZone();
+  testOnce(t, zone);
 });
 
-test('virtualZone', t => {
-  const { virtualZone } = t.context;
-  testOnce(t, virtualZone);
+test.serial('virtualZone', t => {
+  nextLife();
+  const zone = makeVirtualZone();
+  testOnce(t, zone);
 });
 
-test('durableZone', t => {
-  const { rootBaggage, rootDurableZone } = t.context;
+test.serial('durableZone', t => {
+  annihilate();
+  const rootBaggage = getBaggage();
+  const rootDurableZone = makeDurableZone(rootBaggage);
   testOnce(t, rootDurableZone);
+
+  // Do we actually want to refuse to use the same baggage twice?
   const secondDurableZone = makeDurableZone(rootBaggage);
   testOnce(t, secondDurableZone);
   const subDurableZone = makeDurableZone(rootBaggage).subZone('sub');
@@ -73,4 +62,8 @@ test('durableZone', t => {
   t.throws(() => subDurableZone.makeOnce('a', () => 'B'), {
     message: /has already been used/,
   });
+
+  nextLife();
+  const thirdDurableZone = makeDurableZone(getBaggage());
+  testOnce(t, thirdDurableZone);
 });
