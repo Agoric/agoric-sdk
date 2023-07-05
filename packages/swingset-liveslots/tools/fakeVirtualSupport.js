@@ -8,6 +8,7 @@ import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
+import { makeIDCounters } from './id-counters.js';
 
 class FakeFinalizationRegistry {
   // eslint-disable-next-line no-useless-constructor, no-empty-function
@@ -151,19 +152,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     },
   };
 
-  let nextExportID = 1;
-  function allocateExportID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
-  }
-
-  let nextCollectionID = 1;
-  function allocateCollectionID() {
-    const collectionID = nextCollectionID;
-    nextCollectionID += 1;
-    return collectionID;
-  }
+  const { allocateCollectionID, allocateExportID, flushIDCounters } =
+    makeIDCounters(syscall);
 
   // note: The real liveslots slotToVal() maps slots (vrefs) to a WeakRef,
   // and the WeakRef may or may not contain the target value. Use
@@ -257,6 +247,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     syscall,
     allocateExportID,
     allocateCollectionID,
+    flushIDCounters,
     getSlotForVal,
     requiredValForSlot,
     getValForSlot,

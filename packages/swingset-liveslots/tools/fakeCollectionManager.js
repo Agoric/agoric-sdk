@@ -30,6 +30,7 @@ export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
     makeScalarBigWeakSetStore,
     provideBaggage,
     flushSchemaCache,
+    flushIDCounters: fakeStuff.flushIDCounters,
   };
 
   const debugTools = {

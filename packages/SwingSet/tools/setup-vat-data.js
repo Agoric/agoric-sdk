@@ -37,6 +37,7 @@ export const reincarnate = (options = {}) => {
   if (options.fakeVomKit) {
     fvk.vom.flushStateCache();
     fvk.cm.flushSchemaCache();
+    fvk.cm.flushIDCounters();
   }
 
   fakeVomKit = makeFakeVirtualStuff({
