@@ -344,6 +344,7 @@
  *   details: DetailsTag,
  *   Fail: FailTag,
  *   quote: AssertQuote,
+ *   bare: AssertQuote,
  *   makeAssert: MakeAssert,
  * } } Assert
  */
