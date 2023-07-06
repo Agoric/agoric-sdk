@@ -206,17 +206,23 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       }
       return val;
     }
+    let result;
     if (virtual || durable) {
       if (vrm) {
         val = vrm.reanimate(slot);
         if (facet !== undefined) {
-          return vrm.getFacet(id, val, facet);
+          result = vrm.getFacet(id, val, facet);
         }
       } else {
         assert.fail('fake liveSlots stuff configured without vrm');
       }
     }
-    return val;
+    // eslint-disable-next-line no-use-before-define
+    registerEntry(baseRef, val, facet !== undefined);
+    if (!result) {
+      result = val;
+    }
+    return result;
   }
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal, {
@@ -224,6 +230,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   });
 
   function registerEntry(baseRef, val, valIsCohort) {
+    const { facet } = parseVatSlot(baseRef);
+    !facet ||
+      Fail`registerEntry(${baseRef} should not receive individual facets`;
     setValForSlot(baseRef, val);
     if (valIsCohort) {
       const { id } = parseVatSlot(baseRef);
