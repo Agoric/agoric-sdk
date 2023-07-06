@@ -16,9 +16,18 @@ import {
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
-const { hasOwn, defineProperty, getOwnPropertyNames } = Object;
+const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
+
+// See https://github.com/Agoric/agoric-sdk/issues/8005
+// Once agoric-sdk is upgraded to depend on endo post
+// https://github.com/endojs/endo/pull/1606 then remove this
+// definition of `b` and say instead
+// ```js
+//   const { quote: q, base: b } = assert;
+// ```
+const b = index => q(Number(index));
 
 // import { kdebug } from './kdebug.js';
 
@@ -141,9 +150,8 @@ const makeContextCache = (makeState, makeContext) => {
  * @param {*} getSlotForVal
  * @returns {ContextProvider}
  */
-const makeContextProvider = (contextCache, getSlotForVal) => {
-  return harden(rep => contextCache.get(getSlotForVal(rep)));
-};
+const makeContextProvider = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.get(getSlotForVal(rep)));
 
 const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   /** @type { Record<string, any> } */
@@ -260,15 +268,15 @@ const makeFacets = (
 };
 
 const insistDurableCapdata = (vrm, what, capdata, valueFor) => {
-  capdata.slots.forEach((vref, idx) => {
+  for (const [idx, vref] of entries(capdata.slots)) {
     if (!vrm.isDurable(vref)) {
       if (valueFor) {
-        Fail`value for ${what} is not durable: slot ${q(idx)} of ${capdata}`;
+        Fail`value for ${what} is not durable: slot ${b(idx)} of ${capdata}`;
       } else {
-        Fail`${what} is not durable: slot ${q(idx)} of ${capdata}`;
+        Fail`${what} is not durable: slot ${b(idx)} of ${capdata}`;
       }
     }
-  });
+  }
 };
 
 const insistSameCapData = (oldCD, newCD) => {
@@ -281,11 +289,11 @@ const insistSameCapData = (oldCD, newCD) => {
   if (oldCD.slots.length !== newCD.slots.length) {
     Fail`durable Kind stateShape mismatch (slots.length)`;
   }
-  oldCD.slots.forEach((oldVref, idx) => {
+  for (const [idx, oldVref] of entries(oldCD.slots)) {
     if (newCD.slots[idx] !== oldVref) {
       Fail`durable Kind stateShape mismatch (slot[${idx}])`;
     }
-  });
+  }
 };
 
 /**
@@ -707,7 +715,7 @@ export const makeVirtualObjectManager = (
     durableKindDescriptor = undefined, // only for durables
   ) => {
     const {
-      finish,
+      finish = undefined,
       stateShape = undefined,
       thisfulMethods = false,
       interfaceGuard = undefined,
@@ -974,9 +982,9 @@ export const makeVirtualObjectManager = (
       let doMoreGC = false;
       const record = dataCache.get(baseRef);
       for (const valueCD of Object.values(record.capdatas)) {
-        valueCD.slots.forEach(vref => {
+        for (const vref of valueCD.slots) {
           doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
-        });
+        }
       }
       dataCache.delete(baseRef);
       return doMoreGC;
@@ -1015,6 +1023,7 @@ export const makeVirtualObjectManager = (
         if (isDurable) {
           insistDurableCapdata(vrm, prop, valueCD, true);
         }
+        // eslint-disable-next-line github/array-foreach
         valueCD.slots.forEach(vrm.addReachableVref);
         capdatas[prop] = valueCD;
         valueMap.set(prop, value);
