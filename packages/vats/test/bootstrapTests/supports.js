@@ -31,7 +31,7 @@ const trace = makeTracer('BSTSupport', false);
 
 /** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
 
-/** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
+/** @type {{ [P in keyof BootstrapRootObject]: P }} */
 export const bootstrapMethods = {
   bootstrap: 'bootstrap',
   consumeItem: 'consumeItem',

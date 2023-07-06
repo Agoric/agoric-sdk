@@ -7,6 +7,11 @@
 # the destination repository.
 set -xueo pipefail
 
+cache_bust=true
+case $1 in
+--no-cache-bust) cache_bust=false; shift ;;
+esac
+
 WORKDIR=${1:-.}
 cd -- "$WORKDIR" 1>&2
 
@@ -27,12 +32,24 @@ yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
   file="$(pwd)/${stem}-v${version}.tgz"
 
+  # Clean up.
+  rm -f "${stem}"-v*.tgz
+
   # Create the tarball.
   yarn pack 1>&2
 
+  if $cache_bust; then
+    # Bust the cache!
+    sum=$(sha1sum "$file" | sed -e 's/ .*//')
+    dst="$(pwd)/${stem}-v${version}-${sum}.tgz"
+    mv "$file" "$dst"
+  else
+    dst=$file
+  fi
+
   # Write out the version entry.
-  jq -s --arg name "$name" --arg file "$file" \
-      '{ key: $name, value: ("file:" + $file) }' < /dev/null
+  jq -n --arg name "$name" --arg file "$dst" \
+      '{ key: $name, value: ("file:" + $file) }'
 
   popd 1>&2
   ##################
