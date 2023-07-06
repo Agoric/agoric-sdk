@@ -928,8 +928,8 @@ export const makeVirtualObjectManager = (
       }
     };
 
-    // The contextCache holds the {state,self,revoke}
-    // or { state, facets, revoke } "context"
+    // The contextCache holds the
+    // { state, self, revoke } or { state, facets, revoke } "context"
     // object, needed by behavior functions. We keep this in a (per-crank)
     // cache because creating one requires knowledge of the state property
     // names, which requires a DB read. The property names are fixed at
