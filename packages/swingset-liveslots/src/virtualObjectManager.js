@@ -920,15 +920,25 @@ export const makeVirtualObjectManager = (
     const makeContext = (baseRef, state) => {
       // baseRef came from valToSlot, so must be in slotToVal
       const val = requiredValForSlot(baseRef);
+      const revoke = () => contextCache.delete(baseRef);
       // val is either 'self' or the facet record
       if (multifaceted) {
-        return harden({ state, facets: val });
+        return harden({
+          state,
+          facets: val,
+          revoke,
+        });
       } else {
-        return harden({ state, self: val });
+        return harden({
+          state,
+          self: val,
+          revoke,
+        });
       }
     };
 
-    // The contextCache holds the {state,self} or {state,facets} "context"
+    // The contextCache holds the
+    // { state, self, revoke } or { state, facets, revoke } "context"
     // object, needed by behavior functions. We keep this in a (per-crank)
     // cache because creating one requires knowledge of the state property
     // names, which requires a DB read. The property names are fixed at
