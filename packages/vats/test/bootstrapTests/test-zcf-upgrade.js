@@ -92,6 +92,7 @@ const test = anyTest;
 test.before(async t => {
   t.context = await makeZoeTestContext(t);
 });
+
 test.after.always(t => t.context.shutdown?.());
 
 test('run restart-vats proposal', async t => {
@@ -121,7 +122,6 @@ test('run restart-vats proposal', async t => {
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
   };
   const source = `${dirname}/${ZCF_PROBE_SRC}`;
-
   const zcfProbeBundle = await bundleSource(source);
   await controller.validateAndInstallBundle(zcfProbeBundle);
   // This test self-sufficiently builds all the artifacts it needs. The test in
