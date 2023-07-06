@@ -6,7 +6,7 @@ echo Wait for actions to settle
 waitForBlock 2
 
 # CWD is agoric-sdk
-here=./upgrade-test-scripts/agoric-upgrade-11
+upgradeScripts=packages/deployment/upgrade-test/upgrade-test-scripts
 
 # zoe vat is at incarnation 1
-test_val "$(yarn --silent node $here/zoe-upgrade/vat-status.mjs zoe)" "1" "zoe vat incarnation"
+test_val "$(yarn --silent node $upgradeScripts/vat-status.mjs zoe)" "1" "zoe vat incarnation"
