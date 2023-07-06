@@ -1,4 +1,4 @@
-/* global WeakRef */
+/* global globalThis */
 /* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
@@ -8,6 +8,14 @@ import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
+
+const { Fail } = assert;
+
+const {
+  WeakRef: RealWeakRef,
+  WeakMap: RealWeakMap,
+  WeakSet: RealWeakSet,
+} = globalThis;
 
 class FakeFinalizationRegistry {
   // eslint-disable-next-line no-useless-constructor, no-empty-function
@@ -30,8 +38,6 @@ class FakeWeakRef {
   }
 }
 
-const RealWeakRef = WeakRef;
-
 export function makeFakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
@@ -45,6 +51,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     log,
     FinalizationRegistry = FakeFinalizationRegistry,
     WeakRef = FakeWeakRef, // VRM uses this
+    WeakMap = RealWeakMap,
+    WeakSet = RealWeakSet,
     addToPossiblyDeadSet = () => {},
     addToPossiblyRetiredSet = () => {},
   } = options;
@@ -273,6 +281,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     deleteEntry,
     FinalizationRegistry,
     WeakRef,
+    WeakMap,
+    WeakSet,
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
     dumpStore,
