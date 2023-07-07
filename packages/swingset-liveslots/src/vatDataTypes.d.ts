@@ -13,12 +13,19 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+import type {
+  FarClassOptions,
+  StateShape,
+  Context,
+  KitContext,
+  Revoker,
+  ReceiveRevoker,
+} from '@endo/exo';
 import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
 // TODO should be moved into @endo/patterns and eventually imported here
 // instead of this local definition.
 export type InterfaceGuardKit = Record<string, InterfaceGuard>;
-
 export type { MapStore, Pattern };
 
 // This needs `any` values.  If they were `unknown`, code that uses Baggage
@@ -88,7 +95,12 @@ export type DefineKindOptions<C> = {
    * If provided, it describes the shape of all state records of instances
    * of this kind.
    */
-  stateShape?: { [name: string]: Pattern };
+  stateShape?: StateShape;
+
+  /**
+   * If provided, it is called with a revoke function as an argument.
+   */
+  receiveRevoker?: ReceiveRevoker;
 
   /**
    * Intended for internal use only.
