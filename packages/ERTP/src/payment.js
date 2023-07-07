@@ -16,9 +16,13 @@ import { prepareExoClass } from '@agoric/vat-data';
  * @param {string} name
  * @param {Brand<K>} brand
  * @param {InterfaceGuard} PaymentI
- * @returns {() => Payment<K>}
+ * @returns {{
+ *   makePayment: () => Payment<K>;
+ *   revokePayment: (payment: Payment<K>) => boolean;
+ * }}
  */
 export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
+  let revokePayment;
   const makePayment = prepareExoClass(
     issuerBaggage,
     `${name} payment`,
@@ -29,7 +33,16 @@ export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
         return brand;
       },
     },
+    {
+      receiveRevoker(revoke) {
+        revokePayment = revoke;
+      },
+    },
   );
-  return makePayment;
+  assert(revokePayment !== undefined);
+  return harden({
+    makePayment,
+    revokePayment,
+  });
 };
 harden(preparePaymentKind);
