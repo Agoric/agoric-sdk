@@ -153,6 +153,9 @@ const makeContextCache = (makeState, makeContext) => {
 const makeContextProvider = (contextCache, getSlotForVal) =>
   harden(rep => contextCache.get(getSlotForVal(rep)));
 
+const makeContextRevoker = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.delete(getSlotForVal(rep)));
+
 const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   /** @type { Record<string, any> } */
   const contextProviderKit = {};
@@ -173,6 +176,13 @@ const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   }
   return harden(contextProviderKit);
 };
+
+// TODO BUG The returned function revokes the whole kit, i.e., all vrefs
+// sharing the same baseRef. This makes me wonder whether I need to rethink
+// revocation yet again. Perhaps an entire kit is the correct unit and
+// the api should be reconcieved.
+const makeContextFacetRevoker = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.delete(parseVatSlot(getSlotForVal(rep)).baseRef));
 
 // The management of single Representatives (i.e. defineKind) is very similar
 // to that of a cohort of facets (i.e. defineKindMulti). In this description,
@@ -718,6 +728,7 @@ export const makeVirtualObjectManager = (
       finish = undefined,
       stateShape = undefined,
       thisfulMethods = false,
+      receiveRevoker = undefined,
     } = options;
     let {
       // These are "let" rather than "const" only to accommodate code
@@ -1075,6 +1086,13 @@ export const makeVirtualObjectManager = (
       finish?.(contextCache.get(baseRef));
       return val;
     };
+
+    if (receiveRevoker) {
+      const makeRevoker = multifaceted
+        ? makeContextFacetRevoker
+        : makeContextRevoker;
+      receiveRevoker(makeRevoker(contextCache, getSlotForVal));
+    }
 
     return makeNewInstance;
   };
