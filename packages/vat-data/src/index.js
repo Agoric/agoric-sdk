@@ -41,6 +41,7 @@ export {
   // deprecated
   prepareSingleton,
 } from './exo-utils.js';
+export * from './prepare-revocable.js';
 
 /** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
 /** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
