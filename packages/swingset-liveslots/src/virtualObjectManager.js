@@ -16,9 +16,9 @@ import {
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
-const { hasOwn, defineProperty, getOwnPropertyNames } = Object;
+const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
+const { quote: q, bare: b } = assert;
 
 // import { kdebug } from './kdebug.js';
 
@@ -141,9 +141,11 @@ const makeContextCache = (makeState, makeContext) => {
  * @param {*} getSlotForVal
  * @returns {ContextProvider}
  */
-const makeContextProvider = (contextCache, getSlotForVal) => {
-  return harden(rep => contextCache.get(getSlotForVal(rep)));
-};
+const makeContextProvider = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.get(getSlotForVal(rep)));
+
+const makeContextRevoker = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.delete(getSlotForVal(rep)));
 
 const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   /** @type { Record<string, any> } */
@@ -165,6 +167,13 @@ const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   }
   return harden(contextProviderKit);
 };
+
+// TODO BUG The returned function revokes the whole kit, i.e., all vrefs
+// sharing the same baseRef. This makes me wonder whether I need to rethink
+// revocation yet again. Perhaps an entire kit is the correct unit and
+// the api should be reconcieved.
+const makeContextFacetRevoker = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.delete(parseVatSlot(getSlotForVal(rep)).baseRef));
 
 // The management of single Representatives (i.e. defineKind) is very similar
 // to that of a cohort of facets (i.e. defineKindMulti). In this description,
@@ -260,15 +269,15 @@ const makeFacets = (
 };
 
 const insistDurableCapdata = (vrm, what, capdata, valueFor) => {
-  capdata.slots.forEach((vref, idx) => {
+  for (const [idx, vref] of entries(capdata.slots)) {
     if (!vrm.isDurable(vref)) {
       if (valueFor) {
-        Fail`value for ${what} is not durable: slot ${q(idx)} of ${capdata}`;
+        Fail`value for ${what} is not durable: slot ${b(idx)} of ${capdata}`;
       } else {
-        Fail`${what} is not durable: slot ${q(idx)} of ${capdata}`;
+        Fail`${what} is not durable: slot ${b(idx)} of ${capdata}`;
       }
     }
-  });
+  }
 };
 
 const insistSameCapData = (oldCD, newCD) => {
@@ -281,11 +290,11 @@ const insistSameCapData = (oldCD, newCD) => {
   if (oldCD.slots.length !== newCD.slots.length) {
     Fail`durable Kind stateShape mismatch (slots.length)`;
   }
-  oldCD.slots.forEach((oldVref, idx) => {
+  for (const [idx, oldVref] of entries(oldCD.slots)) {
     if (newCD.slots[idx] !== oldVref) {
       Fail`durable Kind stateShape mismatch (slot[${idx}])`;
     }
-  });
+  }
 };
 
 /**
@@ -707,10 +716,11 @@ export const makeVirtualObjectManager = (
     durableKindDescriptor = undefined, // only for durables
   ) => {
     const {
-      finish,
+      finish = undefined,
       stateShape = undefined,
       thisfulMethods = false,
       interfaceGuard = undefined,
+      getRevoker = undefined,
     } = options;
 
     const statePrototype = {}; // Not frozen yet
@@ -948,6 +958,9 @@ export const makeVirtualObjectManager = (
         thisfulMethods,
         interfaceGuard,
       );
+      if (getRevoker) {
+        // const revokerKit = objectMap() TODO
+      }
     } else {
       proto = defendPrototype(
         tag,
@@ -974,9 +987,9 @@ export const makeVirtualObjectManager = (
       let doMoreGC = false;
       const record = dataCache.get(baseRef);
       for (const valueCD of Object.values(record.capdatas)) {
-        valueCD.slots.forEach(vref => {
+        for (const vref of valueCD.slots) {
           doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
-        });
+        }
       }
       dataCache.delete(baseRef);
       return doMoreGC;
@@ -1015,6 +1028,7 @@ export const makeVirtualObjectManager = (
         if (isDurable) {
           insistDurableCapdata(vrm, prop, valueCD, true);
         }
+        // eslint-disable-next-line github/array-foreach
         valueCD.slots.forEach(vrm.addReachableVref);
         capdatas[prop] = valueCD;
         valueMap.set(prop, value);
@@ -1033,6 +1047,13 @@ export const makeVirtualObjectManager = (
       finish?.(contextCache.get(baseRef));
       return val;
     };
+
+    if (getRevoker) {
+      const makeRevoker = multifaceted
+        ? makeContextFacetRevoker
+        : makeContextRevoker;
+      getRevoker(makeRevoker(contextCache, getSlotForVal));
+    }
 
     return makeNewInstance;
   };

@@ -15,6 +15,15 @@ import type {
   WeakSetStore,
 } from '@agoric/store';
 
+import type {
+  FarClassOptions,
+  StateShape,
+  Context,
+  KitContext,
+  Revoker,
+  GetRevoker,
+} from '@endo/exo';
+
 export type { Pattern };
 
 export type Baggage = MapStore<string, unknown>;
@@ -78,7 +87,12 @@ export type DefineKindOptions<C> = {
    * If provided, it describes the shape of all state records of instances
    * of this kind.
    */
-  stateShape?: { [name: string]: Pattern };
+  stateShape?: StateShape;
+
+  /**
+   * If provided, it is called with a revoke function as an argument.
+   */
+  getRevoker?: GetRevoker;
 
   /**
    * Intended for internal use only.
