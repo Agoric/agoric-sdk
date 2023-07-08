@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-check
 const t = 'makeCoreProposalBehavior';
 
@@ -147,15 +148,27 @@ export const makeCoreProposalBehavior = ({
 export const makeEnactCoreProposalsFromBundleRef =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
-    await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
-        const subBehavior = makeCoreProposalBehavior({
-          manifestBundleRef: ref,
-          getManifestCall: call,
-          overrideManifest,
-          E,
-        });
-        return subBehavior(allPowers);
-      }),
-    );
+    const promises = makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
+      const subBehavior = makeCoreProposalBehavior({
+        manifestBundleRef: ref,
+        getManifestCall: call,
+        overrideManifest,
+        E,
+      });
+      console.log(`@@@@ makeEnactCoreProposalsFromBundleRef doing ${ref.bundleName} ${call[0]}`);
+      return subBehavior(allPowers);
+    });
+    const results = [];
+    console.log(`@@@@ makeEnactCoreProposalsFromBundleRefawaiting ${promises.length} promises`);
+    let idx = 0;
+    for (const p of promises) {
+      if (idx !== 8 && idx !== 9) {
+        console.log(`  @@@@@ awaiting #${idx}`);
+        results.push(await p);
+        console.log(`  @@@@@ got #${idx}`);
+      }
+      idx += 1;
+    }
+    console.log(`  @@@@@ got'em all`);
+    return results;
   };

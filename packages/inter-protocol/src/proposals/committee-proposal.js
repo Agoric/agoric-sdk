@@ -1,3 +1,4 @@
+//wip hackery do not merge
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { E } from '@endo/far';
 import { reserveThenDeposit } from './utils.js';
@@ -48,7 +49,9 @@ export const inviteCommitteeMembers = async (
     );
   };
 
-  await distributeInvitations(zip(values(voterAddresses), invitations));
+  // This doesn't resolve until the committee members create their smart wallets.
+  // Don't block bootstrap on it.
+  void distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
 harden(inviteCommitteeMembers);
@@ -180,8 +183,8 @@ export const getManifestForInviteCommittee = async (
       [addGovernorsToEconCharter.name]: {
         consume: {
           auctioneerKit: t,
-          reserveGovernorCreatorFacet: t,
-          vaultFactoryGovernorCreator: t,
+          //reserveGovernorCreatorFacet: t,
+          //vaultFactoryGovernorCreator: t,
           econCharterKit: t,
           zoe: t,
           agoricNames: t,

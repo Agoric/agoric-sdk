@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
 import * as ERTPmod from '@agoric/ertp';
@@ -104,7 +105,7 @@ export const PSM_GOV_MANIFEST = {
     produce: { psmKit: 'true' },
     installation: {
       produce: {
-        contractGovernor: 'zoe',
+        //contractGovernor: 'zoe',
         committee: 'zoe',
         binaryVoteCounter: 'zoe',
         psm: 'zoe',

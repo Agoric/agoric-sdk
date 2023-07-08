@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
@@ -46,6 +47,8 @@ const prepareSpecializedNameAdmin = zone => {
       },
       /** @param {string} address */
       async lookupAdmin(address) {
+        console.log(`@@@@ vat-provisioning:lookupAdmin(${address})`);
+        debugger;//
         const { nameAdmin } = this.state;
         // XXX relies on callers not to provide other admins via update()
         // TODO: enforce?

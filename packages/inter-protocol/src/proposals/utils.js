@@ -1,3 +1,4 @@
+//wip hackery do not merge
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
@@ -63,6 +64,7 @@ export const reserveThenDeposit = async (
   payments,
 ) => {
   console.info('awaiting depositFacet for', debugName);
+  debugger;//
   const [depositFacet] = await reserveThenGetNamePaths(namesByAddressAdmin, [
     [addr, WalletName.depositFacet],
   ]);

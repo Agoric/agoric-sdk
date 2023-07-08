@@ -1208,7 +1208,7 @@ export default function buildKernel(
    */
   async function processDeliveryMessage(message) {
     kdebug('');
-    kdebug(`processQ ${JSON.stringify(message)}`);
+    kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
@@ -1365,9 +1365,9 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processAcceptanceMessage(message) {
-    kdebug('');
-    kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    //kdebug('');
+    //kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
+    //kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
       crankType: 'routing',

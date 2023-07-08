@@ -1,3 +1,4 @@
+//wip do not merge
 // @ts-check
 /* global process */
 import anylogger from 'anylogger';
@@ -38,6 +39,8 @@ import {
 import { parseParams } from './params.js';
 import { makeQueue } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
+
+const VERBOSE = true;
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -157,12 +160,16 @@ export async function buildSwingset(
     }
 
     swingsetConfig.pinBootstrapRoot = true;
+    console.log(`@@@@ before initializeSwingset`);
     await initializeSwingset(swingsetConfig, bootstrapArgs, kernelStorage, {
       // @ts-expect-error debugPrefix? what's that?
       debugPrefix,
+      verbose: VERBOSE,
     });
+  console.log(`@@@@ after initializeSwingset`);
   }
   await ensureSwingsetInitialized();
+  console.log(`@@@@ before makeSwingsetController`);
   const controller = await makeSwingsetController(
     kernelStorage,
     deviceEndowments,
@@ -170,8 +177,10 @@ export async function buildSwingset(
       env,
       slogCallbacks,
       slogSender,
+      verbose: VERBOSE,
     },
   );
+  console.log(`@@@@ after makeSwingsetController`);
 
   // We DON'T want to run the kernel yet, only when the application decides
   // (either on bootstrap block (0) or in endBlock).

@@ -6,6 +6,7 @@ import util from 'util';
 
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
+  buildTimer,
   loadSwingsetConfigFile,
   loadBasedir,
   initializeSwingset,
@@ -19,6 +20,7 @@ import { makeSlogSender } from '@agoric/telemetry';
 
 import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
+import { initEmulatedChain } from './chain.js';
 import {
   organizeBenchmarkStats,
   printBenchmarkStats,
@@ -43,11 +45,12 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --init           - discard any existing saved state at startup
+  --resume         - resume executing using existing saved state
   --initonly       - initialize the swingset but exit without running it
   --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --usexs          - run vats using the the XS engine
+  --usebundlecache - cache bundles created by swingset loader
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
@@ -71,8 +74,10 @@ FLAGS may be:
   --stats          - print a performance stats report at the end of a run
   --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
+  --chain          - emulate the behavior of the cosmos-based chain
   --indirect       - launch swingset from a vat instead of launching directly
   --config FILE    - read swingset config from FILE instead of inferring it
+  --chainbench     - run a chain benchmark XXX say something more useful here
 
 CMD is one of:
   help   - print this helpful usage information
@@ -95,6 +100,42 @@ function fail(message, printUsage) {
     usage();
   }
   process.exit(1);
+}
+
+function generateChainBenchmarkConfig(baseConfig, basedir, bootstrapArgv) {
+  if (baseConfig.vats.benchmarkBootstrap) {
+    fail(`you can't have a vat named benchmarkBootstrap in a benchmark swingset`);
+  }
+  if (baseConfig.vats.benchmarkDriver) {
+    fail(`you can't have a vat named benchmarkDriver in a benchmark swingset`);
+  }
+  let { benchmarkDriver, ...baseConfigOptions } = baseConfig;
+  if (!benchmarkDriver) {
+    benchmarkDriver = {
+      sourceSpec: path.join(basedir, 'vat-benchmark.js'),
+    };
+  }
+  const config = {
+    ...baseConfigOptions,
+    bootstrap: 'benchmarkBootstrap',
+    vats: {
+      benchmarkBootstrap: {
+        sourceSpec: new URL('vat-benchmarkBootstrap.js', import.meta.url).pathname,
+        parameters: {
+          config: {
+            bootstrap: baseConfig.bootstrap,
+          },
+        },
+      },
+      benchmarkDriver,
+      ...baseConfig.vats,
+    },
+  };
+  if (!config.vats[baseConfig.bootstrap].parameters) {
+    config.vats[baseConfig.bootstrap].parameters = {};
+  }
+  config.vats[baseConfig.bootstrap].parameters.argv = bootstrapArgv;
+  return config;
 }
 
 function generateIndirectConfig(baseConfig) {
@@ -152,7 +193,7 @@ function generateIndirectConfig(baseConfig) {
 export async function main() {
   const argv = process.argv.slice(2);
 
-  let forceReset = false;
+  let forceReset = true;
   let dbMode = '--sqlite';
   let blockSize = 200;
   let batchSize = 200;
@@ -179,7 +220,10 @@ export async function main() {
   let dbDir = null;
   let initOnly = false;
   let useXS = false;
+  let useBundleCache = false;
   let activityHash = false;
+  let emulateChain = false;
+  let chainBenchmarkMode = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -190,6 +234,7 @@ export async function main() {
       case '--init':
         forceReset = true;
         break;
+      case '--resume':
       case '--noinit':
         forceReset = false;
         break;
@@ -280,6 +325,18 @@ export async function main() {
       case '--useXS':
         useXS = true;
         break;
+      case '--usebundlecache':
+      case '--useBundleCache':
+        useBundleCache = true;
+        break;
+      case '--chain':
+        emulateChain = true;
+        break;
+      case '--chainbench': // XXX this needs a better option name; not really chain specific
+      case '--chainBench':
+        chainBenchmarkMode = true;
+        emulateChain = true;
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -326,19 +383,39 @@ export async function main() {
   } else {
     config = loadBasedir(basedir);
   }
-  const deviceEndowments = {};
+  if (config.bundleCachePath) {
+    const base = new URL(configPath, `file://${process.cwd()}/`);
+    config.bundleCachePath = new URL(config.bundleCachePath, base).pathname;
+  } else if (useBundleCache) {
+    config.bundleCachePath = path.join(basedir, 'bundles');
+  }
+
+  const timer = buildTimer();
+  config.devices = {
+    timer: {
+      sourceSpec: timer.srcPath,
+    },
+  };
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
+  };
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
-    config.devices = {
-      loopbox: {
-        sourceSpec: loopboxSrcPath,
-        parameters: {
-          senders: config.loopboxSenders,
-        },
+    config.devices.loopbox = {
+      sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: config.loopboxSenders,
       },
     };
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
+  }
+  if (emulateChain) {
+    const bridge = await initEmulatedChain(config, configPath);
+    config.devices.bridge = {
+      sourceSpec: bridge.srcPath,
+    };
+    deviceEndowments.bridge = { ...bridge.endowments };
   }
   if (!config.defaultManagerType) {
     if (useXS) {
@@ -346,6 +423,11 @@ export async function main() {
     } else {
       config.defaultManagerType = 'local';
     }
+  }
+  config.pinBootstrapRoot = true; // XXX should this be a command-line option?
+
+  if (chainBenchmarkMode) {
+    config = generateChainBenchmarkConfig(config, basedir, bootstrapArgv);
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
@@ -654,7 +736,7 @@ export async function main() {
         log(`activityHash: ${controller.getActivityhash()}`);
       }
       if (verbose) {
-        log(`===> end of crank ${crankNumber}`);
+        log(`===> end of crank ${crankNumber - 1}`);
       }
     }
     const commitStartTime = readClock();

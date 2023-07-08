@@ -239,7 +239,7 @@ export async function loadSwingsetConfigFile(configPath) {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const referrer = new URL(
       configPath,
-      `file:///${process.cwd()}/`,
+      `file://${process.cwd()}/`,
     ).toString();
     await normalizeConfigDescriptor(config.vats, referrer, true);
     await normalizeConfigDescriptor(config.bundles, referrer, false);

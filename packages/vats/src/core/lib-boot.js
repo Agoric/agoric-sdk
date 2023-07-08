@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
@@ -75,6 +76,7 @@ export const makeBootstrap = (
    * @param {SoloDevices | ChainDevices} devices
    */
   const rawBootstrap = async (vats, devices) => {
+    console.log(`@@@@ in chain bootstrap 'rawBootstrap'`);
     // Complete SwingSet wiring.
     const { D } = vatPowers;
     if (!devices.mailbox) {
@@ -83,9 +85,11 @@ export const makeBootstrap = (
     await (devices.mailbox &&
       (D(devices.mailbox).registerInboundHandler(vats.vattp),
       E(vats.vattp).registerMailboxDevice(devices.mailbox)));
+    console.log(`@@@@ in chain bootstrap device setup complete`);
 
     const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+    console.log(`@@@@ in chain bootstrap have critical vat key`);
     const { space: namedVat, durableStore: vatStore } = makeVatSpace(
       svc,
       criticalVatKey,
@@ -96,7 +100,9 @@ export const makeBootstrap = (
     const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
       namesVat,
     ).getNameHubKit();
+    console.log(`@@@@ in chain bootstrap getNameHubKit returned`);
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
+    console.log(`@@@@ in chain bootstrap makeWellKnownSpaces completed`);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
     produce.vatStore.resolve(vatStore);
@@ -131,10 +137,12 @@ export const makeBootstrap = (
     });
 
     await runBehaviors(bootManifest);
+    console.log(`@@@@ in chain bootstrap runBehaviors completed`);
 
     const { coreProposalCode } = vatParameters;
     if (!coreProposalCode) {
-      return;
+      console.log(`@@@@ in chain bootstrap returning no core proposals`);
+      return '@@@@ bootstrap result: no core proposal code';
     }
 
     // Start the governance from the core proposals.
@@ -149,8 +157,12 @@ export const makeBootstrap = (
     };
     /** @type {{coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>}} */
     // @ts-expect-error cast
+    debugger;//
     const { coreEvalBridgeHandler } = consume;
     await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
+    console.log(`@@@@ in chain bootstrap fromBridge completed`);
+    console.log(`@@@@ in chain bootstrap returning normal completion`);
+    return '@@@@ bootstrap result: normal bootstrap completion';
   };
 
   // For testing supports

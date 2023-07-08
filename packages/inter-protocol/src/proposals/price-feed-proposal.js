@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-nocheck -- lots of type errors. low prio b/c proposals are like scripts
 import { makeTracer } from '@agoric/internal';
 import {
@@ -233,7 +234,7 @@ export const getManifestForPriceFeed = async (
         chainStorage: t,
         chainTimerService: t,
         client: t,
-        contractGovernor: t,
+        //contractGovernor: t,
         econCharterKit: t,
         economicCommitteeCreatorFacet: t,
         highPrioritySendersManager: t,

@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-check
 /**
  * @file Bootstrap stress test of vaults
@@ -70,7 +71,7 @@ const collateralBrandKey = 'ATOM';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t);
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

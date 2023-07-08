@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @ts-check
 /* global process */
 import * as fsAmbient from 'fs';
@@ -7,9 +8,8 @@ import { inspect } from 'util';
 import childProcessAmbient from 'child_process';
 
 import { Fail } from '@agoric/assert';
-import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain-stripped.js';
+import { BridgeId, VBankAccount } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
@@ -17,68 +17,31 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 /* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
-import { TimeMath } from '@agoric/time';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
 
-// to retain for ESlint, used by typedef
-E;
-
 const sink = () => {};
-
-const trace = makeTracer('BSTSupport', false);
-
-/** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
-
-/** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
-export const bootstrapMethods = {
-  bootstrap: 'bootstrap',
-  consumeItem: 'consumeItem',
-  produceItem: 'produceItem',
-  resetItem: 'resetItem',
-  messageVat: 'messageVat',
-  messageVatObject: 'messageVatObject',
-  messageVatObjectSendOnly: 'messageVatObjectSendOnly',
-  awaitVatObject: 'awaitVatObject',
-  snapshotStore: 'snapshotStore',
-};
-
-/**
- * @template {PropertyKey} K
- * @template V
- * @param {K[]} keys
- * @param {(key: K, i: number) => V} valueMaker
- */
-const keysToObject = (keys, valueMaker) => {
-  return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
-};
-
-/**
- * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of strings.
- *
- * @param {{ deepEqual: (a: unknown, b: unknown, message?: string) => void}} t
- * @param {PropertyKey[]} a
- * @param {PropertyKey[]} b
- * @param {string} [message]
- */
-export const keyArrayEqual = (t, a, b, message) => {
-  const aobj = keysToObject(a, () => 1);
-  const bobj = keysToObject(b, () => 1);
-  return t.deepEqual(aobj, bobj, message);
-};
 
 /**
  * @param {import('@agoric/swingset-vat/src/controller/controller').SwingsetController} controller
  * @param {(..._: any[]) => any} log
  */
-export const makeRunUtils = (controller, log = (..._) => {}) => {
+const makeRunUtils = (controller, log = (..._) => {}) => {
   let cranksRun = 0;
 
   const mutex = makeQueue();
 
   mutex.put(controller.run());
+
+  const go = async () => {
+    try {
+      await mutex.get();
+    } catch {
+      // noop because the result will resolve for the previous runMethod return
+    }
+  };
 
   /**
    * @template {() => any} T
@@ -108,9 +71,17 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     log('runMethod', method, args, 'at', cranksRun);
     assert(Array.isArray(args));
 
+    if (method === 'messageVat') {
+      console.log(`@@@@ start runMethod messageVat ${args[0].name}<-${args[0].methodName}(${inspect(args[0].args)})`);
+    } else if (method === 'messageVatObject') {
+      console.log(`@@@@ start runMethod messageVatObject ${inspect(args[0].presence)}<-${args[0].methodName}(${inspect(args[0].args)})`);
+    } else {
+      console.log(`@@@@ start runMethod ${method} ${inspect(args)}`);
+    }
     const kpid = await runThunk(() =>
       controller.queueToVatRoot('bootstrap', method, args),
     );
+    console.log(`@@@@ end runMethod ${method}`);
 
     const status = controller.kpStatus(kpid);
     switch (status) {
@@ -174,16 +145,15 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
         runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
     });
 
-  return harden({ runThunk, EV });
+  return harden({ runThunk, EV, go });
 };
 
-export const getNodeTestVaultsConfig = async (
-  bundleDir = 'bundles',
+const getNodeTestVaultsConfig = async (
+  bundleDir = './bundles',
   specifier = '@agoric/vats/decentral-itest-vaults-config.json',
 ) => {
-  const fullPath = await importMetaResolve(specifier, import.meta.url).then(
-    u => new URL(u).pathname,
-  );
+  const fullPath = new URL(await importMetaResolve(specifier, import.meta.url)).pathname;
+
   const config = /** @type {SwingSetConfig & {coreProposals?: any[]}} */ (
     await loadSwingsetConfigFile(fullPath)
   );
@@ -212,99 +182,6 @@ export const getNodeTestVaultsConfig = async (
 };
 
 /**
- * @param {object} powers
- * @param {Pick<typeof import('node:child_process'), 'execFileSync' >} powers.childProcess
- * @param {typeof import('node:fs/promises')} powers.fs
- */
-const makeProposalExtractor = ({ childProcess, fs }) => {
-  const getPkgPath = (pkg, fileName = '') =>
-    new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
-
-  const runPackageScript = async (pkg, name, env) => {
-    console.warn(pkg, 'running package script:', name);
-    const pkgPath = getPkgPath(pkg);
-    return childProcess.execFileSync('yarn', ['run', name], {
-      cwd: pkgPath,
-      env,
-    });
-  };
-
-  const loadJSON = async filePath =>
-    harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
-
-  // XXX parses the output to find the files but could write them to a path that can be traversed
-  /** @param {string} txt */
-  const parseProposalParts = txt => {
-    const evals = [
-      ...txt.matchAll(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/g),
-    ].map(m => {
-      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
-      const { permit, script } = m.groups;
-      return { permit, script };
-    });
-    evals.length ||
-      Fail`No swingset-core-eval found in proposal output: ${txt}`;
-
-    const bundles = [
-      ...txt.matchAll(/swingset install-bundle @([^\n]+)/gm),
-    ].map(([, bundle]) => bundle);
-    bundles.length || Fail`No bundles found in proposal output: ${txt}`;
-
-    return { evals, bundles };
-  };
-
-  /**
-   * @param {object} options
-   * @param {string} options.package
-   * @param {string} options.packageScriptName
-   * @param {Record<string, string>} [options.env]
-   */
-  const buildAndExtract = async ({
-    package: packageName,
-    packageScriptName,
-    env = {},
-  }) => {
-    const scriptEnv = Object.assign(Object.create(process.env), env);
-    // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(
-      packageName,
-      packageScriptName,
-      scriptEnv,
-    );
-    const built = parseProposalParts(out.toString());
-
-    const loadAndRmPkgFile = async fileName => {
-      const filePath = getPkgPath(packageName, fileName);
-      const content = await fs.readFile(filePath, 'utf8');
-      await fs.rm(filePath);
-      return content;
-    };
-
-    const evalsP = Promise.all(
-      built.evals.map(async ({ permit, script }) => {
-        const [permits, code] = await Promise.all([
-          loadAndRmPkgFile(permit),
-          loadAndRmPkgFile(script),
-        ]);
-        return { json_permits: permits, js_code: code };
-      }),
-    );
-
-    const bundlesP = Promise.all(
-      built.bundles.map(
-        async bundleFile =>
-          /** @type {Promise<EndoZipBase64Bundle>} */ (loadJSON(bundleFile)),
-      ),
-    );
-    return Promise.all([evalsP, bundlesP]).then(([evals, bundles]) => ({
-      evals,
-      bundles,
-    }));
-  };
-  return buildAndExtract;
-};
-
-/**
  * Start a SwingSet kernel to be shared across all tests. By default Ava tests
  * run in parallel, so be careful to avoid ordering dependencies between them.
  * For example, test accounts balances using separate wallets or test vault
@@ -317,27 +194,13 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
  * not run if a test fails.
  *
  * @param {import('ava').ExecutionContext} t
- * @param {string} bundleDir directory to write bundles and config to
- * @param {object} [options]
- * @param {string} [options.configSpecifier] bootstrap config specifier
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
-export const makeSwingsetTestKit = async (
-  t,
-  bundleDir = 'bundles',
-  { configSpecifier, storage = makeFakeStorageKit('bootstrapTests') } = {},
-) => {
-  console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
+export const makeSwingsetTestKit = async t => {
+  const chainStorage = makeFakeStorageKit('bootstrapTests');
+  const configPath = await getNodeTestVaultsConfig('./bundles', undefined);
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
-
-  const readLatest = path => {
-    const data = unmarshalFromVstorage(storage.data, path, fromCapData);
-    trace('readLatest', path, 'returning', inspect(data, false, 20, true));
-    return data;
-  };
 
   let lastNonce = 0n;
 
@@ -351,13 +214,6 @@ export const makeSwingsetTestKit = async (
   const bridgeOutbound = (bridgeId, obj) => {
     switch (bridgeId) {
       case BridgeId.BANK: {
-        trace(
-          'bridgeOutbound BANK',
-          obj.type,
-          obj.recipient,
-          obj.amount,
-          obj.denom,
-        );
         // bridgeOutbound bank : {
         //   moduleName: 'vbank/reserve',
         //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
@@ -408,14 +264,13 @@ export const makeSwingsetTestKit = async (
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
       case BridgeId.STORAGE:
-        return storage.toStorage(obj);
+        return chainStorage.toStorage(obj);
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);
     }
   };
 
-  const { controller, timer } = await buildSwingset(
-    new Map(),
+  const { controller } = await buildSwingset(
     bridgeOutbound,
     kernelStorage,
     configPath,
@@ -423,70 +278,15 @@ export const makeSwingsetTestKit = async (
     {},
     { debugName: 'TESTBOOT' },
   );
-  console.timeLog('makeSwingsetTestKit', 'buildSwingset');
 
   const runUtils = makeRunUtils(controller, t.log);
-
-  const buildProposal = makeProposalExtractor({
-    childProcess: childProcessAmbient,
-    fs: fsAmbient.promises,
-  });
-
-  console.timeEnd('makeSwingsetTestKit');
-
-  let currentTime = 0n;
-  /** @param {Timestamp} targetTime */
-  const jumpTimeTo = targetTime => {
-    targetTime = TimeMath.absValue(targetTime);
-    targetTime >= currentTime ||
-      Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
-    currentTime = targetTime;
-    trace('jumpTimeTo', currentTime);
-    return runUtils.runThunk(() => timer.poll(currentTime));
-  };
-  /** @param {Timestamp} targetTime */
-  const advanceTimeTo = async targetTime => {
-    targetTime = TimeMath.absValue(targetTime);
-    targetTime >= currentTime ||
-      Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
-    while (currentTime < targetTime) {
-      trace('stepping time from', currentTime, 'towards', targetTime);
-      currentTime += 1n;
-      await runUtils.runThunk(() => timer.poll(currentTime));
-    }
-  };
-  /**
-   *
-   * @param {number} n
-   * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
-   */
-  const advanceTimeBy = (n, unit) => {
-    const multiplier = {
-      seconds: 1,
-      minutes: 60,
-      hours: 60 * 60,
-      days: 60 * 60 * 24,
-    };
-    const targetTime = currentTime + BigInt(multiplier[unit] * n);
-    trace('advanceTimeBy', n, unit, 'to', targetTime);
-    return advanceTimeTo(targetTime);
-  };
 
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
   return {
-    advanceTimeBy,
-    advanceTimeTo,
-    buildProposal,
-    controller,
-    jumpTimeTo,
-    readLatest,
     runUtils,
     shutdown,
-    storage,
-    swingStore,
-    timer,
+    chainStorage,
   };
 };
-/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */

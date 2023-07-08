@@ -1,3 +1,4 @@
+//wip hackery do not merge
 // @jessie-check
 
 import { makeMap } from 'jessie.js';
@@ -97,7 +98,7 @@ export const startPSM = async (
       chainStorage,
       chainTimerService,
       psmKit,
-      anchorBalancePayments: anchorBalancePaymentsP,
+      //anchorBalancePayments: anchorBalancePaymentsP,
     },
     produce: { psmKit: producepsmKit },
     installation: {
@@ -231,15 +232,15 @@ export const startPSM = async (
 
   /** @param {MetricsNotification} metrics */
   const restoreMetrics = async metrics => {
-    const anchorBalancePayments = await anchorBalancePaymentsP;
-    const anchorPmt = anchorBalancePayments.get(anchorBrand);
+    //const anchorBalancePayments = await anchorBalancePaymentsP;
+    //const anchorPmt = anchorBalancePayments.get(anchorBrand);
 
     const { anchorPoolBalance: _a, ...nonPaymentMetrics } = metrics;
 
     const seat = E(zoe).offer(
       E(psmCreatorFacet).makeRestoreMetricsInvitation(),
       harden({ give: { Anchor: metrics.anchorPoolBalance } }),
-      harden({ Anchor: anchorPmt }),
+      //harden({ Anchor: anchorPmt }),
       harden(nonPaymentMetrics),
     );
     await E(seat).getPayouts();
@@ -309,7 +310,7 @@ export const makeAnchorAsset = async (
       agoricNamesAdmin,
       bankManager,
       startUpgradable,
-      anchorBalancePayments,
+      //anchorBalancePayments,
     },
     installation: {
       consume: { mintHolder },
@@ -372,14 +373,14 @@ export const makeAnchorAsset = async (
       makeScalarBigMapStore('Anchor balance payments', { durable: true }),
     );
     // XXX this rule should only apply to the 1st await
-    const anchorPaymentMap = await anchorBalancePayments;
+    //const anchorPaymentMap = await anchorBalancePayments;
 
     // TODO: validate that `metrics.anchorPoolBalance.value` is
     // pass-by-copy PureData (e.g., contains no remotables).
-    const pmt = await E(mint).mintPayment(
-      AmountMath.make(brand, metrics.anchorPoolBalance.value),
-    );
-    anchorPaymentMap.init(brand, pmt);
+    //const pmt = await E(mint).mintPayment(
+    //  AmountMath.make(brand, metrics.anchorPoolBalance.value),
+    //);
+    //anchorPaymentMap.init(brand, pmt);
   };
   await maybeReviveMetrics();
 
@@ -425,8 +426,8 @@ export const PSM_MANIFEST = {
       agoricNamesAdmin: true,
       bankManager: 'bank',
       startUpgradable: true,
-      anchorBalancePayments: true,
-      anchorKits: true,
+      //anchorBalancePayments: true,
+      //anchorKits: true,
     },
     installation: { consume: { mintHolder: 'zoe' } },
     produce: {
@@ -449,7 +450,7 @@ export const PSM_MANIFEST = {
       econCharterKit: 'econCommitteeCharter',
       chainTimerService: 'timer',
       psmKit: true,
-      anchorBalancePayments: true,
+      //anchorBalancePayments: true,
     },
     produce: { psmKit: 'true' },
     installation: {
