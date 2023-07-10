@@ -161,6 +161,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
   };
 
+  const rmVerbose = async filePath => {
+    log(chalk.green(`removing ${filePath}`));
+    // rm is available on all the unix-likes, so use it for speed.
+    await pspawn('rm', ['-rf', filePath]);
+  };
+
   let agSolo;
   let agSoloBuild;
   if (opts.dockerTag) {
@@ -177,9 +183,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     await null;
     if (popts.reset) {
-      log(chalk.green(`removing ${serverDir}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', serverDir]);
+      rmVerbose(serverDir);
     }
 
     if (!opts.dockerTag) {
@@ -269,9 +273,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${portNum}`;
     if (popts.reset) {
-      log(chalk.green(`removing ${serverDir}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', serverDir]);
+      rmVerbose(serverDir);
     }
 
     let chainSpawn;
@@ -478,9 +480,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (popts.reset) {
-      log(chalk.green(`removing ${serverDir}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', serverDir]);
+      rmVerbose(serverDir);
     }
 
     let soloSpawn;
@@ -703,9 +703,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${port}`;
 
     if (popts.reset) {
-      log(chalk.green(`removing ${serverDir}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', serverDir]);
+      rmVerbose(serverDir);
     }
 
     const setupRun = (...bonusArgs) =>
@@ -732,9 +730,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     await null;
     if (popts.reset) {
-      log(chalk.green(`removing ${serverDir}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', serverDir]);
+      rmVerbose(serverDir);
     }
 
     const setupRun = (...bonusArgs) =>
