@@ -58,9 +58,14 @@ sequenceDiagram
   TM->>+A-M: EndBlock
   A-M->>+CM: END_BLOCK
   CM->>CM: runKernel()
-  CM-)A-M: vstorage->setWithoutNotify(prefixedExportDataEntries)
+  CM-)A-M: swingset->swingStoreUpdateExportData(exportDataEntries)
+  A-M->>A-M: swingStore := NewPrefixStore("swingStore.")
   loop each data entry
-    A-M->>+MS-M: vstorage.SetStorage()
+    alt has value
+      A-M->>+MS-M: swingStore.Set(key, value)
+    else no value
+      A-M->>+MS-M: swingStore.Delete(key)
+    end
     MS-M-->>-A-M: 
   end
   CM-->>-A-M: 
@@ -247,8 +252,8 @@ sequenceDiagram
       SSEH-CS->>+D-CS: MkDir(exportDir)
       D-CS-->>-SSEH-CS: 
       SSEH-CS->>+SSES-CS: provider.GetExportDataReader()
-      SSES-CS->>+MS-CS: ExportStorageFromPrefix<br/>("swingStore.")
-      MS-CS-->>-SSES-CS: vstorage data entries
+      SSES-CS->>MS-CS: PrefixStore.Iterator()<br/>("swingStore.")
+      MS-CS--)SSES-CS: sdk.Iterator
       SSES-CS--)-SSEH-CS: export data reader
       loop each data entry
         SSEH-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
