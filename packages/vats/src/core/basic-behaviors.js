@@ -39,6 +39,7 @@ const bootMsgEx = {
     { denom: 'ubld', amount: '1000000000000000' },
     { denom: 'uist', amount: '50000000000' },
   ],
+  swingsetPort: 4,
   vbankPort: 3,
   vibcPort: 2,
 };
