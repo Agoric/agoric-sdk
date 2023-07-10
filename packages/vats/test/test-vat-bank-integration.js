@@ -51,6 +51,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     chainID: 'ag',
     storagePort: 1,
     supplyCoins: [{ amount: '50000000', denom: 'uist' }],
+    swingsetPort: 4,
     vbankPort: 2,
     vibcPort: 3,
   };
