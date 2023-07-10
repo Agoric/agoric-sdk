@@ -131,6 +131,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
+ *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
  *   stdout: Pick<import('stream').Writable, 'write'>,
@@ -158,7 +159,7 @@ export const sendAction = async (bridgeAction, opts) => {
   assert(out); // not dry run
   const tx = JSON.parse(out);
   if (tx.code !== 0) {
-    const err = Error(`failed to send action. code: ${tx.code}`);
+    const err = Error(`failed to send tx: ${tx.raw_log} code: ${tx.code}`);
     // @ts-expect-error XXX how to add properties to an error?
     err.code = tx.code;
     throw err;
