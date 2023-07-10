@@ -37,6 +37,6 @@
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jsdoc": "^40.1.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.8.1"
+    "prettier": "^3.0.0"
   }
 }
