@@ -36,7 +36,10 @@ const (
 	StoragePathSwingStore          = "swingStore"
 )
 
-const stateKey string = "state"
+const (
+	stateKey            = "state"
+	swingStoreKeyPrefix = "swingStore."
+)
 
 // Contextual information about the message source of an action on an inbound queue.
 // This context should be unique per inboundQueueRecord.
@@ -432,6 +435,11 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, vstoragetypes.NewStorageEntry(path, mailbox))
+}
+
+func (k Keeper) GetSwingStore(ctx sdk.Context) types.SwingStore {
+	store := ctx.KVStore(k.storeKey)
+	return types.NewSwingStore(store, []byte(swingStoreKeyPrefix))
 }
 
 func (k Keeper) ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry {
