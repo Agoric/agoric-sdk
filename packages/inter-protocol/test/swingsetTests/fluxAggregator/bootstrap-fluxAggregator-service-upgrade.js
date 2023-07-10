@@ -46,6 +46,7 @@ export const buildRootObject = async () => {
    */
   const installations = {};
 
+  // @ts-expect-error TODO make fluxAggregator publicFacet support all governance methods (or pare down governance API)
   /** @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<import('../../../src/price/fluxAggregatorContract.js').prepare>} */
   let governorFacets;
   /** @type {ReturnType<Awaited<ReturnType<import('../../../src/price/fluxAggregatorContract.js').prepare>>['creatorFacet']['getLimitedCreatorFacet']>} */
