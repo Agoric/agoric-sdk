@@ -82,7 +82,13 @@ export const makeTestCommand = (
           publicInvitationMaker: 'makeInvitation',
         },
         proposal: {
-          want: { Tokens: { brand: agoricNames.brand.GoodStuff, value: 32n } },
+          want: {
+            Tokens: {
+              // @ts-expect-error BoardRemote not a Brand object
+              brand: agoricNames.brand.GoodStuff,
+              value: 32n,
+            },
+          },
         },
       };
       const result = await sendAction(

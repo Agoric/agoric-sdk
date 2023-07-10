@@ -107,7 +107,7 @@ const makeFormatters = assets => {
  * Dynamic check that an OfferStatus is also a BidSpec.
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
- * @param {Awaited<ReturnType<import('../lib/rpc').makeAgoricNames>>} agoricNames
+ * @param {import('../lib/wallet.js').AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
  * returns null if offerStatus is not a BidSpec
  */
