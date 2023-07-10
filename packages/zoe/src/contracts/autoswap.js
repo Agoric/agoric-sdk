@@ -167,6 +167,7 @@ const start = async zcf => {
     } = swapSeat.getProposal();
 
     assert(isNatValue(wantedAmountOut.value));
+    assert.typeof(amountIn.value, 'bigint');
 
     const tradePrice = getOutputPrice(
       wantedAmountOut.value,

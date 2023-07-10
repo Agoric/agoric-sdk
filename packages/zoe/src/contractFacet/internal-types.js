@@ -1,7 +1,7 @@
 // @jessie-check
 
 /**
- * @typedef {( {zcf: ZCF} ) => void} TestJigSetter
+ * @typedef {( {zcf}: {zcf: ZCF} ) => void} TestJigSetter
  */
 
 /**
