@@ -406,7 +406,7 @@ interface Rpc {
     data: Uint8Array,
   ): Promise<Uint8Array>;
 }
-declare type Builtin =
+type Builtin =
   | Date
   | Function
   | Uint8Array
@@ -414,7 +414,7 @@ declare type Builtin =
   | number
   | boolean
   | undefined;
-export declare type DeepPartial<T> = T extends Builtin
+export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
@@ -427,8 +427,8 @@ export declare type DeepPartial<T> = T extends Builtin
       [K in keyof T]?: DeepPartial<T[K]>;
     }
   : Partial<T>;
-declare type KeysOfUnion<T> = T extends T ? keyof T : never;
-export declare type Exact<P, I extends P> = P extends Builtin
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type Exact<P, I extends P> = P extends Builtin
   ? P
   : P & {
       [K in keyof P]: Exact<P[K], I[K]>;

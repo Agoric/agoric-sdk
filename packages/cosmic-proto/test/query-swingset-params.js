@@ -13,7 +13,7 @@ import process from 'process';
  * @param {import('@cosmjs/tendermint-rpc').Tendermint34Client} rpcClient
  * @returns {Promise<import('@agoric/cosmic-proto/swingset/query.js').QueryParamsResponse>}
  */
-const querySwingsetParams = async (rpcClient) => {
+const querySwingsetParams = async rpcClient => {
   const base = QueryClient.withExtensions(rpcClient);
   const rpc = createProtobufRpcClient(base);
   const queryService = new QueryClientImpl(rpc);
@@ -36,7 +36,7 @@ testMain().then(
   () => {
     process.exitCode = 0;
   },
-  (err) => {
+  err => {
     console.error('Failed with', err);
     process.exit(process.exitCode || 1);
   },

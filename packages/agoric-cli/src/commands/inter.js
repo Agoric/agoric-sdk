@@ -87,7 +87,7 @@ const makeFormatters = assets => {
    * @param {(_: T) => string} f
    * @returns { (x: T | null | undefined ) => string | undefined }
    */
-  const maybe = f => x => x ? f(x) : undefined;
+  const maybe = f => x => (x ? f(x) : undefined);
 
   return {
     amount,
