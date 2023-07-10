@@ -240,11 +240,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  // this storagePort changes for every single message. We define it out here
-  // so the 'externalStorage' object can close over the single mutable
-  // instance, and we update the 'portNums.storage' value each time toSwingSet is called
+  // the storagePort used to change for every single message. It's defined out
+  // here so 'sendToChainStorage' can close over the single mutable instance,
+  // when we updated the 'portNums.storage' value each time toSwingSet was called.
   async function launchAndInitializeSwingSet(bootMsg) {
-    const sendToChain = msg => chainSend(portNums.storage, msg);
+    const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
     const fromBridgeMailbox = data => {
       const ack = toNumber(data.ack);
@@ -253,7 +253,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
     const mailboxStorage = makeReadCachingStorage(
       makePrefixedBridgeStorage(
-        sendToChain,
+        sendToChainStorage,
         `${STORAGE_PATH.MAILBOX}.`,
         'legacySet',
         val => fromBridgeMailbox(JSON.parse(val)),
@@ -263,7 +263,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const makeQueueStorage = queuePath => {
       const { kvStore, commit, abort } = makeBufferedStorage(
         makePrefixedBridgeStorage(
-          sendToChain,
+          sendToChainStorage,
           `${queuePath}.`,
           'setWithoutNotify',
           x => x,
@@ -305,7 +305,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         }
         return [path, value];
       });
-      sendToChain(
+      sendToChainStorage(
         stringify({
           method: 'setWithoutNotify',
           args: entries,
@@ -612,69 +612,80 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
-    if (action.vibcPort) {
-      portNums.dibc = action.vibcPort;
+
+    await null;
+
+    switch (action.type) {
+      case AG_COSMOS_INIT: {
+        // console.error('got AG_COSMOS_INIT', action);
+
+        !blockingSend || Fail`Swingset already initialized`;
+
+        if (action.vibcPort) {
+          portNums.dibc = action.vibcPort;
+        }
+
+        if (action.storagePort) {
+          portNums.storage = action.storagePort;
+        }
+
+        if (action.vbankPort) {
+          portNums.bank = action.vbankPort;
+        }
+
+        if (action.lienPort) {
+          portNums.lien = action.lienPort;
+        }
+        harden(portNums);
+
+        // Ensure that initialization has completed.
+        blockingSend = await launchAndInitializeSwingSet(action);
+
+        return true;
+      }
+
+      // Snapshot actions are specific to cosmos chains and handled here
+      case ActionType.COSMOS_SNAPSHOT: {
+        const { blockHeight, request, args: requestArgs } = action;
+        writeSlogObject?.({
+          type: 'cosmic-swingset-snapshot-start',
+          blockHeight,
+          request,
+          args: requestArgs,
+        });
+
+        const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
+
+        resultP.then(
+          result => {
+            writeSlogObject?.({
+              type: 'cosmic-swingset-snapshot-finish',
+              blockHeight,
+              request,
+              args: requestArgs,
+              result,
+            });
+          },
+          error => {
+            writeSlogObject?.({
+              type: 'cosmic-swingset-snapshot-finish',
+              blockHeight,
+              request,
+              args: requestArgs,
+              error,
+            });
+          },
+        );
+
+        return resultP;
+      }
+
+      default: {
+        if (!blockingSend) throw Fail`Swingset not initialized`;
+
+        // Block related actions are processed by `blockingSend`
+        return blockingSend(action);
+      }
     }
-
-    if (action.storagePort) {
-      // Initialize the storage for this particular transaction.
-      // console.log(` setting portNums.storage to`, action.storagePort);
-      portNums.storage = action.storagePort;
-    }
-
-    if (action.vbankPort) {
-      portNums.bank = action.vbankPort;
-    }
-
-    if (action.lienPort) {
-      portNums.lien = action.lienPort;
-    }
-
-    // Snapshot actions are specific to cosmos chains and handled here
-    if (action.type === ActionType.COSMOS_SNAPSHOT) {
-      const { blockHeight, request, args: requestArgs } = action;
-      writeSlogObject?.({
-        type: 'cosmic-swingset-snapshot-start',
-        blockHeight,
-        request,
-        args: requestArgs,
-      });
-
-      const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
-
-      resultP.then(
-        result => {
-          writeSlogObject?.({
-            type: 'cosmic-swingset-snapshot-finish',
-            blockHeight,
-            request,
-            args: requestArgs,
-            result,
-          });
-        },
-        error => {
-          writeSlogObject?.({
-            type: 'cosmic-swingset-snapshot-finish',
-            blockHeight,
-            request,
-            args: requestArgs,
-            error,
-          });
-        },
-      );
-
-      return resultP;
-    }
-
-    // Ensure that initialization has completed.
-    blockingSend = await (blockingSend || launchAndInitializeSwingSet(action));
-
-    if (action.type === AG_COSMOS_INIT) {
-      // console.error('got AG_COSMOS_INIT', action);
-      return true;
-    }
-
-    // Block related actions are processed by `blockingSend`
-    return blockingSend(action);
   }
 }
