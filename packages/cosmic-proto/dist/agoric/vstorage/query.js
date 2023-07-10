@@ -187,7 +187,7 @@ export const QueryChildrenResponse = {
   fromJSON(object) {
     return {
       children: Array.isArray(object?.children)
-        ? object.children.map((e) => String(e))
+        ? object.children.map(e => String(e))
         : [],
       pagination: isSet(object.pagination)
         ? PageResponse.fromJSON(object.pagination)
@@ -197,7 +197,7 @@ export const QueryChildrenResponse = {
   toJSON(message) {
     const obj = {};
     if (message.children) {
-      obj.children = message.children.map((e) => e);
+      obj.children = message.children.map(e => e);
     } else {
       obj.children = [];
     }
@@ -209,7 +209,7 @@ export const QueryChildrenResponse = {
   },
   fromPartial(object) {
     const message = createBaseQueryChildrenResponse();
-    message.children = object.children?.map((e) => e) || [];
+    message.children = object.children?.map(e => e) || [];
     message.pagination =
       object.pagination !== undefined && object.pagination !== null
         ? PageResponse.fromPartial(object.pagination)
@@ -229,14 +229,12 @@ export class QueryClientImpl {
   Data(request) {
     const data = QueryDataRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Data', data);
-    return promise.then((data) =>
-      QueryDataResponse.decode(new _m0.Reader(data)),
-    );
+    return promise.then(data => QueryDataResponse.decode(new _m0.Reader(data)));
   }
   Children(request) {
     const data = QueryChildrenRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Children', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       QueryChildrenResponse.decode(new _m0.Reader(data)),
     );
   }
