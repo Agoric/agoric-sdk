@@ -742,27 +742,22 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   const profiles = {
+    __proto__: null,
     dev: startFakeChain,
     'local-chain': startLocalChain,
     'local-solo': startLocalSolo,
     testnet: opts.dockerTag ? startTestnetDocker : startTestnetSdk,
   };
 
-  const popts = opts;
-
-  const args = rawArgs.slice(1);
-  const profileName = args[0] || 'dev';
+  const [_command = 'start', profileName = 'dev', ...args] = rawArgs;
   const startFn = profiles[profileName];
   if (!startFn) {
+    const profileNames = Object.keys(profiles).join(', ');
     log.error(
-      `unrecognized profile name ${profileName}; use one of: ${Object.keys(
-        profiles,
-      )
-        .sort()
-        .join(', ')}`,
+      `unrecognized profile name ${profileName}; use one of: ${profileNames}`,
     );
     return 1;
   }
 
-  return startFn(profileName, args[0] ? args.slice(1) : args, popts);
+  return startFn(profileName, args, opts);
 }
