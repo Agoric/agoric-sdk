@@ -440,8 +440,7 @@ func NewAgoricApp(
 	app.VstorageKeeper = vstorage.NewKeeper(
 		keys[vstorage.StoreKey],
 	)
-	vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
-	app.vstoragePort = vm.GetPort("vstorage")
+	app.vstoragePort = vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
@@ -810,12 +809,12 @@ type cosmosInitAction struct {
 	Type        string             `json:"type"`
 	ChainID     string             `json:"chainID"`
 	Params      swingset.Params    `json:"params"`
-	StoragePort int                `json:"storagePort"`
 	SupplyCoins sdk.Coins          `json:"supplyCoins"`
-	VibcPort    int                `json:"vibcPort"`
-	VbankPort   int                `json:"vbankPort"`
-	LienPort    int                `json:"lienPort"`
 	UpgradePlan *upgradetypes.Plan `json:"upgradePlan,omitempty"`
+	LienPort    int                `json:"lienPort"`
+	StoragePort int                `json:"storagePort"`
+	VbankPort   int                `json:"vbankPort"`
+	VibcPort    int                `json:"vibcPort"`
 }
 
 // Name returns the name of the App
@@ -831,12 +830,12 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
 		Params:      app.SwingSetKeeper.GetParams(ctx),
-		StoragePort: app.vstoragePort,
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
-		VibcPort:    app.vibcPort,
-		VbankPort:   app.vbankPort,
-		LienPort:    app.lienPort,
 		UpgradePlan: app.upgradePlan,
+		LienPort:    app.lienPort,
+		StoragePort: app.vstoragePort,
+		VbankPort:   app.vbankPort,
+		VibcPort:    app.vibcPort,
 	}
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 
