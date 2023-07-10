@@ -40,6 +40,7 @@ const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const SOLO_COINS = `13000000${STAKING_DENOM},500000000${CENTRAL_DENOM}`;
 const CHAIN_ID = 'agoriclocal';
 
+const SERVERS_ROOT_DIR = '_agstate/agoric-servers';
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
     ? 0
@@ -172,7 +173,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const fakeDelay =
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
 
-    const serverDir = `_agstate/agoric-servers/${profileName}`;
+    const serverDir = `${SERVERS_ROOT_DIR}/${profileName}`;
 
     await null;
     if (popts.reset) {
@@ -206,7 +207,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         agSolo,
         ['init', profileName, '--egresses=fake', `--webport=${HOST_PORT}`],
         {
-          cwd: '_agstate/agoric-servers',
+          cwd: SERVERS_ROOT_DIR,
         },
       );
     }
@@ -266,7 +267,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       }
     }
 
-    const serverDir = `_agstate/agoric-servers/${profileName}-${portNum}`;
+    const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${portNum}`;
     if (popts.reset) {
       log(chalk.green(`removing ${serverDir}`));
       // rm is available on all the unix-likes, so use it for speed.
@@ -448,7 +449,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 1;
     }
 
-    const serverDir = `_agstate/agoric-servers/${profileName}-${portNum}`;
+    const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${portNum}`;
 
     const { cosmosClientBuild } = getSDKBinaries(sdkPrefixes);
     await null;
@@ -552,7 +553,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 0;
     }
 
-    const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
+    const gciFile = `${SERVERS_ROOT_DIR}/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
     process.stdout.write(`Waiting for local-chain-${CHAIN_PORT} to start...`);
     let hasGci = false;
     for await (const _ of untilTrue(() => hasGci)) {
@@ -699,7 +700,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const port = startArgs[0] || PORT;
     const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
-    const serverDir = `_agstate/agoric-servers/${profileName}-${port}`;
+    const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${port}`;
 
     if (popts.reset) {
       log(chalk.green(`removing ${serverDir}`));
@@ -727,7 +728,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   async function startTestnetSdk(profileName, startArgs, popts) {
     const port = startArgs[0] || PORT;
     const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
-    const serverDir = `_agstate/agoric-servers/${profileName}-${port}`;
+    const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${port}`;
 
     await null;
     if (popts.reset) {
