@@ -64,10 +64,10 @@ export const MsgDeliverInbound = {
   fromJSON(object) {
     return {
       messages: Array.isArray(object?.messages)
-        ? object.messages.map((e) => String(e))
+        ? object.messages.map(e => String(e))
         : [],
       nums: Array.isArray(object?.nums)
-        ? object.nums.map((e) => Long.fromValue(e))
+        ? object.nums.map(e => Long.fromValue(e))
         : [],
       ack: isSet(object.ack) ? Long.fromValue(object.ack) : Long.UZERO,
       submitter: isSet(object.submitter)
@@ -78,12 +78,12 @@ export const MsgDeliverInbound = {
   toJSON(message) {
     const obj = {};
     if (message.messages) {
-      obj.messages = message.messages.map((e) => e);
+      obj.messages = message.messages.map(e => e);
     } else {
       obj.messages = [];
     }
     if (message.nums) {
-      obj.nums = message.nums.map((e) => (e || Long.UZERO).toString());
+      obj.nums = message.nums.map(e => (e || Long.UZERO).toString());
     } else {
       obj.nums = [];
     }
@@ -97,8 +97,8 @@ export const MsgDeliverInbound = {
   },
   fromPartial(object) {
     const message = createBaseMsgDeliverInbound();
-    message.messages = object.messages?.map((e) => e) || [];
-    message.nums = object.nums?.map((e) => Long.fromValue(e)) || [];
+    message.messages = object.messages?.map(e => e) || [];
+    message.nums = object.nums?.map(e => Long.fromValue(e)) || [];
     message.ack =
       object.ack !== undefined && object.ack !== null
         ? Long.fromValue(object.ack)
@@ -378,7 +378,7 @@ export const MsgProvision = {
         ? bytesFromBase64(object.address)
         : new Uint8Array(),
       powerFlags: Array.isArray(object?.powerFlags)
-        ? object.powerFlags.map((e) => String(e))
+        ? object.powerFlags.map(e => String(e))
         : [],
       submitter: isSet(object.submitter)
         ? bytesFromBase64(object.submitter)
@@ -393,7 +393,7 @@ export const MsgProvision = {
         message.address !== undefined ? message.address : new Uint8Array(),
       ));
     if (message.powerFlags) {
-      obj.powerFlags = message.powerFlags.map((e) => e);
+      obj.powerFlags = message.powerFlags.map(e => e);
     } else {
       obj.powerFlags = [];
     }
@@ -407,7 +407,7 @@ export const MsgProvision = {
     const message = createBaseMsgProvision();
     message.nickname = object.nickname ?? '';
     message.address = object.address ?? new Uint8Array();
-    message.powerFlags = object.powerFlags?.map((e) => e) || [];
+    message.powerFlags = object.powerFlags?.map(e => e) || [];
     message.submitter = object.submitter ?? new Uint8Array();
     return message;
   },
@@ -588,35 +588,35 @@ export class MsgClientImpl {
   InstallBundle(request) {
     const data = MsgInstallBundle.encode(request).finish();
     const promise = this.rpc.request(this.service, 'InstallBundle', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       MsgInstallBundleResponse.decode(new _m0.Reader(data)),
     );
   }
   DeliverInbound(request) {
     const data = MsgDeliverInbound.encode(request).finish();
     const promise = this.rpc.request(this.service, 'DeliverInbound', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       MsgDeliverInboundResponse.decode(new _m0.Reader(data)),
     );
   }
   WalletAction(request) {
     const data = MsgWalletAction.encode(request).finish();
     const promise = this.rpc.request(this.service, 'WalletAction', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       MsgWalletActionResponse.decode(new _m0.Reader(data)),
     );
   }
   WalletSpendAction(request) {
     const data = MsgWalletSpendAction.encode(request).finish();
     const promise = this.rpc.request(this.service, 'WalletSpendAction', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       MsgWalletSpendActionResponse.decode(new _m0.Reader(data)),
     );
   }
   Provision(request) {
     const data = MsgProvision.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Provision', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       MsgProvisionResponse.decode(new _m0.Reader(data)),
     );
   }
@@ -653,7 +653,7 @@ function base64FromBytes(arr) {
     return globalThis.Buffer.from(arr).toString('base64');
   } else {
     const bin = [];
-    arr.forEach((byte) => {
+    arr.forEach(byte => {
       bin.push(String.fromCharCode(byte));
     });
     return globalThis.btoa(bin.join(''));
