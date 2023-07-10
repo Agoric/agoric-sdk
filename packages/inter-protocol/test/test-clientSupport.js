@@ -8,19 +8,17 @@ import { withAmountUtils } from './supports.js';
 const ist = withAmountUtils(makeIssuerKit('IST'));
 const atom = withAmountUtils(makeIssuerKit('ATOM'));
 
-const brands = {
-  IST: ist.brand,
-  ATOM: atom.brand,
-};
-
-// XXX use @satisfies
-/** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */
-const agoricNames = /** @type {any} */ ({
-  brand: brands,
+// uses actual Brand objects instead of BoardRemote to make the test output more legible
+/** @satisfies {Partial<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>} */
+const agoricNames = {
+  brand: {
+    IST: /** @type {any} */ (ist.brand),
+    ATOM: /** @type {any} */ (atom.brand),
+  },
   vbankAsset: {
     uist: {
       denom: 'uist',
-      brand: ist.brand,
+      brand: /** @type {any} */ (ist.brand),
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'IST',
@@ -28,14 +26,14 @@ const agoricNames = /** @type {any} */ ({
     },
     'ibc/toyatom': {
       denom: 'ibc/toyatom',
-      brand: atom.brand,
+      brand: /** @type {any} */ (atom.brand),
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'ATOM',
       proposedName: 'ATOM',
     },
   },
-});
+};
 
 test('Offers.auction.Bid', async t => {
   const discounts = [

@@ -9,8 +9,6 @@ import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 
-// TODO use '@satisfies" in TS 5.1 to make sure these each conform to OfferMaker interface
-
 // NB: not really a Proposal because the brands are not remotes
 // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
 // mustMatch(harden(proposal), ProposalShape);
@@ -143,11 +141,10 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 };
 
 /**
- * @param {Record<string, Brand>} brands
+ * @param {Record<string, import('@agoric/internal/src/marshal.js').BoardRemote>} brands
  * @param {({ wantMinted: number, giveMinted?: undefined } | { giveMinted: number, wantMinted?: undefined })} opts
- * @param {number} [fee=0]
+ * @param {number} [fee]
  * @param {string} [anchor]
- * @returns {Proposal} XXX not a real proposal, uses BoardRemote
  */
 const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const giving = 'giveMinted' in opts ? 'minted' : 'anchor';
@@ -202,15 +199,13 @@ const makePsmSwapOffer = ({ brand }, instance, opts) => {
       instance,
       publicInvitationMaker: method,
     },
+    // @ts-expect-error BoardRemote not a Brand object
     proposal,
   };
 };
 
 /**
- * @param {{
- *   brand: Record<string, Brand>,
- *   vbankAsset: Record<string, { brand: Brand, displayInfo: DisplayInfo }>,
- * }} agoricNames
+ * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand' | 'vbankAsset'>} agoricNames
  * @param {(msg: string) => Error} makeError error constructor
  * @returns {(a: string) => Amount<'nat'>}
  */
@@ -329,6 +324,7 @@ const makeAddCollateralOffer = ({ brand }, opts) => {
   /** @type {AmountKeywordRecord} */
   const give = {
     Collateral: AmountMath.make(
+      // @ts-expect-error BoardRemote not a Brand object
       brand[opts.collateralBrandKey],
       scaleDecimals(opts.give),
     ),
@@ -373,6 +369,9 @@ const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
   };
 };
 
+/**
+ * @satisfies {Record<string, Record<string, import('@agoric/smart-wallet/src/types.js').OfferMaker>>}
+ */
 export const Offers = {
   auction: {
     Bid: makeBidOffer,
