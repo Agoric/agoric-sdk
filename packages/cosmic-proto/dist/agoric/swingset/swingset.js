@@ -47,7 +47,7 @@ export const CoreEvalProposal = {
       title: isSet(object.title) ? String(object.title) : '',
       description: isSet(object.description) ? String(object.description) : '',
       evals: Array.isArray(object?.evals)
-        ? object.evals.map((e) => CoreEval.fromJSON(e))
+        ? object.evals.map(e => CoreEval.fromJSON(e))
         : [],
     };
   },
@@ -57,9 +57,7 @@ export const CoreEvalProposal = {
     message.description !== undefined &&
       (obj.description = message.description);
     if (message.evals) {
-      obj.evals = message.evals.map((e) =>
-        e ? CoreEval.toJSON(e) : undefined,
-      );
+      obj.evals = message.evals.map(e => (e ? CoreEval.toJSON(e) : undefined));
     } else {
       obj.evals = [];
     }
@@ -69,7 +67,7 @@ export const CoreEvalProposal = {
     const message = createBaseCoreEvalProposal();
     message.title = object.title ?? '';
     message.description = object.description ?? '';
-    message.evals = object.evals?.map((e) => CoreEval.fromPartial(e)) || [];
+    message.evals = object.evals?.map(e => CoreEval.fromPartial(e)) || [];
     return message;
   },
 };
@@ -190,33 +188,33 @@ export const Params = {
   fromJSON(object) {
     return {
       beansPerUnit: Array.isArray(object?.beansPerUnit)
-        ? object.beansPerUnit.map((e) => StringBeans.fromJSON(e))
+        ? object.beansPerUnit.map(e => StringBeans.fromJSON(e))
         : [],
       feeUnitPrice: Array.isArray(object?.feeUnitPrice)
-        ? object.feeUnitPrice.map((e) => Coin.fromJSON(e))
+        ? object.feeUnitPrice.map(e => Coin.fromJSON(e))
         : [],
       bootstrapVatConfig: isSet(object.bootstrapVatConfig)
         ? String(object.bootstrapVatConfig)
         : '',
       powerFlagFees: Array.isArray(object?.powerFlagFees)
-        ? object.powerFlagFees.map((e) => PowerFlagFee.fromJSON(e))
+        ? object.powerFlagFees.map(e => PowerFlagFee.fromJSON(e))
         : [],
       queueMax: Array.isArray(object?.queueMax)
-        ? object.queueMax.map((e) => QueueSize.fromJSON(e))
+        ? object.queueMax.map(e => QueueSize.fromJSON(e))
         : [],
     };
   },
   toJSON(message) {
     const obj = {};
     if (message.beansPerUnit) {
-      obj.beansPerUnit = message.beansPerUnit.map((e) =>
+      obj.beansPerUnit = message.beansPerUnit.map(e =>
         e ? StringBeans.toJSON(e) : undefined,
       );
     } else {
       obj.beansPerUnit = [];
     }
     if (message.feeUnitPrice) {
-      obj.feeUnitPrice = message.feeUnitPrice.map((e) =>
+      obj.feeUnitPrice = message.feeUnitPrice.map(e =>
         e ? Coin.toJSON(e) : undefined,
       );
     } else {
@@ -225,14 +223,14 @@ export const Params = {
     message.bootstrapVatConfig !== undefined &&
       (obj.bootstrapVatConfig = message.bootstrapVatConfig);
     if (message.powerFlagFees) {
-      obj.powerFlagFees = message.powerFlagFees.map((e) =>
+      obj.powerFlagFees = message.powerFlagFees.map(e =>
         e ? PowerFlagFee.toJSON(e) : undefined,
       );
     } else {
       obj.powerFlagFees = [];
     }
     if (message.queueMax) {
-      obj.queueMax = message.queueMax.map((e) =>
+      obj.queueMax = message.queueMax.map(e =>
         e ? QueueSize.toJSON(e) : undefined,
       );
     } else {
@@ -243,14 +241,14 @@ export const Params = {
   fromPartial(object) {
     const message = createBaseParams();
     message.beansPerUnit =
-      object.beansPerUnit?.map((e) => StringBeans.fromPartial(e)) || [];
+      object.beansPerUnit?.map(e => StringBeans.fromPartial(e)) || [];
     message.feeUnitPrice =
-      object.feeUnitPrice?.map((e) => Coin.fromPartial(e)) || [];
+      object.feeUnitPrice?.map(e => Coin.fromPartial(e)) || [];
     message.bootstrapVatConfig = object.bootstrapVatConfig ?? '';
     message.powerFlagFees =
-      object.powerFlagFees?.map((e) => PowerFlagFee.fromPartial(e)) || [];
+      object.powerFlagFees?.map(e => PowerFlagFee.fromPartial(e)) || [];
     message.queueMax =
-      object.queueMax?.map((e) => QueueSize.fromPartial(e)) || [];
+      object.queueMax?.map(e => QueueSize.fromPartial(e)) || [];
     return message;
   },
 };
@@ -284,14 +282,14 @@ export const State = {
   fromJSON(object) {
     return {
       queueAllowed: Array.isArray(object?.queueAllowed)
-        ? object.queueAllowed.map((e) => QueueSize.fromJSON(e))
+        ? object.queueAllowed.map(e => QueueSize.fromJSON(e))
         : [],
     };
   },
   toJSON(message) {
     const obj = {};
     if (message.queueAllowed) {
-      obj.queueAllowed = message.queueAllowed.map((e) =>
+      obj.queueAllowed = message.queueAllowed.map(e =>
         e ? QueueSize.toJSON(e) : undefined,
       );
     } else {
@@ -302,7 +300,7 @@ export const State = {
   fromPartial(object) {
     const message = createBaseState();
     message.queueAllowed =
-      object.queueAllowed?.map((e) => QueueSize.fromPartial(e)) || [];
+      object.queueAllowed?.map(e => QueueSize.fromPartial(e)) || [];
     return message;
   },
 };
@@ -395,7 +393,7 @@ export const PowerFlagFee = {
     return {
       powerFlag: isSet(object.powerFlag) ? String(object.powerFlag) : '',
       fee: Array.isArray(object?.fee)
-        ? object.fee.map((e) => Coin.fromJSON(e))
+        ? object.fee.map(e => Coin.fromJSON(e))
         : [],
     };
   },
@@ -403,7 +401,7 @@ export const PowerFlagFee = {
     const obj = {};
     message.powerFlag !== undefined && (obj.powerFlag = message.powerFlag);
     if (message.fee) {
-      obj.fee = message.fee.map((e) => (e ? Coin.toJSON(e) : undefined));
+      obj.fee = message.fee.map(e => (e ? Coin.toJSON(e) : undefined));
     } else {
       obj.fee = [];
     }
@@ -412,7 +410,7 @@ export const PowerFlagFee = {
   fromPartial(object) {
     const message = createBasePowerFlagFee();
     message.powerFlag = object.powerFlag ?? '';
-    message.fee = object.fee?.map((e) => Coin.fromPartial(e)) || [];
+    message.fee = object.fee?.map(e => Coin.fromPartial(e)) || [];
     return message;
   },
 };
@@ -514,7 +512,7 @@ export const Egress = {
         ? bytesFromBase64(object.peer)
         : new Uint8Array(),
       powerFlags: Array.isArray(object?.powerFlags)
-        ? object.powerFlags.map((e) => String(e))
+        ? object.powerFlags.map(e => String(e))
         : [],
     };
   },
@@ -526,7 +524,7 @@ export const Egress = {
         message.peer !== undefined ? message.peer : new Uint8Array(),
       ));
     if (message.powerFlags) {
-      obj.powerFlags = message.powerFlags.map((e) => e);
+      obj.powerFlags = message.powerFlags.map(e => e);
     } else {
       obj.powerFlags = [];
     }
@@ -536,7 +534,7 @@ export const Egress = {
     const message = createBaseEgress();
     message.nickname = object.nickname ?? '';
     message.peer = object.peer ?? new Uint8Array();
-    message.powerFlags = object.powerFlags?.map((e) => e) || [];
+    message.powerFlags = object.powerFlags?.map(e => e) || [];
     return message;
   },
 };
@@ -629,7 +627,7 @@ function base64FromBytes(arr) {
     return globalThis.Buffer.from(arr).toString('base64');
   } else {
     const bin = [];
-    arr.forEach((byte) => {
+    arr.forEach(byte => {
       bin.push(String.fromCharCode(byte));
     });
     return globalThis.btoa(bin.join(''));
