@@ -37,8 +37,10 @@ const start = zcf => {
 
   const creatorFacet = makeExo('creatorFacet', ElectorateCreatorI, {
     getPoserInvitation() {
-      return zcf.makeInvitation(() => {},
-      `noActionElectorate doesn't allow posing questions`);
+      return zcf.makeInvitation(
+        () => {},
+        `noActionElectorate doesn't allow posing questions`,
+      );
     },
     addQuestion(_instance, _question) {
       throw Error(`noActionElectorate doesn't add questions.`);
