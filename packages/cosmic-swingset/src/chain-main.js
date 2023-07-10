@@ -649,6 +649,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
         !blockingSend || Fail`Swingset already initialized`;
 
+        if (action.swingsetPort) {
+          portNums.swingset = action.swingsetPort;
+        }
+
         if (action.vibcPort) {
           portNums.dibc = action.vibcPort;
         }
