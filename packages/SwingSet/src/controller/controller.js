@@ -10,10 +10,11 @@ import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
+import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
@@ -32,6 +33,12 @@ import {
 } from './bundle-handler.js';
 import { makeStartXSnap } from './startXSnap.js';
 import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
+
+const endoZipBase64Sha512Shape = harden({
+  moduleFormat: 'endoZipBase64',
+  endoZipBase64: M.string(),
+  endoZipBase64Sha512: M.string(),
+});
 
 /** @param {Uint8Array} bytes */
 export function computeSha512(bytes) {
@@ -258,21 +265,11 @@ export async function makeSwingsetController(
    * @param {BundleID} [allegedBundleID]
    * @returns {Promise<BundleID>}
    */
-  async function validateAndInstallBundle(bundle, allegedBundleID) {
+  async function validateAndInstallBundle(bundle, allegedBundleID = undefined) {
     // TODO The following assertion may be removed when checkBundle subsumes
     // the responsibility to verify the permanence of a bundle's properties.
     // https://github.com/endojs/endo/issues/1106
-
-    Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
-      ({ value, get, writable, configurable }) =>
-        typeof value === 'string' &&
-        get === undefined &&
-        // @ts-ignore `isFake` purposely omitted from type
-        (harden.isFake || (writable === false && configurable === false)),
-    ) ||
-      Fail`Bundle with alleged ID ${q(
-        allegedBundleID,
-      )} must be a frozen object with only string value properties, no accessors`;
+    mustMatch(bundle, endoZipBase64Sha512Shape);
     await checkBundle(bundle, computeSha512, allegedBundleID);
     const { endoZipBase64Sha512 } = bundle;
     assert.typeof(endoZipBase64Sha512, 'string');
