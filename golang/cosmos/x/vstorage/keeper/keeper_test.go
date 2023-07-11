@@ -185,7 +185,25 @@ func TestStorage(t *testing.T) {
 		t.Errorf("got export %q, want %q", got, expectedKey2Export)
 	}
 
+	keeper.RemoveEntriesWithPrefix(ctx, "key2.child2")
+	if keeper.HasEntry(ctx, "key2") {
+		t.Errorf("got leftover entries for key2 after removal")
+	}
+	expectedRemainingExport := []*types.DataEntry{
+		{Path: "alpha2", Value: "value2"},
+		{Path: "beta3", Value: "value3"},
+		{Path: "inited", Value: ""},
+	}
+	gotRemainingExport := keeper.ExportStorage(ctx)
+	if !reflect.DeepEqual(gotRemainingExport, expectedRemainingExport) {
+		t.Errorf("got remaining export %q, want %q", expectedRemainingExport, expectedRemainingExport)
+	}
+
 	keeper.ImportStorage(ctx, gotExport)
+	gotExport = keeper.ExportStorage(ctx)
+	if !reflect.DeepEqual(gotExport, expectedExport) {
+		t.Errorf("got export %q after import, want %q", gotExport, expectedExport)
+	}
 }
 
 func TestStorageNotify(t *testing.T) {
