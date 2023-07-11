@@ -120,11 +120,10 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
     // crank).  The resulting abrupt comms vat termination should serve as a
     // diagnostic signal that we have a bug that must be corrected.
 
-    methargs.slots.forEach(
-      s =>
-        !state.hasMetaObject(s) ||
-        Fail`comms meta-object ${s} not allowed in message args`,
-    );
+    for (const s of methargs.slots) {
+      !state.hasMetaObject(s) ||
+        Fail`comms meta-object ${s} not allowed in message args`;
+    }
     return sendFromKernel(target, methargs, result);
   }
 

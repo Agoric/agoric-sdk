@@ -74,9 +74,9 @@ import { Fail } from '@agoric/assert';
 
 export function importMailbox(data, inout = {}) {
   const outbox = new Map();
-  data.outbox.forEach(m => {
+  for (const m of data.outbox) {
     outbox.set(Nat(m[0]), m[1]);
-  });
+  }
   inout.ack = Nat(data.ack);
   inout.outbox = outbox;
   return inout;
@@ -84,9 +84,9 @@ export function importMailbox(data, inout = {}) {
 
 export function exportMailbox(inout) {
   const messages = [];
-  inout.outbox.forEach((body, msgnum) => {
+  for (const [msgnum, body] of inout.outbox) {
     messages.push([Number(msgnum), body]);
-  });
+  }
   messages.sort((a, b) => a[0] - b[0]);
   return {
     ack: Number(inout.ack),
@@ -121,13 +121,13 @@ export function buildMailboxStateMap(state = harden(new Map())) {
 
   function exportToData() {
     const data = {};
-    state.forEach((inout, peer) => {
+    for (const [peer, inout] of state.entries()) {
       const exported = exportMailbox(inout);
       data[peer] = {
         inboundAck: exported.ack,
         outbox: exported.outbox,
       };
-    });
+    }
     return harden(data);
   }
 

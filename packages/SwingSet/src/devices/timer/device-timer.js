@@ -182,7 +182,7 @@ function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
   function poll(now) {
     const timeAndEvents = deadlines.removeEventsThrough(now);
     let wokeAnything = false;
-    timeAndEvents.forEach(events => {
+    for (const events of timeAndEvents) {
       const { time, handlers } = events;
       assert.typeof(time, 'bigint');
       for (const { index, handler } of handlers) {
@@ -197,7 +197,7 @@ function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
         }
         wokeAnything = true;
       }
-    });
+    }
     if (wokeAnything) {
       saveStateFn();
     }
