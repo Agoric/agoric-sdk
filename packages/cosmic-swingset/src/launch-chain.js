@@ -842,12 +842,6 @@ export async function launch({
 
         return undefined;
       }
-      case ActionType.ENACT_UPGRADE_PLAN: {
-        // Dispatch to upgrade-specific handler
-        // const { plan } = action;
-        // const { name, height, info } = plan;
-        return undefined;
-      }
 
       default: {
         throw Fail`Unrecognized action ${action}; are you sure you didn't mean to queue it?`;
