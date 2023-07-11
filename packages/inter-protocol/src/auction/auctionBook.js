@@ -2,7 +2,7 @@ import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
 import {
   M,
@@ -110,6 +110,18 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  * @property {Amount<'nat'> | null} collateralAvailable The amount of collateral
  *   remaining
  */
+export const BookDataNotificationShape = M.splitRecord(
+  {
+    startPrice: M.or(RatioShape, null),
+    currentPriceLevel: M.or(RatioShape, null),
+    startCollateral: AmountShape,
+    collateralAvailable: M.or(AmountShape, null),
+  },
+  {
+    proceedsRaised: AmountShape,
+  },
+);
+harden(BookDataNotificationShape);
 
 /**
  * @typedef {object} ScaledBidData
@@ -133,6 +145,11 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  * @property {Array<ScaledBidData>} scaledBids
  * @property {Array<PricedBidData>} pricedBids
  */
+export const BidDataNotificationShape = {
+  scaledBids: M.arrayOf(M.any()),
+  pricedBids: M.arrayOf(M.any()),
+};
+harden(BidDataNotificationShape);
 
 /**
  * @param {Baggage} baggage
@@ -209,13 +226,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       const bookDataKit = makeRecorderKit(
         bookNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
-          M.any()
+          BookDataNotificationShape
         ),
       );
       const bidsDataKit = makeRecorderKit(
         bidsNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */ (
-          M.any()
+          BidDataNotificationShape
         ),
       );
 

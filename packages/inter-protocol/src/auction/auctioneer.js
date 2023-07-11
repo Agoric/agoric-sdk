@@ -21,9 +21,9 @@ import {
   makeRatioFromAmounts,
   makeRecorderTopic,
   natSafeMath,
+  offerTo,
   prepareRecorder,
   provideEmptySeat,
-  offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
@@ -32,7 +32,7 @@ import { Far } from '@endo/marshal';
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeOfferSpecShape, prepareAuctionBook } from './auctionBook.js';
 import { auctioneerParamTypes } from './params.js';
-import { makeScheduler } from './scheduler.js';
+import { makeScheduler, ScheduleNotificationShape } from './scheduler.js';
 import { AuctionState } from './util.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -441,7 +441,7 @@ export const start = async (zcf, privateArgs, baggage) => {
      * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
      *     import('./scheduler.js').ScheduleNotification
      *   >}
-     */ (M.any()),
+     */ (ScheduleNotificationShape),
   );
 
   /**
