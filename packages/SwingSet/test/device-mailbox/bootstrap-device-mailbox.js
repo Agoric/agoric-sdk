@@ -22,9 +22,9 @@ export function buildRootObject(vatPowers, vatParameters) {
         const handler = Far('mailbox', {
           deliverInboundMessages(peer, messages) {
             log(`dm-${peer}`);
-            messages.forEach(m => {
+            for (const m of messages) {
               log(`m-${m[0]}-${m[1]}`);
-            });
+            }
           },
           deliverInboundAck(peer, ack) {
             log(`da-${peer}-${ack}`);

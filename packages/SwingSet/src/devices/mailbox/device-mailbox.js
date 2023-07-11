@@ -16,10 +16,10 @@ export function buildRootDeviceNode(tools) {
       );
     }
     assert.typeof(peer, 'string');
-    messages.forEach(m => {
+    for (const m of messages) {
       Nat(m[0]);
       assert.typeof(m[1], 'string');
-    });
+    }
     Nat(ack);
     if (messages.length) {
       deliverInboundMessages(peer, harden(messages));

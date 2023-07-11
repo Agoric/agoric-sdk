@@ -132,12 +132,12 @@ export function buildRootDeviceNode(tools) {
   }
 
   endowments.registerResetter(() => {
-    connectedMods.forEach((mod, index) => {
+    for (const [index, mod] of connectedMods.entries()) {
       if (mod) {
         // console.info('Startup resetting', index, mod, nextEpochs[index]);
         SO(registeredReceiver).reset(index, nextEpochs[index]);
       }
-    });
+    }
   });
 
   return Far('root', {
