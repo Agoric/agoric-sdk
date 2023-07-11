@@ -201,6 +201,8 @@ type GaiaApp struct { // nolint: golint
 	vibcPort         int
 	vstoragePort     int
 
+	upgradePlan *upgradetypes.Plan
+
 	invCheckPeriod uint
 
 	// keys to access the substores
@@ -771,47 +773,18 @@ func NewAgoricApp(
 	return app
 }
 
-// swingsetUpgradeAction is the action to run swingset upgrade handlers.
-type swingsetUpgradeAction struct {
-	// Type must be enactUpgradePlanType
-	Type string `json:"type"`
-	// Plan is the upgrade plan
-	Plan upgradetypes.Plan `json:"plan"`
-}
-
-const enactUpgradePlanType = "ENACT_UPGRADE_PLAN"
-
-// swingsetUpgrade tells swingset to execute the upgrade plan.
-func swingsetUpgrade(ctx sdk.Context, plan upgradetypes.Plan, callToController func(ctx sdk.Context, str string) (string, error)) error {
-	action := swingsetUpgradeAction{
-		Type: enactUpgradePlanType,
-		Plan: plan,
-	}
-	bz, err := json.Marshal(action)
-	if err != nil {
-		return err
-	}
-	_, err = callToController(ctx, string(bz))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // upgrade11Handler performs standard upgrade actions plus custom actions for upgrade-11.
 func upgrade11Handler(app *GaiaApp, targetUpgrade string, callToController func(ctx sdk.Context, str string) (string, error)) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		// Record the plan to send to SwingSet
+		app.upgradePlan = &plan
+
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
 			return mvm, err
 		}
 
-		// Lastly, let Swingset reaction to the upgrade
-		err = swingsetUpgrade(ctx, plan, callToController)
-		if err != nil {
-			return mvm, err
-		}
 		return mvm, nil
 	}
 }
@@ -834,14 +807,15 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 }
 
 type cosmosInitAction struct {
-	Type        string          `json:"type"`
-	ChainID     string          `json:"chainID"`
-	Params      swingset.Params `json:"params"`
-	StoragePort int             `json:"storagePort"`
-	SupplyCoins sdk.Coins       `json:"supplyCoins"`
-	VibcPort    int             `json:"vibcPort"`
-	VbankPort   int             `json:"vbankPort"`
-	LienPort    int             `json:"lienPort"`
+	Type        string             `json:"type"`
+	ChainID     string             `json:"chainID"`
+	Params      swingset.Params    `json:"params"`
+	StoragePort int                `json:"storagePort"`
+	SupplyCoins sdk.Coins          `json:"supplyCoins"`
+	VibcPort    int                `json:"vibcPort"`
+	VbankPort   int                `json:"vbankPort"`
+	LienPort    int                `json:"lienPort"`
+	UpgradePlan *upgradetypes.Plan `json:"upgradePlan,omitempty"`
 }
 
 // Name returns the name of the App
@@ -862,6 +836,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VibcPort:    app.vibcPort,
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,
+		UpgradePlan: app.upgradePlan,
 	}
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 
