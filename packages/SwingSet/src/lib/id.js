@@ -2,6 +2,9 @@ import { Nat } from '@endo/nat';
 
 import { Fail } from '@agoric/assert';
 
+const vatIDPattern = /^v[1-9]\d*$/;
+const deviceIDPattern = /^d[1-9]\d*$/;
+
 // Vats are identified by an integer index, which (for typechecking purposes)
 // is encoded as `vNN`. Devices are similarly identified as `dNN`. Both have
 // human-readable names, which are provided to controller.addGenesisVat(),
@@ -23,8 +26,7 @@ import { Fail } from '@agoric/assert';
  */
 export function insistVatID(s) {
   typeof s === 'string' || Fail`not a string`;
-  const pattern = /^v\d+$/;
-  pattern.test(s) || Fail`${s} is not a 'vNN'-style VatID`;
+  vatIDPattern.test(s) || Fail`${s} is not a 'vNN'-style VatID`;
 }
 
 /**
@@ -51,9 +53,9 @@ export function makeVatID(index) {
  */
 export function insistDeviceID(s) {
   typeof s === 'string' || Fail`not a string`;
-  const pattern = /^d\d+$/;
+
   // @ts-expect-error
-  pattern.test(s) || Fail`${s} is not a 'dNN'-style DeviceID`;
+  deviceIDPattern.test(s) || Fail`${s} is not a 'dNN'-style DeviceID`;
 }
 
 /**
