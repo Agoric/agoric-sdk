@@ -4,7 +4,11 @@ import '@agoric/zoe/src/contracts/exported.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import {
+  M,
+  prepareExoClassKit,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
@@ -68,8 +72,8 @@ const trace = makeTracer('AucBook', true);
  * @param {Brand<'nat'>} collateralBrand
  */
 export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
-  const bidAmountShape = makeNatAmountShape(bidBrand);
-  const collateralAmountShape = makeNatAmountShape(collateralBrand);
+  const bidAmountShape = makeNatAmountShape(bidBrand, 0n);
+  const collateralAmountShape = makeNatAmountShape(collateralBrand, 0n);
   return M.splitRecord(
     { maxBuy: collateralAmountShape },
     {
@@ -102,13 +106,37 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  */
 
 /**
+ * @typedef {object} ScaledBidData
+ *
+ * @property {Ratio} bidScaling
+ * @property {Amount<'nat'>} wanted
+ * @property {boolean} exitAfterBuy
+ */
+
+/**
+ * @typedef {object} PricedBidData
+ *
+ * @property {Ratio} price
+ * @property {Amount<'nat'>} wanted
+ * @property {boolean} exitAfterBuy
+ */
+
+/**
+ * @typedef {object} BidDataNotification
+ *
+ * @property {Array<ScaledBidData>} scaledBids
+ * @property {Array<PricedBidData>} pricedBids
+ */
+
+/**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
-  const makeScaledBidBook = prepareScaledBidBook(baggage);
-  const makePriceBook = preparePriceBook(baggage);
+  const bidDataKits = provideDurableMapStore(baggage, 'bidDataKits');
+  const makeScaledBidBook = prepareScaledBidBook(baggage, makeRecorderKit);
+  const makePriceBook = preparePriceBook(baggage, makeRecorderKit);
 
   const AuctionBookStateShape = harden({
     collateralBrand: M.any(),
@@ -120,6 +148,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     priceAuthority: M.any(),
     updatingOracleQuote: M.any(),
     bookDataKit: M.any(),
+    bidDataKits: M.any(),
+    bidsDataKit: M.any(),
     priceBook: M.any(),
     scaledBidBook: M.any(),
     startCollateral: M.any(),
@@ -137,9 +167,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      * @param {Brand<'nat'>} bidBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {StorageNode} node
+     * @param {Array<StorageNode>} nodes
      */
-    (bidBrand, collateralBrand, pAuthority, node) => {
+    (bidBrand, collateralBrand, pAuthority, nodes) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
       const zeroBid = makeEmpty(bidBrand);
       const zeroRatio = makeRatioFromAmounts(
@@ -153,22 +183,32 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       // returned to the funders.
       const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
       const { zcfSeat: bidHoldingSeat } = zcf.makeEmptySeatKit();
+      const [scheduleNode, bidsNode] = nodes;
 
-      const bidAmountShape = makeNatAmountShape(bidBrand);
-      const collateralAmountShape = makeNatAmountShape(collateralBrand);
+      const bidAmountShape = makeNatAmountShape(bidBrand, 0n);
+      const collateralAmountShape = makeNatAmountShape(collateralBrand, 0n);
+
       const scaledBidBook = makeScaledBidBook(
         makeBrandedRatioPattern(bidAmountShape, bidAmountShape),
         collateralBrand,
+        bidsNode,
       );
 
       const priceBook = makePriceBook(
         makeBrandedRatioPattern(bidAmountShape, collateralAmountShape),
         collateralBrand,
+        bidsNode,
       );
 
       const bookDataKit = makeRecorderKit(
-        node,
+        scheduleNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
+          M.any()
+        ),
+      );
+      const bidsDataKit = makeRecorderKit(
+        bidsNode,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */ (
           M.any()
         ),
       );
@@ -185,6 +225,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         updatingOracleQuote: zeroRatio,
 
         bookDataKit,
+        bidDataKits,
+        bidsDataKit,
 
         priceBook,
         scaledBidBook,
@@ -347,6 +389,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          *  @param {ZCFSeat} seat
          *  @param {Ratio} price
          *  @param {Amount<'nat'>} maxBuy
+         *  @param {Timestamp} timestamp
          *  @param {object} opts
          *  @param {boolean} opts.trySettle
          *  @param {boolean} [opts.exitAfterBuy]
@@ -355,6 +398,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           seat,
           price,
           maxBuy,
+          timestamp,
           { trySettle, exitAfterBuy = false },
         ) {
           const { priceBook, curAuctionPrice } = this.state;
@@ -381,7 +425,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             seat.exit();
           } else {
             trace('added Offer ', price, stillWant.value);
-            priceBook.add(seat, price, stillWant, exitAfterBuy);
+            priceBook.add(seat, price, stillWant, exitAfterBuy, timestamp);
+            helper.publishBidData();
           }
 
           void helper.publishBookData();
@@ -395,6 +440,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          *  @param {ZCFSeat} seat
          *  @param {Ratio} bidScaling
          *  @param {Amount<'nat'>} maxBuy
+         *  @param {Timestamp} timestamp
          *  @param {object} opts
          *  @param {boolean} opts.trySettle
          *  @param {boolean} [opts.exitAfterBuy]
@@ -403,6 +449,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           seat,
           bidScaling,
           maxBuy,
+          timestamp,
           { trySettle, exitAfterBuy = false },
         ) {
           trace(this.state.collateralBrand, 'accept scaledBid offer');
@@ -435,10 +482,22 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           ) {
             seat.exit();
           } else {
-            scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
+            scaledBidBook.add(
+              seat,
+              bidScaling,
+              stillWant,
+              exitAfterBuy,
+              timestamp,
+            );
+            void helper.publishBidData();
           }
 
           void helper.publishBookData();
+        },
+        publishBidData() {
+          const { state } = this;
+          state.scaledBidBook.publishOffers();
+          state.priceBook.publishOffers();
         },
         publishBookData() {
           const { state } = this;
@@ -458,6 +517,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
+
           return state.bookDataKit.recorder.write(bookData);
         },
       },
@@ -607,6 +667,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           }
 
           void facets.helper.publishBookData();
+          void facets.helper.publishBidData();
         },
         getCurrentPrice() {
           return this.state.curAuctionPrice;
@@ -644,8 +705,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @param {OfferSpec} offerSpec
          * @param {ZCFSeat} seat
          * @param {boolean} trySettle
+         * @param {Timestamp} timestamp
          */
-        addOffer(offerSpec, seat, trySettle) {
+        addOffer(offerSpec, seat, trySettle, timestamp) {
           const { bidBrand, collateralBrand } = this.state;
           const offerSpecShape = makeOfferSpecShape(bidBrand, collateralBrand);
 
@@ -661,6 +723,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               seat,
               offerSpec.offerPrice,
               offerSpec.maxBuy,
+              timestamp,
               {
                 trySettle,
                 exitAfterBuy,
@@ -671,6 +734,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               seat,
               offerSpec.offerBidScaling,
               offerSpec.maxBuy,
+              timestamp,
               {
                 trySettle,
                 exitAfterBuy,
@@ -710,6 +774,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               'Auction schedule',
               this.state.bookDataKit,
             ),
+            bids: makeRecorderTopic('Auction Bids', this.state.bidsDataKit),
           };
         },
       },
@@ -749,6 +814,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           },
         );
         void facets.helper.publishBookData();
+        void facets.helper.publishBidData();
       },
       stateShape: AuctionBookStateShape,
     },
