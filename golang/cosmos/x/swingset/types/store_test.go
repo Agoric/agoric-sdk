@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -59,16 +58,16 @@ func testSwingStore(t *testing.T, store SwingStore) {
 	store.Delete([]byte("someMissingKey"))
 
 	// Check the iterated values
-	expectedEntries := []*vstoragetypes.DataEntry{
-		{Path: "someEmptyKey", Value: ""},
-		{Path: "someKey", Value: "someNewValue"},
+	expectedEntries := []*SwingStoreExportDataEntry{
+		{Key: "someEmptyKey", Value: ""},
+		{Key: "someKey", Value: "someNewValue"},
 	}
 
 	iter := store.Iterator(nil, nil)
-	gotEntries := []*vstoragetypes.DataEntry{}
+	gotEntries := []*SwingStoreExportDataEntry{}
 	for ; iter.Valid(); iter.Next() {
-		entry := vstoragetypes.DataEntry{
-			Path:  string(iter.Key()),
+		entry := SwingStoreExportDataEntry{
+			Key:   string(iter.Key()),
 			Value: string(iter.Value()),
 		}
 		gotEntries = append(gotEntries, &entry)

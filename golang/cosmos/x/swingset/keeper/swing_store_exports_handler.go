@@ -12,7 +12,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/helpers"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
@@ -470,10 +469,10 @@ type ExportDataEntriesSource interface {
 var _ ExportDataEntriesSource = &swingStoreExportDataEntriesSource{}
 
 type swingStoreExportDataEntriesSource struct {
-	exportDataEntries []*vstoragetypes.DataEntry
+	exportDataEntries []*types.SwingStoreExportDataEntry
 }
 
-func NewSwingStoreExportDataEntriesSource(exportDataEntries []*vstoragetypes.DataEntry) ExportDataEntriesSource {
+func NewSwingStoreExportDataEntriesSource(exportDataEntries []*types.SwingStoreExportDataEntry) ExportDataEntriesSource {
 	return swingStoreExportDataEntriesSource{
 		exportDataEntries: exportDataEntries,
 	}
@@ -492,7 +491,7 @@ func (source swingStoreExportDataEntriesSource) GetAt(index int) (entry []string
 
 	sourceEntry := source.exportDataEntries[index]
 
-	return []string{sourceEntry.Path, sourceEntry.Value}, nil
+	return []string{sourceEntry.Key, sourceEntry.Value}, nil
 }
 
 var _ ExportDataIteratorProvider = &exportDataEntriesProvider{}
@@ -796,7 +795,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 	getExportDataIterator := func() (sdk.Iterator, error) {
 		if manifest.Data == "" {
 			return NewExportDataIterator(
-				NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource([]*vstoragetypes.DataEntry{}))), nil
+				NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource([]*types.SwingStoreExportDataEntry{}))), nil
 		}
 
 		dataFile, err := os.Open(filepath.Join(exportDir, manifest.Data))
