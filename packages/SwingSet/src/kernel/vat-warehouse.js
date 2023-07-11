@@ -108,7 +108,7 @@ export function makeSyscallSimulator(
 
   const explain = () => {
     console.log(`anachrophobia strikes ${vatID} on delivery ${deliveryNum}`);
-    syscallStatus.forEach((status, idx) => {
+    for (const [idx, status] of syscallStatus.entries()) {
       const expected = syscallsExpected[idx];
       const got = syscallsMade[idx];
       switch (status) {
@@ -133,7 +133,7 @@ export function makeSyscallSimulator(
         default:
           Fail`bad ${status}`;
       }
-    });
+    }
   };
 
   const syscallHandler = vso => {

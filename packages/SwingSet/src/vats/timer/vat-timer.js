@@ -351,7 +351,9 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   const processAndReschedule = () => {
     // first, service everything that is ready
     const now = getNow();
-    removeEventsUpTo(schedule, now).forEach(event => event.fired(now));
+    for (const event of removeEventsUpTo(schedule, now)) {
+      event.fired(now);
+    }
     // then, reschedule for whatever is up next
     reschedule();
   };
@@ -642,7 +644,9 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     if (cancels.has(cancelToken)) {
       const cancelled = cancels.get(cancelToken);
       cancels.delete(cancelToken);
-      cancelled.forEach(thing => thing.cancel());
+      for (const thing of cancelled) {
+        thing.cancel();
+      }
     }
   };
 

@@ -128,7 +128,7 @@ export function loadBasedir(basedir, options = {}) {
   const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
-  subs.forEach(dirent => {
+  for (const dirent of subs) {
     if (
       dirent.name.startsWith('vat-') &&
       dirent.name.endsWith('.js') &&
@@ -138,7 +138,7 @@ export function loadBasedir(basedir, options = {}) {
       const vatSourcePath = path.resolve(basedir, dirent.name);
       vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
     }
-  });
+  }
   /** @type {string | void} */
   let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
   try {

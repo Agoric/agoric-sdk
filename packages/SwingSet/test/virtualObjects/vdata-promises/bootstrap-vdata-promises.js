@@ -54,7 +54,9 @@ export function buildRootObject() {
       const data = await E(targetvat).storePromiseStep1(subscriber);
       const subscriberEntries = await Promise.all(subscriberStash);
       const resolutions = {};
-      subscriberEntries.forEach(([name, res]) => (resolutions[name] = res));
+      for (const [name, res] of subscriberEntries) {
+        resolutions[name] = res;
+      }
       return { data, resolutions };
     },
   });
