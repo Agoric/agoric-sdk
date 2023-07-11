@@ -1,10 +1,8 @@
 // @ts-check
-import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
-// eslint-disable-next-line no-unused-vars -- typeof below
-import { makeAgoricNames } from './rpc.js';
 
 // ambient types
 import '@agoric/ertp/src/types-ambient.js';
+import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
 
@@ -30,16 +28,15 @@ export const Natural = str => {
  */
 export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
-/** @type {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail} */
+/** @type {Partial<import('@agoric/vats/tools/board-utils.js').VBankAssetDetail>} */
 // eslint-disable-next-line no-unused-vars
 const exampleAsset = {
-  // @ts-expect-error cast
   brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
   displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
-  // @ts-expect-error cast
   issuer: makeBoardRemote({ boardId: null, iface: undefined }),
-  petname: 'Agoric staking token',
+  proposedName: 'Agoric staking token',
 };
+
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 
 /**
@@ -122,7 +119,7 @@ export const fmtRecordOfLines = record => {
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
- * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { offerStatuses } = state;
@@ -179,7 +176,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
- * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {

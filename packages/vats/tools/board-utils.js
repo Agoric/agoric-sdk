@@ -1,17 +1,17 @@
 // @ts-check
 /**
  * @typedef {{
- *   brand: import('@agoric/internal/src/marshal.js').BoardRemote & Brand,
+ *   brand: import('@agoric/internal/src/marshal.js').BoardRemote,
  *   denom: string,
  *   displayInfo: DisplayInfo,
- *   issuer: import('@agoric/internal/src/marshal.js').BoardRemote & Issuer,
+ *   issuer: import('@agoric/internal/src/marshal.js').BoardRemote,
  *   issuerName: string,
  *   proposedName: string,
  * }} VBankAssetDetail
  */
 /**
  * @typedef {{
- *   brand: Record<string, Brand>,
+ *   brand: Record<string, import('@agoric/internal/src/marshal.js').BoardRemote>,
  *   instance: Record<string, Instance>,
  *   vbankAsset: Record<string, VBankAssetDetail>,
  *   reverse: Record<string, string>,
