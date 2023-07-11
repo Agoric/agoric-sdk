@@ -746,11 +746,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade11Handler(app, upgradeName, callToController),
+		upgrade11Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade11Handler(app, upgradeNameTest, callToController),
+		upgrade11Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -774,7 +774,7 @@ func NewAgoricApp(
 }
 
 // upgrade11Handler performs standard upgrade actions plus custom actions for upgrade-11.
-func upgrade11Handler(app *GaiaApp, targetUpgrade string, callToController func(ctx sdk.Context, str string) (string, error)) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+func upgrade11Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
