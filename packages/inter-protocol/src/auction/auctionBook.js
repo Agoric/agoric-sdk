@@ -173,7 +173,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      * @param {Brand<'nat'>} bidBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {Array<StorageNode>} nodes
+     * @param {[bookNode: StorageNode, bidsNode: StorageNode]} nodes
      */
     (bidBrand, collateralBrand, pAuthority, nodes) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
@@ -189,7 +189,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       // returned to the funders.
       const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
       const { zcfSeat: bidHoldingSeat } = zcf.makeEmptySeatKit();
-      const [scheduleNode, bidsNode] = nodes;
+      const [bookNode, bidsNode] = nodes;
 
       const bidAmountShape = makeNatAmountShape(bidBrand, 0n);
       const collateralAmountShape = makeNatAmountShape(collateralBrand, 0n);
@@ -207,7 +207,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       );
 
       const bookDataKit = makeRecorderKit(
-        scheduleNode,
+        bookNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
           M.any()
         ),

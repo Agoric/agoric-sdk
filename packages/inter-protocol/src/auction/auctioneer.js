@@ -688,6 +688,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     ),
   );
 
+  const booksNode = await E(privateArgs.storageNode).makeChildNode('books');
   const creatorFacet = makeFarGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
@@ -703,10 +704,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
 
-        const bookNodeP = E(privateArgs.storageNode).makeChildNode(bookId);
-        const [scheduleNode, bidsNode] = await Promise.all([
+        const bookNodeP = E(booksNode).makeChildNode(bookId);
+        const [bookNode, bidsNode] = await Promise.all([
           bookNodeP,
-          E(bookNodeP).makeChildNode('schedule'),
           E(bookNodeP).makeChildNode('bids'),
         ]);
 
@@ -714,7 +714,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           brands.Bid,
           brand,
           priceAuthority,
-          [scheduleNode, bidsNode],
+          [bookNode, bidsNode],
         );
 
         // These three store.init() calls succeed or fail atomically

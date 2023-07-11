@@ -227,7 +227,7 @@ test.serial('scenario: Flow 2b', async t => {
 
     console.log('step 1 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest('published.auction.book0'), {
+    t.like(readLatest('published.auction.books.book0'), {
       collateralAvailable: { value: scale6(setup.auction.start.collateral) },
       startCollateral: { value: scale6(setup.auction.start.collateral) },
       startProceedsGoal: { value: scale6(setup.auction.start.debt) },
@@ -244,7 +244,7 @@ test.serial('scenario: Flow 2b', async t => {
 
     console.log('step 5 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest('published.auction.book0'), {
+    t.like(readLatest('published.auction.books.book0'), {
       collateralAvailable: { value: scale6(45) },
     });
 
