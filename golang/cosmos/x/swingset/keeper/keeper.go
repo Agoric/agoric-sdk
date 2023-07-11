@@ -442,10 +442,6 @@ func (k Keeper) GetSwingStore(ctx sdk.Context) types.SwingStore {
 	return types.NewSwingStore(store, []byte(swingStoreKeyPrefix))
 }
 
-func (k Keeper) ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry {
-	return k.vstorageKeeper.ExportStorageFromPrefix(ctx, StoragePathSwingStore)
-}
-
 func (k Keeper) PathToEncodedKey(path string) []byte {
 	return k.vstorageKeeper.PathToEncodedKey(path)
 }

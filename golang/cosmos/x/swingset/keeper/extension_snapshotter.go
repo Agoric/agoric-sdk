@@ -69,13 +69,13 @@ type ExtensionSnapshotter struct {
 	takeAppSnapshot                   func(height int64)
 	newRestoreContext                 func(height int64) sdk.Context
 	swingStoreExportsHandler          *SwingStoreExportsHandler
-	getSwingStoreExportDataShadowCopy func(ctx sdk.Context) []*vstoragetypes.DataEntry
+	getSwingStoreExportDataShadowCopy func(ctx sdk.Context) sdk.Iterator
 	logger                            log.Logger
 	activeSnapshot                    *snapshotDetails
 }
 
 // NewExtensionSnapshotter creates a new swingset ExtensionSnapshotter
-func NewExtensionSnapshotter(app *baseapp.BaseApp, swingStoreExportsHandler *SwingStoreExportsHandler, getSwingStoreExportDataShadowCopy func(ctx sdk.Context) []*vstoragetypes.DataEntry) *ExtensionSnapshotter {
+func NewExtensionSnapshotter(app *baseapp.BaseApp, swingStoreExportsHandler *SwingStoreExportsHandler, getSwingStoreExportDataShadowCopy func(ctx sdk.Context) sdk.Iterator) *ExtensionSnapshotter {
 	return &ExtensionSnapshotter{
 		isConfigured:    func() bool { return app.SnapshotManager() != nil },
 		takeAppSnapshot: app.Snapshot,
@@ -295,7 +295,15 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	// trusted root against which to validate the artifacts.
 	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
 		ctx := snapshotter.newRestoreContext(height)
-		exportData := snapshotter.getSwingStoreExportDataShadowCopy(ctx)
+		exportData := []*vstoragetypes.DataEntry{}
+		exportDataIterator := snapshotter.getSwingStoreExportDataShadowCopy(ctx)
+		defer exportDataIterator.Close()
+
+		for ; exportDataIterator.Valid(); exportDataIterator.Next() {
+			entry := vstoragetypes.DataEntry{Path: string(exportDataIterator.Key()), Value: string(exportDataIterator.Value())}
+			exportData = append(exportData, &entry)
+		}
+
 		return exportData, nil
 	}
 

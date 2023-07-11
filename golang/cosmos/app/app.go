@@ -477,7 +477,9 @@ func NewAgoricApp(
 	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
 		bApp,
 		&app.SwingStoreExportsHandler,
-		app.SwingSetKeeper.ExportSwingStore,
+		func(ctx sdk.Context) sdk.Iterator {
+			return app.SwingSetKeeper.GetSwingStore(ctx).Iterator(nil, nil)
+		},
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
@@ -804,6 +806,8 @@ func upgrade11Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 		app.CheckControllerInited(false)
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
+
+		// TODO: Migrate x/vstorage swingStore to x/swingset SwingStore
 
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
