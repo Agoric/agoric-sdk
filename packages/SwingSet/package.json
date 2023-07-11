@@ -48,6 +48,7 @@
     "@endo/init": "^0.5.57",
     "@endo/marshal": "^0.8.6",
     "@endo/nat": "^4.1.28",
+    "@endo/patterns": "^0.2.3",
     "@endo/promise-kit": "^0.2.57",
     "@endo/ses-ava": "^0.2.41",
     "@endo/zip": "^0.2.32",
