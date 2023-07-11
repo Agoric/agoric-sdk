@@ -181,7 +181,7 @@ export const prepareVaultManagerKit = (
 ) => {
   const { priceAuthority, timerService, reservePublicFacet } = zcf.getTerms();
 
-  const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
+  const Vault = prepareVault(baggage, makeRecorderKit, zcf);
 
   /**
    * @param {HeldParams & { metricsStorageNode: StorageNode }} params
@@ -247,12 +247,12 @@ export const prepareVaultManagerKit = (
     });
   };
 
-  const makeVaultManagerKitInternal = prepareExoClassKit(
+  const VaultManagerKitInternal = prepareExoClassKit(
     baggage,
     'VaultManagerKit',
     {
       collateral: M.interface('collateral', {
-        makeVaultInvitation: M.call().returns(M.promise()),
+        VaultInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedStabilityFee: M.call().returns(RatioShape),
@@ -288,7 +288,7 @@ export const prepareVaultManagerKit = (
       }),
       self: M.interface('self', {
         getGovernedParams: M.call().returns(M.remotable('governedParams')),
-        makeVaultKit: M.call(SeatShape).returns(M.promise()),
+        VaultKit: M.call(SeatShape).returns(M.promise()),
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
@@ -298,11 +298,11 @@ export const prepareVaultManagerKit = (
     initState,
     {
       collateral: {
-        makeVaultInvitation() {
+        VaultInvitation() {
           const { facets } = this;
           const { collateralBrand, debtBrand } = this.state;
           return zcf.makeInvitation(
-            seat => this.facets.self.makeVaultKit(seat),
+            seat => this.facets.self.VaultKit(seat),
             facets.manager.scopeDescription('MakeVault'),
             undefined,
             M.splitRecord({
@@ -940,16 +940,16 @@ export const prepareVaultManagerKit = (
         /**
          * @param {ZCFSeat} seat
          */
-        async makeVaultKit(seat) {
+        async VaultKit(seat) {
           const {
             state,
             facets: { manager },
           } = this;
-          trace(state.collateralBrand, 'makeVaultKit');
+          trace(state.collateralBrand, 'VaultKit');
           const { storageNode } = this.state;
-          assert(marshaller, 'makeVaultKit missing marshaller');
-          assert(storageNode, 'makeVaultKit missing storageNode');
-          assert(zcf, 'makeVaultKit missing zcf');
+          assert(marshaller, 'VaultKit missing marshaller');
+          assert(storageNode, 'VaultKit missing storageNode');
+          assert(zcf, 'VaultKit missing zcf');
 
           const vaultId = String(state.vaultCounter);
 
@@ -958,8 +958,8 @@ export const prepareVaultManagerKit = (
             E(storageNode).makeChildNode(`vaults`),
           ).makeChildNode(`vault${vaultId}`);
 
-          const { self: vault } = makeVault(manager, vaultId, vaultStorageNode);
-          trace(state.collateralBrand, 'makeVaultKit made vault', vault);
+          const { self: vault } = Vault(manager, vaultId, vaultStorageNode);
+          trace(state.collateralBrand, 'VaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed
@@ -1181,17 +1181,17 @@ export const prepareVaultManagerKit = (
     },
   );
 
-  /** @param {Omit<Parameters<typeof makeVaultManagerKitInternal>[0], 'metricsStorageNode'>} externalParams */
-  const makeVaultManagerKit = async externalParams => {
+  /** @param {Omit<Parameters<typeof VaultManagerKitInternal>[0], 'metricsStorageNode'>} externalParams */
+  const VaultManagerKit = async externalParams => {
     const metricsStorageNode = await E(
       externalParams.storageNode,
     ).makeChildNode('metrics');
-    return makeVaultManagerKitInternal({
+    return VaultManagerKitInternal({
       ...externalParams,
       metricsStorageNode,
     });
   };
-  return makeVaultManagerKit;
+  return VaultManagerKit;
 };
 
 /**

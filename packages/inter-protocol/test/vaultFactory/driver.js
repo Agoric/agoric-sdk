@@ -314,13 +314,13 @@ export const makeManagerDriver = async (
    * @param {Amount<'nat'>} [collateral]
    * @param {Amount<'nat'>} [debt]
    */
-  const makeVaultDriver = async (
+  const VaultDriver = async (
     collateral = aeth.make(1000n),
     debt = run.make(50n),
   ) => {
     /** @type {UserSeat<VaultKit>} */
     const vaultSeat = await E(zoe).offer(
-      await E(lender).makeVaultInvitation(),
+      await E(lender).VaultInvitation(),
       harden({
         give: { Collateral: collateral },
         want: { Minted: debt },
@@ -455,7 +455,7 @@ export const makeManagerDriver = async (
     tick: async (ticks = 1) => {
       await timer.tickN(ticks, 'test driver');
     },
-    makeVaultDriver,
+    VaultDriver,
     checkPayouts: async (expectedRUN, expectedAEth) => {
       const payouts = await E(currentSeat).getPayouts();
       const collProceeds = await aeth.issuer.getAmountOf(payouts.Collateral);

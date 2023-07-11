@@ -50,9 +50,9 @@ test('basic', async t => {
   const v1collat = aeth.units(20.0);
   const v1debt = run.units(1.0);
 
-  const v1 = await md.makeVaultDriver(v1collat, v1debt);
-  const v2 = await md.makeVaultDriver(aeth.units(0.25), run.units(1));
-  const v3 = await md.makeVaultDriver(aeth.units(0.25), run.units(1));
+  const v1 = await md.VaultDriver(v1collat, v1debt);
+  const v2 = await md.VaultDriver(aeth.units(0.25), run.units(1));
+  const v3 = await md.VaultDriver(aeth.units(0.25), run.units(1));
 
   // bump LiquidationMargin so they are under
   await md.setGovernedParam('LiquidationMargin', run.makeRatio(20n, 1n), {

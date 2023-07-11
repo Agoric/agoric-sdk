@@ -42,7 +42,7 @@ harden(vaultDirectorParamTypes);
  * @param {string} referencedUi
  * @param {InterestTiming} interestTiming
  */
-const makeVaultDirectorParams = (
+const VaultDirectorParams = (
   electorateInvitationAmount,
   minInitialDebt,
   shortfallInvitationAmount,
@@ -73,9 +73,9 @@ const makeVaultDirectorParams = (
     },
   });
 };
-harden(makeVaultDirectorParams);
+harden(VaultDirectorParams);
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
+/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof VaultDirectorParams>>} VaultDirectorParams */
 
 /** @type {(liquidationMargin: Ratio) => Ratio} */
 const zeroRatio = liquidationMargin =>
@@ -85,7 +85,7 @@ const zeroRatio = liquidationMargin =>
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
-export const makeVaultParamManager = (
+export const VaultParamManager = (
   publisherKit,
   {
     debtLimit,
@@ -104,7 +104,7 @@ export const makeVaultParamManager = (
     [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
     [MINT_FEE_KEY]: [ParamTypes.RATIO, mintFee],
   });
-/** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
+/** @typedef {ReturnType<typeof VaultParamManager>} VaultParamManager */
 
 export const vaultParamPattern = M.splitRecord(
   {
@@ -151,7 +151,7 @@ export const makeGovernedTerms = ({
     priceAuthority,
     reservePublicFacet,
     timerService: timer,
-    governedParams: makeVaultDirectorParams(
+    governedParams: VaultDirectorParams(
       electorateInvitationAmount,
       minInitialDebt,
       shortfallInvitationAmount,
@@ -183,7 +183,7 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   );
 
   const makeManager = (brand, { storageNode, initialParamValues }) => {
-    const manager = makeVaultParamManager(
+    const manager = VaultParamManager(
       makeStoredPublisherKit(storageNode, marshaller, 'governance'),
       initialParamValues,
     );

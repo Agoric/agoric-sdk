@@ -23,12 +23,10 @@ test('excessive loan', async t => {
   const md = await makeManagerDriver(t);
 
   const threshold = 453n;
-  await t.notThrowsAsync(
-    md.makeVaultDriver(aeth.make(100n), run.make(threshold)),
-  );
+  await t.notThrowsAsync(md.VaultDriver(aeth.make(100n), run.make(threshold)));
 
   await t.throwsAsync(
-    md.makeVaultDriver(aeth.make(100n), run.make(threshold + 1n)),
+    md.VaultDriver(aeth.make(100n), run.make(threshold + 1n)),
     {
       message: /Proposed debt.*477n.*exceeds max.*476n.*for.*100n/,
     },
@@ -40,7 +38,7 @@ test('add debt to vault under LiquidationMarging + LiquidationPadding', async t 
   const md = await makeManagerDriver(t);
 
   // take debt that comes just shy of max
-  const vd = await md.makeVaultDriver(aeth.make(1000n), run.make(4500n));
+  const vd = await md.VaultDriver(aeth.make(1000n), run.make(4500n));
   t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(4725n));
 
   const MARGIN_HOP = 20n;
@@ -71,7 +69,7 @@ test('add debt to vault under LiquidationMargin', async t => {
   const md = await makeManagerDriver(t);
 
   // take debt that comes just shy of max
-  const vd = await md.makeVaultDriver(aeth.make(1000n), run.make(4500n));
+  const vd = await md.VaultDriver(aeth.make(1000n), run.make(4500n));
   t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(4725n));
 
   // bump LiquidationMargin so they are under

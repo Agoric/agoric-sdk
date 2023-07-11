@@ -227,7 +227,7 @@ const prepareVaultDirector = (
     },
   });
 
-  const makeVaultManagerKit = prepareVaultManagerKit(baggage, {
+  const VaultManagerKit = prepareVaultManagerKit(baggage, {
     makeERecorderKit,
     makeRecorderKit,
     marshaller,
@@ -278,7 +278,7 @@ const prepareVaultDirector = (
    * @param {VaultDirectorParamManager} directorParamManager
    * @param {ZCFMint<"nat">} debtMint
    */
-  const makeVaultDirector = prepareExoClassKit(
+  const VaultDirector = prepareExoClassKit(
     baggage,
     'VaultDirector',
     {
@@ -393,7 +393,7 @@ const prepareVaultDirector = (
 
           const collateralUnit = await unitAmount(collateralBrand);
 
-          const kit = await makeVaultManagerKit({
+          const kit = await VaultManagerKit({
             debtMint,
             collateralBrand,
             collateralUnit,
@@ -520,7 +520,7 @@ const prepareVaultDirector = (
       },
     },
   );
-  return makeVaultDirector;
+  return VaultDirector;
 };
 harden(prepareVaultDirector);
 
@@ -530,10 +530,10 @@ harden(prepareVaultDirector);
  * @type {(...pvdArgs: Parameters<typeof prepareVaultDirector>) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
  */
 export const provideDirector = (...args) => {
-  const makeVaultDirector = prepareVaultDirector(...args);
+  const VaultDirector = prepareVaultDirector(...args);
 
   const [baggage] = args;
 
-  return provide(baggage, 'director', makeVaultDirector);
+  return provide(baggage, 'director', VaultDirector);
 };
 harden(provideDirector);

@@ -23,7 +23,7 @@ test('pause all manager invitations', async t => {
 
   await md.setGovernedFilters(['manager0:']);
 
-  await t.throwsAsync(md.makeVaultDriver(aeth.make(100n), run.make(50n)), {
+  await t.throwsAsync(md.VaultDriver(aeth.make(100n), run.make(50n)), {
     message: 'not accepting offer with description "manager0: MakeVault"',
   });
 });
@@ -32,7 +32,7 @@ test('AdjustBalances', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
-  const vd = await md.makeVaultDriver(aeth.make(100n), run.make(50n));
+  const vd = await md.VaultDriver(aeth.make(100n), run.make(50n));
 
   await md.setGovernedFilters(['manager0: AdjustBalances']);
 
@@ -45,7 +45,7 @@ test('CloseVault', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
-  const vd = await md.makeVaultDriver(aeth.make(100n), run.make(50n));
+  const vd = await md.VaultDriver(aeth.make(100n), run.make(50n));
 
   await md.setGovernedFilters(['manager0: CloseVault']);
 
@@ -58,7 +58,7 @@ test('TransferVault', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
-  const vd = await md.makeVaultDriver(aeth.make(100n), run.make(50n));
+  const vd = await md.VaultDriver(aeth.make(100n), run.make(50n));
 
   await md.setGovernedFilters(['manager0: TransferVault']);
 

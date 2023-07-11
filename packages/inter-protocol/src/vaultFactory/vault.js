@@ -142,7 +142,7 @@ const VaultStateShape = harden({
  * @param {ZCF} zcf
  */
 export const prepareVault = (baggage, makeRecorderKit, zcf) => {
-  const makeVaultKit = prepareVaultKit(baggage, makeRecorderKit);
+  const VaultKit = prepareVaultKit(baggage, makeRecorderKit);
 
   const maker = prepareExoClassKit(
     baggage,
@@ -582,7 +582,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           seat.exit();
 
           // eslint-disable-next-line no-use-before-define
-          const vaultKit = makeVaultKit(self, state.storageNode);
+          const vaultKit = VaultKit(self, state.storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
 
@@ -664,8 +664,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
           trace('initVault updateDebtAccounting fired');
 
-          // So that makeVaultKit can be synchronous
-          const vaultKit = makeVaultKit(self, storageNode);
+          // So that VaultKit can be synchronous
+          const vaultKit = VaultKit(self, storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
           return vaultKit;

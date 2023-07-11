@@ -35,7 +35,7 @@ const PUBLIC_TOPICS = {
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareVaultHolder = (baggage, makeRecorderKit) => {
-  const makeVaultHolderKit = prepareExoClassKit(
+  const VaultHolderKit = prepareExoClassKit(
     baggage,
     'Vault Holder',
     {
@@ -125,5 +125,5 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
       },
     },
   );
-  return makeVaultHolderKit;
+  return VaultHolderKit;
 };

@@ -16,16 +16,16 @@ const trace = makeTracer('VK', true);
 export const prepareVaultKit = (baggage, makeRecorderKit) => {
   trace('prepareVaultKit', [...baggage.keys()]);
 
-  const makeVaultHolder = prepareVaultHolder(baggage, makeRecorderKit);
+  const VaultHolder = prepareVaultHolder(baggage, makeRecorderKit);
   /**
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
    * @param {StorageNode} storageNode
    */
-  const makeVaultKit = (vault, storageNode) => {
-    trace('prepareVaultKit makeVaultKit');
-    const { holder, helper, invitationMakers } = makeVaultHolder(
+  const VaultKit = (vault, storageNode) => {
+    trace('prepareVaultKit VaultKit');
+    const { holder, helper, invitationMakers } = VaultHolder(
       vault,
       storageNode,
     );
@@ -40,7 +40,7 @@ export const prepareVaultKit = (baggage, makeRecorderKit) => {
     });
     return vaultKit;
   };
-  return makeVaultKit;
+  return VaultKit;
 };
 
 /** @typedef {(ReturnType<ReturnType<typeof prepareVaultKit>>)} VaultKit */

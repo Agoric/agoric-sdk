@@ -18,7 +18,7 @@ const test = unknownTest;
  * @param {bigint} currN
  * @returns {import('../../src/vaultFactory/proceeds.js').VaultBalances}
  */
-const makeVaultBalance = (debtN, collN, currN = debtN) => {
+const VaultBalance = (debtN, collN, currN = debtN) => {
   return {
     collateral: coll.make(collN),
     presaleDebt: debt.make(debtN),
@@ -41,7 +41,7 @@ test('price drop', async t => {
     totalDebt,
     totalCollateral,
     oraclePriceAtStart: price,
-    vaultsBalances: [makeVaultBalance(0n, 0n)],
+    vaultsBalances: [VaultBalance(0n, 0n)],
     penaltyRate: makeRatio(10n, debt.brand, 100n),
   };
   const plan = calculateDistributionPlan(inputs);

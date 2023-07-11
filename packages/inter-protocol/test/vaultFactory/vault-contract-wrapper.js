@@ -120,7 +120,7 @@ export async function start(zcf, privateArgs, baggage) {
     stableMint.burnLosses(harden({ Minted: toBurn }), seat);
   };
 
-  /** @type {Parameters<typeof makeVault>[0]} */
+  /** @type {Parameters<typeof Vault>[0]} */
   const managerMock = Far('vault manager mock', {
     getGovernedParams() {
       return {
@@ -178,9 +178,9 @@ export async function start(zcf, privateArgs, baggage) {
 
   const makeRecorderKit = prepareRecorderKit(baggage, marshaller);
 
-  const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
+  const Vault = prepareVault(baggage, makeRecorderKit, zcf);
 
-  const { self: vault } = await makeVault(
+  const { self: vault } = await Vault(
     managerMock,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
