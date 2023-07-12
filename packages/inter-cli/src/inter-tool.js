@@ -20,7 +20,7 @@ import { makeBatchQuery } from './lib/vstorage.js';
  * Create and run the inter command,
  * portioning out authority as needed.
  */
-const main = () => {
+const main = async () => {
   const logger = anylogger('inter');
   const tui = makeTUI({ stdout: process.stdout, logger });
 
@@ -34,10 +34,8 @@ const main = () => {
     config = await getNetworkConfig(env, { fetch: globalThis.fetch });
     return config;
   };
-  const getBatchQuery = () =>
-    provideConfig().then(({ rpcAddrs }) =>
-      makeBatchQuery(globalThis.fetch, rpcAddrs),
-    );
+
+  // cosmjs-based RPC client is only used for .Children()
   const makeRpcClient = () =>
     provideConfig().then(c => {
       const [rpcAddr] = c.rpcAddrs;
@@ -45,19 +43,28 @@ const main = () => {
       return makeHttpClient(rpcAddr, globalThis.fetch);
     });
 
+  // cosmjs/protobuf tooling doesn't support batch query,
+  // so we re-implement it using fetch().
+  const getBatchQuery = () =>
+    provideConfig().then(({ rpcAddrs }) =>
+      makeBatchQuery(globalThis.fetch, rpcAddrs),
+    );
+
   const interCmd = createCommand('inter-tool').description(
     'Inter Protocol auction bid query',
   );
   addBidCommand(interCmd, { tui, getBatchQuery, makeRpcClient });
 
-  return Promise.resolve(interCmd.parseAsync(process.argv)).catch(err => {
+  try {
+    interCmd.parseAsync(process.argv);
+  } catch (err) {
     if (err instanceof CommanderError) {
       console.error(err.message);
     } else {
       console.error(err); // CRASH! show stack trace
     }
     process.exit(1);
-  });
+  }
 };
 
 main();
