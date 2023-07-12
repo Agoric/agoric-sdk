@@ -135,21 +135,21 @@ test('see all bids for a collateral type', async t => {
   const args = 'node inter-tool bid list';
   const expected = [
     {
-      timestamp: '2023-07-11T17:49:18.000Z',
+      timestamp: '2023-07-11T17:49:18Z',
       sequence: 1001,
       price: '9.5000 IST/ATOM',
       balance: '500 IST',
       wanted: '1000000 ATOM',
     },
     {
-      timestamp: '2023-07-11T23:50:04.000Z',
+      timestamp: '2023-07-11T23:50:04Z',
       sequence: 1002,
       price: '8.5000 IST/ATOM',
       balance: '300 IST',
       wanted: '1000000 ATOM',
     },
     {
-      timestamp: '2023-07-12T03:59:28.000Z',
+      timestamp: '2023-07-12T03:59:28Z',
       sequence: 1003,
       bidScaling: '90.0000%',
       balance: '200 IST',
@@ -201,6 +201,10 @@ test('see all bids for a collateral type', async t => {
   t.deepEqual(out, expected);
 });
 
+test.todo('should timestamps really not show timezone?');
 test.todo('FR3: show partially filled bids');
 test.todo('FR5: --from-bidder, --from-everyone');
-test.todo('prices truncate at 4 decimal places');
+test.todo('want should be maxBuy');
+test.todo('balance should be give');
+test.todo('give should be formatted as keyword record with Bid keyword');
+test.todo('price should be a number with implicit brands (?)');
