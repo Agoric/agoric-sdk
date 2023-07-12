@@ -12,7 +12,15 @@ export AGORIC_SDK_PATH="${AGORIC_SDK_PATH-$SDK_SRC}"
 export NETWORK_NAME=chaintest
 
 sudo ln -sf "$SDK_SRC/packages/deployment/bin/ag-setup-cosmos" /usr/local/bin/ag-setup-cosmos
-rm -rf "$SDK_SRC/chaintest"  ~/.ag-chain-cosmos/ /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000
+
+# Note: the deployment test and the loadgen test in testnet mode modify some
+# directories in $HOME so provide an empty $HOME for them.
+export HOME="$(mktemp -d -t deployment-integration-home.XXXXX)"
+
+# While it'd be great if these [tests were more hermetic](https://github.com/Agoric/agoric-sdk/issues/8059),
+# this manual runner must currently reset paths relative to the SDK to ensure
+# reproducible tests.
+rm -rf "$SDK_SRC/chaintest" "$SDK_SRC/../testnet-load-generator/_agstate/agoric-servers/testnet-8000"
 
 cd "$SDK_SRC"
 sudo ./packages/deployment/scripts/install-deps.sh
