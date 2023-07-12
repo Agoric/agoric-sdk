@@ -76,7 +76,6 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @param {SwingSetConfig} config
  * @param {object} [options]
  * @param {object} [options.extraRuntimeOpts]
- * @param {boolean} [options.holdObjectRefs=true] - DEPRECATED -
  * Refcount incrementing should be manual,
  * see https://github.com/Agoric/agoric-sdk/issues/7213
  * @returns {Promise<{
@@ -306,8 +305,8 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
  * @param {import('ava').ExecutionContext} t
  * @param {ManagerType} defaultManagerType
  * @param {object} [options]
- * @param {boolean} [options.restartVatAdmin=false]
- * @param {boolean} [options.suppressGC=false]
+ * @param {boolean} [options.restartVatAdmin]
+ * @param {boolean} [options.suppressGC]
  */
 const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const { restartVatAdmin: doVatAdminRestart = false, suppressGC = false } =
@@ -411,7 +410,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
    * @param {string} when
    * @param {object} expectations
    * @param {boolean} expectations.afterGC
-   * @param {string[]} [expectations.stillOwned=retainedNames]
+   * @param {string[]} [expectations.stillOwned]
    */
   const verifyObjectTracking = (when, expectations) => {
     const { afterGC, stillOwned = retainedNames } = expectations;

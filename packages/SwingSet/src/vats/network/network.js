@@ -32,7 +32,7 @@ export const rethrowUnlessMissing = err => {
  * @param {ConnectionHandler} handler
  * @param {Endpoint} localAddr
  * @param {Endpoint} remoteAddr
- * @param {Set<Closable>} [current=new Set()]
+ * @param {Set<Closable>} [current]
  * @returns {Connection}
  */
 export const makeConnection = (
@@ -110,7 +110,7 @@ export const makeConnection = (
  * @param {Endpoint} addr0
  * @param {ConnectionHandler} handler1
  * @param {Endpoint} addr1
- * @param {WeakSet<Connection>} [current=new WeakSet()]
+ * @param {WeakSet<Connection>} [current]
  * @returns {[Connection, Connection]}
  */
 export function crossoverConnection(
