@@ -13,7 +13,7 @@
     "lint:eslint": "eslint ."
   },
   "bin": {
-    "inter": "src/iner-tool.js"
+    "inter-tool": "src/inter-tool.js"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
