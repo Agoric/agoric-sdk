@@ -41,11 +41,12 @@ export const ExportManifestFileName = 'export-manifest.json';
  */
 export const getEffectiveArtifactMode = artifactMode => {
   switch (artifactMode) {
-    case undefined:
     case 'none':
     case 'operational':
       return 'operational';
+    case undefined:
     case 'replay':
+      return 'replay';
     case 'archival':
     case 'debug':
       return artifactMode;
