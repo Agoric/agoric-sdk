@@ -14,9 +14,9 @@ import { makeVstorageQueryService } from '../lib/vstorage.js';
  * @param {ReturnType<import('../lib/agd-lib').makeAgd>} io.agd
  * @param {() => Promise<import('@cosmjs/tendermint-rpc').RpcClient>} io.makeRpcClient
  */
-export const addBidCommand = (interCmd, { tui, agd, makeRpcClient }) => {
+export const addBidCommand0 = (interCmd, { tui, agd, makeRpcClient }) => {
   const bidCmd = interCmd
-    .command('bid')
+    .command('bid0')
     .description('auction bidding commands');
 
   /** @param {string} literalOrName */

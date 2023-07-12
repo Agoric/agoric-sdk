@@ -100,17 +100,19 @@ const fmtBid = (bid, fmt) => {
  *
  * @typedef {import('@cosmjs/tendermint-rpc').RpcClient} RpcClient
  */
-export const addAuctionCommand = (
+export const addBidCommand = (
   interCmd,
   { tui, getBatchQuery, makeRpcClient },
 ) => {
-  const auctionCmd = interCmd.command('auction').description('auction queries');
+  const bidCmd = interCmd
+    .command('bid')
+    .description('Add a Bid command/operation');
 
   const makeBoard = () => getBatchQuery().then(makeBoardClient);
 
-  auctionCmd
-    .command('list-bids')
-    .description('XXX TODO list desc')
+  bidCmd
+    .command('list')
+    .description('List Bids operation')
     .option('--book', 'auction book number', Number, 0)
     .action(async (/** @type {{book: number}} */ { book }) => {
       const bidsPart = 'schedule'; // XXX something goofy is going on in the contract
@@ -137,4 +139,6 @@ export const addAuctionCommand = (
         tui.show(fmtBid(bid, fmt));
       }
     });
+
+  return bidCmd;
 };

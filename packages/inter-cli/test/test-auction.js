@@ -14,7 +14,7 @@ import {
 
 import { QueryDataResponse } from '@agoric/cosmic-proto/vstorage/query.js';
 import { toBase64 } from '@cosmjs/encoding';
-import { addAuctionCommand } from '../src/commands/auction.js';
+import { addBidCommand } from '../src/commands/auction.js';
 import { listBidsRPC } from './rpc-fixture.js';
 import { extractCapData } from '../src/lib/boardClient.js';
 import { makeBatchQuery } from '../src/lib/vstorage.js';
@@ -31,6 +31,48 @@ const makeTestContext = async () => {
 test.before(async t => {
   t.context = await makeTestContext();
 });
+
+/** @typedef {import('commander').Command} Command */
+
+/** @type {(c: Command) => Command[]} */
+const subCommands = c => [c, ...c.commands.flatMap(subCommands)];
+
+const usageTest = (words, blurb = 'Command usage:') => {
+  test(`FR5: Usage: ${words}`, async t => {
+    const argv = `node ${words} --help`.split(' ');
+
+    const out = [];
+    const tui = {
+      show: (info, _pretty) => {
+        out.push(info);
+      },
+      warn: () => {},
+    };
+    const program = createCommand('inter-tool');
+    const { context: io } = t;
+    const rpcClient = makeHttpClient('', io.fetch);
+    const cmd = addBidCommand(program, {
+      tui,
+      getBatchQuery: async () => makeBatchQuery(io.fetch, []),
+      makeRpcClient: async () => rpcClient,
+    });
+    for (const c of subCommands(program)) {
+      c.exitOverride();
+    }
+    cmd.configureOutput({
+      writeOut: s => out.push(s),
+      writeErr: s => out.push(s),
+    });
+
+    await t.throwsAsync(program.parseAsync(argv), { message: /outputHelp/ });
+    t.snapshot(out.join('').trim(), blurb);
+  });
+};
+usageTest('inter-tool --help');
+usageTest('inter-tool bid --help');
+usageTest('inter-tool bid list --help');
+
+test.todo('FR5: --asset');
 
 /**
  * Decode JSON RPC response value from base64 etc.
@@ -90,7 +132,7 @@ const encodeDetail = webMap => {
 };
 
 test('inter auction list-bids', async t => {
-  const args = 'node inter auction list-bids';
+  const args = 'node inter-tool bid list';
   const expected = [
     {
       timestamp: '2023-07-11T17:49:18.000Z',
@@ -118,6 +160,7 @@ test('inter auction list-bids', async t => {
   const out = [];
   const tui = {
     show: (info, _pretty) => {
+      t.log(JSON.stringify(info));
       out.push(info);
     },
     warn: () => {},
@@ -134,7 +177,7 @@ test('inter auction list-bids', async t => {
   const rpcClient = makeHttpClient(config.rpcAddrs[0], fetchMock);
 
   const prog = createCommand('inter');
-  addAuctionCommand(prog, {
+  addBidCommand(prog, {
     tui,
     getBatchQuery: async () => makeBatchQuery(fetchMock, config.rpcAddrs),
     makeRpcClient: async () => rpcClient,
@@ -157,3 +200,6 @@ test('inter auction list-bids', async t => {
   }
   t.deepEqual(out, expected);
 });
+
+test.todo('FR3: show partially filled bids');
+test.todo('FR5: --from-bidder, --from-everyone');
