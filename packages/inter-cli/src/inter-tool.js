@@ -5,7 +5,6 @@
 
 import '@endo/init';
 import process from 'process';
-import { execFileSync } from 'child_process';
 
 import anylogger from 'anylogger';
 import { createCommand, CommanderError } from 'commander';
@@ -13,13 +12,11 @@ import { createCommand, CommanderError } from 'commander';
 import { makeHttpClient } from '@agoric/casting/src/makeHttpClient.js';
 
 import { makeTUI } from './lib/tui.js';
-import { makeAgd } from './lib/agd-lib.js';
-import { addBidCommand0 } from './commands/bid.js';
 import { addBidCommand } from './commands/auction.js';
 import { getNetworkConfig } from './lib/networkConfig.js';
 import { makeBatchQuery } from './lib/vstorage.js';
 
-const { Fail } = assert;
+// const { Fail } = assert;
 
 // const assertUint32 = x =>
 //   (Number.isSafeInteger(x) && x >= 0 && x < 2 ** 32) ||
@@ -72,8 +69,6 @@ const main = () => {
   //   assertUint32(delay) &&
   //   new Promise(resolve => globalThis.setTimeout(resolve, delay));
 
-  const agd = makeAgd({ execFileSync });
-  addBidCommand0(interCmd, { tui, makeRpcClient, agd });
   addBidCommand(interCmd, { tui, getBatchQuery, makeRpcClient });
 
   return Promise.resolve(interCmd.parseAsync(process.argv)).catch(err => {
