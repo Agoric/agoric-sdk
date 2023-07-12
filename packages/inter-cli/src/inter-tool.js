@@ -16,12 +16,6 @@ import { addBidCommand } from './commands/auction.js';
 import { getNetworkConfig } from './lib/networkConfig.js';
 import { makeBatchQuery } from './lib/vstorage.js';
 
-// const { Fail } = assert;
-
-// const assertUint32 = x =>
-//   (Number.isSafeInteger(x) && x >= 0 && x < 2 ** 32) ||
-//   Fail`${x} is not a valid uint32`;
-
 /**
  * Create and run the inter command,
  * portioning out authority as needed.
@@ -54,21 +48,6 @@ const main = () => {
   const interCmd = createCommand('inter-tool').description(
     'Inter Protocol auction bid query',
   );
-  // TODO: commands involving signing
-  // .option('--home <dir>', 'agd CosmosSDK application home directory')
-  // .option(
-  //   '--keyring-backend <os|file|test>',
-  //   `keyring's backend (os|file|test) (default "${
-  //     env.AGORIC_KEYRING_BACKEND || 'os'
-  //   }")`,
-  //   env.AGORIC_KEYRING_BACKEND,
-  // );
-
-  // const { now } = Date;
-  // const makeTimeout = delay =>
-  //   assertUint32(delay) &&
-  //   new Promise(resolve => globalThis.setTimeout(resolve, delay));
-
   addBidCommand(interCmd, { tui, getBatchQuery, makeRpcClient });
 
   return Promise.resolve(interCmd.parseAsync(process.argv)).catch(err => {
