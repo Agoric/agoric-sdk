@@ -123,9 +123,10 @@ const swingStoreExportActionType = "SWING_STORE_EXPORT"
 const initiateRequest = "initiate"
 
 type swingStoreInitiateExportAction struct {
-	Type        string `json:"type"`                  // "SWING_STORE_EXPORT"
-	Request     string `json:"request"`               // "initiate"
-	BlockHeight uint64 `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
+	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string                     `json:"request"`               // "initiate"
+	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
+	Args        [1]SwingStoreExportOptions `json:"args"`
 }
 
 // retrieveRequest is the request type for retrieving an initiated export
@@ -150,10 +151,50 @@ type swingStoreDiscardExportAction struct {
 const restoreRequest = "restore"
 
 type swingStoreRestoreExportAction struct {
-	Type        string    `json:"type"`                  // "SWING_STORE_EXPORT"
-	Request     string    `json:"request"`               // "restore"
-	BlockHeight uint64    `json:"blockHeight,omitempty"` // empty if deferring blockHeight to the manifest
-	Args        [1]string `json:"args"`                  // args[1] is the directory in which the export to restore from is located
+	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string                     `json:"request"`               // "restore"
+	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if deferring blockHeight to the manifest
+	Args        [1]swingStoreImportOptions `json:"args"`
+}
+
+// SwingStoreExportModeCurrent represents the minimal set of artifacts needed
+// to operate a node.
+const SwingStoreExportModeCurrent = "current"
+
+// SwingStoreExportModeArchival represents the set of all artifacts needed to
+// not lose any historical state.
+const SwingStoreExportModeArchival = "archival"
+
+// SwingStoreExportModeDebug represents the maximal set of artifacts available
+// in the JS swing-store, including any kept around for debugging purposed only
+// (like previous XS heap snapshots)
+const SwingStoreExportModeDebug = "debug"
+
+// SwingStoreExportOptions are configurable options provided to the JS swing-store export
+type SwingStoreExportOptions struct {
+	// The export mode can be "current", "archival" or "debug" (SwingStoreExportMode* const)
+	// See packages/cosmic-swingset/src/export-kernel-db.js initiateSwingStoreExport and
+	// packages/swing-store/src/swingStore.js makeSwingStoreExporter
+	ExportMode string `json:"exportMode,omitempty"`
+	// A flag indicating whether "export data" should be part of the swing-store export
+	// If false, the resulting SwingStoreExportProvider's GetExportData will
+	// return an empty list of "export data" entries.
+	IncludeExportData bool `json:"includeExportData,omitempty"`
+}
+
+// SwingStoreRestoreOptions are configurable options provided to the JS swing-store import
+type SwingStoreRestoreOptions struct {
+	// A flag indicating whether the swing-store import should attempt to load
+	// all historical artifacts available from the export provider
+	IncludeHistorical bool `json:"includeHistorical,omitempty"`
+}
+
+type swingStoreImportOptions struct {
+	// ExportDir is the directory created by RestoreExport that JS swing-store
+	// should import from.
+	ExportDir string `json:"exportDir"`
+	// IncludeHistorical is a copy of SwingStoreRestoreOptions.IncludeHistorical
+	IncludeHistorical bool `json:"includeHistorical,omitempty"`
 }
 
 var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
@@ -393,7 +434,7 @@ func NewSwingStoreExportsHandler(logger log.Logger, blockingSend func(action vm.
 // from the goroutine that initiated the export.
 //
 // Must be called by the main goroutine
-func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64, eventHandler SwingStoreExportEventHandler) error {
+func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64, eventHandler SwingStoreExportEventHandler, exportOptions SwingStoreExportOptions) error {
 	err := checkNotActive()
 	if err != nil {
 		return err
@@ -447,6 +488,7 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 			Type:        swingStoreExportActionType,
 			BlockHeight: blockHeight,
 			Request:     initiateRequest,
+			Args:        [1]SwingStoreExportOptions{exportOptions},
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
@@ -645,7 +687,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 // RestoreExport restores the JS swing-store using previously exported data and artifacts.
 //
 // Must be called by the main goroutine
-func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStoreExportProvider) error {
+func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStoreExportProvider, restoreOptions SwingStoreRestoreOptions) error {
 	err := checkNotActive()
 	if err != nil {
 		return err
@@ -759,7 +801,10 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		Type:        swingStoreExportActionType,
 		BlockHeight: blockHeight,
 		Request:     restoreRequest,
-		Args:        [1]string{exportDir},
+		Args: [1]swingStoreImportOptions{{
+			ExportDir:         exportDir,
+			IncludeHistorical: restoreOptions.IncludeHistorical,
+		}},
 	}
 
 	_, err = exportsHandler.blockingSend(action, true)
