@@ -124,3 +124,5 @@ test.failing('format price > 1e20', t => {
   const price = fmt.price(ratio);
   t.regex(price, /^[0-9]+(\.[0-9]+)?( \w+\/\w+)?$/);
 });
+
+test.todo('prices truncate at 4 decimal places');

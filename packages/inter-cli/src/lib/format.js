@@ -119,5 +119,7 @@ export const makeAssetFormatters = vbankAssets => {
 export const formatTimestamp = seconds => {
   Nat(seconds);
   const ms = Number(seconds) * 1000;
-  return new Date(ms).toISOString();
+  const iso = new Date(ms).toISOString();
+  const noFrac = iso.replace(/\.000Z$/, 'Z');
+  return noFrac;
 };
