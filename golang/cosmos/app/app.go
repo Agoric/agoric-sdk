@@ -201,6 +201,8 @@ type GaiaApp struct { // nolint: golint
 	vibcPort         int
 	vstoragePort     int
 
+	upgradePlan *upgradetypes.Plan
+
 	invCheckPeriod uint
 
 	// keys to access the substores
@@ -744,11 +746,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade10Handler(app, upgradeName),
+		upgrade11Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade10Handler(app, upgradeNameTest),
+		upgrade11Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -771,39 +773,19 @@ func NewAgoricApp(
 	return app
 }
 
-func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade11Handler performs standard upgrade actions plus custom actions for upgrade-11.
+func upgrade11Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		// change bootrap gov parameter to correct vaults parameter
+		// Record the plan to send to SwingSet
+		app.upgradePlan = &plan
 
-		prevParams := app.SwingSetKeeper.GetParams(ctx)
-
-		ctx.Logger().Info("Pre-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
-
-		switch targetUpgrade {
-		case upgradeName:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-main-vaults-config.json"
-		case upgradeNameTest:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-test-vaults-config.json"
-		default:
-			return fromVm, fmt.Errorf("invalid upgrade name")
-		}
-
-		app.SwingSetKeeper.SetParams(ctx, prevParams)
-		ctx.Logger().Info("Post-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
-
-		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
-		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
-		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
-
+		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
 			return mvm, err
 		}
 
-		// Just run the SwingSet kernel to finish bootstrap and get ready to open for
-		// business.
-		stdlog.Println("Rebooting SwingSet")
-		return mvm, swingset.BootSwingset(ctx, app.SwingSetKeeper)
+		return mvm, nil
 	}
 }
 
@@ -825,14 +807,15 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 }
 
 type cosmosInitAction struct {
-	Type        string          `json:"type"`
-	ChainID     string          `json:"chainID"`
-	Params      swingset.Params `json:"params"`
-	StoragePort int             `json:"storagePort"`
-	SupplyCoins sdk.Coins       `json:"supplyCoins"`
-	VibcPort    int             `json:"vibcPort"`
-	VbankPort   int             `json:"vbankPort"`
-	LienPort    int             `json:"lienPort"`
+	Type        string             `json:"type"`
+	ChainID     string             `json:"chainID"`
+	Params      swingset.Params    `json:"params"`
+	StoragePort int                `json:"storagePort"`
+	SupplyCoins sdk.Coins          `json:"supplyCoins"`
+	VibcPort    int                `json:"vibcPort"`
+	VbankPort   int                `json:"vbankPort"`
+	LienPort    int                `json:"lienPort"`
+	UpgradePlan *upgradetypes.Plan `json:"upgradePlan,omitempty"`
 }
 
 // Name returns the name of the App
@@ -853,6 +836,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VibcPort:    app.vibcPort,
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,
+		UpgradePlan: app.upgradePlan,
 	}
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 
