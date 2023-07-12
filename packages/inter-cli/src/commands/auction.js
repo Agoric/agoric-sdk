@@ -109,21 +109,6 @@ export const addAuctionCommand = (
   const makeBoard = () => getBatchQuery().then(makeBoardClient);
 
   auctionCmd
-    .command('governance')
-    .description(`XXX TODO description`)
-    .action(
-      /** @param {{ }} _opts */
-      async _opts => {
-        const board = await makeBoard();
-
-        const info = await board.readLatestHead(`published.auction.governance`);
-        tui.show(info, true);
-        tui.warn('@@@log metrics', info.current);
-        tui.show(await board.provideAgoricNames(), true); // XXX
-      },
-    );
-
-  auctionCmd
     .command('list-bids')
     .description('XXX TODO list desc')
     .option('--book', 'auction book number', Number, 0)
