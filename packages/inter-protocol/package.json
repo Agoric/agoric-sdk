@@ -11,6 +11,8 @@
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",
     "build:add-STARS-proposal": "agoric run scripts/add-STARS.js",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' src/types.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",

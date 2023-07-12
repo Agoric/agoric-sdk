@@ -345,13 +345,14 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
-  // @ts-expect-error cast
-  const { creatorFacet: mint, publicFacet: issuer } = await E(startUpgradable)({
-    installation: mintHolder,
-    label: keyword,
-    terms,
-  });
+  const { creatorFacet: mint, publicFacet: issuer } =
+    /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */ (
+      await E(startUpgradable)({
+        installation: mintHolder,
+        label: keyword,
+        terms,
+      })
+    );
 
   const brand = await E(issuer).getBrand();
   const kit = harden({ mint, issuer, brand });
