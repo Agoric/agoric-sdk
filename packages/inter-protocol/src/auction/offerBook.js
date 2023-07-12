@@ -150,6 +150,12 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
       publishOffer(record) {
         const key = toScaledRateOfferKey(record.bidScaling, record.seqNum);
 
+        // users can exit seats
+        if (record.seat.hasExited()) {
+          this.self.delete(key);
+          return;
+        }
+
         return E(getBidDataRecorder(key)).write(
           harden({
             bidScaling: record.bidScaling,
@@ -292,6 +298,12 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
       },
       publishOffer(record) {
         const key = toPriceOfferKey(record.price, record.seqNum);
+
+        // users can exit seats
+        if (record.seat.hasExited()) {
+          this.self.delete(key);
+          return;
+        }
 
         return E(getBidDataRecorder(key)).write(
           harden({
