@@ -17,6 +17,12 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
  * @property {Ratio} [initialPrice] - targetAmountIn:targetAmountOut
  */
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * A contract that scales a source price authority to a target price authority
  * via ratios.
@@ -30,7 +36,7 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
  * @param {object} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const quoteMint = provideQuoteMint(baggage);
 
   const { sourcePriceAuthority, scaleIn, scaleOut, initialPrice } =
@@ -85,3 +91,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   );
   return harden({ publicFacet });
 };
+harden(start);

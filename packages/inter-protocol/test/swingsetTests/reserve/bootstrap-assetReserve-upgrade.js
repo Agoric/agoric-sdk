@@ -56,10 +56,10 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<
-   *     import('@agoric/governance/src/committee')['prepare']
+   *     import('@agoric/governance/src/committee')['start']
    *   >;
    *   assetReserveV1?: Installation<
-   *     import('../../../src/reserve/assetReserve')['prepare']
+   *     import('../../../src/reserve/assetReserve')['start']
    *   >;
    *   puppetContractGovernor?: Installation<
    *     import('@agoric/governance/tools/puppetContractGovernor')['start']
@@ -70,14 +70,14 @@ export const buildRootObject = async () => {
 
   /**
    * @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<
-   *     import('../../../src/reserve/assetReserve.js').prepare
+   *     import('../../../src/reserve/assetReserve.js').start
    *   >}
    */
   let governorFacets;
   /**
    * @type {ReturnType<
    *   Awaited<
-   *     ReturnType<import('../../../src/reserve/assetReserve.js').prepare>
+   *     ReturnType<import('../../../src/reserve/assetReserve.js').start>
    *   >['creatorFacet']['getLimitedCreatorFacet']
    * >}
    */
@@ -86,7 +86,7 @@ export const buildRootObject = async () => {
   /**
    * @type {Omit<
    *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
-   *     import('../../../src/reserve/assetReserve.js').prepare
+   *     import('../../../src/reserve/assetReserve.js').start
    *   >['terms'],
    *   'issuers' | 'brands'
    * >}

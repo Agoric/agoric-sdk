@@ -10,6 +10,12 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 const trace = makeTracer('AR', true);
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * @typedef {{
  *   increaseLiquidationShortfall: (increase: Amount) => void;
@@ -39,7 +45,7 @@ const trace = makeTracer('AR', true);
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare', Object.keys(privateArgs), [...baggage.keys()]);
   // This contract mixes two styles of access to durable state. durableStores
   // are declared at the top level and referenced lexically. local state is
@@ -106,7 +112,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet: /** @type {any} */ (assetReserveKit.public),
   };
 };
-harden(prepare);
+harden(start);
 
 /**
  * @typedef {object} ShortfallReporter
@@ -121,8 +127,8 @@ harden(prepare);
  * @property {() => Promise<Invitation<ShortfallReporter>>} makeShortfallReportingInvitation
  */
 
-/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} AssetReservePublicFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
 /**
- * @typedef {Awaited<ReturnType<typeof prepare>>['creatorFacet']} AssetReserveCreatorFacet
+ * @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet
  *   the creator facet for the governor
  */

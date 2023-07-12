@@ -66,6 +66,7 @@ const { Fail } = assert;
 
 /** @type {ContractMeta} */
 export const meta = {
+  upgradability: 'canUpgrade',
   customTermsShape: {
     anchorBrand: BrandShape,
     anchorPerMinted: RatioShape,
@@ -119,7 +120,7 @@ harden(meta);
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
@@ -444,5 +445,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet,
   });
 };
+harden(start);
 
-/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} PsmPublicFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */

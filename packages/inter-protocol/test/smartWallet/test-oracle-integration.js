@@ -121,7 +121,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
 
   /**
    * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
-   *   import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare
+   *   import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
    * >}
    */
   const governedPriceAggregator = await E(agoricNames).lookup(
@@ -373,7 +373,7 @@ test.serial('govern oracles list', async t => {
   );
   /**
    * @type {import('@agoric/zoe/src/zoeService/utils').Instance<
-   *   import('@agoric/governance/src/committee.js')['prepare']
+   *   import('@agoric/governance/src/committee.js')['start']
    * >}
    */
   const economicCommittee = await E(agoricNames).lookup(

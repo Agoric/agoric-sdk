@@ -1,12 +1,18 @@
 import { AmountMath } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * @param {ZCF} zcf
  * @param {*} _privateArgs
  * @param {MapStore<any, any>} baggage
  */
-export const prepare = async (zcf, _privateArgs, baggage) => {
+export const start = async (zcf, _privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   /** @type {ZCFMint} */

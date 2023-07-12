@@ -32,6 +32,12 @@ function provideIssuerKit(zcf, baggage) {
   }
 }
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * This contract holds one mint; it basically wraps makeIssuerKit in its own
  * contract, and hence in its own vat.
@@ -41,7 +47,7 @@ function provideIssuerKit(zcf, baggage) {
  * @param {undefined} _privateArgs
  * @param {Baggage} instanceBaggage
  */
-export const prepare = (zcf, _privateArgs, instanceBaggage) => {
+export const start = (zcf, _privateArgs, instanceBaggage) => {
   const { mint, issuer } = provideIssuerKit(zcf, instanceBaggage);
 
   return {
@@ -49,4 +55,4 @@ export const prepare = (zcf, _privateArgs, instanceBaggage) => {
     creatorFacet: mint,
   };
 };
-harden(prepare);
+harden(start);

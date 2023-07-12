@@ -58,6 +58,7 @@ export const meta = {
       initialShortfallInvitation: InvitationShape,
     },
   ),
+  upgradability: 'canUpgrade',
 };
 harden(meta);
 
@@ -72,7 +73,7 @@ harden(meta);
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);
   const {
     initialPoserInvitation,
@@ -150,5 +151,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet: director.public,
   });
 };
+harden(start);
 
-/** @typedef {ContractOf<typeof prepare>} VaultFactoryContract */
+/** @typedef {ContractOf<typeof start>} VaultFactoryContract */
