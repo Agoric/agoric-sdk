@@ -70,7 +70,7 @@ export default function makeRouter() {
 /**
  * Create a router that behaves like a Protocol.
  *
- * @param {typeof defaultE} [E=defaultE] Eventual sender
+ * @param {typeof defaultE} [E] Eventual sender
  * @returns {RouterProtocol} The new delegated protocol
  */
 export function makeRouterProtocol(E = defaultE) {

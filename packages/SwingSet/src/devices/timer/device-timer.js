@@ -71,7 +71,7 @@ function copyState(schedState) {
  * incoming event), we'd want to tell the host loop when we should next be
  * scheduled.
  *
- * @param {Array<Event>} [state=undefined]
+ * @param {Array<Event>} [state]
  */
 function makeTimerMap(state = undefined) {
   /**
