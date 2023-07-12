@@ -1,7 +1,7 @@
 // @jessie-check
 
 import { assert } from '@agoric/assert';
-import { assertPattern } from '@agoric/store';
+import { assertPattern } from '@endo/patterns';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
@@ -127,8 +127,8 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  *
  * @param {Baggage} issuerBaggage
  * @param {string} name
- * @param {K} [assetKind=AssetKind.NAT]
- * @param {AdditionalDisplayInfo} [displayInfo={}]
+ * @param {K} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
@@ -155,7 +155,7 @@ export const makeDurableIssuerKit = (
 harden(makeDurableIssuerKit);
 
 /**
- * @template {AssetKind} [K='nat']
+ * @template {AssetKind} K
  * The name becomes part of the brand in asset descriptions.
  * The name is useful for debugging and double-checking
  * assumptions, but should not be trusted wrt any external namespace.
@@ -170,8 +170,8 @@ harden(makeDurableIssuerKit);
  *  `displayInfo` gives information to the UI on how to display the amount.
  *
  * @param {string} name
- * @param {K} [assetKind='nat']
- * @param {AdditionalDisplayInfo} [displayInfo={}]
+ * @param {K} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
