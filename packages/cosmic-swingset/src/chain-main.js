@@ -493,6 +493,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
   }
 
+  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
+  let blockingSend;
+
   async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
     await null;
     switch (request) {
@@ -501,6 +504,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         if (typeof exportDir !== 'string') {
           throw Fail`Invalid exportDir argument ${q(exportDir)}`;
         }
+        !stateSyncExport ||
+          Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
+        !blockingSend || Fail`Cannot restore snapshot after init`;
         console.info(
           'Restoring SwingSet state from snapshot at block height',
           blockHeight,
@@ -606,9 +612,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         throw Fail`Unknown cosmos snapshot request ${request}`;
     }
   }
-
-  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
-  let blockingSend;
 
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
