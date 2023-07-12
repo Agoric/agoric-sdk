@@ -28,6 +28,24 @@ import { ExportManifestFileName } from './export-kernel-db.js';
  */
 
 /**
+ * @param {object} options
+ * @returns {asserts options is StateSyncImporterOptions}
+ */
+export const validateImporterOptions = options => {
+  typeof options === 'object' || Fail`options is not an object`;
+  typeof options.stateDir === 'string' ||
+    Fail`required stateDir option not a string`;
+  typeof options.exportDir === 'string' ||
+    Fail`required exportDir option not a string`;
+  options.blockHeight == null ||
+    typeof options.blockHeight === 'number' ||
+    Fail`optional blockHeight option not a number`;
+  options.includeHistorical == null ||
+    typeof options.includeHistorical === 'boolean' ||
+    Fail`optional includeHistorical option not a boolean`;
+};
+
+/**
  * @param {StateSyncImporterOptions} options
  * @param {object} powers
  * @param {Pick<import('fs/promises'), 'readFile'> & Pick<import('fs'), 'createReadStream'>} powers.fs

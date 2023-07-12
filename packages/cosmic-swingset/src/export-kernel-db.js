@@ -78,6 +78,25 @@ const checkExportMode = mode => {
  */
 
 /**
+ * @param {object} options
+ * @returns {asserts options is StateSyncExporterOptions}
+ */
+export const validateExporterOptions = options => {
+  typeof options === 'object' || Fail`options is not an object`;
+  typeof options.stateDir === 'string' ||
+    Fail`required stateDir option not a string`;
+  typeof options.exportDir === 'string' ||
+    Fail`required exportDir option not a string`;
+  options.blockHeight == null ||
+    typeof options.blockHeight === 'number' ||
+    Fail`optional blockHeight option not a number`;
+  checkExportMode(options.exportMode);
+  options.includeExportData == null ||
+    typeof options.includeExportData === 'boolean' ||
+    Fail`optional includeExportData option not a boolean`;
+};
+
+/**
  * @param {StateSyncExporterOptions} options
  * @param {object} powers
  * @param {Pick<import('fs/promises'), 'open' | 'writeFile'>} powers.fs
