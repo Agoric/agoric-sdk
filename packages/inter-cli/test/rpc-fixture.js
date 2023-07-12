@@ -154,7 +154,7 @@ export const listBidsRPC = new Map(
               proofOps: null,
               valueBlockHeight: '7414',
               valueCapData: {
-                body: '#{"balance":{"brand":"$0.Alleged: IST brand","value":"+1230"},"exitAfterBuy":false,"price":{"denominator":{"brand":"$1.Alleged: ATOM brand","value":"+1"},"numerator":{"brand":"$0","value":"+5"}},"sequence":"+1001","timestamp":{"absValue":"+1689097758","timerBrand":"$2.Alleged: timerBrand"},"wanted":{"brand":"$1","value":"+1000000000000"}}',
+                body: '#{"balance":{"brand":"$0.Alleged: IST brand","value":"+500000000"},"exitAfterBuy":false,"price":{"denominator":{"brand":"$1.Alleged: ATOM brand","value":"+10"},"numerator":{"brand":"$0","value":"+95"}},"sequence":"+1001","timestamp":{"absValue":"+1689097758","timerBrand":"$2.Alleged: timerBrand"},"wanted":{"brand":"$1","value":"+1000000000000"}}',
                 slots: ['board0257', 'board02152', 'board0425'],
               },
             },
@@ -175,7 +175,7 @@ export const listBidsRPC = new Map(
               proofOps: null,
               valueBlockHeight: '7414',
               valueCapData: {
-                body: '#{"balance":{"brand":"$0.Alleged: IST brand","value":"+4560"},"exitAfterBuy":false,"price":{"denominator":{"brand":"$1.Alleged: ATOM brand","value":"+1"},"numerator":{"brand":"$0","value":"+5"}},"sequence":"+1002","timestamp":{"absValue":"+1689119404","timerBrand":"$2.Alleged: timerBrand"},"wanted":{"brand":"$1","value":"+1000000000000"}}',
+                body: '#{"balance":{"brand":"$0.Alleged: IST brand","value":"+300000000"},"exitAfterBuy":false,"price":{"denominator":{"brand":"$1.Alleged: ATOM brand","value":"+10"},"numerator":{"brand":"$0","value":"+85"}},"sequence":"+1002","timestamp":{"absValue":"+1689119404","timerBrand":"$2.Alleged: timerBrand"},"wanted":{"brand":"$1","value":"+1000000000000"}}',
                 slots: ['board0257', 'board02152', 'board0425'],
               },
             },
@@ -196,7 +196,7 @@ export const listBidsRPC = new Map(
               proofOps: null,
               valueBlockHeight: '7414',
               valueCapData: {
-                body: '#{"balance":{"brand":"$0.Alleged: IST brand","value":"+3210"},"bidScaling":{"denominator":{"brand":"$0","value":"+100"},"numerator":{"brand":"$0","value":"+90"}},"exitAfterBuy":false,"sequence":"+1003","timestamp":{"absValue":"+1689134368","timerBrand":"$1.Alleged: timerBrand"},"wanted":{"brand":"$2.Alleged: ATOM brand","value":"+1000000000000"}}',
+                body: '#{"balance":{"brand":"$0.Alleged: IST brand","value":"+200000000"},"bidScaling":{"denominator":{"brand":"$0","value":"+100"},"numerator":{"brand":"$0","value":"+90"}},"exitAfterBuy":false,"sequence":"+1003","timestamp":{"absValue":"+1689134368","timerBrand":"$1.Alleged: timerBrand"},"wanted":{"brand":"$2.Alleged: ATOM brand","value":"+1000000000000"}}',
                 slots: ['board0257', 'board0425', 'board02152'],
               },
             },
