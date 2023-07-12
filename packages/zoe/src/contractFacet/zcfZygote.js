@@ -403,7 +403,7 @@ export const makeZCFZygote = async (
           const allDurable = Object.values(areDurable).every(Boolean);
           if (durabilityRequired) {
             allDurable ||
-              Fail`values from prepare() must be durable ${areDurable}`;
+              Fail`with ${meta.upgradability}, values from start() must be durable ${areDurable}`;
           }
 
           if (allDurable) {

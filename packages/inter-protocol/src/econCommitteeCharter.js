@@ -44,6 +44,7 @@ export const meta = {
   customTermsShape: {
     binaryVoteCounterInstallation: InstallationShape,
   },
+  upgradability: 'canUpgrade',
 };
 harden(meta);
 
@@ -52,7 +53,7 @@ harden(meta);
  * @param {undefined} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
   /** @type {MapStore<Instance, GovernorCreatorFacet<any>>} */
   const instanceToGovernor = provideDurableMapStore(
@@ -183,3 +184,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   return harden({ creatorFacet });
 };
+harden(start);

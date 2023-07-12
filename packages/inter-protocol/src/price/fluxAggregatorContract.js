@@ -40,6 +40,7 @@ export const meta = {
       initialPoserInvitation: M.remotable('Invitation'),
     },
   ),
+  upgradability: 'canUpgrade',
 };
 harden(meta);
 
@@ -66,7 +67,7 @@ harden(meta);
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare with baggage keys', [...baggage.keys()]);
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
@@ -192,4 +193,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet: faKit.public,
   });
 };
-harden(prepare);
+harden(start);

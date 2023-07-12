@@ -17,9 +17,9 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
  *   >;
  *   auctioneer: Installation<import('../../src/auction/auctioneer').start>;
  *   governor: Installation<
- *     import('@agoric/governance/src/contractGovernor.js')['prepare']
+ *     import('@agoric/governance/src/contractGovernor.js')['start']
  *   >;
- *   reserve: Installation<import('../../src/reserve/assetReserve.js').prepare>;
+ *   reserve: Installation<import('../../src/reserve/assetReserve.js').start>;
  * }} AuctionTestInstallations
  */
 

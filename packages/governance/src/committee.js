@@ -29,6 +29,7 @@ export const meta = {
     storageNode: StorageNodeShape,
     marshaller: M.remotable('Marshaller'),
   },
+  upgradability: 'canUpgrade',
 };
 harden(meta);
 
@@ -49,7 +50,7 @@ harden(meta);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
-export const prepare = (zcf, privateArgs, baggage) => {
+export const start = (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = provideDurableMapStore(baggage, 'Question');
 
@@ -173,4 +174,4 @@ export const prepare = (zcf, privateArgs, baggage) => {
 
   return { publicFacet, creatorFacet };
 };
-harden(prepare);
+harden(start);

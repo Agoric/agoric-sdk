@@ -63,7 +63,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool')['prepare']>} */
+  /** @type {Installation<import('../src/provisionPool')['start']>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);

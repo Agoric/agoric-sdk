@@ -27,6 +27,7 @@ export const meta = {
     { storageNode: M.eref(M.remotable('StorageNode')) },
     { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
   ),
+  upgradability: 'canUpgrade',
 };
 harden(meta);
 
@@ -142,7 +143,7 @@ export const makeAssetRegistry = assetPublisher => {
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
@@ -300,3 +301,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     creatorFacet,
   };
 };
+harden(start);

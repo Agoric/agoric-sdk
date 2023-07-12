@@ -36,11 +36,11 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  * @property {Awaited<
  *   ReturnType<
  *     Awaited<
- *       ReturnType<import('../psm/psm.js')['prepare']>
+ *       ReturnType<import('../psm/psm.js')['start']>
  *     >['creatorFacet']['getLimitedCreatorFacet']
  *   >
  * >} psmCreatorFacet
- * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['prepare']>} psmGovernorCreatorFacet
+ * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['start']>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 
@@ -63,10 +63,10 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>;
  *   econCharterKit: EconCharterStartResult;
  *   reserveKit: GovernanceFacetKit<
- *     import('../reserve/assetReserve.js')['prepare']
+ *     import('../reserve/assetReserve.js')['start']
  *   >;
  *   vaultFactoryKit: GovernanceFacetKit<
- *     import('../vaultFactory/vaultFactory.js')['prepare']
+ *     import('../vaultFactory/vaultFactory.js')['start']
  *   >;
  *   auctioneerKit: AuctioneerKit;
  *   minInitialDebt: NatValue;
@@ -75,12 +75,12 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
- *   import('../econCommitteeCharter')['prepare']
+ *   import('../econCommitteeCharter')['start']
  * >} EconCharterStartResult
  */
 /**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
- *   import('@agoric/governance/src/committee.js')['prepare']
+ *   import('@agoric/governance/src/committee.js')['start']
  * >} CommitteeStartResult
  */
 

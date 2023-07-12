@@ -82,7 +82,7 @@ import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 
 const { quote: q, Fail } = assert;
 
-export const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+export const start = async (zcf, _privateArgs, instanceBaggage) => {
   const CODE_VERSION = 2;
   const isFirstIncarnation = !instanceBaggage.has('codeVersion');
   if (isFirstIncarnation) {
@@ -128,7 +128,7 @@ export const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   );
   return harden({ creatorFacet });
 };
-harden(prepare);
+harden(start);
 ```
 
 For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .

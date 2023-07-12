@@ -28,6 +28,7 @@ export const meta = {
       metricsOverride: M.recordOf(M.string()),
     },
   ),
+  upgradability: 'canUpgrade',
 };
 harden(meta);
 
@@ -47,7 +48,7 @@ harden(meta);
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -113,4 +114,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   });
 };
 
-harden(prepare);
+harden(start);
