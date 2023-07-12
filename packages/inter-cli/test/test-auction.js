@@ -133,6 +133,7 @@ const encodeDetail = webMap => {
 
 test('see all bids for a collateral type', async t => {
   const args = 'node inter-tool bid list';
+  t.log(args.replace(/^node /, ''));
   const expected = [
     {
       timestamp: '2023-07-11T17:49:18Z',
