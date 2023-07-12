@@ -58,7 +58,7 @@ func TestSwingStoreSnapshotterInProgress(t *testing.T) {
 		<-ch
 		return nil
 	}
-	err := exportsHandler.InitiateExport(123, exportEventHandler)
+	err := exportsHandler.InitiateExport(123, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,12 +67,12 @@ func TestSwingStoreSnapshotterInProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = exportsHandler.InitiateExport(456, newTestSwingStoreEventHandler())
+	err = exportsHandler.InitiateExport(456, newTestSwingStoreEventHandler(), SwingStoreExportOptions{})
 	if err == nil {
 		t.Error("wanted error for export operation in progress")
 	}
 
-	err = exportsHandler.RestoreExport(SwingStoreExportProvider{BlockHeight: 456})
+	err = exportsHandler.RestoreExport(SwingStoreExportProvider{BlockHeight: 456}, SwingStoreRestoreOptions{})
 	if err == nil {
 		t.Error("wanted error for export operation in progress")
 	}
@@ -82,7 +82,7 @@ func TestSwingStoreSnapshotterInProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = exportsHandler.InitiateExport(456, exportEventHandler)
+	err = exportsHandler.InitiateExport(456, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestSwingStoreSnapshotterSecondCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = exportsHandler.InitiateExport(123, exportEventHandler)
+	err = exportsHandler.InitiateExport(123, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestSwingStoreSnapshotterInitiateFails(t *testing.T) {
 		return "", nil
 	}
 
-	err := exportsHandler.InitiateExport(123, exportEventHandler)
+	err := exportsHandler.InitiateExport(123, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestSwingStoreSnapshotterRetrievalFails(t *testing.T) {
 		return savedErr
 	}
 
-	err := exportsHandler.InitiateExport(123, exportEventHandler)
+	err := exportsHandler.InitiateExport(123, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +216,7 @@ func TestSwingStoreSnapshotterDiscard(t *testing.T) {
 		activeOperation.exportRetrieved = true
 		return nil
 	}
-	err := exportsHandler.InitiateExport(123, exportEventHandler)
+	err := exportsHandler.InitiateExport(123, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestSwingStoreSnapshotterDiscard(t *testing.T) {
 	exportEventHandler.onExportStarted = func(height uint64, retrieveExport func() error) error {
 		return nil
 	}
-	err = exportsHandler.InitiateExport(456, exportEventHandler)
+	err = exportsHandler.InitiateExport(456, exportEventHandler, SwingStoreExportOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
