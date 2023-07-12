@@ -131,28 +131,28 @@ const encodeDetail = webMap => {
   return out;
 };
 
-test('inter auction list-bids', async t => {
+test('see all bids for a collateral type', async t => {
   const args = 'node inter-tool bid list';
   const expected = [
     {
       timestamp: '2023-07-11T17:49:18.000Z',
       sequence: 1001,
-      price: '5.0000 IST/ATOM',
-      balance: '0.00123 IST',
+      price: '9.5000 IST/ATOM',
+      balance: '500 IST',
       wanted: '1000000 ATOM',
     },
     {
       timestamp: '2023-07-11T23:50:04.000Z',
       sequence: 1002,
-      price: '5.0000 IST/ATOM',
-      balance: '0.00456 IST',
+      price: '8.5000 IST/ATOM',
+      balance: '300 IST',
       wanted: '1000000 ATOM',
     },
     {
       timestamp: '2023-07-12T03:59:28.000Z',
       sequence: 1003,
       bidScaling: '90.0000%',
-      balance: '0.00321 IST',
+      balance: '200 IST',
       wanted: '1000000 ATOM',
     },
   ];
@@ -203,3 +203,4 @@ test('inter auction list-bids', async t => {
 
 test.todo('FR3: show partially filled bids');
 test.todo('FR5: --from-bidder, --from-everyone');
+test.todo('prices truncate at 4 decimal places');
