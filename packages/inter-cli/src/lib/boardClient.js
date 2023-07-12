@@ -2,7 +2,11 @@
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { assertCapData } from '@agoric/internal/src/lib-chainStorage.js';
-import { BrandShape, DisplayInfoShape, IssuerShape } from '@agoric/ertp';
+import {
+  BrandShape,
+  DisplayInfoShape,
+  IssuerShape,
+} from '@agoric/ertp/src/typeGuards.js';
 import { M, mustMatch } from '@endo/patterns';
 import { zip } from '@agoric/internal';
 import { extractStreamCellValue } from './vstorage.js';
