@@ -22,7 +22,6 @@
     "@agoric/cosmic-proto": "^0.3.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
-    "@agoric/vats": "^0.15.1",
     "@cosmjs/encoding": "^0.30.1",
     "@cosmjs/stargate": "^0.30.1",
     "@cosmjs/tendermint-rpc": "^0.30.1",
