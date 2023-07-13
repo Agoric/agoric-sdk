@@ -234,14 +234,14 @@ export const setupVaultFactoryArguments = async (
     initialShortfallInvitation,
     shortfallInvitationAmount,
     feeMintAccess,
-    auctioneerPublicFacet,
+    auctioneerInstance,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     shortfallInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(shortfallInvitationP),
     feeMintAccessP,
-    E.get(auctioneerKit).publicFacet,
+    E.get(auctioneerKit).instance,
   ]);
 
   const reservePublicFacet = await E.get(reserveKit).publicFacet;
@@ -250,7 +250,6 @@ export const setupVaultFactoryArguments = async (
 
   const vaultFactoryTerms = makeGovernedVFTerms({
     priceAuthority,
-    auctioneerPublicFacet,
     reservePublicFacet,
     interestTiming,
     timer: chainTimerService,
@@ -262,6 +261,7 @@ export const setupVaultFactoryArguments = async (
   });
 
   const vaultFactoryPrivateArgs = {
+    auctioneerInstance,
     feeMintAccess,
     initialPoserInvitation,
     initialShortfallInvitation,

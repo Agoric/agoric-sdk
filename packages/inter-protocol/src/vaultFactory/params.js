@@ -128,7 +128,6 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {{
- *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>;
  *   electorateInvitationAmount: Amount<'set'>;
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
@@ -141,7 +140,6 @@ export const vaultParamPattern = M.splitRecord(
  * }} opts
  */
 export const makeGovernedTerms = ({
-  auctioneerPublicFacet,
   bootstrapPaymentValue,
   electorateInvitationAmount,
   interestTiming,
@@ -153,7 +151,6 @@ export const makeGovernedTerms = ({
   referencedUi = 'NO REFERENCE',
 }) => {
   return harden({
-    auctioneerPublicFacet,
     priceAuthority,
     reservePublicFacet,
     timerService: timer,
@@ -203,7 +200,10 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   };
 
   // restore from baggage
-  [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  for (const [brand, args] of managerArgs.entries()) {
+    makeManager(brand, args);
+  }
 
   return {
     /**

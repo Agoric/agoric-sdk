@@ -1,0 +1,29 @@
+{
+    "consume": {
+        "auctioneerKit": true,
+        "chainTimerService": true,
+        "priceAuthority": true,
+        "startGovernedUpgradable": true,
+        "vaultFactoryKit": true,
+        "zoe": true,
+        "chainStorage": true,
+        "board": true,
+        "reserveKit": true
+    },
+    "produce": {
+        "auctioneerKit": true
+    },
+    "instance": {
+        "produce": {
+            "auctioneer": true
+        },
+        "consume": {
+            "reserve": true
+        }
+    },
+    "issuer": {
+        "consume": {
+            "IST": true
+        }
+    }
+}
