@@ -3,11 +3,9 @@ package swingset
 import (
 	// "os"
 	"fmt"
-	stdlog "log"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func NewGenesisState() *types.GenesisState {
@@ -30,38 +28,14 @@ func DefaultGenesisState() *types.GenesisState {
 	}
 }
 
-type bootstrapBlockAction struct {
-	Type      string `json:"type"`
-	BlockTime int64  `json:"blockTime"`
-}
-
-func BootSwingset(ctx sdk.Context, keeper Keeper) error {
-	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
-	// business.
-	action := &bootstrapBlockAction{
-		Type:      "BOOTSTRAP_BLOCK",
-		BlockTime: ctx.BlockTime().Unix(),
-	}
-
-	_, err := keeper.BlockingSend(ctx, action)
-	return err
-}
-
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
+// InitGenesis initializes the (Cosmos-side) SwingSet state from the GenesisState.
+// Returns whether the app should send a bootstrap action to the controller.
+func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) bool {
 	keeper.SetParams(ctx, data.GetParams())
 	keeper.SetState(ctx, data.GetState())
 
-	stdlog.Println("Running SwingSet until bootstrap is ready")
-	err := BootSwingset(ctx, keeper)
-
-	// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
-	if err != nil {
-		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
-		// Panic here, in the hopes that a replay from scratch will fix the problem.
-		panic(err)
-	}
-
-	return []abci.ValidatorUpdate{}
+	// TODO: bootstrap only if not restoring swing-store from genesis state
+	return true
 }
 
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
