@@ -126,7 +126,6 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {{
- *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>;
  *   electorateInvitationAmount: Amount<'set'>;
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
@@ -139,7 +138,6 @@ export const vaultParamPattern = M.splitRecord(
  * }} opts
  */
 export const makeGovernedTerms = ({
-  auctioneerPublicFacet,
   bootstrapPaymentValue,
   electorateInvitationAmount,
   interestTiming,
@@ -151,7 +149,6 @@ export const makeGovernedTerms = ({
   referencedUi = 'NO REFERENCE',
 }) => {
   return harden({
-    auctioneerPublicFacet,
     priceAuthority,
     reservePublicFacet,
     timerService: timer,
