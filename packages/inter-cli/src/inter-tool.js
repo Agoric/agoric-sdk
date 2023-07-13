@@ -40,11 +40,12 @@ const main = async () => {
     return config;
   };
 
+  const pick = xs => xs[Math.floor(Math.random() * xs.length)];
+
   // cosmjs-based RPC client is only used for .Children()
   const makeRpcClient = () =>
     provideConfig().then(c => {
-      const [rpcAddr] = c.rpcAddrs;
-      tui.warn('TODO: pick among >1 rpcAddrs', { rpcAddr });
+      const rpcAddr = pick(c.rpcAddrs);
       return makeHttpClient(rpcAddr, globalThis.fetch);
     });
 
