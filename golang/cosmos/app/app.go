@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -21,6 +22,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -196,6 +198,7 @@ type GaiaApp struct { // nolint: golint
 	interfaceRegistry types.InterfaceRegistry
 
 	controllerInited bool
+	bootstrapNeeded  bool
 	lienPort         int
 	vbankPort        int
 	vibcPort         int
@@ -431,10 +434,14 @@ func NewAgoricApp(
 
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
+		app.CheckControllerInited(true)
 		// We use SwingSet-level metering to charge the user for the call.
-		app.MustInitController(ctx)
 		defer vm.SetControllerContext(ctx)()
 		return sendToController(true, str)
+	}
+
+	setBootstrapNeeded := func() {
+		app.bootstrapNeeded = true
 	}
 
 	app.VstorageKeeper = vstorage.NewKeeper(
@@ -581,7 +588,7 @@ func NewAgoricApp(
 		transferModule,
 		icaModule,
 		vstorage.NewAppModule(app.VstorageKeeper),
-		swingset.NewAppModule(app.SwingSetKeeper),
+		swingset.NewAppModule(app.SwingSetKeeper, setBootstrapNeeded),
 		vibcModule,
 		vbankModule,
 		lienModule,
@@ -808,6 +815,7 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 type cosmosInitAction struct {
 	Type        string             `json:"type"`
 	ChainID     string             `json:"chainID"`
+	IsBootstrap bool               `json:"isBootstrap"`
 	Params      swingset.Params    `json:"params"`
 	SupplyCoins sdk.Coins          `json:"supplyCoins"`
 	UpgradePlan *upgradetypes.Plan `json:"upgradePlan,omitempty"`
@@ -820,15 +828,25 @@ type cosmosInitAction struct {
 // Name returns the name of the App
 func (app *GaiaApp) Name() string { return app.BaseApp.Name() }
 
-func (app *GaiaApp) MustInitController(ctx sdk.Context) {
-	if app.controllerInited {
-		return
+// CheckControllerInited exits if the controller initialization state does not match `expected`.
+func (app *GaiaApp) CheckControllerInited(expected bool) {
+	if app.controllerInited != expected {
+		fmt.Fprintf(os.Stderr, "controllerInited != %t\n", expected)
+		debug.PrintStack()
+		os.Exit(1)
 	}
+}
+
+// initController sends the initialization message to the VM.
+// Exits if the controller has already been initialized.
+func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
+	app.CheckControllerInited(false)
 	app.controllerInited = true
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
+		IsBootstrap: bootstrap,
 		Params:      app.SwingSetKeeper.GetParams(ctx),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
 		UpgradePlan: app.upgradePlan,
@@ -837,28 +855,51 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VbankPort:   app.vbankPort,
 		VibcPort:    app.vibcPort,
 	}
+	// This really abuses `BlockingSend` to get back at `sendToController`
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintf(os.Stderr, "AG_COSMOS_INIT Returned from SwingSet: %s, %v\n", out, err)
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
-		os.Exit(1)
+		panic(errors.Wrap(err, "cannot initialize Controller"))
 	}
 	var res bool
 	err = json.Unmarshal([]byte(out), &res)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot unmarshal Controller init response", out, err)
-		os.Exit(1)
+		panic(errors.Wrapf(err, "cannot unmarshal Controller init response: %s", out))
 	}
 	if !res {
-		fmt.Fprintln(os.Stderr, "Controller negative init response")
-		os.Exit(1)
+		panic(fmt.Errorf("controller negative init response"))
 	}
+}
+
+type bootstrapBlockAction struct {
+	Type      string `json:"type"`
+	BlockTime int64  `json:"blockTime"`
+}
+
+// BootstrapController initializes the controller (with the bootstrap flag) and sends a bootstrap action.
+func (app *GaiaApp) BootstrapController(ctx sdk.Context) error {
+	app.initController(ctx, true)
+
+	stdlog.Println("Running SwingSet until bootstrap is ready")
+	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
+	// business.
+	action := &bootstrapBlockAction{
+		Type:      "BOOTSTRAP_BLOCK",
+		BlockTime: ctx.BlockTime().Unix(),
+	}
+
+	_, err := app.SwingSetKeeper.BlockingSend(ctx, action)
+	return err
 }
 
 // BeginBlocker application updates every begin block
 func (app *GaiaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	if !app.controllerInited {
+		app.initController(ctx, false)
+	}
+
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -877,17 +918,27 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
 	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 
+	// initialize the provision and reserve module accounts, to avoid their implicit creation
+	// as a default account upon receiving a transfer. See BlockedAddrs().
+	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
+	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
+
+	if app.bootstrapNeeded {
+		err := app.BootstrapController(ctx)
+		// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
+		if err != nil {
+			// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
+			// Panic here, in the hopes that a replay from scratch will fix the problem.
+			panic(err)
+		}
+	}
+
 	// Agoric: report the genesis time explicitly.
 	genTime := req.GetTime()
 	if genTime.After(time.Now()) {
 		d := time.Until(genTime)
 		stdlog.Printf("Genesis time %s is in %s\n", genTime, d)
 	}
-
-	// initialize the provision and reserve module accounts, to avoid their implicit creation
-	// as a default account upon receiving a transfer. See BockedAddrs().
-	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
-	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
 
 	return res
 }
