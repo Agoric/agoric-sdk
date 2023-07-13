@@ -37,7 +37,9 @@ export function insistVatID(s) {
  * @returns {string} a vat ID string of the form "vNN" where NN is the index.
  */
 export function makeVatID(index) {
-  return `v${Nat(index)}`;
+  const vatID = `v${Nat(index)}`;
+  insistVatID(vatID);
+  return vatID;
 }
 
 /**
@@ -66,7 +68,9 @@ export function insistDeviceID(s) {
  * @returns {string} a device ID string of the form "dNN" where NN is the index.
  */
 export function makeDeviceID(index) {
-  return `d${Nat(index)}`;
+  const deviceID = `d${Nat(index)}`;
+  insistDeviceID(deviceID);
+  return deviceID;
 }
 
 export function makeUpgradeID(index) {
