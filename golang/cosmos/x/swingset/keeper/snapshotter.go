@@ -329,14 +329,14 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 	}
 
 	writeFileToPayload := func(fileName string, artifactName string) error {
-		payload := types.ExtensionSnapshotterArtifactPayload{Name: artifactName}
+		artifact := types.SwingStoreArtifact{Name: artifactName}
 
-		payload.Data, err = os.ReadFile(filepath.Join(exportDir, fileName))
+		artifact.Data, err = os.ReadFile(filepath.Join(exportDir, fileName))
 		if err != nil {
 			return err
 		}
 
-		payloadBytes, err := payload.Marshal()
+		payloadBytes, err := artifact.Marshal()
 		if err != nil {
 			return err
 		}
@@ -455,34 +455,34 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 			return err
 		}
 
-		payload := types.ExtensionSnapshotterArtifactPayload{}
-		if err = payload.Unmarshal(payloadBytes); err != nil {
+		artifact := types.SwingStoreArtifact{}
+		if err = artifact.Unmarshal(payloadBytes); err != nil {
 			return err
 		}
 
 		switch {
-		case payload.Name != UntrustedExportDataArtifactName:
+		case artifact.Name != UntrustedExportDataArtifactName:
 			// Artifact verifiable on import from the export data
-			// Since we cannot trust the state-sync payload at this point, we generate
+			// Since we cannot trust the state-sync artifact at this point, we generate
 			// a safe and unique filename from the artifact name we received, by
 			// substituting any non letters-digits-hyphen-underscore-dot by a hyphen,
 			// and prefixing with an incremented id.
 			// The filename is not used for any purpose in the snapshotting logic.
-			filename := sanitizeArtifactName(payload.Name)
+			filename := sanitizeArtifactName(artifact.Name)
 			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
-			manifest.Artifacts = append(manifest.Artifacts, [2]string{payload.Name, filename})
-			err = writeExportFile(filename, payload.Data)
+			manifest.Artifacts = append(manifest.Artifacts, [2]string{artifact.Name, filename})
+			err = writeExportFile(filename, artifact.Data)
 
 		case len(swingStoreEntries) > 0:
 			// Pseudo artifact containing untrusted export data which may have been
 			// saved separately for debugging purposes (not referenced from the manifest)
-			err = writeExportFile(UntrustedExportDataFilename, payload.Data)
+			err = writeExportFile(UntrustedExportDataFilename, artifact.Data)
 
 		default:
 			// There is no trusted export data
 			err = errors.New("cannot restore from untrusted export data")
 			// snapshotter.logger.Info("using untrusted export data for swingstore restore")
-			// _, err = exportDataFile.Write(payload.Data)
+			// _, err = exportDataFile.Write(artifact.Data)
 		}
 
 		if err != nil {
