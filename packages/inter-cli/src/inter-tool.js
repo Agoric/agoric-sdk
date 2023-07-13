@@ -16,6 +16,9 @@ import { addBidCommand } from './commands/auction.js';
 import { getNetworkConfig } from './lib/networkConfig.js';
 import { makeBatchQuery } from './lib/vstorage.js';
 
+const DISCLAIMER =
+  'Source code licensed under Apache 2.0. Use at your own risk.';
+
 /**
  * Create and run the inter command,
  * portioning out authority as needed.
@@ -25,6 +28,8 @@ const main = async () => {
   const tui = makeTUI({ stdout: process.stdout, logger });
 
   const { env } = process;
+  env.ACK_IST_RISK || tui.warn(DISCLAIMER);
+
   let config;
   // NOTE: delay getNetworkConfig() and all other I/O
   // until a command .action() is run
