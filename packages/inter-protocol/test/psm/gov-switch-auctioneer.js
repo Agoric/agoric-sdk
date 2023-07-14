@@ -1,6 +1,8 @@
 // @ts-check
 import { E } from '@endo/far';
 
+console.log('started switch-auctioneer script');
+
 // TODO: set these bundle-ids to the revised code
 const bundleIDs = {
   vaultFactory:
@@ -9,128 +11,32 @@ const bundleIDs = {
     'e85289898e66e0423d7ec1c402ac2ced21573f93cf599d593a0533a1e2355ace624cc95c8c8c18c66d44a921511642e87837accd0e728427c269936b040bb886',
 };
 
-const START_FREQUENCY = 'StartFrequency';
-/** in seconds, how often to reduce the price */
-const CLOCK_STEP = 'ClockStep';
-/** discount or markup for starting price in basis points. 9999 = 1bp discount */
-const STARTING_RATE_BP = 'StartingRate';
-/** A limit below which the price will not be discounted. */
-const LOWEST_RATE_BP = 'LowestRate';
-/** amount to reduce prices each time step in bp, as % of the start price */
-const DISCOUNT_STEP_BP = 'DiscountStep';
-/**
- * VaultManagers liquidate vaults at a frequency configured by START_FREQUENCY.
- * Auctions start this long after the hour to give vaults time to finish.
- */
-const AUCTION_START_DELAY = 'AuctionStartDelay';
+const { fromEntries, keys, values } = Object;
 
-const ParamTypes = /** @type {const} */ ({
-  AMOUNT: 'amount',
-  BRAND: 'brand',
-  INSTALLATION: 'installation',
-  INSTANCE: 'instance',
-  INVITATION: 'invitation',
-  NAT: 'nat',
-  RATIO: 'ratio',
-  STRING: 'string',
-  PASSABLE_RECORD: 'record',
-  TIMESTAMP: 'timestamp',
-  RELATIVE_TIME: 'relativeTime',
-  UNKNOWN: 'unknown',
-});
+/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
 
-/**
- * @param {AuctionParams} initial
- */
-const makeAuctioneerParams = ({
-  ElectorateInvitationAmount,
-  StartFrequency,
-  ClockStep,
-  LowestRate,
-  StartingRate,
-  DiscountStep,
-  AuctionStartDelay,
-  PriceLockPeriod,
-  TimerBrand,
-}) => {
-  return harden({
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: ElectorateInvitationAmount,
-    },
-    [START_FREQUENCY]: {
-      type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.coerceRelativeTimeRecord(StartFrequency, TimerBrand),
-    },
-    [CLOCK_STEP]: {
-      type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.coerceRelativeTimeRecord(ClockStep, TimerBrand),
-    },
-    [AUCTION_START_DELAY]: {
-      type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.coerceRelativeTimeRecord(AuctionStartDelay, TimerBrand),
-    },
-    [PRICE_LOCK_PERIOD]: {
-      type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.coerceRelativeTimeRecord(PriceLockPeriod, TimerBrand),
-    },
-    [STARTING_RATE_BP]: { type: ParamTypes.NAT, value: StartingRate },
-    [LOWEST_RATE_BP]: { type: ParamTypes.NAT, value: LowestRate },
-    [DISCOUNT_STEP_BP]: { type: ParamTypes.NAT, value: DiscountStep },
-  });
-};
-harden(makeAuctioneerParams);
-
-/**
- * See packages/inter-protocol/src/auction/params.js
- *
- * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
- * @param {ERef<Timer>} timer
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {ERef<AssetReservePublicFacet>} reservePublicFacet
- * @param {import('../../src/auction/params').AuctionParams} params
- */
-const makeGovernedATerms = (
-  { storageNode: _storageNode, marshaller: _marshaller },
-  timer,
-  priceAuthority,
-  reservePublicFacet,
-  params,
-) => {
-  // XXX  use storageNode and Marshaller
-  return harden({
-    priceAuthority,
-    reservePublicFacet,
-    timerService: timer,
-    governedParams: makeAuctioneerParams(params),
-  });
-};
-harden(makeGovernedATerms);
-
-export const SECONDS_PER_MINUTE = 60n;
-const SECONDS_PER_HOUR = 60n * 60n;
-const auctionParams = {
-  StartFrequency: 1n * SECONDS_PER_HOUR,
-  ClockStep: 3n * SECONDS_PER_MINUTE,
-  StartingRate: 10500n,
-  LowestRate: 6500n,
-  DiscountStep: 500n,
-  AuctionStartDelay: 2n,
-  PriceLockPeriod: SECONDS_PER_HOUR / 2n,
+/** @type { <T extends Record<string, ERef<any>>>(obj: T) => Promise<{ [K in keyof T]: Awaited<T[K]>}> } */
+const allValues = async obj => {
+  const resolved = await Promise.all(values(obj));
+  // @ts-expect-error cast
+  return harden(fromEntries(zip(keys(obj), resolved)));
 };
 
 /** @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} permittedPowers */
 const switchAuctioneer = async permittedPowers => {
+  console.log('switchAuctioneer: extracting permitted powers...');
+  // see gov-switch-auctioneer-permit.json
   const {
     consume: {
       auctioneerKit: auctioneerKitP,
-      chainTimerService,
-      contractKits: contractKitsP,
+      chainTimerService: timerService,
       priceAuthority,
+      startGovernedUpgradable,
       vaultFactoryKit,
       zoe,
-      startGovernedUpgradable,
     },
+    produce: { auctioneerKit },
     instance: {
       produce: { auctioneer: auctionInstance },
       consume: { reserve: reserveInstance },
@@ -140,73 +46,73 @@ const switchAuctioneer = async permittedPowers => {
     },
   } = permittedPowers;
 
-  const oldAuctionKit = await auctioneerKitP;
-  // install auctioneer code and start a new instance, and save results
-  const installation = await E(zoe).installBundleID(
-    bundleIDs.auctioneer,
-    'auctioneer',
-  );
-  const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
-  const timerBrand = await E(chainTimerService).getTimerBrand();
+  /**
+   * install, start governed instance, publish results
+   */
+  const startNewAuctioneer = async () => {
+    console.log('startNewAuctioneer: installBundleID etc.');
+    const {
+      // @ts-expect-error cast XXX missing from type
+      auctioneerKit: { privateArgs },
+      governedParams,
+      installation,
+      reservePublicFacet,
+      stableIssuer,
+    } = await allValues({
+      auctioneerKit: auctioneerKitP,
+      governedParams: E(E.get(auctioneerKitP).publicFacet).getGovernedParams(),
+      installation: E(zoe).installBundleID(bundleIDs.auctioneer, 'auctioneer'),
+      reservePublicFacet: E(zoe).getPublicFacet(reserveInstance),
+      stableIssuer: stableIssuerP,
+    });
 
-  const electorateInvitationAmount = await E(
-    E(zoe).getInvitationIssuer(),
-  ).getAmountOf(oldAuctionKit.privateArgs.initialPoserInvitation);
-
-  await E(startGovernedUpgradable)({
-    governedParams: {}, // TODO
-    installation,
-    label: 'auctioneer',
-    // @ts-expect-error cast XXX missing from type
-    privateArgs: oldAuctionKit.privateArgs,
-    terms: makeGovernedATerms(
-      // @ts-expect-error not used
-      {},
-      chainTimerService,
+    const terms = {
       priceAuthority,
       reservePublicFacet,
-      {
-        ...auctionParams,
-        ElectorateInvitationAmount: electorateInvitationAmount,
-        TimerBrand: timerBrand,
-      },
-    ),
-    issuerKeywordRecord: { Bid: stableIssuer },
-  });
-
-  // TODO: needs to be governed
-  // TODO: auctioneer contract terms
-  const auctioneerKit = await E(zoe).startInstance(
-    installation,
-    {},
-    undefined,
-    'auctioneer',
-  );
-  const contractKits = await contractKitsP;
-  contractKits.init(
-    auctioneerKit.instance,
-    harden({
-      ...auctioneerKit,
+      timerService,
+      governedParams,
+    };
+    console.log('startNewAuctioneer: startGovernedUpgradable');
+    const kit = await E(startGovernedUpgradable)({
       label: 'auctioneer',
-    }),
-  );
+      installation,
+      issuerKeywordRecord: { Bid: stableIssuer },
+      terms,
+      governedParams: terms.governedParams,
+      privateArgs,
+    });
+    auctioneerKit.reset();
+    auctioneerKit.resolve(kit);
+    // TODO: test that auctioneer in agoricNames.instance gets updated
+    auctionInstance.reset();
+    auctionInstance.resolve(kit.instance);
 
-  // TODO: what to do about the old auctioneer?
+    return kit;
+  };
+
+  const newAuctionKit = await startNewAuctioneer();
+
+  // TODO: shut down old auctioneer?
 
   // upgrade the vaultFactory
-  const vfKit = await vaultFactoryKit;
+  const upgradeVaultFactory = async () => {
+    console.log('upgradeVaultFactory...');
+    const kit = await vaultFactoryKit;
+    // @ts-expect-error cast XXX privateArgs missing from type
+    const { privateArgs } = kit;
 
-  /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
-  const vfPrivate = harden({
-    // @ts-expect-error cast XXX missing from type
-    ...vfKit.privateArgs,
-    auctioneerPublicFacet: auctioneerKit.publicFacet,
-  });
-  const stuff = await E(vfKit.adminFacet).upgradeContract(
-    bundleIDs.vaultFactory,
-    vfPrivate,
-  );
-  console.log('upgraded vaultVactory', stuff);
+    /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
+    const newPrivateArgs = harden({
+      ...privateArgs,
+      auctioneerPublicFacet: newAuctionKit.publicFacet,
+    });
+    const upgradeResult = await E(kit.adminFacet).upgradeContract(
+      bundleIDs.vaultFactory,
+      newPrivateArgs,
+    );
+    console.log('upgraded vaultVactory.', upgradeResult);
+  };
+  await upgradeVaultFactory();
 };
 
 switchAuctioneer;
