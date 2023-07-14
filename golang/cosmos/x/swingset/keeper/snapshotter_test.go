@@ -16,7 +16,7 @@ func newTestSnapshotter() SwingsetSnapshotter {
 		takeSnapshot:      func(height int64) {},
 		newRestoreContext: func(height int64) sdk.Context { return sdk.Context{} },
 		logger:            logger,
-		blockingSend:      func(action vm.Jsonable) (string, error) { return "", nil },
+		blockingSend:      func(action vm.Jsonable, mustNotBeInited bool) (string, error) { return "", nil },
 	}
 }
 
@@ -89,7 +89,7 @@ func TestSecondCommit(t *testing.T) {
 
 func TestInitiateFails(t *testing.T) {
 	swingsetSnapshotter := newTestSnapshotter()
-	swingsetSnapshotter.blockingSend = func(action vm.Jsonable) (string, error) {
+	swingsetSnapshotter.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
 		if action.(*snapshotAction).Request == "initiate" {
 			return "", errors.New("initiate failed")
 		}
@@ -116,7 +116,7 @@ func TestInitiateFails(t *testing.T) {
 
 func TestRetrievalFails(t *testing.T) {
 	swingsetSnapshotter := newTestSnapshotter()
-	swingsetSnapshotter.blockingSend = func(action vm.Jsonable) (string, error) {
+	swingsetSnapshotter.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
 		if action.(*snapshotAction).Request == "retrieve" {
 			return "", errors.New("retrieve failed")
 		}
@@ -152,7 +152,7 @@ func TestRetrievalFails(t *testing.T) {
 func TestDiscard(t *testing.T) {
 	discardCalled := false
 	swingsetSnapshotter := newTestSnapshotter()
-	swingsetSnapshotter.blockingSend = func(action vm.Jsonable) (string, error) {
+	swingsetSnapshotter.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
 		if action.(*snapshotAction).Request == "discard" {
 			discardCalled = true
 		}
