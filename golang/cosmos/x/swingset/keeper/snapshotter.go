@@ -41,6 +41,8 @@ func sanitizeArtifactName(name string) string {
 }
 
 type activeSnapshot struct {
+	// Whether the operation in progress is a restore
+	isRestore bool
 	// The block height of the snapshot in progress
 	height int64
 	// The logger for this snapshot
@@ -111,19 +113,33 @@ func NewSwingsetSnapshotter(
 	}
 }
 
+// checkNotActive returns an error if there is an active snapshot.
+func (snapshotter *SwingsetSnapshotter) checkNotActive() error {
+	active := snapshotter.activeSnapshot
+	if active != nil {
+		select {
+		case <-active.done:
+			snapshotter.activeSnapshot = nil
+		default:
+			if active.isRestore {
+				return fmt.Errorf("snapshot restore already in progress for height %d", active.height)
+			} else {
+				return fmt.Errorf("snapshot already in progress for height %d", active.height)
+			}
+		}
+	}
+	return nil
+}
+
 // InitiateSnapshot synchronously initiates a snapshot for the given height.
 // If a snapshot is already in progress, or if no snapshot manager is configured,
 // this will fail.
 // The snapshot operation is performed in a goroutine, and synchronized with the
 // main thread through the `WaitUntilSnapshotStarted` method.
 func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
-	if snapshotter.activeSnapshot != nil {
-		select {
-		case <-snapshotter.activeSnapshot.done:
-			snapshotter.activeSnapshot = nil
-		default:
-			return fmt.Errorf("snapshot already in progress for height %d", snapshotter.activeSnapshot.height)
-		}
+	err := snapshotter.checkNotActive()
+	if err != nil {
+		return err
 	}
 
 	if !snapshotter.isConfigured() {
@@ -365,6 +381,30 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 	if format != SnapshotFormat {
 		return snapshots.ErrUnknownFormat
 	}
+
+	err := snapshotter.checkNotActive()
+	if err != nil {
+		return err
+	}
+
+	// We technically don't need to create an active snapshot here since both
+	// `InitiateSnapshot` and `RestoreExtension` should only be called from the
+	// main thread, but it doesn't cost much to add in case things go wrong.
+	active := &activeSnapshot{
+		isRestore: true,
+		height:    int64(height),
+		logger:    snapshotter.logger,
+		// goroutine synchronization is unnecessary since anything checking should
+		// be called from the same thread.
+		// Effectively `WaitUntilSnapshotStarted` would block infinitely and
+		// and `InitiateSnapshot` will error when calling `checkNotActive`.
+		startedResult: nil,
+		done:          nil,
+	}
+	snapshotter.activeSnapshot = active
+	defer func() {
+		snapshotter.activeSnapshot = nil
+	}()
 
 	ctx := snapshotter.newRestoreContext(int64(height))
 

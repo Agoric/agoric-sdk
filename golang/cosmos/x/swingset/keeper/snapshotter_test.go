@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -36,6 +37,15 @@ func TestSnapshotInProgress(t *testing.T) {
 	}
 
 	err = swingsetSnapshotter.InitiateSnapshot(456)
+	if err == nil {
+		t.Error("wanted error for snapshot in progress")
+	}
+
+	err = swingsetSnapshotter.RestoreExtension(
+		456, SnapshotFormat,
+		func() ([]byte, error) {
+			return nil, io.EOF
+		})
 	if err == nil {
 		t.Error("wanted error for snapshot in progress")
 	}
