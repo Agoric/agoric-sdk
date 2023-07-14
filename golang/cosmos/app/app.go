@@ -459,8 +459,18 @@ func NewAgoricApp(
 
 	app.SwingSetSnapshotter = swingsetkeeper.NewSwingsetSnapshotter(
 		bApp,
-		app.SwingSetKeeper,
-		sendToController,
+		app.SwingSetKeeper.ExportSwingStore,
+		func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
+			if mustNotBeInited {
+				app.CheckControllerInited(false)
+			}
+
+			bz, err := json.Marshal(action)
+			if err != nil {
+				return "", err
+			}
+			return sendToController(true, string(bz))
+		},
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(

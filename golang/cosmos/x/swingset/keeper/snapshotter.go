@@ -62,17 +62,13 @@ type exportManifest struct {
 	Artifacts [][2]string `json:"artifacts"`
 }
 
-type SwingStoreExporter interface {
-	ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry
-}
-
 type SwingsetSnapshotter struct {
-	isConfigured      func() bool
-	takeSnapshot      func(height int64)
-	newRestoreContext func(height int64) sdk.Context
-	logger            log.Logger
-	exporter          SwingStoreExporter
-	blockingSend      func(action vm.Jsonable) (string, error)
+	isConfigured            func() bool
+	takeSnapshot            func(height int64)
+	newRestoreContext       func(height int64) sdk.Context
+	logger                  log.Logger
+	getSwingStoreExportData func(ctx sdk.Context) []*vstoragetypes.DataEntry
+	blockingSend            func(action vm.Jsonable, mustNotBeInited bool) (string, error)
 	// Only modified by the main goroutine.
 	activeSnapshot *activeSnapshot
 }
@@ -84,33 +80,34 @@ type snapshotAction struct {
 	Args        []json.RawMessage `json:"args,omitempty"`
 }
 
-func NewSwingsetSnapshotter(app *baseapp.BaseApp, exporter SwingStoreExporter, sendToController func(bool, string) (string, error)) SwingsetSnapshotter {
-	// The sendToController performed by this submodule are non-deterministic.
-	// This submodule will send messages to JS from goroutines at unpredictable
-	// times, but this is safe because when handling the messages, the JS side
-	// does not perform operations affecting consensus and ignores state changes
-	// since committing the previous block.
-	// Since this submodule implements block level commit synchronization, the
-	// processing and results are both insensitive to sub-block timing of messages.
-
-	blockingSend := func(action vm.Jsonable) (string, error) {
-		bz, err := json.Marshal(action)
-		if err != nil {
-			return "", err
-		}
-		return sendToController(true, string(bz))
-	}
-
+// NewSwingsetSnapshotter creates a SwingsetSnapshotter which exclusively
+// manages communication with the JS side for Swingset snapshots, ensuring
+// insensitivity to sub-block timing, and enforcing concurrency requirements.
+// The caller of this submodule must arrange block level commit synchronization,
+// to ensure the results are deterministic.
+//
+// Some `blockingSend` calls performed by this submodule are non-deterministic.
+// This submodule will send messages to JS from goroutines at unpredictable
+// times, but this is safe because when handling the messages, the JS side
+// does not perform operations affecting consensus and ignores state changes
+// since committing the previous block.
+// Some other `blockingSend` calls however do change the JS swing-store and
+// must happen before the Swingset controller on the JS side was inited.
+func NewSwingsetSnapshotter(
+	app *baseapp.BaseApp,
+	getSwingStoreExportData func(ctx sdk.Context) []*vstoragetypes.DataEntry,
+	blockingSend func(action vm.Jsonable, mustNotBeInited bool) (string, error),
+) SwingsetSnapshotter {
 	return SwingsetSnapshotter{
 		isConfigured: func() bool { return app.SnapshotManager() != nil },
 		takeSnapshot: app.Snapshot,
 		newRestoreContext: func(height int64) sdk.Context {
 			return app.NewUncachedContext(false, tmproto.Header{Height: height})
 		},
-		logger:         app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "snapshotter"),
-		exporter:       exporter,
-		blockingSend:   blockingSend,
-		activeSnapshot: nil,
+		logger:                  app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "snapshotter"),
+		getSwingStoreExportData: getSwingStoreExportData,
+		blockingSend:            blockingSend,
+		activeSnapshot:          nil,
 	}
 }
 
@@ -157,7 +154,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		}
 
 		// blockingSend for COSMOS_SNAPSHOT action is safe to call from a goroutine
-		_, err := snapshotter.blockingSend(action)
+		_, err := snapshotter.blockingSend(action, false)
 
 		if err != nil {
 			// First indicate a snapshot is no longer in progress if the call to
@@ -188,7 +185,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 			BlockHeight: height,
 			Request:     "discard",
 		}
-		_, err = snapshotter.blockingSend(action)
+		_, err = snapshotter.blockingSend(action, false)
 
 		if err != nil {
 			logger.Error("failed to discard swingset snapshot", "err", err)
@@ -286,7 +283,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 		BlockHeight: activeSnapshot.height,
 		Request:     "retrieve",
 	}
-	out, err := snapshotter.blockingSend(action)
+	out, err := snapshotter.blockingSend(action, false)
 
 	if err != nil {
 		return err
@@ -392,7 +389,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 	// At this point the content of the cosmos DB has been verified against the
 	// AppHash, which means the SwingStore data it contains can be used as the
 	// trusted root against which to validate the artifacts.
-	swingStoreEntries := snapshotter.exporter.ExportSwingStore(ctx)
+	swingStoreEntries := snapshotter.getSwingStoreExportData(ctx)
 
 	if len(swingStoreEntries) > 0 {
 		encoder := json.NewEncoder(exportDataFile)
@@ -480,7 +477,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 		Args:        []json.RawMessage{encodedExportDir},
 	}
 
-	_, err = snapshotter.blockingSend(action)
+	_, err = snapshotter.blockingSend(action, true)
 	if err != nil {
 		return err
 	}
