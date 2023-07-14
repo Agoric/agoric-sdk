@@ -26,6 +26,7 @@ if ('VatData' in globalThis) {
     makeScalarBigSetStore: unvailable,
     makeScalarBigWeakSetStore: unvailable,
     canBeDurable: unvailable,
+    passStyleOf: unvailable, // not exported from here in any case
   };
 }
 
