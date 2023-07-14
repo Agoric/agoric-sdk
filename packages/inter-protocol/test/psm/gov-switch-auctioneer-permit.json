@@ -1,0 +1,8 @@
+{
+    "consume": {
+        "auctioneerKit": true,
+        "chainTimerService": true,
+        "vaultFactoryKit": true,
+        "zoe": true
+    }
+}
