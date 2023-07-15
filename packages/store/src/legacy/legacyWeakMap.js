@@ -6,7 +6,7 @@ import '../types.js';
  *
  * @deprecated switch to ScalarWeakMap if possible, WeakMap otherwise
  * @template K,V
- * @param {string} [tag='key'] - tag for debugging
+ * @param {string} [tag] - tag for debugging
  * @returns {LegacyWeakMap<K,V>}
  */
 export const makeLegacyWeakMap = (tag = 'key') => {

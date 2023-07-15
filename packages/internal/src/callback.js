@@ -265,7 +265,7 @@ export const prepareAttenuator = (
     /**
      * @param {object} opts
      * @param {any} [opts.target]
-     * @param {boolean} [opts.isSync=false]
+     * @param {boolean} [opts.isSync]
      * @param {Overrides} [opts.overrides]
      */
     ({
