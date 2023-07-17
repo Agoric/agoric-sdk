@@ -1,9 +1,9 @@
 package keeper
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"context"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -57,7 +57,7 @@ const (
 var capDataResponseMediaTypes = map[string]string{
 	JSONLines: JSONLines,
 	// Default to JSON Lines.
-	"":        JSONLines,
+	"": JSONLines,
 }
 var capDataTransformationFormats = map[string]string{
 	FormatCapDataFlat: FormatCapDataFlat,
@@ -76,18 +76,22 @@ var capDataRemotableValueFormats = map[string]string{
 // For example,
 // ```
 // { "contacts": [
-//     { "name": "Alice", "email": "a@example.com" },
-//     { "name": "Bob", "email": "b@example.com" }
+//
+//	{ "name": "Alice", "email": "a@example.com" },
+//	{ "name": "Bob", "email": "b@example.com" }
+//
 // ] }
 // ```
 // becomes
 // ```
-// {
-//   "contacts-0-name": "Alice",
-//   "contacts-0-email": "a@example.com",
-//   "contacts-1-name": "Bob",
-//   "contacts-1-email": "b@example.com"
-// }
+//
+//	{
+//	  "contacts-0-name": "Alice",
+//	  "contacts-0-email": "a@example.com",
+//	  "contacts-1-name": "Bob",
+//	  "contacts-1-email": "b@example.com"
+//	}
+//
 // ```
 // cf. https://github.com/Agoric/agoric-sdk/blob/6e5b422b80e47c4dac151404f43faea5ab41e9b0/scripts/get-flattened-publication.sh
 func flatten(input interface{}, output map[string]interface{}, key string, top bool) error {
@@ -95,7 +99,9 @@ func flatten(input interface{}, output map[string]interface{}, key string, top b
 	if capdata, ok := input.(*capdata.CapdataRemotable); ok {
 		repr, _ := json.Marshal(capdata)
 		var replacement interface{}
-		json.Unmarshal(repr, &replacement)
+		if err := json.Unmarshal(repr, &replacement); err != nil {
+			return err
+		}
 		input = replacement
 	}
 
@@ -105,11 +111,15 @@ func flatten(input interface{}, output map[string]interface{}, key string, top b
 	}
 	if arr, ok := input.([]interface{}); ok {
 		for i, v := range arr {
-			flatten(v, output, childKeyPrefix + fmt.Sprintf("%d", i), false)
+			if err := flatten(v, output, childKeyPrefix+fmt.Sprintf("%d", i), false); err != nil {
+				return err
+			}
 		}
 	} else if obj, ok := input.(map[string]interface{}); ok {
 		for k, v := range obj {
-			flatten(v, output, childKeyPrefix + k, false)
+			if err := flatten(v, output, childKeyPrefix+k, false); err != nil {
+				return err
+			}
 		}
 	} else {
 		if _, has := output[key]; has {
@@ -157,7 +167,7 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 	ctx := sdk.UnwrapSDKContext(c)
 
 	valueTransformations := capdata.CapdataValueTransformations{
-		Bigint:    capdataBigintToDigits,
+		Bigint: capdataBigintToDigits,
 	}
 
 	// Read options.
@@ -223,7 +233,7 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 
 	return &types.QueryCapDataResponse{
 		BlockHeight: cell.BlockHeight,
-		Value: strings.Join(responseItems, "\n"),
+		Value:       strings.Join(responseItems, "\n"),
 	}, nil
 }
 
