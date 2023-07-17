@@ -72,7 +72,7 @@ test('assertAmountsEqual - Nat vs. Set', async t => {
     harden({ brand: shinyAmount.brand, value: 0n }),
   );
   const message =
-    'Asset kinds must match: got [{"name":"hat","description":"hat","power":"shiny"}], expected "[0n]"';
+    'Asset kinds must match: got [{"description":"hat","name":"hat","power":"shiny"}], expected "[0n]"';
   t.is(fakeT.getError(), message);
   await t.throwsAsync(resultP, { message });
 });
@@ -87,7 +87,7 @@ test('assertAmountsEqual - false Set', async t => {
   const fakeT = makeFakeT();
   const resultP = assertAmountsEqual(fakeT, shinyAmount, sparklyAmount);
   const message =
-    'Values must match: got [{"name":"hat","description":"hat","power":"shiny"}], expected [{"name":"hat","description":"hat","power":"sparkly"}]';
+    'Values must match: got [{"description":"hat","name":"hat","power":"shiny"}], expected [{"description":"hat","name":"hat","power":"sparkly"}]';
   t.is(fakeT.getError(), message);
   await t.throwsAsync(resultP, { message });
 });

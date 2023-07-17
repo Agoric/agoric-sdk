@@ -231,7 +231,7 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: 'foo' } },
     'nat',
-    /"foo" - Must be a copyRecord to match a copyRecord pattern: {"timer":.*/,
+    /"foo" - Must be a copyRecord to match a copyRecord pattern: \{"deadline":.*,"timer":.*\}/,
   );
   proposeBad(
     t,
@@ -249,7 +249,7 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer, deadline: 3n, extra: 'foo' } } },
     'nat',
-    'proposal: exit: afterDeadline?: {"timer":"[Alleged: ManualTimer]","deadline":"[3n]","extra":"foo"} - Must not have unexpected properties: ["extra"]',
+    'proposal: exit: afterDeadline?: {"deadline":"[3n]","extra":"foo","timer":"[Alleged: ManualTimer]"} - Must not have unexpected properties: ["extra"]',
   );
   proposeBad(
     t,

@@ -465,7 +465,7 @@ test('agoricName invitation source errors', async t => {
     }),
     {
       message:
-        '{"source":"agoricContract","instancePath":["psm-IST-AUSD"]} - Must have missing properties ["callPipe"]',
+        '{"instancePath":["psm-IST-AUSD"],"source":"agoricContract"} - Must have missing properties ["callPipe"]',
     },
   );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
