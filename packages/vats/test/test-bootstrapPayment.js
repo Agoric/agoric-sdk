@@ -12,14 +12,21 @@ import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { feeIssuerConfig } from '../src/core/utils.js';
 
-/** @template T @typedef {import('@agoric/zoe/src/zoeService/utils').Installation<T>} Installation<T> */
+/**
+ * @template T @typedef
+ *   {import('@agoric/zoe/src/zoeService/utils').Installation<T>}
+ *   Installation<T>
+ */
 /**
  * @typedef {import('ava').ExecutionContext<{
- *   zoe: ZoeService,
- *   feeMintAccess: FeeMintAccess,
- *   issuer: Record<'IST', Issuer>,
- *   brand: Record<'IST', Brand>,
- *   installation: Record<'centralSupply', Installation<import('../src/centralSupply.js').start>>,
+ *   zoe: ZoeService;
+ *   feeMintAccess: FeeMintAccess;
+ *   issuer: Record<'IST', Issuer>;
+ *   brand: Record<'IST', Brand>;
+ *   installation: Record<
+ *     'centralSupply',
+ *     Installation<import('../src/centralSupply.js').start>
+ *   >;
  * }>} CentralSupplyTestContext
  */
 

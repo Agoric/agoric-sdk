@@ -25,13 +25,14 @@ const styles = {
 
 /**
  * @param {Set<GraphNode>} nodes
- * @param {Map<string, Set<{ id: string, style?: string }>>} neighbors
- * @yields { string }
+ * @param {Map<string, Set<{ id: string; style?: string }>>} neighbors
+ * @yields {string}
+ *
  * @typedef {{
- *   id: string,
- *   cluster?: string,
- *   label: string,
- *   style?: string,
+ *   id: string;
+ *   cluster?: string;
+ *   label: string;
+ *   style?: string;
  * }} GraphNode
  */
 function* fmtGraph(nodes, neighbors) {
@@ -65,24 +66,32 @@ function* fmtGraph(nodes, neighbors) {
 
 /**
  * @param {Record<string, Permit>} manifest
- * @typedef { true | {
- *   vatParameters?: Record<string, Permit>,
- *   vatPowers?: Record<string, true>
- *   vats?: Record<string, Status>
- *   devices?: Record<string, true>
- *   home?: PowerSpace,
- *   issuer?: PowerSpace,
- *   brand?: PowerSpace,
- *   oracleBrand?: PowerSpace,
- *   installation?: PowerSpace,
- *   instance?: PowerSpace,
- * } & PowerSpace } Permit
- * @typedef {{produce?: Record<string, Status>, consume?: Record<string, Status>}} PowerSpace
- * @typedef { boolean | VatName } Status
- * @typedef { string } VatName
+ *
+ * @typedef {| true
+ *   | ({
+ *       vatParameters?: Record<string, Permit>;
+ *       vatPowers?: Record<string, true>;
+ *       vats?: Record<string, Status>;
+ *       devices?: Record<string, true>;
+ *       home?: PowerSpace;
+ *       issuer?: PowerSpace;
+ *       brand?: PowerSpace;
+ *       oracleBrand?: PowerSpace;
+ *       installation?: PowerSpace;
+ *       instance?: PowerSpace;
+ *     } & PowerSpace)} Permit
+ *
+ * @typedef {{
+ *   produce?: Record<string, Status>;
+ *   consume?: Record<string, Status>;
+ * }} PowerSpace
+ *
+ * @typedef {boolean | VatName} Status
+ *
+ * @typedef {string} VatName
  */
 const manifest2graph = manifest => {
-  /** @type { Set<GraphNode> } */
+  /** @type {Set<GraphNode>} */
   const nodes = new Set();
   const neighbors = new Map();
 
@@ -212,9 +221,9 @@ const loadConfig = async (specifier, { resolve, readFile }) => {
  * @param {typeof import('process').stdout} io.stdout
  * @param {typeof import('fs/promises')} io.fsp
  * @param {{
- *   resolve: Resolver,
- *   url: string,
- *   load: (specifier: string) => Promise<Record<string, any>>,
+ *   resolve: Resolver;
+ *   url: string;
+ *   load: (specifier: string) => Promise<Record<string, any>>;
  * }} io.meta
  *
  * @typedef {(specifier: string, parent: string) => Promise<string>} Resolver

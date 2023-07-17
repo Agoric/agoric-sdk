@@ -40,7 +40,10 @@
     "arrowParens": "avoid",
     "overrides": [
       {
-        "files": "packages/inter-protocol/**/*.{js,ts}",
+        "files": [
+          "packages/inter-protocol/**/*.{js,ts}",
+          "packages/vats/**/*.{js,ts}"
+        ],
         "options": {
           "plugins": [
             "prettier-plugin-jsdoc"

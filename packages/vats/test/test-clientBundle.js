@@ -26,16 +26,18 @@ import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 
 /**
  * @typedef {{
- *   (n: 'board'): BoardVat
- *   (n: 'mint'): MintsVat
+ *   (n: 'board'): BoardVat;
+ *   (n: 'mint'): MintsVat;
  * }} LoadVat
  */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
-  const { consume, produce } =
-    /** @type { BootstrapPowers & DemoFaucetPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
-      space
-    );
+  const { consume, produce } = /**
+   * @type {BootstrapPowers &
+   *   DemoFaucetPowers & {
+   *     consume: { loadVat: LoadVat; loadCriticalVat: LoadVat };
+   *   }}
+   */ (space);
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -129,7 +131,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type { import('../src/core/demoIssuers.js').UserPaymentRecord[] } */
+  /** @type {import('../src/core/demoIssuers.js').UserPaymentRecord[]} */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(
@@ -158,7 +160,7 @@ test('namesByAddressAdmin provideChild', async t => {
   const baggage = makeScalarBigMapStore('fake baggage', { durable: true });
   const provisioning = buildProvisioningRoot(undefined, undefined, baggage);
   const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
-  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin}} */
+  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin }} */
   // @ts-expect-error XXX why doesn't the provideChild override work?
   const { nameAdmin } = E.get(E(namesByAddressAdmin).provideChild(addr));
   t.is(await E(nameAdmin).getMyAddress(), addr);

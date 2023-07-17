@@ -1,7 +1,5 @@
 // @ts-check
-/**
- * @file Bootstrap stress test of vaults
- */
+/** @file Bootstrap stress test of vaults */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { PerformanceObserver, performance } from 'node:perf_hooks';
 import v8 from 'node:v8';
@@ -18,7 +16,9 @@ import { makeSwingsetTestKit } from './supports.js';
 import { makeWalletFactoryDriver } from './drivers.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>>
+ * >}
  */
 const test = anyTest;
 

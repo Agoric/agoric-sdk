@@ -12,9 +12,9 @@ import {
 /**
  * @template {AssetKind} K
  * @typedef {{
- *   keyword: string,
- *   assetKind: K,
- *   displayInfo: DisplayInfo,
+ *   keyword: string;
+ *   assetKind: K;
+ *   displayInfo: DisplayInfo;
  * }} IssuerInfo<K>
  */
 
@@ -33,9 +33,8 @@ function provideIssuerKit(zcf, baggage) {
 }
 
 /**
- * This contract holds one mint; it basically wraps
- * makeIssuerKit in its own contract, and hence in
- * its own vat.
+ * This contract holds one mint; it basically wraps makeIssuerKit in its own
+ * contract, and hence in its own vat.
  *
  * @template {AssetKind} K
  * @param {ZCF<IssuerInfo<K>>} zcf
