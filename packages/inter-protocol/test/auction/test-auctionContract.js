@@ -39,14 +39,20 @@ const test = anyTest;
 
 /**
  * @typedef {Record<string, any> & {
- * bid: IssuerKit & import('../supports.js').AmountUtils,
- * collateral: IssuerKit & import('../supports.js').AmountUtils,
- * zoe: ZoeService,
+ *   bid: IssuerKit & import('../supports.js').AmountUtils;
+ *   collateral: IssuerKit & import('../supports.js').AmountUtils;
+ *   zoe: ZoeService;
  * }} Context
  */
 
 /**
- * @typedef {Awaited<ReturnType<subscriptionTracker<import('../../src/auction/auctionBook.js').BookDataNotification>>>} BookDataTracker
+ * @typedef {Awaited<
+ *   ReturnType<
+ *     subscriptionTracker<
+ *       import('../../src/auction/auctionBook.js').BookDataNotification
+ *     >
+ *   >
+ * >} BookDataTracker
  */
 
 const trace = makeTracer('Test AuctContract', false);
@@ -86,8 +92,10 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
- * @param {*} params
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
+ * @param {any} params
  */
 export const setupServices = async (t, params = defaultParams) => {
   const {
@@ -122,7 +130,9 @@ export const setupServices = async (t, params = defaultParams) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
  * @param {any} [params]
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {
@@ -208,7 +218,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     return seat;
   };
 
-  /** @type {MapStore<Brand,BookDataTracker>} */
+  /** @type {MapStore<Brand, BookDataTracker>} */
   const bookDataTrackers = makeScalarMapStore('trackers');
 
   /**

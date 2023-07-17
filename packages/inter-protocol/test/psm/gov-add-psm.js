@@ -3,10 +3,10 @@
 
 /**
  * @typedef {{
- *   denom: string,
- *   keyword?: string,
- *   proposedName?: string,
- *   decimalPlaces?: number
+ *   denom: string;
+ *   keyword?: string;
+ *   proposedName?: string;
+ *   decimalPlaces?: number;
  * }} AnchorOptions
  */
 

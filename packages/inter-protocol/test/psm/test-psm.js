@@ -179,7 +179,9 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
  * @param {{}} [customTerms]
  */
 async function makePsmDriver(t, customTerms) {
@@ -396,7 +398,15 @@ test('limit is for minted', async t => {
   );
 });
 
-/** @type {[kind: 'want' | 'give', give: number, want: number, ok: boolean, wants?: number][]} */
+/**
+ * @type {[
+ *   kind: 'want' | 'give',
+ *   give: number,
+ *   want: number,
+ *   ok: boolean,
+ *   wants?: number,
+ * ][]}
+ */
 const trades = [
   ['give', 200, 190, false],
   ['want', 101, 100, true, 1],
@@ -740,7 +750,7 @@ const makeMockBankManager = t => {
 };
 
 test('restore PSM: startPSM with previous metrics, params', async t => {
-  /** @type { import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers } */
+  /** @type {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
   const { agoricNames, agoricNamesAdmin, spaces } =

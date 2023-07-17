@@ -1,8 +1,8 @@
 // @jessie-check
 
 /**
- * @file calculations specific to the Vault Factory contract
- * See also ../interest-math.js
+ * @file calculations specific to the Vault Factory contract See also
+ *   ../interest-math.js
  */
 
 import { AmountMath } from '@agoric/ertp';
@@ -17,8 +17,8 @@ import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 
 /**
- * Calculate the minimum collateralization given the liquidation margin and the "padding"
- * from that liquidation threshold.
+ * Calculate the minimum collateralization given the liquidation margin and the
+ * "padding" from that liquidation threshold.
  *
  * @param {Ratio} liquidationMargin
  * @param {Ratio} liquidationPadding
@@ -74,11 +74,10 @@ export const maxDebtForVault = (
 };
 
 /**
- * Calculate the fee, the amount to mint and the resulting debt.
- * The give and the want together reflect a delta, where typically
- * one is zero because they come from the gave/want of an offer
- * proposal. If the `want` is zero, the `fee` will also be zero,
- * so the simple math works.
+ * Calculate the fee, the amount to mint and the resulting debt. The give and
+ * the want together reflect a delta, where typically one is zero because they
+ * come from the gave/want of an offer proposal. If the `want` is zero, the
+ * `fee` will also be zero, so the simple math works.
  *
  * @param {Amount<'nat'>} currentDebt
  * @param {Amount<'nat'>} give excess of currentDebt is returned in 'surplus'

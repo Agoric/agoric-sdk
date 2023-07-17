@@ -43,11 +43,10 @@ const { add, multiply } = natSafeMath;
 const trace = makeTracer('Auction', true);
 
 /**
- * @file
- * In this file, 'Bid' is the name of the ERTP issuer used to purchase
- * collateral from various issuers. It's too confusing to also use Bid as a verb
- * or a description of amounts offered, so we've tried to find alternatives in
- * all those cases.
+ * @file In this file, 'Bid' is the name of the ERTP issuer used to purchase
+ *   collateral from various issuers. It's too confusing to also use Bid as a
+ *   verb or a description of amounts offered, so we've tried to find
+ *   alternatives in all those cases.
  */
 
 const MINIMUM_BID_GIVE = 1n;
@@ -66,18 +65,19 @@ const makeBPRatio = (rate, bidBrand, collateralBrand = bidBrand) =>
 /**
  * The auction sold some amount of collateral, and raised a certain amount of
  * Bid. The excess collateral was returned as `unsoldCollateral`. The Bid amount
- * collected from the auction participants is `proceeds`.
- * Return a set of transfers for atomicRearrange() that distribute
- * `unsoldCollateral` and `proceeds` proportionally to each seat's deposited
- * amount. Any uneven split should be allocated to the reserve.
+ * collected from the auction participants is `proceeds`. Return a set of
+ * transfers for atomicRearrange() that distribute `unsoldCollateral` and
+ * `proceeds` proportionally to each seat's deposited amount. Any uneven split
+ * should be allocated to the reserve.
  *
  * @param {Amount} unsoldCollateral
  * @param {Amount} proceeds
- * @param {{seat: ZCFSeat, amount: Amount<'nat'>, goal: Amount<'nat'>}[]} deposits
+ * @param {{ seat: ZCFSeat; amount: Amount<'nat'>; goal: Amount<'nat'> }[]} deposits
  * @param {ZCFSeat} collateralSeat
- * @param {ZCFSeat} bidHoldingSeat seat with the Bid allocation to be distributed
+ * @param {ZCFSeat} bidHoldingSeat seat with the Bid allocation to be
+ *   distributed
  * @param {string} collateralKeyword The Reserve will hold multiple collaterals,
- *      so they need distinct keywords
+ *   so they need distinct keywords
  * @param {ZCFSeat} reserveSeat
  * @param {Brand} brand
  */
@@ -131,41 +131,42 @@ const distributeProportionalShares = (
 /**
  * The auction sold some amount of collateral, and raised a certain amount of
  * Bid. The excess collateral was returned as `unsoldCollateral`. The Bid amount
- * collected from the auction participants is `proceeds`.
- * Return a set of transfers for atomicRearrange() that distribute
- * `unsoldCollateral` and `proceeds` proportionally to each seat's deposited
- * amount. Any uneven split should be allocated to the reserve.
+ * collected from the auction participants is `proceeds`. Return a set of
+ * transfers for atomicRearrange() that distribute `unsoldCollateral` and
+ * `proceeds` proportionally to each seat's deposited amount. Any uneven split
+ * should be allocated to the reserve.
  *
  * This function is exported for testability, and is not expected to be used
  * outside the contract below.
  *
  * Some or all of the depositors may have specified a goal amount.
- *  * A if none did, return collateral and Bid prorated to deposits.
- *  * B if proceeds < proceedsGoal everyone gets prorated amounts of both.
- *  * C if proceeds matches proceedsGoal, everyone gets the Bid they
- *    asked for, plus enough collateral to reach the same proportional payout.
- *    If any depositor's goal amount exceeded their share of the total,
- *    we'll fall back to the first approach.
- *  * D if proceeds > proceedsGoal && all depositors specified a limit,
- *    all depositors get their goal first, then we distribute the
- *    remainder (collateral and Bid) to get the same proportional payout.
- *  * E if proceeds > proceedsGoal && some depositors didn't specify a
- *    limit, depositors who did will get their goal first, then we distribute
- *    the remainder (collateral and Bid) to get the same proportional
- *    payout. If any depositor's goal amount exceeded their share of the
- *    total, we'll fall back as above.
- * Think of it this way: those who specified a limit want as much collateral
- * back as possible, consistent with raising a certain amount of Bid. Those
- * who didn't specify a limit are trying to sell collateral, and would prefer to
- * have as much as possible converted to Bid.
+ *
+ * - A if none did, return collateral and Bid prorated to deposits.
+ * - B if proceeds < proceedsGoal everyone gets prorated amounts of both.
+ * - C if proceeds matches proceedsGoal, everyone gets the Bid they asked for,
+ *   plus enough collateral to reach the same proportional payout. If any
+ *   depositor's goal amount exceeded their share of the total, we'll fall back
+ *   to the first approach.
+ * - D if proceeds > proceedsGoal && all depositors specified a limit, all
+ *   depositors get their goal first, then we distribute the remainder
+ *   (collateral and Bid) to get the same proportional payout.
+ * - E if proceeds > proceedsGoal && some depositors didn't specify a limit,
+ *   depositors who did will get their goal first, then we distribute the
+ *   remainder (collateral and Bid) to get the same proportional payout. If any
+ *   depositor's goal amount exceeded their share of the total, we'll fall back
+ *   as above. Think of it this way: those who specified a limit want as much
+ *   collateral back as possible, consistent with raising a certain amount of
+ *   Bid. Those who didn't specify a limit are trying to sell collateral, and
+ *   would prefer to have as much as possible converted to Bid.
  *
  * @param {Amount<'nat'>} unsoldCollateral
  * @param {Amount<'nat'>} proceeds
- * @param {{seat: ZCFSeat, amount: Amount<'nat'>, goal: Amount<'nat'>}[]} deposits
+ * @param {{ seat: ZCFSeat; amount: Amount<'nat'>; goal: Amount<'nat'> }[]} deposits
  * @param {ZCFSeat} collateralSeat
- * @param {ZCFSeat} bidHoldingSeat seat with the Bid allocation to be distributed
+ * @param {ZCFSeat} bidHoldingSeat seat with the Bid allocation to be
+ *   distributed
  * @param {string} collateralKeyword The Reserve will hold multiple collaterals,
- *      so they need distinct keywords
+ *   so they need distinct keywords
  * @param {ZCFSeat} reserveSeat
  * @param {Brand} brand
  */
@@ -378,15 +379,17 @@ export const distributeProportionalSharesWithLimits = (
 };
 
 /**
- * @param {ZCF<GovernanceTerms<typeof auctioneerParamTypes> & {
- *   timerService: import('@agoric/time/src/types').TimerService,
- *   reservePublicFacet: AssetReservePublicFacet,
- *   priceAuthority: PriceAuthority
- * }>} zcf
+ * @param {ZCF<
+ *   GovernanceTerms<typeof auctioneerParamTypes> & {
+ *     timerService: import('@agoric/time/src/types').TimerService;
+ *     reservePublicFacet: AssetReservePublicFacet;
+ *     priceAuthority: PriceAuthority;
+ *   }
+ * >} zcf
  * @param {{
- *   initialPoserInvitation: Invitation,
- *   storageNode: StorageNode,
- *   marshaller: Marshaller
+ *   initialPoserInvitation: Invitation;
+ *   storageNode: StorageNode;
+ *   marshaller: Marshaller;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -399,7 +402,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   /** @type {MapStore<Brand, import('./auctionBook.js').AuctionBook>} */
   const books = provideDurableMapStore(baggage, 'auctionBooks');
-  /** @type {MapStore<Brand, Array<{ seat: ZCFSeat, amount: Amount<'nat'>, goal: Amount<'nat'>}>>} */
+  /**
+   * @type {MapStore<
+   *   Brand,
+   *   { seat: ZCFSeat; amount: Amount<'nat'>; goal: Amount<'nat'> }[]
+   * >}
+   */
   const deposits = provideDurableMapStore(baggage, 'deposits');
   /** @type {MapStore<Brand, Keyword>} */
   const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
@@ -427,9 +435,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
   const scheduleKit = makeERecorderKit(
     E(privateArgs.storageNode).makeChildNode('schedule'),
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./scheduler.js').ScheduleNotification>} */ (
-      M.any()
-    ),
+    /**
+     * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
+     *     import('./scheduler.js').ScheduleNotification
+     *   >}
+     */ (M.any()),
   );
 
   /**
@@ -578,7 +588,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {ZCFSeat} zcfSeat
-   * @param {{ goal: Amount<'nat'>}} offerArgs
+   * @param {{ goal: Amount<'nat'> }} offerArgs
    */
   const depositOfferHandler = (zcfSeat, offerArgs) => {
     const goalMatcher = M.or(undefined, { goal: bidAmountShape });

@@ -13,12 +13,10 @@ import {
 import { E } from '@endo/far';
 
 /**
- * @file
- *
- * This contract makes it possible for those who govern contracts to call for
- * votes on changes. A more complete implementation would validate parameters,
- * constrain deadlines and possibly split the ability to call for votes into
- * separate capabilities for finer grain encapsulation.
+ * @file This contract makes it possible for those who govern contracts to call
+ *   for votes on changes. A more complete implementation would validate
+ *   parameters, constrain deadlines and possibly split the ability to call for
+ *   votes into separate capabilities for finer grain encapsulation.
  */
 
 export const INVITATION_MAKERS_DESC = 'charter member invitation';
@@ -28,7 +26,7 @@ export const INVITATION_MAKERS_DESC = 'charter member invitation';
  * @property {bigint} deadline
  * @property {Instance} instance
  * @property {Record<string, unknown>} params
- * @property {{paramPath: { key: string }}} [path]
+ * @property {{ paramPath: { key: string } }} [path]
  */
 const ParamChangesOfferArgsShape = M.splitRecord(
   {
@@ -41,15 +39,13 @@ const ParamChangesOfferArgsShape = M.splitRecord(
   },
 );
 
-/**
- * A pattern for Zoe to check custom terms before `start()`ing the contract.
- */
+/** A pattern for Zoe to check custom terms before `start()`ing the contract. */
 export const customTermsShape = harden({
   binaryVoteCounterInstallation: InstallationShape,
 });
 
 /**
- * @param {ZCF<{binaryVoteCounterInstallation: Installation}>} zcf
+ * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
  * @param {undefined} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

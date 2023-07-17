@@ -44,9 +44,17 @@ export const buildRootObject = async () => {
   /** @type {PsmPublicFacet} */
   let psmPublicFacet;
 
-  /** @type {Subscriber<import('../../../src/psm/psm.js').MetricsNotification>} */
+  /**
+   * @type {Subscriber<
+   *   import('../../../src/psm/psm.js').MetricsNotification
+   * >}
+   */
   let metrics;
-  /** @type {UpdateRecord<import('../../../src/psm/psm.js').MetricsNotification>} */
+  /**
+   * @type {UpdateRecord<
+   *   import('../../../src/psm/psm.js').MetricsNotification
+   * >}
+   */
   let metricsRecord;
 
   /** @type {VatAdminSvc} */
@@ -58,9 +66,13 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   * committee?: Installation<import('@agoric/governance/src/committee.js')['prepare']>,
-   * psmV1?: Installation<PsmSF>,
-   * puppetContractGovernor?: Installation<import('@agoric/governance/tools/puppetContractGovernor').start>,
+   *   committee?: Installation<
+   *     import('@agoric/governance/src/committee.js')['prepare']
+   *   >;
+   *   psmV1?: Installation<PsmSF>;
+   *   puppetContractGovernor?: Installation<
+   *     import('@agoric/governance/tools/puppetContractGovernor').start
+   *   >;
    * }}
    */
   const installations = {};
@@ -68,7 +80,12 @@ export const buildRootObject = async () => {
   /** @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<PsmSF>} */
   let governorFacets;
 
-  /** @type {Omit<import('@agoric/zoe/src/zoeService/utils.js').StartParams<PsmSF>['terms'], 'issuers' | 'brands'>} */
+  /**
+   * @type {Omit<
+   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<PsmSF>['terms'],
+   *   'issuers' | 'brands'
+   * >}
+   */
   const psmTerms = {
     anchorBrand: anchor.brand,
 
@@ -103,12 +120,13 @@ export const buildRootObject = async () => {
 
   return Far('root', {
     /**
-     *
      * @param {{
-     * vatAdmin: ReturnType<import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin')['buildRootObject']>,
-     * zoe: ReturnType<import('@agoric/vats/src/vat-zoe')['buildRootObject']>,
+     *   vatAdmin: ReturnType<
+     *     import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin')['buildRootObject']
+     *   >;
+     *   zoe: ReturnType<import('@agoric/vats/src/vat-zoe')['buildRootObject']>;
      * }} vats
-     * @param {*} devices
+     * @param {any} devices
      */
     bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);

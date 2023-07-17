@@ -22,7 +22,9 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
+ *
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
+ *
  * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
  */
 
@@ -31,43 +33,65 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  * @property {string} label
  * @property {Instance} psm
  * @property {Instance} psmGovernor
- * @property {Awaited<ReturnType<Awaited<ReturnType<import('../psm/psm.js')['prepare']>>['creatorFacet']['getLimitedCreatorFacet']>>} psmCreatorFacet
+ * @property {Awaited<
+ *   ReturnType<
+ *     Awaited<
+ *       ReturnType<import('../psm/psm.js')['prepare']>
+ *     >['creatorFacet']['getLimitedCreatorFacet']
+ *   >
+ * >} psmCreatorFacet
  * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['prepare']>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 
-/**
- * @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit
- */
+/** @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit */
 
 /**
- * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
- * } EconomyBootstrapPowers
+ * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ *
  * @typedef {PromiseSpaceOf<{
- *   economicCommitteeKit: CommitteeStartResult,
- *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet,
- *   feeDistributorKit: StartedInstanceKit<typeof import('../feeDistributor.js').start>,
- *   periodicFeeCollectors: MapStore<number, import('../feeDistributor.js').PeriodicFeeCollector>,
- *   psmKit: MapStore<Brand, PSMKit>,
- *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>,
- *   econCharterKit: EconCharterStartResult,
- *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['prepare']>,
- *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['prepare']>,
- *   auctioneerKit: AuctioneerKit,
- *   minInitialDebt: NatValue,
+ *   economicCommitteeKit: CommitteeStartResult;
+ *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
+ *   feeDistributorKit: StartedInstanceKit<
+ *     typeof import('../feeDistributor.js').start
+ *   >;
+ *   periodicFeeCollectors: MapStore<
+ *     number,
+ *     import('../feeDistributor.js').PeriodicFeeCollector
+ *   >;
+ *   psmKit: MapStore<Brand, PSMKit>;
+ *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>;
+ *   econCharterKit: EconCharterStartResult;
+ *   reserveKit: GovernanceFacetKit<
+ *     import('../reserve/assetReserve.js')['prepare']
+ *   >;
+ *   vaultFactoryKit: GovernanceFacetKit<
+ *     import('../vaultFactory/vaultFactory.js')['prepare']
+ *   >;
+ *   auctioneerKit: AuctioneerKit;
+ *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace
  */
 
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter')['prepare']>} EconCharterStartResult */
-/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee.js')['prepare']>} CommitteeStartResult */
+/**
+ * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+ *   import('../econCommitteeCharter')['prepare']
+ * >} EconCharterStartResult
+ */
+/**
+ * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+ *   import('@agoric/governance/src/committee.js')['prepare']
+ * >} CommitteeStartResult
+ */
 
 /**
  * @file A collection of productions, each of which declares inputs and outputs.
- * Each function is passed a set of powers for reading from and writing to the vat config.
+ *   Each function is passed a set of powers for reading from and writing to the
+ *   vat config.
  *
- * Each of the things they produce they're responsible for resolving or setting.
+ *   Each of the things they produce they're responsible for resolving or setting.
  *
- * In production called by @agoric/vats to bootstrap.
+ *   In production called by @agoric/vats to bootstrap.
  */
 
 /** @param {EconomyBootstrapPowers} powers */
@@ -299,7 +323,11 @@ export const startVaultFactory = async (
     }),
   );
 
-  /** @type {GovernorStartedInstallationKit<typeof vaultFactoryInstallation>} */
+  /**
+   * @type {GovernorStartedInstallationKit<
+   *   typeof vaultFactoryInstallation
+   * >}
+   */
   const g = await E(consume.zoe).startInstance(
     contractGovernorInstallation,
     undefined,
@@ -348,8 +376,8 @@ export const startVaultFactory = async (
 };
 
 /**
- * Grant access to the VaultFactory creatorFacet
- * to up to one user based on address.
+ * Grant access to the VaultFactory creatorFacet to up to one user based on
+ * address.
  *
  * @param {EconomyBootstrapPowers} powers
  * @param {object} [root0]
@@ -435,9 +463,8 @@ export const startRewardDistributor = async ({
 
   /**
    * @type {Awaited<
-   *   ReturnType<typeof import('../feeDistributor.js').makeFeeDistributor>>
-   *   & { adminFacet: AdminFacet, instance: Instance }
-   * }
+   *   ReturnType<typeof import('../feeDistributor.js').makeFeeDistributor>
+   * > & { adminFacet: AdminFacet; instance: Instance }}
    */
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,

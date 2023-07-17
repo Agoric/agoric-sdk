@@ -11,27 +11,32 @@ import { liquidationResults } from './liquidation.js';
 
 /**
  * @typedef {{
- *   overage: Amount<'nat'>,
- *   shortfallToReserve: Amount<'nat'>,
- *   collateralForReserve: Amount<'nat'>,
- *   actualCollateralSold: Amount<'nat'>,
- *   collateralSold: Amount<'nat'>,
- *   collatRemaining: Amount<'nat'>,
- *   debtToBurn: Amount<'nat'>,
- *   mintedForReserve: Amount<'nat'>,
- *   mintedProceeds: Amount<'nat'>,
- *   phantomDebt: Amount<'nat'>,
- *   totalPenalty: Amount<'nat'>,
- *   transfersToVault: Array<[number, AmountKeywordRecord]>,
- *   vaultsToReinstate: Array<number>
+ *   overage: Amount<'nat'>;
+ *   shortfallToReserve: Amount<'nat'>;
+ *   collateralForReserve: Amount<'nat'>;
+ *   actualCollateralSold: Amount<'nat'>;
+ *   collateralSold: Amount<'nat'>;
+ *   collatRemaining: Amount<'nat'>;
+ *   debtToBurn: Amount<'nat'>;
+ *   mintedForReserve: Amount<'nat'>;
+ *   mintedProceeds: Amount<'nat'>;
+ *   phantomDebt: Amount<'nat'>;
+ *   totalPenalty: Amount<'nat'>;
+ *   transfersToVault: [number, AmountKeywordRecord][];
+ *   vaultsToReinstate: number[];
  * }} DistributionPlan
+ *   The plan to execute for distributing proceeds of a liquidation.
  *
- * The plan to execute for distributing proceeds of a liquidation.
- *
- * Vaults are referenced by index in the list sent to the calculator.
+ *   Vaults are referenced by index in the list sent to the calculator.
  */
 
-/** @typedef {{ collateral: Amount<'nat'>, presaleDebt:  Amount<'nat'>, currentDebt: Amount<'nat'> }} VaultBalances */
+/**
+ * @typedef {{
+ *   collateral: Amount<'nat'>;
+ *   presaleDebt: Amount<'nat'>;
+ *   currentDebt: Amount<'nat'>;
+ * }} VaultBalances
+ */
 
 /**
  * Liquidation.md describes how to process liquidation proceeds.
@@ -46,7 +51,8 @@ import { liquidationResults } from './liquidation.js';
  * @param {Amount<'nat'>} inputs.totalDebt
  * @param {Amount<'nat'>} inputs.totalCollateral
  * @param {PriceDescription} inputs.oraclePriceAtStart
- * @param {Array<VaultBalances>} inputs.vaultsBalances ordered best to worst collateralized
+ * @param {VaultBalances[]} inputs.vaultsBalances ordered best to worst
+ *   collateralized
  * @param {Ratio} inputs.penaltyRate
  * @returns {DistributionPlan}
  */

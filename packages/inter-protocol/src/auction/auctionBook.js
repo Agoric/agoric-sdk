@@ -34,34 +34,38 @@ const DEFAULT_DECIMALS = 9;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
- * auction. It holds the book, the capturedPrice, and the collateralSeat that has
- * the allocation of assets for sale.
+ *   auction. It holds the book, the capturedPrice, and the collateralSeat that
+ *   has the allocation of assets for sale.
  *
- * The book contains orders for the collateral. It holds two kinds of
- * orders:
+ *   The book contains orders for the collateral. It holds two kinds of orders:
+ *
  *   - Prices express the bidding offer in terms of a Bid amount
- *   - ScaledBids express the offer in terms of a discount (or markup) from the
- *     most recent oracle price.
+ *   - ScaledBids express the offer in terms of a discount (or markup) from the most
+ *       recent oracle price.
  *
- * Offers can be added in three ways. 1) When the auction is not active, prices
- * are automatically added to the appropriate collection. When the auction is
- * active, 2) if a new offer is at or above the current price, it will be
- * settled immediately; 2) If the offer is below the current price, it will be
- * added in the appropriate place and settled when the price reaches that level.
+ *   Offers can be added in three ways. 1) When the auction is not active, prices
+ *   are automatically added to the appropriate collection. When the auction is
+ *   active, 2) if a new offer is at or above the current price, it will be
+ *   settled immediately; 2) If the offer is below the current price, it will be
+ *   added in the appropriate place and settled when the price reaches that
+ *   level.
  */
 
 const trace = makeTracer('AucBook', true);
 
 /**
  * @typedef {{
- *   maxBuy: Amount<'nat'>
+ *   maxBuy: Amount<'nat'>;
  * } & {
- *   exitAfterBuy?: boolean,
- * } & ({
- *   offerPrice: Ratio,
- * } | {
- *    offerBidScaling: Ratio,
- * })} OfferSpec
+ *   exitAfterBuy?: boolean;
+ * } & (
+ *     | {
+ *         offerPrice: Ratio;
+ *       }
+ *     | {
+ *         offerBidScaling: Ratio;
+ *       }
+ *   )} OfferSpec
  */
 /**
  * @param {Brand<'nat'>} bidBrand
@@ -88,17 +92,19 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 
 /**
  * @typedef {object} BookDataNotification
- *
- * @property {Ratio         | null}      startPrice identifies the priceAuthority and price
- * @property {Ratio         | null}      currentPriceLevel the price at the current auction tier
- * @property {Amount<'nat'> | null}      startProceedsGoal The proceeds the sellers were targeting to raise
- * @property {Amount<'nat'> | null}      remainingProceedsGoal The remainder of
- *     the proceeds the sellers were targeting to raise
- * @property {Amount<'nat'> | undefined} proceedsRaised The proceeds raised so far in the auction
- * @property {Amount<'nat'>}             startCollateral How much collateral was
- *    available for sale at the start. (If more is deposited later, it'll be
- *    added in.)
- * @property {Amount<'nat'> | null}      collateralAvailable The amount of collateral remaining
+ * @property {Ratio | null} startPrice identifies the priceAuthority and price
+ * @property {Ratio | null} currentPriceLevel the price at the current auction
+ *   tier
+ * @property {Amount<'nat'> | null} startProceedsGoal The proceeds the sellers
+ *   were targeting to raise
+ * @property {Amount<'nat'> | null} remainingProceedsGoal The remainder of the
+ *   proceeds the sellers were targeting to raise
+ * @property {Amount<'nat'> | undefined} proceedsRaised The proceeds raised so
+ *   far in the auction
+ * @property {Amount<'nat'>} startCollateral How much collateral was available
+ *   for sale at the start. (If more is deposited later, it'll be added in.)
+ * @property {Amount<'nat'> | null} collateralAvailable The amount of collateral
+ *   remaining
  */
 
 /**
@@ -231,8 +237,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     {
       helper: {
         /**
-         * remove the key from the appropriate book, indicated by whether the price
-         * is defined.
+         * remove the key from the appropriate book, indicated by whether the
+         * price is defined.
          *
          * @param {string} key
          * @param {Ratio | undefined} price
@@ -247,8 +253,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         },
 
         /**
-         * Update the entry in the appropriate book, indicated by whether the price
-         * is defined.
+         * Update the entry in the appropriate book, indicated by whether the
+         * price is defined.
          *
          * @param {string} key
          * @param {Amount} collateralSold
@@ -264,7 +270,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         },
 
         /**
-         * Settle with seat. The caller is responsible for updating the book, if any.
+         * Settle with seat. The caller is responsible for updating the book, if
+         * any.
          *
          * @param {ZCFSeat} seat
          * @param {Amount<'nat'>} collateralWanted
@@ -341,15 +348,16 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         },
 
         /**
-         *  Accept an offer expressed as a price. If the auction is active, attempt to
-         *  buy collateral. If any of the offer remains add it to the book.
+         * Accept an offer expressed as a price. If the auction is active,
+         * attempt to buy collateral. If any of the offer remains add it to the
+         * book.
          *
-         *  @param {ZCFSeat} seat
-         *  @param {Ratio} price
-         *  @param {Amount<'nat'>} maxBuy
-         *  @param {object} opts
-         *  @param {boolean} opts.trySettle
-         *  @param {boolean} [opts.exitAfterBuy]
+         * @param {ZCFSeat} seat
+         * @param {Ratio} price
+         * @param {Amount<'nat'>} maxBuy
+         * @param {object} opts
+         * @param {boolean} opts.trySettle
+         * @param {boolean} [opts.exitAfterBuy]
          */
         acceptPriceOffer(
           seat,
@@ -388,16 +396,16 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         },
 
         /**
-         *  Accept an offer expressed as a discount (or markup). If the auction is
-         *  active, attempt to buy collateral. If any of the offer remains add it to
-         *  the book.
+         * Accept an offer expressed as a discount (or markup). If the auction
+         * is active, attempt to buy collateral. If any of the offer remains add
+         * it to the book.
          *
-         *  @param {ZCFSeat} seat
-         *  @param {Ratio} bidScaling
-         *  @param {Amount<'nat'>} maxBuy
-         *  @param {object} opts
-         *  @param {boolean} opts.trySettle
-         *  @param {boolean} [opts.exitAfterBuy]
+         * @param {ZCFSeat} seat
+         * @param {Ratio} bidScaling
+         * @param {Amount<'nat'>} maxBuy
+         * @param {object} opts
+         * @param {boolean} opts.trySettle
+         * @param {boolean} [opts.exitAfterBuy]
          */
         acceptScaledBidOffer(
           seat,
@@ -466,10 +474,10 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @param {Amount<'nat'>} assetAmount
          * @param {ZCFSeat} sourceSeat
          * @param {Amount<'nat'>} [proceedsGoal] an amount that the depositor
-         *    would like to raise. The auction is requested to not sell more
-         *    collateral than required to raise that much. The auctioneer might
-         *    sell more if there is more than one supplier of collateral, and
-         *    they request inconsistent limits.
+         *   would like to raise. The auction is requested to not sell more
+         *   collateral than required to raise that much. The auctioneer might
+         *   sell more if there is more than one supplier of collateral, and
+         *   they request inconsistent limits.
          */
         addAssets(assetAmount, sourceSeat, proceedsGoal) {
           const { state, facets } = this;
@@ -754,7 +762,11 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     },
   );
 
-  /** @type {(...args: Parameters<typeof makeAuctionBookKit>) => ReturnType<typeof makeAuctionBookKit>['self']} */
+  /**
+   * @type {(
+   *   ...args: Parameters<typeof makeAuctionBookKit>
+   * ) => ReturnType<typeof makeAuctionBookKit>['self']}
+   */
   const makeAuctionBook = (...args) => makeAuctionBookKit(...args).self;
   return makeAuctionBook;
 };

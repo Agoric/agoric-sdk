@@ -27,7 +27,7 @@ import {
 test('schedule start to finish', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -258,7 +258,7 @@ test('schedule start to finish', async t => {
 test('lowest >= starting', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -306,7 +306,7 @@ test('lowest >= starting', async t => {
 test('zero time for auction', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -355,7 +355,7 @@ test('zero time for auction', async t => {
 test('discountStep 0', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -401,7 +401,7 @@ test('discountStep 0', async t => {
 test('discountStep larger than starting rate', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -448,7 +448,7 @@ test('discountStep larger than starting rate', async t => {
 test('start Freq 0', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -494,7 +494,7 @@ test('start Freq 0', async t => {
 test('delay > freq', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -541,7 +541,7 @@ test('delay > freq', async t => {
 test('lockPeriod > freq', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -590,7 +590,7 @@ test('lockPeriod > freq', async t => {
 test('duration = freq', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -671,7 +671,7 @@ test('duration = freq', async t => {
 test('change Schedule', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -864,7 +864,7 @@ test('change Schedule', async t => {
 test('change Schedule late', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -1087,7 +1087,7 @@ test('change Schedule late', async t => {
 test('schedule anomalies', async t => {
   const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
   const timestamp = time => TimeMath.coerceTimestampRecord(time, timerBrand);

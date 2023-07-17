@@ -22,8 +22,8 @@ export const makeCompoundedStabilityFeeProvider = brand => {
  * @param {VaultId} vaultId
  * @param {Amount<'nat'>} initDebt
  * @param {Amount<'nat'>} [initCollateral]
- * @param {*} [manager]
- * @returns {Vault & {setDebt: (Amount) => void}}
+ * @param {any} [manager]
+ * @returns {Vault & { setDebt: (Amount) => void }}
  */
 
 export const makeFakeVault = (

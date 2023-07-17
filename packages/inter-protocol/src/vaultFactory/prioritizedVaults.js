@@ -47,8 +47,8 @@ export const currentDebtToCollateral = vault =>
  * Vaults, ordered by their debt ratio so that all the vaults below a threshold
  * can be quickly found and liquidated.
  *
- * @param {MapStore<string, Vault>} store
- * vault has a higher debt ratio than the previous highest
+ * @param {MapStore<string, Vault>} store vault has a higher debt ratio than the
+ *   previous highest
  */
 export const makePrioritizedVaults = store => {
   const vaults = makeOrderedVaultStore(store);

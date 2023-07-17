@@ -1,6 +1,9 @@
 /* global E */
 // @ts-nocheck
-/** @file Script to replace the econ governance committee in a SwingSet Core Eval (aka big hammer) */
+/**
+ * @file Script to replace the econ governance committee in a SwingSet Core Eval
+ *   (aka big hammer)
+ */
 
 const { Fail } = assert;
 
@@ -19,7 +22,7 @@ const trace = (...args) => console.log('GovReplaceCommitee', ...args);
 
 const { values } = Object;
 
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
@@ -28,7 +31,6 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
  */
 const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
-   *
    * @param {ERef<NameAdmin>} nextAdmin
    * @param {string[]} path
    */
@@ -90,9 +92,7 @@ const invitePSMCommitteeMembers = async (
   ).getVoterInvitations();
   assert.equal(invitations.length, values(voterAddresses).length);
 
-  /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
-   */
+  /** @param {[string, Promise<Invitation>][]} addrInvitations */
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
@@ -233,9 +233,9 @@ const main = async permittedPowers => {
 /**
  * How to test on chain
  *
- * Execute core eval with a dictorator (electorate n=1)
- * Have the old electorate and new electorate vote for different PSM param changes
- * Verify the old's were ignored and the new's were enacted
+ * Execute core eval with a dictorator (electorate n=1) Have the old electorate
+ * and new electorate vote for different PSM param changes Verify the old's were
+ * ignored and the new's were enacted
  */
 
 // "export" from script

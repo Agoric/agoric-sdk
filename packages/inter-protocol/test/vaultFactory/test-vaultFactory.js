@@ -43,12 +43,12 @@ import {
 
 /**
  * @typedef {Record<string, any> & {
- * aeth: IssuerKit & import('../supports.js').AmountUtils,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
- * rates: VaultManagerParamValues,
- * interestTiming: InterestTiming,
- * zoe: ZoeService,
+ *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   rates: VaultManagerParamValues;
+ *   interestTiming: InterestTiming;
+ *   zoe: ZoeService;
  * }} Context
  */
 /** @type {import('ava').TestFn<Context>} */
@@ -126,7 +126,7 @@ test.before(async t => {
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {import('ava').ExecutionContext<Context>} t
- * @param {Array<NatValue> | Ratio} priceOrList
+ * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
@@ -217,7 +217,16 @@ const setupServices = async (
     'AEth',
     rates,
   );
-  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, PriceAuthority, CollateralManager]} */
+  /**
+   * @type {[
+   *   any,
+   *   VaultFactoryCreatorFacet,
+   *   VFC['publicFacet'],
+   *   VaultManager,
+   *   PriceAuthority,
+   *   CollateralManager,
+   * ]}
+   */
   const [
     governorInstance,
     vaultFactory, // creator
@@ -1515,11 +1524,12 @@ test('debt too small - MinInitialDebt', async t => {
 });
 
 /**
- * Each vaultManager manages one collateral type and has a governed parameter, `debtLimit`,
- * that specifies a cap on the amount of debt the manager will allow.
+ * Each vaultManager manages one collateral type and has a governed parameter,
+ * `debtLimit`, that specifies a cap on the amount of debt the manager will
+ * allow.
  *
- * Attempts to adjust balances on vaults beyond the debt limit fail.
- * In other words, minting for anything other than charging stabilityFee fails.
+ * Attempts to adjust balances on vaults beyond the debt limit fail. In other
+ * words, minting for anything other than charging stabilityFee fails.
  */
 test('excessive debt on collateral type - debtLimit', async t => {
   const { zoe, aeth, run } = t.context;
@@ -1938,7 +1948,11 @@ test('manager notifiers, with snapshot', async t => {
     totalDebt: { value: totalDebt },
   });
 
-  /** @type {ReturnType<import('@agoric/internal/src/storage-test-utils.js').makeMockChainStorageRoot>} */
+  /**
+   * @type {ReturnType<
+   *   import('@agoric/internal/src/storage-test-utils.js').makeMockChainStorageRoot
+   * >}
+   */
   // @ts-expect-error mock
   const storage = await services.space.consume.chainStorage;
   const doc = {

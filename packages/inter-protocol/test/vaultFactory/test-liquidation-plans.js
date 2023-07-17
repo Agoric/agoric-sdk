@@ -8,10 +8,7 @@ import {
   makeManagerDriver,
 } from './driver.js';
 
-/**
- * @typedef {import('./driver.js').DriverContext & {
- * }} Context
- */
+/** @typedef {import('./driver.js').DriverContext & {}} Context */
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
@@ -75,15 +72,17 @@ test('basic', async t => {
    * TODO consider having "test.skip" with directions for what throws to insert
    *
    * These are the cases we tested manually:
+   *
    * - Failure at the start of a flow
    * - Failure within the 2b flow
    *
    * These are the states we verified:
+   *
    * - All vaults to be liquidated are liquidated (none reinstated)
    * - Metrics of liquidation counts update correctly
    *
    * Failure to return a plan is not handled because `calculateDistributionPlan`
-   * has a try/catch within it that ensures it returns *some* plan. We
+   * has a try/catch within it that ensures it returns _some_ plan. We
    * considered falling back if it does fail, but the fallback would have to do
    * the same work that had just failed.
    */

@@ -436,7 +436,7 @@ test('calculateCompoundedStabilityFee on zero debt', t => {
 const M = 1_000_000n;
 
 test('calculateCompoundedStabilityFee', t => {
-  /** @type {Array<[bigint, bigint, bigint, number, bigint, number]>} */
+  /** @type {[bigint, bigint, bigint, number, bigint, number][]} */
   const cases = [
     [250n, BASIS_POINTS, M, 1, 1025000n, 10], // 2.5% APR over 1 year yields 2.5%
     [250n, BASIS_POINTS, M, 10, 1280090n, 5], // 2.5% APR over 10 year yields 28%
@@ -495,7 +495,7 @@ test('chargeInterest when no time elapsed', async t => {
   const stabilityFee = makeRatio(250n, brand, BASIS_POINTS);
 
   const now = BigInt(Date.now().toFixed());
-  /** @type {*} */
+  /** @type {any} */
   const powers = {
     mint: {
       getIssuerRecord: () =>
