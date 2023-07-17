@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": [
+    "exported.js",
     "build",
     "scripts",
     "src",

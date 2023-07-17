@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
 import { Far } from '@endo/far';
 // XXX cyclic dependency; TODO move this tool out of swingset-vat

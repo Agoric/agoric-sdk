@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# we don't collect type info by default because it can slow eslint by 8-10x
-# FIXME even in CI it has become too slow so disable until https://github.com/Agoric/agoric-sdk/issues/5788
-# export AGORIC_ESLINT_TYPES='keypresent'
+# we don't collect type info by default because the EXPERIMENTAL_useProjectService that provides viable perf
+# is not yet compatible with running eslint in IDE
+export AGORIC_ESLINT_TYPES='keypresent'
 
 # CI and some VMs OOM without this
 export NODE_OPTIONS='--max-old-space-size=8192'

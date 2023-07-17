@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global FinalizationRegistry WeakRef */
 import test from 'ava';
 import '@endo/init/debug.js';

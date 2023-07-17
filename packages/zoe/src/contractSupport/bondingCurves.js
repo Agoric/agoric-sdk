@@ -27,7 +27,7 @@ const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
  * pool of the kind of asset sent in
  * @param {any} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
- * @param {bigint} [feeBasisPoints=30n] - the fee taken in
+ * @param {bigint} [feeBasisPoints] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee
  * is taken from inputValue
  * @returns {NatValue} outputValue - the current price, in value form
@@ -66,7 +66,7 @@ export const getInputPrice = (
  * pool of the asset being spent
  * @param {any} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
- * @param {bigint} [feeBasisPoints=30n] - the fee taken in
+ * @param {bigint} [feeBasisPoints] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee is taken from
  * outputValue
  * @returns {NatValue} inputValue - the value of input required to purchase output

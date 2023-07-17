@@ -8,7 +8,7 @@ import process from 'process';
 import bundleSource from '@endo/bundle-source';
 import { bundlePaths, hashPaths, entryPaths } from '../src/paths.js';
 
-/** @param {Uint8Array} bytes */
+/** @param {Uint8Array | string} bytes */
 const computeSha256 = bytes => {
   const hash = crypto.createHash('sha256');
   hash.update(bytes);

@@ -21,8 +21,8 @@ const collateralBrandKey = 'ATOM';
 /**
  * @param {import('ava').ExecutionContext} t
  * @param {object} [options]
- * @param {number} [options.incarnation=1]
- * @param {boolean} [options.logTiming=true]
+ * @param {number} [options.incarnation]
+ * @param {boolean} [options.logTiming]
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
 const makeDefaultTestContext = async (

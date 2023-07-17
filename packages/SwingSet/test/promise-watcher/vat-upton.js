@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Far, E } from '@endo/far';
 import { initEmpty } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';

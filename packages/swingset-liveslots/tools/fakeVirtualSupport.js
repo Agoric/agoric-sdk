@@ -315,8 +315,8 @@ export function makeFakeWatchedPromiseManager(
  * Configure virtual stuff with relaxed durability rules and fake liveslots
  *
  * @param {object} [options]
- * @param {number} [options.cacheSize=3]
- * @param {boolean} [options.relaxDurabilityRules=true]
+ * @param {number} [options.cacheSize]
+ * @param {boolean} [options.relaxDurabilityRules]
  */
 export function makeFakeVirtualStuff(options = {}) {
   const actualOptions = {
