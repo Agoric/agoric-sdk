@@ -1,3 +1,4 @@
+/* eslint-disable @jessie.js/safe-await-separator */
 import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
