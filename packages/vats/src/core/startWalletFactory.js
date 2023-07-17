@@ -17,7 +17,10 @@ const trace = makeTracer('StartWF');
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {Installation<import('@agoric/smart-wallet/src/walletFactory').prepare>} inst
+ * @param {Installation<
+ *   import('@agoric/smart-wallet/src/walletFactory').prepare
+ * >} inst
+ *
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars
@@ -26,8 +29,8 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
 /**
- * Publish an arbitrary wallet state so that clients
- * can tell that a wallet has been provisioned.
+ * Publish an arbitrary wallet state so that clients can tell that a wallet has
+ * been provisioned.
  *
  * @param {string[]} oldAddresses
  * @param {Marshaller} marshaller
@@ -53,22 +56,28 @@ const publishRevivableWalletState = async (
 };
 
 /**
- * Register for PLEASE_PROVISION bridge messages and handle
- * them by providing a smart wallet from the wallet factory.
+ * Register for PLEASE_PROVISION bridge messages and handle them by providing a
+ * smart wallet from the wallet factory.
  *
- * @param {BootstrapPowers & ChainStorageVatParams & PromiseSpaceOf<{
- *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
- *   econCharterKit: {
- *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']>>['creatorFacet'],
- *     adminFacet: AdminFacet,
- *   } ,
- *   walletBridgeManager: import('../types.js').ScopedBridgeManager;
- *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager;
- * }>} powers
+ * @param {BootstrapPowers &
+ *   ChainStorageVatParams &
+ *   PromiseSpaceOf<{
+ *     economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
+ *     econCharterKit: {
+ *       creatorFacet: Awaited<
+ *         ReturnType<
+ *           import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']
+ *         >
+ *       >['creatorFacet'];
+ *       adminFacet: AdminFacet;
+ *     };
+ *     walletBridgeManager: import('../types.js').ScopedBridgeManager;
+ *     provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager;
+ *   }>} powers
  * @param {{
  *   options?: {
- *     perAccountInitialValue?: bigint,
- *   },
+ *     perAccountInitialValue?: bigint;
+ *   };
  * }} [config]
  */
 export const startWalletFactory = async (

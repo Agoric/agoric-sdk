@@ -71,7 +71,12 @@ export const makeLiquidationTestContext = async t => {
   );
   console.timeLog('DefaultTestContext', 'governanceDriver');
 
-  /** @type {Record<string, Awaited<ReturnType<typeof makePriceFeedDriver>>>} */
+  /**
+   * @type {Record<
+   *   string,
+   *   Awaited<ReturnType<typeof makePriceFeedDriver>>
+   * >}
+   */
   const priceFeedDrivers = {};
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
@@ -79,7 +84,6 @@ export const makeLiquidationTestContext = async t => {
   console.timeEnd('DefaultTestContext');
 
   /**
-   *
    * @param {object} opts
    * @param {string} opts.collateralBrandKey
    * @param {number} opts.managerIndex

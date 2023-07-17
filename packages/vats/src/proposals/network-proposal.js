@@ -73,18 +73,21 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
- * @param { BootstrapPowers & {
- *   consume: { loadCriticalVat: VatLoader<any> }
- *   produce: { networkVat: Producer<any> }
+ * @param {BootstrapPowers & {
+ *   consume: { loadCriticalVat: VatLoader<any> };
+ *   produce: { networkVat: Producer<any> };
  * }} powers
- *
  * @param {object} options
- * @param {{networkRef: VatSourceRef, ibcRef: VatSourceRef}} options.options
- * // TODO: why doesn't overloading VatLoader work???
- * @typedef { ((name: 'network') => NetworkVat) &
- *            ((name: 'ibc') => IBCVat) } VatLoader2
+ * @param {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }} options.options
+ *   // TODO: why doesn't overloading VatLoader work???
  *
- * @typedef {{ network: ERef<NetworkVat>, ibc: ERef<IBCVat>, provisioning: ERef<ProvisioningVat | undefined>}} NetVats
+ * @typedef {((name: 'network') => NetworkVat) & ((name: 'ibc') => IBCVat)} VatLoader2
+ *
+ * @typedef {{
+ *   network: ERef<NetworkVat>;
+ *   ibc: ERef<IBCVat>;
+ *   provisioning: ERef<ProvisioningVat | undefined>;
+ * }} NetVats
  */
 export const setupNetworkProtocols = async (
   {
@@ -99,7 +102,7 @@ export const setupNetworkProtocols = async (
   options,
 ) => {
   const { networkRef, ibcRef } = options.options;
-  /** @type { NetVats } */
+  /** @type {NetVats} */
   const vats = {
     network: E(loadCriticalVat)('network', networkRef),
     ibc: E(loadCriticalVat)('ibc', ibcRef),

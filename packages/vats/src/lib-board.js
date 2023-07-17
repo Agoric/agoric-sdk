@@ -1,7 +1,6 @@
 // @ts-check
 /**
  * @file lib-board: share objects by way of plain-data ids
- *
  * @see prepareBoardKit()
  */
 
@@ -48,11 +47,11 @@ const BoardKitIKit = {
 //#endregion
 
 /**
- * For a value with a known id in the board, we can use
- * that board id as a slot to preserve identity when marshaling.
+ * For a value with a known id in the board, we can use that board id as a slot
+ * to preserve identity when marshaling.
  *
  * The contents of the string depend on the `prefix` and `crcDigits` options:
- *    \`${prefix}${crc}${seq}\`
+ * `${prefix}${crc}${seq}`
  *
  * For example, 'board0371' for prefix: 'board0', seq: 1, 2 digits crc.
  *
@@ -75,14 +74,11 @@ const calcCrc = (data, crcDigits) => {
 };
 
 /**
+ * @typedef {ReturnType<typeof initDurableBoardState>} BoardState // TODO: use
+ *   Key from @agoric/store when available
  * @see {prepareExoClassKit}
- * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects}
+ * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
  *
- * Hoisting this function makes defining the state type concise.
- * @typedef {ReturnType<typeof initDurableBoardState>} BoardState
- *
- *
- * // TODO: use Key from @agoric/store when available
  * @typedef {import('@endo/marshal').Passable} Key
  */
 
@@ -93,7 +89,8 @@ const calcCrc = (data, crcDigits) => {
  * @param {bigint | number} [initSequence]
  * @param {object} [options]
  * @param {string} [options.prefix] prefix for all ids generated
- * @param {number} [options.crcDigits] count of digits to use in CRC at end of the id
+ * @param {number} [options.crcDigits] count of digits to use in CRC at end of
+ *   the id
  */
 const initDurableBoardState = (
   initSequence = 0,
@@ -180,9 +177,7 @@ const getValue = (id, { prefix, crcDigits, idToVal }) => {
   throw Fail`board does not have id: ${id}`;
 };
 
-/**
- * @param {BoardState} state
- */
+/** @param {BoardState} state */
 const makeSlotToVal = state => {
   const ifaceAllegedPrefix = 'Alleged: ';
   const ifaceInaccessiblePrefix = 'SEVERED: ';
@@ -243,9 +238,9 @@ const makePublishingMarshaller = state => {
 //#endregion
 
 /**
- * A board is a two-way mapping between objects (such as issuers,
- * brands, installation handles) and plain-data string IDs.
- * A well-known board allows sharing objects by way of their ids.
+ * A board is a two-way mapping between objects (such as issuers, brands,
+ * installation handles) and plain-data string IDs. A well-known board allows
+ * sharing objects by way of their ids.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage for upgrade successors
  * @see {@link packages/SwingSet/docs/vat-upgrade.md|Vat Upgrade}
@@ -261,13 +256,13 @@ export const prepareBoardKit = baggage => {
         /**
          * Provide an ID for a value, generating one if not already present.
          *
-         * Each board ID includes a CRC so that the last part is well-distributed,
-         * which mitigates typo risks.
+         * Each board ID includes a CRC so that the last part is
+         * well-distributed, which mitigates typo risks.
          *
-         * Scaling Consideration: since we cannot know when consumers
-         * are no longer interested in an ID, a board holds a strong reference
-         * to `value` for its entire lifetime. For a well-known board, this
-         * is essentially forever.
+         * Scaling Consideration: since we cannot know when consumers are no
+         * longer interested in an ID, a board holds a strong reference to
+         * `value` for its entire lifetime. For a well-known board, this is
+         * essentially forever.
          *
          * @param {Key} value
          * @throws if `value` is not a Key in the @agoric/store sense
@@ -283,14 +278,14 @@ export const prepareBoardKit = baggage => {
           return getValue(id, this.state);
         },
         /**
-         * Convenience method for recursively traversing boards and
-         * board-like remotables to get data associated with a sequence of ids
-         * corresponding to each successive board.
-         * For example, `lookup("foo", "bar")` gets the value associated with
-         * id "foo" and returns the result of invoking `lookup("bar")` upon it
-         * to get the value it associates with id "bar".
+         * Convenience method for recursively traversing boards and board-like
+         * remotables to get data associated with a sequence of ids
+         * corresponding to each successive board. For example, `lookup("foo",
+         * "bar")` gets the value associated with id "foo" and returns the
+         * result of invoking `lookup("bar")` upon it to get the value it
+         * associates with id "bar".
          *
-         * @param  {...string} path
+         * @param {...string} path
          */
         async lookup(...path) {
           const {
@@ -316,19 +311,19 @@ export const prepareBoardKit = baggage => {
           return harden([...state.idToVal.keys()]);
         },
         /**
-         * Get a marshaller that implements the convertValToSlot hook using getId(),
-         * "publishing" previously un-mapped objects.
+         * Get a marshaller that implements the convertValToSlot hook using
+         * getId(), "publishing" previously un-mapped objects.
          */
         getPublishingMarshaller() {
           return this.facets.publishingMarshaller;
         },
         /**
-         * Get a marshaller that implements the convertValToSlot hook using getId(),
-         * only for objects that the board has().
+         * Get a marshaller that implements the convertValToSlot hook using
+         * getId(), only for objects that the board has().
          *
          * For other objects, we don't throw, but we emit a null slot.
-         * Un-serializing a null slot always produces a fresh object
-         * rather than preserving object identity.
+         * Un-serializing a null slot always produces a fresh object rather than
+         * preserving object identity.
          */
         getReadonlyMarshaller() {
           return this.facets.readonlyMarshaller;
@@ -370,9 +365,7 @@ export const prepareBoardKit = baggage => {
   );
 };
 
-/**
- * @param {import('@agoric/zone').Zone} zone
- */
+/** @param {import('@agoric/zone').Zone} zone */
 export const prepareRecorderFactory = zone => {
   const baggage = zone.mapStore(`Recorder Baggage`);
   const makeDurablePublishKit = prepareDurablePublishKit(

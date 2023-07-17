@@ -1,7 +1,6 @@
 // XXX domain of @agoric/cosmic-proto
 /**
- * non-exhaustive list of powerFlags
- * REMOTE_WALLET is currently a default.
+ * non-exhaustive list of powerFlags REMOTE_WALLET is currently a default.
  *
  * See also MsgProvision in golang/cosmos/proto/agoric/swingset/msgs.proto
  */

@@ -2,8 +2,9 @@
 /**
  * @file Bootstrap test integration vaults with smart-wallet
  *
- * Forks test-liquidation to test another scenario, but with a clean vault manager state.
- * TODO is there a way to *reset* the vaultmanager to make the two tests run faster?
+ *   Forks test-liquidation to test another scenario, but with a clean vault
+ *   manager state. TODO is there a way to _reset_ the vaultmanager to make the
+ *   two tests run faster?
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -12,7 +13,9 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeLiquidationTestContext, scale6 } from './liquidation.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeLiquidationTestContext>>>}
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
+ * >}
  */
 const test = anyTest;
 

@@ -34,16 +34,16 @@ const BridgeManagerIKit = harden({
   }),
 });
 
-/**
- * @param {import('@agoric/zone').Zone} zone
- */
+/** @param {import('@agoric/zone').Zone} zone */
 const prepareScopedManager = zone => {
   const makeScopedManager = zone.exoClass(
     'BridgeScopedManager',
     BridgeScopedManagerI,
     /**
      * @param {string} bridgeId
-     * @param {{ outbound: (bridgeId: string, obj: unknown) => Promise<any> }} toBridge
+     * @param {{
+     *   outbound: (bridgeId: string, obj: unknown) => Promise<any>;
+     * }} toBridge
      * @param {import('./types').BridgeHandler} [inboundHandler]
      */
     (bridgeId, toBridge, inboundHandler) => ({
@@ -93,14 +93,16 @@ export const prepareBridgeManager = (zone, D) => {
   const makeScopedManager = prepareScopedManager(zone);
 
   /**
-   * Create a bridge manager for multiplexing messages to and from a bridge device
-   * using string-named channels.
+   * Create a bridge manager for multiplexing messages to and from a bridge
+   * device using string-named channels.
    *
    * @param {BridgeDevice} bridgeDevice The bridge to manage
    * @returns {{
-   *   manager: import('./types.js').BridgeManager,
-   *   privateInbounder: { inbound(srcID: string, obj: unknown): void },
-   *   privateOutbounder: { outbound(dstID: string, obj: unknown): Promise<any> },
+   *   manager: import('./types.js').BridgeManager;
+   *   privateInbounder: { inbound(srcID: string, obj: unknown): void };
+   *   privateOutbounder: {
+   *     outbound(dstID: string, obj: unknown): Promise<any>;
+   *   };
    * }}
    */
   const makeBridgeManagerKit = zone.exoClassKit(
@@ -108,7 +110,12 @@ export const prepareBridgeManager = (zone, D) => {
     BridgeManagerIKit,
     /** @param {BridgeDevice} bridgeDevice */
     bridgeDevice => ({
-      /** @type {MapStore<string, ReturnType<ReturnType<typeof prepareScopedManager>>>} */
+      /**
+       * @type {MapStore<
+       *   string,
+       *   ReturnType<ReturnType<typeof prepareScopedManager>>
+       * >}
+       */
       scopedManagers: zone.detached().mapStore('scopedManagers'),
       bridgeDevice,
     }),
@@ -156,7 +163,12 @@ export const prepareBridgeManager = (zone, D) => {
     },
   );
 
-  /** @type {MapStore<BridgeDevice, ReturnType<typeof makeBridgeManagerKit>>} */
+  /**
+   * @type {MapStore<
+   *   BridgeDevice,
+   *   ReturnType<typeof makeBridgeManagerKit>
+   * >}
+   */
   const bridgeToManagerKit = zone.mapStore('bridgeToManagerKit');
 
   /**

@@ -29,7 +29,11 @@ const sink = () => {};
 
 const trace = makeTracer('BSTSupport', false);
 
-/** @typedef {Awaited<ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>>} BootstrapRootObject */
+/**
+ * @typedef {Awaited<
+ *   ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>
+ * >} BootstrapRootObject
+ */
 
 /** @type {{ [P in keyof BootstrapRootObject]: P }} */
 export const bootstrapMethods = {
@@ -55,9 +59,12 @@ const keysToObject = (keys, valueMaker) => {
 };
 
 /**
- * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of strings.
+ * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
+ * strings.
  *
- * @param {{ deepEqual: (a: unknown, b: unknown, message?: string) => void}} t
+ * @param {{
+ *   deepEqual: (a: unknown, b: unknown, message?: string) => void;
+ * }} t
  * @param {PropertyKey[]} a
  * @param {PropertyKey[]} b
  * @param {string} [message]
@@ -126,9 +133,9 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   /**
    * @type {typeof E & {
-   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>,
-   *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
-   *   rawBoot: Record<string, (...args: any) => Promise<any>>,
+   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+   *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
+   *   rawBoot: Record<string, (...args: any) => Promise<any>>;
    * }}
    */
   // @ts-expect-error cast, approximate
@@ -183,7 +190,7 @@ export const getNodeTestVaultsConfig = async (
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
   );
-  const config = /** @type {SwingSetConfig & {coreProposals?: any[]}} */ (
+  const config = /** @type {SwingSetConfig & { coreProposals?: any[] }} */ (
     await loadSwingsetConfigFile(fullPath)
   );
   assert(config);
@@ -212,7 +219,7 @@ export const getNodeTestVaultsConfig = async (
 
 /**
  * @param {object} powers
- * @param {Pick<typeof import('node:child_process'), 'execFileSync' >} powers.childProcess
+ * @param {Pick<typeof import('node:child_process'), 'execFileSync'>} powers.childProcess
  * @param {typeof import('node:fs/promises')} powers.fs
  */
 const makeProposalExtractor = ({ childProcess, fs }) => {
@@ -309,11 +316,10 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
  * For example, test accounts balances using separate wallets or test vault
  * factory metrics using separate collateral managers. (Or use test.serial)
  *
- * The shutdown() function *must* be called after the test is
- * complete, or else V8 will see the xsnap workers still running, and
- * will never exit (leading to a timeout error). Use
- * t.after.always(shutdown), because the normal t.after() hooks are
- * not run if a test fails.
+ * The shutdown() function _must_ be called after the test is complete, or else
+ * V8 will see the xsnap workers still running, and will never exit (leading to
+ * a timeout error). Use t.after.always(shutdown), because the normal t.after()
+ * hooks are not run if a test fails.
  *
  * @param {import('ava').ExecutionContext} t
  * @param {string} bundleDir directory to write bundles and config to
@@ -345,7 +351,7 @@ export const makeSwingsetTestKit = async (
    * changes there will sometimes require changes here.
    *
    * @param {string} bridgeId
-   * @param {*} obj
+   * @param {any} obj
    */
   const bridgeOutbound = (bridgeId, obj) => {
     switch (bridgeId) {
@@ -455,9 +461,8 @@ export const makeSwingsetTestKit = async (
     }
   };
   /**
-   *
    * @param {number} n
-   * @param {'seconds' | 'minutes' | 'hours'| 'days'} unit
+   * @param {'seconds' | 'minutes' | 'hours' | 'days'} unit
    */
   const advanceTimeBy = (n, unit) => {
     const multiplier = {

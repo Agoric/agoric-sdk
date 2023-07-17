@@ -74,7 +74,7 @@ function dump0(value, spaces, inProgress, depth) {
 
     let sep = '';
     let closer;
-    /** @type {Array<string | symbol>} */
+    /** @type {(string | symbol)[]} */
     const names = Object.getOwnPropertyNames(value);
     const nonNumber = new Set(names);
     if (Array.isArray(value)) {

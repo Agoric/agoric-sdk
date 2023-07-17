@@ -51,7 +51,11 @@ export const prepareMixinMyAddress = zone => {
     ...NameHubIKit.nameAdmin.methodGuards,
     getMyAddress: M.call().returns(M.string()),
   });
-  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<import('./types.js').MyAddressNameAdmin>} */
+  /**
+   * @type {import('@agoric/internal/src/callback.js').MakeAttenuator<
+   *   import('./types.js').MyAddressNameAdmin
+   * >}
+   */
   const mixin = prepareGuardedAttenuator(zone, MixinI, {
     tag: 'MyAddressNameAdmin',
   });
@@ -122,8 +126,8 @@ const updated = (updateCallback, hub, _newValue = undefined) => {
 };
 
 /**
- * Make two facets of a node in a name hierarchy: the nameHub
- * is read access and the nameAdmin is write access.
+ * Make two facets of a node in a name hierarchy: the nameHub is read access and
+ * the nameAdmin is write access.
  *
  * @param {import('@agoric/zone').Zone} zone
  */
@@ -139,7 +143,7 @@ export const prepareNameHubKit = zone => {
   /** @param {{}} me */
   const my = me => provideWeak(ephemera, me, init1);
 
-  /** @type {() => import('./types').NameHubKit } */
+  /** @type {() => import('./types').NameHubKit} */
   const makeNameHubKit = zone.exoClassKit(
     'NameHubKit',
     NameHubIKit,
@@ -283,7 +287,13 @@ export const prepareNameHubKit = zone => {
           const { keyToPK, keyToAdminPK } = my(this.facets.nameHub);
           const { keyToValue, keyToAdmin, updateCallback } = this.state;
 
-          /** @type {[Map<string, PromiseKit<unknown>>, MapStore<string, unknown>, unknown][]} */
+          /**
+           * @type {[
+           *   Map<string, PromiseKit<unknown>>,
+           *   MapStore<string, unknown>,
+           *   unknown,
+           * ][]}
+           */
           const valueMapEntries = [
             [keyToAdminPK, keyToAdmin, adminValue],
             [keyToPK, keyToValue, newValue],
@@ -354,8 +364,8 @@ export const prepareNameHubKit = zone => {
 };
 
 /**
- * Make two facets of a node in a name hierarchy: the nameHub
- * is read access and the nameAdmin is write access.
+ * Make two facets of a node in a name hierarchy: the nameHub is read access and
+ * the nameAdmin is write access.
  *
  * @returns {import('./types.js').NameHubKit}
  */
