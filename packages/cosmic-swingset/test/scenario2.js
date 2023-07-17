@@ -6,9 +6,8 @@ const onlyStderr = ['ignore', 'ignore', 'inherit'];
 const noOutput = ['ignore', 'ignore', 'ignore'];
 // const noisyDebug = ['ignore', 'inherit', 'inherit'];
 
-export const pspawn =
-  (bin, { spawn, cwd }) =>
-  (args = [], opts = {}) => {
+export const pspawn = (bin, { spawn, cwd }) => {
+  return (args = [], opts = {}) => {
     /** @type {import('child_process').ChildProcess} */
     let child;
     const exit = new Promise((resolve, reject) => {
@@ -16,7 +15,9 @@ export const pspawn =
       child = spawn(bin, args, { cwd, ...opts });
       child.addListener('exit', code => {
         if (code !== 0) {
-          reject(Error(`exit ${code} from: ${bin} ${args}`));
+          // TODO: Include ~3 lines from child.stderr or child.stdout if present.
+          // see https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
+          reject(Error(`exit ${code} from command: ${bin} ${args}`));
           return;
         }
         resolve(0);
@@ -35,6 +36,7 @@ export const pspawn =
     // @ts-expect-error child is set in the Promise constructor
     return { kill, child, exit };
   };
+};
 
 /**
  * Shared state for tests using scenario2 chain in ../
