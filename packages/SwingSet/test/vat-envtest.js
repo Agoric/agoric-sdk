@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global VatData */
 import { Far } from '@endo/far';
 

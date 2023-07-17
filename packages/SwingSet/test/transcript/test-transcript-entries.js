@@ -1,3 +1,4 @@
+// @ts-nocheck
 import test from 'ava';
 import '@endo/init/debug.js';
 import { initSwingStore } from '@agoric/swing-store';

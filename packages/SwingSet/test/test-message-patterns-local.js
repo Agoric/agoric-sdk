@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint no-await-in-loop: "off" */
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */

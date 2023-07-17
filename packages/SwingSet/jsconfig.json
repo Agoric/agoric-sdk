@@ -8,6 +8,7 @@
     "misc-tools/**/*.js",
     "src/**/*.js",
     "src/**/*.ts",
+    "test",
     "tools",
-  ],
+  ]
 }

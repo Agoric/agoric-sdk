@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { test, VatData } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order

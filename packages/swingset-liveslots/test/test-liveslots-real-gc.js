@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global WeakRef */
 import test from 'ava';
 import '@endo/init/debug.js';

@@ -332,6 +332,7 @@ async function replay(transcriptFile) {
     throw Error(`unhandled worker type ${worker}`);
   }
 
+  // @ts-expect-error missing symbol
   /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
   let syscallResults = {};
 
@@ -339,6 +340,7 @@ async function replay(transcriptFile) {
     const numWorkers = workers.length;
     let divergent = false;
     for (const [kind, kindSummary] of Object.entries(syscallResults)) {
+      // @ts-expect-error due to missing symbol above, but also `syscallResults` is never populated
       for (const [syscallKey, workerList] of kindSummary.entries()) {
         if (workerList.length !== numWorkers) {
           console.error(
