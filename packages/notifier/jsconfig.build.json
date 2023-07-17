@@ -1,13 +1,6 @@
 {
-    "extends": "./jsconfig.json",
-    "compilerOptions": {
-        "noEmit": false,
-        "declaration": true,
-        "emitDeclarationOnly": true,
-        "declarationMap": true
-    },
-    "exclude": [
-        "scripts",
-        "test/",
+    "extends": [
+        "./jsconfig.json",
+        "../../tsconfig-build-options.json"
     ]
 }
