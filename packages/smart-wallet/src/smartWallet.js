@@ -520,7 +520,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * Umarshals the actionCapData and delegates to the appropriate action handler.
          *
          * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
-         * @param {boolean} [canSpend=false]
+         * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {

@@ -129,7 +129,7 @@ export const makeMapStoreMethods = (
  *
  * @template {Key} K
  * @template {Passable} V
- * @param {string} [tag='key'] - the column name for the key
+ * @param {string} [tag] - the column name for the key
  * @param {StoreOptions} [options]
  * @returns {MapStore<K,V>}
  */

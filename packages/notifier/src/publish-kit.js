@@ -209,7 +209,7 @@ const DurablePublishKitStateShape = harden({
 
 /**
  * @param {object} [options]
- * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
+ * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability]
  * @returns {DurablePublishKitState}
  */
 const initDurablePublishKitState = (options = {}) => {
