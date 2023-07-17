@@ -182,7 +182,8 @@ const makeDurableZoeKit = ({
           zcfBundleCap = bundleCap;
         },
         e => {
-          console.warn(`unable to update ZCF Bundle: `, e);
+          console.error(`'🚨 unable to update ZCF Bundle: `, e);
+          throw e;
         },
       );
     },
