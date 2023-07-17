@@ -8,14 +8,18 @@ import process from 'process';
  * After extracting the oracleAdmins to entries in home.scratch, you can use one
  * from the REPL like:
  *
- * lookup('agoricNames', 'oracleBrand', 'ATOM').then(brand => atom = brand) ->
- * [Object Alleged: ATOM brand]{} lookup('agoricNames', 'oracleBrand',
- * 'USD').then(brand => usd = brand) -> [Object Alleged: USD brand]{} pa =
- * home.priceAuthority -> [Object Alleged: PriceAuthority]{} qn =
- * E(pa).makeQuoteNotifier({ value: 1n * 10n ** 6n, brand: atom }, usd) ->
- * [Object Alleged: QuoteNotifier]{} oa = E(home.scratch).get("offerResult
- * unknown#1652669688625") -> [Object Alleged: OracleAdmin]{}
- * E(oa).pushResult('19.37') E(qn).getUpdateSince()
+ *     lookup('agoricNames', 'oracleBrand', 'ATOM').then(brand => atom = brand)
+ *     -> [Object Alleged: ATOM brand]{}
+ *     lookup('agoricNames', 'oracleBrand', 'USD').then(brand => usd = brand)
+ *     -> [Object Alleged: USD brand]{}
+ *     pa = home.priceAuthority
+ *      -> [Object Alleged: PriceAuthority]{}
+ *     qn = E(pa).makeQuoteNotifier({ value: 1n * 10n ** 6n, brand: atom }, usd)
+ *     -> [Object Alleged: QuoteNotifier]{}
+ *     oa = E(home.scratch).get("offerResult unknown#1652669688625")
+ *     -> [Object Alleged: OracleAdmin]{}
+ *     E(oa).pushResult('19.37')
+ *     E(qn).getUpdateSince()
  *
  * @typedef {{
  *   board: import('@agoric/vats').Board;
