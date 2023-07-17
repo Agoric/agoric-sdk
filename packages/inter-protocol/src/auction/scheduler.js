@@ -20,21 +20,22 @@ const MAX_LATE_TICK = 300n;
 
 /**
  * @file The scheduler is presumed to be quiescent between auction rounds. Each
- * Auction round consists of a sequence of steps with decreasing prices. There
- * should always be a next schedule, but between rounds, liveSchedule is null.
+ *   Auction round consists of a sequence of steps with decreasing prices. There
+ *   should always be a next schedule, but between rounds, liveSchedule is
+ *   null.
  *
- * The lock period that the liquidators use might start before the previous
- * round has finished, so we need to schedule the next round each time an
- * auction starts. This means if the scheduling parameters change, it'll be a
- * full cycle before we switch. Otherwise, the vaults wouldn't know when to
- * start their lock period. If the lock period for the next auction hasn't
- * started when each aucion ends, we recalculate it, in case the parameters have
- * changed.
+ *   The lock period that the liquidators use might start before the previous
+ *   round has finished, so we need to schedule the next round each time an
+ *   auction starts. This means if the scheduling parameters change, it'll be a
+ *   full cycle before we switch. Otherwise, the vaults wouldn't know when to
+ *   start their lock period. If the lock period for the next auction hasn't
+ *   started when each aucion ends, we recalculate it, in case the parameters
+ *   have changed.
  *
- * If the clock skips forward (because of a chain halt, for instance), the
- * scheduler will try to cleanly and quickly finish any round already in
- * progress. It would take additional work on the manual timer to test this
- * thoroughly.
+ *   If the clock skips forward (because of a chain halt, for instance), the
+ *   scheduler will try to cleanly and quickly finish any round already in
+ *   progress. It would take additional work on the manual timer to test this
+ *   thoroughly.
  */
 
 const makeCancelToken = makeCancelTokenMaker('scheduler');
@@ -49,12 +50,11 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
 
 /**
  * @typedef {object} ScheduleNotification
- *
- * @property {Timestamp | null} activeStartTime start time of current
- *    auction if auction is active
+ * @property {Timestamp | null} activeStartTime start time of current auction if
+ *   auction is active
  * @property {Timestamp | null} nextStartTime start time of next auction
- * @property {Timestamp | null} nextDescendingStepTime when the next descending step
- *    will take place
+ * @property {Timestamp | null} nextDescendingStepTime when the next descending
+ *   step will take place
  */
 
 const safelyComputeRoundTiming = (params, baseTime) => {
@@ -92,7 +92,7 @@ export const makeScheduler = async (
    */
   let liveSchedule = null;
 
-  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule | null }>} */
+  /** @returns {Promise<{ now: Timestamp; nextSchedule: Schedule | null }>} */
   const initializeNextSchedule = async () => {
     return E.when(
       // XXX manualTimer returns a bigint, not a timeRecord.
@@ -114,7 +114,7 @@ export const makeScheduler = async (
 
   const stepCancelToken = makeCancelToken();
 
-  /** @type {typeof AuctionState[keyof typeof AuctionState]} */
+  /** @type {(typeof AuctionState)[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
 
   /**

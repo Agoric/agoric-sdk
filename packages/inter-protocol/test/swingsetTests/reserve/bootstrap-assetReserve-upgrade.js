@@ -33,9 +33,17 @@ export const buildRootObject = async () => {
   /** @type {FeeMintAccess} */
   let feeMintAccess;
 
-  /** @type {Subscriber<import('../../../src/reserve/assetReserveKit.js').MetricsNotification>} */
+  /**
+   * @type {Subscriber<
+   *   import('../../../src/reserve/assetReserveKit.js').MetricsNotification
+   * >}
+   */
   let metrics;
-  /** @type {UpdateRecord<import('../../../src/reserve/assetReserveKit.js').MetricsNotification>} */
+  /**
+   * @type {UpdateRecord<
+   *   import('../../../src/reserve/assetReserveKit.js').MetricsNotification
+   * >}
+   */
   let metricsRecord;
 
   /** @type {VatAdminSvc} */
@@ -47,19 +55,42 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   * committee?: Installation<import('@agoric/governance/src/committee')['prepare']>,
-   * assetReserveV1?: Installation<import('../../../src/reserve/assetReserve')['prepare']>,
-   * puppetContractGovernor?: Installation<import('@agoric/governance/tools/puppetContractGovernor')['start']>,
+   *   committee?: Installation<
+   *     import('@agoric/governance/src/committee')['prepare']
+   *   >;
+   *   assetReserveV1?: Installation<
+   *     import('../../../src/reserve/assetReserve')['prepare']
+   *   >;
+   *   puppetContractGovernor?: Installation<
+   *     import('@agoric/governance/tools/puppetContractGovernor')['start']
+   *   >;
    * }}
    */
   const installations = {};
 
-  /** @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<import('../../../src/reserve/assetReserve.js').prepare>} */
+  /**
+   * @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<
+   *     import('../../../src/reserve/assetReserve.js').prepare
+   *   >}
+   */
   let governorFacets;
-  /** @type {ReturnType<Awaited<ReturnType<import('../../../src/reserve/assetReserve.js').prepare>>['creatorFacet']['getLimitedCreatorFacet']>} */
+  /**
+   * @type {ReturnType<
+   *   Awaited<
+   *     ReturnType<import('../../../src/reserve/assetReserve.js').prepare>
+   *   >['creatorFacet']['getLimitedCreatorFacet']
+   * >}
+   */
   let arLimitedFacet;
 
-  /** @type {Omit<import('@agoric/zoe/src/zoeService/utils.js').StartParams<import('../../../src/reserve/assetReserve.js').prepare>['terms'], 'issuers' | 'brands'>} */
+  /**
+   * @type {Omit<
+   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
+   *     import('../../../src/reserve/assetReserve.js').prepare
+   *   >['terms'],
+   *   'issuers' | 'brands'
+   * >}
+   */
   const arTerms = {
     governedParams: {
       // @ts-expect-error missing value
@@ -74,9 +105,7 @@ export const buildRootObject = async () => {
     namesByAddressAdmin,
   };
 
-  /**
-   * @param {Amount<'nat'>} amt
-   */
+  /** @param {Amount<'nat'>} amt */
   const addCollateral = async amt => {
     const arPublicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
     const seat = E(zoeService).offer(

@@ -44,30 +44,34 @@ const trace = makeTracer('VD', true);
 
 /**
  * @typedef {{
- * collaterals: Brand[],
- * rewardPoolAllocation: AmountKeywordRecord,
+ *   collaterals: Brand[];
+ *   rewardPoolAllocation: AmountKeywordRecord;
  * }} MetricsNotification
  *
- * @typedef {Readonly<{
- * }>} ImmutableState
+ * @typedef {Readonly<{}>} ImmutableState
  *
- * @typedef {{
- * }} MutableState
+ * @typedef {{}} MutableState
  *
  * @typedef {ImmutableState & MutableState} State
  *
  * @typedef {{
- *  burnDebt: BurnDebt,
- *  getGovernedParams: (collateralBrand: Brand) => import('./vaultManager.js').GovernedParamGetters,
- *  mintAndTransfer: MintAndTransfer,
- *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
+ *   burnDebt: BurnDebt;
+ *   getGovernedParams: (
+ *     collateralBrand: Brand,
+ *   ) => import('./vaultManager.js').GovernedParamGetters;
+ *   mintAndTransfer: MintAndTransfer;
+ *   getShortfallReporter: () => Promise<
+ *     import('../reserve/assetReserve.js').ShortfallReporter
+ *   >;
  * }} FactoryPowersFacet
  *
  * @typedef {Readonly<{
  *   state: State;
  * }>} MethodContext
  *
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} VaultDirectorParamManager
+ * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<
+ *     import('./params.js').VaultDirectorParams
+ *   >} VaultDirectorParamManager
  */
 
 const shortfallInvitationKey = 'shortfallInvitation';
@@ -76,7 +80,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
- * @param {ZCFMint<"nat">} debtMint
+ * @param {ZCFMint<'nat'>} debtMint
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
@@ -126,9 +130,7 @@ const prepareVaultDirector = (
 
   const managersNode = E(storageNode).makeChildNode('managers');
 
-  /**
-   * @returns {MetricsNotification}
-   */
+  /** @returns {MetricsNotification} */
   const sampleMetrics = () => {
     return harden({
       collaterals: Array.from(collateralManagers.keys()),
@@ -188,8 +190,8 @@ const prepareVaultDirector = (
     },
 
     /**
-     * Let the manager add rewards to the rewardPoolSeat without
-     * exposing the rewardPoolSeat to them.
+     * Let the manager add rewards to the rewardPoolSeat without exposing the
+     * rewardPoolSeat to them.
      *
      * @type {MintAndTransfer}
      */
@@ -264,9 +266,7 @@ const prepareVaultDirector = (
     });
   };
 
-  /**
-   * @returns {State}
-   */
+  /** @returns {State} */
   const initState = () => {
     return {};
   };
@@ -276,7 +276,7 @@ const prepareVaultDirector = (
    *
    * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
    * @param {VaultDirectorParamManager} directorParamManager
-   * @param {ZCFMint<"nat">} debtMint
+   * @param {ZCFMint<'nat'>} debtMint
    */
   const makeVaultDirector = prepareExoClassKit(
     baggage,
@@ -331,9 +331,7 @@ const prepareVaultDirector = (
               }
             },
           }),
-        /**
-         * @param {string} name
-         */
+        /** @param {string} name */
         getInvitation(name) {
           return directorParamManager.getInternalParamValue(name);
         },
@@ -442,9 +440,7 @@ const prepareVaultDirector = (
         },
       },
       public: {
-        /**
-         * @param {Brand} brandIn
-         */
+        /** @param {Brand} brandIn */
         getCollateralManager(brandIn) {
           collateralManagers.has(brandIn) ||
             Fail`Not a supported collateral type ${brandIn}`;
@@ -465,22 +461,16 @@ const prepareVaultDirector = (
         getPublicTopics() {
           return topics;
         },
-        /**
-         * subscription for the paramManager for the vaultFactory's electorate
-         */
+        /** subscription for the paramManager for the vaultFactory's electorate */
         getElectorateSubscription() {
           return directorParamManager.getSubscription();
         },
-        /**
-         * @param {{ collateralBrand: Brand }} selector
-         */
+        /** @param {{ collateralBrand: Brand }} selector */
         getGovernedParams({ collateralBrand }) {
           // TODO use named getters of TypedParamManager
           return vaultParamManagers.get(collateralBrand).getParams();
         },
-        /**
-         * @param {string} name
-         */
+        /** @param {string} name */
         getInvitationAmount(name) {
           return directorParamManager.getInvitationAmount(name);
         },
@@ -500,9 +490,7 @@ const prepareVaultDirector = (
             rescheduleWaker,
           );
         },
-        /**
-         * Start non-durable processes (or restart if needed after vat restart)
-         */
+        /** Start non-durable processes (or restart if needed after vat restart) */
         async start() {
           const { helper, machine } = this.facets;
 
@@ -527,7 +515,9 @@ harden(prepareVaultDirector);
 /**
  * Prepare the VaultDirector kind, get or make the singleton
  *
- * @type {(...pvdArgs: Parameters<typeof prepareVaultDirector>) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
+ * @type {(
+ *   ...pvdArgs: Parameters<typeof prepareVaultDirector>
+ * ) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
  */
 export const provideDirector = (...args) => {
   const makeVaultDirector = prepareVaultDirector(...args);

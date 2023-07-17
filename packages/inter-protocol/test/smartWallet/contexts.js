@@ -62,7 +62,11 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../../../smart-wallet/src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>} */
+  /**
+   * @type {Promise<
+   *   Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>
+   * >}
+   */
   const installation = E(zoe).install(bundle);
 
   const contractGovernorBundle = await bundleCache.load(
@@ -135,7 +139,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     provideWalletAndBalances(address).then(({ wallet }) => wallet);
 
   /**
-   *
    * @param {string[]} oracleAddresses
    * @param {string} inBrandName
    * @param {string} outBrandName
@@ -154,7 +157,13 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       '../inter-protocol/src/price/fluxAggregatorContract.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>>} */
+    /**
+     * @type {Promise<
+     *   Installation<
+     *     import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare
+     *   >
+     * >}
+     */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 
@@ -221,11 +230,14 @@ export const currentPurseBalance = (record, brand) => {
 };
 
 /**
- * Voting yes (first position) on the one open question using the continuing offer.
+ * Voting yes (first position) on the one open question using the continuing
+ * offer.
  *
  * @param {ERef<CommitteeElectoratePublic>} committeePublic
  * @param {string} voterAcceptanceOID
- * @returns {Promise<import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec>}
+ * @returns {Promise<
+ *   import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec
+ * >}
  */
 export const voteForOpenQuestion = async (
   committeePublic,

@@ -39,17 +39,35 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   * committee?: Installation<import('@agoric/governance/src/committee.js')['prepare']>,
-   * fluxAggregatorV1?: Installation<import('../../../src/price/fluxAggregatorContract').prepare>,
-   * puppetContractGovernor?: Installation<import('@agoric/governance/tools/puppetContractGovernor').start>,
+   *   committee?: Installation<
+   *     import('@agoric/governance/src/committee.js')['prepare']
+   *   >;
+   *   fluxAggregatorV1?: Installation<
+   *     import('../../../src/price/fluxAggregatorContract').prepare
+   *   >;
+   *   puppetContractGovernor?: Installation<
+   *     import('@agoric/governance/tools/puppetContractGovernor').start
+   *   >;
    * }}
    */
   const installations = {};
 
   // @ts-expect-error TODO make fluxAggregator publicFacet support all governance methods (or pare down governance API)
-  /** @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<import('../../../src/price/fluxAggregatorContract.js').prepare>} */
+  /**
+   * @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<
+   *     import('../../../src/price/fluxAggregatorContract.js').prepare
+   *   >}
+   */
   let governorFacets;
-  /** @type {ReturnType<Awaited<ReturnType<import('../../../src/price/fluxAggregatorContract.js').prepare>>['creatorFacet']['getLimitedCreatorFacet']>} */
+  /**
+   * @type {ReturnType<
+   *   Awaited<
+   *     ReturnType<
+   *       import('../../../src/price/fluxAggregatorContract.js').prepare
+   *     >
+   *   >['creatorFacet']['getLimitedCreatorFacet']
+   * >}
+   */
   let faLimitedFacet;
 
   /** @type {import('../../../src/price/priceOracleKit.js').OracleKit} */
@@ -59,7 +77,14 @@ export const buildRootObject = async () => {
   /** @type {UpdateRecord<any>} */
   let lastQuote;
 
-  /** @type {Omit<import('@agoric/zoe/src/zoeService/utils.js').StartParams<import('../../../src/price/fluxAggregatorContract.js').prepare>['terms'], 'issuers' | 'brands'>} */
+  /**
+   * @type {Omit<
+   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
+   *     import('../../../src/price/fluxAggregatorContract.js').prepare
+   *   >['terms'],
+   *   'issuers' | 'brands'
+   * >}
+   */
   const faTerms = {
     // driven by one oracle
     maxSubmissionCount: 1,

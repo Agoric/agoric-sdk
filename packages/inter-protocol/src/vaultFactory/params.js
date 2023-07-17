@@ -75,7 +75,11 @@ const makeVaultDirectorParams = (
 };
 harden(makeVaultDirectorParams);
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
+/**
+ * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<
+ *     ReturnType<typeof makeVaultDirectorParams>
+ *   >} VaultDirectorParams
+ */
 
 /** @type {(liquidationMargin: Ratio) => Ratio} */
 const zeroRatio = liquidationMargin =>
@@ -122,16 +126,16 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {{
- *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
- *   electorateInvitationAmount: Amount<'set'>,
- *   minInitialDebt: Amount<'nat'>,
- *   bootstrapPaymentValue: bigint,
- *   priceAuthority: ERef<PriceAuthority>,
- *   timer: ERef<import('@agoric/time/src/types').TimerService>,
- *   reservePublicFacet: AssetReservePublicFacet,
- *   interestTiming: InterestTiming,
- *   shortfallInvitationAmount: Amount<'set'>,
- *   referencedUi?: string,
+ *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>;
+ *   electorateInvitationAmount: Amount<'set'>;
+ *   minInitialDebt: Amount<'nat'>;
+ *   bootstrapPaymentValue: bigint;
+ *   priceAuthority: ERef<PriceAuthority>;
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>;
+ *   reservePublicFacet: AssetReservePublicFacet;
+ *   interestTiming: InterestTiming;
+ *   shortfallInvitationAmount: Amount<'set'>;
+ *   referencedUi?: string;
  * }} opts
  */
 export const makeGovernedTerms = ({
@@ -163,8 +167,8 @@ export const makeGovernedTerms = ({
 };
 harden(makeGovernedTerms);
 /**
- * Stop-gap which restores initial param values
- * UNTIL https://github.com/Agoric/agoric-sdk/issues/5200
+ * Stop-gap which restores initial param values UNTIL
+ * https://github.com/Agoric/agoric-sdk/issues/5200
  *
  * NB: changes from initial values will be lost upon restart
  *
@@ -176,7 +180,12 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   const managers = makeScalarMapStore();
 
   // the managers aren't durable but their arguments are
-  /** @type {MapStore<Brand, {storageNode: StorageNode, initialParamValues: VaultManagerParamValues}>} */
+  /**
+   * @type {MapStore<
+   *   Brand,
+   *   { storageNode: StorageNode; initialParamValues: VaultManagerParamValues }
+   * >}
+   */
   const managerArgs = provideDurableMapStore(
     baggage,
     'vault param manager parts',
@@ -196,7 +205,6 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
 
   return {
     /**
-     *
      * @param {Brand} brand
      * @param {StorageNode} storageNode
      * @param {VaultManagerParamValues} initialParamValues
@@ -206,9 +214,7 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
       managerArgs.init(brand, args);
       return makeManager(brand, args);
     },
-    /**
-     * @param {Brand} brand
-     */
+    /** @param {Brand} brand */
     get(brand) {
       return managers.get(brand);
     },

@@ -42,12 +42,12 @@ import {
 
 /**
  * @typedef {Record<string, any> & {
- * aeth: IssuerKit & import('../supports.js').AmountUtils,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
- * rates: VaultManagerParamValues,
- * interestTiming: InterestTiming,
- * zoe: ZoeService,
+ *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   rates: VaultManagerParamValues;
+ *   interestTiming: InterestTiming;
+ *   zoe: ZoeService;
  * }} Context
  */
 
@@ -124,7 +124,7 @@ test.before(async t => {
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {import('ava').ExecutionContext<Context>} t
- * @param {Array<NatValue> | Ratio} priceOrList
+ * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
@@ -194,7 +194,17 @@ const setupServices = async (
   );
   /** @typedef {import('../../src/proposals/econ-behaviors.js').AuctioneerKit} AuctioneerKit */
   /** @typedef {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} ManualPriceAuthority */
-  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, AuctioneerKit, ManualPriceAuthority, CollateralManager]} */
+  /**
+   * @type {[
+   *   any,
+   *   VaultFactoryCreatorFacet,
+   *   VFC['publicFacet'],
+   *   VaultManager,
+   *   AuctioneerKit,
+   *   ManualPriceAuthority,
+   *   CollateralManager,
+   * ]}
+   */
   const [
     governorInstance,
     vaultFactory, // creator

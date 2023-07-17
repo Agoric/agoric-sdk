@@ -29,13 +29,14 @@ test.before(async t => {
 });
 
 /**
- * @see {distributeProportionalSharesWithLimits} for logical cases A-E
- *
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
  * @param {[collateralReturned: bigint, bidRaise: bigint]} amountsReturned
- * @param {Array<{deposit: number, goal?: number}>} rawDeposits
- * @param {[transfers: Array<[bigint, bigint]>, leftovers: [bigint, bigint]]} rawExpected
+ * @param {{ deposit: number; goal?: number }[]} rawDeposits
+ * @param {[transfers: [bigint, bigint][], leftovers: [bigint, bigint]]} rawExpected
  * @param {string} kwd
+ * @see {distributeProportionalSharesWithLimits} for logical cases A-E
  */
 const checkProportions = (
   t,
@@ -191,7 +192,7 @@ test(
   ],
 );
 
-const transferSharing20 = /** @type {Array<[bigint, bigint]>} */ ([
+const transferSharing20 = /** @type {[bigint, bigint][]} */ ([
   [20n, 4n],
   [60n, 12n],
   [20n, 4n],

@@ -22,31 +22,34 @@ const trace = makeTracer('Vault', true);
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 /**
- * @file This has most of the logic for a Vault, to borrow Minted against collateral.
+ * @file This has most of the logic for a Vault, to borrow Minted against
+ *   collateral.
  *
- * The logic here is for Vault which is the majority of logic of vaults but
- * the user view is the `vault` value contained in VaultKit.
+ *   The logic here is for Vault which is the majority of logic of vaults but the
+ *   user view is the `vault` value contained in VaultKit.
  *
- * A note on naming convention:
- * - `Pre` is used as a postfix for any mutable value retrieved *before* an
- *    `await`, to flag values that must used very carefully after the `await`
- * - `new` is a prefix for values that describe the result of executing a
- *   transaction; e.g., `debt` is the value before the txn, and `newDebt`
- *   will be value if the txn completes.
- * - the absence of one of these implies the opposite, so `newDebt` is the
- *   future value fo `debt`, as computed based on values after any `await`
+ *   A note on naming convention:
+ *
+ *   - `Pre` is used as a postfix for any mutable value retrieved _before_ an
+ *       `await`, to flag values that must used very carefully after the
+ *       `await`
+ *   - `new` is a prefix for values that describe the result of executing a
+ *       transaction; e.g., `debt` is the value before the txn, and `newDebt`
+ *       will be value if the txn completes.
+ *   - the absence of one of these implies the opposite, so `newDebt` is the future
+ *       value fo `debt`, as computed based on values after any `await`
  */
 
 /**
  * Constants for vault phase.
  *
- * ACTIVE       - vault is in use and can be changed
- * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user.
- *                If liquidation fails, vaults may remain in this state. An upgrade to the contract
- *                might be able to recover them.
- * TRANSFER     - vault is able to be transferred (payments and debits frozen until it has a new owner)
- * CLOSED       - vault was closed by the user and all assets have been paid out
- * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
+ * ACTIVE - vault is in use and can be changed LIQUIDATING - vault is being
+ * liquidated by the vault manager, and cannot be changed by the user. If
+ * liquidation fails, vaults may remain in this state. An upgrade to the
+ * contract might be able to recover them. TRANSFER - vault is able to be
+ * transferred (payments and debits frozen until it has a new owner) CLOSED -
+ * vault was closed by the user and all assets have been paid out LIQUIDATED -
+ * vault was closed by the manager, with remaining assets paid to owner
  */
 export const Phase = /** @type {const} */ ({
   ACTIVE: 'active',
@@ -58,7 +61,7 @@ export const Phase = /** @type {const} */ ({
 
 /**
  * @typedef {Phase[keyof Omit<typeof Phase, 'TRANSFER'>]} VaultPhase
- * @type {{[K in VaultPhase]: Array<VaultPhase>}}
+ * @type {{ [K in VaultPhase]: VaultPhase[] }}
  */
 const validTransitions = {
   [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
@@ -72,7 +75,8 @@ const validTransitions = {
  *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
- * @property {{debt: Amount<'nat'>, stabilityFee: Ratio}} debtSnapshot 'debt' at the point the compounded stabilityFee was 'stabilityFee'
+ * @property {{ debt: Amount<'nat'>; stabilityFee: Ratio }} debtSnapshot 'debt'
+ *   at the point the compounded stabilityFee was 'stabilityFee'
  * @property {HolderPhase} vaultState
  */
 
@@ -87,27 +91,36 @@ const validTransitions = {
  * @property {MintAndTransfer} mintAndTransfer
  * @property {(amount: Amount, seat: ZCFSeat) => void} burn
  * @property {() => Ratio} getCompoundedStabilityFee
- * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
+ * @property {(
+ *   oldDebt: import('./storeUtils.js').NormalizedDebt,
+ *   oldCollateral: Amount<'nat'>,
+ *   vaultId: VaultId,
+ *   vaultPhase: VaultPhase,
+ *   vault: Vault,
+ * ) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
 /**
  * @typedef {Readonly<{
- * idInManager: VaultId,
- * manager: VaultManager,
- * storageNode: StorageNode,
- * vaultSeat: ZCFSeat,
+ *   idInManager: VaultId;
+ *   manager: VaultManager;
+ *   storageNode: StorageNode;
+ *   vaultSeat: ZCFSeat;
  * }>} ImmutableState
  */
 
 /**
- * Snapshot is of the debt and compounded interest when the principal was last changed.
+ * Snapshot is of the debt and compounded interest when the principal was last
+ * changed.
  *
  * @typedef {{
- *   stabilityFeeSnapshot: Ratio,
- *   phase: VaultPhase,
- *   debtSnapshot: Amount<'nat'>,
- *   outerUpdater: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification> | null,
+ *   stabilityFeeSnapshot: Ratio;
+ *   phase: VaultPhase;
+ *   debtSnapshot: Amount<'nat'>;
+ *   outerUpdater:
+ *     | import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification>
+ *     | null;
  * }} MutableState
  */
 
@@ -195,7 +208,10 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           return AmountMath.makeEmpty(this.facets.helper.debtBrand());
         },
         /**
-         * @typedef {{ give: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> }, want: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> } }} FullProposal
+         * @typedef {{
+         *   give: { Collateral: Amount<'nat'>; Minted: Amount<'nat'> };
+         *   want: { Collateral: Amount<'nat'>; Minted: Amount<'nat'> };
+         * }} FullProposal
          */
         /**
          * @param {ProposalRecord} partial
@@ -220,9 +236,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         //#endregion
 
         //#region Phase logic
-        /**
-         * @param {VaultPhase} newPhase
-         */
+        /** @param {VaultPhase} newPhase */
         assignPhase(newPhase) {
           const { state } = this;
 
@@ -262,12 +276,14 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * Update the debt balance and propagate upwards to
-         * maintain aggregate debt and liquidation order.
+         * Update the debt balance and propagate upwards to maintain aggregate
+         * debt and liquidation order.
          *
-         * @param {NormalizedDebt} oldDebtNormalized - prior principal and all accrued interest, normalized to the launch of the vaultManager
+         * @param {NormalizedDebt} oldDebtNormalized - prior principal and all
+         *   accrued interest, normalized to the launch of the vaultManager
          * @param {Amount<'nat'>} oldCollateral - actual collateral
-         * @param {Amount<'nat'>} newDebtActual - actual principal and all accrued interest
+         * @param {Amount<'nat'>} newDebtActual - actual principal and all
+         *   accrued interest
          */
         updateDebtAccounting(oldDebtNormalized, oldCollateral, newDebtActual) {
           const { state, facets } = this;
@@ -283,10 +299,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
         },
 
-        /**
-         *
-         * @param {ZCFSeat} seat
-         */
+        /** @param {ZCFSeat} seat */
         getCollateralAllocated(seat) {
           return seat.getAmountAllocated(
             'Collateral',
@@ -308,7 +321,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         *
          * @param {Amount<'nat'>} collateralAmount
          * @param {Amount<'nat'>} proposedDebt
          */
@@ -321,10 +333,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             )} for ${q(collateralAmount)} collateral`;
         },
 
-        /**
-         *
-         * @param {HolderPhase} newPhase
-         */
+        /** @param {HolderPhase} newPhase */
         getStateSnapshot(newPhase) {
           const { state, facets } = this;
 
@@ -340,9 +349,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           });
         },
 
-        /**
-         * call this whenever anything changes!
-         */
+        /** call this whenever anything changes! */
         updateUiState() {
           const { state, facets } = this;
           const { outerUpdater } = state;
@@ -370,9 +377,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           }
         },
 
-        /**
-         * @param {ZCFSeat} seat
-         */
+        /** @param {ZCFSeat} seat */
         async closeHook(seat) {
           const { state, facets } = this;
 
@@ -442,11 +447,11 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * Calculate the fee, the amount to mint and the resulting debt.
-         * The give and the want together reflect a delta, where typically
-         * one is zero because they come from the gave/want of an offer
-         * proposal. If the `want` is zero, the `fee` will also be zero,
-         * so the simple math works.
+         * Calculate the fee, the amount to mint and the resulting debt. The
+         * give and the want together reflect a delta, where typically one is
+         * zero because they come from the gave/want of an offer proposal. If
+         * the `want` is zero, the `fee` will also be zero, so the simple math
+         * works.
          *
          * @param {Amount<'nat'>} currentDebt
          * @param {Amount<'nat'>} giveAmount
@@ -524,7 +529,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         *
          * @param {ZCFSeat} clientSeat
          * @param {FullProposal} fp
          * @param {ReturnType<typeof calculateDebtCosts>} costs
@@ -570,7 +574,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         *
          * @param {ZCFSeat} seat
          * @returns {VaultKit}
          */
@@ -671,9 +674,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           return vaultKit;
         },
 
-        /**
-         * Called by manager at start of liquidation.
-         */
+        /** Called by manager at start of liquidation. */
         liquidating() {
           const { facets } = this;
 
@@ -683,8 +684,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * Called by manager at end of liquidation, at which point all debts have been
-         * covered.
+         * Called by manager at end of liquidation, at which point all debts
+         * have been covered.
          */
         liquidated() {
           const { facets } = this;
@@ -776,9 +777,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
         },
 
-        /**
-         * @returns {Promise<Invitation>}
-         */
+        /** @returns {Promise<Invitation>} */
         makeTransferInvitation() {
           const { state, facets } = this;
           const { outerUpdater } = state;
@@ -810,10 +809,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
         // for status/debugging
 
-        /**
-         *
-         * @returns {Amount<'nat'>}
-         */
+        /** @returns {Amount<'nat'>} */
         getCollateralAmount() {
           const { state, facets } = this;
           const { vaultSeat } = state;
@@ -827,15 +823,15 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         /**
          * The actual current debt, including accrued interest.
          *
-         * This looks like a simple getter but it does a lot of the heavy lifting for
-         * interest accrual. Rather than updating all records when interest accrues,
-         * the vault manager updates just its rolling compounded interest. Here we
-         * calculate what the current debt is given what's recorded in this vault and
-         * what interest has compounded since this vault record was written.
-         *
-         * @see getNormalizedDebt
+         * This looks like a simple getter but it does a lot of the heavy
+         * lifting for interest accrual. Rather than updating all records when
+         * interest accrues, the vault manager updates just its rolling
+         * compounded interest. Here we calculate what the current debt is given
+         * what's recorded in this vault and what interest has compounded since
+         * this vault record was written.
          *
          * @returns {Amount<'nat'>}
+         * @see getNormalizedDebt
          */
         getCurrentDebt() {
           const { state } = this;
@@ -847,14 +843,15 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * The normalization puts all debts on a common time-independent scale since
-         * the launch of this vault manager. This allows the manager to order vaults
-         * by their debt-to-collateral ratios without having to mutate the debts as
-         * the interest accrues.
+         * The normalization puts all debts on a common time-independent scale
+         * since the launch of this vault manager. This allows the manager to
+         * order vaults by their debt-to-collateral ratios without having to
+         * mutate the debts as the interest accrues.
          *
+         * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault
+         *   was open at the launch of this manager, before any interest
+         *   accrued
          * @see getActualDebAmount
-         *
-         * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault was open at the launch of this manager, before any interest accrued
          */
         getNormalizedDebt() {
           const { state } = this;
