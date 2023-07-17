@@ -1337,6 +1337,7 @@ function build(
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
       makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
+      // for use by @endo/pass-style
       passStyleOf,
     },
   });
