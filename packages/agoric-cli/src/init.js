@@ -40,9 +40,10 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
     dappBranch = ['-b', opts.dappBranch];
   }
 
+  const shallow = ['--depth', '1', '--shallow-submodules'];
   const exitStatus = await pspawn(
     'git',
-    ['clone', '--origin=upstream', dappURL, DIR, ...dappBranch],
+    ['clone', '--origin=upstream', ...shallow, dappURL, DIR, ...dappBranch],
     {
       stdio: 'inherit',
     },
