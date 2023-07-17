@@ -3,6 +3,7 @@
         "auctioneerKit": true,
         "chainTimerService": true,
         "priceAuthority": true,
+        "startGovernedUpgradable": true,
         "vaultFactoryKit": true,
         "zoe": true
     },

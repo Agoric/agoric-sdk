@@ -1,14 +1,15 @@
-// @ts-check
-import { E } from '@endo/far';
+// @ts-nocheck
+// #xxxport { E } from '@endo/far';
+/* global E */
 
 console.log('started switch-auctioneer script');
 
 // TODO: set these bundle-ids to the revised code
 const bundleIDs = {
   vaultFactory:
-    '84f4ecca276705b9695afb866844cb6c4e3b07fce785601c38a6dfef0452b55b25a285d3536e6aa19cc7dce70d52a3ea6ec07556e74bb8bf985e09513973c6e8',
+    'b1-84f4ecca276705b9695afb866844cb6c4e3b07fce785601c38a6dfef0452b55b25a285d3536e6aa19cc7dce70d52a3ea6ec07556e74bb8bf985e09513973c6e8',
   auctioneer:
-    'e85289898e66e0423d7ec1c402ac2ced21573f93cf599d593a0533a1e2355ace624cc95c8c8c18c66d44a921511642e87837accd0e728427c269936b040bb886',
+    'b1-e85289898e66e0423d7ec1c402ac2ced21573f93cf599d593a0533a1e2355ace624cc95c8c8c18c66d44a921511642e87837accd0e728427c269936b040bb886',
 };
 
 const { fromEntries, keys, values } = Object;
@@ -23,7 +24,7 @@ const allValues = async obj => {
   return harden(fromEntries(zip(keys(obj), resolved)));
 };
 
-/** @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} permittedPowers */
+// /** @param {#xxxport('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} permittedPowers */
 const switchAuctioneer = async permittedPowers => {
   console.log('switchAuctioneer: extracting permitted powers...');
   // see gov-switch-auctioneer-permit.json
@@ -66,6 +67,9 @@ const switchAuctioneer = async permittedPowers => {
       stableIssuer: stableIssuerP,
     });
 
+    console.log('Private Args', privateArgs);
+    console.log('Governed params', governedParams);
+
     const terms = {
       priceAuthority,
       reservePublicFacet,
@@ -101,7 +105,7 @@ const switchAuctioneer = async permittedPowers => {
     // @ts-expect-error cast XXX privateArgs missing from type
     const { privateArgs } = kit;
 
-    /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
+    /** @type {#xxxport('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
     const newPrivateArgs = harden({
       ...privateArgs,
       auctioneerPublicFacet: newAuctionKit.publicFacet,
