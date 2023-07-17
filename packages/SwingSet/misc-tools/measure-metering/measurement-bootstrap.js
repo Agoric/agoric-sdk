@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
 import { Far, E } from '@endo/far';
 import vaultFactoryBundle from '@agoric/inter-protocol/bundles/bundle-vaultFactory.js';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable */
 import '@endo/init';
 import process from 'process';
