@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "include": [
     "build",
+    "index.js",
     "scripts",
     "src",
     "test",

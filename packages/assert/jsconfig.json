@@ -2,6 +2,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": [
+    "exported.js",
     "src/**/*.js",
   ],
 }
