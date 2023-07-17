@@ -103,7 +103,7 @@ const manifest2graph = manifest => {
    * @param {string} src
    * @param {string} ty
    * @param {Permit} item
-   * @param {boolean} [reverse=false]
+   * @param {boolean} [reverse]
    */
   const level1 = (src, ty, item, reverse = false) => {
     if (!item) return;

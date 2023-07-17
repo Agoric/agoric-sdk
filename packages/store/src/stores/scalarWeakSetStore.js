@@ -70,7 +70,7 @@ export const makeWeakSetStoreMethods = (
  * remotables, since the other primitives may always appear.
  *
  * @template K
- * @param {string} [tag='key'] - tag for debugging
+ * @param {string} [tag] - tag for debugging
  * @param {StoreOptions} [options]
  * @returns {WeakSetStore<K>}
  */

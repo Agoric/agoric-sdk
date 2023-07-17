@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global big globalThis */
 
 export function runTheCheck(world) {

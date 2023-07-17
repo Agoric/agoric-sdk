@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { assert, Fail } from '@agoric/assert';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';

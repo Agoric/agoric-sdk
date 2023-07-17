@@ -1,3 +1,4 @@
+// @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order

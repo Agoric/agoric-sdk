@@ -16,8 +16,8 @@ import { kser } from './kmarshal.js';
 
 /**
  * @param {object} [options]
- * @param {boolean} [options.skipLogging = false]
- * @param {Map<string, string>} [options.kvStore = new Map()]
+ * @param {boolean} [options.skipLogging]
+ * @param {Map<string, string>} [options.kvStore]
  */
 export function buildSyscall(options = {}) {
   const { skipLogging = false, kvStore: fakestore = new Map() } = options;
@@ -168,9 +168,9 @@ function makeRPMaker(nextNumber = 1) {
  * @param {string} vatName
  * @param {object} [options]
  * @param {boolean} [options.forceGC]
- * @param {Map<string, string>} [options.kvStore = new Map()]
+ * @param {Map<string, string>} [options.kvStore]
  * @param {number} [options.nextPromiseImportNumber]
- * @param {boolean} [options.skipLogging = false]
+ * @param {boolean} [options.skipLogging]
  */
 export async function setupTestLiveslots(
   t,

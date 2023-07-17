@@ -65,7 +65,7 @@ harden(assertCapData);
  * @param {Map<string, string>} data
  * @param {string} key
  * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
- * @param {number} [index=-1] index of the desired value in a deserialized stream cell
+ * @param {number} [index] index of the desired value in a deserialized stream cell
  */
 export const unmarshalFromVstorage = (data, key, fromCapData, index = -1) => {
   const serialized = data.get(key) || Fail`no data for ${key}`;

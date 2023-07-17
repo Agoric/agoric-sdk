@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Far, E } from '@endo/far';
 
 export function buildRootObject() {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import test from 'ava';
 import '@endo/init/debug.js';
 import tmp from 'tmp';

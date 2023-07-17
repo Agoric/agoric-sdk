@@ -85,7 +85,7 @@ export const makeSetStoreMethods = (
  * copyRecords, as keys and look them up based on equality of their contents.
  *
  * @template K
- * @param {string} [tag='key'] - tag for debugging
+ * @param {string} [tag] - tag for debugging
  * @param {StoreOptions} [options]
  * @returns {SetStore<K>}
  */
