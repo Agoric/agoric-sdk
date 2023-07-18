@@ -355,13 +355,6 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		return nil
 	}
 
-	if manifest.Data != "" {
-		err = writeFileToPayload(manifest.Data, UntrustedExportDataArtifactName)
-		if err != nil {
-			return err
-		}
-	}
-
 	for _, artifactInfo := range manifest.Artifacts {
 		artifactName := artifactInfo[0]
 		fileName := artifactInfo[1]
@@ -369,6 +362,13 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 			return fmt.Errorf("unexpected artifact name %s", artifactName)
 		}
 		err = writeFileToPayload(fileName, artifactName)
+		if err != nil {
+			return err
+		}
+	}
+
+	if manifest.Data != "" {
+		err = writeFileToPayload(manifest.Data, UntrustedExportDataArtifactName)
 		if err != nil {
 			return err
 		}
@@ -417,8 +417,6 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		snapshotter.activeSnapshot = nil
 	}()
 
-	ctx := snapshotter.newRestoreContext(height)
-
 	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", blockHeight))
 	if err != nil {
 		return err
@@ -427,22 +425,23 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 
 	manifest := exportManifest{
 		BlockHeight: blockHeight,
-		Data:        ExportDataFilename,
 	}
-
-	exportDataFile, err := os.OpenFile(filepath.Join(exportDir, ExportDataFilename), os.O_CREATE|os.O_WRONLY, ExportedFilesMode)
-	if err != nil {
-		return err
-	}
-	defer exportDataFile.Close()
 
 	// Retrieve the SwingStore "ExportData" from the verified vstorage data.
 	// At this point the content of the cosmos DB has been verified against the
 	// AppHash, which means the SwingStore data it contains can be used as the
 	// trusted root against which to validate the artifacts.
+	ctx := snapshotter.newRestoreContext(height)
 	swingStoreEntries := snapshotter.getSwingStoreExportData(ctx)
 
 	if len(swingStoreEntries) > 0 {
+		manifest.Data = ExportDataFilename
+		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, ExportDataFilename), os.O_CREATE|os.O_WRONLY, ExportedFilesMode)
+		if err != nil {
+			return err
+		}
+		defer exportDataFile.Close()
+
 		encoder := json.NewEncoder(exportDataFile)
 		encoder.SetEscapeHTML(false)
 		for _, dataEntry := range swingStoreEntries {
@@ -452,6 +451,12 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 				return err
 			}
 		}
+
+		err = exportDataFile.Sync()
+		if err != nil {
+			return err
+		}
+		exportDataFile.Close()
 	}
 
 	writeExportFile := func(filename string, data []byte) error {
@@ -471,8 +476,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 			return err
 		}
 
-		switch {
-		case artifact.Name != UntrustedExportDataArtifactName:
+		if artifact.Name != UntrustedExportDataArtifactName {
 			// Artifact verifiable on import from the export data
 			// Since we cannot trust the state-sync artifact at this point, we generate
 			// a safe and unique filename from the artifact name we received, by
@@ -483,29 +487,15 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
 			manifest.Artifacts = append(manifest.Artifacts, [2]string{artifact.Name, filename})
 			err = writeExportFile(filename, artifact.Data)
-
-		case len(swingStoreEntries) > 0:
+		} else {
 			// Pseudo artifact containing untrusted export data which may have been
 			// saved separately for debugging purposes (not referenced from the manifest)
 			err = writeExportFile(UntrustedExportDataFilename, artifact.Data)
-
-		default:
-			// There is no trusted export data
-			err = errors.New("cannot restore from untrusted export data")
-			// snapshotter.logger.Info("using untrusted export data for swingstore restore")
-			// _, err = exportDataFile.Write(artifact.Data)
 		}
-
 		if err != nil {
 			return err
 		}
 	}
-
-	err = exportDataFile.Sync()
-	if err != nil {
-		return err
-	}
-	exportDataFile.Close()
 
 	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
