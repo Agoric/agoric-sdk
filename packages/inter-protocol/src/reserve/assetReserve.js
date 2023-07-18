@@ -6,6 +6,7 @@ import {
   prepareRecorderKitMakers,
   provideAll,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 const trace = makeTracer('AR', true);
@@ -51,21 +52,13 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {() => Promise<ZCFMint<'nat'>>} */
-  const takeFeeMint = async () => {
-    if (baggage.has('feeMint')) {
-      return baggage.get('feeMint');
-    }
+  const provider = makeAtomicProvider(baggage);
 
-    const feeMintTemp = await zcf.registerFeeMint(
-      'Fee',
-      privateArgs.feeMintAccess,
-    );
-    baggage.init('feeMint', feeMintTemp);
-    return feeMintTemp;
-  };
-  trace('awaiting takeFeeMint');
-  const feeMint = await takeFeeMint();
+  trace('awaiting feeMint');
+  /** @type {ZCFMint<'nat'>} */
+  const feeMint = await provider.provideAsync('feeMint', () =>
+    zcf.registerFeeMint('Fee', privateArgs.feeMintAccess),
+  );
   const storageNode = await privateArgs.storageNode;
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
     feeMint,
