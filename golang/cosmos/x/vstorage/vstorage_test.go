@@ -88,7 +88,8 @@ func TestGetAndHas(t *testing.T) {
 		{label: "empty non-terminal", args: []interface{}{"top.empty-non-terminal"}, want: `null`},
 		{label: "no entry", args: []interface{}{"nosuchpath"}, want: `null`},
 		{label: "empty args", args: []interface{}{}, errContains: ptr(`missing`)},
-		{label: "non-string arg", args: []interface{}{42}, errContains: ptr(`json`)},
+		{label: "number arg", args: []interface{}{42}, errContains: ptr(`json`)},
+		{label: "null arg", args: []interface{}{nil}, errContains: ptr(`null`)},
 		{label: "extra args", args: []interface{}{"foo", "bar"}, errContains: ptr(`extra`)},
 	}
 	for _, desc := range cases {
@@ -159,10 +160,16 @@ func doTestSetAndDelete(t *testing.T, setMethod string, expectNotify bool) {
 		{label: "restorations",
 			args: []interface{}{[]string{"baz.b", "quux"}, []string{"baz.a", "quux"}},
 		},
-		{label: "non-string path",
+		{label: "number path",
 			// TODO: Fully validate input before making changes
 			// args:        []interface{}{[]string{"foo", "X"}, []interface{}{42, "new"}},
 			args:        []interface{}{[]interface{}{42, "new"}},
+			errContains: ptr("path"),
+		},
+		{label: "null path",
+			// TODO: Fully validate input before making changes
+			// args:        []interface{}{[]string{"foo", "Y"}, []interface{}{nil, "new"}},
+			args:        []interface{}{[]interface{}{nil, "new"}},
 			errContains: ptr("path"),
 		},
 		{label: "non-string value",
