@@ -665,7 +665,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { remainingProceedsGoal } = state;
           const { helper } = facets;
           for (const [key, seatRecord] of prioritizedOffers) {
-            const { seat, price: p, wanted, exitAfterBuy } = seatRecord;
+            const { seat, price: p} = seatRecord;
             if (
               remainingProceedsGoal &&
               AmountMath.isEmpty(remainingProceedsGoal)
@@ -674,18 +674,19 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             } else if (seat.hasExited()) {
               helper.removeFromItsBook(key, p);
             } else {
-              const collateralSold = helper.settle(seat, wanted);
+              const { remainingWant, originalWant, exitAfterBuy } = seatRecord;
+              const collateralSold = helper.settle(seat, remainingWant);
 
               const alloc = seat.getCurrentAllocation();
               if (
                 (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
                 AmountMath.isEmpty(alloc.Bid) ||
                 ('Collateral' in alloc &&
-                  AmountMath.isGTE(alloc.Collateral, wanted))
+                  AmountMath.isGTE(alloc.Collateral, originalWant))
               ) {
                 seat.exit();
                 helper.removeFromItsBook(key, p);
-              } else if (!AmountMath.isGTE(collateralSold, wanted)) {
+              } else if (!AmountMath.isGTE(collateralSold, remainingWant)) {
                 helper.updateItsBook(key, collateralSold, p);
               }
             }

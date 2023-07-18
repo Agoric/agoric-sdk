@@ -33,7 +33,8 @@ const nextSequenceNumber = baggage => {
 /**
  * @typedef {{
  *   seat: ZCFSeat;
- *   wanted: Amount<'nat'>;
+ *   originalWant: Amount<'nat'>,
+ *   remainingWant: Amount<'nat'>,
  *   seqNum: NatValue;
  *   received: Amount<'nat'>;
  *   timestamp: Timestamp;
@@ -135,7 +136,8 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
           received: AmountMath.makeEmpty(collateralBrand),
           seat,
           seqNum,
-          wanted,
+          originalWant: wanted,
+          remainingWant: wanted,
           exitAfterBuy,
           timestamp,
         };
@@ -159,7 +161,8 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
         return E(getBidDataRecorder(key)).write(
           harden({
             bidScaling: record.bidScaling,
-            wanted: record.wanted,
+            originalWant: record.originalWant,
+            remainingWant: record.remainingWant,
             exitAfterBuy: record.exitAfterBuy,
             timestamp: record.timestamp,
             balance: record.seat.getCurrentAllocation().Bid,
@@ -189,6 +192,7 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
         const newRecord = harden({
           ...oldRec,
           received: AmountMath.add(oldRec.received, sold),
+          remainingWant: AmountMath.subtract(oldRec.remainingWant, sold),
         });
         records.set(key, newRecord);
         this.self.publishOffer(newRecord);
@@ -285,7 +289,8 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
           received: AmountMath.makeEmpty(collateralBrand),
           seat,
           seqNum,
-          wanted,
+          originalWant: wanted,
+          remainingWant: wanted,
           exitAfterBuy,
           timestamp,
         });
@@ -308,7 +313,8 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
         return E(getBidDataRecorder(key)).write(
           harden({
             price: record.price,
-            wanted: record.wanted,
+            originalWant: record.originalWant,
+            remainingWant: record.remainingWant,
             exitAfterBuy: record.exitAfterBuy,
             timestamp: record.timestamp,
             balance: record.seat.getCurrentAllocation().Bid,
@@ -337,6 +343,7 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
         const newRecord = harden({
           ...oldRec,
           received: AmountMath.add(oldRec.received, sold),
+          remainingWant: AmountMath.subtract(oldRec.remainingWant, sold),
         });
         records.set(key, newRecord);
         this.self.publishOffer(newRecord);
