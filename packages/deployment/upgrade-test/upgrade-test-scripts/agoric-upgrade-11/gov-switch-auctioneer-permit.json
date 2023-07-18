@@ -5,7 +5,9 @@
         "priceAuthority": true,
         "startGovernedUpgradable": true,
         "vaultFactoryKit": true,
-        "zoe": true
+        "zoe": true,
+        "chainStorage": true,
+        "board": true
     },
     "produce": {
         "auctioneerKit": true

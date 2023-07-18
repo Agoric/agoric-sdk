@@ -7,10 +7,12 @@ console.log('started switch-auctioneer script');
 // TODO: set these bundle-ids to the revised code
 const bundleIDs = {
   vaultFactory:
-    'b1-84f4ecca276705b9695afb866844cb6c4e3b07fce785601c38a6dfef0452b55b25a285d3536e6aa19cc7dce70d52a3ea6ec07556e74bb8bf985e09513973c6e8',
+    'b1-7095a8c9e4becf1cbeb27c1ddfaf3efcb2118e7492c76a1783f6b03f184db440062b0e5d63ab2b7fdc6ced6bca5c8a759277e97aa3ed4b2e0bccbec9c09e98cd',
   auctioneer:
     'b1-e85289898e66e0423d7ec1c402ac2ced21573f93cf599d593a0533a1e2355ace624cc95c8c8c18c66d44a921511642e87837accd0e728427c269936b040bb886',
 };
+
+const STORAGE_PATH = 'auction';
 
 const { fromEntries, keys, values } = Object;
 
@@ -36,6 +38,8 @@ const switchAuctioneer = async permittedPowers => {
       startGovernedUpgradable,
       vaultFactoryKit,
       zoe,
+      chainStorage,
+      board,
     },
     produce: { auctioneerKit },
     instance: {
@@ -54,21 +58,29 @@ const switchAuctioneer = async permittedPowers => {
     console.log('startNewAuctioneer: installBundleID etc.');
     const {
       // @ts-expect-error cast XXX missing from type
-      auctioneerKit: { privateArgs },
-      governedParams,
+      // auctioneerKit: { privateArgs }, // TODO, this doesn't work. Find a way to pass in valid private args
+      governedParamsOrig,
       installation,
       reservePublicFacet,
       stableIssuer,
+      storageNode,
+      marshaller,
     } = await allValues({
       auctioneerKit: auctioneerKitP,
-      governedParams: E(E.get(auctioneerKitP).publicFacet).getGovernedParams(),
+      governedParamsOrig: E(E.get(auctioneerKitP).publicFacet).getGovernedParams(),
       installation: E(zoe).installBundleID(bundleIDs.auctioneer, 'auctioneer'),
       reservePublicFacet: E(zoe).getPublicFacet(reserveInstance),
       stableIssuer: stableIssuerP,
+      storageNode: E(chainStorage).makeChildNode(STORAGE_PATH),
+      marshaller: E(board).getReadonlyMarshaller()
     });
 
-    console.log('Private Args', privateArgs);
-    console.log('Governed params', governedParams);
+    const privateArgs = {
+      storageNode,
+      marshaller,
+    };
+
+    const { Electorate: _, ...governedParams } = governedParamsOrig;
 
     const terms = {
       priceAuthority,
@@ -76,15 +88,17 @@ const switchAuctioneer = async permittedPowers => {
       timerService,
       governedParams,
     };
+
     console.log('startNewAuctioneer: startGovernedUpgradable');
     const kit = await E(startGovernedUpgradable)({
       label: 'auctioneer',
       installation,
       issuerKeywordRecord: { Bid: stableIssuer },
       terms,
-      governedParams: terms.governedParams,
+      governedParams,
       privateArgs,
     });
+
     auctioneerKit.reset();
     auctioneerKit.resolve(kit);
     // TODO: test that auctioneer in agoricNames.instance gets updated
