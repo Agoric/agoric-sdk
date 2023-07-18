@@ -50,9 +50,12 @@ type activeSnapshot struct {
 	logger log.Logger
 	// Use to synchronize the commit boundary
 	startedResult chan error
-	// Internal flag indicating whether the cosmos driven snapshot process completed
+	// Internal flag indicating whether the snapshot was retrieved
 	// Only read or written by the snapshot worker goroutine.
 	retrieved bool
+	// Internal plumbing of any error that happen during `SnapshotExtension`
+	// Only read or written by the snapshot worker goroutine.
+	retrieveError error
 	// Closed when this snapshot is complete
 	done chan struct{}
 }
@@ -196,20 +199,25 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		// In production this should indirectly call SnapshotExtension().
 		snapshotter.takeSnapshot(height)
 
-		// Check whether the cosmos Snapshot() method successfully handled our extension
+		// Restore any retrieve error swallowed by `takeSnapshot`
+		err = active.retrieveError
+		if err != nil {
+			logger.Error("failed to make swingset snapshot", "err", err)
+		}
+
+		// Check whether the JS generated snapshot was retrieved by `SnapshotExtension`
 		if active.retrieved {
 			return
 		}
 
-		logger.Error("failed to make swingset snapshot")
 		action = &snapshotAction{
 			Type:        "COSMOS_SNAPSHOT",
 			BlockHeight: blockHeight,
 			Request:     "discard",
 		}
-		_, err = snapshotter.blockingSend(action, false)
+		_, discardErr := snapshotter.blockingSend(action, false)
 
-		if err != nil {
+		if discardErr != nil {
 			logger.Error("failed to discard swingset snapshot", "err", err)
 		}
 	}()
@@ -279,14 +287,12 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		// a value was provided to a `return` statement.
 		// See https://go.dev/blog/defer-panic-and-recover for details
 		if err != nil {
-			var logger log.Logger
-			if snapshotter.activeSnapshot != nil {
-				logger = snapshotter.activeSnapshot.logger
+			activeSnapshot := snapshotter.activeSnapshot
+			if activeSnapshot != nil {
+				activeSnapshot.retrieveError = err
 			} else {
-				logger = snapshotter.logger
+				snapshotter.logger.Error("swingset snapshot extension failed", "err", err)
 			}
-
-			logger.Error("swingset snapshot extension failed", "err", err)
 		}
 	}()
 
@@ -310,6 +316,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 	if err != nil {
 		return err
 	}
+	activeSnapshot.retrieved = true
 
 	var exportDir string
 	err = json.Unmarshal([]byte(out), &exportDir)
@@ -374,7 +381,6 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		}
 	}
 
-	activeSnapshot.retrieved = true
 	activeSnapshot.logger.Info("retrieved snapshot", "exportDir", exportDir)
 
 	return nil

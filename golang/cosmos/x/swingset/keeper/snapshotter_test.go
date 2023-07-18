@@ -138,7 +138,7 @@ func TestRetrievalFails(t *testing.T) {
 	swingsetSnapshotter.takeSnapshot = func(height int64) {
 		// shortcut to the snapshot manager calling the extension
 		savedErr = swingsetSnapshotter.SnapshotExtension(uint64(height), nilWriter)
-		close(ch)
+		<-ch
 	}
 
 	err := swingsetSnapshotter.InitiateSnapshot(123)
@@ -150,7 +150,7 @@ func TestRetrievalFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	<-ch
+	close(ch)
 	if savedErr == nil {
 		t.Fatal("wanted retrieval error")
 	}
