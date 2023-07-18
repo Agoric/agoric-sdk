@@ -1,4 +1,5 @@
 {
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
   "command": {
     "version": {
       "message": "chore(release): publish",
@@ -14,6 +15,5 @@
     "packages/wallet/*"
   ],
   "rejectCycles": true,
-  "useWorkspaces": true,
   "version": "independent"
 }
