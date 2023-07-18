@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -44,7 +45,7 @@ type activeSnapshot struct {
 	// Whether the operation in progress is a restore
 	isRestore bool
 	// The block height of the snapshot in progress
-	height int64
+	blockHeight uint64
 	// The logger for this snapshot
 	logger log.Logger
 	// Use to synchronize the commit boundary
@@ -77,7 +78,7 @@ type SwingsetSnapshotter struct {
 
 type snapshotAction struct {
 	Type        string            `json:"type"` // COSMOS_SNAPSHOT
-	BlockHeight int64             `json:"blockHeight"`
+	BlockHeight uint64            `json:"blockHeight"`
 	Request     string            `json:"request"` // "initiate", "discard", "retrieve", or "restore"
 	Args        []json.RawMessage `json:"args,omitempty"`
 }
@@ -122,9 +123,9 @@ func (snapshotter *SwingsetSnapshotter) checkNotActive() error {
 			snapshotter.activeSnapshot = nil
 		default:
 			if active.isRestore {
-				return fmt.Errorf("snapshot restore already in progress for height %d", active.height)
+				return fmt.Errorf("snapshot restore already in progress for height %d", active.blockHeight)
 			} else {
-				return fmt.Errorf("snapshot already in progress for height %d", active.height)
+				return fmt.Errorf("snapshot already in progress for height %d", active.blockHeight)
 			}
 		}
 	}
@@ -141,18 +142,23 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 	if err != nil {
 		return err
 	}
+	if height <= 0 {
+		return fmt.Errorf("block height must not be negative or 0")
+	}
+
+	blockHeight := uint64(height)
 
 	if !snapshotter.isConfigured() {
 		return fmt.Errorf("snapshot manager not configured")
 	}
 
-	logger := snapshotter.logger.With("height", height)
+	logger := snapshotter.logger.With("height", blockHeight)
 
 	// Indicate that a snapshot has been initiated by setting `activeSnapshot`.
 	// This structure is used to synchronize with the goroutine spawned below.
 	// It's nilled-out before exiting (and is the only code that does so).
 	active := &activeSnapshot{
-		height:        height,
+		blockHeight:   blockHeight,
 		logger:        logger,
 		startedResult: make(chan error, 1),
 		retrieved:     false,
@@ -165,7 +171,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 
 		action := &snapshotAction{
 			Type:        "COSMOS_SNAPSHOT",
-			BlockHeight: height,
+			BlockHeight: blockHeight,
 			Request:     "initiate",
 		}
 
@@ -198,7 +204,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		logger.Error("failed to make swingset snapshot")
 		action = &snapshotAction{
 			Type:        "COSMOS_SNAPSHOT",
-			BlockHeight: height,
+			BlockHeight: blockHeight,
 			Request:     "discard",
 		}
 		_, err = snapshotter.blockingSend(action, false)
@@ -266,7 +272,7 @@ func (snapshotter *SwingsetSnapshotter) SupportedFormats() []uint32 {
 // This operation is invoked by the snapshot manager in the goroutine started by
 // `InitiateSnapshot`.
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payloadWriter snapshots.ExtensionPayloadWriter) (err error) {
+func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, payloadWriter snapshots.ExtensionPayloadWriter) (err error) {
 	defer func() {
 		// Since the cosmos layers do a poor job of reporting errors, do our own reporting
 		// `err` will be set correctly regardless if it was explicitly assigned or
@@ -290,13 +296,13 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 		return errors.New("no active swingset snapshot")
 	}
 
-	if activeSnapshot.height != int64(height) {
-		return fmt.Errorf("swingset snapshot requested for unexpected height %d (expected %d)", height, activeSnapshot.height)
+	if activeSnapshot.blockHeight != blockHeight {
+		return fmt.Errorf("swingset snapshot requested for unexpected height %d (expected %d)", blockHeight, activeSnapshot.blockHeight)
 	}
 
 	action := &snapshotAction{
 		Type:        "COSMOS_SNAPSHOT",
-		BlockHeight: activeSnapshot.height,
+		BlockHeight: blockHeight,
 		Request:     "retrieve",
 	}
 	out, err := snapshotter.blockingSend(action, false)
@@ -324,8 +330,8 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 		return err
 	}
 
-	if manifest.BlockHeight != height {
-		return fmt.Errorf("snapshot manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, height)
+	if manifest.BlockHeight != blockHeight {
+		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
 	writeFileToPayload := func(fileName string, artifactName string) error {
@@ -377,10 +383,15 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 // RestoreExtension restores an extension state snapshot,
 // the payload reader returns `io.EOF` when it reaches the extension boundaries.
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format uint32, payloadReader snapshots.ExtensionPayloadReader) error {
+func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, format uint32, payloadReader snapshots.ExtensionPayloadReader) error {
 	if format != SnapshotFormat {
 		return snapshots.ErrUnknownFormat
 	}
+
+	if blockHeight > math.MaxInt64 {
+		return fmt.Errorf("snapshot block height %d is higher than max int64", blockHeight)
+	}
+	height := int64(blockHeight)
 
 	err := snapshotter.checkNotActive()
 	if err != nil {
@@ -391,9 +402,9 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 	// `InitiateSnapshot` and `RestoreExtension` should only be called from the
 	// main thread, but it doesn't cost much to add in case things go wrong.
 	active := &activeSnapshot{
-		isRestore: true,
-		height:    int64(height),
-		logger:    snapshotter.logger,
+		isRestore:   true,
+		blockHeight: blockHeight,
+		logger:      snapshotter.logger,
 		// goroutine synchronization is unnecessary since anything checking should
 		// be called from the same thread.
 		// Effectively `WaitUntilSnapshotStarted` would block infinitely and
@@ -406,16 +417,16 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 		snapshotter.activeSnapshot = nil
 	}()
 
-	ctx := snapshotter.newRestoreContext(int64(height))
+	ctx := snapshotter.newRestoreContext(height)
 
-	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", height))
+	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", blockHeight))
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(exportDir)
 
 	manifest := exportManifest{
-		BlockHeight: height,
+		BlockHeight: blockHeight,
 		Data:        ExportDataFilename,
 	}
 
@@ -512,7 +523,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 
 	action := &snapshotAction{
 		Type:        "COSMOS_SNAPSHOT",
-		BlockHeight: int64(height),
+		BlockHeight: blockHeight,
 		Request:     "restore",
 		Args:        []json.RawMessage{encodedExportDir},
 	}
@@ -522,7 +533,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 		return err
 	}
 
-	snapshotter.logger.Info("restored snapshot", "exportDir", exportDir, "height", height)
+	snapshotter.logger.Info("restored snapshot", "exportDir", exportDir, "height", blockHeight)
 
 	return nil
 }
