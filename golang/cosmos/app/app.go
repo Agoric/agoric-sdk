@@ -233,12 +233,13 @@ type GaiaApp struct { // nolint: golint
 	FeeGrantKeeper feegrantkeeper.Keeper
 	AuthzKeeper    authzkeeper.Keeper
 
-	SwingSetKeeper      swingset.Keeper
-	SwingSetSnapshotter swingset.Snapshotter
-	VstorageKeeper      vstorage.Keeper
-	VibcKeeper          vibc.Keeper
-	VbankKeeper         vbank.Keeper
-	LienKeeper          lien.Keeper
+	SwingStoreExportsHandler swingset.SwingStoreExportsHandler
+	SwingSetSnapshotter      swingset.ExtensionSnapshotter
+	SwingSetKeeper           swingset.Keeper
+	VstorageKeeper           vstorage.Keeper
+	VibcKeeper               vibc.Keeper
+	VbankKeeper              vbank.Keeper
+	LienKeeper               lien.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -457,9 +458,8 @@ func NewAgoricApp(
 		callToController,
 	)
 
-	app.SwingSetSnapshotter = swingsetkeeper.NewSwingsetSnapshotter(
-		bApp,
-		app.SwingSetKeeper.ExportSwingStore,
+	app.SwingStoreExportsHandler = *swingsetkeeper.NewSwingStoreExportsHandler(
+		app.Logger(),
 		func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
 			if mustNotBeInited {
 				app.CheckControllerInited(false)
@@ -471,6 +471,11 @@ func NewAgoricApp(
 			}
 			return sendToController(true, string(bz))
 		},
+	)
+	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
+		bApp,
+		&app.SwingStoreExportsHandler,
+		app.SwingSetKeeper.ExportSwingStore,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
