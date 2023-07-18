@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,7 +27,8 @@ import (
 // See docs/architecture/state-sync.md for a sequence diagram of how this
 // module fits within the state-sync process.
 
-var _ snapshots.ExtensionSnapshotter = &SwingsetSnapshotter{}
+var _ snapshots.ExtensionSnapshotter = &ExtensionSnapshotter{}
+var _ SwingStoreExportEventHandler = &ExtensionSnapshotter{}
 
 // SnapshotFormat 1 defines all extension payloads to be SwingStoreArtifact proto messages
 const SnapshotFormat = 1
@@ -59,10 +61,10 @@ const ExportManifestFilename = "export-manifest.json"
 // JS and golang handle such extra whitespace.
 const exportDataFilename = "export-data.jsonl"
 
-// UntrustedExportDataArtifactName is a special artifact name to indicate the
-// presence of a synthetic artifact containing untrusted "export data". This
-// artifact must not end up in the list of artifacts imported by the JS import
-// tooling (which would fail).
+// UntrustedExportDataArtifactName is a special artifact name that the provider
+// and consumer of an export can use to indicate the presence of a synthetic
+// artifact containing untrusted "export data". This artifact must not end up in
+// the list of artifacts imported by the JS import tooling (which would fail).
 const UntrustedExportDataArtifactName = "UNTRUSTED-EXPORT-DATA"
 const untrustedExportDataFilename = "untrusted-export-data.jsonl"
 
@@ -137,14 +139,13 @@ type operationDetails struct {
 	// channel.
 	exportStartedResult chan error
 	// exportRetrieved is an internal flag indicating whether the JS generated
-	// the "retrieve" blockingSend was performed or not, and used to control
-	// whether to send a "discard" request if the JS side stayed responsible for
-	// the generated but un-retrieved export.
+	// export was retrieved. It can be false regardless of the component's
+	// eventHandler reporting an error or not. It is only indicative of whether
+	// the component called retrieveExport, and used to control whether to send
+	// a discard request if the JS side stayed responsible for the generated but
+	// un-retrieved export.
 	// It is only read or written by the export operation's goroutine.
 	exportRetrieved bool
-	// Internal plumbing of any error that happen during `SnapshotExtension`
-	// Only read or written by the snapshot worker goroutine.
-	retrieveError error
 	// exportDone is a channel that is closed when the active export operation
 	// is complete.
 	// It is assigned at creation and never mutated. The started goroutine
@@ -156,13 +157,13 @@ type operationDetails struct {
 // activeOperation is a global variable reflecting a swing-store import or
 // export in progress on the JS side.
 // This variable is only assigned to through calls of the public methods of
-// SwingsetSnapshotter, which rely on the exportDone channel getting
+// SwingStoreExportsHandler, which rely on the exportDone channel getting
 // closed to nil this variable.
-// Only the calls to InitiateSnapshot and RestoreSnapshot set this to a non-nil
+// Only the calls to InitiateExport and RestoreExport set this to a non-nil
 // value. The goroutine in which these calls occur is referred to as the
 // "main goroutine". That goroutine may be different over time, but it's the
 // caller's responsibility to ensure those goroutines do not overlap calls to
-// the SwingsetSnapshotter public methods.
+// the SwingStoreExportsHandler public methods.
 // See also the details of each field for the conditions under which they are
 // accessed.
 var activeOperation *operationDetails
@@ -174,7 +175,7 @@ var activeOperation *operationDetails
 // this method before sending a commit action to the JS controller.
 //
 // Waits for a just initiated export operation to have started in its goroutine.
-// If no operation is in progress (InitiateSnapshot hasn't been called or
+// If no operation is in progress (InitiateExport hasn't been called or
 // already completed), or if we previously checked if the operation had started,
 // returns immediately.
 //
@@ -211,13 +212,14 @@ func WaitUntilSwingStoreExportStarted() error {
 // WaitUntilSwingStoreExportDone synchronizes with the completion of an export
 // operation in progress, if any.
 // Only a single swing-store operation may execute at a time. Calling
-// InitiateSnapshot or RestoreSnapshot will fail if a swing-store operation is
+// InitiateExport or RestoreExport will fail if a swing-store operation is
 // already in progress. Furthermore, a component may need to know once an
 // export it initiated has completed. Once this method call returns, the
-// goroutine is guaranteed to have terminated.
+// goroutine is guaranteed to have terminated, and the SwingStoreExportEventHandler
+// provided to InitiateExport to no longer be in use.
 //
-// Reports any error that may have occurred from InitiateSnapshot.
-// If no export operation is in progress (InitiateSnapshot hasn't been called or
+// Reports any error that may have occurred from InitiateExport.
+// If no export operation is in progress (InitiateExport hasn't been called or
 // already completed), or if we previously checked if an export had completed,
 // returns immediately.
 //
@@ -258,48 +260,123 @@ func checkNotActive() error {
 	return nil
 }
 
-type SwingsetSnapshotter struct {
-	isConfigured            func() bool
-	takeSnapshot            func(height int64)
-	newRestoreContext       func(height int64) sdk.Context
-	logger                  log.Logger
-	getSwingStoreExportData func(ctx sdk.Context) []*vstoragetypes.DataEntry
-	blockingSend            func(action vm.Jsonable, mustNotBeInited bool) (string, error)
+// snapshotDetails describes an in-progress state-sync snapshot
+type snapshotDetails struct {
+	// blockHeight is the block height of this in-progress snapshot.
+	blockHeight uint64
+	// logger is the destination for this snapshot's log messages.
+	logger log.Logger
+	// retrieveExport is the callback provided by the SwingStoreExportsHandler to
+	// retrieve the SwingStore's export provider which allows to read the export's
+	// artifacts used to populate this state-sync extension's payloads.
+	retrieveExport func() error
+	// payloadWriter is the callback provided by the state-sync snapshot manager
+	// for an extension to write a payload into the under-construction snapshot
+	// stream. It may be called multiple times, and often is (currently once per
+	// SwingStore export artifact).
+	payloadWriter snapshots.ExtensionPayloadWriter
 }
 
-// NewSwingsetSnapshotter creates a SwingsetSnapshotter which exclusively
-// manages communication with the JS side for Swingset snapshots, ensuring
-// insensitivity to sub-block timing, and enforcing concurrency requirements.
-// The caller of this submodule must arrange block level commit synchronization,
-// to ensure the results are deterministic.
+// SwingStoreExportProvider gives access to a SwingStore "export data" and the
+// related artifacts.
+// A JS swing-store export is composed of optional "export data" (a set of
+// key/value pairs), and opaque artifacts (a name and data as bytes) that
+// complement the "export data".
+// The abstraction is similar to the JS side swing-store export abstraction,
+// but without the ability to list artifacts or random access them.
 //
-// Some `blockingSend` calls performed by this submodule are non-deterministic.
-// This submodule will send messages to JS from goroutines at unpredictable
-// times, but this is safe because when handling the messages, the JS side
-// does not perform operations affecting consensus and ignores state changes
-// since committing the previous block.
-// Some other `blockingSend` calls however do change the JS swing-store and
-// must happen before the Swingset controller on the JS side was inited.
-func NewSwingsetSnapshotter(
+// A swing-store export for creating a state-sync snapshot will not contain any
+// "export data" since this information is reflected every block into the
+// verified cosmos DB.
+// On state-sync snapshot restore, the swingset ExtensionSnapshotter will
+// synthesize a provider for this module with "export data" sourced from the
+// restored cosmos DB, and artifacts from the extension's payloads. When
+// importing, the JS swing-store will verify that the artifacts match hashes
+// contained in the trusted "export data".
+type SwingStoreExportProvider struct {
+	// BlockHeight is the block height of the SwingStore export.
+	BlockHeight uint64
+	// GetExportData is a function to return the "export data" of the SwingStore export, if any.
+	GetExportData func() ([]*vstoragetypes.DataEntry, error)
+	// ReadArtifact is a function to return the next unread artifact in the SwingStore export.
+	// It errors with io.EOF upon reaching the end of the artifact list.
+	ReadArtifact func() (types.SwingStoreArtifact, error)
+}
+
+// SwingStoreExportEventHandler is used to handle events that occur while generating
+// a swing-store export. It is provided to SwingStoreExportsHandler.InitiateExport.
+type SwingStoreExportEventHandler interface {
+	// OnExportStarted is called by InitiateExport in a goroutine after the
+	// swing-store export has successfully started.
+	// This is where the component performing the export must initiate its own
+	// off main goroutine work, which results in retrieving and processing the
+	// swing-store export.
+	//
+	// Must call the retrieveExport function before returning, which will in turn
+	// synchronously invoke OnExportRetrieved once the swing-store export is ready.
+	OnExportStarted(blockHeight uint64, retrieveExport func() error) error
+	// OnExportRetrieved is called when the swing-store export has been retrieved,
+	// during the retrieveExport invocation.
+	// The provider is not a return value to retrieveExport in order to
+	// report errors in components that are unable to propagate errors back to the
+	// OnExportStarted result, like cosmos state-sync ExtensionSnapshotter.
+	// The implementation must synchronously consume the provider, which becomes
+	// invalid after the method returns.
+	OnExportRetrieved(provider SwingStoreExportProvider) error
+}
+
+// ExtensionSnapshotter is the cosmos state-sync extension snapshotter for the
+// x/swingset module.
+// It handles the SwingSet state that is not part of the Cosmos DB. Currently
+// that state is solely composed of the SwingStore artifacts, as a copy of the
+// SwingStore "export data" is streamed into the cosmos DB during execution.
+// When performing a snapshot, the extension leverages the SwingStoreExportsHandler
+// to retrieve the needed SwingStore artifacts. When restoring a snapshot,
+// the extension combines the artifacts from the state-sync snapshot with the
+// SwingStore "export data" from the already restored cosmos DB, to produce a
+// full SwingStore export that can be imported to create a new JS swing-store DB.
+//
+// Since swing-store is not able to open its DB at historical commit points,
+// the export operation must start before new changes are committed, aka before
+// Swingset is instructed to commit the next block. For that reason the cosmos
+// snapshot operation is currently mediated by the SwingStoreExportsHandler,
+// which helps with the synchronization needed to generate consistent exports,
+// while allowing SwingSet activity to proceed for the next block. This relies
+// on the application calling WaitUntilSwingStoreExportStarted before
+// instructing SwingSet to commit a new block.
+type ExtensionSnapshotter struct {
+	isConfigured func() bool
+	// takeAppSnapshot is called by OnExportStarted when creating a snapshot
+	takeAppSnapshot                   func(height int64)
+	newRestoreContext                 func(height int64) sdk.Context
+	swingStoreExportsHandler          *SwingStoreExportsHandler
+	getSwingStoreExportDataShadowCopy func(ctx sdk.Context) []*vstoragetypes.DataEntry
+	logger                            log.Logger
+	activeSnapshot                    *snapshotDetails
+}
+
+// NewExtensionSnapshotter creates a new swingset ExtensionSnapshotter
+func NewExtensionSnapshotter(
 	app *baseapp.BaseApp,
-	getSwingStoreExportData func(ctx sdk.Context) []*vstoragetypes.DataEntry,
-	blockingSend func(action vm.Jsonable, mustNotBeInited bool) (string, error),
-) SwingsetSnapshotter {
-	return SwingsetSnapshotter{
-		isConfigured: func() bool { return app.SnapshotManager() != nil },
-		takeSnapshot: app.Snapshot,
+	swingStoreExportsHandler *SwingStoreExportsHandler,
+	getSwingStoreExportDataShadowCopy func(ctx sdk.Context) []*vstoragetypes.DataEntry,
+) *ExtensionSnapshotter {
+	return &ExtensionSnapshotter{
+		isConfigured:    func() bool { return app.SnapshotManager() != nil },
+		takeAppSnapshot: app.Snapshot,
 		newRestoreContext: func(height int64) sdk.Context {
 			return app.NewUncachedContext(false, tmproto.Header{Height: height})
 		},
-		logger:                  app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "snapshotter"),
-		getSwingStoreExportData: getSwingStoreExportData,
-		blockingSend:            blockingSend,
+		logger:                            app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter"),
+		swingStoreExportsHandler:          swingStoreExportsHandler,
+		getSwingStoreExportDataShadowCopy: getSwingStoreExportDataShadowCopy,
+		activeSnapshot:                    nil,
 	}
 }
 
 // SnapshotName returns the name of the snapshotter, it should be unique in the manager.
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SnapshotName() string {
+func (snapshotter *ExtensionSnapshotter) SnapshotName() string {
 	return types.ModuleName
 }
 
@@ -307,15 +384,42 @@ func (snapshotter *SwingsetSnapshotter) SnapshotName() string {
 // extension payloads when creating a snapshot. It's independent of the format
 // used for the overall state-sync snapshot.
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SnapshotFormat() uint32 {
+func (snapshotter *ExtensionSnapshotter) SnapshotFormat() uint32 {
 	return SnapshotFormat
 }
 
 // SupportedFormats returns a list of extension specific payload formats it can
 // restore from.
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SupportedFormats() []uint32 {
+func (snapshotter *ExtensionSnapshotter) SupportedFormats() []uint32 {
 	return []uint32{SnapshotFormat}
+}
+
+// SwingStoreExportsHandler exclusively manages the communication with the JS side
+// related to swing-store exports, ensuring insensitivity to sub-block timing,
+// and enforcing concurrency requirements.
+// The caller of this submodule must arrange block level commit synchronization,
+// to ensure the results are deterministic.
+//
+// Some blockingSend calls performed by this submodule are non-deterministic.
+// This submodule will send messages to JS from goroutines at unpredictable
+// times, but this is safe because when handling the messages, the JS side
+// does not perform operations affecting consensus and ignores state changes
+// since committing the previous block.
+// Some other blockingSend calls however do change the JS swing-store and
+// must happen before the Swingset controller on the JS side was inited, in
+// which case the mustNotBeInited parameter will be set to true.
+type SwingStoreExportsHandler struct {
+	logger       log.Logger
+	blockingSend func(action vm.Jsonable, mustNotBeInited bool) (string, error)
+}
+
+// NewSwingStoreExportsHandler creates a SwingStoreExportsHandler
+func NewSwingStoreExportsHandler(logger log.Logger, blockingSend func(action vm.Jsonable, mustNotBeInited bool) (string, error)) *SwingStoreExportsHandler {
+	return &SwingStoreExportsHandler{
+		logger:       logger.With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "SwingStoreExportsHandler"),
+		blockingSend: blockingSend,
+	}
 }
 
 // InitiateSnapshot initiates a snapshot for the given block height.
@@ -324,10 +428,9 @@ func (snapshotter *SwingsetSnapshotter) SupportedFormats() []uint32 {
 //
 // The snapshot operation is performed in a goroutine.
 // Use WaitUntilSwingStoreExportStarted to synchronize commit boundaries.
-func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
-	err := checkNotActive()
-	if err != nil {
-		return err
+func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
+	if !snapshotter.isConfigured() {
+		return fmt.Errorf("snapshot manager not configured")
 	}
 	if height <= 0 {
 		return fmt.Errorf("block height must not be negative or 0")
@@ -335,11 +438,30 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 
 	blockHeight := uint64(height)
 
-	if !snapshotter.isConfigured() {
-		return fmt.Errorf("snapshot manager not configured")
+	return snapshotter.swingStoreExportsHandler.InitiateExport(blockHeight, snapshotter)
+}
+
+// InitiateExport synchronously verifies that there is not already an export or
+// import operation in progress and initiates a new export in a goroutine,
+// via a dedicated SWING_STORE_EXPORT blockingSend action independent of other
+// block related blockingSends, calling the given eventHandler when a related
+// blockingSend completes. If the eventHandler doesn't retrieve the export,
+// then it sends another blockingSend action to discard it.
+//
+// eventHandler is invoked solely from the spawned goroutine.
+// The "started" and "done" events can be used for synchronization with an
+// active operation taking place in the goroutine, by calling respectively the
+// WaitUntilSwingStoreExportStarted and WaitUntilSwingStoreExportDone methods
+// from the goroutine that initiated the export.
+//
+// Must be called by the main goroutine
+func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64, eventHandler SwingStoreExportEventHandler) error {
+	err := checkNotActive()
+	if err != nil {
+		return err
 	}
 
-	logger := snapshotter.logger.With("height", blockHeight)
+	logger := exportsHandler.logger.With("height", blockHeight)
 
 	// Indicate that an export operation has been initiated by setting the global
 	// activeOperation var.
@@ -385,7 +507,7 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
-		_, startedErr = snapshotter.blockingSend(initiateAction, false)
+		_, startedErr = exportsHandler.blockingSend(initiateAction, false)
 
 		if startedErr != nil {
 			logger.Error("failed to initiate swing-store export", "err", startedErr)
@@ -398,25 +520,41 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		// Calls to WaitUntilSwingStoreExportStarted will no longer block.
 		close(operationDetails.exportStartedResult)
 
-		// In production this should indirectly call SnapshotExtension().
-		snapshotter.takeSnapshot(height)
+		// The user provided OnExportStarted function should call retrieveExport()
+		var retrieveErr error
+		err = eventHandler.OnExportStarted(blockHeight, func() error {
+			activeOperationDetails := activeOperation
+			if activeOperationDetails != operationDetails || operationDetails.exportRetrieved {
+				// shouldn't happen, but return an error if it does
+				return errors.New("export operation no longer active")
+			}
 
-		// Restore any retrieve error swallowed by `takeSnapshot`
-		err = activeOperation.retrieveError
+			retrieveErr = exportsHandler.retrieveExport(eventHandler.OnExportRetrieved)
+
+			return retrieveErr
+		})
+
+		// Restore any retrieve error swallowed by OnExportStarted
+		if err == nil {
+			err = retrieveErr
+		}
 		if err != nil {
 			logger.Error("failed to process swing-store export", "err", err)
 		}
 
-		// Check whether the JS generated export was retrieved by SnapshotExtension
+		// Check whether the JS generated export was retrieved by eventHandler
 		if operationDetails.exportRetrieved {
 			return
 		}
+
+		// Discarding the export so invalidate retrieveExport
+		operationDetails.exportRetrieved = true
 
 		discardAction := &swingStoreDiscardExportAction{
 			Type:    swingStoreExportActionType,
 			Request: discardRequest,
 		}
-		_, discardErr := snapshotter.blockingSend(discardAction, false)
+		_, discardErr := exportsHandler.blockingSend(discardAction, false)
 
 		if discardErr != nil {
 			logger.Error("failed to discard swing-store export", "err", err)
@@ -434,45 +572,101 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 	return nil
 }
 
+// OnExportStarted performs the actual cosmos state-sync app snapshot.
+// The cosmos implementation will ultimately call SnapshotExtension, which can
+// retrieve and process the SwingStore artifacts.
+// This method is invoked by the SwingStoreExportsHandler in a goroutine
+// started by InitiateExport, only if no other SwingStore export operation is
+// already in progress.
+//
+// Implements SwingStoreExportEventHandler
+func (snapshotter *ExtensionSnapshotter) OnExportStarted(blockHeight uint64, retrieveExport func() error) error {
+	logger := snapshotter.logger.With("height", blockHeight)
+
+	if blockHeight > math.MaxInt64 {
+		return fmt.Errorf("snapshot block height %d is higher than max int64", blockHeight)
+	}
+	height := int64(blockHeight)
+
+	// We assume SwingStoreSnapshotter correctly guarded against concurrent snapshots
+	snapshotDetails := snapshotDetails{
+		blockHeight:    blockHeight,
+		logger:         logger,
+		retrieveExport: retrieveExport,
+	}
+	snapshotter.activeSnapshot = &snapshotDetails
+
+	snapshotter.takeAppSnapshot(height)
+
+	snapshotter.activeSnapshot = nil
+
+	// Unfortunately Cosmos BaseApp.Snapshot() does not report its errors.
+	return nil
+}
+
 // SnapshotExtension is the method invoked by cosmos to write extension payloads
 // into the underlying protobuf stream of the state-sync snapshot.
 // This method is invoked by the cosmos snapshot manager in a goroutine it
-// started during the call to takeAppSnapshot. However the snapshot manager
-// fully synchronizes its goroutine with the goroutine started by this
-// SwingsetSnapshotter.
+// started during the call to OnExportStarted. However the snapshot manager
+// fully synchronizes its goroutine with the goroutine started by the
+// SwingStoreSnapshotter, making it safe to invoke callbacks of the
+// SwingStoreSnapshotter. SnapshotExtension actually delegates writing
+// extension payloads to OnExportRetrieved.
 //
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, payloadWriter snapshots.ExtensionPayloadWriter) (err error) {
-	defer func() {
-		// Since the cosmos layers do a poor job of reporting errors, do our own reporting
-		// `err` will be set correctly regardless if it was explicitly assigned or
-		// a value was provided to a `return` statement.
-		// See https://go.dev/blog/defer-panic-and-recover for details
-		if err != nil {
-			operationDetails := activeOperation
-			if operationDetails != nil {
-				operationDetails.retrieveError = err
-			} else {
-				snapshotter.logger.Error("swingset snapshot extension failed", "err", err)
-			}
-		}
-	}()
+func (snapshotter *ExtensionSnapshotter) SnapshotExtension(blockHeight uint64, payloadWriter snapshots.ExtensionPayloadWriter) error {
+	logError := func(err error) error {
+		// The cosmos layers do a poor job of reporting errors, however
+		// SwingStoreExportsHandler arranges to report retrieve errors swallowed by
+		// takeAppSnapshot, so we manually report unexpected errors.
+		snapshotter.logger.Error("swingset snapshot extension failed", "err", err)
+		return err
+	}
 
+	snapshotDetails := snapshotter.activeSnapshot
+	if snapshotDetails == nil {
+		// shouldn't happen, but return an error if it does
+		return logError(errors.New("no active swingset snapshot"))
+	}
+
+	if snapshotDetails.blockHeight != blockHeight {
+		return logError(fmt.Errorf("swingset extension snapshot requested for unexpected height %d (expected %d)", blockHeight, snapshotDetails.blockHeight))
+	}
+
+	snapshotDetails.payloadWriter = payloadWriter
+
+	return snapshotDetails.retrieveExport()
+}
+
+// retrieveExport retrieves an initiated export then invokes onExportRetrieved
+// with the retrieved export.
+//
+// It performs a SWING_STORE_EXPORT blockingSend which on success returns a
+// string of the directory containing the JS swing-store export. It then reads
+// the export manifest generated by the JS side, and synthesizes a
+// SwingStoreExportProvider for the onExportRetrieved callback to access the
+// retrieved swing-store export.
+// The export manifest format is described by the exportManifest struct.
+//
+// After calling onExportRetrieved, the export directory and its contents are
+// deleted.
+//
+// This will block until the export is ready. Internally invoked by the
+// InitiateExport logic in the export operation's goroutine.
+func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved func(provider SwingStoreExportProvider) error) (err error) {
 	operationDetails := activeOperation
 	if operationDetails == nil {
 		// shouldn't happen, but return an error if it does
 		return errors.New("no active swing-store export operation")
 	}
 
-	if operationDetails.blockHeight != blockHeight {
-		return fmt.Errorf("swingset extension snapshot requested for unexpected height %d (expected %d)", blockHeight, operationDetails.blockHeight)
-	}
+	blockHeight := operationDetails.blockHeight
 
 	action := &swingStoreRetrieveExportAction{
 		Type:    swingStoreExportActionType,
 		Request: retrieveRequest,
 	}
-	out, err := snapshotter.blockingSend(action, false)
+	out, err := exportsHandler.blockingSend(action, false)
 
 	if err != nil {
 		return err
@@ -502,20 +696,99 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
-	writeFileToPayload := func(fileName string, artifactName string) error {
-		artifact := types.SwingStoreArtifact{Name: artifactName}
-
-		artifact.Data, err = os.ReadFile(filepath.Join(exportDir, fileName))
-		if err != nil {
-			return err
+	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
+		entries := []*vstoragetypes.DataEntry{}
+		if manifest.Data == "" {
+			return entries, nil
 		}
 
+		dataFile, err := os.Open(filepath.Join(exportDir, manifest.Data))
+		if err != nil {
+			return nil, err
+		}
+		defer dataFile.Close()
+
+		decoder := json.NewDecoder(dataFile)
+		for {
+			var jsonEntry []string
+			err = decoder.Decode(&jsonEntry)
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return nil, err
+			}
+
+			if len(jsonEntry) != 2 {
+				return nil, fmt.Errorf("invalid export data entry (length %d)", len(jsonEntry))
+			}
+			entry := vstoragetypes.DataEntry{Path: jsonEntry[0], Value: jsonEntry[1]}
+			entries = append(entries, &entry)
+		}
+
+		return entries, nil
+	}
+
+	nextArtifact := 0
+
+	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
+		if nextArtifact == len(manifest.Artifacts) {
+			return artifact, io.EOF
+		} else if nextArtifact > len(manifest.Artifacts) {
+			return artifact, fmt.Errorf("exceeded expected artifact count: %d > %d", nextArtifact, len(manifest.Artifacts))
+		}
+
+		artifactEntry := manifest.Artifacts[nextArtifact]
+		nextArtifact++
+
+		artifactName := artifactEntry[0]
+		fileName := artifactEntry[1]
+		if artifactName == UntrustedExportDataArtifactName {
+			return artifact, fmt.Errorf("unexpected export artifact name %s", artifactName)
+		}
+		artifact.Name = artifactName
+		artifact.Data, err = os.ReadFile(filepath.Join(exportDir, fileName))
+
+		return artifact, err
+	}
+
+	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadArtifact: readArtifact})
+	if err != nil {
+		return err
+	}
+
+	// if nextArtifact != len(manifest.Artifacts) {
+	// 	return errors.New("not all export artifacts were retrieved")
+	// }
+
+	operationDetails.logger.Info("retrieved swing-store export", "exportDir", exportDir)
+
+	return nil
+}
+
+// OnExportRetrieved handles the SwingStore export retrieved by the SwingStoreExportsHandler
+// and writes it out to the SnapshotExtension's payloadWriter.
+// This operation is invoked by the SwingStoreExportsHandler in the snapshot
+// manager goroutine synchronized with SwingStoreExportsHandler's own goroutine.
+//
+// Implements SwingStoreExportEventHandler
+func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreExportProvider) error {
+	snapshotDetails := snapshotter.activeSnapshot
+	if snapshotDetails == nil || snapshotDetails.payloadWriter == nil {
+		// shouldn't happen, but return an error if it does
+		return errors.New("no active swingset snapshot")
+	}
+
+	if snapshotDetails.blockHeight != provider.BlockHeight {
+		return fmt.Errorf("SwingStore export received for unexpected block height %d (app snapshot height is %d)", provider.BlockHeight, snapshotDetails.blockHeight)
+	}
+
+	writeArtifactToPayload := func(artifact types.SwingStoreArtifact) error {
 		payloadBytes, err := artifact.Marshal()
 		if err != nil {
 			return err
 		}
 
-		err = payloadWriter(payloadBytes)
+		err = snapshotDetails.payloadWriter(payloadBytes)
 		if err != nil {
 			return err
 		}
@@ -523,34 +796,57 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		return nil
 	}
 
-	for _, artifactInfo := range manifest.Artifacts {
-		artifactName := artifactInfo[0]
-		fileName := artifactInfo[1]
-		if artifactName == UntrustedExportDataArtifactName {
-			return fmt.Errorf("unexpected artifact name %s", artifactName)
+	for {
+		artifact, err := provider.ReadArtifact()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
 		}
-		err = writeFileToPayload(fileName, artifactName)
+
+		err = writeArtifactToPayload(artifact)
 		if err != nil {
 			return err
 		}
 	}
 
-	if manifest.Data != "" {
-		err = writeFileToPayload(manifest.Data, UntrustedExportDataArtifactName)
+	swingStoreExportDataEntries, err := provider.GetExportData()
+	if err != nil {
+		return err
+	}
+	if len(swingStoreExportDataEntries) == 0 {
+		return nil
+	}
+
+	// For debugging, write out any retrieved export data as a single untrusted artifact
+	// which has the same encoding as the internal SwingStore export data representation:
+	// a sequence of [key, value] JSON arrays each terminated by a new line.
+	exportDataArtifact := types.SwingStoreArtifact{Name: UntrustedExportDataArtifactName}
+
+	var encodedExportData bytes.Buffer
+	encoder := json.NewEncoder(&encodedExportData)
+	encoder.SetEscapeHTML(false)
+	for _, dataEntry := range swingStoreExportDataEntries {
+		entry := []string{dataEntry.Path, dataEntry.Value}
+		err := encoder.Encode(entry)
 		if err != nil {
 			return err
 		}
 	}
+	exportDataArtifact.Data = encodedExportData.Bytes()
 
-	operationDetails.logger.Info("retrieved swing-store export", "exportDir", exportDir)
-
+	err = writeArtifactToPayload(exportDataArtifact)
+	encodedExportData.Reset()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // RestoreExtension restores an extension state snapshot,
 // the payload reader returns io.EOF when it reaches the extension boundaries.
 // Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, format uint32, payloadReader snapshots.ExtensionPayloadReader) error {
+func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, format uint32, payloadReader snapshots.ExtensionPayloadReader) error {
 	if format != SnapshotFormat {
 		return snapshots.ErrUnknownFormat
 	}
@@ -560,18 +856,49 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	}
 	height := int64(blockHeight)
 
+	// Retrieve the SwingStore "ExportData" from the verified vstorage data.
+	// At this point the content of the cosmos DB has been verified against the
+	// AppHash, which means the SwingStore data it contains can be used as the
+	// trusted root against which to validate the artifacts.
+	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
+		ctx := snapshotter.newRestoreContext(height)
+		exportData := snapshotter.getSwingStoreExportDataShadowCopy(ctx)
+		return exportData, nil
+	}
+
+	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
+		payloadBytes, err := payloadReader()
+		if err != nil {
+			return artifact, err
+		}
+
+		err = artifact.Unmarshal(payloadBytes)
+		return artifact, err
+	}
+
+	return snapshotter.swingStoreExportsHandler.RestoreExport(
+		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportData: getExportData, ReadArtifact: readArtifact},
+	)
+}
+
+// RestoreExport restores the JS swing-store using previously exported data and artifacts.
+//
+// Must be called by the main goroutine
+func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStoreExportProvider) error {
 	err := checkNotActive()
 	if err != nil {
 		return err
 	}
 
-	// We technically don't need to create an active snapshot here since both
-	// `InitiateSnapshot` and `RestoreExtension` should only be called from the
-	// main thread, but it doesn't cost much to add in case things go wrong.
+	blockHeight := provider.BlockHeight
+
+	// We technically don't need to create an active operation here since both
+	// InitiateExport and RestoreExport should only be called from the main
+	// goroutine, but it doesn't cost much to add in case things go wrong.
 	operationDetails := &operationDetails{
 		isRestore:   true,
 		blockHeight: blockHeight,
-		logger:      snapshotter.logger,
+		logger:      exportsHandler.logger,
 		// goroutine synchronization is unnecessary since anything checking should
 		// be called from the same goroutine.
 		// Effectively WaitUntilSwingStoreExportStarted would block infinitely and
@@ -584,7 +911,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		activeOperation = nil
 	}()
 
-	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", blockHeight))
+	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-swing-store-restore-%d-*", blockHeight))
 	if err != nil {
 		return err
 	}
@@ -594,12 +921,10 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		BlockHeight: blockHeight,
 	}
 
-	// Retrieve the SwingStore "ExportData" from the verified vstorage data.
-	// At this point the content of the cosmos DB has been verified against the
-	// AppHash, which means the SwingStore data it contains can be used as the
-	// trusted root against which to validate the artifacts.
-	ctx := snapshotter.newRestoreContext(height)
-	exportDataEntries := snapshotter.getSwingStoreExportData(ctx)
+	exportDataEntries, err := provider.GetExportData()
+	if err != nil {
+		return err
+	}
 
 	if len(exportDataEntries) > 0 {
 		manifest.Data = exportDataFilename
@@ -630,15 +955,10 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	}
 
 	for {
-		payloadBytes, err := payloadReader()
+		artifact, err := provider.ReadArtifact()
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return err
-		}
-
-		artifact := types.SwingStoreArtifact{}
-		if err = artifact.Unmarshal(payloadBytes); err != nil {
 			return err
 		}
 
@@ -681,12 +1001,12 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		Args:        [1]string{exportDir},
 	}
 
-	_, err = snapshotter.blockingSend(action, true)
+	_, err = exportsHandler.blockingSend(action, true)
 	if err != nil {
 		return err
 	}
 
-	snapshotter.logger.Info("restored snapshot", "exportDir", exportDir, "height", blockHeight)
+	exportsHandler.logger.Info("restored swing-store export", "exportDir", exportDir, "height", blockHeight)
 
 	return nil
 }
