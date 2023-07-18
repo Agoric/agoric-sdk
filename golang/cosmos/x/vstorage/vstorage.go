@@ -31,6 +31,16 @@ func NewStorageHandler(keeper Keeper) vstorageHandler {
 	return vstorageHandler{keeper: keeper}
 }
 
+func unmarshalString(jsonText json.RawMessage) (string, error) {
+	var str *string
+	if err := json.Unmarshal(jsonText, &str); err != nil {
+		return "", err
+	} else if str == nil {
+		return "", fmt.Errorf("cannot unmarshal `null` into string")
+	}
+	return *str, nil
+}
+
 func unmarshalSinglePathFromArgs(args []json.RawMessage, path *string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("missing 'path' argument")
@@ -39,6 +49,18 @@ func unmarshalSinglePathFromArgs(args []json.RawMessage, path *string) error {
 		return fmt.Errorf("extra arguments after 'path'")
 	}
 	return json.Unmarshal(args[0], path)
+}
+
+func unmarshalPathsFromArgs(args []json.RawMessage) ([]string, error) {
+	paths := make([]string, len(args))
+	for i, arg := range args {
+		path, err := unmarshalString(arg)
+		if err != nil {
+			return nil, err
+		}
+		paths[i] = path
+	}
+	return paths, nil
 }
 
 func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret string, err error) {
@@ -101,6 +123,17 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 				return
 			}
 			keeper.SetStorage(cctx.Context, entry)
+		}
+		return "true", nil
+
+	case "delete":
+		paths, err := unmarshalPathsFromArgs(msg.Args)
+		if err != nil {
+			return "", err
+		}
+		for _, path := range paths {
+			newEntry := types.NewStorageEntryWithNoData(path)
+			keeper.SetStorageAndNotify(cctx.Context, newEntry)
 		}
 		return "true", nil
 
