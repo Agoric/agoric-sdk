@@ -55,7 +55,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const provider = makeAtomicProvider(baggage);
 
   trace('awaiting feeMint');
-  /** @type {ZCFMint<'nat'>} */
   const feeMint = await provider.provideAsync('feeMint', () =>
     zcf.registerFeeMint('Fee', privateArgs.feeMintAccess),
   );

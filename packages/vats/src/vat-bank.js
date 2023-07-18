@@ -410,7 +410,7 @@ const prepareBank = (
   // we decide to partition the provider and use `brandToVPurse` directly, we'd
   // need ephemera for each `makeBank` call.
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
-  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<string, VirtualPurse>} */
+  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<string>} */
   const purseProvider = makeAtomicProvider(addressDenomToPurse);
 
   const makeBank = zone.exoClass(

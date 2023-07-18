@@ -139,11 +139,10 @@ harden(provideLazy);
  * storage.
  *
  * @template K
- * @template V
- * @param {WeakMapStore<K, V>} store
+ * @param {WeakMapStore<K, unknown>} store
  */
 export const makeAtomicProvider = store => {
-  /** @type {Map<K, Promise<V>>} */
+  /** @type {Map<K, Promise<unknown>>} */
   const pending = new Map();
 
   /**
@@ -153,6 +152,9 @@ export const makeAtomicProvider = store => {
    * call `makeValue(key)`, remember it as the value for
    * that key, and return it.
    *
+   * Assumes the makeValue return type is consistent for a given key.
+   *
+   * @template V
    * @param {K} key
    * @param {(key: K) => Promise<V>} makeValue make the value for the store
    * if it hasn't been made yet or the last make failed
@@ -162,7 +164,7 @@ export const makeAtomicProvider = store => {
    */
   const provideAsync = (key, makeValue, finishValue) => {
     if (store.has(key)) {
-      return Promise.resolve(store.get(key));
+      return Promise.resolve(/** @type {V} */ (store.get(key)));
     }
     if (!pending.has(key)) {
       const valP = makeValue(key)
@@ -183,7 +185,7 @@ export const makeAtomicProvider = store => {
     }
     const valP = pending.get(key);
     assert(valP);
-    return valP;
+    return /** @type {Promise<V>} */ (valP);
   };
 
   return harden({ provideAsync });
@@ -191,8 +193,7 @@ export const makeAtomicProvider = store => {
 harden(makeAtomicProvider);
 /**
  * @template K
- * @template V
- * @typedef {ReturnType<typeof makeAtomicProvider<K, V>>} AtomicProvider<K, V>
+ * @typedef {ReturnType<typeof makeAtomicProvider<K>>} AtomicProvider<K>
  */
 
 /**
