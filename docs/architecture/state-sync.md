@@ -9,9 +9,11 @@ sequenceDiagram
     participant A-M as App
     participant MS-M as MultiStore
     participant SSES-M as SwingSet ExtensionSnapshotter
+    participant SSEH-M as SwingStoreExportsHandler
   end
 
   box whitesmoke App snapshot goroutine
+    participant SSEH-AS as SwingStoreExportsHandler
     participant SSES-AS as SwingSet ExtensionSnapshotter
     participant A-AS as App
     participant SM-AS as Snapshot manager
@@ -21,6 +23,7 @@ sequenceDiagram
     participant SM-CS as Snapshot manager
     participant MS-CS as MultiStore
     participant SSES-CS as SwingSet ExtensionSnapshotter
+    participant SSEH-CS as SwingStoreExportsHandler
     participant D-CS as Disk
   end
 
@@ -36,8 +39,8 @@ sequenceDiagram
   end
 
   TM->>+A-M: Commit
-  A-M->>+SSES-M: WaitUntilSwingStoreExportStarted()
-  SSES-M-->>-A-M: 
+  A-M->>+SSEH-M: WaitUntilSwingStoreExportStarted()
+  SSEH-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: swingStore.commit()
   CM-->>-A-M: 
@@ -64,8 +67,8 @@ sequenceDiagram
   A-M-->>-TM: 
 
   TM->>+A-M: Commit
-  A-M->>+SSES-M: WaitUntilSwingStoreExportStarted()
-  SSES-M-->>-A-M: 
+  A-M->>+SSEH-M: WaitUntilSwingStoreExportStarted()
+  SSEH-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: swingStore.commit()
   CM-->>-A-M: 
@@ -74,25 +77,28 @@ sequenceDiagram
   CM-->>-A-M: 
   A-M->>A-M: isSnapshotHeight: true
   A-M->>+SSES-M: InitiateSnapshot()
-  SSES-M->>SSES-M: checkNotActive()
-  SSES-M->>SSES-M: activeOperation = operationDetails{}
-  SSES-M-)+SSES-AS: go
+  SSES-M->>+SSEH-M: InitiateExport()
+  SSEH-M->>SSEH-M: checkNotActive()
+  SSEH-M->>SSEH-M: activeOperation = operationDetails{}
+  SSEH-M-)+SSEH-AS: go
+  SSEH-M-->>-SSES-M: 
   SSES-M-->>-A-M: 
   A-M-->>-TM: 
 
   par App Snapshot
-    SSES-AS->>+CM: SWING_STORE_EXPORT/initiate
+    SSEH-AS->>+CM: SWING_STORE_EXPORT/initiate
     CM->>+D: MkDir(exportDir)
     D-->>-CM: 
     CM-)+SSE: initiateSwingStoreExport(exportDir)
     CM->>CM: await started<br/>(blocking)
-    CM-->>-SSES-AS: 
+    CM-->>-SSEH-AS: 
     alt not initiated
-      SSES-AS-)SSES-M: exportStartedResult <- err<br/>close(exportStartedResult)
-      SSES-AS-)SSES-M: exportDone <- err
+      SSEH-AS-)SSEH-M: exportStartedResult <- err<br/>close(exportStartedResult)
+      SSEH-AS-)SSEH-M: exportDone <- err
     else initiated
-    SSES-AS-)SSES-M: close(exportStartedResult)
+    SSEH-AS-)SSEH-M: close(exportStartedResult)
     alt retrieval
+    SSEH-AS->>+SSES-AS: OnExportStarted()
     SSES-AS->>+A-AS: BaseApp.Snapshot()
     A-AS->>+SM-AS: Create()
     SM-AS-)+SM-CS: go createSnapshot()
@@ -104,40 +110,47 @@ sequenceDiagram
     end
     MS-CS-->>-SM-CS: 
     SM-CS->>+SSES-CS: SnapshotExtension()
-    SSES-CS->>+CM: SWING_STORE_EXPORT/retrieve
+    SSES-CS->>+SSEH-CS: retrieveExport()
+    SSEH-CS->>+CM: SWING_STORE_EXPORT/retrieve
     CM->>CM: await done<br/>(blocking)
-    CM-->>-SSES-CS: exportDir
-    SSES-CS->>+D-CS: Read(export-manifest.json)
-    D-CS-->>-SSES-CS: 
+    CM-->>-SSEH-CS: exportDir
+    SSEH-CS->>+D-CS: Read(export-manifest.json)
+    D-CS-->>-SSEH-CS: 
+    SSEH-CS->>+SSES-CS: OnExportRetrieved()
     loop
-      SSES-CS->>+D-CS: Read(artifactFile)
-      D-CS-->>-SSES-CS: 
-      SSES-CS->>+SM-CS: payloadWriter(artifact{name, data})
+      SSES-CS->>+SSEH-CS: provider.ReadArtifact()
+      SSEH-CS->>+D-CS: Read(artifactFile)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS-->>-SSES-CS: artifact{name, data}
+      SSES-CS->>+SM-CS: payloadWriter(artifact)
       SM-CS-)SM-AS: chunks <- chunk
       SM-CS-->>-SSES-CS: 
     end
-    SSES-CS->>+D-CS: Delete(exportDir)
-    D-CS-->>-SSES-CS: 
+    SSES-CS-->>-SSEH-CS: 
+    SSEH-CS->>+D-CS: Delete(exportDir)
+    D-CS-->>-SSEH-CS: 
+    SSEH-CS-->>-SSES-CS: 
     SSES-CS-->>-SM-CS: 
     SM-CS-)-SM-AS: close(chunks)
     SM-AS->>SM-AS: Save()
     SM-AS-->>-A-AS: 
     A-AS-->>-SSES-AS: 
+    SSES-AS-->>-SSEH-AS: 
     else no retrieval
-      SSES-AS->>+A-AS: BaseApp.Snapshot()
-      A-AS-->>-SSES-AS: 
-      SSES-AS->>+CM: SWING_STORE_EXPORT/discard
+      SSEH-AS->>+SSES-AS: OnExportStarted()
+      SSES-AS-->>-SSEH-AS: 
+      SSEH-AS->>+CM: SWING_STORE_EXPORT/discard
       CM-)SSE: Stop()
       SSE-)CM: done::reject()
       CM->>CM: await done
       CM->>+D: Delete(exportDir)
       D-->-CM: 
-      CM-->>-SSES-AS: 
-      SSES-AS-)SSES-M: exportDone <- err
+      CM-->>-SSEH-AS: 
+      SSEH-AS-)SSEH-M: exportDone <- err
     end
     end
-    SSES-AS-)SSES-M: close(exportDone)
-    deactivate SSES-AS
+    SSEH-AS-)SSEH-M: close(exportDone)
+    deactivate SSEH-AS
   end
 
   par JS SwingStore export
@@ -169,9 +182,9 @@ sequenceDiagram
   Note over TM, A-M: BeginBlock, EndBlock
 
   TM->>+A-M: Commit
-  A-M->>+SSES-M: WaitUntilSwingStoreExportStarted()
-  SSES-M->>SSES-M: err = <-exportStartedResult<br/>(blocking)
-  SSES-M-->>-A-M: 
+  A-M->>+SSEH-M: WaitUntilSwingStoreExportStarted()
+  SSEH-M->>SSEH-M: err = <-exportStartedResult<br/>(blocking)
+  SSEH-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: await started<br/>(blocking)
   CM->>CM: swingStore.commit()
@@ -197,6 +210,7 @@ sequenceDiagram
     participant SM-CS as Snapshot manager
     participant MS-CS as MultiStore
     participant SSES-CS as SwingSet ExtensionSnapshotter
+    participant SSEH-CS as SwingStoreExportsHandler
     participant D-CS as Disk
   end
 
@@ -227,28 +241,33 @@ sequenceDiagram
 
     opt loop over extensions
       SM-CS->>+SSES-CS: RestoreExtension()
-      SSES-CS->>SSES-CS: checkNotActive()
-      SSES-CS->>SSES-CS: activeOperation = operationDetails{}
-      SSES-CS->>+D-CS: MkDir(exportDir)
-      D-CS-->>-SSES-CS: 
+      SSES-CS->>+SSEH-CS: RestoreExport()
+      SSEH-CS->>SSEH-CS: checkNotActive()
+      SSEH-CS->>SSEH-CS: activeOperation = operationDetails{}
+      SSEH-CS->>+D-CS: MkDir(exportDir)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS->>+SSES-CS: provider.GetExportData()
       SSES-CS->>+MS-CS: ExportStorageFromPrefix<br/>("swingStore.")
       MS-CS-->>-SSES-CS: vstorage data entries
+      SSES-CS-->>-SSEH-CS: 
       loop each data entry
-        SSES-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
-        D-CS-->>-SSES-CS: 
+        SSEH-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
+        D-CS-->>-SSEH-CS: 
       end
       loop extension snapshot items
+        SSEH-CS->>+SSES-CS: provider.readArtifact()
         SSES-CS->>+SM-CS: payloadReader()
         SM-CS->>+SM-M: chunk = <-chunks
         SM-M-->>-SM-CS: 
         SM-CS-->>-SSES-CS: extension payloadBytes
         SSES-CS->>SSES-CS: artifact = parse(payloadBytes)
-        SSES-CS->>+D-CS: Write(sanitizedFilename, artifact.data)
-        D-CS-->>-SSES-CS: 
+        SSES-CS->>-SSEH-CS: artifact
+        SSEH-CS->>+D-CS: Write(sanitizedFilename, artifact.data)
+        D-CS-->>-SSEH-CS: 
       end
-      SSES-CS->>+D-CS: Write(export-manifest.jsonl, manifest)
-      D-CS-->>-SSES-CS: 
-      SSES-CS->>+CM: SWING_STORE_EXPORT/restore
+      SSEH-CS->>+D-CS: Write(export-manifest.jsonl, manifest)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS->>+CM: SWING_STORE_EXPORT/restore
       CM->>+SSI: performStateSyncImport()
       SSI->>+D: Read(export-manifest.json)
       D-->>-SSI: 
@@ -274,9 +293,10 @@ sequenceDiagram
       SSI->>+SS: set(host.blockHeight)
       SS-->>-SSI: 
       SSI-->>-CM: 
-      CM-->>-SSES-CS: 
-      SSES-CS->>+D-CS: Delete(exportDir)
-      D-CS-->>-SSES-CS: 
+      CM-->>-SSEH-CS: 
+      SSEH-CS->>+D-CS: Delete(exportDir)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS-->>-SSES-CS: 
       SSES-CS-->>-SM-CS: 
     end
     SM-CS-)-SM-M: chRestoreDone <- restoreDone{}<br/>close(chRestoreDone)
