@@ -497,54 +497,6 @@ function build(
     return Remotable(iface);
   }
 
-  /**
-   * Counters to track the next number for various categories of allocation.
-   * `exportID` starts at 1 because 'o+0' is always automatically
-   * pre-assigned to the root object.
-   * `promiseID` starts at 5 as a very minor aid to debugging: when puzzling
-   * over trace logs and the like, it helps for the numbers in various species
-   * of IDs that are jumbled together to be a little out of sync and thus a
-   * little less similar to each other.
-   */
-  const initialIDCounters = { exportID: 1, collectionID: 1, promiseID: 5 };
-  /** @type {Record<string, number>} */
-  let idCounters;
-  let idCountersAreDirty = false;
-
-  function initializeIDCounters() {
-    if (!idCounters) {
-      // the saved value might be missing, or from an older liveslots
-      // (with fewer counters), so merge it with our initial values
-      const saved = JSON.parse(syscall.vatstoreGet('idCounters') || '{}');
-      idCounters = { ...initialIDCounters, ...saved };
-      idCountersAreDirty = true;
-    }
-  }
-
-  function allocateNextID(name) {
-    if (!idCounters) {
-      // Normally `initializeIDCounters` would be called from startVat, but some
-      // tests bypass that so this is a backstop.  Note that the invocation from
-      // startVat is there to make vatStore access patterns a bit more
-      // consistent from one vat to another, principally as a confusion
-      // reduction measure in service of debugging; it is not a correctness
-      // issue.
-      initializeIDCounters();
-    }
-    const result = idCounters[name];
-    result !== undefined || Fail`unknown idCounters[${name}]`;
-    idCounters[name] += 1;
-    idCountersAreDirty = true;
-    return result;
-  }
-
-  function flushIDCounters() {
-    if (idCountersAreDirty) {
-      syscall.vatstoreSet('idCounters', JSON.stringify(idCounters));
-      idCountersAreDirty = false;
-    }
-  }
-
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
   // allocatePromiseID() returns a slot, registerPromise() uses the slot from
   // allocatePromiseID(), exportPassByPresence() generates a slot itself using
@@ -553,15 +505,18 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    return allocateNextID('exportID');
+    // eslint-disable-next-line no-use-before-define
+    return vrm.allocateNextID('exportID');
   }
 
   function allocateCollectionID() {
-    return allocateNextID('collectionID');
+    // eslint-disable-next-line no-use-before-define
+    return vrm.allocateNextID('collectionID');
   }
 
   function allocatePromiseID() {
-    const promiseID = allocateNextID('promiseID');
+    // eslint-disable-next-line no-use-before-define
+    const promiseID = vrm.allocateNextID('promiseID');
     return makeVatSlot('promise', true, promiseID);
   }
 
@@ -1447,7 +1402,7 @@ function build(
     }
     harden(vpow);
 
-    initializeIDCounters();
+    vrm.initializeIDCounters();
     vom.initializeKindHandleKind();
     collectionManager.initializeStoreKindInfo();
 
@@ -1570,7 +1525,7 @@ function build(
    * dispatch has completed and user code has relinquished agency.
    */
   function afterDispatchActions() {
-    flushIDCounters();
+    vrm.flushIDCounters();
     collectionManager.flushSchemaCache();
     vom.flushStateCache();
   }
