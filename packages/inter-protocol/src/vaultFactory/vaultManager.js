@@ -1101,6 +1101,7 @@ export const prepareVaultManagerKit = (
           state.lockedQuote = undefined;
 
           if (vaultData.getSize() === 0) {
+            void helper.writeMetrics();
             return;
           }
           trace(
