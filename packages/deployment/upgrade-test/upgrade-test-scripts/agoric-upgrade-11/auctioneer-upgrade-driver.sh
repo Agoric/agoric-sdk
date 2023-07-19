@@ -8,18 +8,18 @@ set -euo pipefail
 here='upgrade-test-scripts/agoric-upgrade-11'
 
 # yarn bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
-# yarn bundle-source --cache-json /tmp packages/inter-protocol/src/auction/auctioneer.js auctioneer
+yarn bundle-source --cache-json /tmp packages/inter-protocol/src/auction/auctioneer.js auctioneer
 
-# # TODO: make sure this consistently works
-# agd tx swingset install-bundle @/tmp/bundle-vaultFactory.json \
-#       --from gov1 --keyring-backend=test --gas=auto \
-#       --chain-id=agoriclocal -b block --yes
-# agoric follow -lF :bundles
+# TODO: make sure this consistently works
+agd tx swingset install-bundle @/tmp/bundle-vaultFactory.json \
+      --from gov1 --keyring-backend=test --gas=auto \
+      --chain-id=agoriclocal -b block --yes
+agoric follow -lF :bundles
 
-# agd tx swingset install-bundle @/tmp/bundle-auctioneer.json \
-#       --from gov1 --keyring-backend=test --gas=auto \
-#       --chain-id=agoriclocal -b block --yes
-# agoric follow -lF :bundles
+agd tx swingset install-bundle @/tmp/bundle-auctioneer.json \
+      --from gov1 --keyring-backend=test --gas=auto \
+      --chain-id=agoriclocal -b block --yes
+agoric follow -lF :bundles
 
 agd --chain-id=agoriclocal \
   tx gov submit-proposal swingset-core-eval \
