@@ -11,7 +11,6 @@ test('makeVatID', async t => {
   t.is(makeVatID(100n ** 10n), 'v100000000000000000000');
 
   t.throws(() => makeVatID());
-  t.throws(() => makeVatID(0));
   t.throws(() => makeVatID(-1));
   t.throws(() => makeVatID(3.14));
   t.throws(() => makeVatID('3'));
@@ -38,7 +37,6 @@ test('makeDeviceID', async t => {
   t.is(makeDeviceID(100n ** 10n), 'd100000000000000000000');
 
   t.throws(() => makeDeviceID());
-  t.throws(() => makeDeviceID(0));
   t.throws(() => makeDeviceID(-1));
   t.throws(() => makeDeviceID(3.14));
   t.throws(() => makeDeviceID('3'));
