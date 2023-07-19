@@ -15,9 +15,7 @@ import '../types-ambient.js';
 /** @type {CopySet} */
 const empty = makeCopySet([]);
 
-/**
- * @type {MathHelpers<CopySet>}
- */
+/** @type {MathHelpers<CopySet>} */
 export const copySetMathHelpers = harden({
   doCoerce: set => {
     mustMatch(set, M.set(), 'set of amount');

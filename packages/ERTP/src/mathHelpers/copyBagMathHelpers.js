@@ -15,9 +15,7 @@ import '../types-ambient.js';
 /** @type {CopyBag} */
 const empty = makeCopyBag([]);
 
-/**
- * @type {MathHelpers<CopyBag>}
- */
+/** @type {MathHelpers<CopyBag>} */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {
     mustMatch(bag, M.bag(), 'bag of amount');
