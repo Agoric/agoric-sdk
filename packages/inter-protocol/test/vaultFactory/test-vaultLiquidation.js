@@ -949,8 +949,17 @@ test('liquidate two loans', async t => {
     manualTimer,
   );
 
-  totalDebt += 7n;
+  totalDebt += 6n;
   await aethVaultMetrics.assertChange({
+    lockedQuote: null,
+    totalDebt: { value: totalDebt },
+  });
+  totalDebt += 1n;
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(7_000_000n),
+    ),
     totalDebt: { value: totalDebt },
   });
   totalDebt += 6n;
@@ -3156,7 +3165,13 @@ test('Bug 7796 missing lockedPrice', async t => {
   const penaltyAeth = 309_850n;
 
   await aethVaultMetrics.assertChange({
-    lockedQuote: { denominator: { value: 9_990_000n } },
+    lockedQuote: null,
+  });
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(9_990_000n),
+    )
   });
   await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: totalDebt },
@@ -3346,7 +3361,13 @@ test('Bug 7851 & no bidders', async t => {
   );
 
   await aethVaultMetrics.assertChange({
-    lockedQuote: { denominator: { value: 9_990_000n } },
+    lockedQuote: null,
+  });
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(9_990_000n),
+    ),
   });
   await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: aliceDebt },
