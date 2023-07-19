@@ -65,10 +65,11 @@ const makeBPRatio = (rate, bidBrand, collateralBrand = bidBrand) =>
 /**
  * The auction sold some amount of collateral, and raised a certain amount of
  * Bid. The excess collateral was returned as `unsoldCollateral`. The Bid amount
- * collected from the auction participants is `proceeds`. Return a set of
- * transfers for atomicRearrange() that distribute `unsoldCollateral` and
- * `proceeds` proportionally to each seat's deposited amount. Any uneven split
- * should be allocated to the reserve.
+ * collected from the auction participants is `proceeds`.
+ *
+ * Return a set of transfers for atomicRearrange() that distribute
+ * `unsoldCollateral` and `proceeds` proportionally to each seat's deposited
+ * amount. Any uneven split should be allocated to the reserve.
  *
  * @param {Amount} unsoldCollateral
  * @param {Amount} proceeds
@@ -131,10 +132,11 @@ const distributeProportionalShares = (
 /**
  * The auction sold some amount of collateral, and raised a certain amount of
  * Bid. The excess collateral was returned as `unsoldCollateral`. The Bid amount
- * collected from the auction participants is `proceeds`. Return a set of
- * transfers for atomicRearrange() that distribute `unsoldCollateral` and
- * `proceeds` proportionally to each seat's deposited amount. Any uneven split
- * should be allocated to the reserve.
+ * collected from the auction participants is `proceeds`.
+ *
+ * Return a set of transfers for atomicRearrange() that distribute
+ * `unsoldCollateral` and `proceeds` proportionally to each seat's deposited
+ * amount. Any uneven split should be allocated to the reserve.
  *
  * This function is exported for testability, and is not expected to be used
  * outside the contract below.
