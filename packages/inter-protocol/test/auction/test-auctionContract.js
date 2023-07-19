@@ -1350,6 +1350,15 @@ test.serial('multiple bidders at one auction step', async t => {
   await driver.advanceTo(now, 'wait');
 
   t.true(await E(seat1).hasExited());
+
+  const doc = {
+    node: 'auction.books.book0.bids',
+    owner: 'the auctioneer contract',
+    pattern: 'mockChainStorageRoot.auction',
+    replacement: 'published.auction',
+  };
+  await documentStorageSchema(t, driver.mockChainStorage, doc);
+
   t.false(await E(seat2).hasExited());
   await E(seat2).tryExit();
 

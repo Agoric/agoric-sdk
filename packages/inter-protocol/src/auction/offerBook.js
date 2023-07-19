@@ -55,12 +55,22 @@ const makeBidNode = (bidsNode, bidId) =>
   E(bidsNode).makeChildNode(`bid${bidId}`);
 
 const makeGetBidDataRecorder = (bidDataKits, bidDataKitPromises) => {
-  return key => {
+  const getBidDataRecorder = key => {
     if (bidDataKitPromises.has(key)) {
       return E.get(bidDataKitPromises.get(key)).recorder;
     }
     return bidDataKits.get(key).recorder;
   };
+
+  const deleteNodeIfPresent = key => {
+    if (bidDataKitPromises.has(key) || bidDataKits.has(key)) {
+
+      // TODO(8063)  delete node rather than erasing the data
+      return E(getBidDataRecorder(key)).writeFinal('');
+    }
+  }
+
+  return { getBidDataRecorder, deleteNodeIfPresent };
 };
 
 /** @typedef {ReturnType<import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit>} RecorderKit */
@@ -81,7 +91,7 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
   const bidDataKits = baggage.get('bidDataKits');
   /** @type {MapStore<string, Promise<RecorderKit>>} */
   const bidDataKitPromises = makeScalarMapStore('bidDataKit Promises');
-  const getBidDataRecorder = makeGetBidDataRecorder(
+  const { getBidDataRecorder, deleteNodeIfPresent } = makeGetBidDataRecorder(
     bidDataKits,
     bidDataKitPromises,
   );
@@ -114,7 +124,6 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
         const { bidScalingPattern, collateralBrand, records, bidsNode } =
           this.state;
         mustMatch(bidScaling, bidScalingPattern);
-
         const seqNum = nextSequenceNumber(baggage);
         const key = toScaledRateOfferKey(bidScaling, seqNum);
 
@@ -142,6 +151,7 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
           timestamp,
         };
         records.init(key, harden(bidderRecord));
+        this.self.publishOffer(bidderRecord);
         return key;
       },
       /** @param {Ratio} bidScaling */
@@ -170,19 +180,13 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
           }),
         );
       },
-      publishOffers() {
-        const { records } = this.state;
-
-        for (const r of records.values()) {
-          this.self.publishOffer(r);
-        }
-      },
       hasOrders() {
         const { records } = this.state;
         return records.getSize() > 0;
       },
       delete(key) {
         const { records } = this.state;
+        void deleteNodeIfPresent(key);
         bidDataKits.delete(key);
         records.delete(key);
       },
@@ -206,6 +210,7 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
               bidDataKits.delete(key);
             }
             records.delete(key);
+            void deleteNodeIfPresent(key);
           }
         }
       },
@@ -234,7 +239,7 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
   const bidDataKits = baggage.get('bidDataKits');
   /** @type {MapStore<string, Promise<RecorderKit>>} */
   const bidDataKitPromises = makeScalarMapStore('bidDataKit Promises');
-  const getBidDataRecorder = makeGetBidDataRecorder(
+  const { getBidDataRecorder, deleteNodeIfPresent } = makeGetBidDataRecorder(
     bidDataKits,
     bidDataKitPromises,
   );
@@ -295,6 +300,7 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
           timestamp,
         });
         records.init(key, bidderRecord);
+        this.self.publishOffer(bidderRecord);
         return key;
       },
       offersAbove(price) {
@@ -322,18 +328,13 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
           }),
         );
       },
-      publishOffers() {
-        const { records } = this.state;
-        for (const r of records.values()) {
-          this.self.publishOffer(r);
-        }
-      },
       hasOrders() {
         const { records } = this.state;
         return records.getSize() > 0;
       },
       delete(key) {
         const { records } = this.state;
+        void deleteNodeIfPresent(key);
         bidDataKits.delete(key);
         records.delete(key);
       },
@@ -356,6 +357,7 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
             if (bidDataKits.has(key)) {
               bidDataKits.delete(key);
             }
+            void deleteNodeIfPresent(key);
             records.delete(key);
           }
         }

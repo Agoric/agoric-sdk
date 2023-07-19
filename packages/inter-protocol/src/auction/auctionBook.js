@@ -451,7 +451,6 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           } else {
             trace('added Offer ', price, stillWant.value);
             priceBook.add(seat, price, stillWant, exitAfterBuy, timestamp);
-            helper.publishBidData();
           }
 
           void helper.publishBookData();
@@ -514,15 +513,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               exitAfterBuy,
               timestamp,
             );
-            void helper.publishBidData();
           }
 
           void helper.publishBookData();
-        },
-        publishBidData() {
-          const { state } = this;
-          state.scaledBidBook.publishOffers();
-          state.priceBook.publishOffers();
         },
         publishBookData() {
           const { state } = this;
@@ -693,7 +686,6 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           }
 
           void facets.helper.publishBookData();
-          void facets.helper.publishBidData();
         },
         getCurrentPrice() {
           return this.state.curAuctionPrice;
@@ -840,7 +832,6 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           },
         );
         void facets.helper.publishBookData();
-        void facets.helper.publishBidData();
       },
       stateShape: AuctionBookStateShape,
     },
