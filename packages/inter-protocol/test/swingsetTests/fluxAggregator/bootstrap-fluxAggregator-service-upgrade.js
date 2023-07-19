@@ -52,12 +52,6 @@ export const buildRootObject = async () => {
    */
   const installations = {};
 
-  // @ts-expect-error TODO make fluxAggregator publicFacet support all governance methods (or pare down governance API)
-  /**
-   * @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<
-   *     import('../../../src/price/fluxAggregatorContract.js').prepare
-   *   >}
-   */
   let governorFacets;
   /**
    * @type {ReturnType<
@@ -177,7 +171,6 @@ export const buildRootObject = async () => {
 
       // Complete round-trip without upgrade
       trace(`BOOT buildV1 startInstance`);
-      // @ts-expect-error
       governorFacets = await E(zoe).startInstance(
         NonNullish(installations.puppetContractGovernor),
         undefined,
