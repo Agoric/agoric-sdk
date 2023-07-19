@@ -151,18 +151,12 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     },
   };
 
-  let nextExportID = 1;
   function allocateExportID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
+    return vrm.allocateNextID('exportID');
   }
 
-  let nextCollectionID = 1;
   function allocateCollectionID() {
-    const collectionID = nextCollectionID;
-    nextCollectionID += 1;
-    return collectionID;
+    return vrm.allocateNextID('collectionID');
   }
 
   // note: The real liveslots slotToVal() maps slots (vrefs) to a WeakRef,
@@ -326,9 +320,9 @@ export function makeFakeVirtualStuff(options = {}) {
   const { relaxDurabilityRules } = actualOptions;
   const fakeStuff = makeFakeLiveSlotsStuff(actualOptions);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
+  fakeStuff.setVrm(vrm);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff);
   vom.initializeKindHandleKind();
-  fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, actualOptions);
   const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
   return { fakeStuff, vrm, vom, cm, wpm };
@@ -338,9 +332,9 @@ export function makeStandaloneFakeVirtualObjectManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const { relaxDurabilityRules = true } = options;
   const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
+  fakeStuff.setVrm(vrm);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff);
   vom.initializeKindHandleKind();
-  fakeStuff.setVrm(vrm);
   return vom;
 }
 
@@ -348,6 +342,7 @@ export function makeStandaloneFakeCollectionManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const { relaxDurabilityRules = true } = options;
   const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
+  fakeStuff.setVrm(vrm);
   return makeFakeCollectionManager(vrm, fakeStuff, options);
 }
 
