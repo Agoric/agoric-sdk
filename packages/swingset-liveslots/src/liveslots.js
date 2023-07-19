@@ -497,54 +497,6 @@ function build(
     return Remotable(iface);
   }
 
-  /**
-   * Counters to track the next number for various categories of allocation.
-   * `exportID` starts at 1 because 'o+0' is always automatically
-   * pre-assigned to the root object.
-   * `promiseID` starts at 5 as a very minor aid to debugging: when puzzling
-   * over trace logs and the like, it helps for the numbers in various species
-   * of IDs that are jumbled together to be a little out of sync and thus a
-   * little less similar to each other.
-   */
-  const initialIDCounters = { exportID: 1, collectionID: 1, promiseID: 5 };
-  /** @type {Record<string, number>} */
-  let idCounters;
-  let idCountersAreDirty = false;
-
-  function initializeIDCounters() {
-    if (!idCounters) {
-      // the saved value might be missing, or from an older liveslots
-      // (with fewer counters), so merge it with our initial values
-      const saved = JSON.parse(syscall.vatstoreGet('idCounters') || '{}');
-      idCounters = { ...initialIDCounters, ...saved };
-      idCountersAreDirty = true;
-    }
-  }
-
-  function allocateNextID(name) {
-    if (!idCounters) {
-      // Normally `initializeIDCounters` would be called from startVat, but some
-      // tests bypass that so this is a backstop.  Note that the invocation from
-      // startVat is there to make vatStore access patterns a bit more
-      // consistent from one vat to another, principally as a confusion
-      // reduction measure in service of debugging; it is not a correctness
-      // issue.
-      initializeIDCounters();
-    }
-    const result = idCounters[name];
-    result !== undefined || Fail`unknown idCounters[${name}]`;
-    idCounters[name] += 1;
-    idCountersAreDirty = true;
-    return result;
-  }
-
-  function flushIDCounters() {
-    if (idCountersAreDirty) {
-      syscall.vatstoreSet('idCounters', JSON.stringify(idCounters));
-      idCountersAreDirty = false;
-    }
-  }
-
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
   // allocatePromiseID() returns a slot, registerPromise() uses the slot from
   // allocatePromiseID(), exportPassByPresence() generates a slot itself using
@@ -553,15 +505,18 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    return allocateNextID('exportID');
+    // eslint-disable-next-line no-use-before-define
+    return vrm.allocateNextID('exportID');
   }
 
   function allocateCollectionID() {
-    return allocateNextID('collectionID');
+    // eslint-disable-next-line no-use-before-define
+    return vrm.allocateNextID('collectionID');
   }
 
   function allocatePromiseID() {
-    const promiseID = allocateNextID('promiseID');
+    // eslint-disable-next-line no-use-before-define
+    const promiseID = vrm.allocateNextID('promiseID');
     return makeVatSlot('promise', true, promiseID);
   }
 
@@ -756,9 +711,9 @@ function build(
       Fail`registerValue(${baseRef} should not receive individual facets`;
     slotToVal.set(baseRef, new WeakRef(val));
     if (valIsCohort) {
-      vrm.getFacetNames(id).forEach((name, index) => {
+      for (const [index, name] of vrm.getFacetNames(id).entries()) {
         valToSlot.set(val[name], `${baseRef}:${index}`);
-      });
+      }
     } else {
       valToSlot.set(val, baseRef);
     }
@@ -980,12 +935,20 @@ function build(
         return null;
       }
       syscall.resolve(resolutions);
-      resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
-        resolutionCD.slots.forEach(vref => maybeNewVPIDs.add(vref));
-      });
-      resolutions.forEach(([xvpid]) => maybeNewVPIDs.delete(xvpid));
+      for (const resolution of resolutions) {
+        const [_xvpid, _isReject, resolutionCD] = resolution;
+        for (const vref of resolutionCD.slots) {
+          maybeNewVPIDs.add(vref);
+        }
+      }
+      for (const resolution of resolutions) {
+        const [xvpid] = resolution;
+        maybeNewVPIDs.delete(xvpid);
+      }
     }
-    Array.from(maybeNewVPIDs).sort().forEach(maybeExportPromise);
+    for (const newVPID of Array.from(maybeNewVPIDs).sort()) {
+      maybeExportPromise(newVPID);
+    }
 
     // ideally we'd wait until .then is called on p before subscribing, but
     // the current Promise API doesn't give us a way to discover this, so we
@@ -1187,13 +1150,21 @@ function build(
 
       const maybeNewVPIDs = new Set();
       // if we mention a vpid, we might need to track it
-      resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
-        resolutionCD.slots.forEach(vref => maybeNewVPIDs.add(vref));
-      });
+      for (const resolution of resolutions) {
+        const [_xvpid, _isReject, resolutionCD] = resolution;
+        for (const vref of resolutionCD.slots) {
+          maybeNewVPIDs.add(vref);
+        }
+      }
       // but not if we just resolved it (including the primary)
-      resolutions.forEach(([xvpid]) => maybeNewVPIDs.delete(xvpid));
+      for (const resolution of resolutions) {
+        const [xvpid] = resolution;
+        maybeNewVPIDs.delete(xvpid);
+      }
       // track everything that's left
-      Array.from(maybeNewVPIDs).sort().forEach(maybeExportPromise);
+      for (const newVPID of Array.from(maybeNewVPIDs).sort()) {
+        maybeExportPromise(newVPID);
+      }
 
       // only the primary can possibly be newly resolved
       unregisterUnreferencedVPID(vpid);
@@ -1251,11 +1222,11 @@ function build(
     // 'imports' is an exclusively-owned Set that holds all new
     // promise vpids, both resolved and unresolved
     const imports = finishCollectingPromiseImports();
-    retiredVPIDs.forEach(vpid => {
+    for (const vpid of retiredVPIDs) {
       unregisterUnreferencedVPID(vpid); // unregisters if not in vdata
       importedVPIDs.delete(vpid);
       imports.delete(vpid); // resolved, so don't subscribe()
-    });
+    }
     for (const vpid of Array.from(imports).sort()) {
       syscall.subscribe(vpid);
     }
@@ -1295,14 +1266,18 @@ function build(
 
   function retireExports(vrefs) {
     assert(Array.isArray(vrefs));
-    vrefs.forEach(retireOneExport);
+    for (const vref of vrefs) {
+      retireOneExport(vref);
+    }
   }
 
   function retireImports(vrefs) {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    vrefs.forEach(vrm.ceaseRecognition);
+    for (const vref of vrefs) {
+      vrm.ceaseRecognition(vref);
+    }
   }
 
   // TODO: when we add notifyForward, guard against cycles
@@ -1447,7 +1422,7 @@ function build(
     }
     harden(vpow);
 
-    initializeIDCounters();
+    vrm.initializeIDCounters();
     vom.initializeKindHandleKind();
     collectionManager.initializeStoreKindInfo();
 
@@ -1570,7 +1545,7 @@ function build(
    * dispatch has completed and user code has relinquished agency.
    */
   function afterDispatchActions() {
-    flushIDCounters();
+    vrm.flushIDCounters();
     collectionManager.flushSchemaCache();
     vom.flushStateCache();
   }
