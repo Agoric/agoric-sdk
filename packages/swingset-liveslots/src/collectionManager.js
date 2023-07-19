@@ -380,11 +380,11 @@ export function makeCollectionManager(
       currentGenerationNumber += 1;
       assertAcceptableSyscallCapdataSize([serializedValue]);
       if (durable) {
-        serializedValue.slots.forEach((vref, slotIndex) => {
+        for (const [slotIndex, vref] of serializedValue.slots.entries()) {
           if (!vrm.isDurable(vref)) {
             throwNotDurable(value, slotIndex, serializedValue);
           }
-        });
+        }
       }
       if (passStyleOf(key) === 'remotable') {
         /** @type {string} */
@@ -400,7 +400,9 @@ export function makeCollectionManager(
           vrm.addReachableVref(vref);
         }
       }
-      serializedValue.slots.forEach(vrm.addReachableVref);
+      for (const vref of serializedValue.slots) {
+        vrm.addReachableVref(vref);
+      }
       syscall.vatstoreSet(keyToDBKey(key), JSON.stringify(serializedValue));
       updateEntryCount(1);
     };
@@ -419,11 +421,11 @@ export function makeCollectionManager(
       const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
-        after.slots.forEach((vref, i) => {
+        for (const [i, vref] of after.slots.entries()) {
           if (!vrm.isDurable(vref)) {
             throwNotDurable(value, i, after);
           }
-        });
+        }
       }
       const dbKey = keyToDBKey(key);
       const rawBefore = syscall.vatstoreGet(dbKey);
@@ -793,13 +795,15 @@ export function makeCollectionManager(
     }
     const schemataCapData = serialize(harden(schemata));
     if (isDurable) {
-      schemataCapData.slots.forEach((vref, slotIndex) => {
+      for (const [slotIndex, vref] of schemataCapData.slots.entries()) {
         if (!vrm.isDurable(vref)) {
           throwNotDurable(vref, slotIndex, schemataCapData);
         }
-      });
+      }
     }
-    schemataCapData.slots.forEach(vrm.addReachableVref);
+    for (const vref of schemataCapData.slots) {
+      vrm.addReachableVref(vref);
+    }
 
     schemaCache.set(
       collectionID,

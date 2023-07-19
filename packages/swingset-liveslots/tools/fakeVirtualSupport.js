@@ -233,9 +233,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     setValForSlot(baseRef, val);
     if (valIsCohort) {
       const { id } = parseVatSlot(baseRef);
-      vrm.getFacetNames(id).forEach((name, index) => {
+      for (const [index, name] of vrm.getFacetNames(id).entries()) {
         valToSlot.set(val[name], `${baseRef}:${index}`);
-      });
+      }
     } else {
       valToSlot.set(val, baseRef);
     }
