@@ -189,6 +189,7 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   );
 
   const makeManager = (brand, { storageNode, initialParamValues }) => {
+    console.info('@@@@makeManager', initialParamValues);
     const manager = makeVaultParamManager(
       makeStoredPublisherKit(storageNode, marshaller, 'governance'),
       initialParamValues,
