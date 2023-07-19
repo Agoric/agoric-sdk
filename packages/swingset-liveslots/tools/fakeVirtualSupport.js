@@ -233,9 +233,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     setValForSlot(baseRef, val);
     if (valIsCohort) {
       const { id } = parseVatSlot(baseRef);
-      vrm.getFacetNames(id).forEach((name, index) => {
+      for (const [index, name] of vrm.getFacetNames(id).entries()) {
         valToSlot.set(val[name], `${baseRef}:${index}`);
-      });
+      }
     } else {
       valToSlot.set(val, baseRef);
     }
@@ -315,8 +315,8 @@ export function makeFakeWatchedPromiseManager(
  * Configure virtual stuff with relaxed durability rules and fake liveslots
  *
  * @param {object} [options]
- * @param {number} [options.cacheSize=3]
- * @param {boolean} [options.relaxDurabilityRules=true]
+ * @param {number} [options.cacheSize]
+ * @param {boolean} [options.relaxDurabilityRules]
  */
 export function makeFakeVirtualStuff(options = {}) {
   const actualOptions = {
