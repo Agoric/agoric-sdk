@@ -19,7 +19,8 @@ sudo ./packages/deployment/scripts/install-deps.sh
 yarn install && XSNAP_RANDOM_INIT=1 yarn build && make -C packages/cosmic-swingset/
 # change to "false" to skip extraction on success like in CI
 testfailure="unknown"
-/usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh || {
+DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
+packages/deployment/scripts/integration-test.sh || {
   echo "Test failed!!!"
   testfailure="true"
 }
