@@ -2,8 +2,8 @@ import { Nat } from '@endo/nat';
 
 import { Fail } from '@agoric/assert';
 
-const vatIDPattern = /^v[1-9]\d*$/;
-const deviceIDPattern = /^d[1-9]\d*$/;
+const vatIDPattern = /^v\d+$/;
+const deviceIDPattern = /^d\d+$/;
 
 // Vats are identified by an integer index, which (for typechecking purposes)
 // is encoded as `vNN`. Devices are similarly identified as `dNN`. Both have
