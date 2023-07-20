@@ -67,12 +67,14 @@ const switchAuctioneer = async permittedPowers => {
       marshaller,
     } = await allValues({
       auctioneerKit: auctioneerKitP,
-      governedParamsOrig: E(E.get(auctioneerKitP).publicFacet).getGovernedParams(),
+      governedParamsOrig: E(
+        E.get(auctioneerKitP).publicFacet,
+      ).getGovernedParams(),
       installation: E(zoe).installBundleID(bundleIDs.auctioneer, 'auctioneer'),
       reservePublicFacet: E(zoe).getPublicFacet(reserveInstance),
       stableIssuer: stableIssuerP,
       storageNode: E(chainStorage).makeChildNode(STORAGE_PATH),
-      marshaller: E(board).getReadonlyMarshaller()
+      marshaller: E(board).getReadonlyMarshaller(),
     });
 
     const privateArgs = {
