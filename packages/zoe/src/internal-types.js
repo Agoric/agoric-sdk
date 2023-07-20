@@ -204,7 +204,7 @@
 /**
  * @typedef {object} ExecuteContractResult
  * @property {object} creatorFacet
- * @property {Promise<Invitation>} creatorInvitation
+ * @property {Promise<Invitation>} [creatorInvitation]
  * @property {object} publicFacet
  * @property {HandleOfferObj} handleOfferObj
  */

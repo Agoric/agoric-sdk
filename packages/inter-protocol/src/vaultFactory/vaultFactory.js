@@ -44,19 +44,22 @@ const trace = makeTracer('VF', true);
  * >} VaultFactoryZCF
  */
 
-export const privateArgsShape = M.splitRecord(
-  harden({
-    marshaller: M.remotable('Marshaller'),
-    storageNode: StorageNodeShape,
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    feeMintAccess: FeeMintAccessShape,
-    initialPoserInvitation: InvitationShape,
-    initialShortfallInvitation: InvitationShape,
-  }),
-);
-harden(privateArgsShape);
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: M.splitRecord(
+    {
+      marshaller: M.remotable('Marshaller'),
+      storageNode: StorageNodeShape,
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      feeMintAccess: FeeMintAccessShape,
+      initialPoserInvitation: InvitationShape,
+      initialShortfallInvitation: InvitationShape,
+    },
+  ),
+};
+harden(meta);
 
 /**
  * @param {VaultFactoryZCF} zcf

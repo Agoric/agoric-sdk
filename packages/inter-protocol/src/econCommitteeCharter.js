@@ -39,10 +39,13 @@ const ParamChangesOfferArgsShape = M.splitRecord(
   },
 );
 
-/** A pattern for Zoe to check custom terms before `start()`ing the contract. */
-export const customTermsShape = harden({
-  binaryVoteCounterInstallation: InstallationShape,
-});
+/** @type {ContractMeta} */
+export const meta = {
+  customTermsShape: {
+    binaryVoteCounterInstallation: InstallationShape,
+  },
+};
+harden(meta);
 
 /**
  * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
