@@ -299,6 +299,13 @@ export const METER_TYPE = 'xs-meter-0';
 
 Be sure to also update `test/test-xs-perf.js` with the new meter version.
 
+```sh
+cd packages/xsnap
+git add api.js
+git commit -am 'chore: Bump xsnap meter type'
+cd ../..
+```
+
 Changing anything in Endo usually frustrates the SwingSet kernel hashes, and if
 Endo changes nothing, bumping the meter version certainly will, and so
 predictably frustrates the kernel hash golden test.
@@ -314,13 +321,6 @@ cd packages/SwingSet
 yarn test test/test-xsnap-store.js --update-snapshots
 git add test/snapshots/test-xsnap-store.*
 git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
-cd ../..
-```
-
-```sh
-cd packages/xsnap
-git add api.js
-git commit -am 'chore: Bump xsnap meter type'
 cd ../..
 ```
 
