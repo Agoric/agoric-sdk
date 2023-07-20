@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -248,7 +247,12 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	if err != nil {
 		return err
 	}
-	if len(swingStoreExportDataEntries) == 0 {
+	exportDataIterator := NewExportDataIterator(
+		NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource(swingStoreExportDataEntries)),
+	)
+	defer exportDataIterator.Close()
+
+	if !exportDataIterator.Valid() {
 		return nil
 	}
 
@@ -258,14 +262,9 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	exportDataArtifact := types.SwingStoreArtifact{Name: UntrustedExportDataArtifactName}
 
 	var encodedExportData bytes.Buffer
-	encoder := json.NewEncoder(&encodedExportData)
-	encoder.SetEscapeHTML(false)
-	for _, dataEntry := range swingStoreExportDataEntries {
-		entry := []string{dataEntry.Path, dataEntry.Value}
-		err := encoder.Encode(entry)
-		if err != nil {
-			return err
-		}
+	err = EncodeExportDataToJsonl(exportDataIterator, &encodedExportData)
+	if err != nil {
+		return err
 	}
 	exportDataArtifact.Data = encodedExportData.Bytes()
 

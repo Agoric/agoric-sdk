@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/helpers"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -368,6 +370,206 @@ type swingStoreImportOptions struct {
 	IncludeHistorical bool `json:"includeHistorical,omitempty"`
 }
 
+var _ sdk.Iterator = &exportDataIterator{}
+
+// ExportDataIteratorProvider is an abstraction for the provider of key/value
+// string pairs backing an export data Iterator
+type ExportDataIteratorProvider interface {
+	Read() ([]string, error)
+	Close() error
+}
+
+type exportDataIterator struct {
+	provider ExportDataIteratorProvider
+	current  []string
+	err      error
+}
+
+// NewExportDataIterator creates an iterator over a key/value string pair
+// provider. The values are iterated in order they're present in the source.
+func NewExportDataIterator(provider ExportDataIteratorProvider) sdk.Iterator {
+	iter := &exportDataIterator{
+		provider: provider,
+	}
+	iter.Next()
+	return iter
+}
+
+// Domain implements Iterator
+func (iter *exportDataIterator) Domain() (start []byte, end []byte) {
+	return nil, nil
+}
+
+// Valid returns whether the current iterator is valid. Once invalid, the Iterator remains
+// invalid forever.
+func (iter *exportDataIterator) Valid() bool {
+	if iter.err == io.EOF {
+		return false
+	} else if iter.err != nil {
+		// Workaround for cosmos iterators not following tendermint iterator semantics
+		// Since cosmos iterators do not use Error() to communicate iteration errors,
+		// panic if we encounter an iteration error
+		panic(iter.err)
+	}
+	return true
+}
+
+func (iter *exportDataIterator) checkValid() {
+	if !iter.Valid() {
+		panic("invalid iterator")
+	}
+}
+
+// Next moves the iterator to the next entry in the reader.
+// If Valid returns false, this method will panic.
+func (iter *exportDataIterator) Next() {
+	iter.checkValid()
+
+	iter.current, iter.err = iter.provider.Read()
+
+	if iter.err == nil && len(iter.current) != 2 {
+		iter.err = fmt.Errorf("invalid data entry (length %d)", len(iter.current))
+	}
+}
+
+// Key returns the key at the current position. Panics if the iterator is invalid.
+// CONTRACT: key readonly []byte
+func (iter *exportDataIterator) Key() (key []byte) {
+	iter.checkValid()
+
+	return []byte(iter.current[0])
+}
+
+// Value returns the value at the current position. Panics if the iterator is invalid.
+// CONTRACT: value readonly []byte
+func (iter *exportDataIterator) Value() (value []byte) {
+	iter.checkValid()
+
+	return []byte(iter.current[1])
+}
+
+// Error returns the last error encountered by the iterator, if any.
+func (iter *exportDataIterator) Error() error {
+	err := iter.err
+	if err == io.EOF {
+		return nil
+	}
+
+	return err
+}
+
+// Close closes the iterator, releasing any allocated resources.
+func (iter *exportDataIterator) Close() error {
+	return iter.provider.Close()
+}
+
+type ExportDataEntriesSource interface {
+	GetAt(index int) ([]string, error)
+}
+
+var _ ExportDataEntriesSource = &swingStoreExportDataEntriesSource{}
+
+type swingStoreExportDataEntriesSource struct {
+	exportDataEntries []*vstoragetypes.DataEntry
+}
+
+func NewSwingStoreExportDataEntriesSource(exportDataEntries []*vstoragetypes.DataEntry) ExportDataEntriesSource {
+	return swingStoreExportDataEntriesSource{
+		exportDataEntries: exportDataEntries,
+	}
+}
+
+func (source swingStoreExportDataEntriesSource) GetAt(index int) (entry []string, err error) {
+	length := len(source.exportDataEntries)
+
+	if index == length {
+		return entry, io.EOF
+	}
+
+	if index > length {
+		return entry, fmt.Errorf("index %d is out of source bounds (length %d)", index, length)
+	}
+
+	sourceEntry := source.exportDataEntries[index]
+
+	return []string{sourceEntry.Path, sourceEntry.Value}, nil
+}
+
+var _ ExportDataIteratorProvider = &exportDataEntriesProvider{}
+
+type exportDataEntriesProvider struct {
+	source  ExportDataEntriesSource
+	current int
+}
+
+func NewExportDataEntriesProvider(source ExportDataEntriesSource) ExportDataIteratorProvider {
+	return &exportDataEntriesProvider{
+		source:  source,
+		current: 0,
+	}
+}
+
+func (prov *exportDataEntriesProvider) Read() (next []string, err error) {
+	if prov.source == nil {
+		return next, fmt.Errorf("provider closed")
+	}
+
+	entry, err := prov.source.GetAt(prov.current)
+	prov.current += 1
+
+	return entry, err
+}
+
+func (prov *exportDataEntriesProvider) Close() error {
+	prov.current = -1
+	prov.source = nil
+	return nil
+}
+
+var _ ExportDataIteratorProvider = &jsonlExportDataDecoderProvider{}
+
+type jsonlExportDataDecoderProvider struct {
+	closer  io.Closer
+	decoder *json.Decoder
+}
+
+func (prov jsonlExportDataDecoderProvider) Read() (next []string, err error) {
+	err = prov.decoder.Decode(&next)
+	return next, err
+}
+
+func (prov jsonlExportDataDecoderProvider) Close() error {
+	return prov.closer.Close()
+}
+
+// NewJsonlExportDataDecoderIterator creates an iterator over a reader that
+// decodes each line as a json tuple of key and value. The values are iterated
+// in order they're present in the source
+func NewJsonlExportDataDecoderIterator(reader io.ReadCloser) sdk.Iterator {
+	provider := jsonlExportDataDecoderProvider{
+		closer:  reader,
+		decoder: json.NewDecoder(reader),
+	}
+	return NewExportDataIterator(provider)
+}
+
+// EncodeExportDataToJsonl consumes an iterator of key/value pairs and writes
+// each pair as a JSON encoded array, separated by new lines.
+func EncodeExportDataToJsonl(exportDataIterator sdk.Iterator, writer io.Writer) (err error) {
+	defer helpers.RecoverToError(&err)
+
+	encoder := json.NewEncoder(writer)
+	encoder.SetEscapeHTML(false)
+	for ; exportDataIterator.Valid(); exportDataIterator.Next() {
+		entry := [2]string{string(exportDataIterator.Key()), string(exportDataIterator.Value())}
+		err := encoder.Encode(entry)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SwingStoreExportsHandler exclusively manages the communication with the JS side
 // related to swing-store exports, ensuring insensitivity to sub-block timing,
 // and enforcing concurrency requirements.
@@ -591,8 +793,9 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
-	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
-		entries := []*vstoragetypes.DataEntry{}
+	getExportData := func() (entries []*vstoragetypes.DataEntry, err error) {
+		defer helpers.RecoverToError(&err)
+
 		if manifest.Data == "" {
 			return entries, nil
 		}
@@ -601,22 +804,13 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		if err != nil {
 			return nil, err
 		}
-		defer dataFile.Close()
+		exportDataIterator := NewJsonlExportDataDecoderIterator(dataFile)
 
-		decoder := json.NewDecoder(dataFile)
-		for {
-			var jsonEntry []string
-			err = decoder.Decode(&jsonEntry)
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return nil, err
-			}
+		entries = []*vstoragetypes.DataEntry{}
 
-			if len(jsonEntry) != 2 {
-				return nil, fmt.Errorf("invalid export data entry (length %d)", len(jsonEntry))
-			}
-			entry := vstoragetypes.DataEntry{Path: jsonEntry[0], Value: jsonEntry[1]}
+		defer exportDataIterator.Close()
+		for ; exportDataIterator.Valid(); exportDataIterator.Next() {
+			entry := vstoragetypes.DataEntry{Path: string(exportDataIterator.Key()), Value: string(exportDataIterator.Value())}
 			entries = append(entries, &entry)
 		}
 
@@ -704,8 +898,12 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	if err != nil {
 		return err
 	}
+	exportDataIterator := NewExportDataIterator(
+		NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource(exportDataEntries)),
+	)
+	defer exportDataIterator.Close()
 
-	if len(exportDataEntries) > 0 {
+	if exportDataIterator.Valid() {
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
@@ -713,14 +911,9 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		}
 		defer exportDataFile.Close()
 
-		encoder := json.NewEncoder(exportDataFile)
-		encoder.SetEscapeHTML(false)
-		for _, dataEntry := range exportDataEntries {
-			entry := []string{dataEntry.Path, dataEntry.Value}
-			err := encoder.Encode(entry)
-			if err != nil {
-				return err
-			}
+		err = EncodeExportDataToJsonl(exportDataIterator, exportDataFile)
+		if err != nil {
+			return err
 		}
 
 		err = exportDataFile.Sync()
