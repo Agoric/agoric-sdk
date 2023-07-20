@@ -9,13 +9,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
 type beginBlockAction struct {
 	Type        string       `json:"type"`
-	StoragePort int          `json:"storagePort"`
 	BlockHeight int64        `json:"blockHeight"`
 	BlockTime   int64        `json:"blockTime"`
 	ChainID     string       `json:"chainID"`
@@ -39,7 +37,6 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: vm.GetPort("vstorage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),
