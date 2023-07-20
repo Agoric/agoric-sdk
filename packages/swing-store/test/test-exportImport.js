@@ -7,11 +7,9 @@ import test from 'ava';
 import tmp from 'tmp';
 import bundleSource from '@endo/bundle-source';
 
-import {
-  initSwingStore,
-  makeSwingStoreExporter,
-  importSwingStore,
-} from '../src/swingStore.js';
+import { initSwingStore } from '../src/swingStore.js';
+import { makeSwingStoreExporter } from '../src/exporter.js';
+import { importSwingStore } from '../src/importer.js';
 
 function makeExportLog() {
   const exportLog = [];
