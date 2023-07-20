@@ -4,7 +4,7 @@
 // import { E } from "@endo/far";
 
 const PROBER_BUNDLE_ID =
-  'b1-3af827f96f8623a5f271a995a7a5156892100066324d942a45a5e77699eee9984c74bacb6891fcc7f82c52d5496d81f046ff09fc45e0be58f4db889ea0243ae1';
+  'b1-9f4bf80ae5441495ba771946974917bfe39961754484855833acc27bc3addbf68ee46e616487cf80bda7bf64322522b7e1f24ecc80c4cea3e9541ac8c156c634';
 
 console.info('zoe upgrade: evaluating script');
 
