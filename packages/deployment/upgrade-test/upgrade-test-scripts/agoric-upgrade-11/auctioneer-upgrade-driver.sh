@@ -10,14 +10,15 @@ here='upgrade-test-scripts/agoric-upgrade-11'
 bundle_auctioneer_filepath='/tmp/bundle-auctioneer.json'
 bundle_vault_filepath='/tmp/bundle-vaultFactory.json'
 
-yarn bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
+alias bundle-source="yarn run --silent bundle-source"
+bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
 VAULT_HASH=`jq -r .endoZipBase64Sha512 ${bundle_vault_filepath}`
 
 # TODO: print better diagnostic message
 echo ${VAULT_HASH}
 grep ${VAULT_HASH} ${here}/gov-switch-auctioneer.js || exit 1
 
-yarn bundle-source --cache-json /tmp packages/inter-protocol/src/auction/auctioneer.js auctioneer
+bundle-source --cache-json /tmp packages/inter-protocol/src/auction/auctioneer.js auctioneer
 AUCTIONEER_HASH=`jq -r .endoZipBase64Sha512 ${bundle_auctioneer_filepath}`
 grep ${AUCTIONEER_HASH} ${here}/gov-switch-auctioneer.js || exit 1
 
