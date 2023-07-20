@@ -6,7 +6,7 @@ import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform
 import { createSHA256 } from './hasher.js';
 
 /**
- * @typedef { import('./swingStore').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
