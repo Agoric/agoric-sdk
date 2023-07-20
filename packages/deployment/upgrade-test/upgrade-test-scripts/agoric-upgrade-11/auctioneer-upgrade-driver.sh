@@ -7,16 +7,27 @@ set -euo pipefail
 
 here='upgrade-test-scripts/agoric-upgrade-11'
 
-# yarn bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
+bundle_auctioneer_filepath='/tmp/bundle-auctioneer.json'
+bundle_vault_filepath='/tmp/bundle-vaultFactory.json'
+
+yarn bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
+VAULT_HASH=`jq -r .endoZipBase64Sha512 ${bundle_vault_filepath}`
+
+# TODO: print better diagnostic message
+echo ${VAULT_HASH}
+grep ${VAULT_HASH} ${here}/gov-switch-auctioneer.js || exit 1
+
 yarn bundle-source --cache-json /tmp packages/inter-protocol/src/auction/auctioneer.js auctioneer
+AUCTIONEER_HASH=`jq -r .endoZipBase64Sha512 ${bundle_auctioneer_filepath}`
+grep ${AUCTIONEER_HASH} ${here}/gov-switch-auctioneer.js || exit 1
 
 # TODO: make sure this consistently works
-agd tx swingset install-bundle @/tmp/bundle-vaultFactory.json \
+agd tx swingset install-bundle @${bundle_vault_filepath} \
       --from gov1 --keyring-backend=test --gas=auto \
       --chain-id=agoriclocal -b block --yes
 agoric follow -lF :bundles
 
-agd tx swingset install-bundle @/tmp/bundle-auctioneer.json \
+agd tx swingset install-bundle @${bundle_auctioneer_filepath} \
       --from gov1 --keyring-backend=test --gas=auto \
       --chain-id=agoriclocal -b block --yes
 agoric follow -lF :bundles
