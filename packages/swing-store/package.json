@@ -20,14 +20,14 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.2",
-    "@endo/base64": "^0.2.31",
-    "@endo/bundle-source": "^2.5.1",
-    "@endo/check-bundle": "^0.2.18",
-    "@endo/nat": "^4.1.27",
+    "@endo/base64": "^0.2.32",
+    "@endo/bundle-source": "^2.5.2",
+    "@endo/check-bundle": "^0.2.19",
+    "@endo/nat": "^4.1.28",
     "better-sqlite3": "^8.2.0"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.56",
+    "@endo/init": "^0.5.57",
     "@types/better-sqlite3": "^7.5.0",
     "ava": "^5.3.0",
     "c8": "^7.13.0",
