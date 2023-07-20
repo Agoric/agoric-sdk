@@ -1,6 +1,5 @@
 // @jessie-check
 
-import { initEmpty } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -18,7 +17,7 @@ export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
     issuerBaggage,
     `${name} payment`,
     PaymentI,
-    initEmpty,
+    () => harden({}),
     {
       getAllegedBrand() {
         return brand;

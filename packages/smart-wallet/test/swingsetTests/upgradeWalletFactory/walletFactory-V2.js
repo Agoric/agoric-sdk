@@ -5,7 +5,8 @@
  * This variant adds a sayHelloUpgrade method to check that upgrade has occurred.
  */
 
-import { M, makeExo, mustMatch } from '@agoric/store';
+import { makeExo } from '@endo/exo';
+import { M, mustMatch } from '@endo/patterns';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';

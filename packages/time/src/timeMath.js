@@ -1,4 +1,4 @@
-import { mustMatch } from '@agoric/store';
+import { mustMatch } from '@endo/patterns';
 import { Nat } from '@endo/nat';
 import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
@@ -103,6 +103,10 @@ const relLike = (left, right, relValue) => {
 // the `TimeMathType`, since that is the documentation that shows up
 // in the IDE. Well, at least the vscode IDE.
 
+/**
+ * @param {Timestamp} abs
+ * @returns {bigint}
+ */
 const absValue = abs => {
   if (typeof abs === 'bigint') {
     return Nat(abs);
@@ -111,6 +115,10 @@ const absValue = abs => {
   return Nat(abs.absValue);
 };
 
+/**
+ * @param {RelativeTime} rel
+ * @returns {bigint}
+ */
 const relValue = rel => {
   if (typeof rel === 'bigint') {
     return Nat(rel);
@@ -200,7 +208,7 @@ const modRelRel = (rel, step) =>
  * @param {Timestamp | RelativeTime} right
  * @param {bigint} v1
  * @param {bigint} v2
- * @returns {RankComparison}
+ * @returns {-1 | 0 | 1}
  */
 const compareValues = (left, right, v1, v2) => {
   sharedTimerBrand(left, right);

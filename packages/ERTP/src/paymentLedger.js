@@ -2,7 +2,7 @@
 
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M, keyEQ } from '@agoric/store';
+import { mustMatch, M, keyEQ } from '@endo/patterns';
 import {
   provideDurableWeakMapStore,
   prepareExo,
@@ -12,7 +12,6 @@ import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
-import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */

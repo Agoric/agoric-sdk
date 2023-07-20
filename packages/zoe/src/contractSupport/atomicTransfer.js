@@ -1,4 +1,4 @@
-import { mustMatch, M } from '@agoric/store';
+import { mustMatch, M } from '@endo/patterns';
 import { assertRightsConserved } from '../contractFacet/rightsConservation.js';
 import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 

@@ -1,5 +1,5 @@
 import { SubscriberShape } from '@agoric/notifier';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 
 export { SubscriberShape };

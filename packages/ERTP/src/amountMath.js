@@ -1,6 +1,6 @@
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
-import { M, matches } from '@agoric/store';
+import { M, matches } from '@endo/patterns';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';

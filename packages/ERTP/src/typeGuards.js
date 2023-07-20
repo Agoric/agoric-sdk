@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { M, matches } from '@agoric/store';
+import { M, matches } from '@endo/patterns';
 
 export const BrandShape = M.remotable('Brand');
 export const IssuerShape = M.remotable('Issuer');

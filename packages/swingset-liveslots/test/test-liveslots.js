@@ -6,7 +6,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@agoric/assert';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { kslot, kser, kunser } from './kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';

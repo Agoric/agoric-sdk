@@ -6,7 +6,7 @@ import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { M, matches } from '@agoric/store';
+import { M, matches } from '@endo/patterns';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,

@@ -140,6 +140,10 @@ export function commaSplit(s) {
   return s.split(',');
 }
 
+/**
+ * @param {unknown} m
+ * @returns {asserts m is string}
+ */
 function insistMeterID(m) {
   assert.typeof(m, 'string');
   assert.equal(m[0], 'm');
@@ -553,7 +557,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    * Allocate a new koid.
    *
    * @param {string} ownerID
-   * @param {undefined | bigint} id
+   * @param {bigint} [id]
    * @returns {string}
    */
   function addKernelObject(ownerID, id = undefined) {
@@ -561,6 +565,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     insistVatID(ownerID);
     if (id === undefined) {
       id = Nat(BigInt(getRequired('ko.nextID')));
+      // XXX https://github.com/Agoric/agoric-sdk/issues/4620
+      assert.typeof(id, 'bigint');
       kvStore.set('ko.nextID', `${id + 1n}`);
     }
     kdebug(`Adding kernel object ko${id} for ${ownerID}`);
@@ -990,11 +996,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     insistMeterID(meterID);
     assert.typeof(delta, 'bigint');
     Nat(delta);
-    /** @type { bigint | string } */
-    let remaining = getRequired(`${meterID}.remaining`);
+    const remaining = getRequired(`${meterID}.remaining`);
     if (remaining !== 'unlimited') {
-      remaining = Nat(BigInt(remaining));
-      kvStore.set(`${meterID}.remaining`, `${remaining + delta}`);
+      kvStore.set(`${meterID}.remaining`, `${Nat(BigInt(remaining)) + delta}`);
     }
   }
 

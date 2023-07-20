@@ -9,7 +9,7 @@ import {
 } from '@agoric/ertp';
 import { StorageNodeShape } from '@agoric/internal';
 import { observeNotifier } from '@agoric/notifier';
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {

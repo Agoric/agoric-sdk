@@ -1,4 +1,6 @@
-import { makeExo, mustMatch, keyEQ, M } from '@agoric/store';
+import { mustMatch, keyEQ, M } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
+
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
 import { QuestionI, QuestionSpecShape } from './typeGuards.js';

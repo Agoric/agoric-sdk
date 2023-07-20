@@ -1,4 +1,4 @@
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import '../../../exported.js';
 
 import { prepareExoClass, prepareExo } from '@agoric/vat-data';

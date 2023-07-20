@@ -10,7 +10,7 @@ import {
   PaymentShape,
 } from '@agoric/ertp';
 import { SubscriberShape } from '@agoric/notifier';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { TimestampShape } from '@agoric/time';
 
 // keywords have an initial cap

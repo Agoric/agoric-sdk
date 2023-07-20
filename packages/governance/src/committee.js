@@ -1,5 +1,5 @@
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 

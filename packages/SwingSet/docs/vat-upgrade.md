@@ -127,7 +127,7 @@ To enable upgrade, the v1 code must stash important data in durable storage, and
 For durable objects, the v1 code must store the "durable kind handle" in durable storage. This is done automatically by `prepareExoClass()` and `prepareExoClassKit()`, but can also be done manually (see [Virtual and Durable Objects](./virtual-objects.md#virtual-and-durable-objects)).
 
 ```js
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 const FooI = M.interface('foo', fooMethodGuards);
 // someDurableMap should generally be reachable from baggage.
 const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods);
@@ -201,7 +201,7 @@ The v2 code wakes up inside the upgrade phase when `buildRootObject(vatPowers, v
 Before completion of `buildRootObject()` is indicated (either by returning a non-promise or by fulfilling a returned promise), the v2 code is obligated to redefine every Kind that was created by the v1 code. If any durable Kinds are defined incompletely or left undefined by the time of that indication, the upgrade fails and the vat is rolled back to v1.
 
 ```js
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 // fooMethodGuards and fooMethods must match or be a superset of their v1 analogs.
 const FooI = M.interface('foo', fooMethodGuards);
 // someDurableMap is `baggage` or was retrieved from it.

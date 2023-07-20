@@ -1,5 +1,5 @@
 // @ts-check
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 import { isPromise } from '@endo/promise-kit';
 
