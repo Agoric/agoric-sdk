@@ -23,11 +23,14 @@ const { ceilDivide } = natSafeMath;
  * }} CommitteeElectorateCreatorFacet
  */
 
-export const privateArgsShape = {
-  storageNode: StorageNodeShape,
-  marshaller: M.remotable('Marshaller'),
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: {
+    storageNode: StorageNodeShape,
+    marshaller: M.remotable('Marshaller'),
+  },
 };
-harden(privateArgsShape);
+harden(meta);
 
 /**
  * Each Committee (an Electorate) represents a particular set of voters. The
@@ -170,5 +173,4 @@ export const prepare = (zcf, privateArgs, baggage) => {
 
   return { publicFacet, creatorFacet };
 };
-
 harden(prepare);

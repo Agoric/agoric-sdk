@@ -64,40 +64,41 @@ const { Fail } = assert;
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
-export const customTermsShape = {
-  anchorBrand: BrandShape,
-  anchorPerMinted: RatioShape,
-  electionManager: InstanceHandleShape,
-  governedParams: {
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: AmountShape,
+/** @type {ContractMeta} */
+export const meta = {
+  customTermsShape: {
+    anchorBrand: BrandShape,
+    anchorPerMinted: RatioShape,
+    electionManager: InstanceHandleShape,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: AmountShape,
+      },
+      WantMintedFee: {
+        type: ParamTypes.RATIO,
+        value: RatioShape,
+      },
+      GiveMintedFee: {
+        type: ParamTypes.RATIO,
+        value: RatioShape,
+      },
+      MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
     },
-    WantMintedFee: {
-      type: ParamTypes.RATIO,
-      value: RatioShape,
-    },
-    GiveMintedFee: {
-      type: ParamTypes.RATIO,
-      value: RatioShape,
-    },
-    MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
   },
+  privateArgsShape: M.splitRecord(
+    {
+      marshaller: M.remotable('Marshaller'),
+      storageNode: StorageNodeShape,
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      feeMintAccess: FeeMintAccessShape,
+      initialPoserInvitation: InvitationShape,
+    },
+  ),
 };
-harden(customTermsShape);
-
-export const privateArgsShape = M.splitRecord(
-  harden({
-    marshaller: M.remotable('Marshaller'),
-    storageNode: StorageNodeShape,
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    feeMintAccess: FeeMintAccessShape,
-    initialPoserInvitation: InvitationShape,
-  }),
-);
-harden(privateArgsShape);
+harden(meta);
 
 /**
  * @param {ZCF<

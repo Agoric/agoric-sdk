@@ -222,13 +222,7 @@ export const makeZCFZygote = async (
     return evalContractBundle(bundle);
   };
   // evaluate the contract (either the first version, or an upgrade)
-  const {
-    start,
-    buildRootObject,
-    privateArgsShape,
-    customTermsShape,
-    prepare,
-  } = await evaluateContract();
+  const { start, buildRootObject, meta, prepare } = await evaluateContract();
 
   if (start === undefined && prepare === undefined) {
     buildRootObject === undefined ||
@@ -300,6 +294,7 @@ export const makeZCFZygote = async (
       const terms = getInstanceRecHolder().getTerms();
 
       // If the contract provided customTermsShape, validate the customTerms.
+      const { customTermsShape } = meta;
       if (customTermsShape) {
         const { brands: _b, issuers: _i, ...customTerms } = terms;
         mustMatch(harden(customTerms), customTermsShape, 'customTerms');
@@ -373,6 +368,7 @@ export const makeZCFZygote = async (
       zcfBaggage.init('instanceRecHolder', instanceRecHolder);
 
       const startFn = start || prepare;
+      const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
@@ -423,6 +419,7 @@ export const makeZCFZygote = async (
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintKind();
 
+      const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }

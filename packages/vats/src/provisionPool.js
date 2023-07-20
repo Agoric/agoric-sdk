@@ -14,18 +14,22 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
-export const privateArgsShape = M.splitRecord(
-  harden({
-    poolBank: M.eref(M.remotable('bank')),
-    storageNode: M.eref(M.remotable('storageNode')),
-    marshaller: M.eref(M.remotable('marshaller')),
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    initialPoserInvitation: InvitationShape,
-    metricsOverride: M.recordOf(M.string()),
-  }),
-);
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: M.splitRecord(
+    {
+      poolBank: M.eref(M.remotable('bank')),
+      storageNode: M.eref(M.remotable('storageNode')),
+      marshaller: M.eref(M.remotable('marshaller')),
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      initialPoserInvitation: InvitationShape,
+      metricsOverride: M.recordOf(M.string()),
+    },
+  ),
+};
+harden(meta);
 
 /**
  * @typedef {StandardTerms &

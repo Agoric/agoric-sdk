@@ -16,18 +16,19 @@ import { shape } from './typeGuards.js';
 
 const trace = makeTracer('WltFct');
 
-export const privateArgsShape = harden(
-  M.splitRecord(
+/** @type {ContractMeta} */
+export const meta = {
+  customTermsShape: {
+    agoricNames: M.eref(M.remotable('agoricNames')),
+    board: M.eref(M.remotable('board')),
+    assetPublisher: M.eref(M.remotable('Bank')),
+  },
+  privateArgsShape: M.splitRecord(
     { storageNode: M.eref(M.remotable('StorageNode')) },
     { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
   ),
-);
-
-export const customTermsShape = harden({
-  agoricNames: M.eref(M.remotable('agoricNames')),
-  board: M.eref(M.remotable('board')),
-  assetPublisher: M.eref(M.remotable('Bank')),
-});
+};
+harden(meta);
 
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
