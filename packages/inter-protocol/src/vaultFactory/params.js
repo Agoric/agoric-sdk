@@ -199,7 +199,25 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   };
 
   // restore from baggage
-  [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  for (const [brand, args] of managerArgs.entries()) {
+    // Migrate Interest Rate to Stability Fee
+
+    let newParamArgs = args;
+    if ('interestRate' in args.initialParamValues) {
+      newParamArgs = harden({
+        ...args,
+        initialParamValues: {
+          ...args.initialParamValues,
+          stabilityFee: args.initialParamValues.interestRate
+        },
+      });
+      console.info('@@@@makeManager with new args', newParamArgs);
+      managerArgs.set(brand, newParamArgs);
+    }
+
+    makeManager(brand, newParamArgs);
+  }
 
   return {
     /**
