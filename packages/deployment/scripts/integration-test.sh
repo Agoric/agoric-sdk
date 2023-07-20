@@ -7,10 +7,14 @@ thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 export GOBIN="$thisdir/../../../golang/cosmos/build"
 export NETWORK_NAME=${NETWORK_NAME-localtest}
 
+SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
+
 DEFAULT_LOADGEN=/usr/src/testnet-load-generator
 LOADGEN=${LOADGEN-""}
 if [ -n "$LOADGEN" ]; then
   LOADGEN=$(cd "$LOADGEN" > /dev/null && pwd -P)
+elif [ -d "$SDK_SRC/../testnet-load-generator" ]; then
+  LOADGEN=$(cd "$SDK_SRC/../testnet-load-generator" > /dev/null && pwd -P)
 elif [ -d "$DEFAULT_LOADGEN" ]; then
   LOADGEN=$(cd "$DEFAULT_LOADGEN" > /dev/null && pwd -P)
 else
@@ -31,7 +35,6 @@ cd "$NETWORK_NAME/setup"
 
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
 export AG_SETUP_COSMOS_STATE_SYNC_INTERVAL=20 
-SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
 if [ -n "$LOADGEN" ]
 then
