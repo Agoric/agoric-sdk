@@ -7,6 +7,20 @@ thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 export GOBIN="$thisdir/../../../golang/cosmos/build"
 export NETWORK_NAME=${NETWORK_NAME-localtest}
 
+SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
+
+DEFAULT_LOADGEN=/usr/src/testnet-load-generator
+LOADGEN=${LOADGEN-""}
+if [ -n "$LOADGEN" ]; then
+  LOADGEN=$(cd "$LOADGEN" > /dev/null && pwd -P)
+elif [ -d "$SDK_SRC/../testnet-load-generator" ]; then
+  LOADGEN=$(cd "$SDK_SRC/../testnet-load-generator" > /dev/null && pwd -P)
+elif [ -d "$DEFAULT_LOADGEN" ]; then
+  LOADGEN=$(cd "$DEFAULT_LOADGEN" > /dev/null && pwd -P)
+else
+  LOADGEN=
+fi
+
 SOLO_ADDR=
 VAT_CONFIG=
 RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
@@ -21,19 +35,16 @@ cd "$NETWORK_NAME/setup"
 
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
 export AG_SETUP_COSMOS_STATE_SYNC_INTERVAL=20 
-AGORIC_SDK_PATH=${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
-if [ -d /usr/src/testnet-load-generator ]
+if [ -n "$LOADGEN" ]
 then
-  solodir=/usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000
+  solodir="$LOADGEN"/_agstate/agoric-servers/testnet-8000
   "$thisdir/../../solo/bin/ag-solo" init "$solodir" --webport=8000
   SOLO_ADDR=$(cat "$solodir/ag-cosmos-helper-address")
   VAT_CONFIG="@agoric/vats/decentral-demo-config.json"
 fi
 
-# Speed up the docker deployment by pre-mounting /usr/src/agoric-sdk.
-DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
-  "$thisdir/docker-deployment.cjs" > deployment.json
+"$thisdir/docker-deployment.cjs" > deployment.json
 
 # Set up the network from our above deployment.json.
 "$thisdir/setup.sh" init --noninteractive
@@ -44,18 +55,18 @@ VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
-if [ -d /usr/src/testnet-load-generator ]
+if [ -n "$LOADGEN" ]
 then
-  /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh show-config > "$RESULTSDIR/network-config"
+  "$SDK_SRC/packages/deployment/scripts/setup.sh" show-config > "$RESULTSDIR/network-config"
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
-  cd /usr/src/testnet-load-generator
+  cd "$LOADGEN"
   SOLO_COINS=40000000000uist \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
-  SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER= \
+  SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER="" \
   SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
   AG_CHAIN_COSMOS_HOME=$HOME/.agoric \
-  SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
+  SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=$SDK_SRC OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --no-stage.save-storage \
     --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
     --stage.loadgen.faucet.interval=6 --stage.loadgen.faucet.limit=4 \

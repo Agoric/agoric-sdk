@@ -62,7 +62,7 @@ RUN \
   yarn build
 
 # Remove dev dependencies.
-RUN rm -rf packages/xsnap/moddable
+RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/build/tmp
 # FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
 # RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
@@ -86,11 +86,11 @@ ARG GIT_REVISION=unknown
 RUN echo "$GIT_REVISION" > /usr/src/agoric-sdk/packages/solo/public/git-revision.txt
 
 # Compatibility links for older containers.
-RUN ln -s /data /agoric
-RUN ln -s /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
-RUN ln -s /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
+RUN ln -sf /data /agoric
+RUN ln -sf /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
+RUN ln -sf /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
 
-RUN /usr/src/agoric-sdk/packages/deployment/scripts/smoketest-binaries.sh
+RUN /usr/src/agoric-sdk/scripts/smoketest-binaries.sh
 
 # By default, run the daemon with specified arguments.
 WORKDIR /root

@@ -1,10 +1,10 @@
 #! /bin/sh
-NETWORK_NAME=${NETWORK_NAME-agoric}
+NETWORK_NAME=${NETWORK_NAME-localtest}
 SETUP_HOME=${SETUP_HOME-$NETWORK_NAME}
 IMAGE=ghcr.io/agoric/cosmic-swingset-setup:${TAG-latest}
 TTY=-i
 test -t 0 && test -t 1 && TTY=-it
-FLAGS=
+FLAGS=--entrypoint=/bin/bash
 case "$1" in
 --pull)
   shift
@@ -12,19 +12,20 @@ case "$1" in
   ;;
 esac
 case "$1" in
-shell)
-  shift
-  FLAGS=--entrypoint=/bin/bash
-  ;;
-show-*)
-  TTY=-i
+shell) shift ;;
+*)
+  set /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh ${1+"$@"}
   ;;
 esac
+
 setup_volume=
 if test -f "$PWD/$SETUP_HOME/setup/deployment.json"; then
   setup_volume=--volume="$PWD/$SETUP_HOME/setup:/data/chains/$SETUP_HOME"
 elif test -f deployment.json; then
   setup_volume=--volume="$PWD:/data/chains/$SETUP_HOME"
+fi
+if test -n "$LOADGEN"; then
+  setup_volume="$setup_volume --volume=$LOADGEN:/usr/src/testnet-load-generator"
 fi
 exec docker run --rm $TTY $FLAGS \
   --volume=ag-setup-cosmos-chains:/data/chains \
@@ -32,8 +33,6 @@ exec docker run --rm $TTY $FLAGS \
   --volume=/var/run/docker.sock:/var/run/docker.sock \
   $setup_volume \
   --env AGD_HOME=/root/.ag-chain-cosmos \
-  --env AG_SETUP_COSMOS_NAME=$NETWORK_NAME \
-  --env AG_SETUP_COSMOS_HOME=$SETUP_HOME \
-  --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
-  --env DO_API_TOKEN=$DO_API_TOKEN \
+  --env NETWORK_NAME=$NETWORK_NAME \
+  -w /data/chains \
   "$IMAGE" ${1+"$@"}
