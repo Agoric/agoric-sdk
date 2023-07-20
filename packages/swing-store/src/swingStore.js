@@ -2,73 +2,32 @@
 /* global Buffer */
 import fs from 'fs';
 import path from 'path';
-import { performance } from 'perf_hooks';
 
 import sqlite3 from 'better-sqlite3';
 
-import { assert, Fail, q } from '@agoric/assert';
-import { makeMeasureSeconds } from '@agoric/internal';
+import { Fail, q } from '@agoric/assert';
 
+import { dbFileInDirectory } from './util.js';
+import { makeKVStore, getKeyType } from './kvStore.js';
 import { makeTranscriptStore } from './transcriptStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
-
-export { makeSnapStore, makeBundleStore };
-
-/**
- * This is a polyfill for the `buffer` function from Node's
- * 'stream/consumers' package, which unfortunately only exists in newer versions
- * of Node.
- *
- * @param {AsyncIterable<Buffer>} inStream
- */
-export const buffer = async inStream => {
-  const chunks = [];
-  for await (const chunk of inStream) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-};
-
-export function makeSnapStoreIO() {
-  return {
-    measureSeconds: makeMeasureSeconds(performance.now),
-  };
-}
+import { makeSnapStoreIO } from './snapStoreIO.js';
 
 /**
- * @param {string} key
- */
-function getKeyType(key) {
-  if (key.startsWith('local.')) {
-    return 'local';
-  } else if (key.startsWith('host.')) {
-    return 'host';
-  }
-  return 'consensus';
-}
-
-/**
- * @typedef {{
- *   has: (key: string) => boolean,
- *   get: (key: string) => string | undefined,
- *   getNextKey: (previousKey: string) => string | undefined,
- *   set: (key: string, value: string, bypassHash?: boolean ) => void,
- *   delete: (key: string) => void,
- * }} KVStore
+ * @typedef { import('./kvStore').KVStore } KVStore
  *
  * @typedef { import('./snapStore').SnapStore } SnapStore
- * @typedef { import('./snapStore').SnapStoreInternal } SnapStoreInternal
  * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
  *
  * @typedef { import('./transcriptStore').TranscriptStore } TranscriptStore
- * @typedef { import('./transcriptStore').TranscriptStoreInternal } TranscriptStoreInternal
  * @typedef { import('./transcriptStore').TranscriptStoreDebug } TranscriptStoreDebug
  *
  * @typedef { import('./bundleStore').BundleStore } BundleStore
- * @typedef { import('./bundleStore').BundleStoreInternal } BundleStoreInternal
  * @typedef { import('./bundleStore').BundleStoreDebug } BundleStoreDebug
+ *
+ * @typedef { import('./exporter').KVPair } KVPair
  *
  * @typedef {{
  *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
@@ -105,182 +64,11 @@ function getKeyType(key) {
  * }} SwingStoreDebugTools
  *
  * @typedef {{
- *    transcriptStore: TranscriptStoreInternal,
- *    snapStore: SnapStoreInternal,
- *    bundleStore: BundleStoreInternal,
- * }} SwingStoreInternal
- *
- * @typedef {{
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
  *  debug: SwingStoreDebugTools,
- *  internal: SwingStoreInternal,
+ *  internal: import('./internal.js').SwingStoreInternal,
  * }} SwingStore
- */
-
-/**
- * @template T
- *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
- */
-/**
- * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
- */
-
-/**
- * @typedef {readonly [
- *   key: string,
- *   value?: string | null | undefined,
- * ]} KVPair
- *
- * @typedef {object} SwingStoreExporter
- *
- * Allows export of data from a swingStore as a fixed view onto the content as
- * of the most recent commit point at the time the exporter was created.  The
- * exporter may be used while another SwingStore instance is active for the same
- * DB, possibly in another thread or process.  It guarantees that regardless of
- * the concurrent activity of other swingStore instances, the data representing
- * the commit point will stay consistent and available.
- *
- * @property {() => AnyIterableIterator<KVPair>} getExportData
- *
- * Get a full copy of the first-stage export data (key-value pairs) from the
- * swingStore. This represents both the contents of the KVStore (excluding host
- * and local prefixes), as well as any data needed to validate all artifacts,
- * both current and historical. As such it represents the root of trust for the
- * application.
- *
- * Content of validation data (with supporting entries for indexing):
- * - kv.${key} = ${value}  // ordinary kvStore data entry
- * - snapshot.${vatID}.${snapPos} = ${{ vatID, snapPos, hash });
- * - snapshot.${vatID}.current = `snapshot.${vatID}.${snapPos}`
- * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
- * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
- *
- * @property {() => AnyIterableIterator<string>} getArtifactNames
- *
- * Get a list of name of artifacts available from the swingStore.  A name returned
- * by this method guarantees that a call to `getArtifact` on the same exporter
- * instance will succeed. Options control the filtering of the artifact names
- * yielded.
- *
- * Artifact names:
- * - transcript.${vatID}.${startPos}.${endPos}
- * - snapshot.${vatID}.${snapPos}
- *
- * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
- *
- * Retrieve an artifact by name.  May throw if the artifact is not available,
- * which can occur if the artifact is historical and wasn't been preserved.
- *
- * @property {() => Promise<void>} close
- *
- * Dispose of all resources held by this exporter. Any further operation on this
- * exporter or its outstanding iterators will fail.
- */
-
-/**
- * @param {string} dirPath
- * @param {string} exportMode
- * @returns {SwingStoreExporter}
- */
-export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
-  typeof dirPath === 'string' || Fail`dirPath must be a string`;
-  exportMode === 'current' ||
-    exportMode === 'archival' ||
-    exportMode === 'debug' ||
-    Fail`invalid exportMode ${q(exportMode)}`;
-  const exportHistoricalSnapshots = exportMode === 'debug';
-  const exportHistoricalTranscripts = exportMode !== 'current';
-  const filePath = path.join(dirPath, 'swingstore.sqlite');
-  const db = sqlite3(filePath);
-
-  // Execute the data export in a (read) transaction, to ensure that we are
-  // capturing the state of the database at a single point in time.
-  const sqlBeginTransaction = db.prepare('BEGIN TRANSACTION');
-  sqlBeginTransaction.run();
-
-  // ensureTxn can be a dummy, we just started one
-  const ensureTxn = () => {};
-  const snapStore = makeSnapStore(db, ensureTxn, makeSnapStoreIO());
-  const bundleStore = makeBundleStore(db, ensureTxn);
-  const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
-
-  const sqlGetAllKVData = db.prepare(`
-    SELECT key, value
-    FROM kvStore
-    ORDER BY key
-  `);
-
-  /**
-   * @returns {AsyncIterableIterator<KVPair>}
-   * @yields {KVPair}
-   */
-  async function* getExportData() {
-    const kvPairs = sqlGetAllKVData.iterate();
-    for (const kv of kvPairs) {
-      if (getKeyType(kv.key) === 'consensus') {
-        yield [`kv.${kv.key}`, kv.value];
-      }
-    }
-    yield* snapStore.getExportRecords(true);
-    yield* transcriptStore.getExportRecords(true);
-    yield* bundleStore.getExportRecords();
-  }
-
-  /**
-   * @returns {AsyncIterableIterator<string>}
-   * @yields {string}
-   */
-  async function* getArtifactNames() {
-    yield* snapStore.getArtifactNames(exportHistoricalSnapshots);
-    yield* transcriptStore.getArtifactNames(exportHistoricalTranscripts);
-    yield* bundleStore.getArtifactNames();
-  }
-
-  /**
-   * @param {string} name
-   * @returns {AsyncIterableIterator<Uint8Array>}
-   */
-  function getArtifact(name) {
-    typeof name === 'string' || Fail`artifact name must be a string`;
-    const [type] = name.split('.', 1);
-
-    if (type === 'snapshot') {
-      return snapStore.exportSnapshot(name, exportHistoricalSnapshots);
-    } else if (type === 'transcript') {
-      return transcriptStore.exportSpan(name, exportHistoricalTranscripts);
-    } else if (type === 'bundle') {
-      return bundleStore.exportBundle(name);
-    } else {
-      throw Fail`invalid artifact type ${q(type)}`;
-    }
-  }
-
-  const sqlAbort = db.prepare('ROLLBACK');
-
-  async function close() {
-    // After all the data has been extracted, always abort the export
-    // transaction to ensure that the export was read-only (i.e., that no bugs
-    // inadvertantly modified the database).
-    sqlAbort.run();
-    db.close();
-  }
-
-  return harden({
-    getExportData,
-    getArtifactNames,
-    getArtifact,
-    close,
-  });
-}
-
-/**
- * Function used to create a new swingStore from an object implementing the
- * exporter API. The exporter API may be provided by a swingStore instance, or
- * implemented by a host to restore data that was previously exported.
- *
- * @typedef {(exporter: SwingStoreExporter) => Promise<SwingStore>} ImportSwingStore
  */
 
 /**
@@ -342,7 +130,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
  *
  * @returns {SwingStore}
  */
-function makeSwingStore(dirPath, forceReset, options = {}) {
+export function makeSwingStore(dirPath, forceReset, options = {}) {
   const { serialized } = options;
   if (serialized) {
     Buffer.isBuffer(serialized) || Fail`options.serialized must be Buffer`;
@@ -374,7 +162,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       }
     }
     fs.mkdirSync(dirPath, { recursive: true });
-    filePath = path.join(dirPath, 'swingstore.sqlite');
+    filePath = dbFileInDirectory(dirPath);
   } else {
     filePath = ':memory:';
   }
@@ -449,13 +237,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
 
   // Perform all database initialization in a single transaction
   sqlBeginTransaction.run();
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS kvStore (
-      key TEXT,
-      value TEXT,
-      PRIMARY KEY (key)
-    )
-  `);
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS pendingExports (
@@ -465,37 +246,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     )
   `);
 
-  const { dumpTranscripts, ...transcriptStore } = makeTranscriptStore(
-    db,
-    ensureTxn,
-    // eslint-disable-next-line no-use-before-define
-    noteExport,
-    {
-      keepTranscripts,
-    },
-  );
-  const { dumpSnapshots, ...snapStore } = makeSnapStore(
-    db,
-    ensureTxn,
-    makeSnapStoreIO(),
-    // eslint-disable-next-line no-use-before-define
-    noteExport,
-    {
-      keepSnapshots,
-    },
-  );
-  const { dumpBundles, ...bundleStore } = makeBundleStore(
-    db,
-    ensureTxn,
-    // eslint-disable-next-line no-use-before-define
-    noteExport,
-  );
-
-  const sqlCommit = db.prepare('COMMIT');
-
-  // At this point, all database initialization should be complete, so commit now.
-  sqlCommit.run();
-
   let exportCallback;
   function setExportCallback(cb) {
     typeof cb === 'function' || Fail`callback must be a function`;
@@ -504,147 +254,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   if (options.exportCallback) {
     setExportCallback(options.exportCallback);
   }
-
-  let inCrank = false;
-
-  function diskUsage() {
-    if (dirPath) {
-      const dataFilePath = `${dirPath}/swingstore.sqlite`;
-      const stat = fs.statSync(dataFilePath);
-      return stat.size;
-    } else {
-      return 0;
-    }
-  }
-
-  const sqlKVGet = db.prepare(`
-    SELECT value
-    FROM kvStore
-    WHERE key = ?
-  `);
-  sqlKVGet.pluck(true);
-
-  /**
-   * Obtain the value stored for a given key.
-   *
-   * @param {string} key  The key whose value is sought.
-   *
-   * @returns {string | undefined} the (string) value for the given key, or
-   *    undefined if there is no such value.
-   *
-   * @throws if key is not a string.
-   */
-  function get(key) {
-    typeof key === 'string' || Fail`key must be a string`;
-    return sqlKVGet.get(key);
-  }
-
-  const sqlKVGetNextKey = db.prepare(`
-    SELECT key
-    FROM kvStore
-    WHERE key > ?
-    LIMIT 1
-  `);
-  sqlKVGetNextKey.pluck(true);
-
-  /**
-   * getNextKey enables callers to iterate over all keys within a
-   * given range. To build an iterator of all keys from start
-   * (inclusive) to end (exclusive), do:
-   *
-   * function* iterate(start, end) {
-   *   if (kvStore.has(start)) {
-   *     yield start;
-   *   }
-   *   let prev = start;
-   *   while (true) {
-   *     let next = kvStore.getNextKey(prev);
-   *     if (!next || next >= end) {
-   *       break;
-   *     }
-   *     yield next;
-   *     prev = next;
-   *   }
-   * }
-   *
-   * @param {string} previousKey  The key returned will always be later than this one.
-   *
-   * @returns {string | undefined} a key string, or undefined if we reach the end of the store
-   *
-   * @throws if previousKey is not a string
-   */
-
-  function getNextKey(previousKey) {
-    typeof previousKey === 'string' || Fail`previousKey must be a string`;
-    return sqlKVGetNextKey.get(previousKey);
-  }
-
-  /**
-   * Test if the state contains a value for a given key.
-   *
-   * @param {string} key  The key that is of interest.
-   *
-   * @returns {boolean} true if a value is stored for the key, false if not.
-   *
-   * @throws if key is not a string.
-   */
-  function has(key) {
-    typeof key === 'string' || Fail`key must be a string`;
-    return get(key) !== undefined;
-  }
-
-  const sqlKVSet = db.prepare(`
-    INSERT INTO kvStore (key, value)
-    VALUES (?, ?)
-    ON CONFLICT DO UPDATE SET value = excluded.value
-  `);
-
-  /**
-   * Store a value for a given key.  The value will replace any prior value if
-   * there was one.
-   *
-   * @param {string} key  The key whose value is being set.
-   * @param {string} value  The value to set the key to.
-   *
-   * @throws if either parameter is not a string.
-   */
-  function set(key, value) {
-    typeof key === 'string' || Fail`key must be a string`;
-    typeof value === 'string' || Fail`value must be a string`;
-    // synchronous read after write within a transaction is safe
-    // The transaction's overall success will be awaited during commit
-    ensureTxn();
-    sqlKVSet.run(key, value);
-    trace('set', key, value);
-  }
-
-  const sqlKVDel = db.prepare(`
-    DELETE FROM kvStore
-    WHERE key = ?
-  `);
-
-  /**
-   * Remove any stored value for a given key.  It is permissible for there to
-   * be no existing stored value for the key.
-   *
-   * @param {string} key  The key whose value is to be deleted
-   *
-   * @throws if key is not a string.
-   */
-  function del(key) {
-    typeof key === 'string' || Fail`key must be a string`;
-    ensureTxn();
-    sqlKVDel.run(key);
-    trace('del', key);
-  }
-
-  const kvStore = {
-    has,
-    get,
-    getNextKey,
-    set,
-    delete: del,
-  };
 
   const sqlAddPendingExport = db.prepare(`
     INSERT INTO pendingExports (key, value)
@@ -658,13 +267,55 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     }
   }
 
+  const kvStore = makeKVStore(db, ensureTxn, trace);
+
+  const { dumpTranscripts, ...transcriptStore } = makeTranscriptStore(
+    db,
+    ensureTxn,
+    noteExport,
+    {
+      keepTranscripts,
+    },
+  );
+  const { dumpSnapshots, ...snapStore } = makeSnapStore(
+    db,
+    ensureTxn,
+    makeSnapStoreIO(),
+    noteExport,
+    {
+      keepSnapshots,
+    },
+  );
+  const { dumpBundles, ...bundleStore } = makeBundleStore(
+    db,
+    ensureTxn,
+    noteExport,
+  );
+
+  const sqlCommit = db.prepare('COMMIT');
+
+  // At this point, all database initialization should be complete, so commit now.
+  sqlCommit.run();
+
+  let inCrank = false;
+
+  function diskUsage() {
+    if (dirPath) {
+      const dataFilePath = dbFileInDirectory(dirPath);
+      const stat = fs.statSync(dataFilePath);
+      return stat.size;
+    } else {
+      return 0;
+    }
+  }
+
   const kernelKVStore = {
     ...kvStore,
     set(key, value) {
       typeof key === 'string' || Fail`key must be a string`;
       const keyType = getKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
-      set(key, value);
+      kvStore.set(key, value);
       if (keyType === 'consensus') {
         noteExport(`kv.${key}`, value);
         crankhasher.add('add');
@@ -679,7 +330,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       typeof key === 'string' || Fail`key must be a string`;
       const keyType = getKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
-      del(key);
+      kvStore.delete(key);
       if (keyType === 'consensus') {
         noteExport(`kv.${key}`, undefined);
         crankhasher.add('delete');
@@ -695,12 +346,12 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     set(key, value) {
       const keyType = getKeyType(key);
       keyType === 'host' || Fail`hostKVStore requires host keys`;
-      set(key, value);
+      kvStore.set(key, value);
     },
     delete(key) {
       const keyType = getKeyType(key);
       keyType === 'host' || Fail`hostKVStore requires host keys`;
-      del(key);
+      kvStore.delete(key);
     },
   };
 
@@ -740,7 +391,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     resetCrankhash();
 
     // Get the old activityhash
-    let oldActivityhash = get('activityhash');
+    let oldActivityhash = kvStore.get('activityhash');
     if (oldActivityhash === undefined) {
       oldActivityhash = '';
     }
@@ -756,7 +407,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
 
     // Store the new activityhash
     const activityhash = hasher.finish();
-    set('activityhash', activityhash);
+    kvStore.set('activityhash', activityhash);
     // Need to explicitly call noteExport here because activityhash is written
     // directly to the low-level store to avoid recursive hashing, which
     // bypasses the normal notification mechanism
@@ -766,7 +417,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   function getActivityhash() {
-    return get('activityhash') || '';
+    return kvStore.get('activityhash') || '';
   }
 
   const sqlExportsGet = db.prepare(`
@@ -822,6 +473,9 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     db = null;
     stopTrace();
   }
+
+  /** @type {import('./internal.js').SwingStoreInternal} */
+  const internal = harden({ snapStore, transcriptStore, bundleStore });
 
   /**
    * Return a Buffer with the entire DB state, useful for cloning a
@@ -909,11 +563,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     dump,
     getDatabase,
   };
-  const internal = {
-    snapStore,
-    transcriptStore,
-    bundleStore,
-  };
 
   return harden({
     kernelStorage,
@@ -946,197 +595,6 @@ export function initSwingStore(dirPath = null, options = {}) {
   return makeSwingStore(dirPath, true, options);
 }
 
-function parseVatArtifactExportKey(key) {
-  const parts = key.split('.');
-  const [_type, vatID, rawPos] = parts;
-  // prettier-ignore
-  parts.length === 3 ||
-    Fail`expected artifact name of the form '{type}.{vatID}.{pos}', saw ${q(key)}`;
-  const isCurrent = rawPos === 'current';
-  let pos;
-  if (isCurrent) {
-    pos = -1;
-  } else {
-    pos = Number(rawPos);
-  }
-
-  return { vatID, isCurrent, pos };
-}
-
-function artifactKey(type, vatID, pos) {
-  return `${type}.${vatID}.${pos}`;
-}
-
-/**
- * @param {SwingStoreExporter} exporter
- * @param {string | null} [dirPath]
- * @param {object} options
- * @returns {Promise<SwingStore>}
- */
-export async function importSwingStore(exporter, dirPath = null, options = {}) {
-  if (dirPath) {
-    typeof dirPath === 'string' || Fail`dirPath must be a string`;
-  }
-  const { includeHistorical = false } = options;
-  const store = makeSwingStore(dirPath, true, options);
-  const { kernelStorage, internal } = store;
-
-  // Artifact metadata, keyed as `${type}.${vatID}.${pos}`
-  //
-  // Note that this key is almost but not quite the artifact name, since the
-  // names of transcript span artifacts also include the endPos, but the endPos
-  // value is in flux until the span is complete.
-  const artifactMetadata = new Map();
-
-  // Each vat requires a transcript span and (usually) a snapshot.  This table
-  // tracks which of these we've seen, keyed by vatID.
-  // vatID -> { snapshotKey: metadataKey, transcriptKey: metatdataKey }
-  const vatArtifacts = new Map();
-  const bundleArtifacts = new Map();
-
-  for await (const [key, value] of exporter.getExportData()) {
-    const [tag] = key.split('.', 1);
-    const subKey = key.substring(tag.length + 1);
-    if (tag === 'kv') {
-      // 'kv' keys contain individual kvStore entries
-      if (value == null) {
-        // Note '==' rather than '===': any nullish value implies deletion
-        kernelStorage.kvStore.delete(subKey);
-      } else {
-        kernelStorage.kvStore.set(subKey, value);
-      }
-    } else if (tag === 'bundle') {
-      // 'bundle' keys contain bundle IDs
-      if (value == null) {
-        bundleArtifacts.delete(key);
-      } else {
-        bundleArtifacts.set(key, value);
-      }
-    } else if (tag === 'transcript' || tag === 'snapshot') {
-      // 'transcript' and 'snapshot' keys contain artifact description info.
-      assert(value); // make TypeScript shut up
-      const { vatID, isCurrent, pos } = parseVatArtifactExportKey(key);
-      if (isCurrent) {
-        const vatInfo = vatArtifacts.get(vatID) || {};
-        if (tag === 'snapshot') {
-          // `export.snapshot.{vatID}.current` directly identifies the current snapshot artifact
-          vatInfo.snapshotKey = value;
-        } else if (tag === 'transcript') {
-          // `export.transcript.${vatID}.current` contains a metadata record for the current
-          // state of the current transcript span as of the time of export
-          const metadata = JSON.parse(value);
-          vatInfo.transcriptKey = artifactKey(tag, vatID, metadata.startPos);
-          artifactMetadata.set(vatInfo.transcriptKey, metadata);
-        }
-        vatArtifacts.set(vatID, vatInfo);
-      } else {
-        artifactMetadata.set(artifactKey(tag, vatID, pos), JSON.parse(value));
-      }
-    } else {
-      Fail`unknown artifact type tag ${q(tag)} on import`;
-    }
-  }
-
-  // At this point we should have acquired the entire KV store state, plus
-  // sufficient metadata to identify the complete set of artifacts we'll need to
-  // fetch along with the information required to validate each of them after
-  // fetching.
-  //
-  // Depending on how the export was parameterized, the metadata may also include
-  // information about historical artifacts that we might or might not actually
-  // fetch depending on how this import was parameterized
-
-  // Fetch the set of current artifacts.
-
-  // Keep track of fetched artifacts in this set so we don't fetch them a second
-  // time if we are trying for historical artifacts also.
-  const fetchedArtifacts = new Set();
-
-  for await (const [vatID, vatInfo] of vatArtifacts.entries()) {
-    // For each vat, we *must* have a transcript span.  If this is not the very
-    // first transcript span in the history of that vat, then we also must have
-    // a snapshot for the state of the vat immediately prior to when the
-    // transcript span begins.
-    vatInfo.transcriptKey ||
-      Fail`missing current transcript key for vat ${q(vatID)}`;
-    const transcriptInfo = artifactMetadata.get(vatInfo.transcriptKey);
-    transcriptInfo || Fail`missing transcript metadata for vat ${q(vatID)}`;
-    let snapshotInfo;
-    if (vatInfo.snapshotKey) {
-      snapshotInfo = artifactMetadata.get(vatInfo.snapshotKey);
-      snapshotInfo || Fail`missing snapshot metadata for vat ${q(vatID)}`;
-    }
-    if (!snapshotInfo) {
-      transcriptInfo.startPos === 0 ||
-        Fail`missing current snapshot for vat ${q(vatID)}`;
-    } else {
-      snapshotInfo.snapPos + 1 === transcriptInfo.startPos ||
-        Fail`current transcript for vat ${q(vatID)} doesn't go with snapshot`;
-      fetchedArtifacts.add(vatInfo.snapshotKey);
-    }
-    await (!snapshotInfo ||
-      internal.snapStore.importSnapshot(
-        vatInfo.snapshotKey,
-        exporter,
-        snapshotInfo,
-      ));
-
-    const transcriptArtifactName = `${vatInfo.transcriptKey}.${transcriptInfo.endPos}`;
-    await internal.transcriptStore.importSpan(
-      transcriptArtifactName,
-      exporter,
-      transcriptInfo,
-    );
-    fetchedArtifacts.add(transcriptArtifactName);
-  }
-  const bundleArtifactNames = Array.from(bundleArtifacts.keys()).sort();
-  for await (const bundleArtifactName of bundleArtifactNames) {
-    await internal.bundleStore.importBundle(
-      bundleArtifactName,
-      exporter,
-      bundleArtifacts.get(bundleArtifactName),
-    );
-  }
-
-  if (!includeHistorical) {
-    await exporter.close();
-    return store;
-  }
-
-  // If we're also importing historical artifacts, have the exporter enumerate
-  // the complete set of artifacts it has and fetch all of them except for the
-  // ones we've already fetched.
-  for await (const artifactName of exporter.getArtifactNames()) {
-    if (fetchedArtifacts.has(artifactName)) {
-      continue;
-    }
-    let fetchedP;
-    if (artifactName.startsWith('snapshot.')) {
-      fetchedP = internal.snapStore.importSnapshot(
-        artifactName,
-        exporter,
-        artifactMetadata.get(artifactName),
-      );
-    } else if (artifactName.startsWith('transcript.')) {
-      // strip endPos off artifact name
-      const metadataKey = artifactName.split('.').slice(0, 3).join('.');
-      fetchedP = internal.transcriptStore.importSpan(
-        artifactName,
-        exporter,
-        artifactMetadata.get(metadataKey),
-      );
-    } else if (artifactName.startsWith('bundle.')) {
-      // already taken care of
-      continue;
-    } else {
-      Fail`unknown artifact type: ${artifactName}`;
-    }
-    await fetchedP;
-  }
-  await exporter.close();
-  return store;
-}
-
 /**
  * Open a persistent swingset store.  If there is no existing store at the given
  * `dirPath`, a new, empty store will be created.
@@ -1167,7 +625,7 @@ export function openSwingStore(dirPath, options = {}) {
 export function isSwingStore(dirPath) {
   typeof dirPath === 'string' || Fail`dirPath must be a string`;
   if (fs.existsSync(dirPath)) {
-    const storeFile = path.resolve(dirPath, 'swingstore.sqlite');
+    const storeFile = dbFileInDirectory(dirPath);
     if (fs.existsSync(storeFile)) {
       return true;
     }

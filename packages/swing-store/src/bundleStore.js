@@ -16,7 +16,7 @@ import { buffer } from './util.js';
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  */
 /**
- * @typedef { import('./swingStore').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
  *   addBundle: (bundleID: string, bundle: Bundle) => void;

@@ -25,7 +25,7 @@ import { buffer } from './util.js';
  */
 
 /**
- * @typedef { import('./swingStore').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
