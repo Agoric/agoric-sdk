@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
@@ -625,26 +626,22 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		if err != nil {
 			return nil, err
 		}
-		defer dataFile.Close()
+		exportDataReader := agoric.NewJsonlKVEntryDecoderReader(dataFile)
+		defer exportDataReader.Close()
 
-		decoder := json.NewDecoder(dataFile)
 		for {
-			var jsonEntry []string
-			err = decoder.Decode(&jsonEntry)
+			entry, err := exportDataReader.Read()
 			if err == io.EOF {
-				break
+				return entries, nil
 			} else if err != nil {
-				return nil, err
+				return []*vstoragetypes.DataEntry{}, err
 			}
-
-			if len(jsonEntry) != 2 {
-				return nil, fmt.Errorf("invalid export data entry (length %d)", len(jsonEntry))
+			if !entry.HasValue() {
+				return []*vstoragetypes.DataEntry{}, fmt.Errorf("export data entry must have value")
 			}
-			entry := vstoragetypes.DataEntry{Path: jsonEntry[0], Value: jsonEntry[1]}
-			entries = append(entries, &entry)
+			dataEntry := vstoragetypes.DataEntry{Path: entry.Key(), Value: entry.StringValue()}
+			entries = append(entries, &dataEntry)
 		}
-
-		return entries, nil
 	}
 
 	nextArtifact := 0
@@ -737,14 +734,10 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		}
 		defer exportDataFile.Close()
 
-		encoder := json.NewEncoder(exportDataFile)
-		encoder.SetEscapeHTML(false)
-		for _, dataEntry := range exportDataEntries {
-			entry := []string{dataEntry.Path, dataEntry.Value}
-			err := encoder.Encode(entry)
-			if err != nil {
-				return err
-			}
+		exportDataReader := agoric.NewVstorageDataEntriesReader(exportDataEntries)
+		err = agoric.EncodeKVEntryReaderToJsonl(exportDataReader, exportDataFile)
+		if err != nil {
+			return err
 		}
 
 		err = exportDataFile.Sync()

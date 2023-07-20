@@ -2,12 +2,12 @@ package keeper
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -249,6 +249,8 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	if len(swingStoreExportDataEntries) == 0 {
 		return nil
 	}
+	exportDataReader := agoric.NewVstorageDataEntriesReader(swingStoreExportDataEntries)
+	defer exportDataReader.Close()
 
 	// For debugging, write out any retrieved export data as a single untrusted artifact
 	// which has the same encoding as the internal SwingStore export data representation:
@@ -256,14 +258,9 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	exportDataArtifact := types.SwingStoreArtifact{Name: UntrustedExportDataArtifactName}
 
 	var encodedExportData bytes.Buffer
-	encoder := json.NewEncoder(&encodedExportData)
-	encoder.SetEscapeHTML(false)
-	for _, dataEntry := range swingStoreExportDataEntries {
-		entry := []string{dataEntry.Path, dataEntry.Value}
-		err := encoder.Encode(entry)
-		if err != nil {
-			return err
-		}
+	err = agoric.EncodeKVEntryReaderToJsonl(exportDataReader, &encodedExportData)
+	if err != nil {
+		return err
 	}
 	exportDataArtifact.Data = encodedExportData.Bytes()
 
