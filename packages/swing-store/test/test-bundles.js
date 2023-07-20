@@ -8,7 +8,7 @@ import {
   importSwingStore,
   initSwingStore,
   makeSwingStoreExporter,
-} from '../src/swingStore.js';
+} from '../src/index.js';
 import { buffer } from '../src/util.js';
 
 function makeB0ID(bundle) {
