@@ -15,7 +15,7 @@ alias bundle-source="yarn run --silent bundle-source"
 # bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
 VAULT_HASH=`jq -r .endoZipBase64Sha512 ${bundle_vault_filepath}`
 
-# TODO: print better diagnostic message
+echo checking that hashes match ${here}/gov-switch-auctioneer.js
 echo ${VAULT_HASH}
 grep ${VAULT_HASH} ${here}/gov-switch-auctioneer.js || exit 1
 
