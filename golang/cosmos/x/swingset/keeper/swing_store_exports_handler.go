@@ -267,8 +267,8 @@ func checkNotActive() error {
 type SwingStoreExportProvider struct {
 	// BlockHeight is the block height of the SwingStore export.
 	BlockHeight uint64
-	// GetExportData is a function to return the "export data" of the SwingStore export, if any.
-	GetExportData func() ([]*vstoragetypes.DataEntry, error)
+	// GetExportDataIterator returns an iterator for the "export data" of the SwingStore export, if any.
+	GetExportDataIterator func() (sdk.Iterator, error)
 	// ReadArtifact is a function to return the next unread artifact in the SwingStore export.
 	// It errors with io.EOF upon reaching the end of the artifact list.
 	ReadArtifact func() (types.SwingStoreArtifact, error)
@@ -350,8 +350,8 @@ type SwingStoreExportOptions struct {
 	// packages/swing-store/src/swingStore.js makeSwingStoreExporter
 	ExportMode string `json:"exportMode,omitempty"`
 	// A flag indicating whether "export data" should be part of the swing-store export
-	// If false, the resulting SwingStoreExportProvider's GetExportData will
-	// return an empty list of "export data" entries.
+	// If false, the resulting SwingStoreExportProvider's GetExportDataIterator will
+	// return an invalid iterator.
 	IncludeExportData bool `json:"includeExportData,omitempty"`
 }
 
@@ -793,28 +793,18 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
-	getExportData := func() (entries []*vstoragetypes.DataEntry, err error) {
-		defer helpers.RecoverToError(&err)
-
+	getExportDataIterator := func() (sdk.Iterator, error) {
 		if manifest.Data == "" {
-			return entries, nil
+			return NewExportDataIterator(
+				NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource([]*vstoragetypes.DataEntry{}))), nil
 		}
 
 		dataFile, err := os.Open(filepath.Join(exportDir, manifest.Data))
 		if err != nil {
 			return nil, err
 		}
-		exportDataIterator := NewJsonlExportDataDecoderIterator(dataFile)
 
-		entries = []*vstoragetypes.DataEntry{}
-
-		defer exportDataIterator.Close()
-		for ; exportDataIterator.Valid(); exportDataIterator.Next() {
-			entry := vstoragetypes.DataEntry{Path: string(exportDataIterator.Key()), Value: string(exportDataIterator.Value())}
-			entries = append(entries, &entry)
-		}
-
-		return entries, nil
+		return NewJsonlExportDataDecoderIterator(dataFile), nil
 	}
 
 	nextArtifact := 0
@@ -840,7 +830,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return artifact, err
 	}
 
-	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadArtifact: readArtifact})
+	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportDataIterator: getExportDataIterator, ReadArtifact: readArtifact})
 	if err != nil {
 		return err
 	}
@@ -894,13 +884,10 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		BlockHeight: blockHeight,
 	}
 
-	exportDataEntries, err := provider.GetExportData()
+	exportDataIterator, err := provider.GetExportDataIterator()
 	if err != nil {
 		return err
 	}
-	exportDataIterator := NewExportDataIterator(
-		NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource(exportDataEntries)),
-	)
 	defer exportDataIterator.Close()
 
 	if exportDataIterator.Valid() {

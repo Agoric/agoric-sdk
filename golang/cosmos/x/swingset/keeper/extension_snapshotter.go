@@ -8,7 +8,6 @@ import (
 	"math"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	snapshots "github.com/cosmos/cosmos-sdk/snapshots/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -243,13 +242,10 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 		}
 	}
 
-	swingStoreExportDataEntries, err := provider.GetExportData()
+	exportDataIterator, err := provider.GetExportDataIterator()
 	if err != nil {
 		return err
 	}
-	exportDataIterator := NewExportDataIterator(
-		NewExportDataEntriesProvider(NewSwingStoreExportDataEntriesSource(swingStoreExportDataEntries)),
-	)
 	defer exportDataIterator.Close()
 
 	if !exportDataIterator.Valid() {
@@ -293,18 +289,9 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	// At this point the content of the cosmos DB has been verified against the
 	// AppHash, which means the SwingStore data it contains can be used as the
 	// trusted root against which to validate the artifacts.
-	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
+	getExportDataIterator := func() (sdk.Iterator, error) {
 		ctx := snapshotter.newRestoreContext(height)
-		exportData := []*vstoragetypes.DataEntry{}
-		exportDataIterator := snapshotter.getSwingStoreExportDataShadowCopy(ctx)
-		defer exportDataIterator.Close()
-
-		for ; exportDataIterator.Valid(); exportDataIterator.Next() {
-			entry := vstoragetypes.DataEntry{Path: string(exportDataIterator.Key()), Value: string(exportDataIterator.Value())}
-			exportData = append(exportData, &entry)
-		}
-
-		return exportData, nil
+		return snapshotter.getSwingStoreExportDataShadowCopy(ctx), nil
 	}
 
 	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
@@ -318,7 +305,7 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	}
 
 	return snapshotter.swingStoreExportsHandler.RestoreExport(
-		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportData: getExportData, ReadArtifact: readArtifact},
+		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportDataIterator: getExportDataIterator, ReadArtifact: readArtifact},
 		SwingStoreRestoreOptions{IncludeHistorical: false},
 	)
 }
