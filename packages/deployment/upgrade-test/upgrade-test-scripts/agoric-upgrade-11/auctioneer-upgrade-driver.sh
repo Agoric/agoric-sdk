@@ -11,7 +11,8 @@ bundle_auctioneer_filepath='/tmp/bundle-auctioneer.json'
 bundle_vault_filepath='/tmp/bundle-vaultFactory.json'
 
 alias bundle-source="yarn run --silent bundle-source"
-bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
+# TODO: for now, we're bundling vaultFactory outside the container. but before we finish:
+# bundle-source --cache-json /tmp packages/inter-protocol/src/vaultFactory/vaultFactory.js vaultFactory
 VAULT_HASH=`jq -r .endoZipBase64Sha512 ${bundle_vault_filepath}`
 
 # TODO: print better diagnostic message
