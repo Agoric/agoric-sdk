@@ -24,7 +24,11 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').prepare>>} */
+  /**
+   * @type {Promise<
+   *   Installation<import('../src/walletFactory.js').prepare>
+   * >}
+   */
   const installation = E(zoe).install(bundle);
   //#endregion
 

@@ -30,9 +30,7 @@ export { ActionType };
 export const withAmountUtils = kit => {
   return {
     ...kit,
-    /**
-     * @param {NatValue} v
-     */
+    /** @param {NatValue} v */
     make: v => AmountMath.make(kit.brand, v),
     makeEmpty: () => AmountMath.makeEmpty(kit.brand),
     /**
@@ -44,9 +42,7 @@ export const withAmountUtils = kit => {
 };
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
 
-/**
- * @param {ERef<StoredFacet>} subscription
- */
+/** @param {ERef<StoredFacet>} subscription */
 export const subscriptionKey = subscription => {
   return E(subscription)
     .getStoreKey()
@@ -85,15 +81,19 @@ const makeFakeBridgeManager = () =>
     },
   });
 /**
- * @param {*} log
- * @returns {Promise<ChainBootstrapSpace>}>}
+ * @param {any} log
+ * @returns {Promise<ChainBootstrapSpace>} >}
  */
 export const makeMockTestSpace = async log => {
   const space = /** @type {any} */ (makePromiseSpace(log));
-  const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
-      space
-    );
+  const { consume, produce } = /**
+   * @type {BootstrapPowers & {
+   *   consume: {
+   *     loadVat: (n: 'mints') => MintsVat;
+   *     loadCriticalVat: (n: 'mints') => MintsVat;
+   *   };
+   * }}
+   */ (space);
   const { agoricNames, spaces } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
@@ -150,7 +150,9 @@ export const makeMockTestSpace = async log => {
 };
 
 /**
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
+ * @param {ERef<{
+ *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
+ * }>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {

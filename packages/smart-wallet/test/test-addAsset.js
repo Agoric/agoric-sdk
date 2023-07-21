@@ -8,7 +8,11 @@ import { makeScalarMapStore } from '@agoric/store';
 import { makeDefaultTestContext } from './contexts.js';
 import { makeMockTestSpace } from './supports.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<makeDefaultTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 test.before(async t => {
@@ -34,8 +38,8 @@ const bigIntReplacer = (_key, val) =>
 const range = qty => [...Array(qty).keys()];
 
 /**
- * NOTE: this doesn't test all forms of work.
- * A better test would measure inter-vat messages or some such.
+ * NOTE: this doesn't test all forms of work. A better test would measure
+ * inter-vat messages or some such.
  */
 test('avoid O(wallets) storage writes for a new asset', async t => {
   const bankManager = t.context.consume.bankManager;

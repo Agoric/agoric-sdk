@@ -27,79 +27,91 @@ const { Fail, quote: q } = assert;
 
 /**
  * @file Smart wallet module
- *
- * @see {@link ../README.md}}
+ * @see {@link ../README.md} }
  */
 
 /**
  * @typedef {{
- *   method: 'executeOffer'
- *   offer: import('./offers.js').OfferSpec,
+ *   method: 'executeOffer';
+ *   offer: import('./offers.js').OfferSpec;
  * }} ExecuteOfferAction
  */
 
 /**
  * @typedef {{
- *   method: 'tryExitOffer'
- *   offerId: import('./offers.js').OfferId,
+ *   method: 'tryExitOffer';
+ *   offerId: import('./offers.js').OfferId;
  * }} TryExitOfferAction
  */
 
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/**
- * @typedef { ExecuteOfferAction | TryExitOfferAction } BridgeAction
- */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction} BridgeAction */
 
 /**
- * Purses is an array to support a future requirement of multiple purses per brand.
+ * Purses is an array to support a future requirement of multiple purses per
+ * brand.
  *
- * Each map is encoded as an array of entries because a Map doesn't serialize directly.
- * We also considered having a vstorage key for each offer but for now are sticking with this design.
+ * Each map is encoded as an array of entries because a Map doesn't serialize
+ * directly. We also considered having a vstorage key for each offer but for now
+ * are sticking with this design.
  *
  * Cons
- *    - Reserializes previously written results when a new result is added
- *    - Optimizes reads though writes are on-chain (~100 machines) and reads are off-chain (to 1 machine)
+ *
+ * - Reserializes previously written results when a new result is added
+ * - Optimizes reads though writes are on-chain (~100 machines) and reads are
+ *   off-chain (to 1 machine)
  *
  * Pros
- *    - Reading all offer results happens much more (>100) often than storing a new offer result
- *    - Reserialization and writes are paid in execution gas, whereas reads are not
  *
- * This design should be revisited if ever batch querying across vstorage keys become cheaper or reads be paid.
+ * - Reading all offer results happens much more (>100) often than storing a new
+ *   offer result
+ * - Reserialization and writes are paid in execution gas, whereas reads are not
+ *
+ * This design should be revisited if ever batch querying across vstorage keys
+ * become cheaper or reads be paid.
  *
  * @typedef {{
- *   purses: Array<{brand: Brand, balance: Amount}>,
- *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
- *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
- *   liveOffers: Array<[import('./offers.js').OfferId, import('./offers.js').OfferStatus]>,
+ *   purses: { brand: Brand; balance: Amount }[];
+ *   offerToUsedInvitation: [offerId: string, usedInvitation: Amount][];
+ *   offerToPublicSubscriberPaths: [
+ *     offerId: string,
+ *     publicTopics: { [subscriberName: string]: string },
+ *   ][];
+ *   liveOffers: [
+ *     import('./offers.js').OfferId,
+ *     import('./offers.js').OfferStatus,
+ *   ][];
  * }} CurrentWalletRecord
  */
 
 /**
- * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
+ * @typedef {| { updated: 'offerStatus'; status: import('./offers.js').OfferStatus }
  *   | { updated: 'balance'; currentAmount: Amount }
- *   | { updated: 'walletAction'; status: { error: string } }
- * } UpdateRecord Record of an update to the state of this wallet.
+ *   | { updated: 'walletAction'; status: { error: string } }} UpdateRecord
+ *   Record of an update to the state of this wallet.
  *
- * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
+ *   Client is responsible for coalescing updates into a current state. See
+ *   `coalesceUpdates` utility.
  *
- * The reason for this burden on the client is that publishing
- * the full history of offers with each change is untenable.
+ *   The reason for this burden on the client is that publishing the full history
+ *   of offers with each change is untenable.
  *
- * `balance` update supports forward-compatibility for more than one purse per
- * brand. An additional key will be needed to disambiguate. For now the brand in
- * the amount suffices.
+ *   `balance` update supports forward-compatibility for more than one purse per
+ *   brand. An additional key will be needed to disambiguate. For now the brand
+ *   in the amount suffices.
  */
 
 /**
  * @typedef {{
- *   brand: Brand,
- *   displayInfo: DisplayInfo,
- *   issuer: Issuer,
- *   petname: import('./types').Petname
+ *   brand: Brand;
+ *   displayInfo: DisplayInfo;
+ *   issuer: Issuer;
+ *   petname: import('./types').Petname;
  * }} BrandDescriptor
- * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
+ *   For use by clients to describe brands to users. Includes `displayInfo` to
+ *   save a remote call.
  */
 
 // imports
@@ -107,44 +119,58 @@ const { Fail, quote: q } = assert;
 
 /**
  * @typedef {{
- *   address: string,
- *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
- *   currentStorageNode: StorageNode,
- *   invitationPurse: Purse<'set'>,
- *   walletStorageNode: StorageNode,
+ *   address: string;
+ *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>;
+ *   currentStorageNode: StorageNode;
+ *   invitationPurse: Purse<'set'>;
+ *   walletStorageNode: StorageNode;
  * }} UniqueParams
  *
  * @typedef {Pick<MapStore<Brand, BrandDescriptor>, 'has' | 'get' | 'values'>} BrandDescriptorRegistry
+ *
  * @typedef {{
- *   agoricNames: ERef<import('@agoric/vats').NameHub>,
- *   registry: BrandDescriptorRegistry,
- *   invitationIssuer: Issuer<'set'>,
- *   invitationBrand: Brand<'set'>,
- *   invitationDisplayInfo: DisplayInfo,
- *   publicMarshaller: Marshaller,
- *   zoe: ERef<ZoeService>,
+ *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   registry: BrandDescriptorRegistry;
+ *   invitationIssuer: Issuer<'set'>;
+ *   invitationBrand: Brand<'set'>;
+ *   invitationDisplayInfo: DisplayInfo;
+ *   publicMarshaller: Marshaller;
+ *   zoe: ERef<ZoeService>;
  * }} SharedParams
  *
- * @typedef {ImmutableState & MutableState} State
- * - `brandPurses` is precious and closely held. defined as late as possible to reduce its scope.
- * - `offerToInvitationMakers` is precious and closely held.
- * - `offerToPublicSubscriberPaths` is precious and closely held.
- * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
+ * @typedef {ImmutableState & MutableState} State - `brandPurses` is precious
+ *   and closely held. defined as late as possible to reduce its scope.
  *
- * @typedef {Readonly<UniqueParams & {
- *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
- *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
- *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
- *   offerToUsedInvitation: MapStore<string, Amount>,
- *   purseBalances: MapStore<RemotePurse, Amount>,
- *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
- *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
- *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
- *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
- * }>} ImmutableState
+ *   - `offerToInvitationMakers` is precious and closely held.
+ *   - `offerToPublicSubscriberPaths` is precious and closely held.
+ *   - `purseBalances` is a cache of what we've received from purses. Held so we can
+ *       publish all balances on change.
  *
- * @typedef {{
- * }} MutableState
+ *
+ * @typedef {Readonly<
+ *   UniqueParams & {
+ *     paymentQueues: MapStore<Brand, import('@endo/far').FarRef<Payment>[]>;
+ *     offerToInvitationMakers: MapStore<
+ *       string,
+ *       import('./types').RemoteInvitationMakers
+ *     >;
+ *     offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>;
+ *     offerToUsedInvitation: MapStore<string, Amount>;
+ *     purseBalances: MapStore<RemotePurse, Amount>;
+ *     updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>;
+ *     currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>;
+ *     liveOffers: MapStore<
+ *       import('./offers.js').OfferId,
+ *       import('./offers.js').OfferStatus
+ *     >;
+ *     liveOfferSeats: WeakMapStore<
+ *       import('./offers.js').OfferId,
+ *       UserSeat<unknown>
+ *     >;
+ *   }
+ * >} ImmutableState
+ *
+ * @typedef {{}} MutableState
  */
 
 /**
@@ -168,7 +194,6 @@ export const prepareSmartWallet = (baggage, shared) => {
   const makeRecorderKit = prepareRecorderKit(baggage, shared.publicMarshaller);
 
   /**
-   *
    * @param {UniqueParams} unique
    * @returns {State}
    */
@@ -268,9 +293,10 @@ export const prepareSmartWallet = (baggage, shared) => {
   };
 
   /**
-   * Make the durable object to return, but taking some parameters that are awaited by a wrapping function.
-   * This is necessary because the class kit construction helpers, `initState` and `finish` run synchronously
-   * and the child storage node must be awaited until we have durable promises.
+   * Make the durable object to return, but taking some parameters that are
+   * awaited by a wrapping function. This is necessary because the class kit
+   * construction helpers, `initState` and `finish` run synchronously and the
+   * child storage node must be awaited until we have durable promises.
    */
   const makeWalletWithResolvedStorageNodes = prepareExoClassKit(
     baggage,
@@ -371,7 +397,8 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
       },
       /**
-       * Similar to {DepositFacet} but async because it has to look up the purse.
+       * Similar to {DepositFacet} but async because it has to look up the
+       * purse.
        */
       deposit: {
         /**
@@ -380,7 +407,8 @@ export const prepareSmartWallet = (baggage, shared) => {
          * If the purse doesn't exist, we hold the payment in durable storage.
          *
          * @param {import('@endo/far').FarRef<Payment>} payment
-         * @returns {Promise<Amount>} amounts for deferred deposits will be empty
+         * @returns {Promise<Amount>} amounts for deferred deposits will be
+         *   empty
          */
         async receive(payment) {
           const { paymentQueues: queues, bank, invitationPurse } = this.state;
@@ -405,11 +433,14 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
       offers: {
         /**
-         * Take an offer description provided in capData, augment it with payments and call zoe.offer()
+         * Take an offer description provided in capData, augment it with
+         * payments and call zoe.offer()
          *
          * @param {import('./offers.js').OfferSpec} offerSpec
-         * @returns {Promise<void>} after the offer has been both seated and exited by Zoe.
-         * @throws if any parts of the offer can be determined synchronously to be invalid
+         * @returns {Promise<void>} after the offer has been both seated and
+         *   exited by Zoe.
+         * @throws if any parts of the offer can be determined synchronously to
+         *   be invalid
          */
         async executeOffer(offerSpec) {
           const { facets, state } = this;
@@ -479,7 +510,16 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               }
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
+            /**
+             * @type {(
+             *   offerId: string,
+             *   invitationAmount: Amount<'set'>,
+             *   invitationMakers: import('./types').RemoteInvitationMakers,
+             *   publicSubscribers?:
+             *     | import('./types').PublicSubscribers
+             *     | import('@agoric/zoe/src/contractSupport').TopicsRecord,
+             * ) => Promise<void>}
+             */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,
@@ -517,9 +557,11 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
       self: {
         /**
-         * Umarshals the actionCapData and delegates to the appropriate action handler.
+         * Umarshals the actionCapData and delegates to the appropriate action
+         * handler.
          *
-         * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
+         * @param {import('@endo/marshal').CapData<string>} actionCapData of
+         *   type BridgeAction
          * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */
@@ -611,7 +653,10 @@ export const prepareSmartWallet = (baggage, shared) => {
   );
 
   /**
-   * @param {Omit<UniqueParams, 'currentStorageNode' | 'walletStorageNode'> & {walletStorageNode: ERef<StorageNode>}} uniqueWithoutChildNodes
+   * @param {Omit<
+   *   UniqueParams,
+   *   'currentStorageNode' | 'walletStorageNode'
+   * > & { walletStorageNode: ERef<StorageNode> }} uniqueWithoutChildNodes
    */
   const makeSmartWallet = async uniqueWithoutChildNodes => {
     const [walletStorageNode, currentStorageNode] = await Promise.all([

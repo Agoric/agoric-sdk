@@ -8,7 +8,11 @@ import { makeMockTestSpace } from './supports.js';
 
 import '@agoric/vats/src/core/types.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const makeTestContext = async () => {
@@ -26,7 +30,11 @@ const makeTestContext = async () => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').prepare>>} */
+  /**
+   * @type {Promise<
+   *   Installation<import('../src/walletFactory.js').prepare>
+   * >}
+   */
   const installation = E(zoe).install(bundle);
   //#endregion
 
