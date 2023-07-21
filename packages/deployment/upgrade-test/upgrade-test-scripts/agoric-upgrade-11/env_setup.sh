@@ -104,16 +104,19 @@ make_swing_store_snapshot() {( set -euo pipefail
   /usr/src/agoric-sdk/packages/cosmic-swingset/src/export-kernel-db.js --home "$HOME/.agoric" --export-dir "$EXPORT_DIR" --verbose --artifact-mode replay --export-data-mode all "$@"
 
   EXPORT_MANIFEST_FILE="$EXPORT_DIR/export-manifest.json"
-  EXPORT_DATA_FILE="$EXPORT_DIR/$(cat "$EXPORT_MANIFEST_FILE" | jq -r .data)"
-  EXPORT_DATA_UNTRUSTED_FILE="${EXPORT_DATA_FILE%.*}-untrusted.jsonl"
   EXPORT_HEIGHT=$(cat "$EXPORT_MANIFEST_FILE" | jq -r .blockHeight)
-  EXPORT_MANIFEST="$(cat $EXPORT_MANIFEST_FILE)"
+  
+  [ "x${WITHOUT_GENESIS_EXPORT:-0}" = "x1" ] || {
+    EXPORT_DATA_FILE="$EXPORT_DIR/$(cat "$EXPORT_MANIFEST_FILE" | jq -r .data)"
+    EXPORT_DATA_UNTRUSTED_FILE="${EXPORT_DATA_FILE%.*}-untrusted.jsonl"
+    EXPORT_MANIFEST="$(cat $EXPORT_MANIFEST_FILE)"
 
-  mv "$EXPORT_DATA_FILE" "$EXPORT_DATA_UNTRUSTED_FILE"
-  export_genesis "$EXPORT_DIR/genesis-export" $EXPORT_HEIGHT 
-  cat $EXPORT_DIR/genesis-export/genesis.json | jq -cr '.app_state.swingset.swing_store_export_data[] | [.key,.value]' > "$EXPORT_DATA_FILE"
+    mv "$EXPORT_DATA_FILE" "$EXPORT_DATA_UNTRUSTED_FILE"
+    export_genesis "$EXPORT_DIR/genesis-export" $EXPORT_HEIGHT 
+    cat $EXPORT_DIR/genesis-export/genesis.json | jq -cr '.app_state.swingset.swing_store_export_data[] | [.key,.value]' > "$EXPORT_DATA_FILE"
 
-  jq -n "$EXPORT_MANIFEST | .untrustedData=\"$(basename -- "$EXPORT_DATA_UNTRUSTED_FILE")\"" > "$EXPORT_MANIFEST_FILE"
+    jq -n "$EXPORT_MANIFEST | .untrustedData=\"$(basename -- "$EXPORT_DATA_UNTRUSTED_FILE")\"" > "$EXPORT_MANIFEST_FILE"
+  }
 
   echo "Successful swing-store export for block $EXPORT_HEIGHT"
 )}
