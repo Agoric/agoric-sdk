@@ -4,7 +4,7 @@ import { Fail, q } from '@agoric/assert';
 import { makeSwingStore } from './swingStore.js';
 import { buffer } from './util.js';
 
-function assertComplete(internal, level) {
+export function assertComplete(internal, level) {
   assert.equal(level, 'operational'); // only option for now
   // every bundle must be populated
   internal.bundleStore.assertComplete(level);

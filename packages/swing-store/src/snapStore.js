@@ -47,6 +47,8 @@ import { buffer } from './util.js';
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
  *   addSnapshotRecord: (artifactMetadata: object) => void,
  *   populateSnapshot: (name: string, chunkProvider: () => AnyIterableIterator<Uint8Array>, includeHistorical: boolean) => Promise<void>,
+ *   assertComplete: () => void,
+ *   repairSnapshotRecord: (artifactMetadata: object) => void,
  * }} SnapStoreInternal
  *
  * @typedef {{
@@ -501,6 +503,18 @@ export function makeSnapStore(
     WHERE vatID = ? AND snapPos = ?
   `);
 
+  function repairSnapshotRecord(metadata) {
+    const { vatID, snapPos, hash, inUse } = metadata;
+    const existing = sqlGetSnapshotHashFor.get(vatID, snapPos);
+    if (existing) {
+      if (!!existing.inUse !== !!inUse || existing.hash !== hash) {
+        throw Fail`repairSnapshotRecord metadata mismatch: ${existing} vs ${metadata}`;
+      }
+    } else {
+      sqlAddSnapshotRecord.run(vatID, snapPos, hash, inUse ? 1 : null);
+    }
+  }
+
   const sqlPopulateSnapshot = db.prepare(`
     UPDATE snapshots SET
       uncompressedSize = ?, compressedSize = ?, compressedSnapshot = ?
@@ -637,6 +651,7 @@ export function makeSnapStore(
     addSnapshotRecord,
     populateSnapshot,
     assertComplete,
+    repairSnapshotRecord,
 
     hasHash,
     listAllSnapshots,

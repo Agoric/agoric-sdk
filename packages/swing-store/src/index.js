@@ -1,6 +1,7 @@
 export { initSwingStore, openSwingStore, isSwingStore } from './swingStore.js';
 export { makeSwingStoreExporter } from './exporter.js';
 export { importSwingStore } from './importer.js';
+export { repairMetadata } from './repair-metadata.js';
 
 // temporary, for the benefit of SwingSet/misc-tools/replay-transcript.js
 export { makeSnapStore } from './snapStore.js';

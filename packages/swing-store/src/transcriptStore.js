@@ -28,6 +28,7 @@ import { createSHA256 } from './hasher.js';
  *   addTranscriptSpanRecord: (metadata: Map) => void,
  *   populateTranscriptSpan: (name: string, chunkProvider: () => AnyIterableIterator<Uint8Array>, includeHistorical: boolean) => Promise<void>,
  *   assertComplete: (level: string) => void,
+ *   repairTranscriptSpanRecord: (metadata: object) => void,
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
  * }} TranscriptStoreInternal
  *
@@ -608,6 +609,29 @@ export function makeTranscriptStore(
   `);
   sqlCountPopulatedSpanItems.pluck();
 
+  function repairTranscriptSpanRecord(metadata) {
+    const { vatID, startPos, endPos, hash, isCurrent, incarnation } = metadata;
+    const existing = sqlGetSpanMetadataFor.get(vatID, startPos, endPos);
+    if (existing) {
+      if (
+        !!existing.isCurrent !== !!isCurrent ||
+        existing.hash !== hash ||
+        existing.incarnation !== incarnation
+      ) {
+        throw Fail`repairTranscriptSpanRecord metadata mismatch: ${existing} vs ${metadata}`;
+      }
+    } else {
+      sqlWriteSpan.run(
+        vatID,
+        startPos,
+        endPos,
+        hash,
+        isCurrent ? 1 : null,
+        incarnation,
+      );
+    }
+  }
+
   function assertComplete(level) {
     assert.equal(level, 'operational'); // for now
     // every 'isCurrent' transcript span must have all items
@@ -641,6 +665,7 @@ export function makeTranscriptStore(
     addTranscriptSpanRecord,
     populateTranscriptSpan,
     assertComplete,
+    repairTranscriptSpanRecord,
 
     dumpTranscripts,
     readFullVatTranscript,

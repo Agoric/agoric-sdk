@@ -45,7 +45,7 @@ function convert(orig) {
  * @param { Map<string, string | null> } exportData
  * @param { Map<string, string> } artifacts
  */
-function makeExporter(exportData, artifacts) {
+export function makeExporter(exportData, artifacts) {
   return {
     async *getExportData() {
       for (const [key, value] of exportData.entries()) {
@@ -84,7 +84,7 @@ test('import empty', async t => {
   });
 });
 
-function buildData() {
+export function buildData() {
   // build an export manually
   const exportData = new Map();
   const artifacts = new Map();
