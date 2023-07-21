@@ -492,7 +492,7 @@ test('calculateCompoundedStabilityFee', t => {
 
 test('chargeInterest when no time elapsed', async t => {
   const { brand, issuer } = makeIssuerKit('ducats');
-  const stabilityFee = makeRatio(250n, brand, BASIS_POINTS);
+  const interestRate = makeRatio(250n, brand, BASIS_POINTS);
 
   const now = BigInt(Date.now().toFixed());
   /** @type {any} */
@@ -503,7 +503,7 @@ test('chargeInterest when no time elapsed', async t => {
     },
   };
   const params = {
-    stabilityFee,
+    interestRate,
     chargingPeriod: ONE_DAY,
     recordingPeriod: ONE_DAY,
   };

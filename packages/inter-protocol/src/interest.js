@@ -153,7 +153,7 @@ const validatedBrand = (mint, debt) => {
  *   seatAllocationKeyword: Keyword;
  * }} powers
  * @param {{
- *   stabilityFee: Ratio;
+ *   interestRate: Ratio;
  *   chargingPeriod: RelativeTime;
  *   recordingPeriod: RelativeTime;
  * }} params
@@ -173,7 +173,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   const brand = validatedBrand(powers.mint, prior.totalDebt);
 
   const interestCalculator = makeInterestCalculator(
-    params.stabilityFee,
+    params.interestRate,
     params.chargingPeriod,
     params.recordingPeriod,
   );
