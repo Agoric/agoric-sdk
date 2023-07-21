@@ -20,7 +20,11 @@ import {
 const prepareSpecializedNameAdmin = zone => {
   const mixinMyAddress = prepareMixinMyAddress(zone);
 
-  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<import('./types.js').NamesByAddressAdmin>} */
+  /**
+   * @type {import('@agoric/internal/src/callback.js').MakeAttenuator<
+   *   import('./types.js').NamesByAddressAdmin
+   * >}
+   */
   const specialize = prepareGuardedAttenuator(zone, NameHubIKit.nameAdmin, {
     tag: 'NamesByAddressAdmin',
   });
@@ -34,7 +38,10 @@ const prepareSpecializedNameAdmin = zone => {
       /**
        * @param {string} address
        * @param {string[]} [reserved]
-       * @returns {Promise<{ nameHub: NameHub, nameAdmin: import('./types.js').MyAddressNameAdmin}>}
+       * @returns {Promise<{
+       *   nameHub: NameHub;
+       *   nameAdmin: import('./types.js').MyAddressNameAdmin;
+       * }>}
        */
       async provideChild(address, reserved) {
         const { nameAdmin } = this.state;
@@ -50,7 +57,7 @@ const prepareSpecializedNameAdmin = zone => {
         // XXX relies on callers not to provide other admins via update()
         // TODO: enforce?
 
-        /** @type { import('./types').MyAddressNameAdmin } */
+        /** @type {import('./types').MyAddressNameAdmin} */
         // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
         // @ts-ignore cast
         const myAdmin = nameAdmin.lookupAdmin(address);
@@ -59,9 +66,7 @@ const prepareSpecializedNameAdmin = zone => {
     },
   );
 
-  /**
-   * @param {import('./types.js').NameAdmin} nameAdmin
-   */
+  /** @param {import('./types.js').NameAdmin} nameAdmin */
   const makeMyAddressNameAdmin = nameAdmin => {
     const overrideFacet = makeOverrideFacet(nameAdmin);
     return specialize({

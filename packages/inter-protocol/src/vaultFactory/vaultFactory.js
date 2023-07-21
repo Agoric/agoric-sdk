@@ -34,12 +34,14 @@ import { provideDirector } from './vaultDirector.js';
 const trace = makeTracer('VF', true);
 
 /**
- * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
- *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
- *   priceAuthority: ERef<PriceAuthority>,
- *   reservePublicFacet: AssetReservePublicFacet,
- *   timerService: import('@agoric/time/src/types').TimerService,
- * }>} VaultFactoryZCF
+ * @typedef {ZCF<
+ *   GovernanceTerms<import('./params').VaultDirectorParams> & {
+ *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
+ *     priceAuthority: ERef<PriceAuthority>;
+ *     reservePublicFacet: AssetReservePublicFacet;
+ *     timerService: import('@agoric/time/src/types').TimerService;
+ *   }
+ * >} VaultFactoryZCF
  */
 
 export const privateArgsShape = M.splitRecord(
@@ -59,11 +61,11 @@ harden(privateArgsShape);
 /**
  * @param {VaultFactoryZCF} zcf
  * @param {{
- *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Invitation,
- *   initialShortfallInvitation: Invitation,
- *   storageNode: ERef<StorageNode>,
- *   marshaller: ERef<Marshaller>,
+ *   feeMintAccess: FeeMintAccess;
+ *   initialPoserInvitation: Invitation;
+ *   initialShortfallInvitation: Invitation;
+ *   storageNode: ERef<StorageNode>;
+ *   marshaller: ERef<Marshaller>;
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */

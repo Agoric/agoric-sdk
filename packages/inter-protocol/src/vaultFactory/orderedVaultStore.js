@@ -3,22 +3,20 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
 /**
  * Used by prioritizedVaults to wrap the Collections API for this use case.
  *
- * Designed to be replaceable by naked Collections API when composite keys are available.
+ * Designed to be replaceable by naked Collections API when composite keys are
+ * available.
  *
- * In this module debts are encoded as the inverse quotient (collateral over debt) so that
- * greater collateralization sorts after lower. (Higher debt-to-collateral come
- * first.)
+ * In this module debts are encoded as the inverse quotient (collateral over
+ * debt) so that greater collateralization sorts after lower. (Higher
+ * debt-to-collateral come first.)
  */
 
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
-/**
- * @param {MapStore<string, Vault>} store
- */
+/** @param {MapStore<string, Vault>} store */
 export const makeOrderedVaultStore = store => {
   /**
-   *
    * @param {string} vaultId
    * @param {Vault} vault
    */
@@ -31,7 +29,6 @@ export const makeOrderedVaultStore = store => {
   };
 
   /**
-   *
    * @param {string} key
    * @returns {Vault}
    */

@@ -26,10 +26,11 @@
     "eslint-plugin-github": "^4.8.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jsdoc": "^46.4.3",
-    "eslint-plugin-prettier": "^5.0.0-alpha.2",
+    "eslint-plugin-prettier": "^5.0.0",
     "lerna": "^3.22.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.0.0",
+    "prettier-plugin-jsdoc": "^1.0.0",
     "typescript": "~5.1.6"
   },
   "engines": {
@@ -37,6 +38,24 @@
   },
   "prettier": {
     "arrowParens": "avoid",
+    "overrides": [
+      {
+        "files": [
+          "packages/ERTP/**/*.{js,ts}",
+          "packages/inter-protocol/**/*.{js,ts}",
+          "packages/vats/**/*.{js,ts}"
+        ],
+        "options": {
+          "plugins": [
+            "prettier-plugin-jsdoc"
+          ],
+          "jsdocAddDefaultToDescription": false,
+          "jsdocParser": true,
+          "jsdocCapitalizeDescription": false,
+          "tsdoc": true
+        }
+      }
+    ],
     "singleQuote": true
   },
   "scripts": {

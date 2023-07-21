@@ -2,21 +2,30 @@
 
 /**
  * @typedef {import('./vault').VaultNotification} VaultNotification
+ *
  * @typedef {import('./vault').Vault} Vault
+ *
  * @typedef {import('./vaultKit').VaultKit} VaultKit
+ *
  * @typedef {import('./vaultManager').VaultManager} VaultManager
+ *
  * @typedef {import('./vaultManager').CollateralManager} CollateralManager
+ *
  * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
+ *
  * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
+ *
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
+ *
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
  * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ *
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
  */
 
 /**
- * @typedef  {object} AutoswapLocal
+ * @typedef {object} AutoswapLocal
  * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
  * @property {() => Invitation} makeSwapInvitation
  */
@@ -24,13 +33,16 @@
 /**
  * @typedef {object} VaultManagerParamValues
  * @property {Ratio} liquidationMargin - margin below which collateral will be
- * liquidated to satisfy the debt.
- * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as proportion of debt
- * @property {Ratio} stabilityFee - annual interest rate charged on debt positions
- * @property {Ratio} mintFee - The fee (in BasisPoints) charged when creating
- * or increasing a debt position.
+ *   liquidated to satisfy the debt.
+ * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as
+ *   proportion of debt
+ * @property {Ratio} stabilityFee - annual interest rate charged on debt
+ *   positions
+ * @property {Ratio} mintFee - The fee (in BasisPoints) charged when creating or
+ *   increasing a debt position.
  * @property {Amount<'nat'>} debtLimit
- * @property {Ratio} [liquidationPadding] - vault must maintain this in order to remove collateral or add debt
+ * @property {Ratio} [liquidationPadding] - vault must maintain this in order to
+ *   remove collateral or add debt
  */
 
 /**
@@ -42,7 +54,7 @@
  */
 
 /**
- * @typedef  {object} VaultFactoryCreatorFacet
+ * @typedef {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
  * @property {() => Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
@@ -51,10 +63,10 @@
  */
 
 /**
- * @callback MintAndTransfer
- * Mint new debt `toMint` and transfer the `fee` portion to the vaultFactory's reward
- * pool. Then reallocate over all the seat arguments and the rewardPoolSeat. Update
- * the `totalDebt` if the reallocate succeeds.
+ * @callback MintAndTransfer Mint new debt `toMint` and transfer the `fee`
+ *   portion to the vaultFactory's reward pool. Then reallocate over all the
+ *   seat arguments and the rewardPoolSeat. Update the `totalDebt` if the
+ *   reallocate succeeds.
  * @param {ZCFSeat} mintReceiver
  * @param {Amount<'nat'>} toMint
  * @param {Amount<'nat'>} fee
@@ -63,11 +75,8 @@
  */
 
 /**
- * @callback BurnDebt
- *
- * Burn debt tokens off a seat and update
- * the `totalDebt` if the reallocate succeeds.
- *
+ * @callback BurnDebt Burn debt tokens off a seat and update the `totalDebt` if
+ *   the reallocate succeeds.
  * @param {Amount} toBurn
  * @param {ZCFSeat} fromSeat
  * @returns {void}
@@ -78,16 +87,15 @@
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getMintFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getStabilityFee - The annual interest rate on a debt position
+ * @property {() => Ratio} getStabilityFee - The annual interest rate on a debt
+ *   position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the debt position.
  * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
  *   at which interest is recorded to the debt position.
  */
 
-/**
- * @typedef {string} VaultId
- */
+/** @typedef {string} VaultId */
 
 /**
  * @typedef {object} InterestTiming
@@ -104,7 +112,9 @@
 
 /**
  * @typedef {object} Liquidator
- * @property {() => Promise<Invitation<void, { debt: Amount<'nat'>; penaltyRate: Ratio; }>>} makeLiquidateInvitation
+ * @property {() => Promise<
+ *   Invitation<void, { debt: Amount<'nat'>; penaltyRate: Ratio }>
+ * >} makeLiquidateInvitation
  */
 
 /**
@@ -124,11 +134,11 @@
 /**
  * @typedef {object} CalculatorKit
  * @property {Calculate} calculate calculate new debt for charging periods up to
- * the present.
+ *   the present.
  * @property {Calculate} calculateReportingPeriod calculate new debt for
- * reporting periods up to the present. If some charging periods have elapsed
- * that don't constitute whole reporting periods, the time is not updated past
- * them and interest is not accumulated for them.
+ *   reporting periods up to the present. If some charging periods have elapsed
+ *   that don't constitute whole reporting periods, the time is not updated past
+ *   them and interest is not accumulated for them.
  */
 
-/** @typedef {{key: 'governedParams' | {collateralBrand: Brand}}} VaultFactoryParamPath */
+/** @typedef {{ key: 'governedParams' | { collateralBrand: Brand } }} VaultFactoryParamPath */

@@ -13,7 +13,7 @@ import {
   splitAllCentralPayments,
 } from '../src/core/demoIssuers.js';
 
-/** @param { bigint } n */
+/** @param {bigint} n */
 const showIST = n => `${decimal(n, 6)} IST`;
 
 // TODO: prune showIST formatting utility

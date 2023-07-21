@@ -15,9 +15,7 @@ export * from './startEconCommittee.js'; // eslint-disable-line import/export
 // require updating a lot of tests. So for now, we just
 // grab the kits afterward and store them.
 
-/**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
- */
+/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
 export const storeInterContractStartKits = async ({
   consume: {
     contractKits,
@@ -31,8 +29,8 @@ export const storeInterContractStartKits = async ({
   },
 }) => {
   /**
-   * @param {Promise<MapStore<string, {instance: Instance}>>} storeP
-   * @param {Promise<{instance: Instance}>[]} kitPs
+   * @param {Promise<MapStore<string, { instance: Instance }>>} storeP
+   * @param {Promise<{ instance: Instance }>[]} kitPs
    */
   const storeAll = async (storeP, kitPs) => {
     const store = await storeP;

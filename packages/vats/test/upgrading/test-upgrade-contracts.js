@@ -1,20 +1,23 @@
 /**
- * @file
- *  cribbed from packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js
+ * @file cribbed from
+ *   packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js
  */
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { buildVatController } from '@agoric/swingset-vat';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 /**
- * WARNING: uses ambient authority
- * of import.meta.url
+ * WARNING: uses ambient authority of import.meta.url
  *
- * We aim to use ambient authority only in test.before();
- * splitting out makeTestContext() lets us type t.context.
+ * We aim to use ambient authority only in test.before(); splitting out
+ * makeTestContext() lets us type t.context.
  */
 const makeTestContext = async () => {
   const bfile = name => new URL(name, import.meta.url).pathname;

@@ -1,20 +1,23 @@
 // @ts-check
 /**
  * @typedef {{
- *   brand: import('@agoric/internal/src/marshal.js').BoardRemote,
- *   denom: string,
- *   displayInfo: DisplayInfo,
- *   issuer: import('@agoric/internal/src/marshal.js').BoardRemote,
- *   issuerName: string,
- *   proposedName: string,
+ *   brand: import('@agoric/internal/src/marshal.js').BoardRemote;
+ *   denom: string;
+ *   displayInfo: DisplayInfo;
+ *   issuer: import('@agoric/internal/src/marshal.js').BoardRemote;
+ *   issuerName: string;
+ *   proposedName: string;
  * }} VBankAssetDetail
  */
 /**
  * @typedef {{
- *   brand: Record<string, import('@agoric/internal/src/marshal.js').BoardRemote>,
- *   instance: Record<string, Instance>,
- *   vbankAsset: Record<string, VBankAssetDetail>,
- *   reverse: Record<string, string>,
+ *   brand: Record<
+ *     string,
+ *     import('@agoric/internal/src/marshal.js').BoardRemote
+ *   >;
+ *   instance: Record<string, Instance>;
+ *   vbankAsset: Record<string, VBankAssetDetail>;
+ *   reverse: Record<string, string>;
  * }} AgoricNamesRemotes
  */
 
@@ -29,7 +32,7 @@ import { prepareBoardKit } from '../src/lib-board.js';
 export * from '@agoric/internal/src/marshal.js';
 
 /**
- * @param {import("@agoric/internal/src/storage-test-utils.js").FakeStorageKit} fakeStorageKit
+ * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} fakeStorageKit
  * @returns {AgoricNamesRemotes}
  */
 export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
@@ -41,7 +44,12 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const reverse = {};
   const entries = ['brand', 'instance'].map(kind => {
-    /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
+    /**
+     * @type {[
+     *   string,
+     *   import('@agoric/vats/tools/board-utils.js').BoardRemote,
+     * ][]}
+     */
     const parts = unmarshalFromVstorage(
       data,
       `published.agoricNames.${kind}`,
@@ -69,8 +77,8 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
 harden(makeAgoricNamesRemotesFromFakeStorage);
 
 /**
- * Make a board that uses durable storage, but with fake baggage which will fail upgrade.
- * Suitable only for use in tests.
+ * Make a board that uses durable storage, but with fake baggage which will fail
+ * upgrade. Suitable only for use in tests.
  *
  * @param {bigint | number} [initSequence]
  * @param {object} [options]

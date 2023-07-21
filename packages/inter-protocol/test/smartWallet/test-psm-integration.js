@@ -19,9 +19,11 @@ import {
 import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
- * & {consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']}>
- * }
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<makeDefaultTestContext>> & {
+ *     consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ *   }
+ * >}
  */
 const test = anyTest;
 
@@ -233,7 +235,7 @@ test('govern offerFilter', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {any} balances XXX please improve this
-   * @returns {Promise<[{description: string, instance: Instance}]>}
+   * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) =>
     // @ts-expect-error TS can't tell that it's going to satisfy the @returns.

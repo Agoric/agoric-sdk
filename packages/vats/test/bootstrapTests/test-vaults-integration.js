@@ -1,7 +1,5 @@
 // @ts-check
-/**
- * @file Bootstrap test integration vaults with smart-wallet
- */
+/** @file Bootstrap test integration vaults with smart-wallet */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
@@ -18,7 +16,9 @@ import { makeWalletFactoryDriver } from './drivers.js';
 import { makeSwingsetTestKit } from './supports.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>>
+ * >}
  */
 const test = anyTest;
 

@@ -24,12 +24,16 @@ export const BASIS_POINTS = 10000n;
 
 /**
  * @typedef {Record<string, any> & {
- * aeth: IssuerKit & import('../supports.js').AmountUtils,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * bundleCache: Awaited<ReturnType<typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache>>,
- * rates: VaultManagerParamValues,
- * interestTiming: InterestTiming,
- * zoe: ZoeService,
+ *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   bundleCache: Awaited<
+ *     ReturnType<
+ *       typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache
+ *     >
+ *   >;
+ *   rates: VaultManagerParamValues;
+ *   interestTiming: InterestTiming;
+ *   zoe: ZoeService;
  * }} Context
  */
 
@@ -56,7 +60,7 @@ export const defaultParamValues = debtBrand =>
  * @param {import('ava').ExecutionContext<Context>} t
  * @param {IssuerKit<'nat'>} run
  * @param {IssuerKit<'nat'>} aeth
- * @param {Array<NatValue> | Ratio} priceOrList
+ * @param {NatValue[] | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
  * @param {Amount | undefined} unitAmountIn
  * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
@@ -160,7 +164,8 @@ export const getRunFromFaucet = async (t, amount) => {
 };
 
 /**
- * Vault offer result used to include `publicNotifiers` but now is `publicSubscribers`.
+ * Vault offer result used to include `publicNotifiers` but now is
+ * `publicSubscribers`.
  *
  * @param {UserSeat<VaultKit>} vaultSeat
  */

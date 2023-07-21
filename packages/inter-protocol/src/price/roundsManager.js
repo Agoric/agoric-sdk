@@ -17,6 +17,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 /** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
  * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ *
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
 
@@ -28,34 +29,30 @@ export const ROUND_MAX = BigInt(2 ** 32 - 1);
 
 const trace = makeTracer('RoundsM', false);
 
-/**
- * @param {bigint} roundId
- */
+/** @param {bigint} roundId */
 const validRoundId = roundId => {
   return roundId <= ROUND_MAX;
 };
 
 /**
- * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound
+ * @typedef {{ roundId: number | undefined; unitPrice: NatValue }} PriceRound
  *
- * @typedef {Pick<RoundData, 'roundId' | 'startedAt'> &  { startedBy: string }} LatestRound
+ * @typedef {Pick<RoundData, 'roundId' | 'startedAt'> & { startedBy: string }} LatestRound
  */
 
-/**
- * @typedef {Round & {roundId: bigint}} RoundData
- */
+/** @typedef {Round & { roundId: bigint }} RoundData */
 
 /**
  * @typedef {object} Round
  * @property {bigint} answer the answer for the given round
- * @property {Timestamp} startedAt the timestamp when the round was started. This is 0
- * if the round hasn't been started yet.
- * @property {Timestamp} updatedAt the timestamp when the round last was updated (i.e.
- * answer was last computed)
- * @property {bigint} answeredInRound the round ID of the round in which the answer
- * was computed. answeredInRound may be smaller than roundId when the round
- * timed out. answeredInRound is equal to roundId when the round didn't time out
- * and was completed regularly.
+ * @property {Timestamp} startedAt the timestamp when the round was started.
+ *   This is 0 if the round hasn't been started yet.
+ * @property {Timestamp} updatedAt the timestamp when the round last was updated
+ *   (i.e. answer was last computed)
+ * @property {bigint} answeredInRound the round ID of the round in which the
+ *   answer was computed. answeredInRound may be smaller than roundId when the
+ *   round timed out. answeredInRound is equal to roundId when the round didn't
+ *   time out and was completed regularly.
  */
 
 /**
@@ -66,29 +63,31 @@ const validRoundId = roundId => {
  * @property {number} roundTimeout
  */
 
-/**
- * @typedef {IssuerKit<'set'>} QuoteKit
- */
+/** @typedef {IssuerKit<'set'>} QuoteKit */
 
 /**
- * @typedef {Readonly<import('./fluxAggregatorKit.js').ChainlinkConfig & {
- * quoteKit: QuoteKit,
- * answerPublisher: Publisher<void>,
- * brandIn: Brand<'nat'>,
- * brandOut: Brand<'nat'>,
- * latestRoundPublisher: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<LatestRound>,
- * timerPresence: TimerService,
- * }>} HeldParams
+ * @typedef {Readonly<
+ *   import('./fluxAggregatorKit.js').ChainlinkConfig & {
+ *     quoteKit: QuoteKit;
+ *     answerPublisher: Publisher<void>;
+ *     brandIn: Brand<'nat'>;
+ *     brandOut: Brand<'nat'>;
+ *     latestRoundPublisher: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<LatestRound>;
+ *     timerPresence: TimerService;
+ *   }
+ * >} HeldParams
  *
- * @typedef {Readonly<HeldParams & {
- * details: MapStore<bigint, RoundDetails>,
- * rounds: MapStore<bigint, Round>,
- * unitIn: bigint,
- * }>} ImmutableState
+ * @typedef {Readonly<
+ *   HeldParams & {
+ *     details: MapStore<bigint, RoundDetails>;
+ *     rounds: MapStore<bigint, Round>;
+ *     unitIn: bigint;
+ *   }
+ * >} ImmutableState
  *
  * @typedef {{
- * lastValueOutForUnitIn: bigint?,
- * reportingRoundId: bigint,
+ *   lastValueOutForUnitIn: bigint?;
+ *   reportingRoundId: bigint;
  * }} MutableState
  */
 /** @typedef {ImmutableState & MutableState} State */
@@ -116,7 +115,11 @@ export const prepareRoundsManagerKit = baggage =>
         handlePush: M.call(M.record(), M.record()).returns(M.promise()),
       }),
     },
-    /** @type {(opts: HeldParams & { unitAmountIn: Amount<'nat'> }) => State} */
+    /**
+     * @type {(
+     *   opts: HeldParams & { unitAmountIn: Amount<'nat'> },
+     * ) => State}
+     */
     ({
       // ChainlinkConfig
       maxSubmissionCount,
@@ -170,9 +173,7 @@ export const prepareRoundsManagerKit = baggage =>
     },
     {
       helper: {
-        /**
-         * @param {bigint} roundId
-         */
+        /** @param {bigint} roundId */
         acceptingSubmissions(roundId) {
           const { details } = this.state;
           return (
@@ -190,9 +191,7 @@ export const prepareRoundsManagerKit = baggage =>
           return roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
         },
 
-        /**
-         * @param {bigint} roundId
-         */
+        /** @param {bigint} roundId */
         deleteRoundDetails(roundId) {
           const { details } = this.state;
           const roundDetails = details.get(roundId);
@@ -201,9 +200,7 @@ export const prepareRoundsManagerKit = baggage =>
           details.delete(roundId);
         },
 
-        /**
-         * @param {bigint} roundId
-         */
+        /** @param {bigint} roundId */
         isNextRound(roundId) {
           const { reportingRoundId } = this.state;
           return roundId === add(reportingRoundId, 1);
@@ -421,7 +418,7 @@ export const prepareRoundsManagerKit = baggage =>
          * @param {OracleStatus} status
          * @param {bigint} roundId
          * @param {Timestamp} blockTimestamp
-         * @returns {string?} error message, if there is one
+         * @returns {string | null} error message, if there is one
          */
         validateOracleRound(status, roundId, blockTimestamp) {
           const { reportingRoundId } = this.state;
@@ -449,10 +446,7 @@ export const prepareRoundsManagerKit = baggage =>
         },
       },
       contract: {
-        /**
-         *
-         * @param {PriceQuoteValue} quote
-         */
+        /** @param {PriceQuoteValue} quote */
         async authenticateQuote(quote) {
           const { quoteKit } = this.state;
           const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
@@ -470,9 +464,7 @@ export const prepareRoundsManagerKit = baggage =>
           const { brandIn, brandOut, timerPresence } = state;
           const { contract } = this.facets;
 
-          /**
-           * @param {PriceQuery} priceQuery
-           */
+          /** @param {PriceQuery} priceQuery */
           return Far('createQuote', priceQuery => {
             const { lastValueOutForUnitIn, unitIn } = state;
 
@@ -486,9 +478,7 @@ export const prepareRoundsManagerKit = baggage =>
               return undefined;
             }
 
-            /**
-             * @param {Amount<'nat'>} amountIn the given amountIn
-             */
+            /** @param {Amount<'nat'>} amountIn the given amountIn */
             const calcAmountOut = amountIn => {
               const valueIn = AmountMath.getValue(brandIn, amountIn);
               return AmountMath.make(
@@ -497,9 +487,7 @@ export const prepareRoundsManagerKit = baggage =>
               );
             };
 
-            /**
-             * @param {Amount<'nat'>} amountOut the wanted amountOut
-             */
+            /** @param {Amount<'nat'>} amountOut the wanted amountOut */
             const calcAmountIn = amountOut => {
               const valueOut = AmountMath.getValue(brandOut, amountOut);
               return AmountMath.make(
@@ -564,9 +552,8 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * consumers are encouraged to check
-         * that they're receiving fresh data by inspecting the updatedAt and
-         * answeredInRound return values.
+         * consumers are encouraged to check that they're receiving fresh data
+         * by inspecting the updatedAt and answeredInRound return values.
          *
          * @param {bigint | number} roundIdRaw
          * @returns {Promise<RoundData>}
@@ -603,8 +590,9 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * a method to provide all current info oracleStatuses need. Intended only
-         * only to be callable by oracleStatuses. Not for use by contracts to read state.
+         * a method to provide all current info oracleStatuses need. Intended
+         * only only to be callable by oracleStatuses. Not for use by contracts
+         * to read state.
          *
          * @param {OracleStatus} status
          * @param {Timestamp} blockTimestamp

@@ -26,7 +26,7 @@ export { makeMockChainStorageRoot };
 export const DENOM_UNIT = 1_000_000n;
 
 /**
- * @param {*} t
+ * @param {any} t
  * @param {string} sourceRoot
  * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
@@ -54,16 +54,16 @@ export const setUpZoeForTest = async (setJig = () => {}) =>
 harden(setUpZoeForTest);
 
 /**
- * @param {*} t
+ * @param {any} t
  * @param {import('@agoric/time/src/types').TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
   const space = /** @type {any} */ (makePromiseSpace(trace));
-  const { produce, consume } =
-    /** @type { import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
-      space
-    );
+  const { produce, consume } = /**
+   * @type {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers &
+   *     BootstrapPowers}
+   */ (space);
 
   await produceDiagnostics(space);
 
@@ -112,9 +112,11 @@ export const installPuppetGovernance = (zoe, produce) => {
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupply: ERef<Installation<import('@agoric/vats/src/centralSupply.js').start>>,
- *   feeMintAccess: ERef<FeeMintAccess>,
- *   zoe: ERef<ZoeService>,
+ *   centralSupply: ERef<
+ *     Installation<import('@agoric/vats/src/centralSupply.js').start>
+ *   >;
+ *   feeMintAccess: ERef<FeeMintAccess>;
+ *   zoe: ERef<ZoeService>;
  * }} powers
  * @returns {Promise<Payment<'nat'>>}
  */
@@ -135,9 +137,11 @@ export const mintRunPayment = async (
 
 /**
  * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} Space
- *
  * @param {Space} space
- * @param {Record<keyof Space['installation']['produce'], Promise<Installation>>} installations
+ * @param {Record<
+ *   keyof Space['installation']['produce'],
+ *   Promise<Installation>
+ * >} installations
  */
 export const produceInstallations = (space, installations) => {
   for (const [key, installation] of Object.entries(installations)) {
@@ -147,16 +151,12 @@ export const produceInstallations = (space, installations) => {
 
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
-/**
- * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit
- */
+/** @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit */
 export const withAmountUtils = kit => {
   const decimalPlaces = kit.issuer.getDisplayInfo?.()?.decimalPlaces ?? 6;
   return {
     ...kit,
-    /**
-     * @param {NatValue} v
-     */
+    /** @param {NatValue} v */
     make: v => AmountMath.make(kit.brand, v),
     makeEmpty: () => AmountMath.makeEmpty(kit.brand),
     /**
@@ -164,18 +164,14 @@ export const withAmountUtils = kit => {
      * @param {NatValue} [d]
      */
     makeRatio: (n, d) => makeRatio(n, kit.brand, d),
-    /**
-     * @param {number} n
-     */
+    /** @param {number} n */
     units: n =>
       AmountMath.make(kit.brand, BigInt(Math.round(n * 10 ** decimalPlaces))),
   };
 };
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
 
-/**
- * @param {ERef<StoredSubscription<unknown> | StoredSubscriber<unknown>>} subscription
- */
+/** @param {ERef<StoredSubscription<unknown> | StoredSubscriber<unknown>>} subscription */
 export const subscriptionKey = subscription => {
   return E(subscription)
     .getStoreKey()
@@ -190,7 +186,9 @@ export const subscriptionKey = subscription => {
 };
 
 /**
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
+ * @param {ERef<{
+ *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
+ * }>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {
@@ -208,9 +206,10 @@ export const headValue = async subscriber => {
 };
 
 /**
- * CAVEAT: the head may lag and you need to explicitly getUpdateSince(lastUpdateCount)
- * 
-  @type {<T>(subscription: ERef<Subscription<T>>) => Promise<T>}
+ * CAVEAT: the head may lag and you need to explicitly
+ * getUpdateSince(lastUpdateCount)
+ *
+ * @type {<T>(subscription: ERef<Subscription<T>>) => Promise<T>}
  */
 export const headValueLegacy = async subscription => {
   await eventLoopIteration();
@@ -222,7 +221,9 @@ export const headValueLegacy = async subscription => {
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
+ * @param {ERef<{
+ *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
+ * }>} hasTopics
  * @param {string} topicName
  * @param {string} path
  * @param {string[]} [dataKeys]
@@ -248,14 +249,20 @@ export const assertTopicPathData = async (
 };
 
 /**
- * Sequence currents from a wallet UpdateRecord publication feed. Note that local
- * state may not reflect the wallet's state if the initial currents are missed.
+ * Sequence currents from a wallet UpdateRecord publication feed. Note that
+ * local state may not reflect the wallet's state if the initial currents are
+ * missed.
  *
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<Subscriber<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>>} currents
- * @returns {Array<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>} array that grows as the subscription feeds
+ * @param {ERef<
+ *   Subscriber<
+ *     import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord
+ *   >
+ * >} currents
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord[]}
+ *   array that grows as the subscription feeds
  */
 export const sequenceCurrents = currents => {
   const sequence = [];

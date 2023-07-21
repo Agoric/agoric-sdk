@@ -27,7 +27,9 @@ import { makeFakeBankKit } from '../tools/bank-utils.js';
 
 /**
  * @typedef {import('../src/vat-bank.js').Bank} Bank
+ *
  * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
+ *
  * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
  */
 
@@ -268,10 +270,9 @@ test('provisionPool trades provided assets for IST', async t => {
 });
 
 /**
- * This is a bit of a short-cut; rather than scaffold
- * everything needed to make a walletFactory, we factored
- * out the part that had a bug as `publishDepositFacet`
- * and we make a mock walletFactory that uses it.
+ * This is a bit of a short-cut; rather than scaffold everything needed to make
+ * a walletFactory, we factored out the part that had a bug as
+ * `publishDepositFacet` and we make a mock walletFactory that uses it.
  *
  * @param {string[]} addresses
  */

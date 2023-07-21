@@ -9,10 +9,7 @@ import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 import '../../src/vaultFactory/types.js';
 
-/**
- * @typedef {import('./driver.js').DriverContext & {
- * }} Context
- */
+/** @typedef {import('./driver.js').DriverContext & {}} Context */
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 

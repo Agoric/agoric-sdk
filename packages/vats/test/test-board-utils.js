@@ -14,7 +14,7 @@ import {
 const streamCellTextFromArray = values =>
   JSON.stringify({ blockHeight: '0', values });
 
-/** @type {Array<[string, any]>} */
+/** @type {[string, any][]} */
 const agoricNamesDataEntriesFixture = [
   [
     'published.agoricNames.issuer',

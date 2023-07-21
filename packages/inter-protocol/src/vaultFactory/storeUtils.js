@@ -19,13 +19,9 @@ const { multiply } = natSafeMath;
 
 const trace = makeTracer('Store', true);
 
-/**
- * @typedef {import('@endo/marshal').PureData} PureData
- */
+/** @typedef {import('@endo/marshal').PureData} PureData */
 
-/**
- * @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey
- */
+/** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
 
 // `makeEncodePassable` has three named options:
 // `encodeRemotable`, `encodeError`, and `encodePromise`.
@@ -69,12 +65,12 @@ const decodeNumber = encoded => {
 };
 
 // Type annotations to support static testing of amount values
-/** @typedef {Amount<'nat'> & {normalized: true}} NormalizedDebt */
-/** @typedef {Amount<'nat'> & {normalized: false}} ActualDebt */
+/** @typedef {Amount<'nat'> & { normalized: true }} NormalizedDebt */
+/** @typedef {Amount<'nat'> & { normalized: false }} ActualDebt */
 
 /**
- * Overcollateralized are greater than one.
- * The more undercollaterized the smaller in [0-1].
+ * Overcollateralized are greater than one. The more undercollaterized the
+ * smaller in [0-1].
  *
  * @param {NormalizedDebt} normalizedDebt normalized (not actual) total debt
  * @param {Amount<'nat'>} collateral
@@ -95,7 +91,7 @@ const collateralizationRatio = (normalizedDebt, collateral) => {
  * @param {Amount<'nat'>} collateral
  * @param {VaultId} vaultId
  * @returns {string} lexically sortable string in which highest
- * debt-to-collateral is earliest
+ *   debt-to-collateral is earliest
  */
 export const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   assert(normalizedDebt);
@@ -162,7 +158,7 @@ harden(normalizedCollRatio);
  * @param {Ratio} compoundedStabilityFee
  * @param {Ratio} margin
  * @returns {string} lexically sortable string in which highest
- * debt-to-collateral is earliest
+ *   debt-to-collateral is earliest
  */
 export const normalizedCollRatioKey = (
   quote,

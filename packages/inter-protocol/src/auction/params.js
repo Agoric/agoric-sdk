@@ -13,7 +13,7 @@ import { M } from '@agoric/store';
 export const InvitationShape = M.remotable('Invitation');
 
 /**
- * In seconds, how often to start an auction.  The auction will start at
+ * In seconds, how often to start an auction. The auction will start at
  * AUCTION_START_DELAY seconds after a multiple of START_FREQUENCY, with the
  * price at STARTING_RATE_BP. Every CLOCK_STEP, the price will be reduced by
  * DISCOUNT_STEP_BP, as long as the rate is at or above LOWEST_RATE_BP, or until
@@ -73,9 +73,7 @@ export const auctioneerParamTypes = harden({
  * @property {import('@agoric/time/src/types').TimerBrand} TimerBrand
  */
 
-/**
- * @param {AuctionParams} initial
- */
+/** @param {AuctionParams} initial */
 export const makeAuctioneerParams = ({
   ElectorateInvitationAmount,
   StartFrequency,
@@ -148,7 +146,7 @@ export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
 harden(makeAuctioneerParamManager);
 
 /**
- * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
+ * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} caps
  * @param {ERef<Timer>} timer
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {ERef<AssetReservePublicFacet>} reservePublicFacet

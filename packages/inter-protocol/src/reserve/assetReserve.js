@@ -12,30 +12,30 @@ const trace = makeTracer('AR', true);
 
 /**
  * @typedef {{
- *   increaseLiquidationShortfall: (increase: Amount) => void
- *   reduceLiquidationShortfall: (reduction: Amount) => void
+ *   increaseLiquidationShortfall: (increase: Amount) => void;
+ *   reduceLiquidationShortfall: (reduction: Amount) => void;
  * }} ShortfallReportingFacet
  */
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * Asset Reserve holds onto assets for the Inter Protocol, and can
- * dispense it for various purposes under governance control.
+ * Asset Reserve holds onto assets for the Inter Protocol, and can dispense it
+ * for various purposes under governance control.
  *
  * This contract has the ability to mint Fee tokens, granted through its private
  * arguments.
  *
- * @param {ZCF<GovernanceTerms<{}> &
- * {
- *   governedApis: ['burnFeesToReduceShortfall'],
- * }
+ * @param {ZCF<
+ *   GovernanceTerms<{}> & {
+ *     governedApis: ['burnFeesToReduceShortfall'];
+ *   }
  * >} zcf
  * @param {{
- *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Invitation,
- *   marshaller: ERef<Marshaller>,
- *   storageNode: ERef<StorageNode>,
+ *   feeMintAccess: FeeMintAccess;
+ *   initialPoserInvitation: Invitation;
+ *   marshaller: ERef<Marshaller>;
+ *   storageNode: ERef<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -122,4 +122,7 @@ harden(prepare);
  */
 
 /** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} AssetReservePublicFacet */
-/** @typedef {Awaited<ReturnType<typeof prepare>>['creatorFacet']} AssetReserveCreatorFacet the creator facet for the governor */
+/**
+ * @typedef {Awaited<ReturnType<typeof prepare>>['creatorFacet']} AssetReserveCreatorFacet
+ *   the creator facet for the governor
+ */

@@ -15,7 +15,7 @@ const aeth = withAmountUtils(makeIssuerKit('Aeth'));
 /**
  * Max debt for a fixed collateral of 1_000 aeth
  *
- * @param {*} t
+ * @param {any} t
  * @param {readonly [Number, Number, Number]} input
  * @param {bigint} result
  */
@@ -75,9 +75,14 @@ test('negative liquidationPadding throws', t => {
 /**
  * Max debt for a fixed collateral of 1_000 aeth
  *
- * @param {*} t
+ * @param {any} t
  * @param {readonly [Number, Number, Number]} input
- * @param {{ fee: number, newDebt: number, toMint: number, surplus: number }} result
+ * @param {{
+ *   fee: number;
+ *   newDebt: number;
+ *   toMint: number;
+ *   surplus: number;
+ * }} result
  */
 function checkDebtCosts(
   t,

@@ -1,7 +1,7 @@
 /**
- * @file
- * Adaptation of Chainlink algorithm to the Agoric platform.
- * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
+ * @file Adaptation of Chainlink algorithm to the Agoric platform. Modeled on
+ *   https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol
+ *   (version?)
  */
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
@@ -24,10 +24,14 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
+ *
  * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
- * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
- * // TODO: use RelativeTime, not RelativeTimeValue
+ *
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime //
+ *   TODO: use RelativeTime, not RelativeTimeValue
+ *
  * @typedef {import('@agoric/time/src/types').RelativeTimeValue} RelativeTimeValue
+ *
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
 
@@ -49,30 +53,35 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * @typedef {object} ChainlinkConfig
  * @property {number} maxSubmissionCount
  * @property {number} minSubmissionCount
- * @property {bigint} restartDelay the number of rounds an Oracle has to wait before they can initiate a round
- * @property {number} minSubmissionValue an immutable check for a lower bound of what
- * submission values are accepted from an oracle
- * @property {number} maxSubmissionValue an immutable check for an upper bound of what
- * submission values are accepted from an oracle
- * @property {number} timeout the number of seconds after the previous round that
- * allowed to lapse before allowing an oracle to skip an unfinished round
+ * @property {bigint} restartDelay the number of rounds an Oracle has to wait
+ *   before they can initiate a round
+ * @property {number} minSubmissionValue an immutable check for a lower bound of
+ *   what submission values are accepted from an oracle
+ * @property {number} maxSubmissionValue an immutable check for an upper bound
+ *   of what submission values are accepted from an oracle
+ * @property {number} timeout the number of seconds after the previous round
+ *   that allowed to lapse before allowing an oracle to skip an unfinished
+ *   round
  */
 
 /**
- * Returns a maker for a single durable FluxAggregatorKit, closed over the prepare() arguments.
+ * Returns a maker for a single durable FluxAggregatorKit, closed over the
+ * prepare() arguments.
  *
  * The kit aggregates price inputs to produce a PriceAuthority. Unlike the
- * simpler `priceAggregator.js`, this approximates the *Node Operator
- * Aggregation* logic of [Chainlink price
+ * simpler `priceAggregator.js`, this approximates the _Node Operator
+ * Aggregation_ logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
  * @param {Baggage} baggage
- * @param {ZCF<ChainlinkConfig & {
- * timer: TimerService,
- * brandIn: Brand<'nat'>,
- * brandOut: Brand<'nat'>,
- * unitAmountIn?: Amount<'nat'>,
- * }>} zcf
+ * @param {ZCF<
+ *   ChainlinkConfig & {
+ *     timer: TimerService;
+ *     brandIn: Brand<'nat'>;
+ *     brandOut: Brand<'nat'>;
+ *     unitAmountIn?: Amount<'nat'>;
+ *   }
+ * >} zcf
  * @param {TimerService} timerPresence
  * @param {import('./roundsManager.js').QuoteKit} quoteKit
  * @param {StorageNode} storageNode
@@ -128,7 +137,10 @@ export const prepareFluxAggregatorKit = async (
   // end of maker definitions /////////////////////////////////
 
   const { answerKit, latestRoundKit, priceKit } = await provideAll(baggage, {
-    /** This is just a signal that there's a new answer, which is read from `lastValueOutForUnitIn` */
+    /**
+     * This is just a signal that there's a new answer, which is read from
+     * `lastValueOutForUnitIn`
+     */
     answerKit: () => makeDurablePublishKit(),
     /** For publishing priceAuthority values to off-chain storage */
     priceKit: () =>
@@ -142,9 +154,11 @@ export const prepareFluxAggregatorKit = async (
       E.when(E(storageNode).makeChildNode('latestRound'), node =>
         makeRecorderKit(
           node,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./roundsManager.js').LatestRound>} */ (
-            M.any()
-          ),
+          /**
+           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
+           *     import('./roundsManager.js').LatestRound
+           *   >}
+           */ (M.any()),
         ),
       ),
   });
@@ -223,9 +237,9 @@ export const prepareFluxAggregatorKit = async (
          * An "oracle invitation" is an invitation to be able to submit data to
          * include in the priceAggregator's results.
          *
-         * The offer result from this invitation is a OracleAdmin, which can be used
-         * directly to manage the price submissions as well as to terminate the
-         * relationship.
+         * The offer result from this invitation is a OracleAdmin, which can be
+         * used directly to manage the price submissions as well as to terminate
+         * the relationship.
          *
          * @param {string} oracleId unique per contract instance
          */
@@ -235,8 +249,8 @@ export const prepareFluxAggregatorKit = async (
           /**
            * If custom arguments are supplied to the `zoe.offer` call, they can
            * indicate an OraclePriceSubmission notifier and a corresponding
-           * `shiftValueOut` that should be adapted as part of the priceAuthority's
-           * reported data.
+           * `shiftValueOut` that should be adapted as part of the
+           * priceAuthority's reported data.
            *
            * @param {ZCFSeat} seat
            */
@@ -299,8 +313,9 @@ export const prepareFluxAggregatorKit = async (
         },
 
         /**
-         * a method to provide all current info oracleStatuses need. Intended only
-         * only to be callable by oracleStatuses. Not for use by contracts to read state.
+         * a method to provide all current info oracleStatuses need. Intended
+         * only only to be callable by oracleStatuses. Not for use by contracts
+         * to read state.
          *
          * @param {string} oracleId
          * @param {bigint} queriedRoundId

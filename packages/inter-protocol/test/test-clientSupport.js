@@ -9,7 +9,11 @@ const ist = withAmountUtils(makeIssuerKit('IST'));
 const atom = withAmountUtils(makeIssuerKit('ATOM'));
 
 // uses actual Brand objects instead of BoardRemote to make the test output more legible
-/** @satisfies {Partial<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>} */
+/**
+ * @satisfies {Partial<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes
+ * >}
+ */
 const agoricNames = {
   brand: {
     IST: /** @type {any} */ (ist.brand),

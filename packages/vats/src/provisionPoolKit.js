@@ -23,38 +23,42 @@ import { PowerFlags } from './walletFlags.js';
 
 const { details: X, quote: q, Fail } = assert;
 
-/** @typedef {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/inter-protocol/src/psm/psm.js').prepare>} PsmInstance */
+/**
+ * @typedef {import('@agoric/zoe/src/zoeService/utils').Instance<
+ *   import('@agoric/inter-protocol/src/psm/psm.js').prepare
+ * >} PsmInstance
+ */
 
 /**
  * @typedef {object} ProvisionPoolKitReferences
  * @property {ERef<BankManager>} bankManager
  * @property {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- * @property {ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>} walletFactory
+ * @property {ERef<
+ *   import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']
+ * >} walletFactory
  */
 
 /**
- * @typedef {object} MetricsNotification
- * Metrics naming scheme is that nouns are present values and past-participles
- * are accumulative.
- *
- * @property {bigint} walletsProvisioned  count of new wallets provisioned
- * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted provided to new wallets
- * @property {Amount<'nat'>} totalMintedConverted  running sum of Minted
- * ever received by the contract from PSM
+ * @typedef {object} MetricsNotification Metrics naming scheme is that nouns are
+ *   present values and past-participles are accumulative.
+ * @property {bigint} walletsProvisioned count of new wallets provisioned
+ * @property {Amount<'nat'>} totalMintedProvided running sum of Minted provided
+ *   to new wallets
+ * @property {Amount<'nat'>} totalMintedConverted running sum of Minted ever
+ *   received by the contract from PSM
  */
 
 /**
- * Given attenuated access to the funding purse,
- * handle requests to provision smart wallets.
+ * Given attenuated access to the funding purse, handle requests to provision
+ * smart wallets.
  *
  * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
  * @param {() => void} onProvisioned
+ *
  * @typedef {import('./vat-bank.js').Bank} Bank
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
-  /**
-   * @param {ProvisionPoolKitReferences} refs
-   */
+  /** @param {ProvisionPoolKitReferences} refs */
   const makeBridgeHandler = ({
     bankManager,
     namesByAddressAdmin,
@@ -90,10 +94,10 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
- *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
- *   params: *,
- *   poolBank: import('@endo/far').ERef<Bank>,
- *   zcf: ZCF,
+ *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
+ *   params: any;
+ *   poolBank: import('@endo/far').ERef<Bank>;
+ *   zcf: ZCF;
  * }} powers
  */
 export const prepareProvisionPoolKit = (
@@ -173,9 +177,7 @@ export const prepareProvisionPoolKit = (
     {
       // aka "limitedCreatorFacet"
       machine: {
-        /**
-         * @param {string[]} oldAddresses
-         */
+        /** @param {string[]} oldAddresses */
         addRevivableAddresses(oldAddresses) {
           console.log('revivableAddresses count', oldAddresses.length);
           this.state.revivableAddresses.addAll(oldAddresses);
@@ -183,9 +185,7 @@ export const prepareProvisionPoolKit = (
         getWalletReviver() {
           return this.facets.walletReviver;
         },
-        /**
-         * @param {ProvisionPoolKitReferences} erefs
-         */
+        /** @param {ProvisionPoolKitReferences} erefs */
         async setReferences(erefs) {
           const { bankManager, namesByAddressAdmin, walletFactory } = erefs;
           const obj = harden({
@@ -295,10 +295,7 @@ export const prepareProvisionPoolKit = (
           state.walletsProvisioned += 1n;
           facets.helper.publishMetrics();
         },
-        /**
-         *
-         * @param {ERef<Bank>} destBank
-         */
+        /** @param {ERef<Bank>} destBank */
         async sendInitialPayment(destBank) {
           const {
             facets: { helper },

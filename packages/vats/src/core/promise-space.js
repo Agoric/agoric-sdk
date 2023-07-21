@@ -6,17 +6,17 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @typedef {{
- *   onAddKey: (key: string) => void,
- *   onResolve: (key: string, value: ERef<unknown>) => void,
- *   onSettled: (key: string, remaining: Set<string>) => void,
- *   onReset: (key: string) => void,
+ *   onAddKey: (key: string) => void;
+ *   onResolve: (key: string, value: ERef<unknown>) => void;
+ *   onSettled: (key: string, remaining: Set<string>) => void;
+ *   onReset: (key: string) => void;
  * }} PromiseSpaceHooks
  */
 
 const noop = harden(() => {});
 
 /**
- * @param { typeof console.log } log
+ * @param {typeof console.log} log
  * @returns {PromiseSpaceHooks}
  */
 export const makeLogHooks = log =>
@@ -29,11 +29,11 @@ export const makeLogHooks = log =>
   });
 
 /**
- * Note: caller is responsible for synchronization
- * in case of onResolve() called with a promise.
+ * Note: caller is responsible for synchronization in case of onResolve() called
+ * with a promise.
  *
  * @param {MapStore<string, Passable>} store
- * @param { typeof console.log } [log]
+ * @param {typeof console.log} [log]
  * @returns {PromiseSpaceHooks}
  */
 export const makeStoreHooks = (store, log = noop) => {
@@ -77,9 +77,11 @@ export const makeStoreHooks = (store, log = noop) => {
  * Note: repeated resolve()s without an intervening reset() are noops.
  *
  * @template {Record<string, unknown>} [T=Record<string, unknown>]
- * @param {{ log?: typeof console.log } & (
- *  { hooks?: PromiseSpaceHooks } | { store: MapStore<string, any> }
- * ) | (typeof console.log)} [optsOrLog]
+ * @param {| ({ log?: typeof console.log } & (
+ *       | { hooks?: PromiseSpaceHooks }
+ *       | { store: MapStore<string, any> }
+ *     ))
+ *   | typeof console.log} [optsOrLog]
  * @returns {PromiseSpaceOf<T>}
  */
 export const makePromiseSpace = (optsOrLog = {}) => {
@@ -91,9 +93,7 @@ export const makePromiseSpace = (optsOrLog = {}) => {
       : opts.hooks || makeLogHooks(log);
   const { onAddKey, onSettled, onResolve, onReset } = hooks;
 
-  /**
-   * @typedef {{ pk: PromiseRecord<any>, isSettling: boolean }} PromiseState
-   */
+  /** @typedef {{ pk: PromiseRecord<any>; isSettling: boolean }} PromiseState */
   /** @type {Map<string, PromiseState>} */
   const nameToState = new Map();
   /** @type {Set<string>} */

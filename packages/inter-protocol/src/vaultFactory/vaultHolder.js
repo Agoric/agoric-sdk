@@ -1,6 +1,4 @@
-/**
- * @file Use-object for the owner of a vault
- */
+/** @file Use-object for the owner of a vault */
 import { AmountShape } from '@agoric/ertp';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -10,8 +8,8 @@ const { Fail } = assert;
 
 /**
  * @typedef {{
- * topicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<VaultNotification>,
- * vault: Vault | null,
+ *   topicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<VaultNotification>;
+ *   vault: Vault | null;
  * }} State
  */
 
@@ -25,7 +23,7 @@ const HolderI = M.interface('holder', {
   makeTransferInvitation: M.call().returns(M.promise()),
 });
 
-/** @type {{ [name: string]: [ description: string, valueShape: Pattern ] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
 const PUBLIC_TOPICS = {
   vault: ['Vault holder status', M.any()],
 };
@@ -48,7 +46,6 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
       }),
     },
     /**
-     *
      * @param {Vault} vault
      * @param {StorageNode} storageNode
      * @returns {State}
@@ -61,9 +58,7 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
     },
     {
       helper: {
-        /**
-         * @throws if this holder no longer owns the vault
-         */
+        /** @throws if this holder no longer owns the vault */
         owned() {
           const { vault } = this.state;
           if (!vault) {
@@ -104,8 +99,8 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
           return this.facets.helper.owned().makeCloseInvitation();
         },
         /**
-         * Starting a transfer revokes the vault holder. The associated updater will
-         * get a special notification that the vault is being transferred.
+         * Starting a transfer revokes the vault holder. The associated updater
+         * will get a special notification that the vault is being transferred.
          */
         makeTransferInvitation() {
           const vault = this.facets.helper.owned();

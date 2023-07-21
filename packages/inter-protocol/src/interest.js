@@ -12,6 +12,7 @@ import { TimeMath } from '@agoric/time';
 
 /**
  * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ *
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
  */
 
@@ -20,9 +21,7 @@ const BASIS_POINTS = 10000;
 // single digit APR is less than a basis point per day.
 const LARGE_DENOMINATOR = BASIS_POINTS * BASIS_POINTS;
 
-/**
- * Number chosen from 6 digits for a basis point, doubled for multiplication.
- */
+/** Number chosen from 6 digits for a basis point, doubled for multiplication. */
 const COMPOUNDED_INTEREST_DENOMINATOR = 10n ** 20n;
 
 /**
@@ -144,23 +143,31 @@ const validatedBrand = (mint, debt) => {
 };
 
 /**
- * Charge interest accrued between `latestStabilityFeeUpdate` and `accruedUntil`.
+ * Charge interest accrued between `latestStabilityFeeUpdate` and
+ * `accruedUntil`.
  *
  * @param {{
- *  mint: ZCFMint<'nat'>,
- *  mintAndTransferWithFee: MintAndTransfer,
- *  poolIncrementSeat: ZCFSeat,
- *  seatAllocationKeyword: Keyword }} powers
+ *   mint: ZCFMint<'nat'>;
+ *   mintAndTransferWithFee: MintAndTransfer;
+ *   poolIncrementSeat: ZCFSeat;
+ *   seatAllocationKeyword: Keyword;
+ * }} powers
  * @param {{
- *  stabilityFee: Ratio,
- *  chargingPeriod: RelativeTime,
- *  recordingPeriod: RelativeTime}} params
+ *   stabilityFee: Ratio;
+ *   chargingPeriod: RelativeTime;
+ *   recordingPeriod: RelativeTime;
+ * }} params
  * @param {{
- *  latestStabilityFeeUpdate: Timestamp,
- *  compoundedStabilityFee: Ratio,
- *  totalDebt: Amount<'nat'>}} prior
+ *   latestStabilityFeeUpdate: Timestamp;
+ *   compoundedStabilityFee: Ratio;
+ *   totalDebt: Amount<'nat'>;
+ * }} prior
  * @param {Timestamp} accruedUntil
- * @returns {{compoundedStabilityFee: Ratio, latestStabilityFeeUpdate: Timestamp, totalDebt: Amount<'nat'> }}
+ * @returns {{
+ *   compoundedStabilityFee: Ratio;
+ *   latestStabilityFeeUpdate: Timestamp;
+ *   totalDebt: Amount<'nat'>;
+ * }}
  */
 export const chargeInterest = (powers, params, prior, accruedUntil) => {
   const brand = validatedBrand(powers.mint, prior.totalDebt);

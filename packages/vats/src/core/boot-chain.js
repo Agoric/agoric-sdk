@@ -25,11 +25,11 @@ export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
  * Build root object of the bootstrap vat.
  *
  * @param {VatPowers & {
- *   D: DProxy,
- *   logger: (msg) => void,
+ *   D: DProxy;
+ *   logger: (msg) => void;
  * }} vatPowers
  * @param {{
- *   coreProposalCode?: string,
+ *   coreProposalCode?: string;
  * }} vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

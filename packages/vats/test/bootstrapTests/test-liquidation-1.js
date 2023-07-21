@@ -1,7 +1,5 @@
 // @ts-check
-/**
- * @file Bootstrap test of liquidation across multiple collaterals
- */
+/** @file Bootstrap test of liquidation across multiple collaterals */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
@@ -14,7 +12,9 @@ import {
 } from './liquidation.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeLiquidationTestContext>>>}
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
+ * >}
  */
 const test = anyTest;
 
@@ -126,10 +126,11 @@ test.after.always(t => {
 
 // Reference: Flow 1 from https://github.com/Agoric/agoric-sdk/issues/7123
 /**
- *
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<typeof makeLiquidationTestContext>>>} t
- * @param {{collateralBrandKey: string, managerIndex: number}} case
- * @param {*} _expected
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
+ * >} t
+ * @param {{ collateralBrandKey: string; managerIndex: number }} case
+ * @param {any} _expected
  */
 const checkFlow1 = async (
   t,
@@ -339,7 +340,12 @@ const checkFlow1 = async (
     console.log(collateralBrandKey, 'step 10 of 10');
     // continuing after now would start a new auction
     {
-      /** @type {Record<string, import('@agoric/time/src/types.js').TimestampRecord>} */
+      /**
+       * @type {Record<
+       *   string,
+       *   import('@agoric/time/src/types.js').TimestampRecord
+       * >}
+       */
       const { nextDescendingStepTime, nextStartTime } = readLatest(
         'published.auction.schedule',
       );

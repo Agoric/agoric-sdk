@@ -10,7 +10,7 @@ import { Far } from '@endo/marshal';
 /**
  * Constants for Auction State.
  *
- * @type {{ ACTIVE: 'active', WAITING: 'waiting' }}
+ * @type {{ ACTIVE: 'active'; WAITING: 'waiting' }}
  */
 export const AuctionState = {
   ACTIVE: 'active',
@@ -18,8 +18,8 @@ export const AuctionState = {
 };
 
 /**
- * @param {{ brand: Brand, value: Pattern }} numeratorAmountShape
- * @param {{ brand: Brand, value: Pattern }} denominatorAmountShape
+ * @param {{ brand: Brand; value: Pattern }} numeratorAmountShape
+ * @param {{ brand: Brand; value: Pattern }} denominatorAmountShape
  */
 export const makeBrandedRatioPattern = (
   numeratorAmountShape,
@@ -36,7 +36,7 @@ export const makeBrandedRatioPattern = (
  * @param {Ratio} currentPrice
  * @param {Ratio} oraclePrice
  * @returns {boolean} TRUE iff the discount(/markup) applied to the price is
- *          higher than the quote.
+ *   higher than the quote.
  */
 export const isScaledBidPriceHigher = (bidScaling, currentPrice, oraclePrice) =>
   ratioGTE(multiplyRatios(oraclePrice, bidScaling), currentPrice);

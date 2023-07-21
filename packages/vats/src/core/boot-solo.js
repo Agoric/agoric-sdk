@@ -31,12 +31,12 @@ const modules = harden({
  * Build root object of the bootstrap vat.
  *
  * @param {VatPowers & {
- *   D: DProxy,
- *   logger: (msg) => void,
+ *   D: DProxy;
+ *   logger: (msg) => void;
  * }} vatPowers
  * @param {{
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
- *   coreProposalCode?: string,
+ *   bootstrapManifest?: Record<string, Record<string, unknown>>;
+ *   coreProposalCode?: string;
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {

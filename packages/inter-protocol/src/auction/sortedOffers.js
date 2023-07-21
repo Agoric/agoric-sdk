@@ -13,12 +13,13 @@ const { Fail } = assert;
 
 /**
  * @file we use a floating point representation of the price or rate as the
- * first part of the key in the store. The second part is the sequence number of
- * the bid, but it doesn't matter for sorting. When we retrieve multiple bids,
- * it's only by bid value, so we don't care how the sequence numbers sort.
+ *   first part of the key in the store. The second part is the sequence number
+ *   of the bid, but it doesn't matter for sorting. When we retrieve multiple
+ *   bids, it's only by bid value, so we don't care how the sequence numbers
+ *   sort.
  *
- * We take advantage of the fact that encodeData takes a passable and turns it
- * into a sort key. Arrays of passable data sort like composite keys.
+ *   We take advantage of the fact that encodeData takes a passable and turns it
+ *   into a sort key. Arrays of passable data sort like composite keys.
  */
 
 /**
@@ -39,7 +40,7 @@ export const toPartialOfferKey = offerPrice => {
  * @param {Ratio} offerPrice IST/collateral
  * @param {bigint} sequenceNumber
  * @returns {string} lexically sortable string in which highest price is first,
- *    ties will be broken by sequenceNumber of offer
+ *   ties will be broken by sequenceNumber of offer
  */
 export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
   mustMatch(offerPrice, RatioShape);
@@ -107,7 +108,7 @@ export const toBidScalingComparator = rate => {
  * @param {Ratio} rate discount/markup rate expressed as a ratio IST/IST
  * @param {bigint} sequenceNumber
  * @returns {string} lexically sortable string in which highest price is first,
- *    ties will be broken by sequenceNumber of offer
+ *   ties will be broken by sequenceNumber of offer
  */
 export const toScaledRateOfferKey = (rate, sequenceNumber) => {
   mustMatch(rate, RatioShape);
