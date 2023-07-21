@@ -293,13 +293,13 @@ async function testExportImport(
     ],
   ]);
 
-  expectedArtifactNames = Array.from(expectedArtifactNames);
-  expectedArtifactNames.push(`bundle.${bundleIDA}`);
-  expectedArtifactNames.push(`bundle.${bundleIDB}`);
+  expectedArtifactNames = new Set(expectedArtifactNames);
+  expectedArtifactNames.add(`bundle.${bundleIDA}`);
+  expectedArtifactNames.add(`bundle.${bundleIDB}`);
 
-  const artifactNames = [];
+  const artifactNames = new Set();
   for await (const name of exporter.getArtifactNames()) {
-    artifactNames.push(name);
+    artifactNames.add(name);
   }
   t.deepEqual(artifactNames, expectedArtifactNames);
 
@@ -313,7 +313,7 @@ async function testExportImport(
     });
   } catch (e) {
     if (failureMode === 'transcript') {
-      t.is(e.message, 'artifact "transcript.vatA.0.3" is not available');
+      t.is(e.message, 'artifact "transcript.vatA.0.3" is not complete');
       return;
     } else if (failureMode === 'snapshot') {
       t.is(e.message, 'artifact "snapshot.vatA.2" is not available');
@@ -359,6 +359,17 @@ const expectedDebugArtifacts = [
   'transcript.vatB.5.10',
 ];
 
+const expectedPrunedDebugArtifacts = [
+  // 'debug' export on 'current' store
+  'snapshot.vatA.8',
+  'snapshot.vatB.4',
+  'transcript.vatA.0.3',
+  'transcript.vatA.3.9',
+  'transcript.vatA.9.12',
+  'transcript.vatB.0.5',
+  'transcript.vatB.5.10',
+];
+
 const C = 'current';
 const A = 'archival';
 const D = 'debug';
@@ -384,13 +395,27 @@ test('export and import data for state sync - current->archival->debug', async t
 });
 
 test('export and import data for state sync - current->debug->current', async t => {
-  await testExportImport(t, C, D, C, 'none', expectedDebugArtifacts);
+  await testExportImport(t, C, D, C, 'none', expectedPrunedDebugArtifacts);
 });
 test('export and import data for state sync - current->debug->archival', async t => {
-  await testExportImport(t, C, D, A, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(
+    t,
+    C,
+    D,
+    A,
+    'transcript',
+    expectedPrunedDebugArtifacts,
+  );
 });
 test('export and import data for state sync - current->debug->debug', async t => {
-  await testExportImport(t, C, D, D, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(
+    t,
+    C,
+    D,
+    D,
+    'transcript',
+    expectedPrunedDebugArtifacts,
+  );
 });
 
 // ------------------------------------------------------------
@@ -416,13 +441,13 @@ test('export and import data for state sync - archival->archival->debug', async 
 });
 
 test('export and import data for state sync - archival->debug->current', async t => {
-  await testExportImport(t, A, D, C, 'none', expectedDebugArtifacts);
+  await testExportImport(t, A, D, C, 'none', expectedPrunedDebugArtifacts);
 });
 test('export and import data for state sync - archival->debug->archival', async t => {
-  await testExportImport(t, A, D, A, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(t, A, D, A, 'none', expectedPrunedDebugArtifacts);
 });
 test('export and import data for state sync - archival->debug->debug', async t => {
-  await testExportImport(t, A, D, D, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(t, A, D, D, 'none', expectedPrunedDebugArtifacts);
 });
 
 // ------------------------------------------------------------

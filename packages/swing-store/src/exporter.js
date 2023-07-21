@@ -140,7 +140,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
     const [type] = name.split('.', 1);
 
     if (type === 'snapshot') {
-      return snapStore.exportSnapshot(name, exportHistoricalSnapshots);
+      return snapStore.exportSnapshot(name);
     } else if (type === 'transcript') {
       return transcriptStore.exportSpan(name, exportHistoricalTranscripts);
     } else if (type === 'bundle') {

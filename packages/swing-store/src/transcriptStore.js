@@ -6,8 +6,11 @@ import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform
 import { createSHA256 } from './hasher.js';
 
 /**
- * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
- *
+ * @template T
+ *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ */
+
+/**
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
  *   rolloverSpan: (vatID: string) => number,
@@ -20,9 +23,11 @@ import { createSHA256 } from './hasher.js';
  *
  * @typedef {{
  *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterableIterator<Uint8Array>
- *   importSpan: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => Promise<void>,
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
+ *   addTranscriptSpanRecord: (metadata: Map) => void,
+ *   populateTranscriptSpan: (name: string, chunkProvider: () => AnyIterableIterator<Uint8Array>, includeHistorical: boolean) => Promise<void>,
+ *   assertComplete: (level: string) => void,
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
  * }} TranscriptStoreInternal
  *
@@ -82,7 +87,7 @@ export function makeTranscriptStore(
   //
   // The transcriptItems associated with historical spans may or may not exist,
   // depending on pruning.  However, the items associated with the current span
-  // must always be present
+  // must always be present.
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptSpans (
@@ -465,8 +470,7 @@ export function makeTranscriptStore(
    *   `transcript.${vatID}.${startPos}.${endPos}`
    *
    * @param {string} name  The name of the transcript artifact to be read
-   * @param {boolean} includeHistorical  If true, allow non-current spans to be fetched
-   *
+   * @param {boolean} includeHistorical
    * @returns {AsyncIterableIterator<Uint8Array>}
    * @yields {Uint8Array}
    */
@@ -516,33 +520,64 @@ export function makeTranscriptStore(
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
   };
 
+  function addTranscriptSpanRecord(metadata) {
+    const { vatID, startPos, endPos, hash, isCurrent, incarnation } = metadata;
+    vatID || Fail`transcript metadata missing vatID: ${metadata}`;
+    startPos !== undefined ||
+      Fail`transcript metadata missing startPos: ${metadata}`;
+    endPos !== undefined ||
+      Fail`transcript metadata missing endPos: ${metadata}`;
+    hash || Fail`transcript metadata missing hash: ${metadata}`;
+    isCurrent !== undefined ||
+      Fail`transcript metadata missing isCurrent: ${metadata}`;
+    incarnation !== undefined ||
+      Fail`transcript metadata missing incarnation: ${metadata}`;
+
+    sqlWriteSpan.run(
+      vatID,
+      startPos,
+      endPos,
+      hash,
+      isCurrent ? 1 : null,
+      incarnation,
+    );
+  }
+
+  const sqlGetSpanMetadataFor = db.prepare(`
+    SELECT hash, isCurrent, incarnation
+      FROM transcriptSpans
+      WHERE vatID = ? AND startPos = ? AND endPos = ?
+  `);
+
   /**
    * Import a transcript span from another store.
    *
    * @param {string} name  Artifact Name of the transcript span
-   * @param {SwingStoreExporter} exporter  Exporter from which to get the span data
-   * @param {object} info  Metadata describing the span
+   * @param {() => AnyIterableIterator<Uint8Array>} chunkProvider  get snapshot bytes
+   * @param {boolean} includeHistorical
    *
    * @returns {Promise<void>}
    */
-  async function importSpan(name, exporter, info) {
+  async function populateTranscriptSpan(
+    name,
+    chunkProvider,
+    includeHistorical,
+  ) {
     const parts = name.split('.');
     const [type, vatID, rawStartPos, rawEndPos] = parts;
     // prettier-ignore
     parts.length === 4 && type === 'transcript' ||
       Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw '${q(name)}'`;
-    // prettier-ignore
-    info.vatID === vatID ||
-      Fail`artifact name says vatID ${q(vatID)}, metadata says ${q(info.vatID)}`;
     const startPos = Number(rawStartPos);
-    // prettier-ignore
-    info.startPos === startPos ||
-      Fail`artifact name says startPos ${q(startPos)}, metadata says ${q(info.startPos)}`;
     const endPos = Number(rawEndPos);
-    // prettier-ignore
-    info.endPos === endPos ||
-      Fail`artifact name says endPos ${q(endPos)}, metadata says ${q(info.endPos)}`;
-    const artifactChunks = exporter.getArtifact(name);
+
+    const metadata = sqlGetSpanMetadataFor.get(vatID, startPos, endPos);
+    metadata || Fail`no metadata for transcript span ${name}`;
+    if (!metadata.isCurrent && !includeHistorical) {
+      return; // ignore old spans
+    }
+
+    const artifactChunks = await chunkProvider();
     const inStream = Readable.from(artifactChunks);
     const lineTransform = new BufferLineTransform();
     const lineStream = inStream.pipe(lineTransform).setEncoding('utf8');
@@ -550,21 +585,44 @@ export function makeTranscriptStore(
     let pos = startPos;
     for await (const line of lineStream) {
       const item = line.trimEnd();
-      sqlAddItem.run(vatID, item, pos, info.incarnation);
+      sqlAddItem.run(vatID, item, pos, metadata.incarnation);
       hash = updateSpanHash(hash, item);
       pos += 1;
     }
-    pos === endPos || Fail`artifact ${name} is not available`;
-    info.hash === hash ||
-      Fail`artifact ${name} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
-    sqlWriteSpan.run(
-      info.vatID,
-      info.startPos,
-      info.endPos,
-      info.hash,
-      info.isCurrent ? 1 : null,
-      info.incarnation,
-    );
+    pos === endPos || Fail`artifact ${name} is not complete`;
+
+    // validate against the previously-established metadata
+
+    // prettier-ignore
+    metadata.hash === hash ||
+      Fail`artifact ${name} hash is ${q(hash)}, metadata says ${q(metadata.hash)}`;
+
+    // If that passes, the not-yet-committed data is good. If it
+    // fails, the thrown error will flunk the import and inhibit a
+    // commit. So we're done.
+  }
+
+  const sqlCountPopulatedSpanItems = db.prepare(`
+    SELECT COUNT(*) FROM transcriptItems
+      WHERE vatID = ? AND incarnation = ? AND position >= ? AND position < ?
+  `);
+  sqlCountPopulatedSpanItems.pluck();
+
+  function assertComplete(level) {
+    assert.equal(level, 'operational'); // for now
+    // every 'isCurrent' transcript span must have all items
+    for (const rec of sqlGetCurrentSpanMetadata.iterate()) {
+      const { vatID, startPos, endPos, incarnation } = rec;
+      const count = sqlCountPopulatedSpanItems.get(
+        vatID,
+        incarnation,
+        startPos,
+        endPos,
+      );
+      if (count !== endPos - startPos) {
+        throw Fail`incomplete current transcript span: ${count} items, ${rec}`;
+      }
+    }
   }
 
   return harden({
@@ -577,9 +635,12 @@ export function makeTranscriptStore(
     deleteVatTranscripts,
 
     exportSpan,
-    importSpan,
     getExportRecords,
     getArtifactNames,
+
+    addTranscriptSpanRecord,
+    populateTranscriptSpan,
+    assertComplete,
 
     dumpTranscripts,
     readFullVatTranscript,
