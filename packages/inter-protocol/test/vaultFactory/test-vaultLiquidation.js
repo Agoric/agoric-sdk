@@ -3171,7 +3171,7 @@ test('Bug 7796 missing lockedPrice', async t => {
     lockedQuote: makeRatioFromAmounts(
       aeth.make(1_000_000n),
       run.make(9_990_000n),
-    )
+    ),
   });
   await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: totalDebt },
