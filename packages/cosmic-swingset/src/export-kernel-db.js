@@ -353,7 +353,7 @@ export const main = async (
     {
       fs,
       pathResolve,
-      log: verbose ? console.log : null,
+      log: verbose ? console.warn : null,
     },
   );
 
