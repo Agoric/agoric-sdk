@@ -584,7 +584,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           );
         });
 
-        console.info(
+        console.warn(
           'Initiating SwingSet state snapshot at block height',
           blockHeight,
           'with options',
