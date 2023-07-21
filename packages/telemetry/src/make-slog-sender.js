@@ -6,6 +6,7 @@ import { serializeSlogObj } from './serialize-slog-obj.js';
 export const DEFAULT_SLOGSENDER_MODULE =
   '@agoric/telemetry/src/flight-recorder.js';
 export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
+export const DATADOG_SENDER_MODULE = '@agoric/telemetry/src/slog-datadog.js';
 
 export const DEFAULT_SLOGSENDER_AGENT = 'self';
 
@@ -41,6 +42,7 @@ export const makeSlogSender = async (opts = {}) => {
   const slogSenderModules = [
     ...new Set([
       ...(agentEnv.SLOGFILE ? [SLOGFILE_SENDER_MODULE] : []),
+      ...(agentEnv.DATADOG_LOG_FILE ? [DATADOG_SENDER_MODULE] : []),
       ...SLOGSENDER.split(',')
         .filter(Boolean)
         .map(modulePath =>
