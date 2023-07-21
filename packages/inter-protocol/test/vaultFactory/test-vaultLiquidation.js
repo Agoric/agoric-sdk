@@ -426,7 +426,7 @@ test('price drop', async t => {
   t.is(notification.value.vaultState, Phase.ACTIVE);
   t.deepEqual((await notification.value).debtSnapshot, {
     debt: AmountMath.add(wantMinted, fee),
-    stabilityFee: makeRatio(100n, run.brand),
+    interest: makeRatio(100n, run.brand),
   });
   const { Minted: lentAmount } = await E(vaultSeat).getFinalAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, wantMinted), 'received 470 Minted');
@@ -2633,7 +2633,7 @@ test('refund to one of two loans', async t => {
   t.is(aliceNotification.value.vaultState, Phase.ACTIVE);
   t.deepEqual((await aliceNotification.value).debtSnapshot, {
     debt: AmountMath.add(aliceWantMinted, aliceFee),
-    stabilityFee: makeRatio(100n, run.brand),
+    interest: makeRatio(100n, run.brand),
   });
   const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, aliceWantMinted));

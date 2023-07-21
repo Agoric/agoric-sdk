@@ -498,7 +498,7 @@ test('interest on multiple vaults', async t => {
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  // 160n is initial fee. stabilityFee is ~3n/week. compounding is in the noise.
+  // 160n is initial fee. interest is ~3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
@@ -509,7 +509,7 @@ test('interest on multiple vaults', async t => {
     run.make(3200n + bobAddedDebt),
   );
 
-  // 236 is the initial fee. stabilityFee is ~4n/week
+  // 236 is the initial fee. Interest is ~4n/week
   const aliceAddedDebt = 236n + 4n;
   t.deepEqual(
     calculateCurrentDebt(
@@ -523,7 +523,7 @@ test('interest on multiple vaults', async t => {
   // but no change to the snapshot
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(4935n),
-    stabilityFee: makeRatio(100n, run.brand, 100n),
+    interest: makeRatio(100n, run.brand, 100n),
   });
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
@@ -531,7 +531,7 @@ test('interest on multiple vaults', async t => {
   t.is(
     rewardAllocation.Minted.value,
     rewardRunCount,
-    // reward includes 5% fees on two loans plus 1% stabilityFee three times on each
+    // reward includes 5% fees on two loans plus 1% interest three times on each
     `Should be ${rewardRunCount}, was ${rewardAllocation.Minted.value}`,
   );
 
@@ -552,7 +552,7 @@ test('interest on multiple vaults', async t => {
   // Advance another 7 days, past one charging and recording period
   await manualTimer.tickN(8);
 
-  // open a vault when manager's stabilityFee already compounded
+  // open a vault when manager's interest already compounded
   const wantedRun = 1_000n;
   /** @type {UserSeat<VaultKit>} */
   const danVaultSeat = await E(zoe).offer(
@@ -640,7 +640,7 @@ test('adjust balances', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(5250n),
-    stabilityFee: makeRatio(100n, run.brand),
+    interest: makeRatio(100n, run.brand),
   });
 
   // increase collateral 1 ///////////////////////////////////// (give both)
@@ -737,7 +737,7 @@ test('adjust balances', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(5253n),
-    stabilityFee: run.makeRatio(100n),
+    interest: run.makeRatio(100n),
   });
 
   // reduce collateral  ///////////////////////////////////// (want both)
@@ -898,12 +898,12 @@ test('adjust balances - withdraw RUN', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
 });
 
-test('adjust balances after stabilityFee charges', async t => {
+test('adjust balances after interest charges', async t => {
   const OPEN1 = 450n;
   const AMPLE = 100_000n;
   const { aeth, run } = t.context;
 
-  // charge stabilityFee on every tick
+  // charge interest on every tick
   const manualTimer = buildManualTimer(trace, 0n, {
     timeStep: SECONDS_PER_DAY,
   });
@@ -940,7 +940,7 @@ test('adjust balances after stabilityFee charges', async t => {
   );
   const { vault } = await E(vaultSeat).getOfferResult();
 
-  trace('1. Charge stabilityFee');
+  trace('1. Charge interest');
   await manualTimer.tick();
   await manualTimer.tick();
 
@@ -1226,7 +1226,7 @@ test('collect fees from vault', async t => {
     recordingPeriod: SECONDS_PER_WEEK,
   };
 
-  // charge stabilityFee on every tick
+  // charge interest on every tick
   const manualTimer = buildManualTimer(t.log, 0n, {
     timeStep: SECONDS_PER_WEEK,
     eventLoopIteration,
@@ -1529,7 +1529,7 @@ test('debt too small - MinInitialDebt', async t => {
  * allow.
  *
  * Attempts to adjust balances on vaults beyond the debt limit fail. In other
- * words, minting for anything other than charging stabilityFee fails.
+ * words, minting for anything other than charging interest fails.
  */
 test('excessive debt on collateral type - debtLimit', async t => {
   const { zoe, aeth, run } = t.context;
@@ -1825,7 +1825,7 @@ test('manager notifiers, with snapshot', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
 
-  trace('6. Loan stabilityFee');
+  trace('6. Loan interest');
   vaultSeat = await E(services.zoe).offer(
     await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
@@ -1846,9 +1846,9 @@ test('manager notifiers, with snapshot', async t => {
   });
   m.addDebt(DEBT2);
   await manualTimer.tickN(5);
-  const stabilityFeeAccrued = (await E(vault).getCurrentDebt()).value - DEBT1;
-  m.addDebt(stabilityFeeAccrued);
-  t.is(stabilityFeeAccrued, 9n);
+  const interestAccrued = (await E(vault).getCurrentDebt()).value - DEBT1;
+  m.addDebt(interestAccrued);
+  t.is(interestAccrued, 9n);
 
   trace('7. make another loan to trigger a publish');
   vaultSeat = await E(services.zoe).offer(
