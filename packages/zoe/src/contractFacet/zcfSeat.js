@@ -381,7 +381,10 @@ export const createSeatManager = (
               activeZCFSeats.set(seat, allocation);
             }
 
-            E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
+            // we don't wait for the results here. As described in
+            // docs/zoe-zcf.md, The initial allocation to a seat originates with
+            // Zoe, but *all subsequent updates come from ZCF to Zoe*.
+            void E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
           } catch (err) {
             shutdownWithFailure(err);
             throw err;
