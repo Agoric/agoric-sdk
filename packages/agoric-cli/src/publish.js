@@ -70,23 +70,17 @@ const registry = new Registry([
  * @property {string} endoZipBase64Sha512
  */
 
-/**
- * @typedef {EndoZipBase64Bundle} SourceBundle
- */
+/** @typedef {EndoZipBase64Bundle} SourceBundle */
 
-/**
- * @typedef {EndoZipBase64Sha512Bundle} HashBundle
- */
+/** @typedef {EndoZipBase64Sha512Bundle} HashBundle */
 
-/**
- * @typedef {SourceBundle | HashBundle} Bundle
- */
+/** @typedef {SourceBundle | HashBundle} Bundle */
 
 const { details: X, quote: q, Fail } = assert;
 
 /**
  * @template T
- * @param {Array<T>} array
+ * @param {T[]} array
  * @param {number} randomNumber
  * @returns {T}
  */
@@ -216,9 +210,7 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
   return publishBundleHttp;
 };
 
-/**
- * @param {string} address - a domain name, IPv4 address, or URL
- */
+/** @param {string} address - a domain name, IPv4 address, or URL */
 const urlForRpcAddress = address => {
   if (address.includes('://')) {
     return address;
@@ -272,7 +264,7 @@ export const makeCosmosBundlePublisher = ({
       submitter: fromBech32(from.address).data,
     };
 
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
+    /** @type {import('@cosmjs/proto-signing').EncodeObject[]} */
     const encodeObjects = [
       {
         typeUrl: Agoric.proto.swingset.InstallBundle.typeUrl,
@@ -351,12 +343,10 @@ export const makeCosmosBundlePublisher = ({
  * @property {'chain-cosmos-sdk' | 'fake-chain'} type
  * @property {string} chainID
  * @property {string} homeDirectory
- * @property {Array<string>} rpcAddresses
+ * @property {string[]} rpcAddresses
  */
 
-/**
- * @typedef {HttpConnectionSpec | CosmosConnectionSpec} ConnectionSpec
- */
+/** @typedef {HttpConnectionSpec | CosmosConnectionSpec} ConnectionSpec */
 
 /**
  * @callback PublishBundleCosmos
@@ -365,9 +355,7 @@ export const makeCosmosBundlePublisher = ({
  * @returns {Promise<void>}
  */
 
-/**
- * @typedef {ReturnType<typeof makeBundlePublisher>} PublishBundle
- */
+/** @typedef {ReturnType<typeof makeBundlePublisher>} PublishBundle */
 
 /**
  * @param {SourceBundle} bundle

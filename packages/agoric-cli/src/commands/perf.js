@@ -22,9 +22,7 @@ import { networkConfig } from '../lib/rpc.js';
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;
 
-/**
- * @param {import('anylogger').Logger} logger
- */
+/** @param {import('anylogger').Logger} logger */
 export const makePerfCommand = logger => {
   const perf = new Command('perf')
     .description('Performance testing commands')

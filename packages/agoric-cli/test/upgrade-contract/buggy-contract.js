@@ -3,7 +3,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**
  * @param {ZCF} zcf
- * @param {*} _privateArgs
+ * @param {any} _privateArgs
  * @param {MapStore<any, any>} baggage
  */
 export const start = async (zcf, _privateArgs, baggage) => {

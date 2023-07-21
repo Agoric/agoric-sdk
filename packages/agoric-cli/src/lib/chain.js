@@ -37,13 +37,13 @@ harden(normalizeAddressWithOptions);
 /**
  * @param {ReadonlyArray<string>} swingsetArgs
  * @param {import('./rpc').MinimalNetworkConfig & {
- *   from: string,
- *   fees?: string,
- *   dryRun?: boolean,
- *   verbose?: boolean,
- *   keyring?: {home?: string, backend: string}
- *   stdout?: Pick<import('stream').Writable, 'write'>
- *   execFileSync?: typeof import('child_process').execFileSync
+ *   from: string;
+ *   fees?: string;
+ *   dryRun?: boolean;
+ *   verbose?: boolean;
+ *   keyring?: { home?: string; backend: string };
+ *   stdout?: Pick<import('stream').Writable, 'write'>;
+ *   execFileSync?: typeof import('child_process').execFileSync;
  * }} opts
  */
 export const execSwingsetTransaction = (swingsetArgs, opts) => {
@@ -111,12 +111,14 @@ harden(fetchSwingsetParams);
 
 /**
  * @param {import('./rpc').MinimalNetworkConfig & {
- *   execFileSync: typeof import('child_process').execFileSync,
- *   delay: (ms: number) => Promise<void>,
- *   period?: number,
- *   retryMessage?: string,
+ *   execFileSync: typeof import('child_process').execFileSync;
+ *   delay: (ms: number) => Promise<void>;
+ *   period?: number;
+ *   retryMessage?: string;
  * }} opts
- * @returns {<T>(l: (b: { time: string, height: string }) => Promise<T>) => Promise<T>}
+ * @returns {<T>(
+ *   l: (b: { time: string; height: string }) => Promise<T>,
+ * ) => Promise<T>}
  */
 export const pollBlocks = opts => async lookup => {
   const { execFileSync, delay, rpcAddrs, period = 3 * 1000 } = opts;
@@ -151,9 +153,9 @@ export const pollBlocks = opts => async lookup => {
 /**
  * @param {string} txhash
  * @param {import('./rpc').MinimalNetworkConfig & {
- *   execFileSync: typeof import('child_process').execFileSync,
- *   delay: (ms: number) => Promise<void>,
- *   period?: number,
+ *   execFileSync: typeof import('child_process').execFileSync;
+ *   delay: (ms: number) => Promise<void>;
+ *   period?: number;
  * }} opts
  */
 export const pollTx = async (txhash, opts) => {
@@ -176,7 +178,14 @@ export const pollTx = async (txhash, opts) => {
       { stdio: ['ignore', 'pipe', 'ignore'] },
     );
     // XXX this type is defined in a .proto file somewhere
-    /** @type {{ height: string, txhash: string, code: number, timestamp: string }} */
+    /**
+     * @type {{
+     *   height: string;
+     *   txhash: string;
+     *   code: number;
+     *   timestamp: string;
+     * }}
+     */
     const info = JSON.parse(out.toString());
     return info;
   };

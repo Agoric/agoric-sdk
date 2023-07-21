@@ -10,9 +10,7 @@ import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
-/**
- * @param {import('anylogger').Logger} logger
- */
+/** @param {import('anylogger').Logger} logger */
 export const makeVaultsCommand = logger => {
   const vaults = new Command('vaults')
     .description('Vault Factory commands')

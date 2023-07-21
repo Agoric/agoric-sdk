@@ -28,7 +28,11 @@ export const Natural = str => {
  */
 export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
-/** @type {Partial<import('@agoric/vats/tools/board-utils.js').VBankAssetDetail>} */
+/**
+ * @type {Partial<
+ *   import('@agoric/vats/tools/board-utils.js').VBankAssetDetail
+ * >}
+ */
 // eslint-disable-next-line no-unused-vars
 const exampleAsset = {
   brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
@@ -37,7 +41,7 @@ const exampleAsset = {
   proposedName: 'Agoric staking token',
 };
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail} AssetDescriptor */
 
 /**
  * @param {AssetDescriptor[]} assets
@@ -99,9 +103,7 @@ export const purseBalanceTuples = (purses, assets) => {
   return purses.map(b => fmt(asBoardRemote(b.balance)));
 };
 
-/**
- * @param {Record<string, Array<unknown>>} record
- */
+/** @param {Record<string, unknown[]>} record */
 export const fmtRecordOfLines = record => {
   const { stringify } = JSON;
   const groups = Object.entries(record).map(([key, items]) => [
@@ -175,7 +177,9 @@ export const offerStatusTuples = (state, agoricNames) => {
 
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} current
- * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
+ * @param {ReturnType<
+ *   import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer
+ * >['state']} coalesced
  * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {

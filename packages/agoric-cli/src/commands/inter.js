@@ -38,9 +38,9 @@ const bidInvitationShape = harden({
   callPipe: [['makeBidInvitation', M.any()]],
 });
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail} AssetDescriptor */
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction} TryExitOfferAction */
+/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec} BidSpec */
 /** @typedef {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} ScheduleNotification */
 /** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BookDataNotification} BookDataNotification */
 
@@ -85,7 +85,7 @@ const makeFormatters = assets => {
   /**
    * @template T
    * @param {(_: T) => string} f
-   * @returns { (x: T | null | undefined ) => string | undefined }
+   * @returns {(x: T | null | undefined) => string | undefined}
    */
   const maybe = f => x => (x ? f(x) : undefined);
 
@@ -109,7 +109,7 @@ const makeFormatters = assets => {
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
  * @param {import('../lib/wallet.js').AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
- * returns null if offerStatus is not a BidSpec
+ * @returns returns null if offerStatus is not a BidSpec
  */
 const coerceBid = (offerStatus, agoricNames, warn) => {
   const { offerArgs } = offerStatus;
@@ -130,8 +130,9 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
   }
 
   /**
-   * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
-   *        { offerArgs: BidSpec}}
+   * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus & {
+   *   offerArgs: BidSpec;
+   * }}
    */
   // @ts-expect-error dynamic cast
   const bid = offerStatus;
@@ -141,8 +142,9 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
 /**
  * Format amounts etc. in a BidSpec OfferStatus
  *
- * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: BidSpec}} bid
+ * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus & {
+ *   offerArgs: BidSpec;
+ * }} bid
  * @param {import('agoric/src/lib/format.js').AssetDescriptor[]} assets
  */
 export const fmtBid = (bid, assets) => {
@@ -179,14 +181,14 @@ export const fmtBid = (bid, assets) => {
  * Make Inter Protocol liquidation bidding commands.
  *
  * @param {{
- *   env: Partial<Record<string, string>>,
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
- *   now: () => number,
+ *   env: Partial<Record<string, string>>;
+ *   stdout: Pick<import('stream').Writable, 'write'>;
+ *   stderr: Pick<import('stream').Writable, 'write'>;
+ *   now: () => number;
  *   createCommand: // Note: includes access to process.stdout, .stderr, .exit
- *     typeof import('commander').createCommand,
- *   execFileSync: typeof import('child_process').execFileSync,
- *   setTimeout: typeof setTimeout,
+ *   typeof import('commander').createCommand;
+ *   execFileSync: typeof import('child_process').execFileSync;
+ *   setTimeout: typeof setTimeout;
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
  */
@@ -284,13 +286,13 @@ inter auction status
       async (
         /**
          * @type {{
-         *   book: number,
+         *   book: number;
          * }}
          */ opts,
       ) => {
         const { agoricNames, readLatestHead } = await tryMakeUtils();
 
-        /** @type { [ScheduleNotification, BookDataNotification, *] } */
+        /** @type {[ScheduleNotification, BookDataNotification, any]} */
         // @ts-expect-error dynamic cast
         const [schedule, book, { current: params }] = await Promise.all([
           readLatestHead(`published.auction.schedule`),
@@ -335,7 +337,7 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean?} dryRun
+   * @param {boolean | null} dryRun
    */
   const placeBid = async (from, offer, tools, dryRun = false) => {
     const { networkConfig, agoricNames, pollOffer } = tools;
@@ -373,13 +375,13 @@ inter auction status
 
   /**
    * @typedef {{
-   *   give: string,
-   *   maxBuy: string,
-   *   wantMinimum?: string,
-   *   offerId: string,
-   *   from: string,
-   *   generateOnly?: boolean,
-   *   dryRun?: boolean,
+   *   give: string;
+   *   maxBuy: string;
+   *   wantMinimum?: string;
+   *   offerId: string;
+   *   from: string;
+   *   generateOnly?: boolean;
+   *   dryRun?: boolean;
    * }} SharedBidOpts
    */
 
@@ -412,7 +414,7 @@ inter auction status
     .action(
       /**
        * @param {SharedBidOpts & {
-       *   price: number,
+       *   price: number;
        * }} opts
        */
       async ({ generateOnly, dryRun, ...opts }) => {
@@ -453,7 +455,7 @@ inter auction status
     .action(
       /**
        * @param {SharedBidOpts & {
-       *   discount: number,
+       *   discount: number;
        * }} opts
        */
       async ({ generateOnly, ...opts }) => {
@@ -485,8 +487,8 @@ inter auction status
       /**
        * @param {string} id
        * @param {{
-       *   from: string,
-       *   generateOnly?: boolean,
+       *   from: string;
+       *   generateOnly?: boolean;
        * }} opts
        */
       async (id, { from, generateOnly }) => {
@@ -560,8 +562,8 @@ $ inter bid list --from my-acct
     .action(
       /**
        * @param {{
-       *   from: string,
-       *   all?: boolean,
+       *   from: string;
+       *   all?: boolean;
        * }} opts
        */
       async opts => {

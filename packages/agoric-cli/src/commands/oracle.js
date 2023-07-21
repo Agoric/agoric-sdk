@@ -25,10 +25,10 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 /**
  * @param {import('anylogger').Logger} logger
  * @param {{
- *   delay?: (ms: number) => Promise<void>,
- *   execFileSync?: typeof import('child_process').execFileSync,
- *   env?: Record<string, string | undefined>,
- *   stdout?: Pick<import('stream').Writable,'write'>,
+ *   delay?: (ms: number) => Promise<void>;
+ *   execFileSync?: typeof import('child_process').execFileSync;
+ *   env?: Record<string, string | undefined>;
+ *   stdout?: Pick<import('stream').Writable, 'write'>;
  * }} [io]
  */
 export const makeOracleCommand = (logger, io = {}) => {
@@ -168,7 +168,7 @@ export const makeOracleCommand = (logger, io = {}) => {
     Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
 
     for (const [offerId, { value }] of entries) {
-      /** @type {{ description: string, instance: unknown }[]} */
+      /** @type {{ description: string; instance: unknown }[]} */
       const [{ description }] = value;
       if (description === 'oracle invitation') {
         return offerId;
@@ -243,9 +243,9 @@ export const makeOracleCommand = (logger, io = {}) => {
       async (
         /**
          * @type {{
-         *  pair: [brandIn: string, brandOut: string],
-         *  keys: string[],
-         *  price: number,
+         *   pair: [brandIn: string, brandOut: string];
+         *   keys: string[];
+         *   price: number;
          * }}
          */ { pair, keys, price },
       ) => {
