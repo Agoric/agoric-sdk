@@ -113,7 +113,7 @@ func decodeCapdataLegacyValue(
 				if ifaceStr, ok := ifaceVal.(string); ok {
 					iface = &ifaceStr
 				} else if ifaceVal != nil {
-					return nil, fmt.Errorf("invalid iface: %q", ifaceVal)
+					return nil, fmt.Errorf("invalid slot iface: %q", ifaceVal)
 				}
 				return upsertCapdataRemotable(remotables, slotIndex, slots[slotIndex], iface)
 			case "hilbert":
@@ -133,7 +133,7 @@ func decodeCapdataLegacyValue(
 			case "-Infinity":
 				return nil, fmt.Errorf("not implemented: @qclass %q", qclass)
 			default:
-				return nil, fmt.Errorf("invalid @qclass: %q", qclass)
+				return nil, fmt.Errorf("unrecognized @qclass: %q", qclass)
 			}
 		}
 		for k, v := range obj {
