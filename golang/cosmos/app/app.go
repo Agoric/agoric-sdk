@@ -126,6 +126,14 @@ import (
 
 const appName = "agoric"
 
+// FlagSwingStoreExportDir defines the config flag used to specify where a
+// genesis swing-store export is expected. For start from genesis, the default
+// value is config/swing-store in the home directory. For genesis export, the
+// value is always a "swing-store" directory sibling to the exported
+// genesis.json file.
+// TODO: document this flag in config, likely alongside the genesis path
+const FlagSwingStoreExportDir = "swing-store-export-dir"
+
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
@@ -588,6 +596,7 @@ func NewAgoricApp(
 	app.EvidenceKeeper = *evidenceKeeper
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	swingStoreExportDir := cast.ToString(appOpts.Get(FlagSwingStoreExportDir))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -617,7 +626,7 @@ func NewAgoricApp(
 		transferModule,
 		icaModule,
 		vstorage.NewAppModule(app.VstorageKeeper),
-		swingset.NewAppModule(app.SwingSetKeeper, setBootstrapNeeded, app.ensureControllerInited),
+		swingset.NewAppModule(app.SwingSetKeeper, &app.SwingStoreExportsHandler, setBootstrapNeeded, app.ensureControllerInited, swingStoreExportDir),
 		vibcModule,
 		vbankModule,
 		lienModule,

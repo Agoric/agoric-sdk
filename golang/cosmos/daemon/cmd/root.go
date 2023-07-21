@@ -276,10 +276,15 @@ func (ac appCreator) newApp(
 
 const (
 	// FlagExportDir is the command-line flag for the "export" command specifying
-	// where the output of the export should be placed.
+	// where the output of the export should be placed. It contains both the
+	// items names below: the genesis file, and a directory containing the
+	// exported swing-store artifacts
 	FlagExportDir = "export-dir"
 	// ExportedGenesisFileName is the file name used to save the genesis in the export-dir
 	ExportedGenesisFileName = "genesis.json"
+	// ExportedSwingStoreDirectoryName is the directory name used to save the swing-store
+	// export (artifacts only) in the export-dir
+	ExportedSwingStoreDirectoryName = "swing-store"
 )
 
 // extendCosmosExportCommand monkey-patches the "export" command added by
@@ -295,6 +300,8 @@ func extendCosmosExportCommand(cmd *cobra.Command, hasVMController bool) {
 	originalRunE := cmd.RunE
 
 	extendedRunE := func(cmd *cobra.Command, args []string) error {
+		serverCtx := server.GetServerContextFromCmd(cmd)
+
 		exportDir, _ := cmd.Flags().GetString(FlagExportDir)
 		err := os.MkdirAll(exportDir, os.ModePerm)
 		if err != nil {
@@ -302,6 +309,17 @@ func extendCosmosExportCommand(cmd *cobra.Command, hasVMController bool) {
 		}
 
 		genesisPath := filepath.Join(exportDir, ExportedGenesisFileName)
+		swingStoreExportPath := filepath.Join(exportDir, ExportedSwingStoreDirectoryName)
+
+		err = os.MkdirAll(swingStoreExportPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		// We unconditionally set FlagSwingStoreExportDir as for export, it makes
+		// little sense for users to control this location separately, and we don't
+		// want to override any swing-store artifacts that may be associated to the
+		// current genesis.
+		serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 
 		// This will fail is a genesis.json already exists in the export-dir
 		genesisFile, err := os.OpenFile(genesisPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, os.ModePerm)

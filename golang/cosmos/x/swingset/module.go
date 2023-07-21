@@ -80,18 +80,22 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 
 type AppModule struct {
 	AppModuleBasic
-	keeper                 Keeper
-	setBootstrapNeeded     func()
-	ensureControllerInited func(sdk.Context)
+	keeper                   Keeper
+	swingStoreExportsHandler *SwingStoreExportsHandler
+	setBootstrapNeeded       func()
+	ensureControllerInited   func(sdk.Context)
+	swingStoreExportDir      string
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k Keeper, setBootstrapNeeded func(), ensureControllerInited func(sdk.Context)) AppModule {
+func NewAppModule(k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, setBootstrapNeeded func(), ensureControllerInited func(sdk.Context), swingStoreExportDir string) AppModule {
 	am := AppModule{
-		AppModuleBasic:         AppModuleBasic{},
-		keeper:                 k,
-		setBootstrapNeeded:     setBootstrapNeeded,
-		ensureControllerInited: ensureControllerInited,
+		AppModuleBasic:           AppModuleBasic{},
+		keeper:                   k,
+		swingStoreExportsHandler: swingStoreExportsHandler,
+		setBootstrapNeeded:       setBootstrapNeeded,
+		ensureControllerInited:   ensureControllerInited,
+		swingStoreExportDir:      swingStoreExportDir,
 	}
 	return am
 }
@@ -150,6 +154,12 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	return []abci.ValidatorUpdate{}
 }
 
+func (am AppModule) checkSwingStoreExportSetup() {
+	if am.swingStoreExportDir == "" {
+		panic(fmt.Errorf("SwingStore export dir not set"))
+	}
+}
+
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
@@ -161,6 +171,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 }
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
+	am.checkSwingStoreExportSetup()
+	gs := ExportGenesis(ctx, am.keeper, am.swingStoreExportsHandler, am.swingStoreExportDir)
 	return cdc.MustMarshalJSON(gs)
 }
