@@ -18,21 +18,13 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { TimeMath } from '@agoric/time';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-
-import * as processAmbient from 'child_process';
 import {
   boardSlottingMarshaller,
-  makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
-import { makeWalletFactoryDriver, makeZoeDriver } from './drivers.js';
 
 // to retain for ESlint, used by typedef
 E;
-
-// main/production config doesn't have initialPrice, upon which 'open vaults' depends
-const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
 
 const sink = () => {};
 
@@ -231,7 +223,7 @@ export const getNodeTestVaultsConfig = async (
  * @param {Pick<typeof import('node:child_process'), 'execFileSync'>} powers.childProcess
  * @param {typeof import('node:fs/promises')} powers.fs
  */
-const makeProposalExtractor = ({ childProcess, fs }) => {
+export const makeProposalExtractor = ({ childProcess, fs }) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
 
@@ -318,6 +310,7 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
   };
   return buildAndExtract;
 };
+harden(makeProposalExtractor);
 
 /**
  * Start a SwingSet kernel to be shared across all tests. By default Ava tests
@@ -500,96 +493,5 @@ export const makeSwingsetTestKit = async (
     storage,
     swingStore,
     timer,
-  };
-};
-
-/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
-
-export const makeTestContext = async t => {
-  console.time('DefaultTestContext');
-  /** @type {SwingsetTestKit} */
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
-    configSpecifier: PLATFORM_CONFIG,
-  });
-
-  const { runUtils, storage } = swingsetTestKit;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
-
-  // Wait for ATOM to make it into agoricNames
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
-
-  await eventLoopIteration();
-
-  // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
-  agoricNamesRemotes.brand.ATOM || Fail`ATOM brand not yet defined`;
-  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
-
-  const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
-    storage,
-    agoricNamesRemotes,
-  );
-  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
-
-  console.timeEnd('DefaultTestContext');
-
-  const buildProposal = makeProposalExtractor({
-    childProcess: processAmbient,
-    fs: fsAmbientPromises,
-  });
-
-  return {
-    ...swingsetTestKit,
-    agoricNamesRemotes,
-    walletFactoryDriver,
-    buildProposal,
-  };
-};
-
-export const makeZoeTestContext = async t => {
-  console.time('DefaultTestContext');
-  /** @type {SwingsetTestKit} */
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
-    configSpecifier: '@agoric/vats/decentral-demo-config.json',
-  });
-
-  const { controller, runUtils } = swingsetTestKit;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
-
-  await eventLoopIteration();
-
-  // We don't need vaults, but this gets the brand, which is checked somewhere
-  // Wait for ATOM to make it into agoricNames
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
-
-  // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
-  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
-
-  const zoeDriver = await makeZoeDriver(swingsetTestKit);
-  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
-
-  console.timeEnd('DefaultTestContext');
-
-  const buildProposal = makeProposalExtractor({
-    childProcess: processAmbient,
-    fs: fsAmbientPromises,
-  });
-
-  return {
-    ...swingsetTestKit,
-    controller,
-    agoricNamesRemotes,
-    zoeDriver,
-    buildProposal,
   };
 };
