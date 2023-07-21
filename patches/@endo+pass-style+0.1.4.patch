@@ -1,0 +1,14 @@
+diff --git a/node_modules/@endo/pass-style/src/passStyleOf.js b/node_modules/@endo/pass-style/src/passStyleOf.js
+index 9774bde..2ae3aac 100644
+--- a/node_modules/@endo/pass-style/src/passStyleOf.js
++++ b/node_modules/@endo/pass-style/src/passStyleOf.js
+@@ -205,7 +205,8 @@ const makePassStyleOf = passStyleHelpers => {
+  * @type {PassStyleOf}
+  */
+ export const passStyleOf =
+-  globalThis?.VatData?.passStyleOf ||
++  // Prefer: globalThis?.VatData?.passStyleOf ||
++  globalThis && globalThis.VatData && globalThis.VatData.passStyleOf ||
+   makePassStyleOf([
+     CopyArrayHelper,
+     CopyRecordHelper,
