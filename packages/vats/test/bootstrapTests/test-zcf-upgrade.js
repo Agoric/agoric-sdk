@@ -2,35 +2,91 @@
 
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import path from 'path';
-import { makeZoeTestContext } from './supports.js';
+import processAmbient from 'child_process';
+import { promises as fsAmbientPromises } from 'fs';
+
+import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeZoeDriver } from './drivers.js';
+import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const ZCF_PROBE_SRC = './zcfProbe.js';
 
+/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
+
 /**
  * @file Bootstrap test of upgrading ZCF to support atomicRearrange internally.
  *
- * The goal is to tell Zoe about a new version of ZCF that it should use
- * when starting new contracts. Zoe wasn't previously configurable for that, so
- * a prerequisite was to upgrade Zoe to a version that could have its ZCF
- * updated. To test that we install a contract that can detect the variation
- * among zcf versions, and run it before, in the middle and after the upgrades.
+ *   The goal is to tell Zoe about a new version of ZCF that it should use when
+ *   starting new contracts. Zoe wasn't previously configurable for that, so a
+ *   prerequisite was to upgrade Zoe to a version that could have its ZCF
+ *   updated. To test that we install a contract that can detect the variation
+ *   among zcf versions, and run it before, in the middle and after the
+ *   upgrades.
  *
- *  0. add a contract that can report on the state of ZCF's support for
- *     different versions of reallocation: staging, helper, and internal.
- *  1. put new Zoe & ZCF bundles on chain
- *  2. upgrade Zoe; return a new facet that supports ZCF update
- *  3. tell Zoe to use new ZCF
- *  4. restart the new contract; verify that the behavior is unchanged.
- *  5. null upgrade the contract; verify that zcf supports internal rearrange.
- *  6. [optional] fully upgrade the contract; verify that it works
+ *   0. add a contract that can report on the state of ZCF's support for different
+ *        versions of reallocation: staging, helper, and internal.
+ *   1. put new Zoe & ZCF bundles on chain
+ *   2. upgrade Zoe; return a new facet that supports ZCF update
+ *   3. tell Zoe to use new ZCF
+ *   4. restart the new contract; verify that the behavior is unchanged.
+ *   5. null upgrade the contract; verify that zcf supports internal rearrange.
+ *   6. [optional] fully upgrade the contract; verify that it works
  */
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeZoeTestContext>>>} */
+export const makeZoeTestContext = async t => {
+  console.time('ZoeTestContext');
+  /** @type {SwingsetTestKit} */
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
+    configSpecifier: '@agoric/vats/decentral-demo-config.json',
+  });
+
+  const { controller, runUtils } = swingsetTestKit;
+  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
+
+  await eventLoopIteration();
+
+  // We don't need vaults, but this gets the brand, which is checked somewhere
+  // Wait for ATOM to make it into agoricNames
+  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+
+  // has to be late enough for agoricNames data to have been published
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
+    swingsetTestKit.storage,
+  );
+  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
+
+  const zoeDriver = await makeZoeDriver(swingsetTestKit);
+  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+
+  console.timeEnd('DefaultTestContext');
+
+  const buildProposal = makeProposalExtractor({
+    childProcess: processAmbient,
+    fs: fsAmbientPromises,
+  });
+
+  return {
+    ...swingsetTestKit,
+    controller,
+    agoricNamesRemotes,
+    zoeDriver,
+    buildProposal,
+  };
+};
+
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeZoeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 test.before(async t => {
@@ -67,7 +123,11 @@ test('run restart-vats proposal', async t => {
   const source = `${dirname}/${ZCF_PROBE_SRC}`;
 
   const zcfProbeBundle = await bundleSource(source);
-  // uncomment and add `import fs from "fs";` to generate a bundle of the prober contract
+  // This test self-sufficiently builds all the artifacts it needs. The test in
+  // .../packages/deployment/upgradeTest/upgradeTest-scripts/agoric-upgrade-11/zoe-upgrade/
+  // needs a bundled copy of ./zcfProbe.js as of the final commit that will be
+  // installed on-chain. Uncomment the following line and add
+  // `import fs from "fs";` to generate a bundle of the contract.
   // fs.writeFileSync('bundles/prober-contract-bundle.json', JSON.stringify(zcfProbeBundle));
 
   const brandRecord = await zoeDriver.instantiateProbeContract(zcfProbeBundle);

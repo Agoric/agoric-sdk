@@ -1,12 +1,69 @@
 // @ts-check
 /** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+
+import processAmbient from 'child_process';
+import { promises as fsAmbientPromises } from 'fs';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeTestContext } from './supports.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeWalletFactoryDriver } from './drivers.js';
+import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
+
+const { Fail } = assert;
 
 /** @file Bootstrap test of restarting (almost) all vats */
 
+// main/production config doesn't have initialPrice, upon which 'open vaults' depends
+const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
+/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
+
+export const makeTestContext = async t => {
+  console.time('DefaultTestContext');
+  /** @type {SwingsetTestKit} */
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+    configSpecifier: PLATFORM_CONFIG,
+  });
+
+  const { runUtils, storage } = swingsetTestKit;
+  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
+
+  // Wait for ATOM to make it into agoricNames
+  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+
+  await eventLoopIteration();
+
+  // has to be late enough for agoricNames data to have been published
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
+    swingsetTestKit.storage,
+  );
+  agoricNamesRemotes.brand.ATOM || Fail`ATOM brand not yet defined`;
+  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
+
+  const walletFactoryDriver = await makeWalletFactoryDriver(
+    runUtils,
+    storage,
+    agoricNamesRemotes,
+  );
+  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+
+  console.timeEnd('DefaultTestContext');
+
+  const buildProposal = makeProposalExtractor({
+    childProcess: processAmbient,
+    fs: fsAmbientPromises,
+  });
+
+  return {
+    ...swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    buildProposal,
+  };
+};
 /**
  * @type {import('ava').TestFn<
  *   Awaited<ReturnType<typeof makeTestContext>>
