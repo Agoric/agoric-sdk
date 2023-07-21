@@ -190,7 +190,9 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
       delete(key) {
         const { records } = this.state;
         void deleteNodeIfPresent(key);
-        bidDataKits.delete(key);
+        if (bidDataKits.has(key)) {
+          bidDataKits.delete(key);
+        }
         records.delete(key);
       },
       updateReceived(key, sold) {
@@ -209,11 +211,7 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
         for (const [key, { seat }] of records.entries()) {
           if (!seat.hasExited()) {
             seat.exit();
-            if (bidDataKits.has(key)) {
-              bidDataKits.delete(key);
-            }
-            records.delete(key);
-            void deleteNodeIfPresent(key);
+            this.self.delete(key);
           }
         }
       },
@@ -338,7 +336,9 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
       delete(key) {
         const { records } = this.state;
         void deleteNodeIfPresent(key);
-        bidDataKits.delete(key);
+        if (bidDataKits.has(key)) {
+          bidDataKits.delete(key);
+        }
         records.delete(key);
       },
       updateReceived(key, sold) {
@@ -357,11 +357,7 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
         for (const [key, { seat }] of records.entries()) {
           if (!seat.hasExited()) {
             seat.exit();
-            if (bidDataKits.has(key)) {
-              bidDataKits.delete(key);
-            }
-            void deleteNodeIfPresent(key);
-            records.delete(key);
+            this.self.delete(key);
           }
         }
       },
