@@ -119,8 +119,8 @@
 
 /**
  * @typedef {object} DebtStatus
- * @property {Timestamp} latestStabilityFeeUpdate
- * @property {NatValue} interest interest accrued since latestStabilityFeeUpdate
+ * @property {Timestamp} latestInterestUpdate
+ * @property {NatValue} interest interest accrued since latestInterestUpdate
  * @property {NatValue} newDebt total including principal and interest
  */
 

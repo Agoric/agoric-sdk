@@ -149,8 +149,8 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {{
- *   compoundedStabilityFee: Ratio;
- *   latestStabilityFeeUpdate: Timestamp;
+ *   compoundedInterest: Ratio;
+ *   latestInterestUpdate: Timestamp;
  *   numLiquidationsCompleted: number;
  *   numLiquidationsAborted: number;
  *   totalCollateral: Amount<'nat'>;
@@ -242,8 +242,8 @@ export const prepareVaultManagerKit = (
     return harden({
       ...params,
       ...immutable,
-      compoundedStabilityFee: makeRatio(100n, debtBrand), // starts at 1.0, no interest
-      latestStabilityFeeUpdate: startTimeStamp,
+      compoundedInterest: makeRatio(100n, debtBrand), // starts at 1.0, no interest
+      latestInterestUpdate: startTimeStamp,
       numLiquidationsCompleted: 0,
       numLiquidationsAborted: 0,
       totalCollateral: zeroCollateral,
@@ -267,7 +267,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
-        getCompoundedStabilityFee: M.call().returns(RatioShape),
+        getCompoundedInterest: M.call().returns(RatioShape),
       }),
       helper: M.interface(
         'helper',
@@ -288,7 +288,7 @@ export const prepareVaultManagerKit = (
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
-        getCompoundedStabilityFee: M.call().returns(RatioShape),
+        getCompoundedInterest: M.call().returns(RatioShape),
         scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
@@ -331,8 +331,8 @@ export const prepareVaultManagerKit = (
           const ephemera = collateralEphemera(this.state.collateralBrand);
           return ephemera.storedQuotesNotifier;
         },
-        getCompoundedStabilityFee() {
-          return this.state.compoundedStabilityFee;
+        getCompoundedInterest() {
+          return this.state.compoundedInterest;
         },
         getPublicTopics() {
           const { assetTopicKit, metricsTopicKit } = this.state;
@@ -450,15 +450,15 @@ export const prepareVaultManagerKit = (
                 .getRecordingPeriod(),
             },
             {
-              latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
-              compoundedStabilityFee: state.compoundedStabilityFee,
+              latestInterestUpdate: state.latestInterestUpdate,
+              compoundedInterest: state.compoundedInterest,
               totalDebt: state.totalDebt,
             },
             updateTime,
           );
 
-          state.compoundedStabilityFee = changes.compoundedStabilityFee;
-          state.latestStabilityFeeUpdate = changes.latestStabilityFeeUpdate;
+          state.compoundedInterest = changes.compoundedInterest;
+          state.latestInterestUpdate = changes.latestInterestUpdate;
           state.totalDebt = changes.totalDebt;
 
           return facets.helper.assetNotify();
@@ -853,8 +853,8 @@ export const prepareVaultManagerKit = (
           return `${descriptionScope}: ${base}`;
         },
         /** coefficient on existing debt to calculate new debt */
-        getCompoundedStabilityFee() {
-          return this.state.compoundedStabilityFee;
+        getCompoundedInterest() {
+          return this.state.compoundedInterest;
         },
         /**
          * Called by a vault when its balances change.
@@ -1060,7 +1060,7 @@ export const prepareVaultManagerKit = (
           const { self, helper } = facets;
           const {
             collateralBrand,
-            compoundedStabilityFee,
+            compoundedInterest,
             debtBrand,
             liquidatingVaults,
             lockedQuote,
@@ -1089,7 +1089,7 @@ export const prepareVaultManagerKit = (
               zcf,
               {
                 quote: lockedQuote,
-                interest: compoundedStabilityFee,
+                interest: compoundedInterest,
                 margin: liqMargin,
               },
               prioritizedVaults,

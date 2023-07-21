@@ -503,8 +503,8 @@ test('interest on multiple vaults', async t => {
   t.deepEqual(
     calculateCurrentDebt(
       bobUpdate.value.debtSnapshot.debt,
-      bobUpdate.value.debtSnapshot.stabilityFee,
-      assetUpdate.value.compoundedStabilityFee,
+      bobUpdate.value.debtSnapshot.interest,
+      assetUpdate.value.compoundedInterest,
     ),
     run.make(3200n + bobAddedDebt),
   );
@@ -514,8 +514,8 @@ test('interest on multiple vaults', async t => {
   t.deepEqual(
     calculateCurrentDebt(
       aliceUpdate.value.debtSnapshot.debt,
-      aliceUpdate.value.debtSnapshot.stabilityFee,
-      assetUpdate.value.compoundedStabilityFee,
+      aliceUpdate.value.debtSnapshot.interest,
+      assetUpdate.value.compoundedInterest,
     ),
     run.make(4700n + aliceAddedDebt),
     `should have collected ${aliceAddedDebt}`,
@@ -1031,7 +1031,7 @@ test('transfer vault', async t => {
     customDetails: {
       debtSnapshot: {
         debt: debtAmount,
-        stabilityFee: aliceFinish.value.debtSnapshot.stabilityFee,
+        interest: aliceFinish.value.debtSnapshot.interest,
       },
       locked: collateralAmount,
       vaultState: 'active',

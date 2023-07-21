@@ -56,8 +56,8 @@ export const makeInterestCalculator = (
    * @type {Calculate}
    */
   const calculate = (debtStatus, currentTime) => {
-    const { newDebt, latestStabilityFeeUpdate } = debtStatus;
-    let newRecent = latestStabilityFeeUpdate;
+    const { newDebt, latestInterestUpdate } = debtStatus;
+    let newRecent = latestInterestUpdate;
     let growingInterest = debtStatus.interest;
     let growingDebt = newDebt;
     while (
@@ -77,7 +77,7 @@ export const makeInterestCalculator = (
       growingDebt += newInterest;
     }
     return {
-      latestStabilityFeeUpdate: newRecent,
+      latestInterestUpdate: newRecent,
       interest: growingInterest,
       newDebt: growingDebt,
     };
@@ -92,9 +92,9 @@ export const makeInterestCalculator = (
    * @type {Calculate}
    */
   const calculateReportingPeriod = (debtStatus, currentTime) => {
-    const { latestStabilityFeeUpdate } = debtStatus;
+    const { latestInterestUpdate } = debtStatus;
     const overshoot = TimeMath.modRelRel(
-      TimeMath.subtractAbsAbs(currentTime, latestStabilityFeeUpdate),
+      TimeMath.subtractAbsAbs(currentTime, latestInterestUpdate),
       recordingPeriod,
     );
     return calculate(
@@ -110,20 +110,20 @@ export const makeInterestCalculator = (
 };
 
 /**
- * compoundedStabilityFee *= (new debt) / (prior total debt)
+ * compoundedInterest *= (new debt) / (prior total debt)
  *
- * @param {Ratio} priorCompoundedStabilityFee
+ * @param {Ratio} priorCompoundedInterest
  * @param {NatValue} priorDebt
  * @param {NatValue} newDebt
  */
-export const calculateCompoundedStabilityFee = (
-  priorCompoundedStabilityFee,
+export const calculateCompoundedInterest = (
+  priorCompoundedInterest,
   priorDebt,
   newDebt,
 ) => {
-  const brand = priorCompoundedStabilityFee.numerator.brand;
+  const brand = priorCompoundedInterest.numerator.brand;
   const compounded = multiplyRatios(
-    priorCompoundedStabilityFee,
+    priorCompoundedInterest,
     makeRatio(newDebt, brand, priorDebt, brand),
   );
   return quantize(compounded, COMPOUNDED_INTEREST_DENOMINATOR);
@@ -143,8 +143,7 @@ const validatedBrand = (mint, debt) => {
 };
 
 /**
- * Charge interest accrued between `latestStabilityFeeUpdate` and
- * `accruedUntil`.
+ * Charge interest accrued between `latestInterestUpdate` and `accruedUntil`.
  *
  * @param {{
  *   mint: ZCFMint<'nat'>;
@@ -158,14 +157,14 @@ const validatedBrand = (mint, debt) => {
  *   recordingPeriod: RelativeTime;
  * }} params
  * @param {{
- *   latestStabilityFeeUpdate: Timestamp;
- *   compoundedStabilityFee: Ratio;
+ *   latestInterestUpdate: Timestamp;
+ *   compoundedInterest: Ratio;
  *   totalDebt: Amount<'nat'>;
  * }} prior
  * @param {Timestamp} accruedUntil
  * @returns {{
- *   compoundedStabilityFee: Ratio;
- *   latestStabilityFeeUpdate: Timestamp;
+ *   compoundedInterest: Ratio;
+ *   latestInterestUpdate: Timestamp;
  *   totalDebt: Amount<'nat'>;
  * }}
  */
@@ -181,7 +180,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   // calculate delta of accrued debt
   const debtStatus = interestCalculator.calculateReportingPeriod(
     {
-      latestStabilityFeeUpdate: prior.latestStabilityFeeUpdate,
+      latestInterestUpdate: prior.latestInterestUpdate,
       newDebt: prior.totalDebt.value,
       interest: 0n, // XXX this is always zero, doesn't need to be an option
     },
@@ -192,8 +191,8 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   // done if none
   if (interestAccrued === 0n) {
     return {
-      compoundedStabilityFee: prior.compoundedStabilityFee,
-      latestStabilityFeeUpdate: debtStatus.latestStabilityFeeUpdate,
+      compoundedInterest: prior.compoundedInterest,
+      latestInterestUpdate: debtStatus.latestInterestUpdate,
       totalDebt: prior.totalDebt,
     };
   }
@@ -203,8 +202,8 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   // testing with small numbers there's 5 digits of precision, and with large
   // numbers the ratios tend towards ample precision.
   // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
-  const compoundedStabilityFee = calculateCompoundedStabilityFee(
-    prior.compoundedStabilityFee,
+  const compoundedInterest = calculateCompoundedInterest(
+    prior.compoundedInterest,
     prior.totalDebt.value,
     debtStatus.newDebt,
   );
@@ -225,8 +224,8 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   );
 
   return {
-    compoundedStabilityFee,
-    latestStabilityFeeUpdate: debtStatus.latestStabilityFeeUpdate,
+    compoundedInterest,
+    latestInterestUpdate: debtStatus.latestInterestUpdate,
     totalDebt,
   };
 };
