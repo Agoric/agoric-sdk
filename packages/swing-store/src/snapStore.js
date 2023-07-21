@@ -105,6 +105,12 @@ export function makeSnapStore(
   function deleteAllUnusedSnapshots() {
     ensureTxn();
     sqlDeleteAllUnusedSnapshots.run();
+
+    // NOTE: this is more than pruning the snapshot data, it deletes
+    // the metadata/hash as well, making it impossible to safely
+    // repopulate the snapshot data from an untrusted source. We need
+    // to replace this with a method that merely nulls out the
+    // 'compressedSnapshot' field.
   }
 
   function snapshotArtifactName(rec) {
