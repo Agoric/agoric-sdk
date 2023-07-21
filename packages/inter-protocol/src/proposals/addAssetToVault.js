@@ -212,7 +212,7 @@ export const registerScaledPriceAuthority = async (
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  * @param {bigint | number | string} config.options.debtLimitValue
- * @param {bigint} config.options.stabilityFeeValue
+ * @param {bigint} config.options.interestRateValue
  */
 export const addAssetToVault = async (
   {
@@ -228,7 +228,7 @@ export const addAssetToVault = async (
       debtLimitValue = 1_000n * 1_000_000n,
       // Default to a safe value. Production will likely set this through governance.
       // Allow setting through bootstrap to simplify testing.
-      stabilityFeeValue = 1n,
+      interestRateValue = 1n,
       interchainAssetOptions,
     },
   },
@@ -250,7 +250,7 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, BigInt(debtLimitValue)),
-    stabilityFee: makeRatio(stabilityFeeValue, stable),
+    interestRate: makeRatio(interestRateValue, stable),
     // The rest of these we use safe defaults.
     // In production they will be governed by the Econ Committee.
     // Product deployments are also expected to have a low debtLimitValue at the outset,
@@ -268,7 +268,7 @@ export const getManifestForAddAssetToVault = (
   { restoreRef },
   {
     debtLimitValue,
-    stabilityFeeValue,
+    interestRateValue,
     interchainAssetOptions,
     scaledPriceAuthorityRef,
   },
@@ -341,7 +341,7 @@ export const getManifestForAddAssetToVault = (
     options: {
       debtLimitValue,
       interchainAssetOptions,
-      stabilityFeeValue,
+      interestRateValue,
     },
   };
 };

@@ -106,16 +106,16 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {{
- *   compoundedStabilityFee: Ratio;
- *   stabilityFee: Ratio;
- *   latestStabilityFeeUpdate: Timestamp;
+ *   compoundedInterest: Ratio;
+ *   interestRate: Ratio;
+ *   latestInterestUpdate: Timestamp;
  * }} AssetState
  *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
  *   getRecordingPeriod: () => RelativeTime;
  *   getDebtLimit: () => Amount<'nat'>;
- *   getStabilityFee: () => Ratio;
+ *   getInterestRate: () => Ratio;
  *   getLiquidationPadding: () => Ratio;
  *   getLiquidationMargin: () => Ratio;
  *   getLiquidationPenalty: () => Ratio;
@@ -427,9 +427,9 @@ export const prepareVaultManagerKit = (
             updateTime,
           });
 
-          const stabilityFee = factoryPowers
+          const interestRate = factoryPowers
             .getGovernedParams(collateralBrand)
-            .getStabilityFee();
+            .getInterestRate();
 
           // Update state with the results of charging interest
 
@@ -441,7 +441,7 @@ export const prepareVaultManagerKit = (
               seatAllocationKeyword: 'Minted',
             },
             {
-              stabilityFee,
+              interestRate,
               chargingPeriod: factoryPowers
                 .getGovernedParams(collateralBrand)
                 .getChargingPeriod(),
@@ -466,14 +466,14 @@ export const prepareVaultManagerKit = (
         assetNotify() {
           const { state } = this;
           const { collateralBrand, assetTopicKit } = state;
-          const stabilityFee = factoryPowers
+          const interestRate = factoryPowers
             .getGovernedParams(collateralBrand)
-            .getStabilityFee();
+            .getInterestRate();
           /** @type {AssetState} */
           const payload = harden({
-            compoundedStabilityFee: state.compoundedStabilityFee,
-            stabilityFee,
-            latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
+            compoundedInterest: state.compoundedInterest,
+            interestRate,
+            latestInterestUpdate: state.latestInterestUpdate,
           });
           return assetTopicKit.recorder.write(payload);
         },
@@ -1174,11 +1174,11 @@ export const prepareVaultManagerKit = (
         helper.start();
         void state.assetTopicKit.recorder.write(
           harden({
-            compoundedStabilityFee: state.compoundedStabilityFee,
-            stabilityFee: factoryPowers
+            compoundedInterest: state.compoundedInterest,
+            interestRate: factoryPowers
               .getGovernedParams(state.collateralBrand)
-              .getStabilityFee(),
-            latestStabilityFeeUpdate: state.latestStabilityFeeUpdate,
+              .getInterestRate(),
+            latestInterestUpdate: state.latestInterestUpdate,
           }),
         );
 

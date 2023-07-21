@@ -21,7 +21,7 @@ export const DEBT_LIMIT_KEY = 'DebtLimit';
 export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const LIQUIDATION_PADDING_KEY = 'LiquidationPadding';
 export const LIQUIDATION_PENALTY_KEY = 'LiquidationPenalty';
-export const STABILITY_FEE_KEY = 'StabilityFee';
+export const INTEREST_RATE_KEY = 'InterestRate';
 export const MINT_FEE_KEY = 'MintFee';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
@@ -93,7 +93,7 @@ export const makeVaultParamManager = (
   publisherKit,
   {
     debtLimit,
-    stabilityFee,
+    interestRate,
     liquidationMargin,
     liquidationPadding = zeroRatio(liquidationMargin),
     liquidationPenalty,
@@ -102,7 +102,7 @@ export const makeVaultParamManager = (
 ) =>
   makeParamManagerSync(publisherKit, {
     [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, debtLimit],
-    [STABILITY_FEE_KEY]: [ParamTypes.RATIO, stabilityFee],
+    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, interestRate],
     [LIQUIDATION_PADDING_KEY]: [ParamTypes.RATIO, liquidationPadding],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, liquidationMargin],
     [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
@@ -114,7 +114,7 @@ export const vaultParamPattern = M.splitRecord(
   {
     liquidationMargin: ratioPattern,
     liquidationPenalty: ratioPattern,
-    stabilityFee: ratioPattern,
+    interestRate: ratioPattern,
     mintFee: ratioPattern,
     debtLimit: amountPattern,
   },

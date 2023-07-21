@@ -36,7 +36,7 @@
  *   liquidated to satisfy the debt.
  * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as
  *   proportion of debt
- * @property {Ratio} stabilityFee - annual interest rate charged on debt
+ * @property {Ratio} interestRate - annual interest rate charged on debt
  *   positions
  * @property {Ratio} mintFee - The fee (in BasisPoints) charged when creating or
  *   increasing a debt position.
@@ -87,7 +87,7 @@
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getMintFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getStabilityFee - The annual interest rate on a debt
+ * @property {() => Ratio} getInterestRate - The annual interest rate on a debt
  *   position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the debt position.
