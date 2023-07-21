@@ -125,7 +125,6 @@ harden(BookDataNotificationShape);
 
 /**
  * @typedef {object} ScaledBidData
- *
  * @property {Ratio} bidScaling
  * @property {Amount<'nat'>} wanted
  * @property {boolean} exitAfterBuy
@@ -133,7 +132,6 @@ harden(BookDataNotificationShape);
 
 /**
  * @typedef {object} PricedBidData
- *
  * @property {Ratio} price
  * @property {Amount<'nat'>} wanted
  * @property {boolean} exitAfterBuy
@@ -141,9 +139,8 @@ harden(BookDataNotificationShape);
 
 /**
  * @typedef {object} BidDataNotification
- *
- * @property {Array<ScaledBidData>} scaledBids
- * @property {Array<PricedBidData>} pricedBids
+ * @property {ScaledBidData[]} scaledBids
+ * @property {PricedBidData[]} pricedBids
  */
 export const BidDataNotificationShape = {
   scaledBids: M.arrayOf(M.any()),
@@ -658,7 +655,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { remainingProceedsGoal } = state;
           const { helper } = facets;
           for (const [key, seatRecord] of prioritizedOffers) {
-            const { seat, price: p} = seatRecord;
+            const { seat, price: p } = seatRecord;
             if (
               remainingProceedsGoal &&
               AmountMath.isEmpty(remainingProceedsGoal)

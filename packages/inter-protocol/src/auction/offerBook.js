@@ -33,8 +33,8 @@ const nextSequenceNumber = baggage => {
 /**
  * @typedef {{
  *   seat: ZCFSeat;
- *   originalWant: Amount<'nat'>,
- *   remainingWant: Amount<'nat'>,
+ *   originalWant: Amount<'nat'>;
+ *   remainingWant: Amount<'nat'>;
  *   seqNum: NatValue;
  *   received: Amount<'nat'>;
  *   timestamp: Timestamp;
@@ -64,16 +64,19 @@ const makeGetBidDataRecorder = (bidDataKits, bidDataKitPromises) => {
 
   const deleteNodeIfPresent = key => {
     if (bidDataKitPromises.has(key) || bidDataKits.has(key)) {
-
       // TODO(8063)  delete node rather than erasing the data
       return E(getBidDataRecorder(key)).writeFinal('');
     }
-  }
+  };
 
   return { getBidDataRecorder, deleteNodeIfPresent };
 };
 
-/** @typedef {ReturnType<import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit>} RecorderKit */
+/**
+ * @typedef {ReturnType<
+ *   import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit
+ * >} RecorderKit
+ */
 
 /**
  * Prices in this book are expressed as percentage of the full oracle price
