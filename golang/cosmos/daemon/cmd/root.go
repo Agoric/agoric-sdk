@@ -40,7 +40,8 @@ import (
 type Sender func(needReply bool, str string) (string, error)
 
 var AppName = "agd"
-var OnStartHook func(log.Logger)
+var OnStartHook func(logger log.Logger)
+var OnExportHook func(logger log.Logger)
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -272,6 +273,9 @@ func (ac appCreator) appExport(
 	jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
+	if OnExportHook != nil {
+		OnExportHook(logger)
+	}
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
