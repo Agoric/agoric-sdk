@@ -2,18 +2,20 @@
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
  *
- * The responsibilities include:
- * - opening a new vault backed by the collateral
- * - publishing metrics on the vault economy for that collateral
- * - charging interest on all active vaults
- * - liquidating active vaults that have exceeded the debt ratio
+ *   The responsibilities include:
  *
- * Once a vault is settled (liquidated or closed) it can still be used, traded,
- * etc. but is no longer the concern of the manager. It can't be liquidated,
- * have interest charged, or be counted in the metrics.
+ *   - opening a new vault backed by the collateral
+ *   - publishing metrics on the vault economy for that collateral
+ *   - charging interest on all active vaults
+ *   - liquidating active vaults that have exceeded the debt ratio
  *
- * Undercollateralized vaults can have their assets sent to the auctioneer to be
- * liquidated. If the auction is unsuccessful, the liquidation may be reverted.
+ *   Once a vault is settled (liquidated or closed) it can still be used, traded,
+ *   etc. but is no longer the concern of the manager. It can't be liquidated,
+ *   have interest charged, or be counted in the metrics.
+ *
+ *   Undercollateralized vaults can have their assets sent to the auctioneer to be
+ *   liquidated. If the auction is unsuccessful, the liquidation may be
+ *   reverted.
  */
 import '@agoric/zoe/exported.js';
 
@@ -73,93 +75,102 @@ const trace = makeTracer('VM');
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
  * @typedef {object} MetricsNotification
- *
- * @property {Ratio | null} lockedQuote      priceQuote that will be used for liquidation.
- *                                   Non-null from priceLock time until liquidation has taken place.
- * @property {number}         numActiveVaults          present count of vaults
- * @property {number}         numLiquidatingVaults  present count of liquidating vaults
- * @property {Amount<'nat'>}  totalCollateral    present sum of collateral across all vaults
- * @property {Amount<'nat'>}  totalDebt          present sum of debt across all vaults
- * @property {Amount<'nat'>}  retainedCollateral collateral held as a result of not returning excess refunds
- *                                                to owners of vaults liquidated with shortfalls
- * @property {Amount<'nat'>}  liquidatingCollateral  present sum of collateral in vaults sent for liquidation
- * @property {Amount<'nat'>}  liquidatingDebt        present sum of debt in vaults sent for liquidation
- *
- * @property {Amount<'nat'>}  totalCollateralSold       running sum of collateral sold in liquidation
- * @property {Amount<'nat'>}  totalOverageReceived      running sum of overages, central received greater than debt
- * @property {Amount<'nat'>}  totalProceedsReceived     running sum of minted received from liquidation
- * @property {Amount<'nat'>}  totalShortfallReceived    running sum of shortfalls, minted received less than debt
- * @property {number}         numLiquidationsCompleted  running count of liquidated vaults
- * @property {number}         numLiquidationsAborted    running count of vault liquidations that were reverted.
+ * @property {Ratio | null} lockedQuote priceQuote that will be used for
+ *   liquidation. Non-null from priceLock time until liquidation has taken
+ *   place.
+ * @property {number} numActiveVaults present count of vaults
+ * @property {number} numLiquidatingVaults present count of liquidating vaults
+ * @property {Amount<'nat'>} totalCollateral present sum of collateral across
+ *   all vaults
+ * @property {Amount<'nat'>} totalDebt present sum of debt across all vaults
+ * @property {Amount<'nat'>} retainedCollateral collateral held as a result of
+ *   not returning excess refunds to owners of vaults liquidated with
+ *   shortfalls
+ * @property {Amount<'nat'>} liquidatingCollateral present sum of collateral in
+ *   vaults sent for liquidation
+ * @property {Amount<'nat'>} liquidatingDebt present sum of debt in vaults sent
+ *   for liquidation
+ * @property {Amount<'nat'>} totalCollateralSold running sum of collateral sold
+ *   in liquidation
+ * @property {Amount<'nat'>} totalOverageReceived running sum of overages,
+ *   central received greater than debt
+ * @property {Amount<'nat'>} totalProceedsReceived running sum of minted
+ *   received from liquidation
+ * @property {Amount<'nat'>} totalShortfallReceived running sum of shortfalls,
+ *   minted received less than debt
+ * @property {number} numLiquidationsCompleted running count of liquidated
+ *   vaults
+ * @property {number} numLiquidationsAborted running count of vault liquidations
+ *   that were reverted.
  */
 
 /**
  * @typedef {{
- *  compoundedStabilityFee: Ratio,
- *  stabilityFee: Ratio,
- *  latestStabilityFeeUpdate: Timestamp,
+ *   compoundedStabilityFee: Ratio;
+ *   stabilityFee: Ratio;
+ *   latestStabilityFeeUpdate: Timestamp;
  * }} AssetState
  *
  * @typedef {{
- *  getChargingPeriod: () => RelativeTime,
- *  getRecordingPeriod: () => RelativeTime,
- *  getDebtLimit: () => Amount<'nat'>,
- *  getStabilityFee: () => Ratio,
- *  getLiquidationPadding: () => Ratio,
- *  getLiquidationMargin: () => Ratio,
- *  getLiquidationPenalty: () => Ratio,
- *  getMintFee: () => Ratio,
- *  getMinInitialDebt: () => Amount<'nat'>,
+ *   getChargingPeriod: () => RelativeTime;
+ *   getRecordingPeriod: () => RelativeTime;
+ *   getDebtLimit: () => Amount<'nat'>;
+ *   getStabilityFee: () => Ratio;
+ *   getLiquidationPadding: () => Ratio;
+ *   getLiquidationMargin: () => Ratio;
+ *   getLiquidationPenalty: () => Ratio;
+ *   getMintFee: () => Ratio;
+ *   getMinInitialDebt: () => Amount<'nat'>;
  * }} GovernedParamGetters
  */
 
 /**
  * @typedef {Readonly<{
- *   debtMint: ZCFMint<'nat'>,
- *   collateralBrand: Brand<'nat'>,
- *   collateralUnit: Amount<'nat'>,
- *   descriptionScope: string,
- *   startTimeStamp: Timestamp,
- *   storageNode: StorageNode,
+ *   debtMint: ZCFMint<'nat'>;
+ *   collateralBrand: Brand<'nat'>;
+ *   collateralUnit: Amount<'nat'>;
+ *   descriptionScope: string;
+ *   startTimeStamp: Timestamp;
+ *   storageNode: StorageNode;
  * }>} HeldParams
  */
 
 /**
  * @typedef {{
- *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>,
- *   debtBrand: Brand<'nat'>,
- *   liquidatingVaults: SetStore<Vault>,
- *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>,
- *   poolIncrementSeat: ZCFSeat,
- *   retainedCollateralSeat: ZCFSeat,
- *   unsettledVaults: MapStore<string, Vault>,
+ *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>;
+ *   debtBrand: Brand<'nat'>;
+ *   liquidatingVaults: SetStore<Vault>;
+ *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>;
+ *   poolIncrementSeat: ZCFSeat;
+ *   retainedCollateralSeat: ZCFSeat;
+ *   unsettledVaults: MapStore<string, Vault>;
  * }} ImmutableState
  */
 
 /**
  * @typedef {{
- *   compoundedStabilityFee: Ratio,
- *   latestStabilityFeeUpdate: Timestamp,
- *   numLiquidationsCompleted: number,
- *   numLiquidationsAborted: number,
- *   totalCollateral: Amount<'nat'>,
- *   totalCollateralSold: Amount<'nat'>,
- *   totalDebt: Amount<'nat'>,
- *   liquidatingCollateral: Amount<'nat'>,
- *   liquidatingDebt: Amount<'nat'>,
- *   totalOverageReceived: Amount<'nat'>,
- *   totalProceedsReceived: Amount<'nat'>,
- *   totalShortfallReceived: Amount<'nat'>,
- *   vaultCounter: number,
- *   lockedQuote: PriceQuote | undefined,
+ *   compoundedStabilityFee: Ratio;
+ *   latestStabilityFeeUpdate: Timestamp;
+ *   numLiquidationsCompleted: number;
+ *   numLiquidationsAborted: number;
+ *   totalCollateral: Amount<'nat'>;
+ *   totalCollateralSold: Amount<'nat'>;
+ *   totalDebt: Amount<'nat'>;
+ *   liquidatingCollateral: Amount<'nat'>;
+ *   liquidatingDebt: Amount<'nat'>;
+ *   totalOverageReceived: Amount<'nat'>;
+ *   totalProceedsReceived: Amount<'nat'>;
+ *   totalShortfallReceived: Amount<'nat'>;
+ *   vaultCounter: number;
+ *   lockedQuote: PriceQuote | undefined;
  * }} MutableState
  */
 
 /**
  * @type {(brand: Brand) => {
- * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
- * storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>,
- * storedCollateralQuote: PriceQuote,
+ *   prioritizedVaults: ReturnType<typeof makePrioritizedVaults>;
+ *   storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>;
+ *   storedCollateralQuote: PriceQuote;
  * }}
  */
 // any b/c will be filled after start()
@@ -168,11 +179,11 @@ const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {{
- *   zcf: import('./vaultFactory.js').VaultFactoryZCF,
- *   marshaller: ERef<Marshaller>,
- *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
- *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit,
- *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
+ *   marshaller: ERef<Marshaller>;
+ *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
+ *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit;
+ *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet;
  * }} powers
  */
 export const prepareVaultManagerKit = (
@@ -203,8 +214,9 @@ export const prepareVaultManagerKit = (
       poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
 
       /**
-       * Vaults that have been sent for liquidation. When we get proceeds (or lack
-       * thereof) back from the liquidator, we will allocate them among the vaults.
+       * Vaults that have been sent for liquidation. When we get proceeds (or
+       * lack thereof) back from the liquidator, we will allocate them among the
+       * vaults.
        *
        * @type {SetStore<Vault>}
        */
@@ -339,9 +351,7 @@ export const prepareVaultManagerKit = (
 
       // Some of these could go in closures but are kept on a facet anticipating future durability options.
       helper: {
-        /**
-         * Start non-durable processes (or restart if needed after vat restart)
-         */
+        /** Start non-durable processes (or restart if needed after vat restart) */
         start() {
           const { state, facets } = this;
           trace(state.collateralBrand, 'helper.start()', state.vaultCounter);
@@ -409,9 +419,7 @@ export const prepareVaultManagerKit = (
           });
           trace('helper.start() done');
         },
-        /**
-         * @param {Timestamp} updateTime
-         */
+        /** @param {Timestamp} updateTime */
         async chargeAllVaults(updateTime) {
           const { state, facets } = this;
           const { collateralBrand, debtMint, poolIncrementSeat } = state;
@@ -515,7 +523,6 @@ export const prepareVaultManagerKit = (
           state.liquidatingDebt = AmountMath.add(state.liquidatingDebt, debt);
         },
         /**
-         *
          * @param {Amount<'nat'>} debt
          * @param {Amount<'nat'>} collateral
          * @param {Amount<'nat'>} overage
@@ -598,14 +605,18 @@ export const prepareVaultManagerKit = (
         },
 
         /**
-         * This is designed to tolerate an incomplete plan, in case calculateDistributionPlan encounters
-         * an error during its calculation. We don't have a way to induce such errors in CI so we've
-         * done so manually in dev and verified this function recovers as expected.
+         * This is designed to tolerate an incomplete plan, in case
+         * calculateDistributionPlan encounters an error during its calculation.
+         * We don't have a way to induce such errors in CI so we've done so
+         * manually in dev and verified this function recovers as expected.
          *
          * @param {AmountKeywordRecord} proceeds
          * @param {Amount<'nat'>} totalDebt
          * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
-         * @param {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} vaultData
+         * @param {MapStore<
+         *   Vault,
+         *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
+         * >} vaultData
          * @param {Amount<'nat'>} totalCollateral
          */
         planProceedsDistribution(
@@ -661,13 +672,14 @@ export const prepareVaultManagerKit = (
         },
 
         /**
-         * This is designed to tolerate an incomplete plan, in case calculateDistributionPlan encounters
-         * an error during its calculation. We don't have a way to induce such errors in CI so we've
-         * done so manually in dev and verified this function recovers as expected.
+         * This is designed to tolerate an incomplete plan, in case
+         * calculateDistributionPlan encounters an error during its calculation.
+         * We don't have a way to induce such errors in CI so we've done so
+         * manually in dev and verified this function recovers as expected.
          *
          * @param {object} obj
          * @param {import('./proceeds.js').DistributionPlan} obj.plan
-         * @param {Array<Vault>} obj.vaultsInPlan
+         * @param {Vault[]} obj.vaultsInPlan
          * @param {ZCFSeat} obj.liqSeat
          * @param {Amount<'nat'>} obj.totalCollateral
          * @param {Amount<'nat'>} obj.totalDebt
@@ -840,9 +852,7 @@ export const prepareVaultManagerKit = (
           const { descriptionScope } = this.state;
           return `${descriptionScope}: ${base}`;
         },
-        /**
-         * coefficient on existing debt to calculate new debt
-         */
+        /** coefficient on existing debt to calculate new debt */
         getCompoundedStabilityFee() {
           return this.state.compoundedStabilityFee;
         },
@@ -852,7 +862,8 @@ export const prepareVaultManagerKit = (
          * @param {NormalizedDebt} oldDebtNormalized
          * @param {Amount<'nat'>} oldCollateral
          * @param {VaultId} vaultId
-         * @param {import('./vault.js').VaultPhase} vaultPhase at the end of whatever change updated balances
+         * @param {import('./vault.js').VaultPhase} vaultPhase at the end of
+         *   whatever change updated balances
          * @param {Vault} vault
          * @returns {void}
          */
@@ -937,9 +948,7 @@ export const prepareVaultManagerKit = (
           return factoryPowers.getGovernedParams(collateralBrand);
         },
 
-        /**
-         * @param {ZCFSeat} seat
-         */
+        /** @param {ZCFSeat} seat */
         async makeVaultKit(seat) {
           const {
             state,
@@ -1045,9 +1054,7 @@ export const prepareVaultManagerKit = (
           facets.helper.writeMetrics();
           return storedCollateralQuote;
         },
-        /**
-         * @param {ERef<AuctioneerPublicFacet>} auctionPF
-         */
+        /** @param {ERef<AuctioneerPublicFacet>} auctionPF */
         async liquidateVaults(auctionPF) {
           const { state, facets } = this;
           const { self, helper } = facets;
@@ -1181,7 +1188,12 @@ export const prepareVaultManagerKit = (
     },
   );
 
-  /** @param {Omit<Parameters<typeof makeVaultManagerKitInternal>[0], 'metricsStorageNode'>} externalParams */
+  /**
+   * @param {Omit<
+   *   Parameters<typeof makeVaultManagerKitInternal>[0],
+   *   'metricsStorageNode'
+   * >} externalParams
+   */
   const makeVaultManagerKit = async externalParams => {
     const metricsStorageNode = await E(
       externalParams.storageNode,
@@ -1194,15 +1206,13 @@ export const prepareVaultManagerKit = (
   return makeVaultManagerKit;
 };
 
+/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultManagerKit>>>} VaultManagerKit */
 /**
- * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultManagerKit>>>} VaultManagerKit
- */
-/**
- * @typedef {VaultManagerKit['self']} VaultManager
- * Each VaultManager manages a single collateral type.
+ * @typedef {VaultManagerKit['self']} VaultManager Each VaultManager manages a
+ *   single collateral type.
  *
- * It manages some number of outstanding debt positions, each called a Vault,
- * for which the collateral is provided in exchange for borrowed Minted.
+ *   It manages some number of outstanding debt positions, each called a Vault,
+ *   for which the collateral is provided in exchange for borrowed Minted.
  */
 /** @typedef {VaultManagerKit['collateral']} CollateralManager */
 

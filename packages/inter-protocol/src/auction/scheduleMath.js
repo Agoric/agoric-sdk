@@ -18,17 +18,18 @@ const subtract1 = relTime =>
 /**
  * The length of the auction has to be inferred from the governed params.
  *
- * 1. The auction starts by offering collateral at a `StartingRate` (e.g., 105%)
- *    of the market price at auction start, and continues until it reaches
- *    (or would exceed on its next step) LowestRate (e.g., 65%)
+ * 1. The auction starts by offering collateral at a `StartingRate` (e.g., 105%) of
+ *    the market price at auction start, and continues until it reaches (or
+ *    would exceed on its next step) LowestRate (e.g., 65%)
  * 2. The offer price changes every `ClockStep` seconds
- * 3. The offer price changes by `DiscountStep` amount (e.g., 5%) each step So
- *    it must run however many `ClockSteps` are required to get from
- *    `StartingRate` to `LowestRate` changing by `DiscountStep` each time.
+ * 3. The offer price changes by `DiscountStep` amount (e.g., 5%) each step So it
+ *    must run however many `ClockSteps` are required to get from `StartingRate`
+ *    to `LowestRate` changing by `DiscountStep` each time.
  *
- * Therefore, the duration is `(StartingRate - LowestRate) / DiscountStep * ClockStep`.
+ * Therefore, the duration is `(StartingRate - LowestRate) / DiscountStep *
+ * ClockStep`.
  *
- * Note that this is what's *scheduled*. More than one auction can be running
+ * Note that this is what's _scheduled_. More than one auction can be running
  * simultaneously, and some conditions can cause some of the auctions to stop
  * selling early (e.g. reaching their target debt to raise or selling all of
  * their collateral).
@@ -108,10 +109,10 @@ export const computeRoundTiming = (params, baseTime) => {
 harden(computeRoundTiming);
 
 /**
- * Calculate when the next descending step will start. If we're between
- * auctions (i.e. liveSchedule is undefined), or the last step of the current
- * auction has started, then it'll be nextSchedule.startTime. Otherwise, it's
- * the start of the step following the current step.
+ * Calculate when the next descending step will start. If we're between auctions
+ * (i.e. liveSchedule is undefined), or the last step of the current auction has
+ * started, then it'll be nextSchedule.startTime. Otherwise, it's the start of
+ * the step following the current step.
  *
  * @param {import('./scheduler.js').Schedule | null} liveSchedule
  * @param {import('./scheduler.js').Schedule | null} nextSchedule
@@ -143,7 +144,6 @@ export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
 harden(nextDescendingStepTime);
 
 /**
- *
  * @param {Timestamp} time
  * @param {import('./scheduler.js').Schedule} schedule
  * @returns {'before' | 'during' | 'endExactly' | 'after'}

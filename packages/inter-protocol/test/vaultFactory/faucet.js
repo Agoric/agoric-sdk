@@ -6,7 +6,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
  * needed.
  *
  * @param {ZCF} zcf
- * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
  */
 export async function start(zcf, { feeMintAccess }) {
   const stableMint = await zcf.registerFeeMint('RUN', feeMintAccess);

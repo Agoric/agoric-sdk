@@ -35,10 +35,13 @@ export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 const stablePsmKey = `published.psm.${Stable.symbol}`;
 
 /**
- * @param {Array<[key: string, value: string]>} chainStorageEntries
+ * @param {[key: string, value: string][]} chainStorageEntries
  * @param {string} keyword
- * @param {{ minted: Brand<'nat'>, anchor: Brand<'nat'> }} brands
- * @returns {{ metrics?: MetricsNotification, governance?: GovernanceSubscriptionState }}
+ * @param {{ minted: Brand<'nat'>; anchor: Brand<'nat'> }} brands
+ * @returns {{
+ *   metrics?: MetricsNotification;
+ *   governance?: GovernanceSubscriptionState;
+ * }}
  */
 const findOldPSMState = (chainStorageEntries, keyword, brands) => {
   // In this reviver, object references are revived as boardIDs
@@ -80,7 +83,7 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
  * @param {bigint} [config.WantMintedFeeBP]
  * @param {bigint} [config.GiveMintedFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
- * @param {{ anchorOptions?: AnchorOptions } } [config.options]
+ * @param {{ anchorOptions?: AnchorOptions }} [config.options]
  */
 export const startPSM = async (
   {
@@ -291,16 +294,16 @@ harden(startPSM);
  */
 
 /**
- * Make anchor issuer out of a Cosmos asset; presumably
- * USDC over IBC. Add it to BankManager.
+ * Make anchor issuer out of a Cosmos asset; presumably USDC over IBC. Add it to
+ * BankManager.
  *
- * Also, if vatParameters shows an anchorPoolBalance for this asset,
- * mint a payment for that balance.
+ * Also, if vatParameters shows an anchorPoolBalance for this asset, mint a
+ * payment for that balance.
  *
  * TODO: address redundancy with publishInterchainAssetFromBank
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces & ChainStorageVatParams} powers
- * @param {{options: { anchorOptions?: AnchorOptions } }} config
+ * @param {{ options: { anchorOptions?: AnchorOptions } }} config
  */
 export const makeAnchorAsset = async (
   {
@@ -345,14 +348,18 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  const { creatorFacet: mint, publicFacet: issuer } =
-    /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */ (
-      await E(startUpgradable)({
-        installation: mintHolder,
-        label: keyword,
-        terms,
-      })
-    );
+  const { creatorFacet: mint, publicFacet: issuer } = /**
+   * @type {{
+   *   creatorFacet: ERef<Mint<'nat'>>;
+   *   publicFacet: ERef<Issuer<'nat'>>;
+   * }}
+   */ (
+    await E(startUpgradable)({
+      installation: mintHolder,
+      label: keyword,
+      terms,
+    })
+  );
 
   const brand = await E(issuer).getBrand();
   const kit = harden({ mint, issuer, brand });

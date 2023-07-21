@@ -10,9 +10,7 @@ import { E, Far } from '@endo/far';
 import { mustMatch } from '@agoric/store';
 import { makeFeeDistributor, customTermsShape } from '../src/feeDistributor.js';
 
-/**
- * @param {Issuer} feeIssuer
- */
+/** @param {Issuer} feeIssuer */
 const makeFakeFeeDepositFacetKit = feeIssuer => {
   const depositPayments = [];
 
@@ -40,10 +38,10 @@ const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
   });
 };
 /**
- * @param {*} t
+ * @param {any} t
  * @param {Promise<Payment[]>} paymentsP
  * @param {number} count
- * @param {*} values
+ * @param {any} values
  * @param {Issuer} issuer
  * @param {Brand} brand
  */

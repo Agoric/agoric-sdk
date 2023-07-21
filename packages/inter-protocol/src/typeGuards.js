@@ -2,9 +2,7 @@
 
 import { M } from '@agoric/store';
 
-/**
- * To be used only for 'helper' facets where the calls are from trusted code.
- */
+/** To be used only for 'helper' facets where the calls are from trusted code. */
 export const UnguardedHelperI = M.interface(
   'helper',
   {},

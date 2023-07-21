@@ -1,9 +1,9 @@
 // @ts-check
 /**
- * @file Bootstrap test integration vaults with smart-wallet.
- * The tests in this file are NOT independent; a single `test.before()`
- * handler creates shared state with `makeSwingsetTestKit` and each
- * test is run serially and assumes changes from earlier tests.
+ * @file Bootstrap test integration vaults with smart-wallet. The tests in this
+ *   file are NOT independent; a single `test.before()` handler creates shared
+ *   state with `makeSwingsetTestKit` and each test is run serially and assumes
+ *   changes from earlier tests.
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -77,10 +77,12 @@ const makeDefaultTestContext = async (
 };
 
 /**
- * Shared context can be updated by re-bootstrapping, and is placed one
- * property deep so such changes propagate to later tests.
+ * Shared context can be updated by re-bootstrapping, and is placed one property
+ * deep so such changes propagate to later tests.
  *
- * @type {import('ava').TestFn<{shared: Awaited<ReturnType<typeof makeDefaultTestContext>>}>}
+ * @type {import('ava').TestFn<{
+ *   shared: Awaited<ReturnType<typeof makeDefaultTestContext>>;
+ * }>}
  */
 const test = anyTest;
 test.before(async t => {
@@ -287,7 +289,11 @@ test.serial('open vault', async t => {
 test.serial('restart vaultFactory', async t => {
   const { runUtils, readCollateralMetrics } = t.context.shared;
   const { EV } = runUtils;
-  /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
+  /**
+   * @type {Awaited<
+   *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
+   * >}
+   */
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
   );
@@ -314,7 +320,11 @@ test.serial('restart vaultFactory', async t => {
 
 test.serial('restart contractGovernor', async t => {
   const { EV } = t.context.shared.runUtils;
-  /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
+  /**
+   * @type {Awaited<
+   *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
+   * >}
+   */
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
   );
@@ -486,7 +496,7 @@ test.serial(
     /** @type {MapStore} */
     const powerStore = await EV.vat('bootstrap').consumeItem('powerStore');
 
-    /** @type {(n: string) => Promise<Array<[*, *]>>} */
+    /** @type {(n: string) => Promise<[any, any][]>} */
     const getStoreSnapshot = async name =>
       EV.vat('bootstrap').snapshotStore(await EV(powerStore).get(name));
 

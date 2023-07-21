@@ -22,11 +22,11 @@ const HUNDRED_THOUSAND = 100000n;
 // const TEN_MILLION = 10000000n;
 
 /**
- * This file is originally an adaptation of test-interest.js to labeled
- * time. The original often used values like ONE_DAY both as RelativeTime
- * and as Timestamps, which this file can no longer get away with. We left
- * the original duration constants as RelativeTime and use this adapter for
- * those cases where it was used as a Timestamp.
+ * This file is originally an adaptation of test-interest.js to labeled time.
+ * The original often used values like ONE_DAY both as RelativeTime and as
+ * Timestamps, which this file can no longer get away with. We left the original
+ * duration constants as RelativeTime and use this adapter for those cases where
+ * it was used as a Timestamp.
  *
  * @param {RelativeTime} rel
  * @returns {Timestamp}

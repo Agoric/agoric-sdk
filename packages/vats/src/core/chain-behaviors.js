@@ -23,7 +23,7 @@ const { keys } = Object;
 
 /**
  * This registers the code triggered by `agd tx gov submit-proposal
- * swingset-core-eval permit.json code.js`.  It is the "big hammer" governance
+ * swingset-core-eval permit.json code.js`. It is the "big hammer" governance
  * that allows code.js access to all powers permitted by permit.json.
  *
  * @param {BootstrapPowers} allPowers
@@ -59,9 +59,11 @@ export const bridgeCoreEval = async allPowers => {
       switch (obj.type) {
         case 'CORE_EVAL': {
           /**
-           * Type defined by `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto` CoreEval.
+           * Type defined by
+           * `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto`
+           * CoreEval.
            *
-           * @type {{ evals: { json_permits: string, js_code: string }[]}}
+           * @type {{ evals: { json_permits: string; js_code: string }[] }}
            */
           const { evals } = obj;
           return Promise.all(
@@ -114,7 +116,7 @@ harden(bridgeCoreEval);
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ProvisioningVat>> }
+ *   consume: { loadCriticalVat: ERef<VatLoader<ProvisioningVat>> };
  * }} powers
  */
 export const makeProvisioner = async ({
@@ -128,9 +130,7 @@ export const makeProvisioner = async ({
 };
 harden(makeProvisioner);
 
-/**
- * @param {BootstrapPowers} powers
- */
+/** @param {BootstrapPowers} powers */
 export const noProvisioner = async ({ produce: { provisioning } }) => {
   provisioning.resolve(undefined);
 };
@@ -309,9 +309,10 @@ export const startTimerService = async ({
 harden(startTimerService);
 
 /**
- * @param {BootDevices<ChainDevices> & BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
- * }} powers
+ * @param {BootDevices<ChainDevices> &
+ *   BootstrapSpace & {
+ *     consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
+ *   }} powers
  */
 export const makeBridgeManager = async ({
   consume: { loadCriticalVat },
@@ -348,7 +349,7 @@ harden(makeBridgeManager);
 
 /**
  * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
  * }} powers
  */
 export const makeChainStorage = async ({
@@ -380,7 +381,7 @@ export const makeChainStorage = async ({
 
 /**
  * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
  * }} powers
  */
 export const produceHighPrioritySendersManager = async ({
@@ -405,14 +406,15 @@ export const produceHighPrioritySendersManager = async ({
   );
 
   /**
-   * NB: this is a non-durable Far object. If the bootstrap vat (where this object is made)
-   * were to be terminated, the object references to this would be severed.
+   * NB: this is a non-durable Far object. If the bootstrap vat (where this
+   * object is made) were to be terminated, the object references to this would
+   * be severed.
    *
-   * See {@link ./README.md bootstrap documentation} for implications.
-   * If the bootstrap vat is replaced, the new bootstrap config must be made
-   * using state extracted from IAVL. Contracts holding this manager will need
-   * to be updated with the new object, which can be done with an upgrade
-   * (regular or null) with the new object in privateArgs.
+   * See {@link ./README.md bootstrap documentation} for implications. If the
+   * bootstrap vat is replaced, the new bootstrap config must be made using
+   * state extracted from IAVL. Contracts holding this manager will need to be
+   * updated with the new object, which can be done with an upgrade (regular or
+   * null) with the new object in privateArgs.
    */
   const manager = makePrioritySendersManager(sendersNode);
 
@@ -441,11 +443,14 @@ export const publishAgoricNamesToChainStorage = async ({
 
 /**
  * @deprecated use reflectAgoricNamesToChainStorage
- *
  * @param {BootstrapPowers} powers
- * @param {{ options?: {agoricNamesOptions?: {
- *   topLevel?: string[]
- * }}}} config
+ * @param {{
+ *   options?: {
+ *     agoricNamesOptions?: {
+ *       topLevel?: string[];
+ *     };
+ *   };
+ * }} config
  */
 export const publishAgoricNames = async (
   { consume: { agoricNamesAdmin, board, chainStorage: rootP } },

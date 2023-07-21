@@ -17,7 +17,6 @@ const trace = makeTracer('ReserveKit', true);
 
 /**
  * @typedef {object} MetricsNotification
- *
  * @property {AmountKeywordRecord} allocations
  * @property {Amount<'nat'>} shortfallBalance shortfall from liquidation that
  *   has not yet been compensated.
@@ -28,10 +27,11 @@ const trace = makeTracer('ReserveKit', true);
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
- * feeMint: ZCFMint<'nat'>,
- * makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit,
- * storageNode: StorageNode,
- * zcf: ZCF}} powers
+ *   feeMint: ZCFMint<'nat'>;
+ *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
+ *   storageNode: StorageNode;
+ *   zcf: ZCF;
+ * }} powers
  */
 export const prepareAssetReserveKit = async (
   baggage,
@@ -63,10 +63,7 @@ export const prepareAssetReserveKit = async (
         reduceLiquidationShortfall: M.call(AmountShape).returns(),
       }),
     },
-    /**
-     *
-     * @param {StorageNode} metricsNode
-     */
+    /** @param {StorageNode} metricsNode */
     metricsNode => {
       /**
        * Used to look up the unique keyword for each brand, including Fee brand.
@@ -77,7 +74,8 @@ export const prepareAssetReserveKit = async (
         durable: true,
       });
       /**
-       * Used to look up the brands for keywords, excluding Fee because it's a special case.
+       * Used to look up the brands for keywords, excluding Fee because it's a
+       * special case.
        *
        * @type {MapStore<Keyword, Brand>}
        */
@@ -137,7 +135,6 @@ export const prepareAssetReserveKit = async (
       },
       governedApis: {
         /**
-         *
          * @param {Amount<'nat'>} reduction
          * @returns {void}
          */
@@ -205,12 +202,11 @@ export const prepareAssetReserveKit = async (
         },
       },
       /**
-       * XXX missing governance public methods https://github.com/Agoric/agoric-sdk/issues/5200
+       * XXX missing governance public methods
+       * https://github.com/Agoric/agoric-sdk/issues/5200
        */
       public: {
-        /**
-         * Anyone can deposit any assets to the reserve
-         */
+        /** Anyone can deposit any assets to the reserve */
         makeAddCollateralInvitation() {
           /** @type {OfferHandler<Promise<string>>} */
           const handler = async seat => {
@@ -247,9 +243,7 @@ export const prepareAssetReserveKit = async (
         },
       },
       shortfallReportingFacet: {
-        /**
-         * @param {Amount<"nat">} shortfall
-         */
+        /** @param {Amount<'nat'>} shortfall */
         increaseLiquidationShortfall(shortfall) {
           const { facets, state } = this;
           state.shortfallBalance = AmountMath.add(
@@ -260,9 +254,7 @@ export const prepareAssetReserveKit = async (
         },
 
         // currently exposed for testing. Maybe it only gets called internally?
-        /**
-         * @param {Amount<"nat">} reduction
-         */
+        /** @param {Amount<'nat'>} reduction */
         reduceLiquidationShortfall(reduction) {
           const { state } = this;
           if (AmountMath.isGTE(reduction, state.shortfallBalance)) {

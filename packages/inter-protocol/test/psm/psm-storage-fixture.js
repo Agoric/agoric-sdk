@@ -3,9 +3,10 @@
  *
  * Taken from mainnet; for example, the 1st value comes from...
  *
- * `agd --node https://main.rpc.agoric.net:443 query vstorage data published.agoricNames.brand -o json | jq .value`
+ * `agd --node https://main.rpc.agoric.net:443 query vstorage data
+ * published.agoricNames.brand -o json | jq .value`
  *
- * @type {Array<[key: string, value: string]>}
+ * @type {[key: string, value: string][]}
  */
 export const chainStorageEntries = [
   [

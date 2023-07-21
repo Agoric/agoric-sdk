@@ -15,7 +15,8 @@ const trace = makeTracer('TestMetrics', false);
 
 /**
  * @template {object} N
- * @param {AsyncIterable<N, N> | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} mixed
+ * @param {| AsyncIterable<N, N>
+ *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} mixed
  */
 const asNotifier = mixed => {
   if ('subscriber' in mixed) {
@@ -27,7 +28,8 @@ const asNotifier = mixed => {
 /**
  * @template {object} N
  * @param {import('ava').ExecutionContext} t
- * @param {AsyncIterable<N, N> | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} subscription
+ * @param {| AsyncIterable<N, N>
+ *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} subscription
  */
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = asNotifier(subscription);
@@ -76,7 +78,9 @@ export const subscriptionTracker = async (t, subscription) => {
  *
  * @template {object} N
  * @param {import('ava').ExecutionContext} t
- * @param {ERef<{getPublicTopics?: () => {metrics: {subscriber: Subscriber<N>}}}>} publicFacet
+ * @param {ERef<{
+ *   getPublicTopics?: () => { metrics: { subscriber: Subscriber<N> } };
+ * }>} publicFacet
  */
 export const metricsTracker = async (t, publicFacet) => {
   const publicTopics = await E(publicFacet).getPublicTopics();
@@ -89,7 +93,15 @@ export const metricsTracker = async (t, publicFacet) => {
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
-  /** @type {Awaited<ReturnType<typeof subscriptionTracker<import('../src/vaultFactory/vaultManager').MetricsNotification>>>} */
+  /**
+   * @type {Awaited<
+   *   ReturnType<
+   *     typeof subscriptionTracker<
+   *       import('../src/vaultFactory/vaultManager').MetricsNotification
+   *     >
+   *   >
+   * >}
+   */
   const m = await metricsTracker(t, publicFacet);
 
   /** @returns {bigint} Proceeds - overage + shortfall */

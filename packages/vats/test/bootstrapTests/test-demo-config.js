@@ -7,7 +7,9 @@ import { makeSwingsetTestKit, keyArrayEqual } from './supports.js';
 
 const { keys } = Object;
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>>
+ * >}
  */
 const test = anyTest;
 
@@ -78,15 +80,14 @@ test('sim/demo config launches Vaults as expected by loadgen', async t => {
 });
 
 /**
- * decentral-demo-config.json now uses boot-sim.js,
- * which includes connectFaucet, which re-introduced USDC.
- * That triggered a compatibility path in the loadgen that
- * caused it to try and fail to run the vaults task.
+ * decentral-demo-config.json now uses boot-sim.js, which includes
+ * connectFaucet, which re-introduced USDC. That triggered a compatibility path
+ * in the loadgen that caused it to try and fail to run the vaults task.
  * work-around: rename USDC to DAI in connectFaucet.
  *
- * TODO: move connectFaucet to a coreProposal and
- * separate decentral-demo-config.json into separate
- * configurations for sim-chain, loadgen.
+ * TODO: move connectFaucet to a coreProposal and separate
+ * decentral-demo-config.json into separate configurations for sim-chain,
+ * loadgen.
  */
 test('demo config meets loadgen constraint: no USDC', async t => {
   const { EV } = t.context.runUtils;

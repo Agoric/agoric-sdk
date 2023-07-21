@@ -40,7 +40,11 @@ import { INVITATION_MAKERS_DESC } from '../src/econCommitteeCharter.js';
 const { Fail } = assert;
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const contractRoots = {
@@ -76,7 +80,11 @@ const makeTestContext = async () => {
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
   const installation = {
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
-    /** @type {Promise<Installation<import('@agoric/vats/src/centralSupply.js').start>>} */
+    /**
+     * @type {Promise<
+     *   Installation<import('@agoric/vats/src/centralSupply.js').start>
+     * >}
+     */
     centralSupply: E(zoe).install(centralSupplyBundle),
     econCommitteeCharter: install(
       contractRoots.econCommitteeCharter,
@@ -143,8 +151,10 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
- * @param {{ env?: Record<string, string|undefined> }} [io]
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
+ * @param {{ env?: Record<string, string | undefined> }} [io]
  */
 const makeScenario = async (t, { env = process.env } = {}) => {
   const rawSpace = await setupBootstrap(t);
@@ -175,7 +185,13 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     );
   };
 
-  /** @type {PromiseKit<{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand}>} */
+  /**
+   * @type {PromiseKit<{
+   *   mint: ERef<Mint>;
+   *   issuer: ERef<Issuer>;
+   *   brand: Brand;
+   * }>}
+   */
   const ibcKitP = makePromiseKit();
 
   const startDevNet = async () => {
@@ -273,9 +289,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       );
     };
 
-  /**
-   * @param {string[]} proposals
-   */
+  /** @param {string[]} proposals */
   const evalProposals = async proposals => {
     const { code, bundleHandleToAbsolutePaths } =
       await extractCoreProposalBundles(
@@ -329,15 +343,15 @@ const makeScenario = async (t, { env = process.env } = {}) => {
 
   /**
    * @param {{
-   *   agoricNames: ERef<NameHub>,
-   *   board: ERef<import('@agoric/vats').Board>,
-   *   zoe: ERef<ZoeService>,
+   *   agoricNames: ERef<NameHub>;
+   *   board: ERef<import('@agoric/vats').Board>;
+   *   zoe: ERef<ZoeService>;
    *   wallet: {
    *     purses: {
-   *       ist: ERef<Purse>,
-   *       atom: ERef<Purse>,
-   *     },
-   *   },
+   *       ist: ERef<Purse>;
+   *       atom: ERef<Purse>;
+   *     };
+   *   };
    * }} home
    */
   const makeBenefactor = home => {
@@ -350,7 +364,11 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     return Far('benefactor', {
       depositInReserve: async (qty = 10_000n) => {
         const atomBrand = await E(agoricNames).lookup('brand', 'ATOM');
-        /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
+        /**
+         * @type {ERef<
+         *   import('../src/reserve/assetReserve').AssetReservePublicFacet
+         * >}
+         */
         const reserveAPI = E(zoe).getPublicFacet(
           E(agoricNames).lookup('instance', 'reserve'),
         );
@@ -481,7 +499,11 @@ test.skip('assets are in Vaults', async t => {
   const brand = await E(agoricNames).lookup('brand', 'ATOM');
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
-  /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
+  /**
+   * @type {ERef<
+   *   import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']
+   * >}
+   */
   const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));
 
   const params = await E(vaultsAPI).getGovernedParams({
@@ -542,8 +564,8 @@ test.skip('Committee can raise debt limit', async t => {
   const params = { DebtLimit: AmountMath.make(stableBrand, 100n) };
 
   // We happen to know how the timer is implemented.
-  /** @type { ERef<ManualTimer> } */
-  const timer = /** @type {any } */ (s.space.consume.chainTimerService);
+  /** @type {ERef<ManualTimer>} */
+  const timer = /** @type {any} */ (s.space.consume.chainTimerService);
 
   const now = await E(timer).getCurrentTimestamp();
   const deadline = TimeMath.addAbsRel(now, 3n);

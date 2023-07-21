@@ -84,10 +84,11 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
 }
 
 /**
- * @param { BootDevices<SoloDevices> & BootstrapSpace & {
- *   vatParameters: BootstrapVatParams,
- *   vats: SwingsetVats & SoloVats,
- * }} powers
+ * @param {BootDevices<SoloDevices> &
+ *   BootstrapSpace & {
+ *     vatParameters: BootstrapVatParams;
+ *     vats: SwingsetVats & SoloVats;
+ *   }} powers
  */
 export const startClient = async ({
   vatParameters: {

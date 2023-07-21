@@ -148,7 +148,14 @@ test('communication', async t => {
     message: /not found/,
   });
 
-  /** @type {undefined | IteratorResult<{brand: Brand, issuer: ERef<Issuer>, proposedName: string}>} */
+  /**
+   * @type {| undefined
+   *   | IteratorResult<{
+   *       brand: Brand;
+   *       issuer: ERef<Issuer>;
+   *       proposedName: string;
+   *     }>}
+   */
   let itResult;
   const p = it.next().then(r => (itResult = r));
   t.is(itResult, undefined);

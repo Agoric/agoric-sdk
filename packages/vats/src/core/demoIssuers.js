@@ -25,7 +25,7 @@ export const DecimalPlaces = {
   simolean: 0,
 };
 
-/** @type {Record<string, { proposedName: string, balance: bigint}>} */
+/** @type {Record<string, { proposedName: string; balance: bigint }>} */
 const FaucetPurseDetail = {
   [Stake.symbol]: {
     proposedName: Stake.proposedName,
@@ -92,19 +92,21 @@ const defaultConfig = /** @type {const} */ ({
 
 /**
  * @typedef {readonly [bigint, bigint]} Rational
- *
- * @type { Record<string, {
- *   config?: {
- *     collateralValue: bigint,
- *     initialMargin: Rational,
- *     liquidationMargin: Rational,
- *     liquidationPenalty: Rational,
- *     stabilityFee: Rational,
- *     mintFee: Rational,
- *     liquidationPadding?: Rational,
- *   },
- *   trades: Array<{ central: number, collateral: bigint}>
- * }>}
+ * @type {Record<
+ *   string,
+ *   {
+ *     config?: {
+ *       collateralValue: bigint;
+ *       initialMargin: Rational;
+ *       liquidationMargin: Rational;
+ *       liquidationPenalty: Rational;
+ *       stabilityFee: Rational;
+ *       mintFee: Rational;
+ *       liquidationPadding?: Rational;
+ *     };
+ *     trades: { central: number; collateral: bigint }[];
+ *   }
+ * >}
  */
 export const AMMDemoState = {
   // TODO: getRUN makes BLD obsolete here
@@ -182,9 +184,9 @@ const run2places = f =>
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupplyInstall: ERef<Installation>,
- *   feeMintAccess: ERef<FeeMintAccess>,
- *   zoe: ERef<ZoeService>,
+ *   centralSupplyInstall: ERef<Installation>;
+ *   feeMintAccess: ERef<FeeMintAccess>;
+ *   zoe: ERef<ZoeService>;
  * }} powers
  * @returns {Promise<Payment<'nat'>>}
  */
@@ -216,17 +218,15 @@ const provideCoin = async (name, mints) => {
 };
 
 /**
- * @param { BootstrapSpace &
- *   { consume: {loadVat: VatLoader<MintsVat>} }
- * } powers
+ * @param {BootstrapSpace & { consume: { loadVat: VatLoader<MintsVat> } }} powers
+ *   TODO: sync this type with end-user docs?
  *
- * TODO: sync this type with end-user docs?
  * @typedef {{
- *   issuer: ERef<Issuer>,
- *   issuerPetname: string,
- *   payment: Payment,
- *   brand: Brand,
- *   pursePetname: string,
+ *   issuer: ERef<Issuer>;
+ *   issuerPetname: string;
+ *   payment: Payment;
+ *   brand: Brand;
+ *   pursePetname: string;
  * }} UserPaymentRecord
  */
 export const connectFaucet = async ({
@@ -334,7 +334,7 @@ export const connectFaucet = async ({
       /**
        * reap the spoils of our on-chain provisioning.
        *
-       * @returns {Promise<Array<UserPaymentRecord>>}
+       * @returns {Promise<UserPaymentRecord[]>}
        */
       tapFaucet: async () => faucetPaymentInfo,
       getFeePurse() {
@@ -389,7 +389,7 @@ export const ammPoolRunDeposits = issuers => {
 /**
  * @param {Payment} bootstrapPayment
  * @param {Record<string, bigint>} balances
- * @param {{ issuer: ERef<Issuer>, brand: Brand }} central
+ * @param {{ issuer: ERef<Issuer>; brand: Brand }} central
  */
 export const splitAllCentralPayments = async (
   bootstrapPayment,
@@ -421,9 +421,9 @@ export const splitAllCentralPayments = async (
 
 /**
  * @param {string} issuerName
- * @param {typeof AMMDemoState['ATOM']} record
- * @param {Record<string, { issuer: ERef<Issuer>, brand: Brand }>} kits
- * @param {{ issuer: ERef<Issuer<'nat'>>, brand: Brand<'nat'> }} central
+ * @param {(typeof AMMDemoState)['ATOM']} record
+ * @param {Record<string, { issuer: ERef<Issuer>; brand: Brand }>} kits
+ * @param {{ issuer: ERef<Issuer<'nat'>>; brand: Brand<'nat'> }} central
  */
 export const poolRates = (issuerName, record, kits, central) => {
   /** @param {bigint} n */
@@ -462,7 +462,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 };
 
 /**
- * @param { import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers & {
- *   consume: { mints }
- * }} powers
+ * @param {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers & {
+ *     consume: { mints };
+ *   }} powers
  */

@@ -12,8 +12,8 @@ import { setupReserveServices } from './setup.js';
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<FeeMintAccess>} feeMintAccessP
- * @param {*} faucetInstallation
- * @param {*} stableInitialLiquidity
+ * @param {any} faucetInstallation
+ * @param {any} stableInitialLiquidity
  */
 const getRunFromFaucet = async (
   zoe,

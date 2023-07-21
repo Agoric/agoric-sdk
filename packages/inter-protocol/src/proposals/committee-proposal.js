@@ -4,14 +4,14 @@ import { reserveThenDeposit } from './utils.js';
 
 const { values } = Object;
 
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteCommitteeMembers = async (
   {
@@ -26,9 +26,7 @@ export const inviteCommitteeMembers = async (
 
   const highPrioritySendersManager = await consume.highPrioritySendersManager;
 
-  /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
-   */
+  /** @param {[string, Promise<Invitation>][]} addrInvitations */
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
@@ -53,9 +51,7 @@ export const inviteCommitteeMembers = async (
 
 harden(inviteCommitteeMembers);
 
-/**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- */
+/** @param {import('./econ-behaviors').EconomyBootstrapPowers} powers */
 export const startEconCharter = async ({
   consume: { zoe },
   produce: { econCharterKit },
@@ -131,7 +127,7 @@ harden(addGovernorsToEconCharter);
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteToEconCharter = async (
   { consume: { namesByAddressAdmin, econCharterKit } },

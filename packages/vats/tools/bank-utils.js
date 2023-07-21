@@ -4,13 +4,16 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-/**
- * @param {Array<Pick<IssuerKit, 'brand' | 'issuer'>>} issuerKits
- */
+/** @param {Pick<IssuerKit, 'brand' | 'issuer'>[]} issuerKits */
 export const makeFakeBankKit = issuerKits => {
   /** @type {MapStore<Brand, ERef<Issuer>>} */
   const issuers = makeScalarMapStore();
-  /** @type {MapStore<Brand, ERef<import('../src/vat-bank.js').VirtualPurse>>} */
+  /**
+   * @type {MapStore<
+   *   Brand,
+   *   ERef<import('../src/vat-bank.js').VirtualPurse>
+   * >}
+   */
   const purses = makeScalarMapStore();
 
   // XXX setup purses without publishing
@@ -20,7 +23,11 @@ export const makeFakeBankKit = issuerKits => {
     purses.init(kit.brand, E(kit.issuer).makeEmptyPurse());
   });
 
-  /** @type {SubscriptionRecord<import('../src/vat-bank.js').AssetDescriptor>} */
+  /**
+   * @type {SubscriptionRecord<
+   *   import('../src/vat-bank.js').AssetDescriptor
+   * >}
+   */
   const { subscription, publication } = makeSubscriptionKit();
 
   /**

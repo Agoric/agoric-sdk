@@ -74,21 +74,27 @@ const defaultParamValues = debt =>
 
 /**
  * @typedef {{
- * aeth: IssuerKit & import('../supports.js').AmountUtils,
- * aethInitialLiquidity: Amount<'nat'>,
- * consume: import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'],
- * puppetGovernors: { [contractName: string]: undefined | ERef<import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<any>['creatorFacet']> },
- * electorateTerms: any,
- * feeMintAccess: FeeMintAccess,
- * installation: Record<string, any>,
- * interestTiming: any,
- * minInitialDebt: bigint,
- * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
- * rates: any,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * stableInitialLiquidity: Amount<'nat'>,
- * timer: ReturnType<typeof buildManualTimer>,
- * zoe: ZoeService,
+ *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   aethInitialLiquidity: Amount<'nat'>;
+ *   consume: import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ *   puppetGovernors: {
+ *     [contractName: string]:
+ *       | undefined
+ *       | ERef<
+ *           import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<any>['creatorFacet']
+ *         >;
+ *   };
+ *   electorateTerms: any;
+ *   feeMintAccess: FeeMintAccess;
+ *   installation: Record<string, any>;
+ *   interestTiming: any;
+ *   minInitialDebt: bigint;
+ *   reserveCreatorFacet: ERef<AssetReserveCreatorFacet>;
+ *   rates: any;
+ *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   stableInitialLiquidity: Amount<'nat'>;
+ *   timer: ReturnType<typeof buildManualTimer>;
+ *   zoe: ZoeService;
  * }} DriverContext
  */
 
@@ -136,9 +142,7 @@ export const makeDriverContext = async ({
   return { ...frozenCtx, bundleCache, run, aeth };
 };
 
-/**
- * @param {import('ava').ExecutionContext<DriverContext>} t
- */
+/** @param {import('ava').ExecutionContext<DriverContext>} t */
 const setupReserveAndElectorate = async t => {
   const {
     zoe,
@@ -254,7 +258,14 @@ const setupServices = async (t, initialPrice, priceBase) => {
     aethKeyword,
   );
 
-  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
+  /**
+   * @type {[
+   *   any,
+   *   VaultFactoryCreatorFacet,
+   *   VFC['publicFacet'],
+   *   VaultManager,
+   * ]}
+   */
   const [governorInstance, vaultFactory, vfPublic, aethVaultManager] =
     await Promise.all([
       E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
@@ -310,7 +321,6 @@ export const makeManagerDriver = async (
   let notification = {};
   let currentOfferResult;
   /**
-   *
    * @param {Amount<'nat'>} [collateral]
    * @param {Amount<'nat'>} [debt]
    */
@@ -340,7 +350,6 @@ export const makeManagerDriver = async (
       vaultSeat: () => vaultSeat,
       notification: () => notification,
       /**
-       *
        * @param {bigint} collValue
        * @param {import('../supports.js').AmountUtils} collUtils
        * @param {bigint} [mintedValue]
@@ -362,7 +371,6 @@ export const makeManagerDriver = async (
         return E(seat).getOfferResult();
       },
       /**
-       *
        * @param {bigint} mintedValue
        * @param {import('../supports.js').AmountUtils} collUtils
        * @param {bigint} [collValue]
@@ -403,10 +411,10 @@ export const makeManagerDriver = async (
         t.truthy(await E(vaultSeat).hasExited());
       },
       /**
-       *
        * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
        * @param {object} [likeExpected]
-       * @param {AT_NEXT|number} [optSince] AT_NEXT is an alias for updateCount of the last update, forcing to wait for another
+       * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for
+       *   updateCount of the last update, forcing to wait for another
        */
       notified: async (phase, likeExpected, optSince) => {
         notification = await E(notifier).getUpdateSince(
@@ -475,8 +483,9 @@ export const makeManagerDriver = async (
     // and the director driver should `{ key: 'governedParams }`
     /**
      * @param {string} name
-     * @param {*} newValue
-     * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
+     * @param {any} newValue
+     * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the
+     *   factory
      */
     setGovernedParam: (
       name,
@@ -492,18 +501,16 @@ export const makeManagerDriver = async (
         }),
       );
     },
-    /**
-     * @param {string[]} filters
-     */
+    /** @param {string[]} filters */
     setGovernedFilters: filters => {
       trace(t, 'setGovernedFilters', filters);
       const vfGov = NonNullish(t.context.puppetGovernors.vaultFactory);
       return E(vfGov).setFilters(harden(filters));
     },
     /**
-     *
      * @param {object} [likeExpected]
-     * @param {AT_NEXT|number} [optSince] AT_NEXT is an alias for updateCount of the last update, forcing to wait for another
+     * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for updateCount
+     *   of the last update, forcing to wait for another
      */
     managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
@@ -527,9 +534,7 @@ export const makeManagerDriver = async (
   return driver;
 };
 
-/**
- * @param {import('ava').ExecutionContext<DriverContext>} t
- */
+/** @param {import('ava').ExecutionContext<DriverContext>} t */
 export const makeAuctioneerDriver = async t => {
   const auctioneerKit = await t.context.consume.auctioneerKit;
 
@@ -576,7 +581,7 @@ export const makeAuctioneerDriver = async t => {
     },
     /**
      * @param {keyof import('../../src/auction/params.js').AuctionParams} name
-     * @param {*} newValue
+     * @param {any} newValue
      */
     setGovernedParam: async (name, newValue) => {
       trace('setGovernedParam', name);

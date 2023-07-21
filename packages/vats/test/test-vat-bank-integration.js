@@ -22,11 +22,12 @@ import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   // Supply bootstrap prerequisites.
-  const space = /** @type { any } */ (makePromiseSpace(t.log));
-  const { produce, consume } =
-    /** @type { BootstrapPowers & { consume: { loadCriticalVat: VatLoader<any> }}} */ (
-      space
-    );
+  const space = /** @type {any} */ (makePromiseSpace(t.log));
+  const { produce, consume } = /**
+   * @type {BootstrapPowers & {
+   *   consume: { loadCriticalVat: VatLoader<any> };
+   * }}
+   */ (space);
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -66,10 +67,10 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     zone: heapZone,
     consume,
     produce,
-    devices: /** @type { any } */ ({}),
-    vats: /** @type { any } */ ({}),
-    vatPowers: /** @type { any } */ ({}),
-    runBehaviors: /** @type { any } */ ({}),
+    devices: /** @type {any} */ ({}),
+    vats: /** @type {any} */ ({}),
+    vatPowers: /** @type {any} */ ({}),
+    runBehaviors: /** @type {any} */ ({}),
     modules: {},
     ...spaces,
   });

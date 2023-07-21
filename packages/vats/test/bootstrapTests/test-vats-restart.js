@@ -1,7 +1,5 @@
 // @ts-check
-/**
- * @file Bootstrap test of restarting (almost) all vats
- */
+/** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
@@ -12,7 +10,9 @@ import { makeWalletFactoryDriver } from './drivers.js';
 import { makeSwingsetTestKit } from './supports.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
  */
 const test = anyTest;
 
@@ -121,7 +121,11 @@ test.serial('run restart-vats proposal', async t => {
 test.serial('read metrics', async t => {
   const { EV } = t.context.runUtils;
 
-  /** @type {Awaited<import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']>} */
+  /**
+   * @type {Awaited<
+   *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
+   * >}
+   */
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
   );

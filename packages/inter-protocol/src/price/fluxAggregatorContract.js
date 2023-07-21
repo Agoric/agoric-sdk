@@ -18,6 +18,7 @@ import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 const trace = makeTracer('FluxAgg', false);
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
+ *
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
 
@@ -39,23 +40,25 @@ export const privateArgsShape = M.splitRecord(
 );
 
 /**
- * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
- * the *Node Operator Aggregation* logic of [Chainlink price
+ * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`,
+ * this approximates the _Node Operator Aggregation_ logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
- * @param {ZCF<import('./fluxAggregatorKit.js').ChainlinkConfig & {
- * timer: TimerService,
- * brandIn: Brand<'nat'>,
- * brandOut: Brand<'nat'>,
- * description: string,
- * unitAmountIn?: Amount<'nat'>,
- * }>} zcf
+ * @param {ZCF<
+ *   import('./fluxAggregatorKit.js').ChainlinkConfig & {
+ *     timer: TimerService;
+ *     brandIn: Brand<'nat'>;
+ *     brandOut: Brand<'nat'>;
+ *     description: string;
+ *     unitAmountIn?: Amount<'nat'>;
+ *   }
+ * >} zcf
  * @param {{
- * highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager,
- * initialPoserInvitation: Invitation,
- * marshaller: ERef<Marshaller>,
- * namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
- * storageNode: StorageNode,
+ *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
+ *   initialPoserInvitation: Invitation;
+ *   marshaller: ERef<Marshaller>;
+ *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
+ *   storageNode: StorageNode;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -151,20 +154,22 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const governedApis = {
     /**
-     * Add the specified oracles. May partially fail, such that some oracles are added and others aren't.
+     * Add the specified oracles. May partially fail, such that some oracles are
+     * added and others aren't.
      *
      * @param {string[]} addrs
-     * @returns {Promise<Array<PromiseSettledResult<string>>>}
+     * @returns {Promise<PromiseSettledResult<string>[]>}
      */
     addOracles: addrs => {
       return Promise.allSettled(addrs.map(addOracle));
     },
     /**
-     * Remove the specified oracles. May partially fail, such that some oracles are removed and others aren't.
-     * If the oracle was never part of the set that's a PromiseRejectedResult
+     * Remove the specified oracles. May partially fail, such that some oracles
+     * are removed and others aren't. If the oracle was never part of the set
+     * that's a PromiseRejectedResult
      *
      * @param {string[]} addrs
-     * @returns {Promise<Array<PromiseSettledResult<string>>>}
+     * @returns {Promise<PromiseSettledResult<string>[]>}
      */
     removeOracles: addrs => {
       return Promise.allSettled(addrs.map(removeOracle));

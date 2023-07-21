@@ -9,9 +9,7 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
 
-/**
- * A pattern for Zoe to check custom terms before `start()`ing the contract.
- */
+/** A pattern for Zoe to check custom terms before `start()`ing the contract. */
 export const customTermsShape = harden({
   keywordShares: KeywordSharesShape,
   timerService: M.eref(M.remotable('TimerService')),
@@ -20,12 +18,12 @@ export const customTermsShape = harden({
 
 /**
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ *
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
 
 /**
  * @typedef {object} FeeCollector
- *
  * @property {() => ERef<Payment<'nat'>>} collectFees
  */
 
@@ -65,10 +63,12 @@ export const makeContractFeeCollector = (zoe, creatorFacet) => {
  * for fees that have been collected to date and send that payment to the
  * depositFacet.
  *
- * @param {() => Promise<unknown>} schedulePayments - distribute to the destinations
- * @param {ERef<TimerService>} timerService - timer that is used to schedule collections
+ * @param {() => Promise<unknown>} schedulePayments - distribute to the
+ *   destinations
+ * @param {ERef<TimerService>} timerService - timer that is used to schedule
+ *   collections
  * @param {RelativeTime} [collectionInterval] - how often to collect fees in the
- * `timerService` unit
+ *   `timerService` unit
  */
 export const startDistributing = (
   schedulePayments,
@@ -99,8 +99,9 @@ export const startDistributing = (
 };
 
 /**
- * @typedef {{ pushPayment: (payment: Payment, issuer: ERef<Issuer>) => Promise<Amount>}} FeeDestination
- *
+ * @typedef {{
+ *   pushPayment: (payment: Payment, issuer: ERef<Issuer>) => Promise<Amount>;
+ * }} FeeDestination
  * @param {Record<Keyword, ERef<FeeDestination>>} [destinations]
  * @param {Record<Keyword, NatValue>} [keywordShares]
  */
@@ -161,17 +162,16 @@ export const sharePayment = async (
     .filter(([_, amt]) => !AmountMath.isEmpty(amt));
 
   /**
-   * If the `sharedPayment[i]` payments that are sent to the fee
-   * `destination` with `pushPayment` never arrive, or never get deposited
-   * (or otherwise used up), then they remain in the recovery set of the
-   * `recoveryPurse`. The purpose of this, and of recovery sets in general,
-   * is to be able, in emergencies, to recover the assets of payments in flight
-   * that seem to be stuck. This is much like cancelling a check that may still
-   * be undeposited.
+   * If the `sharedPayment[i]` payments that are sent to the fee `destination`
+   * with `pushPayment` never arrive, or never get deposited (or otherwise used
+   * up), then they remain in the recovery set of the `recoveryPurse`. The
+   * purpose of this, and of recovery sets in general, is to be able, in
+   * emergencies, to recover the assets of payments in flight that seem to be
+   * stuck. This is much like cancelling a check that may still be undeposited.
    *
    * TODO: However, for this to be possible, the `recoveryPurse` holding that
-   * recovery set must remain accessible to someone that should legitimately
-   * be able to recover those payments. But this `recoveryPurse` is currently
+   * recovery set must remain accessible to someone that should legitimately be
+   * able to recover those payments. But this `recoveryPurse` is currently
    * dropped on the floor instead.
    */
   const recoveryPurse = E(issuer).makeEmptyPurse();
@@ -193,7 +193,11 @@ export const sharePayment = async (
 
 /**
  * @param {ERef<Issuer<'nat'>>} feeIssuer
- * @param {{ keywordShares: Record<Keyword, NatValue>, timerService: ERef<TimerService>, collectionInterval: RelativeTime}} terms
+ * @param {{
+ *   keywordShares: Record<Keyword, NatValue>;
+ *   timerService: ERef<TimerService>;
+ *   collectionInterval: RelativeTime;
+ * }} terms
  */
 export const makeFeeDistributor = (feeIssuer, terms) => {
   const { timerService, collectionInterval } = terms;
@@ -261,9 +265,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
       return periodicCollector;
     },
 
-    /**
-     * @param {import('@endo/far').EOnly<DepositFacet>} depositFacet
-     */
+    /** @param {import('@endo/far').EOnly<DepositFacet>} depositFacet */
     makeDepositFacetDestination: depositFacet => {
       return Far(`DepositFacetDestination`, {
         pushPayment: async (payment, _issuer) => {
@@ -315,9 +317,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
       });
     },
 
-    /**
-     * @param {Record<Keyword, ERef<FeeDestination>>} newDestinations
-     */
+    /** @param {Record<Keyword, ERef<FeeDestination>>} newDestinations */
     setDestinations: async newDestinations => {
       destinations = newDestinations;
       shareConfig = makeShareConfig(destinations, keywordShares);
@@ -344,9 +344,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 /** @typedef {ReturnType<typeof makeFeeDistributor>['creatorFacet']} FeeDistributorCreatorFacet */
 /** @typedef {ReturnType<typeof makeFeeDistributor>['publicFacet']} FeeDistributorPublicFacet */
 
-/**
- * @param {ZCF<Parameters<typeof makeFeeDistributor>[1]>} zcf
- */
+/** @param {ZCF<Parameters<typeof makeFeeDistributor>[1]>} zcf */
 export const start = async zcf => {
   const feeIssuer = E(zcf.getZoeService()).getFeeIssuer();
   return makeFeeDistributor(feeIssuer, zcf.getTerms());

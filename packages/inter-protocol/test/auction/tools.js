@@ -12,16 +12,18 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
  * @typedef {{
- * autoRefund: Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>,
- * auctioneer: Installation<import('../../src/auction/auctioneer').start>,
- * governor: Installation<import('@agoric/governance/src/contractGovernor.js')['prepare']>,
- * reserve: Installation<import('../../src/reserve/assetReserve.js').prepare>,
+ *   autoRefund: Installation<
+ *     import('@agoric/zoe/src/contracts/automaticRefund').start
+ *   >;
+ *   auctioneer: Installation<import('../../src/auction/auctioneer').start>;
+ *   governor: Installation<
+ *     import('@agoric/governance/src/contractGovernor.js')['prepare']
+ *   >;
+ *   reserve: Installation<import('../../src/reserve/assetReserve.js').prepare>;
  * }} AuctionTestInstallations
  */
 
-/**
- * @param {ZoeService} zoe
- */
+/** @param {ZoeService} zoe */
 export const setUpInstallations = async zoe => {
   const autoRefund = '@agoric/zoe/src/contracts/automaticRefund.js';
   const autoRefundUrl = await importMetaResolve(autoRefund, import.meta.url);
