@@ -125,8 +125,8 @@ func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 	blockHeight := uint64(height)
 
 	return snapshotter.swingStoreExportsHandler.InitiateExport(blockHeight, snapshotter, SwingStoreExportOptions{
-		ExportMode:        SwingStoreExportModeCurrent,
-		IncludeExportData: false,
+		ArtifactMode:   SwingStoreArtifactModeOperational,
+		ExportDataMode: SwingStoreExportDataModeSkip,
 	})
 }
 
@@ -304,6 +304,6 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 
 	return snapshotter.swingStoreExportsHandler.RestoreExport(
 		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact},
-		SwingStoreRestoreOptions{IncludeHistorical: false},
+		SwingStoreRestoreOptions{ArtifactMode: SwingStoreArtifactModeOperational},
 	)
 }
