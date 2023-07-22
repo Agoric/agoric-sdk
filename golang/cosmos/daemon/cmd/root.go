@@ -28,6 +28,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -242,6 +243,13 @@ func (ac appCreator) newApp(
 	}
 
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+
+	// Set a default value for FlagSwingStoreExportDir based on the homePath
+	// in case we need to InitGenesis with swing-store data
+	viper, ok := appOpts.(*viper.Viper)
+	if ok && cast.ToString(appOpts.Get(gaia.FlagSwingStoreExportDir)) == "" {
+		viper.Set(gaia.FlagSwingStoreExportDir, filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName))
+	}
 
 	snapshotDir := filepath.Join(homePath, "data", "snapshots")
 	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)

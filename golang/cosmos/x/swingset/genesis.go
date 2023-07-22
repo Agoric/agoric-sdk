@@ -30,18 +30,49 @@ func DefaultGenesisState() *types.GenesisState {
 
 // InitGenesis initializes the (Cosmos-side) SwingSet state from the GenesisState.
 // Returns whether the app should send a bootstrap action to the controller.
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) bool {
-	keeper.SetParams(ctx, data.GetParams())
-	keeper.SetState(ctx, data.GetState())
+func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, swingStoreExportDir string, data *types.GenesisState) bool {
+	k.SetParams(ctx, data.GetParams())
+	k.SetState(ctx, data.GetState())
 
 	swingStoreExportData := data.GetSwingStoreExportData()
-	if len(swingStoreExportData) > 0 {
-		// See https://github.com/Agoric/agoric-sdk/issues/6527
-		panic("genesis with swing-store state not implemented")
+	if len(swingStoreExportData) == 0 {
+		return true
 	}
 
-	// TODO: bootstrap only if not restoring swing-store from genesis state
-	return true
+	artifactProvider, err := keeper.OpenSwingStoreExportDirectory(swingStoreExportDir)
+	if err != nil {
+		panic(err)
+	}
+
+	swingStore := k.GetSwingStore(ctx)
+
+	for _, entry := range swingStoreExportData {
+		swingStore.Set([]byte(entry.Key), []byte(entry.Value))
+	}
+
+	snapshotHeight := uint64(ctx.BlockHeight())
+
+	getExportDataReader := func() (agoric.KVEntryReader, error) {
+		exportDataIterator := swingStore.Iterator(nil, nil)
+		return agoric.NewKVIteratorReader(exportDataIterator), nil
+	}
+
+	err = swingStoreExportsHandler.RestoreExport(
+		keeper.SwingStoreExportProvider{
+			BlockHeight:         snapshotHeight,
+			GetExportDataReader: getExportDataReader,
+			ReadNextArtifact:    artifactProvider.ReadNextArtifact,
+		},
+		keeper.SwingStoreRestoreOptions{
+			ArtifactMode:   keeper.SwingStoreArtifactModeReplay,
+			ExportDataMode: keeper.SwingStoreExportDataModeAll,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return false
 }
 
 func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, swingStoreExportDir string) *types.GenesisState {

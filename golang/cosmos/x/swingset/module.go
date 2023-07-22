@@ -163,7 +163,8 @@ func (am AppModule) checkSwingStoreExportSetup() {
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	bootstrapNeeded := InitGenesis(ctx, am.keeper, &genesisState)
+	am.checkSwingStoreExportSetup()
+	bootstrapNeeded := InitGenesis(ctx, am.keeper, am.swingStoreExportsHandler, am.swingStoreExportDir, &genesisState)
 	if bootstrapNeeded {
 		am.setBootstrapNeeded()
 	}
