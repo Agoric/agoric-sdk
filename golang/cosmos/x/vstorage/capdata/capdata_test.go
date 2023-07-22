@@ -12,7 +12,7 @@ func ptr[T any](v T) *T {
 	return &v
 }
 
-func mustMarshal(val any) string {
+func mustJsonMarshal(val any) string {
 	jsonText, err := json.Marshal(val)
 	if err != nil {
 		panic(err)
@@ -20,7 +20,7 @@ func mustMarshal(val any) string {
 	return string(jsonText)
 }
 
-func mustUnmarshalString(jsonText string, ptr any) {
+func mustJsonUnmarshal(jsonText string, ptr any) {
 	if err := json.Unmarshal([]byte(jsonText), ptr); err != nil {
 		panic(err)
 	}
@@ -283,9 +283,9 @@ func Test_DecodeSerializedCapdata(t *testing.T) {
 		}
 		var expected interface{}
 		if desc.expected != "" {
-			mustUnmarshalString(desc.expected, &expected)
+			mustJsonUnmarshal(desc.expected, &expected)
 		} else {
-			mustUnmarshalString(desc.body, &expected)
+			mustJsonUnmarshal(desc.body, &expected)
 		}
 		for _, format := range []string{"smallcaps", "legacy"} {
 			if desc.format != "" && desc.format != format {
@@ -299,10 +299,10 @@ func Test_DecodeSerializedCapdata(t *testing.T) {
 			if format == "smallcaps" {
 				capdata.Body = "#" + capdata.Body
 			}
-			intermediate, err := DecodeSerializedCapdata(mustMarshal(capdata), desc.transformations)
+			intermediate, err := DecodeSerializedCapdata(mustJsonMarshal(capdata), desc.transformations)
 			// Replace each Remotable with its representation before comparing.
 			var got interface{}
-			mustUnmarshalString(mustMarshal(intermediate), &got)
+			mustJsonUnmarshal(mustJsonMarshal(intermediate), &got)
 			if desc.errContains == nil {
 				if err != nil {
 					t.Errorf("%s: got unexpected error %v", label, err)
