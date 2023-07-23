@@ -81,6 +81,7 @@ jobs:
         run: |
           set -xe
           DOCKER_VOLUMES="$PWD:/usr/src/agoric-sdk" \
+          LOADGEN=1 \
           packages/deployment/scripts/integration-test.sh
         timeout-minutes: 90
         env:
