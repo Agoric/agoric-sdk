@@ -11,8 +11,6 @@ export AGORIC_SDK_PATH="${AGORIC_SDK_PATH-$SDK_SRC}"
 
 export NETWORK_NAME=chaintest
 
-sudo ln -sf "$SDK_SRC/packages/deployment/bin/ag-setup-cosmos" /usr/local/bin/ag-setup-cosmos
-
 # Note: the deployment test and the loadgen test in testnet mode modify some
 # directories in $HOME so provide an empty $HOME for them.
 export HOME="$(mktemp -d -t deployment-integration-home.XXXXX)"
