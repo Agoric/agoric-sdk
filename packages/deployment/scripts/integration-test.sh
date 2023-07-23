@@ -9,16 +9,24 @@ export NETWORK_NAME=${NETWORK_NAME-localtest}
 
 SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
-DEFAULT_LOADGEN=/usr/src/testnet-load-generator
 LOADGEN=${LOADGEN-""}
-if [ -n "$LOADGEN" ]; then
+if [ -z "$LOADGEN" ] || [ "x$LOADGEN" = "x1" ]; then
+  for dir in "$SDK_SRC/../testnet-load-generator" /usr/src/testnet-load-generator; do
+    if [ -d "$dir" ]; then
+      LOADGEN="$dir"
+      break
+    fi
+  done
+fi
+
+if [ -d "$LOADGEN" ]; then
+  # Get the absolute path.
   LOADGEN=$(cd "$LOADGEN" > /dev/null && pwd -P)
-elif [ -d "$SDK_SRC/../testnet-load-generator" ]; then
-  LOADGEN=$(cd "$SDK_SRC/../testnet-load-generator" > /dev/null && pwd -P)
-elif [ -d "$DEFAULT_LOADGEN" ]; then
-  LOADGEN=$(cd "$DEFAULT_LOADGEN" > /dev/null && pwd -P)
+elif [ -n "$LOADGEN" ]; then
+  echo "Cannot find loadgen (\$LOADGEN=$LOADGEN)" >&2
+  exit 2
 else
-  LOADGEN=
+  echo "Running chain without loadgen" >&2
 fi
 
 SOLO_ADDR=
