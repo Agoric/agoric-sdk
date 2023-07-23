@@ -91,25 +91,27 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * @typedef {object} BookDataNotification
- * @property {Ratio | null} startPrice identifies the priceAuthority and price
- * @property {Ratio | null} currentPriceLevel the price at the current auction
- *   tier
- * @property {Amount<'nat'> | null} startProceedsGoal The proceeds the sellers
- *   were targeting to raise
- * @property {Amount<'nat'> | null} remainingProceedsGoal The remainder of the
- *   proceeds the sellers were targeting to raise
- * @property {Amount<'nat'> | undefined} proceedsRaised The proceeds raised so
- *   far in the auction
- * @property {Amount<'nat'>} startCollateral How much collateral was available
- *   for sale at the start. (If more is deposited later, it'll be added in.)
- * @property {Amount<'nat'> | null} collateralAvailable The amount of collateral
- *   remaining
+ * @typedef  {object}                    BookDataNotification
+ * @property {Ratio | null}              startPrice            identifies the
+ *   priceAuthority and price
+ * @property {Ratio | null}              currentPriceLevel     the price at the
+ *   current auction tier
+ * @property {Amount<'nat'> | null}      startProceedsGoal     The proceeds the
+ *   sellers were targeting to raise
+ * @property {Amount<'nat'> | null}      remainingProceedsGoal The remainder of
+ *   the proceeds the sellers were targeting to raise
+ * @property {Amount<'nat'> | undefined} proceedsRaised        The proceeds
+ *   raised so far in the auction
+ * @property {Amount<'nat'>}             startCollateral       How much
+ *   collateral was available for sale at the start. (If more is deposited
+ *   later, it'll be added in.)
+ * @property {Amount<'nat'> | null}      collateralAvailable   The amount of
+ *   collateral remaining
  */
 
 /**
- * @param {Baggage} baggage
- * @param {ZCF} zcf
+ * @param {Baggage}                                                               baggage
+ * @param {ZCF}                                                                   zcf
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
@@ -140,10 +142,10 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     'AuctionBook',
     undefined,
     /**
-     * @param {Brand<'nat'>} bidBrand
-     * @param {Brand<'nat'>} collateralBrand
+     * @param {Brand<'nat'>}   bidBrand
+     * @param {Brand<'nat'>}   collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {StorageNode} node
+     * @param {StorageNode}    node
      */
     (bidBrand, collateralBrand, pAuthority, node) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
@@ -240,7 +242,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * remove the key from the appropriate book, indicated by whether the
          * price is defined.
          *
-         * @param {string} key
+         * @param {string}            key
          * @param {Ratio | undefined} price
          */
         removeFromItsBook(key, price) {
@@ -256,8 +258,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * Update the entry in the appropriate book, indicated by whether the
          * price is defined.
          *
-         * @param {string} key
-         * @param {Amount} collateralSold
+         * @param {string}            key
+         * @param {Amount}            collateralSold
          * @param {Ratio | undefined} price
          */
         updateItsBook(key, collateralSold, price) {
@@ -273,7 +275,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * Settle with seat. The caller is responsible for updating the book, if
          * any.
          *
-         * @param {ZCFSeat} seat
+         * @param {ZCFSeat}       seat
          * @param {Amount<'nat'>} collateralWanted
          */
         settle(seat, collateralWanted) {
@@ -352,12 +354,12 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * attempt to buy collateral. If any of the offer remains add it to the
          * book.
          *
-         * @param {ZCFSeat} seat
-         * @param {Ratio} price
+         * @param {ZCFSeat}       seat
+         * @param {Ratio}         price
          * @param {Amount<'nat'>} maxBuy
-         * @param {object} opts
-         * @param {boolean} opts.trySettle
-         * @param {boolean} [opts.exitAfterBuy]
+         * @param {object}        opts
+         * @param {boolean}       opts.trySettle
+         * @param {boolean}       [opts.exitAfterBuy]
          */
         acceptPriceOffer(
           seat,
@@ -400,12 +402,12 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * is active, attempt to buy collateral. If any of the offer remains add
          * it to the book.
          *
-         * @param {ZCFSeat} seat
-         * @param {Ratio} bidScaling
+         * @param {ZCFSeat}       seat
+         * @param {Ratio}         bidScaling
          * @param {Amount<'nat'>} maxBuy
-         * @param {object} opts
-         * @param {boolean} opts.trySettle
-         * @param {boolean} [opts.exitAfterBuy]
+         * @param {object}        opts
+         * @param {boolean}       opts.trySettle
+         * @param {boolean}       [opts.exitAfterBuy]
          */
         acceptScaledBidOffer(
           seat,
@@ -472,7 +474,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       self: {
         /**
          * @param {Amount<'nat'>} assetAmount
-         * @param {ZCFSeat} sourceSeat
+         * @param {ZCFSeat}       sourceSeat
          * @param {Amount<'nat'>} [proceedsGoal] an amount that the depositor
          *   would like to raise. The auction is requested to not sell more
          *   collateral than required to raise that much. The auctioneer might
@@ -650,8 +652,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         },
         /**
          * @param {OfferSpec} offerSpec
-         * @param {ZCFSeat} seat
-         * @param {boolean} trySettle
+         * @param {ZCFSeat}   seat
+         * @param {boolean}   trySettle
          */
         addOffer(offerSpec, seat, trySettle) {
           const { bidBrand, collateralBrand } = this.state;

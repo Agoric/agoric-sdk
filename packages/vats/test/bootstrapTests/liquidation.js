@@ -192,8 +192,8 @@ export const makeLiquidationTestContext = async t => {
 
   const check = {
     /**
-     * @param {number} managerIndex
-     * @param {number} vaultIndex
+     * @param {number}              managerIndex
+     * @param {number}              vaultIndex
      * @param {Record<string, any>} partial
      */
     vaultNotification(managerIndex, vaultIndex, partial) {

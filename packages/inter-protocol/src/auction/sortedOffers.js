@@ -37,10 +37,10 @@ export const toPartialOfferKey = offerPrice => {
 /**
  * Return a sort key that distinguishes by Price and sequence number
  *
- * @param {Ratio} offerPrice IST/collateral
- * @param {bigint} sequenceNumber
- * @returns {string} lexically sortable string in which highest price is first,
- *   ties will be broken by sequenceNumber of offer
+ * @param   {Ratio}  offerPrice     IST/collateral
+ * @param   {bigint} sequenceNumber
+ * @returns {string}                lexically sortable string in which highest
+ *   price is first, ties will be broken by sequenceNumber of offer
  */
 export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
   mustMatch(offerPrice, RatioShape);
@@ -53,10 +53,10 @@ export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
 };
 
 /**
- * @param {number} floatPrice
- * @param {Brand<'nat'>} numBrand
- * @param {Brand<'nat'>} denomBrand
- * @param {number} useDecimals
+ * @param   {number}       floatPrice
+ * @param   {Brand<'nat'>} numBrand
+ * @param   {Brand<'nat'>} denomBrand
+ * @param   {number}       useDecimals
  * @returns {Ratio}
  */
 const priceRatioFromFloat = (floatPrice, numBrand, denomBrand, useDecimals) => {
@@ -81,10 +81,10 @@ const bidScalingRatioFromKey = (bidScaleFloat, numBrand, useDecimals) => {
 /**
  * fromPriceOfferKey is only used for diagnostics.
  *
- * @param {string} key
- * @param {Brand<'nat'>} numBrand
- * @param {Brand<'nat'>} denomBrand
- * @param {number} useDecimals
+ * @param   {string}                                           key
+ * @param   {Brand<'nat'>}                                     numBrand
+ * @param   {Brand<'nat'>}                                     denomBrand
+ * @param   {number}                                           useDecimals
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
@@ -105,10 +105,11 @@ export const toBidScalingComparator = rate => {
 /**
  * Sorts offers expressed as percentage of the current oracle price.
  *
- * @param {Ratio} rate discount/markup rate expressed as a ratio IST/IST
- * @param {bigint} sequenceNumber
- * @returns {string} lexically sortable string in which highest price is first,
- *   ties will be broken by sequenceNumber of offer
+ * @param   {Ratio}  rate           discount/markup rate expressed as a ratio
+ *   IST/IST
+ * @param   {bigint} sequenceNumber
+ * @returns {string}                lexically sortable string in which highest
+ *   price is first, ties will be broken by sequenceNumber of offer
  */
 export const toScaledRateOfferKey = (rate, sequenceNumber) => {
   mustMatch(rate, RatioShape);
@@ -123,9 +124,9 @@ export const toScaledRateOfferKey = (rate, sequenceNumber) => {
 /**
  * fromScaledRateOfferKey is only used for diagnostics.
  *
- * @param {string} key
- * @param {Brand} brand
- * @param {number} useDecimals
+ * @param   {string}                                           key
+ * @param   {Brand}                                            brand
+ * @param   {number}                                           useDecimals
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromScaledRateOfferKey = (key, brand, useDecimals) => {

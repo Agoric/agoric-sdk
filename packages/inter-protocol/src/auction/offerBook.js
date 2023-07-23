@@ -55,7 +55,7 @@ export const prepareScaledBidBook = baggage =>
     undefined,
     /**
      * @param {Pattern} bidScalingPattern
-     * @param {Brand} collateralBrand
+     * @param {Brand}   collateralBrand
      */
     (bidScalingPattern, collateralBrand) => ({
       bidScalingPattern,
@@ -65,10 +65,10 @@ export const prepareScaledBidBook = baggage =>
     }),
     {
       /**
-       * @param {ZCFSeat} seat
-       * @param {Ratio} bidScaling
+       * @param {ZCFSeat}       seat
+       * @param {Ratio}         bidScaling
        * @param {Amount<'nat'>} wanted
-       * @param {boolean} exitAfterBuy
+       * @param {boolean}       exitAfterBuy
        */
       add(seat, bidScaling, wanted, exitAfterBuy) {
         const { bidScalingPattern, collateralBrand, records } = this.state;
@@ -148,7 +148,7 @@ export const preparePriceBook = baggage =>
     undefined,
     /**
      * @param {Pattern} priceRatioPattern
-     * @param {Brand} collateralBrand
+     * @param {Brand}   collateralBrand
      */
     (priceRatioPattern, collateralBrand) => ({
       priceRatioPattern,
@@ -158,10 +158,10 @@ export const preparePriceBook = baggage =>
     }),
     {
       /**
-       * @param {ZCFSeat} seat
-       * @param {Ratio} price
+       * @param {ZCFSeat}       seat
+       * @param {Ratio}         price
        * @param {Amount<'nat'>} wanted
-       * @param {boolean} exitAfterBuy
+       * @param {boolean}       exitAfterBuy
        */
       add(seat, price, wanted, exitAfterBuy) {
         const { priceRatioPattern, collateralBrand, records } = this.state;

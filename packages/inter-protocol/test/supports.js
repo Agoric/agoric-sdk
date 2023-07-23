@@ -26,9 +26,9 @@ export { makeMockChainStorageRoot };
 export const DENOM_UNIT = 1_000_000n;
 
 /**
- * @param {any} t
- * @param {string} sourceRoot
- * @param {string} bundleName
+ * @param   {any}                   t
+ * @param   {string}                sourceRoot
+ * @param   {string}                bundleName
  * @returns {Promise<SourceBundle>}
  */
 export const provideBundle = (t, sourceRoot, bundleName) => {
@@ -54,7 +54,7 @@ export const setUpZoeForTest = async (setJig = () => {}) =>
 harden(setUpZoeForTest);
 
 /**
- * @param {any} t
+ * @param {any}                                           t
  * @param {import('@agoric/time/src/types').TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
@@ -97,7 +97,7 @@ export const installGovernance = (zoe, produce) => {
 /**
  * Install governance contracts, with a "puppet" governor for use in tests.
  *
- * @param {ERef<ZoeService>} zoe
+ * @param {ERef<ZoeService>}                 zoe
  * @param {Space['installation']['produce']} produce
  */
 export const installPuppetGovernance = (zoe, produce) => {
@@ -110,8 +110,8 @@ export const installPuppetGovernance = (zoe, produce) => {
 };
 
 /**
- * @param {bigint} value
- * @param {{
+ * @param   {bigint}                                                                                                                                                             value
+ * @param   {{
  *   centralSupply: ERef<
  *     Installation<import('@agoric/vats/src/centralSupply.js').start>
  *   >;
@@ -136,9 +136,9 @@ export const mintRunPayment = async (
 };
 
 /**
- * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} Space
- * @param {Space} space
- * @param {Record<
+ * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers}         Space
+ * @param   {Space}                                                                       space
+ * @param   {Record<
  *   keyof Space['installation']['produce'],
  *   Promise<Installation>
  * >} installations
@@ -189,7 +189,7 @@ export const subscriptionKey = subscription => {
  * @param {ERef<{
  *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
  * }>} hasTopics
- * @param {string} subscriberName
+ * @param {string}                                                                                     subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {
   return E(hasTopics)
@@ -220,13 +220,13 @@ export const headValueLegacy = async subscription => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {import('ava').ExecutionContext}                                                             t
  * @param {ERef<{
  *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
  * }>} hasTopics
- * @param {string} topicName
- * @param {string} path
- * @param {string[]} [dataKeys]
+ * @param {string}                                                                                     topicName
+ * @param {string}                                                                                     path
+ * @param {string[]}                                                                                   [dataKeys]
  */
 export const assertTopicPathData = async (
   t,
@@ -256,7 +256,7 @@ export const assertTopicPathData = async (
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<
+ * @param   {ERef<
  *   Subscriber<
  *     import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord
  *   >

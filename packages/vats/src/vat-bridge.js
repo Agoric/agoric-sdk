@@ -22,8 +22,9 @@ export function buildRootObject(vatPowers, _args, baggage) {
 
   /**
    * @param {ERef<import('./types.js').ScopedBridgeManager>} storageBridgeManagerP
-   * @param {string} rootPath must be unique (caller responsibility to ensure)
-   * @param {object} [options]
+   * @param {string}                                         rootPath
+   *   must be unique (caller responsibility to ensure)
+   * @param {object}                                         [options]
    */
   const makeBridgedChainStorageRoot = async (
     storageBridgeManagerP,

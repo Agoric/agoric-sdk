@@ -36,10 +36,10 @@ const makeDefaultParams = ({
 };
 
 /**
- * @param {any} t
- * @param {any} params
+ * @param {any}    t
+ * @param {any}    params
  * @param {number} baseTime
- * @param {any} rawExpect
+ * @param {any}    rawExpect
  */
 const checkSchedule = (t, params, baseTime, rawExpect) => {
   const schedule = computeRoundTiming(params, coerceAbs(baseTime));
@@ -57,9 +57,9 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
 };
 
 /**
- * @param {any} t
- * @param {any} params
- * @param {number} baseTime
+ * @param {any}             t
+ * @param {any}             params
+ * @param {number}          baseTime
  * @param {string | RegExp} message
  */
 const checkScheduleThrows = async (t, params, baseTime, message) => {

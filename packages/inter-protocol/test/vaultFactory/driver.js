@@ -99,8 +99,8 @@ const defaultParamValues = debt =>
  */
 
 /**
- * @param {object} opts
- * @param {InterestTiming} [opts.interestTiming]
+ * @param   {object}                 opts
+ * @param   {InterestTiming}         [opts.interestTiming]
  * @returns {Promise<DriverContext>}
  */
 export const makeDriverContext = async ({
@@ -169,7 +169,7 @@ const setupReserveAndElectorate = async t => {
 
 /**
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {Amount<'nat'>} amt
+ * @param {Amount<'nat'>}                                 amt
  */
 const getRunFromFaucet = async (t, amt) => {
   const {
@@ -203,8 +203,8 @@ const getRunFromFaucet = async (t, amt) => {
  * interfere.
  *
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {Amount} initialPrice
- * @param {Amount} priceBase
+ * @param {Amount}                                        initialPrice
+ * @param {Amount}                                        priceBase
  */
 const setupServices = async (t, initialPrice, priceBase) => {
   const timer = buildManualTimer(t.log);
@@ -294,8 +294,8 @@ const setupServices = async (t, initialPrice, priceBase) => {
 
 /**
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {Amount<'nat'>} [initialPrice]
- * @param {Amount<'nat'>} [priceBase]
+ * @param {Amount<'nat'>}                                 [initialPrice]
+ * @param {Amount<'nat'>}                                 [priceBase]
  */
 export const makeManagerDriver = async (
   t,
@@ -350,9 +350,9 @@ export const makeManagerDriver = async (
       vaultSeat: () => vaultSeat,
       notification: () => notification,
       /**
-       * @param {bigint} collValue
+       * @param {bigint}                               collValue
        * @param {import('../supports.js').AmountUtils} collUtils
-       * @param {bigint} [mintedValue]
+       * @param {bigint}                               [mintedValue]
        */
       giveCollateral: async (collValue, collUtils, mintedValue = 0n) => {
         trace(t, 'giveCollateral', collValue);
@@ -371,9 +371,9 @@ export const makeManagerDriver = async (
         return E(seat).getOfferResult();
       },
       /**
-       * @param {bigint} mintedValue
+       * @param {bigint}                               mintedValue
        * @param {import('../supports.js').AmountUtils} collUtils
-       * @param {bigint} [collValue]
+       * @param {bigint}                               [collValue]
        */
       giveMinted: async (mintedValue, collUtils, collValue = 0n) => {
         trace(t, 'giveCollateral', mintedValue);
@@ -412,9 +412,10 @@ export const makeManagerDriver = async (
       },
       /**
        * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
-       * @param {object} [likeExpected]
-       * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for
-       *   updateCount of the last update, forcing to wait for another
+       * @param {object}                                               [likeExpected]
+       * @param {AT_NEXT | number}                                     [optSince]
+       *   AT_NEXT is an alias for updateCount of the last update, forcing to wait
+       *   for another
        */
       notified: async (phase, likeExpected, optSince) => {
         notification = await E(notifier).getUpdateSince(
@@ -482,8 +483,8 @@ export const makeManagerDriver = async (
     // e.g. the manager driver should know the paramPath is `{ key: { collateralBrand: aeth.brand } }`
     // and the director driver should `{ key: 'governedParams }`
     /**
-     * @param {string} name
-     * @param {any} newValue
+     * @param {string}                name
+     * @param {any}                   newValue
      * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the
      *   factory
      */
@@ -508,9 +509,9 @@ export const makeManagerDriver = async (
       return E(vfGov).setFilters(harden(filters));
     },
     /**
-     * @param {object} [likeExpected]
-     * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for updateCount
-     *   of the last update, forcing to wait for another
+     * @param {object}           [likeExpected]
+     * @param {AT_NEXT | number} [optSince]     AT_NEXT is an alias for
+     *   updateCount of the last update, forcing to wait for another
      */
     managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
@@ -581,7 +582,7 @@ export const makeAuctioneerDriver = async t => {
     },
     /**
      * @param {keyof import('../../src/auction/params.js').AuctionParams} name
-     * @param {any} newValue
+     * @param {any}                                                       newValue
      */
     setGovernedParam: async (name, newValue) => {
       trace('setGovernedParam', name);

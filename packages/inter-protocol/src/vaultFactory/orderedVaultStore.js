@@ -18,7 +18,7 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
 export const makeOrderedVaultStore = store => {
   /**
    * @param {string} vaultId
-   * @param {Vault} vault
+   * @param {Vault}  vault
    */
   const addVault = (vaultId, vault) => {
     const debt = vault.getNormalizedDebt();
@@ -29,7 +29,7 @@ export const makeOrderedVaultStore = store => {
   };
 
   /**
-   * @param {string} key
+   * @param   {string} key
    * @returns {Vault}
    */
   const removeByKey = key => {

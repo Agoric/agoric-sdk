@@ -17,7 +17,7 @@ import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 
 const trace = makeTracer('FluxAgg', false);
 /**
- * @typedef {import('@agoric/vat-data').Baggage} Baggage
+ * @typedef {import('@agoric/vat-data').Baggage}            Baggage
  *
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
@@ -52,7 +52,7 @@ export const privateArgsShape = M.splitRecord(
  *     description: string;
  *     unitAmountIn?: Amount<'nat'>;
  *   }
- * >} zcf
+ * >}                                                                   zcf
  * @param {{
  *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
  *   initialPoserInvitation: Invitation;
@@ -60,7 +60,7 @@ export const privateArgsShape = M.splitRecord(
  *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
  *   storageNode: StorageNode;
  * }} privateArgs
- * @param {Baggage} baggage
+ * @param {Baggage}                                                                                                                                                                                                                                                                        baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   trace('prepare with baggage keys', [...baggage.keys()]);
@@ -157,7 +157,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
      * Add the specified oracles. May partially fail, such that some oracles are
      * added and others aren't.
      *
-     * @param {string[]} addrs
+     * @param   {string[]}                                addrs
      * @returns {Promise<PromiseSettledResult<string>[]>}
      */
     addOracles: addrs => {
@@ -168,7 +168,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
      * are removed and others aren't. If the oracle was never part of the set
      * that's a PromiseRejectedResult
      *
-     * @param {string[]} addrs
+     * @param   {string[]}                                addrs
      * @returns {Promise<PromiseSettledResult<string>[]>}
      */
     removeOracles: addrs => {

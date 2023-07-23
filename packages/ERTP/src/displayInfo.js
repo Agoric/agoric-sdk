@@ -6,8 +6,8 @@ import { mustMatch } from '@agoric/store';
 import { DisplayInfoShape } from './typeGuards.js';
 
 /**
- * @param {AdditionalDisplayInfo} allegedDisplayInfo
- * @param {AssetKind} assetKind
+ * @param   {AdditionalDisplayInfo} allegedDisplayInfo
+ * @param   {AssetKind}             assetKind
  * @returns {DisplayInfo}
  */
 export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {

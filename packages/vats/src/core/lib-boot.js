@@ -34,9 +34,9 @@ const { Fail, quote: q } = assert;
  */
 
 /**
- * @typedef {(powers: any, config?: any) => Promise<void>} BootBehavior
+ * @typedef {(powers: any, config?: any) => Promise<void>}                                       BootBehavior
  *
- * @typedef {Record<string, unknown>} ModuleNamespace
+ * @typedef {Record<string, unknown>}                                                            ModuleNamespace
  *
  * @typedef {{ utils: typeof import('./utils.js') } & Record<
  *   string,
@@ -52,11 +52,11 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  *   D: DProxy;
  *   logger: (msg) => void;
  * }} vatPowers
- * @param {Record<string, unknown>} vatParameters
- * @param {BootstrapManifest} bootManifest
- * @param {Record<string, BootBehavior>} behaviors
- * @param {BootModules} modules
- * @param {import('@agoric/zone').Zone} [zone]
+ * @param {Record<string, unknown>}                               vatParameters
+ * @param {BootstrapManifest}                                     bootManifest
+ * @param {Record<string, BootBehavior>}                          behaviors
+ * @param {BootModules}                                           modules
+ * @param {import('@agoric/zone').Zone}                           [zone]
  */
 export const makeBootstrap = (
   vatPowers,
@@ -78,7 +78,7 @@ export const makeBootstrap = (
   /**
    * Bootstrap vats and devices.
    *
-   * @param {SwingsetVats} vats
+   * @param {SwingsetVats}               vats
    * @param {SoloDevices | ChainDevices} devices
    */
   const rawBootstrap = async (vats, devices) => {
@@ -172,7 +172,7 @@ export const makeBootstrap = (
     /**
      * Bootstrap vats and devices.
      *
-     * @param {SwingsetVats} vats
+     * @param {SwingsetVats}               vats
      * @param {SoloDevices | ChainDevices} devices
      */
     bootstrap: (vats, devices) => {

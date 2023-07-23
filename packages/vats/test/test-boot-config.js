@@ -38,7 +38,7 @@ const NON_UPGRADEABLE_VATS = [
 ];
 
 /**
- * @param {string} bin
+ * @param {string}                                          bin
  * @param {{ spawn: typeof import('child_process').spawn }} io
  */
 export const pspawn =

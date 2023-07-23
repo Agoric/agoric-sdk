@@ -16,7 +16,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').Timestamp}    Timestamp
  *
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
@@ -35,7 +35,7 @@ const validRoundId = roundId => {
 };
 
 /**
- * @typedef {{ roundId: number | undefined; unitPrice: NatValue }} PriceRound
+ * @typedef {{ roundId: number | undefined; unitPrice: NatValue }}             PriceRound
  *
  * @typedef {Pick<RoundData, 'roundId' | 'startedAt'> & { startedBy: string }} LatestRound
  */
@@ -43,24 +43,24 @@ const validRoundId = roundId => {
 /** @typedef {Round & { roundId: bigint }} RoundData */
 
 /**
- * @typedef {object} Round
- * @property {bigint} answer the answer for the given round
- * @property {Timestamp} startedAt the timestamp when the round was started.
- *   This is 0 if the round hasn't been started yet.
- * @property {Timestamp} updatedAt the timestamp when the round last was updated
- *   (i.e. answer was last computed)
- * @property {bigint} answeredInRound the round ID of the round in which the
+ * @typedef  {object}    Round
+ * @property {bigint}    answer          the answer for the given round
+ * @property {Timestamp} startedAt       the timestamp when the round was
+ *   started. This is 0 if the round hasn't been started yet.
+ * @property {Timestamp} updatedAt       the timestamp when the round last was
+ *   updated (i.e. answer was last computed)
+ * @property {bigint}    answeredInRound the round ID of the round in which the
  *   answer was computed. answeredInRound may be smaller than roundId when the
  *   round timed out. answeredInRound is equal to roundId when the round didn't
  *   time out and was completed regularly.
  */
 
 /**
- * @typedef {object} RoundDetails
+ * @typedef  {object}   RoundDetails
  * @property {bigint[]} submissions
- * @property {number} maxSubmissions
- * @property {number} minSubmissions
- * @property {number} roundTimeout
+ * @property {number}   maxSubmissions
+ * @property {number}   minSubmissions
+ * @property {number}   roundTimeout
  */
 
 /** @typedef {IssuerKit<'set'>} QuoteKit */
@@ -83,12 +83,12 @@ const validRoundId = roundId => {
  *     rounds: MapStore<bigint, Round>;
  *     unitIn: bigint;
  *   }
- * >} ImmutableState
+ * >}                                                                                                                                                                                              ImmutableState
  *
  * @typedef {{
  *   lastValueOutForUnitIn: bigint?;
  *   reportingRoundId: bigint;
- * }} MutableState
+ * }}                                                                                                                                                                                                                                                                   MutableState
  */
 /** @typedef {ImmutableState & MutableState} State */
 
@@ -183,7 +183,7 @@ export const prepareRoundsManagerKit = baggage =>
 
         /**
          * @param {OracleStatus} status
-         * @param {bigint} roundId
+         * @param {bigint}       roundId
          */
         delayed(status, roundId) {
           const { restartDelay } = this.state;
@@ -207,9 +207,9 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {bigint} roundId
+         * @param {bigint}    roundId
          * @param {Timestamp} blockTimestamp
-         * @param {string} oracleId
+         * @param {string}    oracleId
          */
         initializeNewRound(roundId, blockTimestamp, oracleId) {
           const {
@@ -255,7 +255,7 @@ export const prepareRoundsManagerKit = baggage =>
 
         /**
          * @param {bigint} roundId
-         * @param {bigint} rrId reporting round ID
+         * @param {bigint} rrId    reporting round ID
          */
         previousAndCurrentUnanswered(roundId, rrId) {
           const { rounds } = this.state;
@@ -263,10 +263,10 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {bigint} roundId
-         * @param {OracleStatus} status
-         * @param {Timestamp} blockTimestamp
-         * @returns {OracleStatus | undefined} the new status
+         * @param   {bigint}                   roundId
+         * @param   {OracleStatus}             status
+         * @param   {Timestamp}                blockTimestamp
+         * @returns {OracleStatus | undefined}                the new status
          */
         proposeNewRound(roundId, status, blockTimestamp) {
           const { helper } = this.facets;
@@ -284,10 +284,10 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {bigint} submission
-         * @param {bigint} roundId
-         * @param {OracleStatus} status
-         * @returns {OracleStatus} the new status
+         * @param   {bigint}       submission
+         * @param   {bigint}       roundId
+         * @param   {OracleStatus} status
+         * @returns {OracleStatus}            the new status
          */
         recordSubmission(submission, roundId, status) {
           trace('recordSubmission', submission, roundId, status);
@@ -312,7 +312,7 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {bigint} roundId
+         * @param {bigint}    roundId
          * @param {Timestamp} blockTimestamp
          */
         supersedable(roundId, blockTimestamp) {
@@ -325,7 +325,7 @@ export const prepareRoundsManagerKit = baggage =>
           );
         },
         /**
-         * @param {bigint} roundId
+         * @param {bigint}    roundId
          * @param {Timestamp} blockTimestamp
          */
         timedOut(roundId, blockTimestamp) {
@@ -352,7 +352,7 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {bigint} roundId
+         * @param {bigint}    roundId
          * @param {Timestamp} blockTimestamp
          */
         updateRoundAnswer(roundId, blockTimestamp) {
@@ -386,7 +386,7 @@ export const prepareRoundsManagerKit = baggage =>
           return [true, newAnswer];
         },
         /**
-         * @param {bigint} roundId
+         * @param {bigint}    roundId
          * @param {Timestamp} blockTimestamp
          */
         updateTimedOutRoundInfo(roundId, blockTimestamp) {
@@ -415,10 +415,11 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {OracleStatus} status
-         * @param {bigint} roundId
-         * @param {Timestamp} blockTimestamp
-         * @returns {string | null} error message, if there is one
+         * @param   {OracleStatus}  status
+         * @param   {bigint}        roundId
+         * @param   {Timestamp}     blockTimestamp
+         * @returns {string | null}                error message, if there is
+         *   one
          */
         validateOracleRound(status, roundId, blockTimestamp) {
           const { reportingRoundId } = this.state;
@@ -455,8 +456,8 @@ export const prepareRoundsManagerKit = baggage =>
         },
 
         /**
-         * @param {object} param0
-         * @param {number} [param0.overrideValueOut]
+         * @param {object}    param0
+         * @param {number}    [param0.overrideValueOut]
          * @param {Timestamp} [param0.timestamp]
          */
         makeCreateQuote({ overrideValueOut, timestamp } = {}) {
@@ -531,8 +532,8 @@ export const prepareRoundsManagerKit = baggage =>
 
         /**
          * @param {OracleStatus} status
-         * @param {bigint} queriedRoundId
-         * @param {Timestamp} blockTimestamp
+         * @param {bigint}       queriedRoundId
+         * @param {Timestamp}    blockTimestamp
          */
         eligibleForSpecificRound(status, queriedRoundId, blockTimestamp) {
           const { rounds } = this.state;
@@ -555,7 +556,7 @@ export const prepareRoundsManagerKit = baggage =>
          * consumers are encouraged to check that they're receiving fresh data
          * by inspecting the updatedAt and answeredInRound return values.
          *
-         * @param {bigint | number} roundIdRaw
+         * @param   {bigint | number}    roundIdRaw
          * @returns {Promise<RoundData>}
          */
         async getRoundData(roundIdRaw) {
@@ -595,7 +596,7 @@ export const prepareRoundsManagerKit = baggage =>
          * to read state.
          *
          * @param {OracleStatus} status
-         * @param {Timestamp} blockTimestamp
+         * @param {Timestamp}    blockTimestamp
          */
         oracleRoundStateSuggestRound(status, blockTimestamp) {
           const { helper } = this.facets;
@@ -656,7 +657,7 @@ export const prepareRoundsManagerKit = baggage =>
          * push a unitPrice result from this oracle
          *
          * @param {OracleStatus} status
-         * @param {PriceRound} result
+         * @param {PriceRound}   result
          */
         async handlePush(
           status,

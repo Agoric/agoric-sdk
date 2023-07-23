@@ -74,7 +74,7 @@ export const prepareMixinMyAddress = zone => {
 
   /**
    * @param {import('./types.js').NameAdmin} nameAdmin
-   * @param {string} address
+   * @param {string}                         address
    */
   const mixinMyAddress = (nameAdmin, address) => {
     const myAddressFacet = makeConstantFacet(address);
@@ -96,8 +96,8 @@ export const prepareMixinMyAddress = zone => {
  * @template {{}} K
  * @template {NonPrimitive} V
  * @param {WeakMap<K, V>} store
- * @param {K} key
- * @param {(k: K) => V} make
+ * @param {K}             key
+ * @param {(k: K) => V}   make
  */
 const provideWeak = (store, key, make) => {
   if (store.has(key)) {
@@ -111,8 +111,8 @@ const provideWeak = (store, key, make) => {
 
 /**
  * @param {import('./types.js').NameHubUpdateHandler | undefined} updateCallback
- * @param {NameHub} hub
- * @param {unknown} [_newValue]
+ * @param {NameHub}                                               hub
+ * @param {unknown}                                               [_newValue]
  */
 const updated = (updateCallback, hub, _newValue = undefined) => {
   if (!updateCallback) {

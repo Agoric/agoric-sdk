@@ -49,12 +49,12 @@ const bootMsgEx = {
  */
 
 /**
- * @param {BootstrapPowers & {}} powers
+ * @param   {BootstrapPowers & {}}                            powers
  *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
  *   as from createVatByName
  *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
+ * @typedef {MapStore<string, CreateVatResults>}              VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
@@ -166,15 +166,15 @@ harden(produceStartUpgradable);
 
 /**
  * @template {GovernableStartFn} SF
- * @param {{
+ * @param   {{
  *   zoe: ERef<ZoeService>;
  *   governedContractInstallation: ERef<Installation<SF>>;
  *   issuerKeywordRecord?: IssuerKeywordRecord;
  *   terms: Record<string, unknown>;
  *   privateArgs: any; // TODO: connect with Installation type
  *   label: string;
- * }} zoeArgs
- * @param {{
+ * }}                                                                           zoeArgs
+ * @param   {{
  *   governedParams: Record<string, unknown>;
  *   timer: ERef<import('@agoric/time/src/types').TimerService>;
  *   contractGovernor: ERef<Installation>;
@@ -325,11 +325,11 @@ export const produceStartGovernedUpgradable = async ({
 harden(produceStartGovernedUpgradable);
 
 /**
- * @param {BootstrapPowers & {
+ * @param   {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
  * }} powers
  *
- * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
+ * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>}                      ZoeVat
  */
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
@@ -358,13 +358,13 @@ export const buildZoe = async ({
 harden(buildZoe);
 
 /**
- * @param {BootstrapPowers & {
+ * @param   {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
  * }} powers
  *
  * @typedef {ERef<
  *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
- * >} PriceAuthorityVat
+ * >}                  PriceAuthorityVat
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },

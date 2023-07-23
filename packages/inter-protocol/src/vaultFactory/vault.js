@@ -63,7 +63,7 @@ export const Phase = /** @type {const} */ ({
 
 /**
  * @typedef {Phase[keyof Omit<typeof Phase, 'TRANSFER'>]} VaultPhase
- * @type {{ [K in VaultPhase]: VaultPhase[] }}
+ * @type    {{ [K in VaultPhase]: VaultPhase[] }}
  */
 const validTransitions = {
   [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
@@ -73,26 +73,27 @@ const validTransitions = {
 };
 
 /**
- * @typedef {Phase[keyof typeof Phase]} HolderPhase
+ * @typedef  {Phase[keyof typeof Phase]}                    HolderPhase
  *
- * @typedef {object} VaultNotification
- * @property {Amount<'nat'>} locked Amount of Collateral locked
- * @property {{ debt: Amount<'nat'>; stabilityFee: Ratio }} debtSnapshot 'debt'
- *   at the point the compounded stabilityFee was 'stabilityFee'
- * @property {HolderPhase} vaultState
+ * @typedef  {object}                                       VaultNotification
+ * @property {Amount<'nat'>}                                locked
+ *   Amount of Collateral locked
+ * @property {{ debt: Amount<'nat'>; stabilityFee: Ratio }} debtSnapshot
+ *   'debt' at the point the compounded stabilityFee was 'stabilityFee'
+ * @property {HolderPhase}                                  vaultState
  */
 
 // XXX masks typedef from types.js, but using that causes circular def problems
 /**
- * @typedef {object} VaultManager
- * @property {() => Subscriber<import('./vaultManager').AssetState>} getAssetSubscriber
- * @property {(collateralAmount: Amount) => Amount<'nat'>} maxDebtFor
- * @property {() => Brand} getCollateralBrand
- * @property {(base: string) => string} scopeDescription
- * @property {() => Brand<'nat'>} getDebtBrand
- * @property {MintAndTransfer} mintAndTransfer
- * @property {(amount: Amount, seat: ZCFSeat) => void} burn
- * @property {() => Ratio} getCompoundedStabilityFee
+ * @typedef  {object}                                                                                                                                                         VaultManager
+ * @property {() => Subscriber<import('./vaultManager').AssetState>}                                                                                                          getAssetSubscriber
+ * @property {(collateralAmount: Amount) => Amount<'nat'>}                                                                                                                    maxDebtFor
+ * @property {() => Brand}                                                                                                                                                    getCollateralBrand
+ * @property {(base: string) => string}                                                                                                                                       scopeDescription
+ * @property {() => Brand<'nat'>}                                                                                                                                             getDebtBrand
+ * @property {MintAndTransfer}                                                                                                                                                mintAndTransfer
+ * @property {(amount: Amount, seat: ZCFSeat) => void}                                                                                                                        burn
+ * @property {() => Ratio}                                                                                                                                                    getCompoundedStabilityFee
  * @property {(
  *   oldDebt: import('./storeUtils.js').NormalizedDebt,
  *   oldCollateral: Amount<'nat'>,
@@ -100,7 +101,7 @@ const validTransitions = {
  *   vaultPhase: VaultPhase,
  *   vault: Vault,
  * ) => void} handleBalanceChange
- * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
+ * @property {() => import('./vaultManager.js').GovernedParamGetters}                                                                                                         getGovernedParams
  */
 
 /**
@@ -152,9 +153,9 @@ const VaultStateShape = harden({
 });
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/ertp').Baggage}                                        baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
- * @param {ZCF} zcf
+ * @param {ZCF}                                                                   zcf
  */
 export const prepareVault = (baggage, makeRecorderKit, zcf) => {
   const makeVaultKit = prepareVaultKit(baggage, makeRecorderKit);
@@ -167,9 +168,9 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
       self: VaultI,
     },
     /**
-     * @param {VaultManager} manager
-     * @param {VaultId} idInManager
-     * @param {StorageNode} storageNode
+     * @param   {VaultManager}                  manager
+     * @param   {VaultId}                       idInManager
+     * @param   {StorageNode}                   storageNode
      * @returns {ImmutableState & MutableState}
      */
     (manager, idInManager, storageNode) => {
@@ -216,7 +217,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * }} FullProposal
          */
         /**
-         * @param {ProposalRecord} partial
+         * @param   {ProposalRecord} partial
          * @returns {FullProposal}
          */
         fullProposal(partial) {
@@ -283,8 +284,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          *
          * @param {NormalizedDebt} oldDebtNormalized - prior principal and all
          *   accrued interest, normalized to the launch of the vaultManager
-         * @param {Amount<'nat'>} oldCollateral - actual collateral
-         * @param {Amount<'nat'>} newDebtActual - actual principal and all
+         * @param {Amount<'nat'>}  oldCollateral     - actual collateral
+         * @param {Amount<'nat'>}  newDebtActual     - actual principal and all
          *   accrued interest
          */
         updateDebtAccounting(oldDebtNormalized, oldCollateral, newDebtActual) {
@@ -473,8 +474,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         /**
          * Adjust principal and collateral (atomically for offer safety)
          *
-         * @param {ZCFSeat} clientSeat
-         * @returns {string} success message
+         * @param   {ZCFSeat} clientSeat
+         * @returns {string}             success message
          */
         adjustBalancesHook(clientSeat) {
           const { state, facets } = this;
@@ -531,13 +532,14 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * @param {ZCFSeat} clientSeat
-         * @param {FullProposal} fp
-         * @param {ReturnType<typeof calculateDebtCosts>} costs
-         * @param {object} accounting
-         * @param {NormalizedDebt} accounting.normalizedDebtPre
-         * @param {Amount<'nat'>} accounting.collateralPre
-         * @returns {string} success message
+         * @param   {ZCFSeat}                               clientSeat
+         * @param   {FullProposal}                          fp
+         * @param   {ReturnType<typeof calculateDebtCosts>} costs
+         * @param   {object}                                accounting
+         * @param   {NormalizedDebt}                        accounting.normalizedDebtPre
+         * @param   {Amount<'nat'>}                         accounting.collateralPre
+         * @returns {string}
+         *   success message
          */
         commitBalanceAdjustment(
           clientSeat,
@@ -576,7 +578,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * @param {ZCFSeat} seat
+         * @param   {ZCFSeat}  seat
          * @returns {VaultKit}
          */
         makeTransferInvitationHook(seat) {
@@ -600,7 +602,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
         },
 
         /**
-         * @param {ZCFSeat} seat
+         * @param {ZCFSeat}     seat
          * @param {StorageNode} storageNode
          */
         async initVaultKit(seat, storageNode) {

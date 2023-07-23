@@ -16,53 +16,53 @@
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').buildRootDeviceNode
  *   >
- * >} BridgeDevice
+ * >}                                                                                                                        BridgeDevice
  *
  * @typedef {Device<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode
  *   >
- * >} CommandDevice
+ * >}                                                                                                                      CommandDevice
  *
  * @typedef {Device<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode
  *   >
- * >} MailboxDevice
+ * >}                                                                                                                      MailboxDevice
  *
  * @typedef {Device<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode
  *   >
- * >} PluginDevice
+ * >}                                                                                                                        PluginDevice
  *
  * @typedef {Device<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode
  *   >
- * >} TimerDevice
+ * >}                                                                                                                          TimerDevice
  *
  * @typedef {Device<
  *   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
- * >} VatAdminDevice
+ * >}                                                                                                                                          VatAdminDevice
  *
  * @typedef {ERef<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').buildRootObject
  *   >
- * >} VattpVat
+ * >}                                                                                                                                      VattpVat
  *
  * @typedef {ERef<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').buildRootObject
  *   >
- * >} VatAdminVat
+ * >}                                                                                                                              VatAdminVat
  *
  * @typedef {ERef<
  *   ReturnType<
  *     typeof import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').buildRootObject
  *   >
- * >} TimerVat
+ * >}                                                                                                                                      TimerVat
  *   See deliverToController in packages/SwingSet/src/vats/comms/controller.js
  *
  * @typedef {ERef<{
@@ -80,11 +80,11 @@
  *   timer: TimerVat;
  *   vatAdmin: VatAdminVat;
  *   vattp: VattpVat;
- * }} SwingsetVats
+ * }}                                                                                                                                                            SwingsetVats
  *
  * @typedef {{
  *   vatParameters: { chainStorageEntries?: [k: string, v: string][] };
- * }} ChainStorageVatParams
+ * }}                                                                                                                                                                             ChainStorageVatParams
  */
 
 /**
@@ -101,7 +101,7 @@
  *   mailbox: MailboxDevice;
  *   timer: TimerDevice;
  *   bridge?: BridgeDevice;
- * }} ChainDevices
+ * }}                          ChainDevices
  */
 
 /**
@@ -113,9 +113,9 @@
 
 /**
  * @template T
- * @typedef {object} Producer<T>
- * @property {(v: ERef<T>) => void} resolve
- * @property {(r: unknown) => void} reject
+ * @typedef  {object}                     Producer<T>
+ * @property {(v: ERef<T>) => void}       resolve
+ * @property {(r: unknown) => void}       reject
  * @property {(reason?: unknown) => void} reset
  */
 /** @typedef {{ bundleName?: string; bundleID?: string }} VatSourceRef */
@@ -127,7 +127,7 @@
 /**
  * @typedef {{
  *   assignBundle: (ps: PropertyMaker[]) => void;
- * }} ClientManager
+ * }}         ClientManager
  *   tool to put properties onto the `home` object of the client
  *
  * @typedef {(addr: string, flags: string[]) => Record<string, unknown>} PropertyMaker
@@ -146,25 +146,26 @@
 
 /**
  * @callback CreateUserBundle
- * @param {string} nickname
- * @param {string} clientAddress
- * @param {string[]} powerFlags
- * @returns {Promise<Record<string, Promise<any>>>}
+ * @param    {string}                                                                                           nickname
+ * @param    {string}                                                                                           clientAddress
+ * @param    {string[]}                                                                                         powerFlags
+ * @returns  {Promise<Record<string, Promise<any>>>}
  *
- * @typedef {object} ClientFacet
- * @property {() => ERef<Record<string, any>>} getChainBundle Required for
- *   ag-solo, but deprecated in favour of getConfiguration NOTE: we use `any`
- *   rather than `unknown` because each client that wants to call a method such
- *   as `E(userBundle.bank).deposit(payment)` has to cast userBundle.bank;
- *   ideally, the cast is to some useful type. But unknown can't be cast
- *   directly to some other type; it has to be cast to any first.
- * @property {() => AsyncIterable<Configuration, Configuration>} getConfiguration
+ * @typedef  {object}                                                                                           ClientFacet
+ * @property {() => ERef<Record<string, any>>}                                                                  getChainBundle
+ *   Required for ag-solo, but deprecated in favour of getConfiguration NOTE: we
+ *   use `any` rather than `unknown` because each client that wants to call a
+ *   method such as `E(userBundle.bank).deposit(payment)` has to cast
+ *   userBundle.bank; ideally, the cast is to some useful type. But unknown
+ *   can't be cast directly to some other type; it has to be cast to any first.
+ * @property {() => AsyncIterable<Configuration, Configuration>}                                                getConfiguration
  *
- * @typedef {{ clientAddress: string; clientHome: Record<string, any> }} Configuration
+ * @typedef  {{ clientAddress: string; clientHome: Record<string, any> }}                                       Configuration
  *
- * @typedef {object} ClientCreator
- * @property {CreateUserBundle} createUserBundle Required for vat-provisioning,
- *   but deprecated in favor of {@link createClient}.
+ * @typedef  {object}                                                                                           ClientCreator
+ * @property {CreateUserBundle}                                                                                 createUserBundle
+ *   Required for vat-provisioning, but deprecated in favor of
+ *   {@link createClient}.
  * @property {(
  *   nickname: string,
  *   clientAddress: string,
@@ -173,7 +174,7 @@
  */
 
 /**
- * @typedef {import('@agoric/inter-protocol/src/tokens.js').TokenKeyword} TokenKeyword
+ * @typedef {import('@agoric/inter-protocol/src/tokens.js').TokenKeyword}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   TokenKeyword
  *
  * @typedef {{
  *   issuer: TokenKeyword | 'Invitation' | 'AUSD';
@@ -209,7 +210,7 @@
  *     | 'Pegasus';
  *   oracleBrand: 'USD';
  *   uiConfig: 'VaultFactory';
- * }} WellKnownName
+ * }}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             WellKnownName
  *
  * @typedef {{
  *   issuer: {
@@ -420,10 +421,10 @@
  *   zoe: ZoeService;
  * }} ChainBootstrapSpaceT
  *
- * @typedef {PromiseSpaceOf<ChainBootstrapSpaceT>} ChainBootstrapSpace
+ * @typedef {PromiseSpaceOf<ChainBootstrapSpaceT>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ChainBootstrapSpace
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub IDEA/TODO: make types of
- *   demo stuff invisible in production behaviors
+ * @typedef {import('@agoric/vats').NameHub}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         NameHub
+ *   IDEA/TODO: make types of demo stuff invisible in production behaviors
  *
  * @typedef {{
  *   argv: {
@@ -431,7 +432,7 @@
  *     FIXME_GCI: string;
  *     PROVISIONER_INDEX?: number;
  *   };
- * }} BootstrapVatParams
+ * }}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     BootstrapVatParams
  *
  * @typedef {BootstrapSpace & {
  *   zone: import('@agoric/zone').Zone;
@@ -441,7 +442,7 @@
  *   vatParameters: BootstrapVatParams;
  *   runBehaviors: (manifest: unknown) => Promise<unknown>;
  *   modules: Record<string, Record<string, any>>;
- * }} BootstrapPowers
+ * }}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  BootstrapPowers
  *
  * @typedef {WellKnownSpaces &
  *   PromiseSpaceOf<
@@ -453,42 +454,42 @@
  *       loadVat: VatLoader<unknown>;
  *       loadCriticalVat: VatLoader<unknown>;
  *     }
- *   >} BootstrapSpace
+ *   >}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          BootstrapSpace
  *
- * @typedef {{ mint: ERef<Mint>; issuer: ERef<Issuer>; brand: Brand }} RemoteIssuerKit
+ * @typedef {{ mint: ERef<Mint>; issuer: ERef<Issuer>; brand: Brand }}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               RemoteIssuerKit
  *
- * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
+ * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               BankManager
  *
- * @typedef {ERef<ReturnType<import('../vat-agoricNames').buildRootObject>>} AgoricNamesVat
+ * @typedef {ERef<ReturnType<import('../vat-agoricNames').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         AgoricNamesVat
  *
- * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
+ * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             BankVat
  *
- * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
+ * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            BoardVat
  *
- * @typedef {ERef<ReturnType<import('../vat-bridge.js').buildRootObject>>} ChainStorageVat
+ * @typedef {ERef<ReturnType<import('../vat-bridge.js').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           ChainStorageVat
  *
  * @typedef {ERef<
  *   ReturnType<import('../vat-provisioning.js').buildRootObject>
- * >} ProvisioningVat
+ * >}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ProvisioningVat
  *
- * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
+ * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            MintsVat
  *
  * @typedef {ERef<
  *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
- * >} PriceAuthorityVat
+ * >}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               PriceAuthorityVat
  *
- * @typedef {ERef<ReturnType<import('../vat-network.js').buildRootObject>>} NetworkVat
+ * @typedef {ERef<ReturnType<import('../vat-network.js').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          NetworkVat
  *
- * @typedef {ERef<ReturnType<import('../vat-ibc.js').buildRootObject>>} IBCVat
+ * @typedef {ERef<ReturnType<import('../vat-ibc.js').buildRootObject>>}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              IBCVat
  *
- * @typedef {import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin} PriceAuthorityRegistryAdmin
+ * @typedef {import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         PriceAuthorityRegistryAdmin
  *
  * @typedef {{
  *   namedVat: PromiseSpaceOf<{
  *     agoricNames: Awaited<AgoricNamesVat>;
  *     board: Awaited<BoardVat>;
  *   }>;
- * }} NamedVatPowers
+ * }}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         NamedVatPowers
  */
 
 /**
@@ -508,15 +509,15 @@
  *
  * @typedef {ERef<
  *   ReturnType<import('@agoric/solo/src/vat-spawner.js').buildRootObject>
- * >} SpawnerVat
+ * >}                                 SpawnerVat
  *
  * @typedef {ERef<
  *   ReturnType<import('@agoric/solo/src/vat-http.js').buildRootObject>
- * >} HttpVat
+ * >}                                    HttpVat
  *
  * @typedef {ERef<
  *   ReturnType<import('@agoric/solo/src/vat-uploads.js').buildRootObject>
- * >} UploadsVat
+ * >}                                 UploadsVat
  */
 
 /** @template T @typedef {{vatPowers: { D: DProxy }, devices: T}} BootDevices<T> */

@@ -33,7 +33,7 @@ const modules = harden({
  * @param {VatPowers & {
  *   D: DProxy;
  *   logger: (msg) => void;
- * }} vatPowers
+ * }}                                           vatPowers
  * @param {{
  *   bootstrapManifest?: Record<string, Record<string, unknown>>;
  *   coreProposalCode?: string;

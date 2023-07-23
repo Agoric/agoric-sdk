@@ -91,8 +91,8 @@ const defaultConfig = /** @type {const} */ ({
 });
 
 /**
- * @typedef {readonly [bigint, bigint]} Rational
- * @type {Record<
+ * @typedef {readonly [bigint, bigint]}                                                                                                                                                                                                                                                                                                                 Rational
+ * @type    {Record<
  *   string,
  *   {
  *     config?: {
@@ -182,8 +182,8 @@ const run2places = f =>
   BigInt(Math.round(f * 100)) * 10n ** BigInt(DecimalPlaces[Stable.symbol] - 2);
 
 /**
- * @param {bigint} value
- * @param {{
+ * @param   {bigint}                                                                                                         value
+ * @param   {{
  *   centralSupplyInstall: ERef<Installation>;
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
@@ -208,7 +208,7 @@ const mintRunPayment = async (
 };
 
 /**
- * @param {string} name
+ * @param {string}   name
  * @param {MintsVat} mints
  */
 const provideCoin = async (name, mints) => {
@@ -218,7 +218,7 @@ const provideCoin = async (name, mints) => {
 };
 
 /**
- * @param {BootstrapSpace & { consume: { loadVat: VatLoader<MintsVat> } }} powers
+ * @param   {BootstrapSpace & { consume: { loadVat: VatLoader<MintsVat> } }}                                                   powers
  *   TODO: sync this type with end-user docs?
  *
  * @typedef {{
@@ -387,8 +387,8 @@ export const ammPoolRunDeposits = issuers => {
 };
 
 /**
- * @param {Payment} bootstrapPayment
- * @param {Record<string, bigint>} balances
+ * @param {Payment}                                bootstrapPayment
+ * @param {Record<string, bigint>}                 balances
  * @param {{ issuer: ERef<Issuer>; brand: Brand }} central
  */
 export const splitAllCentralPayments = async (
@@ -420,10 +420,10 @@ export const splitAllCentralPayments = async (
 };
 
 /**
- * @param {string} issuerName
- * @param {(typeof AMMDemoState)['ATOM']} record
+ * @param {string}                                                 issuerName
+ * @param {(typeof AMMDemoState)['ATOM']}                          record
  * @param {Record<string, { issuer: ERef<Issuer>; brand: Brand }>} kits
- * @param {{ issuer: ERef<Issuer<'nat'>>; brand: Brand<'nat'> }} central
+ * @param {{ issuer: ERef<Issuer<'nat'>>; brand: Brand<'nat'> }}   central
  */
 export const poolRates = (issuerName, record, kits, central) => {
   /** @param {bigint} n */
@@ -437,7 +437,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 
   /**
    * @param {Rational} r
-   * @param {Brand} b
+   * @param {Brand}    b
    */
   const toRatio = ([n, d], b) => makeRatio(n, b, d);
   const rates = {

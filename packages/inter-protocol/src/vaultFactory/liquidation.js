@@ -59,14 +59,14 @@ const cancelWakeups = timer => {
  * | (nominalStart N+1, endTime N+1] | recover: skip round N+1 and schedule N+2 |
  * | (endTime N+1, ∞)                | give up: wait for repair by governance   |
  *
- * @param {object} opts
- * @param {ERef<TimerService>} opts.timer
- * @param {TimerWaker} opts.priceLockWaker
- * @param {TimerWaker} opts.liquidationWaker
- * @param {TimerWaker} opts.reschedulerWaker
- * @param {import('../auction/scheduler.js').Schedule} opts.nextAuctionSchedule
- * @param {import('@agoric/time/src/types').TimestampRecord} opts.now
- * @param {ParamStateRecord} opts.params
+ * @param   {object}                                           opts
+ * @param   {ERef<TimerService>}                               opts.timer
+ * @param   {TimerWaker}                                       opts.priceLockWaker
+ * @param   {TimerWaker}                                       opts.liquidationWaker
+ * @param   {TimerWaker}                                       opts.reschedulerWaker
+ * @param   {import('../auction/scheduler.js').Schedule}       opts.nextAuctionSchedule
+ * @param   {import('@agoric/time/src/types').TimestampRecord} opts.now
+ * @param   {ParamStateRecord}                                 opts.params
  * @returns {void}
  */
 const setWakeups = ({
@@ -139,11 +139,11 @@ const setWakeups = ({
  * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
  * time there's a "reschedule" wakeup.
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
- * @param {ERef<TimerService>} timer
- * @param {TimerWaker} priceLockWaker
- * @param {TimerWaker} liquidationWaker
- * @param {TimerWaker} reschedulerWaker
+ * @param   {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param   {ERef<TimerService>}                                             timer
+ * @param   {TimerWaker}                                                     priceLockWaker
+ * @param   {TimerWaker}                                                     liquidationWaker
+ * @param   {TimerWaker}                                                     reschedulerWaker
  * @returns {Promise<void>}
  */
 export const setWakeupsForNextAuction = async (
@@ -185,8 +185,8 @@ export const setWakeupsForNextAuction = async (
 harden(setWakeupsForNextAuction);
 
 /**
- * @param {Amount<'nat'>} debt
- * @param {Amount<'nat'>} minted
+ * @param   {Amount<'nat'>}                                        debt
+ * @param   {Amount<'nat'>}                                        minted
  * @returns {{ overage: Amount<'nat'>; shortfall: Amount<'nat'> }}
  */
 export const liquidationResults = (debt, minted) => {
@@ -205,9 +205,9 @@ harden(liquidationResults);
 /**
  * Watch governed params for change
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
- * @param {ERef<TimerService>} timer
- * @param {TimerWaker} reschedulerWaker
+ * @param   {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param   {ERef<TimerService>}                                             timer
+ * @param   {TimerWaker}                                                     reschedulerWaker
  * @returns {void}
  */
 export const watchForGovernanceChange = (
@@ -237,17 +237,17 @@ export const watchForGovernanceChange = (
 };
 
 /**
- * @param {ZCF} zcf
- * @param {object} collateralizationDetails
- * @param {PriceQuote} collateralizationDetails.quote
- * @param {Ratio} collateralizationDetails.interest
- * @param {Ratio} collateralizationDetails.margin
- * @param {ReturnType<
+ * @param   {ZCF}                                                                                                                                                                                             zcf
+ * @param   {object}                                                                                                                                                                                          collateralizationDetails
+ * @param   {PriceQuote}                                                                                                                                                                                      collateralizationDetails.quote
+ * @param   {Ratio}                                                                                                                                                                                           collateralizationDetails.interest
+ * @param   {Ratio}                                                                                                                                                                                           collateralizationDetails.margin
+ * @param   {ReturnType<
  *   typeof import('./prioritizedVaults.js').makePrioritizedVaults
- * >} prioritizedVaults
- * @param {SetStore<Vault>} liquidatingVaults
- * @param {Brand<'nat'>} debtBrand
- * @param {Brand<'nat'>} collateralBrand
+ * >}                                                                                                                   prioritizedVaults
+ * @param   {SetStore<Vault>}                                                                                                                                                                                 liquidatingVaults
+ * @param   {Brand<'nat'>}                                                                                                                                                                                    debtBrand
+ * @param   {Brand<'nat'>}                                                                                                                                                                                    collateralBrand
  * @returns {{
  *   vaultData: MapStore<
  *     Vault,

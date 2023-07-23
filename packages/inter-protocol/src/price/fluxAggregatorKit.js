@@ -23,45 +23,45 @@ const trace = makeTracer('FlxAgg', true);
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
- * @typedef {import('@agoric/vat-data').Baggage} Baggage
+ * @typedef {import('@agoric/vat-data').Baggage}                 Baggage
  *
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').Timestamp}         Timestamp
  *
- * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime //
- *   TODO: use RelativeTime, not RelativeTimeValue
+ * @typedef {import('@agoric/time/src/types').RelativeTime}      RelativeTime
+ *   // TODO: use RelativeTime, not RelativeTimeValue
  *
  * @typedef {import('@agoric/time/src/types').RelativeTimeValue} RelativeTimeValue
  *
- * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ * @typedef {import('@agoric/time/src/types').TimerService}      TimerService
  */
 
 /** @type {(quote: PriceQuote) => PriceDescription} */
 const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
- * @typedef {object} RoundState
- * @property {boolean} eligibleForSpecificRound
- * @property {bigint} queriedRoundId
- * @property {bigint} latestSubmission
+ * @typedef  {object}    RoundState
+ * @property {boolean}   eligibleForSpecificRound
+ * @property {bigint}    queriedRoundId
+ * @property {bigint}    latestSubmission
  * @property {Timestamp} startedAt
- * @property {number} roundTimeout
- * @property {number} oracleCount
+ * @property {number}    roundTimeout
+ * @property {number}    oracleCount
  */
 
 // Partly documented at https://github.com/smartcontractkit/chainlink/blob/b045416ebca769aa69bde2da23b5109abe07a8b5/contracts/src/v0.6/FluxAggregator.sol#L153
 /**
- * @typedef {object} ChainlinkConfig
+ * @typedef  {object} ChainlinkConfig
  * @property {number} maxSubmissionCount
  * @property {number} minSubmissionCount
- * @property {bigint} restartDelay the number of rounds an Oracle has to wait
- *   before they can initiate a round
+ * @property {bigint} restartDelay       the number of rounds an Oracle has to
+ *   wait before they can initiate a round
  * @property {number} minSubmissionValue an immutable check for a lower bound of
  *   what submission values are accepted from an oracle
  * @property {number} maxSubmissionValue an immutable check for an upper bound
  *   of what submission values are accepted from an oracle
- * @property {number} timeout the number of seconds after the previous round
- *   that allowed to lapse before allowing an oracle to skip an unfinished
- *   round
+ * @property {number} timeout            the number of seconds after the
+ *   previous round that allowed to lapse before allowing an oracle to skip an
+ *   unfinished round
  */
 
 /**
@@ -73,7 +73,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * Aggregation_ logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
- * @param {Baggage} baggage
+ * @param {Baggage}                                                                                                                                            baggage
  * @param {ZCF<
  *   ChainlinkConfig & {
  *     timer: TimerService;
@@ -82,11 +82,11 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  *     unitAmountIn?: Amount<'nat'>;
  *   }
  * >} zcf
- * @param {TimerService} timerPresence
- * @param {import('./roundsManager.js').QuoteKit} quoteKit
- * @param {StorageNode} storageNode
- * @param {() => PublishKit<any>} makeDurablePublishKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
+ * @param {TimerService}                                                                                                                                       timerPresence
+ * @param {import('./roundsManager.js').QuoteKit}                                                                                                              quoteKit
+ * @param {StorageNode}                                                                                                                                        storageNode
+ * @param {() => PublishKit<any>}                                                                                                                              makeDurablePublishKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder}                                                                                 makeRecorder
  */
 export const prepareFluxAggregatorKit = async (
   baggage,
@@ -317,8 +317,8 @@ export const prepareFluxAggregatorKit = async (
          * only only to be callable by oracleStatuses. Not for use by contracts
          * to read state.
          *
-         * @param {string} oracleId
-         * @param {bigint} queriedRoundId
+         * @param   {string}              oracleId
+         * @param   {bigint}              queriedRoundId
          * @returns {Promise<RoundState>}
          */
         async oracleRoundState(oracleId, queriedRoundId) {

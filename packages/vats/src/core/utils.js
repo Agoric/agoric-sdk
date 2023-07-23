@@ -86,7 +86,7 @@ export const feeIssuerConfig = {
 /**
  * Wire up a remote between the comms vat and vattp.
  *
- * @param {string} addr
+ * @param {string}                                             addr
  * @param {{ vats: { vattp: VattpVat; comms: CommsVatRoot } }} powers
  */
 export const addRemote = async (addr, { vats: { comms, vattp } }) => {
@@ -96,8 +96,8 @@ export const addRemote = async (addr, { vats: { comms, vattp } }) => {
 harden(addRemote);
 
 /**
- * @param {((...args) => Record<string, unknown>)[]} builders
- * @param {...unknown} args
+ * @param   {((...args) => Record<string, unknown>)[]} builders
+ * @param   {...unknown}                               args
  * @returns {Record<string, unknown>}
  */
 export const callProperties = (builders, ...args) =>
@@ -109,8 +109,8 @@ export const callProperties = (builders, ...args) =>
  *
  * @param {true | string | Record<string, any>} template true or vat name string
  *   or recursive object
- * @param {unknown} specimen
- * @param {string[]} [path]
+ * @param {unknown}                             specimen
+ * @param {string[]}                            [path]
  */
 export const extract = (template, specimen, path = []) => {
   if (template === true || typeof template === 'string') {
@@ -147,9 +147,10 @@ export const extract = (template, specimen, path = []) => {
 harden(extract);
 
 /**
- * @param {true | string | Record<string, any>} permit the permit supplied by
+ * @param {true | string | Record<string, any>} permit    the permit supplied by
  *   the manifest
- * @param {unknown} allPowers the powers to attenuate
+ * @param {unknown}                             allPowers the powers to
+ *   attenuate
  */
 export const extractPowers = (permit, allPowers) => {
   if (typeof permit === 'object' && permit !== null) {
@@ -165,10 +166,10 @@ export const extractPowers = (permit, allPowers) => {
 harden(extractPowers);
 
 /**
- * @param {object} opts
- * @param {unknown} opts.allPowers
- * @param {Record<string, unknown>} opts.behaviors
- * @param {Record<string, Record<string, unknown>>} opts.manifest
+ * @param {object}                                                     opts
+ * @param {unknown}                                                    opts.allPowers
+ * @param {Record<string, unknown>}                                    opts.behaviors
+ * @param {Record<string, Record<string, unknown>>}                    opts.manifest
  * @param {(name: string, permit: Record<string, unknown>) => unknown} opts.makeConfig
  */
 export const runModuleBehaviors = ({
@@ -200,7 +201,7 @@ const noop = harden(() => {});
 
 /**
  * @param {ERef<import('../types').NameAdmin>} nameAdmin
- * @param {typeof console.log} [log]
+ * @param {typeof console.log}                 [log]
  */
 export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
   const logHooks = makeLogHooks(log);
@@ -228,8 +229,8 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 
 /**
  * @param {ERef<import('../types').NameAdmin>} parentAdmin
- * @param {typeof console.log} [log]
- * @param {string[]} [kinds]
+ * @param {typeof console.log}                 [log]
+ * @param {string[]}                           [kinds]
  */
 export const makeWellKnownSpaces = async (
   parentAdmin,
@@ -257,9 +258,10 @@ export const makeWellKnownSpaces = async (
  * installation, instance, etc.
  *
  * @deprecated use vat-agoricNames, makeWellKnownSpaces
- * @param {typeof console.log} [log]
- * @param {Record<string, Record<string, unknown>>} reserved a property for each
- *   of issuer, brand, etc. with a value whose keys are names to reserve.
+ * @param   {typeof console.log}                                                                                                                         [log]
+ * @param   {Record<string, Record<string, unknown>>}                                                                                                    reserved
+ *   a property for each of issuer, brand, etc. with a value whose keys are names
+ *   to reserve.
  *
  *   For static typing and integrating with the bootstrap permit system, return {
  *   produce, consume } spaces rather than NameAdmins.
@@ -312,15 +314,15 @@ export const makeMyAddressNameAdminKit = address => {
 };
 
 /**
- * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
- * @param {unknown} criticalVatKey
- * @param {(...args: any) => void} [log]
- * @param {string} [label]
+ * @param   {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
+ * @param   {unknown}                                                         criticalVatKey
+ * @param   {(...args: any) => void}                                          [log]
+ * @param   {string}                                                          [label]
  *
- * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults}                 CreateVatResults
  *   as from createVatByName
  *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
+ * @typedef {MapStore<string, CreateVatResults>}                              VatStore
  */
 export const makeVatSpace = (
   svc,

@@ -23,16 +23,16 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
- * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
+ * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet}                      AuctioneerPublicFacet
  *
- * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
+ * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet}                     AuctioneerCreatorFacet
  */
 
 /**
- * @typedef {object} PSMKit
- * @property {string} label
- * @property {Instance} psm
- * @property {Instance} psmGovernor
+ * @typedef  {object}                                                                                                                                         PSMKit
+ * @property {string}                                                                                                                                         label
+ * @property {Instance}                                                                                                                                       psm
+ * @property {Instance}                                                                                                                                       psmGovernor
  * @property {Awaited<
  *   ReturnType<
  *     Awaited<
@@ -40,14 +40,14 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *     >['creatorFacet']['getLimitedCreatorFacet']
  *   >
  * >} psmCreatorFacet
- * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['prepare']>} psmGovernorCreatorFacet
- * @property {AdminFacet} psmAdminFacet
+ * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['prepare']>}                                                                                psmGovernorCreatorFacet
+ * @property {AdminFacet}                                                                                                                                     psmAdminFacet
  */
 
 /** @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit */
 
 /**
- * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  EconomyBootstrapPowers
  *
  * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
@@ -193,11 +193,11 @@ export const setupReserve = async ({
 
 /**
  * @param {EconomyBootstrapPowers['consume']} consume
- * @param {object} config
- * @param {InterestTiming} [config.interestTiming]
- * @param {object} [config.options]
- * @param {string} [config.options.referencedUi]
- * @param {Amount<'nat'>} minInitialDebt
+ * @param {object}                            config
+ * @param {InterestTiming}                    [config.interestTiming]
+ * @param {object}                            [config.options]
+ * @param {string}                            [config.options.referencedUi]
+ * @param {Amount<'nat'>}                     minInitialDebt
  */
 export const setupVaultFactoryArguments = async (
   consume,
@@ -276,11 +276,11 @@ export const setupVaultFactoryArguments = async (
 
 /**
  * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {InterestTiming} [config.interestTiming]
- * @param {object} [config.options]
- * @param {string} [config.options.referencedUi]
- * @param {bigint} minInitialDebt
+ * @param {object}                 config
+ * @param {InterestTiming}         [config.interestTiming]
+ * @param {object}                 [config.options]
+ * @param {string}                 [config.options.referencedUi]
+ * @param {bigint}                 minInitialDebt
  */
 export const startVaultFactory = async (
   {
@@ -380,9 +380,9 @@ export const startVaultFactory = async (
  * address.
  *
  * @param {EconomyBootstrapPowers} powers
- * @param {object} [root0]
- * @param {object} [root0.options]
- * @param {string} [root0.options.vaultFactoryControllerAddress]
+ * @param {object}                 [root0]
+ * @param {object}                 [root0.options]
+ * @param {string}                 [root0.options.vaultFactoryControllerAddress]
  */
 export const grantVaultFactoryControl = async (
   { consume: { client, priceAuthorityAdmin, vaultFactoryKit } },
@@ -519,8 +519,8 @@ harden(startRewardDistributor);
 
 /**
  * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {any} [config.auctionParams]
+ * @param {object}                 config
+ * @param {any}                    [config.auctionParams]
  */
 export const startAuctioneer = async (
   {

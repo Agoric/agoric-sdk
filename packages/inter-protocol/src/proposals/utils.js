@@ -6,12 +6,12 @@ const { Fail } = assert;
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
- * @param {string[][]} paths
+ * @param {string[][]}                             paths
  */
 export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
    * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
-   * @param {string[]} path
+   * @param {string[]}                               path
    */
   const nextPath = async (nextAdmin, path) => {
     const [nextName, ...rest] = path;
@@ -41,7 +41,7 @@ export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
- * @param {string[]} names
+ * @param {string[]}                               names
  */
 export const reserveThenGetNames = async (nameAdmin, names) =>
   reserveThenGetNamePaths(
@@ -50,10 +50,10 @@ export const reserveThenGetNames = async (nameAdmin, names) =>
   );
 
 /**
- * @param {string} debugName
+ * @param {string}                                 debugName
  * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- * @param {string} addr
- * @param {ERef<Payment>[]} payments
+ * @param {string}                                 addr
+ * @param {ERef<Payment>[]}                        payments
  */
 export const reserveThenDeposit = async (
   debugName,
@@ -101,9 +101,9 @@ const provideWhen = async (store, key, make) => {
  * @param {{
  *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>;
  * }} homeP
- * @param {object} opts
- * @param {(specifier: string) => Promise<{ default: Bundle }>} opts.loadBundle
- * @param {string} [opts.installCacheKey]
+ * @param {object}                                                                     opts
+ * @param {(specifier: string) => Promise<{ default: Bundle }>}                        opts.loadBundle
+ * @param {string}                                                                     [opts.installCacheKey]
  */
 export const makeInstallCache = async (
   homeP,

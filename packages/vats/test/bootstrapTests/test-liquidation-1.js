@@ -129,8 +129,8 @@ test.after.always(t => {
  * @param {import('ava').ExecutionContext<
  *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
  * >} t
- * @param {{ collateralBrandKey: string; managerIndex: number }} case
- * @param {any} _expected
+ * @param {{ collateralBrandKey: string; managerIndex: number }}                                       case
+ * @param {any}                                                                                        _expected
  */
 const checkFlow1 = async (
   t,

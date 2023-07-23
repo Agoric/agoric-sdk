@@ -29,7 +29,7 @@ const trace = makeTracer('Store', true);
 // So by omitting all three, we know that
 // the resulting function will encode only `PureData` arguments.
 /**
- * @param {PureData} key
+ * @param   {PureData} key
  * @returns {string}
  */
 export const encodeData = makeEncodePassable();
@@ -40,13 +40,13 @@ export const encodeData = makeEncodePassable();
 // So by omitting all three, we know that
 // the resulting function will decode only to `PureData` results.
 /**
- * @param {string} encoded
+ * @param   {string}   encoded
  * @returns {PureData}
  */
 export const decodeData = makeDecodePassable();
 
 /**
- * @param {number} n
+ * @param   {number} n
  * @returns {string}
  */
 const encodeNumber = n => {
@@ -55,7 +55,7 @@ const encodeNumber = n => {
 };
 
 /**
- * @param {string} encoded
+ * @param   {string} encoded
  * @returns {number}
  */
 const decodeNumber = encoded => {
@@ -72,8 +72,8 @@ const decodeNumber = encoded => {
  * Overcollateralized are greater than one. The more undercollaterized the
  * smaller in [0-1].
  *
- * @param {NormalizedDebt} normalizedDebt normalized (not actual) total debt
- * @param {Amount<'nat'>} collateral
+ * @param   {NormalizedDebt} normalizedDebt normalized (not actual) total debt
+ * @param   {Amount<'nat'>}  collateral
  * @returns {number}
  */
 const collateralizationRatio = (normalizedDebt, collateral) => {
@@ -87,11 +87,11 @@ const collateralizationRatio = (normalizedDebt, collateral) => {
 /**
  * Sorts by ratio in descending debt. Ordering of vault id is undefined.
  *
- * @param {NormalizedDebt} normalizedDebt normalized (not actual) total debt
- * @param {Amount<'nat'>} collateral
- * @param {VaultId} vaultId
- * @returns {string} lexically sortable string in which highest
- *   debt-to-collateral is earliest
+ * @param   {NormalizedDebt} normalizedDebt normalized (not actual) total debt
+ * @param   {Amount<'nat'>}  collateral
+ * @param   {VaultId}        vaultId
+ * @returns {string}                        lexically sortable string in which
+ *   highest debt-to-collateral is earliest
  */
 export const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   assert(normalizedDebt);
@@ -109,7 +109,7 @@ export const toVaultKey = (normalizedDebt, collateral, vaultId) => {
 harden(toVaultKey);
 
 /**
- * @param {string} key
+ * @param   {string}                                                  key
  * @returns {[normalizedCollateralization: number, vaultId: VaultId]}
  */
 export const fromVaultKey = key => {
@@ -126,9 +126,9 @@ harden(fromVaultKey);
  *
  * For use by `normalizedCollRatioKey` and tests.
  *
- * @param {PriceQuote} quote
- * @param {Ratio} compoundedStabilityFee
- * @param {Ratio} margin
+ * @param   {PriceQuote} quote
+ * @param   {Ratio}      compoundedStabilityFee
+ * @param   {Ratio}      margin
  * @returns {number}
  */
 export const normalizedCollRatio = (quote, compoundedStabilityFee, margin) => {
@@ -154,11 +154,11 @@ harden(normalizedCollRatio);
  * to be based on a float with as much resolution as we can get, so we multiply
  * out the numerator and the denominator, and divide only once.
  *
- * @param {PriceQuote} quote
- * @param {Ratio} compoundedStabilityFee
- * @param {Ratio} margin
- * @returns {string} lexically sortable string in which highest
- *   debt-to-collateral is earliest
+ * @param   {PriceQuote} quote
+ * @param   {Ratio}      compoundedStabilityFee
+ * @param   {Ratio}      margin
+ * @returns {string}                            lexically sortable string in
+ *   which highest debt-to-collateral is earliest
  */
 export const normalizedCollRatioKey = (
   quote,

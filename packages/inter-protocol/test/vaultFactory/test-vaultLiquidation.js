@@ -123,12 +123,12 @@ test.before(async t => {
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
- * @param {import('ava').ExecutionContext<Context>} t
- * @param {NatValue[] | Ratio} priceOrList
- * @param {Amount | undefined} unitAmountIn
- * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {RelativeTime} quoteInterval
- * @param {bigint} stableInitialLiquidity
+ * @param {import('ava').ExecutionContext<Context>}                      t
+ * @param {NatValue[] | Ratio}                                           priceOrList
+ * @param {Amount | undefined}                                           unitAmountIn
+ * @param {import('@agoric/time/src/types').TimerService}                timer
+ * @param {RelativeTime}                                                 quoteInterval
+ * @param {bigint}                                                       stableInitialLiquidity
  * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [auctionParams]
  */
 const setupServices = async (

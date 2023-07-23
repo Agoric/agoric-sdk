@@ -16,12 +16,12 @@ import {
 const trace = makeTracer('StartWF');
 
 /**
- * @param {ERef<ZoeService>} zoe
- * @param {Installation<
+ * @param   {ERef<ZoeService>}                                                           zoe
+ * @param   {Installation<
  *   import('@agoric/smart-wallet/src/walletFactory').prepare
  * >} inst
  *
- * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
+ * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>}                           WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars
 const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
@@ -32,8 +32,8 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * Publish an arbitrary wallet state so that clients can tell that a wallet has
  * been provisioned.
  *
- * @param {string[]} oldAddresses
- * @param {Marshaller} marshaller
+ * @param {string[]}    oldAddresses
+ * @param {Marshaller}  marshaller
  * @param {StorageNode} walletStorageNode
  */
 const publishRevivableWalletState = async (
@@ -78,7 +78,7 @@ const publishRevivableWalletState = async (
  *   options?: {
  *     perAccountInitialValue?: bigint;
  *   };
- * }} [config]
+ * }}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [config]
  */
 export const startWalletFactory = async (
   {

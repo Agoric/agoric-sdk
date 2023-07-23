@@ -36,8 +36,8 @@ const prepareSpecializedNameAdmin = zone => {
     nameAdmin => ({ nameAdmin }),
     {
       /**
-       * @param {string} address
-       * @param {string[]} [reserved]
+       * @param   {string}                                                                                 address
+       * @param   {string[]}                                                                               [reserved]
        * @returns {Promise<{
        *   nameHub: NameHub;
        *   nameAdmin: import('./types.js').MyAddressNameAdmin;
@@ -82,8 +82,8 @@ const prepareSpecializedNameAdmin = zone => {
 };
 
 /**
- * @param {unknown} _vatPowers
- * @param {unknown} _vatParameters
+ * @param {unknown}                            _vatPowers
+ * @param {unknown}                            _vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export function buildRootObject(_vatPowers, _vatParameters, baggage) {
@@ -105,8 +105,8 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
 
   /**
    * @param {ERef<ClientCreator>} b
-   * @param {CommsVatRoot} c
-   * @param {VattpVat} v
+   * @param {CommsVatRoot}        c
+   * @param {VattpVat}            v
    */
   async function register(b, c, v) {
     bundler = b;
@@ -115,8 +115,8 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   }
 
   /**
-   * @param {string} nickname
-   * @param {string} address
+   * @param {string}   nickname
+   * @param {string}   address
    * @param {string[]} powerFlags
    */
   async function pleaseProvision(nickname, address, powerFlags) {

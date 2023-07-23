@@ -60,7 +60,7 @@ const MINT_LIMIT = scale6(20_000_000);
 /**
  * Compute the fee for giving an Amount in minted.
  *
- * @param {Amount<'nat'>} minted
+ * @param   {Amount<'nat'>} minted
  * @returns {Amount<'nat'>}
  */
 const minusMintedFee = minted => {
@@ -77,8 +77,8 @@ const minusMintedFee = minted => {
 /**
  * Compute the fee in the minted asset of an Amount given in anchor.
  *
- * @param {Amount<'nat'>} anchor
- * @param {Ratio} anchorPerMinted
+ * @param   {Amount<'nat'>} anchor
+ * @param   {Ratio}         anchorPerMinted
  * @returns {Amount<'nat'>}
  */
 const minusAnchorFee = (anchor, anchorPerMinted) => {
@@ -182,7 +182,7 @@ test.before(async t => {
  * @param {import('ava').ExecutionContext<
  *   Awaited<ReturnType<makeTestContext>>
  * >} t
- * @param {{}} [customTerms]
+ * @param {{}}                                                                       [customTerms]
  */
 async function makePsmDriver(t, customTerms) {
   const {
@@ -231,9 +231,9 @@ async function makePsmDriver(t, customTerms) {
   };
 
   /**
-   * @param {Amount<'nat'>} giveRun
+   * @param {Amount<'nat'>}  giveRun
    * @param {Payment<'nat'>} runPayment
-   * @param {Amount<'nat'>} [wantAnchor]
+   * @param {Amount<'nat'>}  [wantAnchor]
    */
   const swapMintedForAnchorSeat = async (giveRun, runPayment, wantAnchor) => {
     const seat = E(zoe).offer(
@@ -297,9 +297,9 @@ async function makePsmDriver(t, customTerms) {
     },
 
     /**
-     * @param {Amount<'nat'>} giveRun
+     * @param {Amount<'nat'>}  giveRun
      * @param {Payment<'nat'>} runPayment
-     * @param {Amount<'nat'>} [wantAnchor]
+     * @param {Amount<'nat'>}  [wantAnchor]
      */
     async swapMintedForAnchor(giveRun, runPayment, wantAnchor) {
       const seat = swapMintedForAnchorSeat(giveRun, runPayment, wantAnchor);

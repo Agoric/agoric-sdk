@@ -48,13 +48,13 @@ const { Fail } = assert;
  */
 
 /**
- * @typedef {object} MetricsNotification Metrics naming scheme is that nouns are
- *   present values and past-participles are accumulative.
- * @property {Amount<'nat'>} anchorPoolBalance amount of Anchor token available
- *   to be swapped
- * @property {Amount<'nat'>} mintedPoolBalance amount of Minted token
+ * @typedef  {object}        MetricsNotification Metrics naming scheme is that
+ *   nouns are present values and past-participles are accumulative.
+ * @property {Amount<'nat'>} anchorPoolBalance   amount of Anchor token
+ *   available to be swapped
+ * @property {Amount<'nat'>} mintedPoolBalance   amount of Minted token
  *   outstanding (the amount minted minus the amount burned).
- * @property {Amount<'nat'>} feePoolBalance amount of Minted token fees
+ * @property {Amount<'nat'>} feePoolBalance      amount of Minted token fees
  *   available to be collected
  * @property {Amount<'nat'>} totalAnchorProvided running sum of Anchor ever
  *   given by this contract
@@ -115,8 +115,8 @@ harden(privateArgsShape);
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
- * }} privateArgs
- * @param {Baggage} baggage
+ * }}                                                     privateArgs
+ * @param {Baggage}                                                                                                                                                                             baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
@@ -202,7 +202,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const StableAmountShape = makeNatAmountShape(stableBrand);
 
   /**
-   * @param {ZCFSeat} seat
+   * @param {ZCFSeat}                                        seat
    * @param {Omit<MetricsNotification, 'anchorPoolBalance'>} target
    */
   const restoreMetricsHook = (seat, target) => {
@@ -262,7 +262,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   };
 
   /**
-   * @param {ZCFSeat} seat
+   * @param {ZCFSeat}       seat
    * @param {Amount<'nat'>} given
    * @param {Amount<'nat'>} [wanted] defaults to maximum anchor (given exchange
    *   rate minus fees)
@@ -292,7 +292,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   };
 
   /**
-   * @param {ZCFSeat} seat
+   * @param {ZCFSeat}       seat
    * @param {Amount<'nat'>} given
    * @param {Amount<'nat'>} [wanted]
    */

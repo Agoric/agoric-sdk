@@ -52,7 +52,7 @@ const trace = makeTracer('Auction', true);
 const MINIMUM_BID_GIVE = 1n;
 
 /**
- * @param {NatValue} rate
+ * @param {NatValue}     rate
  * @param {Brand<'nat'>} bidBrand
  * @param {Brand<'nat'>} collateralBrand
  */
@@ -71,16 +71,16 @@ const makeBPRatio = (rate, bidBrand, collateralBrand = bidBrand) =>
  * `unsoldCollateral` and `proceeds` proportionally to each seat's deposited
  * amount. Any uneven split should be allocated to the reserve.
  *
- * @param {Amount} unsoldCollateral
- * @param {Amount} proceeds
+ * @param {Amount}                                                          unsoldCollateral
+ * @param {Amount}                                                          proceeds
  * @param {{ seat: ZCFSeat; amount: Amount<'nat'>; goal: Amount<'nat'> }[]} deposits
- * @param {ZCFSeat} collateralSeat
- * @param {ZCFSeat} bidHoldingSeat seat with the Bid allocation to be
- *   distributed
- * @param {string} collateralKeyword The Reserve will hold multiple collaterals,
- *   so they need distinct keywords
- * @param {ZCFSeat} reserveSeat
- * @param {Brand} brand
+ * @param {ZCFSeat}                                                         collateralSeat
+ * @param {ZCFSeat}                                                         bidHoldingSeat
+ *   seat with the Bid allocation to be distributed
+ * @param {string}                                                          collateralKeyword
+ *   The Reserve will hold multiple collaterals, so they need distinct keywords
+ * @param {ZCFSeat}                                                         reserveSeat
+ * @param {Brand}                                                           brand
  */
 const distributeProportionalShares = (
   unsoldCollateral,
@@ -161,16 +161,16 @@ const distributeProportionalShares = (
  *   Bid. Those who didn't specify a limit are trying to sell collateral, and
  *   would prefer to have as much as possible converted to Bid.
  *
- * @param {Amount<'nat'>} unsoldCollateral
- * @param {Amount<'nat'>} proceeds
+ * @param {Amount<'nat'>}                                                   unsoldCollateral
+ * @param {Amount<'nat'>}                                                   proceeds
  * @param {{ seat: ZCFSeat; amount: Amount<'nat'>; goal: Amount<'nat'> }[]} deposits
- * @param {ZCFSeat} collateralSeat
- * @param {ZCFSeat} bidHoldingSeat seat with the Bid allocation to be
- *   distributed
- * @param {string} collateralKeyword The Reserve will hold multiple collaterals,
- *   so they need distinct keywords
- * @param {ZCFSeat} reserveSeat
- * @param {Brand} brand
+ * @param {ZCFSeat}                                                         collateralSeat
+ * @param {ZCFSeat}                                                         bidHoldingSeat
+ *   seat with the Bid allocation to be distributed
+ * @param {string}                                                          collateralKeyword
+ *   The Reserve will hold multiple collaterals, so they need distinct keywords
+ * @param {ZCFSeat}                                                         reserveSeat
+ * @param {Brand}                                                           brand
  */
 export const distributeProportionalSharesWithLimits = (
   unsoldCollateral,
@@ -392,8 +392,8 @@ export const distributeProportionalSharesWithLimits = (
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
- * }} privateArgs
- * @param {Baggage} baggage
+ * }}                                                                                                                     privateArgs
+ * @param {Baggage}                                                                                                                                                                                                             baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const { brands, timerService: timer, priceAuthority } = zcf.getTerms();
@@ -445,8 +445,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   /**
-   * @param {ZCFSeat} seat
-   * @param {Amount<'nat'>} amount
+   * @param {ZCFSeat}              seat
+   * @param {Amount<'nat'>}        amount
    * @param {Amount<'nat'> | null} goal
    */
   const addDeposit = (seat, amount, goal = null) => {
@@ -589,7 +589,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
   /**
-   * @param {ZCFSeat} zcfSeat
+   * @param {ZCFSeat}                 zcfSeat
    * @param {{ goal: Amount<'nat'> }} offerArgs
    */
   const depositOfferHandler = (zcfSeat, offerArgs) => {
@@ -633,7 +633,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           Fail`No book for brand ${collateralBrand}`;
         const offerSpecShape = makeOfferSpecShape(brands.Bid, collateralBrand);
         /**
-         * @param {ZCFSeat} zcfSeat
+         * @param {ZCFSeat}                              zcfSeat
          * @param {import('./auctionBook.js').OfferSpec} offerSpec
          */
         const newBidHandler = (zcfSeat, offerSpec) => {
@@ -690,7 +690,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const creatorFacet = makeFarGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
-       * @param {Issuer} issuer
+       * @param {Issuer}  issuer
        * @param {Keyword} kwd
        */
       async addBrand(issuer, kwd) {

@@ -126,7 +126,7 @@ export const buildRootObject = async () => {
      *   >;
      *   zoe: ReturnType<import('@agoric/vats/src/vat-zoe')['buildRootObject']>;
      * }} vats
-     * @param {any} devices
+     * @param {any}                                                                                                                                                                                               devices
      */
     bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);

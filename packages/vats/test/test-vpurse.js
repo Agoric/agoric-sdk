@@ -24,9 +24,9 @@ test.before(t => {
 });
 
 /**
- * @param {any} t
+ * @param {any}                         t
  * @param {import('@agoric/zone').Zone} zone
- * @param {bigint} [escrowValue]
+ * @param {bigint}                      [escrowValue]
  */
 const setup = (t, zone, escrowValue = 0n) => {
   const makeVirtualPurse = prepareVirtualPurse(zone);

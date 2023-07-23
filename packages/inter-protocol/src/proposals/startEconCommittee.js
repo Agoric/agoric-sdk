@@ -15,16 +15,16 @@ const sanitizePathSegment = name => {
 };
 
 /**
- * @typedef {object} EconCommitteeOptions
+ * @typedef  {object} EconCommitteeOptions
  * @property {string} [committeeName]
  * @property {number} [committeeSize]
  */
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {object} [config.options]
- * @param {EconCommitteeOptions} [config.options.econCommitteeOptions]
+ * @param {object}                                            config
+ * @param {object}                                            [config.options]
+ * @param {EconCommitteeOptions}                              [config.options.econCommitteeOptions]
  */
 export const startEconomicCommittee = async (
   {

@@ -8,9 +8,9 @@ import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
 /**
- * @param {ReturnType<typeof import('./supports.js').makeRunUtils>} runUtils
+ * @param {ReturnType<typeof import('./supports.js').makeRunUtils>}             runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {import('../../tools/board-utils.js').AgoricNamesRemotes}             agoricNamesRemotes
  */
 export const makeWalletFactoryDriver = async (
   runUtils,
@@ -32,15 +32,15 @@ export const makeWalletFactoryDriver = async (
   const marshaller = boardSlottingMarshaller(slotToRemotable);
 
   /**
-   * @param {string} walletAddress
+   * @param {string}                                                        walletAddress
    * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
-   * @param {boolean} isNew
+   * @param {boolean}                                                       isNew
    */
   const makeWalletDriver = (walletAddress, walletPresence, isNew) => ({
     isNew,
 
     /**
-     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+     * @param   {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
      * @returns {Promise<void>}
      */
     executeOffer(offer) {
@@ -53,7 +53,7 @@ export const makeWalletFactoryDriver = async (
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
-     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+     * @param   {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
      * @returns {Promise<void>}
      */
     sendOffer(offer) {
@@ -79,9 +79,9 @@ export const makeWalletFactoryDriver = async (
     /**
      * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M
      *   offer maker function
-     * @param {M} makeOffer
-     * @param {Parameters<M>[1]} firstArg
-     * @param {Parameters<M>[2]} [secondArg]
+     * @param   {M}                makeOffer
+     * @param   {Parameters<M>[1]} firstArg
+     * @param   {Parameters<M>[2]} [secondArg]
      * @returns {Promise<void>}
      */
     executeOfferMaker(makeOffer, firstArg, secondArg) {
@@ -91,9 +91,9 @@ export const makeWalletFactoryDriver = async (
     /**
      * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M
      *   offer maker function
-     * @param {M} makeOffer
-     * @param {Parameters<M>[1]} firstArg
-     * @param {Parameters<M>[2]} [secondArg]
+     * @param   {M}                makeOffer
+     * @param   {Parameters<M>[1]} firstArg
+     * @param   {Parameters<M>[2]} [secondArg]
      * @returns {Promise<void>}
      */
     sendOfferMaker(makeOffer, firstArg, secondArg) {
@@ -128,7 +128,7 @@ export const makeWalletFactoryDriver = async (
     /**
      * Skip the provisionPool for tests
      *
-     * @param {string} walletAddress
+     * @param   {string}                                       walletAddress
      * @returns {Promise<ReturnType<typeof makeWalletDriver>>}
      */
     async provideSmartWallet(walletAddress) {
@@ -143,10 +143,10 @@ export const makeWalletFactoryDriver = async (
 };
 
 /**
- * @param {string} collateralBrandKey
+ * @param {string}                                                  collateralBrandKey
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
- * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
- * @param {string[]} oracleAddresses
+ * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>}     walletFactoryDriver
+ * @param {string[]}                                                oracleAddresses
  */
 export const makePriceFeedDriver = async (
   collateralBrandKey,
@@ -206,10 +206,10 @@ export const makePriceFeedDriver = async (
 };
 
 /**
- * @param {import('./supports.js').SwingsetTestKit} testKit
+ * @param {import('./supports.js').SwingsetTestKit}                 testKit
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
- * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
- * @param {string[]} committeeAddresses
+ * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>}     walletFactoryDriver
+ * @param {string[]}                                                committeeAddresses
  */
 export const makeGovernanceDriver = async (
   testKit,
@@ -325,8 +325,8 @@ export const makeGovernanceDriver = async (
   return {
     /**
      * @param {Instance} instance
-     * @param {object} params
-     * @param {object} [path]
+     * @param {object}   params
+     * @param {object}   [path]
      */
     async changeParams(instance, params, path) {
       instance || Fail`missing instance`;

@@ -31,17 +31,17 @@ export const privateArgsShape = M.splitRecord(
  * @typedef {StandardTerms &
  *   GovernanceTerms<{
  *     PerAccountInitialAmount: 'amount';
- *   }>} ProvisionTerms
+ *   }>}                                                                                                                                                           ProvisionTerms
  *   TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
- * @param {ZCF<ProvisionTerms>} zcf
- * @param {{
+ * @param   {ZCF<ProvisionTerms>}                                                                                                                                                                                                                       zcf
+ * @param   {{
  *   poolBank: import('@endo/far').ERef<import('./vat-bank.js').Bank>;
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
  *   metricsOverride?: import('./provisionPoolKit').MetricsNotification;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param   {import('@agoric/vat-data').Baggage}                                                                                                                                                                                                        baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;

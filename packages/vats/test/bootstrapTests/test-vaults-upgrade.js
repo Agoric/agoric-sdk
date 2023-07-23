@@ -19,10 +19,10 @@ import { makeWalletFactoryDriver } from './drivers.js';
 const collateralBrandKey = 'ATOM';
 
 /**
- * @param {import('ava').ExecutionContext} t
- * @param {object} [options]
- * @param {number} [options.incarnation]
- * @param {boolean} [options.logTiming]
+ * @param {import('ava').ExecutionContext}                                      t
+ * @param {object}                                                              [options]
+ * @param {number}                                                              [options.incarnation]
+ * @param {boolean}                                                             [options.logTiming]
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
 const makeDefaultTestContext = async (
@@ -510,7 +510,8 @@ test.serial(
      * Map refs to objects and find a vat containing one of them.
      *
      * @param {Record<string, unknown>} refs
-     * @param {string[]} exclude don't report hits from these vatIDs
+     * @param {string[]}                exclude don't report hits from these
+     *   vatIDs
      */
     const findVat = async (refs, exclude = [zoeVat]) => {
       const mapped = {};

@@ -57,12 +57,12 @@ export const defaultParamValues = debtBrand =>
   });
 
 /**
- * @param {import('ava').ExecutionContext<Context>} t
- * @param {IssuerKit<'nat'>} run
- * @param {IssuerKit<'nat'>} aeth
- * @param {NatValue[] | Ratio} priceOrList
- * @param {RelativeTime} quoteInterval
- * @param {Amount | undefined} unitAmountIn
+ * @param {import('ava').ExecutionContext<Context>}                      t
+ * @param {IssuerKit<'nat'>}                                             run
+ * @param {IssuerKit<'nat'>}                                             aeth
+ * @param {NatValue[] | Ratio}                                           priceOrList
+ * @param {RelativeTime}                                                 quoteInterval
+ * @param {Amount | undefined}                                           unitAmountIn
  * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
  */
 export const setupElectorateReserveAndAuction = async (
@@ -132,7 +132,7 @@ export const setupElectorateReserveAndAuction = async (
 
 /**
  * @param {import('ava').ExecutionContext<any>} t
- * @param {bigint} amount
+ * @param {bigint}                              amount
  */
 export const getRunFromFaucet = async (t, amount) => {
   const {

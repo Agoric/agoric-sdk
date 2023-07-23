@@ -21,22 +21,22 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 /** @typedef {{ roundId: number | undefined; unitPrice: NatValue }} PriceDatum */
 
 /**
- * @typedef {object} OracleStatus
+ * @typedef  {object}  OracleStatus
  * @property {boolean} [disabled]
- * @property {bigint} lastReportedRound
- * @property {bigint} lastStartedRound
- * @property {bigint} latestSubmission
- * @property {string} oracleId
+ * @property {bigint}  lastReportedRound
+ * @property {bigint}  lastStartedRound
+ * @property {bigint}  latestSubmission
+ * @property {string}  oracleId
  */
 /**
  * @typedef {Readonly<HeldParams & {}>} ImmutableState
  *
- * @typedef {OracleStatus & {}} MutableState
+ * @typedef {OracleStatus & {}}         MutableState
  */
 /** @typedef {ImmutableState & MutableState} State */
 
 /**
- * @param {HeldParams} heldParams
+ * @param   {HeldParams} heldParams
  * @returns {State}
  */
 const initState = ({ oracleId, roundPowers }) => {

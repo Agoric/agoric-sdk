@@ -13,9 +13,9 @@ const coll = withAmountUtils(makeIssuerKit('aEth'));
 const test = unknownTest;
 
 /**
- * @param {bigint} debtN
- * @param {bigint} collN
- * @param {bigint} currN
+ * @param   {bigint}                                                     debtN
+ * @param   {bigint}                                                     collN
+ * @param   {bigint}                                                     currN
  * @returns {import('../../src/vaultFactory/proceeds.js').VaultBalances}
  */
 const makeVaultBalance = (debtN, collN, currN = debtN) => {

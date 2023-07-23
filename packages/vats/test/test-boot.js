@@ -38,15 +38,15 @@ test.before(t => {
 
 /**
  * @callback BuildRootObject
- * @param {{}} vatPowers
- * @param {{}} vatParameters
+ * @param {{}}                                 vatPowers
+ * @param {{}}                                 vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 
 /**
- * @param {string} label
+ * @param {string}          label
  * @param {BuildRootObject} entryPoint
- * @param {boolean} doCoreProposals
+ * @param {boolean}         doCoreProposals
  */
 const testBootstrap = (label, entryPoint, doCoreProposals) => {
   const vatParameters = {

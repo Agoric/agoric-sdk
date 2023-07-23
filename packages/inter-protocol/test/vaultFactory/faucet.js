@@ -5,7 +5,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
  * A Faucet providing Minted so we can provide initial liquidity where it's
  * needed.
  *
- * @param {ZCF} zcf
+ * @param {ZCF}                              zcf
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
  */
 export async function start(zcf, { feeMintAccess }) {

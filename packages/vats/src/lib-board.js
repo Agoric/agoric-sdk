@@ -62,7 +62,7 @@ const BoardKitIKit = {
  * Calculate a CRC, padding to crcDigits.
  *
  * @param {number | string} data
- * @param {number} crcDigits
+ * @param {number}          crcDigits
  */
 const calcCrc = (data, crcDigits) => {
   // The explicit use of crcmodels is to avoid a typing error.
@@ -79,7 +79,7 @@ const calcCrc = (data, crcDigits) => {
  * @see {prepareExoClassKit}
  * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
  *
- * @typedef {import('@endo/marshal').Passable} Key
+ * @typedef {import('@endo/marshal').Passable}         Key
  */
 
 // TODO consider tightening initSequence to bigint only
@@ -87,10 +87,10 @@ const calcCrc = (data, crcDigits) => {
  * Make state for the board. Hoisted up to define the BoardState type.
  *
  * @param {bigint | number} [initSequence]
- * @param {object} [options]
- * @param {string} [options.prefix] prefix for all ids generated
- * @param {number} [options.crcDigits] count of digits to use in CRC at end of
- *   the id
+ * @param {object}          [options]
+ * @param {string}          [options.prefix]    prefix for all ids generated
+ * @param {number}          [options.crcDigits] count of digits to use in CRC at
+ *   end of the id
  */
 const initDurableBoardState = (
   initSequence = 0,
@@ -127,7 +127,7 @@ const initDurableBoardState = (
 // transient marshallers that get GCed when the function completes.
 
 /**
- * @param {Key} value
+ * @param {Key}        value
  * @param {BoardState} state
  */
 const getId = (value, state) => {
@@ -151,7 +151,7 @@ const getId = (value, state) => {
 };
 
 /**
- * @param {string} id
+ * @param {string}               id
  * @param {Readonly<BoardState>} state
  */
 const getValue = (id, { prefix, crcDigits, idToVal }) => {
@@ -183,8 +183,8 @@ const makeSlotToVal = state => {
   const ifaceInaccessiblePrefix = 'SEVERED: ';
 
   /**
-   * @param {BoardId} slot
-   * @param {string} iface
+   * @param   {BoardId} slot
+   * @param   {string}  iface
    * @returns {unknown}
    */
   const slotToVal = (slot, iface) => {
@@ -203,7 +203,7 @@ const makeSlotToVal = state => {
 
 // TODO make Marshaller type generic on slot
 /**
- * @param {BoardState} state
+ * @param   {BoardState}                              state
  * @returns {ReturnType<typeof makeMarshal<string?>>}
  */
 const makeReadonlyMarshaller = state => {
@@ -224,7 +224,7 @@ const makeReadonlyMarshaller = state => {
 };
 
 /**
- * @param {BoardState} state
+ * @param   {BoardState}                             state
  * @returns {ReturnType<typeof makeMarshal<string>>}
  */
 const makePublishingMarshaller = state => {
@@ -264,15 +264,15 @@ export const prepareBoardKit = baggage => {
          * `value` for its entire lifetime. For a well-known board, this is
          * essentially forever.
          *
-         * @param {Key} value
-         * @throws if `value` is not a Key in the @agoric/store sense
+         * @param  {Key} value
+         * @throws       if `value` is not a Key in the @agoric/store sense
          */
         getId(value) {
           return getId(value, this.state);
         },
         /**
-         * @param {BoardId} id
-         * @throws if id is not in the mapping
+         * @param  {BoardId} id
+         * @throws    if id is not in the mapping
          */
         getValue(id) {
           return getValue(id, this.state);
@@ -374,7 +374,7 @@ export const prepareRecorderFactory = zone => {
   );
 
   /**
-   * @param {string} label
+   * @param {string}     label
    * @param {Marshaller} marshaller
    */
   const prepareRecorderKit = (label, marshaller) => {

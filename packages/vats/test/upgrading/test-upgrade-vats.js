@@ -31,9 +31,9 @@ test.before(async t => {
 });
 
 /**
- * @param {any} t
- * @param {Partial<SwingSetConfig>} [kernelConfigOverrides]
- * @param {Record<string, unknown>} [deviceEndowments]
+ * @param   {any}                                      t
+ * @param   {Partial<SwingSetConfig>}                  [kernelConfigOverrides]
+ * @param   {Record<string, unknown>}                  [deviceEndowments]
  * @returns {Promise<ReturnType<typeof makeRunUtils>>}
  */
 const makeScenario = async (

@@ -51,10 +51,10 @@ function mirror(data, width) {
 
 export class CRC {
   /**
-   * @param {number} width
-   * @param {number} poly
-   * @param {number} xorIn
-   * @param {number} xorOut
+   * @param {number}  width
+   * @param {number}  poly
+   * @param {number}  xorIn
+   * @param {number}  xorOut
    * @param {boolean} reflect
    */
   constructor(width, poly, xorIn, xorOut, reflect) {

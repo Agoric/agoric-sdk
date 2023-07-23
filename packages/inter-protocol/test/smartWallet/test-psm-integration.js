@@ -232,9 +232,10 @@ test('govern offerFilter', async t => {
   /**
    * get invitation details the way a user would
    *
-   * @param {string} desc
-   * @param {number} len
-   * @param {any} balances XXX please improve this
+   * @param   {string}                                                 desc
+   * @param   {number}                                                 len
+   * @param   {any}                                                    balances
+   *   XXX please improve this
    * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) =>

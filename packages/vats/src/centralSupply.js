@@ -10,8 +10,8 @@ import { E, Far } from '@endo/far';
  * @param {ZCF<{
  *   bootstrapPaymentValue: bigint;
  * }>} zcf
- * @param {object} privateArgs
- * @param {FeeMintAccess} privateArgs.feeMintAccess
+ * @param {object}                                    privateArgs
+ * @param {FeeMintAccess}                             privateArgs.feeMintAccess
  */
 export const start = async (zcf, { feeMintAccess }) => {
   const { bootstrapPaymentValue } = zcf.getTerms();

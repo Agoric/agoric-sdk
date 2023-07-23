@@ -34,8 +34,8 @@ const subtract1 = relTime =>
  * selling early (e.g. reaching their target debt to raise or selling all of
  * their collateral).
  *
- * @param {Awaited<import('./params.js').AuctionParamManager>} params
- * @param {Timestamp} baseTime
+ * @param   {Awaited<import('./params.js').AuctionParamManager>} params
+ * @param   {Timestamp}                                          baseTime
  * @returns {import('./scheduler.js').Schedule}
  */
 export const computeRoundTiming = (params, baseTime) => {
@@ -114,9 +114,9 @@ harden(computeRoundTiming);
  * started, then it'll be nextSchedule.startTime. Otherwise, it's the start of
  * the step following the current step.
  *
- * @param {import('./scheduler.js').Schedule | null} liveSchedule
- * @param {import('./scheduler.js').Schedule | null} nextSchedule
- * @param {Timestamp} now
+ * @param   {import('./scheduler.js').Schedule | null} liveSchedule
+ * @param   {import('./scheduler.js').Schedule | null} nextSchedule
+ * @param   {Timestamp}                                now
  * @returns {Timestamp | null}
  */
 export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
@@ -144,8 +144,8 @@ export const nextDescendingStepTime = (liveSchedule, nextSchedule, now) => {
 harden(nextDescendingStepTime);
 
 /**
- * @param {Timestamp} time
- * @param {import('./scheduler.js').Schedule} schedule
+ * @param   {Timestamp}                                    time
+ * @param   {import('./scheduler.js').Schedule}            schedule
  * @returns {'before' | 'during' | 'endExactly' | 'after'}
  */
 export const timeVsSchedule = (time, schedule) => {

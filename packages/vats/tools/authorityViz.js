@@ -24,9 +24,9 @@ const styles = {
 };
 
 /**
- * @param {Set<GraphNode>} nodes
- * @param {Map<string, Set<{ id: string; style?: string }>>} neighbors
- * @yields {string}
+ * @param   {Set<GraphNode>}                                                           nodes
+ * @param   {Map<string, Set<{ id: string; style?: string }>>}                         neighbors
+ * @yields  {string}
  *
  * @typedef {{
  *   id: string;
@@ -65,7 +65,7 @@ function* fmtGraph(nodes, neighbors) {
 }
 
 /**
- * @param {Record<string, Permit>} manifest
+ * @param   {Record<string, Permit>}                                                                                                                                                                                                                                                                                                                                                         manifest
  *
  * @typedef {| true
  *   | ({
@@ -84,11 +84,11 @@ function* fmtGraph(nodes, neighbors) {
  * @typedef {{
  *   produce?: Record<string, Status>;
  *   consume?: Record<string, Status>;
- * }} PowerSpace
+ * }}                                                                                                                                                                                                                                                                                                    PowerSpace
  *
- * @typedef {boolean | VatName} Status
+ * @typedef {boolean | VatName}                                                                                                                                                                                                                                                                                                                                                              Status
  *
- * @typedef {string} VatName
+ * @typedef {string}                                                                                                                                                                                                                                                                                                                                                                         VatName
  */
 const manifest2graph = manifest => {
   /** @type {Set<GraphNode>} */
@@ -109,9 +109,9 @@ const manifest2graph = manifest => {
   };
 
   /**
-   * @param {string} src
-   * @param {string} ty
-   * @param {Permit} item
+   * @param {string}  src
+   * @param {string}  ty
+   * @param {Permit}  item
    * @param {boolean} [reverse]
    */
   const level1 = (src, ty, item, reverse = false) => {
@@ -200,9 +200,9 @@ const manifest2graph = manifest => {
 const { Fail, quote: q } = assert;
 
 /**
- * @param {string} specifier
- * @param {object} io
- * @param {Resolver} io.resolve
+ * @param {string}                                specifier
+ * @param {object}                                io
+ * @param {Resolver}                              io.resolve
  * @param {typeof import('fs/promises').readFile} io.readFile
  */
 const loadConfig = async (specifier, { resolve, readFile }) => {
@@ -216,17 +216,17 @@ const loadConfig = async (specifier, { resolve, readFile }) => {
 };
 
 /**
- * @param {string[]} args
- * @param {object} io
- * @param {typeof import('process').stdout} io.stdout
- * @param {typeof import('fs/promises')} io.fsp
- * @param {{
+ * @param   {string[]}                                                                                             args
+ * @param   {object}                                                                                               io
+ * @param   {typeof import('process').stdout}                                                                      io.stdout
+ * @param   {typeof import('fs/promises')}                                                                         io.fsp
+ * @param   {{
  *   resolve: Resolver;
  *   url: string;
  *   load: (specifier: string) => Promise<Record<string, any>>;
  * }} io.meta
  *
- * @typedef {(specifier: string, parent: string) => Promise<string>} Resolver
+ * @typedef {(specifier: string, parent: string) => Promise<string>}                                               Resolver
  */
 const main = async (args, { stdout, fsp, meta }) => {
   const [specifier, ...opts] = args;

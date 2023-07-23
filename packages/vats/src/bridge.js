@@ -40,11 +40,11 @@ const prepareScopedManager = zone => {
     'BridgeScopedManager',
     BridgeScopedManagerI,
     /**
-     * @param {string} bridgeId
+     * @param {string}                                                            bridgeId
      * @param {{
      *   outbound: (bridgeId: string, obj: unknown) => Promise<any>;
      * }} toBridge
-     * @param {import('./types').BridgeHandler} [inboundHandler]
+     * @param {import('./types').BridgeHandler}                                   [inboundHandler]
      */
     (bridgeId, toBridge, inboundHandler) => ({
       bridgeId,
@@ -87,7 +87,7 @@ const prepareScopedManager = zone => {
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {DProxy} D The device sender
+ * @param {DProxy}                      D    The device sender
  */
 export const prepareBridgeManager = (zone, D) => {
   const makeScopedManager = prepareScopedManager(zone);
@@ -96,7 +96,8 @@ export const prepareBridgeManager = (zone, D) => {
    * Create a bridge manager for multiplexing messages to and from a bridge
    * device using string-named channels.
    *
-   * @param {BridgeDevice} bridgeDevice The bridge to manage
+   * @param   {BridgeDevice}                                                                                                                                                                                                bridgeDevice
+   *   The bridge to manage
    * @returns {{
    *   manager: import('./types.js').BridgeManager;
    *   privateInbounder: { inbound(srcID: string, obj: unknown): void };
@@ -174,7 +175,7 @@ export const prepareBridgeManager = (zone, D) => {
   /**
    * Obtain the single manager associated with a bridge device.
    *
-   * @param {BridgeDevice} bridgeDevice
+   * @param   {BridgeDevice}                       bridgeDevice
    * @returns {import('./types.js').BridgeManager}
    */
   const provideManagerForBridge = bridgeDevice => {

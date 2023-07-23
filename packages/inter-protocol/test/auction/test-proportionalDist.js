@@ -32,10 +32,10 @@ test.before(async t => {
  * @param {import('ava').ExecutionContext<
  *   Awaited<ReturnType<makeTestContext>>
  * >} t
- * @param {[collateralReturned: bigint, bidRaise: bigint]} amountsReturned
- * @param {{ deposit: number; goal?: number }[]} rawDeposits
- * @param {[transfers: [bigint, bigint][], leftovers: [bigint, bigint]]} rawExpected
- * @param {string} kwd
+ * @param {[collateralReturned: bigint, bidRaise: bigint]}                           amountsReturned
+ * @param {{ deposit: number; goal?: number }[]}                                     rawDeposits
+ * @param {[transfers: [bigint, bigint][], leftovers: [bigint, bigint]]}             rawExpected
+ * @param {string}                                                                   kwd
  * @see {distributeProportionalSharesWithLimits} for logical cases A-E
  */
 const checkProportions = (

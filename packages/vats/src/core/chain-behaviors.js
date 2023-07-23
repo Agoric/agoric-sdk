@@ -202,7 +202,7 @@ const missingKeys = (pattern, specimen) =>
   keys(pattern).filter(k => !keys(specimen).includes(k));
 
 /**
- * @param {BootstrapSpace} powers
+ * @param {BootstrapSpace}                         powers
  * @param {{ template?: Record<string, unknown> }} config
  */
 export const setupClientManager = async (
@@ -443,7 +443,7 @@ export const publishAgoricNamesToChainStorage = async ({
 
 /**
  * @deprecated use reflectAgoricNamesToChainStorage
- * @param {BootstrapPowers} powers
+ * @param {BootstrapPowers}                                                                     powers
  * @param {{
  *   options?: {
  *     agoricNamesOptions?: {

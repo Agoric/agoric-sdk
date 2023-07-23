@@ -20,8 +20,8 @@ import { addSubtract } from '../contractSupport.js';
  * Calculate the minimum collateralization given the liquidation margin and the
  * "padding" from that liquidation threshold.
  *
- * @param {Ratio} liquidationMargin
- * @param {Ratio} liquidationPadding
+ * @param   {Ratio} liquidationMargin
+ * @param   {Ratio} liquidationPadding
  * @returns {Ratio}
  */
 export const calculateMinimumCollateralization = (
@@ -32,8 +32,8 @@ export const calculateMinimumCollateralization = (
 /**
  * Calculate the lesser price of the given quotes.
  *
- * @param {PriceQuote} quoteA
- * @param {PriceQuote} [quoteB]
+ * @param   {PriceQuote} quoteA
+ * @param   {PriceQuote} [quoteB]
  * @returns {Ratio}
  */
 export const minimumPrice = (quoteA, quoteB) => {
@@ -54,9 +54,9 @@ harden(minimumPrice);
  * Calculate the maximum debt allowed based on the price quote and the lesser of
  * the `liquidationMargin` or the `liquidationPadding`.
  *
- * @param {PriceQuote} quoteAmount
- * @param {Ratio} liquidationMargin
- * @param {Ratio} liquidationPadding
+ * @param   {PriceQuote}    quoteAmount
+ * @param   {Ratio}         liquidationMargin
+ * @param   {Ratio}         liquidationPadding
  * @returns {Amount<'nat'>}
  */
 export const maxDebtForVault = (
@@ -80,9 +80,10 @@ export const maxDebtForVault = (
  * `fee` will also be zero, so the simple math works.
  *
  * @param {Amount<'nat'>} currentDebt
- * @param {Amount<'nat'>} give excess of currentDebt is returned in 'surplus'
+ * @param {Amount<'nat'>} give        excess of currentDebt is returned in
+ *   'surplus'
  * @param {Amount<'nat'>} want
- * @param {Ratio} debtFee
+ * @param {Ratio}         debtFee
  */
 export const calculateDebtCosts = (currentDebt, give, want, debtFee) => {
   const maxGive = AmountMath.min(currentDebt, give);

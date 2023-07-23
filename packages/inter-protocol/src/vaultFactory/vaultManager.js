@@ -74,34 +74,36 @@ const trace = makeTracer('VM');
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
- * @typedef {object} MetricsNotification
- * @property {Ratio | null} lockedQuote priceQuote that will be used for
- *   liquidation. Non-null from priceLock time until liquidation has taken
- *   place.
- * @property {number} numActiveVaults present count of vaults
- * @property {number} numLiquidatingVaults present count of liquidating vaults
- * @property {Amount<'nat'>} totalCollateral present sum of collateral across
+ * @typedef  {object}        MetricsNotification
+ * @property {Ratio | null}  lockedQuote              priceQuote that will be
+ *   used for liquidation. Non-null from priceLock time until liquidation has
+ *   taken place.
+ * @property {number}        numActiveVaults          present count of vaults
+ * @property {number}        numLiquidatingVaults     present count of
+ *   liquidating vaults
+ * @property {Amount<'nat'>} totalCollateral          present sum of collateral
+ *   across all vaults
+ * @property {Amount<'nat'>} totalDebt                present sum of debt across
  *   all vaults
- * @property {Amount<'nat'>} totalDebt present sum of debt across all vaults
- * @property {Amount<'nat'>} retainedCollateral collateral held as a result of
- *   not returning excess refunds to owners of vaults liquidated with
+ * @property {Amount<'nat'>} retainedCollateral       collateral held as a
+ *   result of not returning excess refunds to owners of vaults liquidated with
  *   shortfalls
- * @property {Amount<'nat'>} liquidatingCollateral present sum of collateral in
+ * @property {Amount<'nat'>} liquidatingCollateral    present sum of collateral
+ *   in vaults sent for liquidation
+ * @property {Amount<'nat'>} liquidatingDebt          present sum of debt in
  *   vaults sent for liquidation
- * @property {Amount<'nat'>} liquidatingDebt present sum of debt in vaults sent
- *   for liquidation
- * @property {Amount<'nat'>} totalCollateralSold running sum of collateral sold
- *   in liquidation
- * @property {Amount<'nat'>} totalOverageReceived running sum of overages,
+ * @property {Amount<'nat'>} totalCollateralSold      running sum of collateral
+ *   sold in liquidation
+ * @property {Amount<'nat'>} totalOverageReceived     running sum of overages,
  *   central received greater than debt
- * @property {Amount<'nat'>} totalProceedsReceived running sum of minted
+ * @property {Amount<'nat'>} totalProceedsReceived    running sum of minted
  *   received from liquidation
- * @property {Amount<'nat'>} totalShortfallReceived running sum of shortfalls,
+ * @property {Amount<'nat'>} totalShortfallReceived   running sum of shortfalls,
  *   minted received less than debt
- * @property {number} numLiquidationsCompleted running count of liquidated
- *   vaults
- * @property {number} numLiquidationsAborted running count of vault liquidations
- *   that were reverted.
+ * @property {number}        numLiquidationsCompleted running count of
+ *   liquidated vaults
+ * @property {number}        numLiquidationsAborted   running count of vault
+ *   liquidations that were reverted.
  */
 
 /**
@@ -109,7 +111,7 @@ const trace = makeTracer('VM');
  *   compoundedStabilityFee: Ratio;
  *   stabilityFee: Ratio;
  *   latestStabilityFeeUpdate: Timestamp;
- * }} AssetState
+ * }}                                                                                                                                                                                                                                                AssetState
  *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
@@ -177,7 +179,7 @@ const trace = makeTracer('VM');
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/ertp').Baggage}                                                                                                                                                                                                                                                                                                                  baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;
@@ -195,7 +197,7 @@ export const prepareVaultManagerKit = (
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
   /**
-   * @param {HeldParams & { metricsStorageNode: StorageNode }} params
+   * @param   {HeldParams & { metricsStorageNode: StorageNode }} params
    * @returns {HeldParams & ImmutableState & MutableState}
    */
   const initState = params => {
@@ -610,14 +612,14 @@ export const prepareVaultManagerKit = (
          * We don't have a way to induce such errors in CI so we've done so
          * manually in dev and verified this function recovers as expected.
          *
-         * @param {AmountKeywordRecord} proceeds
-         * @param {Amount<'nat'>} totalDebt
-         * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
+         * @param {AmountKeywordRecord}                                                                   proceeds
+         * @param {Amount<'nat'>}                                                                         totalDebt
+         * @param {Pick<PriceQuote, 'quoteAmount'>}                                                       oraclePriceAtStart
          * @param {MapStore<
          *   Vault,
          *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
          * >} vaultData
-         * @param {Amount<'nat'>} totalCollateral
+         * @param {Amount<'nat'>}                                                                         totalCollateral
          */
         planProceedsDistribution(
           proceeds,
@@ -677,12 +679,12 @@ export const prepareVaultManagerKit = (
          * We don't have a way to induce such errors in CI so we've done so
          * manually in dev and verified this function recovers as expected.
          *
-         * @param {object} obj
-         * @param {import('./proceeds.js').DistributionPlan} obj.plan
-         * @param {Vault[]} obj.vaultsInPlan
-         * @param {ZCFSeat} obj.liqSeat
-         * @param {Amount<'nat'>} obj.totalCollateral
-         * @param {Amount<'nat'>} obj.totalDebt
+         * @param   {object}                                   obj
+         * @param   {import('./proceeds.js').DistributionPlan} obj.plan
+         * @param   {Vault[]}                                  obj.vaultsInPlan
+         * @param   {ZCFSeat}                                  obj.liqSeat
+         * @param   {Amount<'nat'>}                            obj.totalCollateral
+         * @param   {Amount<'nat'>}                            obj.totalDebt
          * @returns {void}
          */
         distributeProceeds({
@@ -820,7 +822,7 @@ export const prepareVaultManagerKit = (
         },
         /**
          * @param {Amount<'nat'>} toBurn
-         * @param {ZCFSeat} seat
+         * @param {ZCFSeat}       seat
          */
         burn(toBurn, seat) {
           const { state } = this;
@@ -859,12 +861,12 @@ export const prepareVaultManagerKit = (
         /**
          * Called by a vault when its balances change.
          *
-         * @param {NormalizedDebt} oldDebtNormalized
-         * @param {Amount<'nat'>} oldCollateral
-         * @param {VaultId} vaultId
-         * @param {import('./vault.js').VaultPhase} vaultPhase at the end of
-         *   whatever change updated balances
-         * @param {Vault} vault
+         * @param   {NormalizedDebt}                  oldDebtNormalized
+         * @param   {Amount<'nat'>}                   oldCollateral
+         * @param   {VaultId}                         vaultId
+         * @param   {import('./vault.js').VaultPhase} vaultPhase        at the
+         *   end of whatever change updated balances
+         * @param   {Vault}                           vault
          * @returns {void}
          */
         handleBalanceChange(

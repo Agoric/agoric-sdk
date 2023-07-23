@@ -30,7 +30,7 @@ export const storeInterContractStartKits = async ({
 }) => {
   /**
    * @param {Promise<MapStore<string, { instance: Instance }>>} storeP
-   * @param {Promise<{ instance: Instance }>[]} kitPs
+   * @param {Promise<{ instance: Instance }>[]}                 kitPs
    */
   const storeAll = async (storeP, kitPs) => {
     const store = await storeP;

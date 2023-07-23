@@ -95,7 +95,7 @@ test.before(async t => {
  * @param {import('ava').ExecutionContext<
  *   Awaited<ReturnType<makeTestContext>>
  * >} t
- * @param {any} params
+ * @param {any}                                                                      params
  */
 export const setupServices = async (t, params = defaultParams) => {
   const {
@@ -133,7 +133,7 @@ export const setupServices = async (t, params = defaultParams) => {
  * @param {import('ava').ExecutionContext<
  *   Awaited<ReturnType<makeTestContext>>
  * >} t
- * @param {any} [params]
+ * @param {any}                                                                      [params]
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {
   const { zoe, bid } = t.context;
@@ -152,11 +152,11 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
   const { publicFacet, creatorFacet } = auctioneerKit;
 
   /**
-   * @param {Amount<'nat'>} giveBid
-   * @param {Amount<'nat'>} wantCollateral
-   * @param {Ratio} [discount]
+   * @param {Amount<'nat'>}              giveBid
+   * @param {Amount<'nat'>}              wantCollateral
+   * @param {Ratio}                      [discount]
    * @param {ExitRule | { onBuy: true }} [exitRule]
-   * @param {Amount<'nat'>} [proposalWant]
+   * @param {Amount<'nat'>}              [proposalWant]
    */
   const bidForCollateralSeat = async (
     giveBid,
@@ -222,7 +222,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
   const bookDataTrackers = makeScalarMapStore('trackers');
 
   /**
-   * @param {Brand} brand
+   * @param   {Brand}                    brand
    * @returns {Promise<BookDataTracker>}
    */
   const getBookDataTracker = async brand => {
@@ -242,8 +242,8 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
 
   /**
    * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} issuerKit
-   * @param {Amount<'nat'>} collateralAmount
-   * @param {{ goal: Amount<'nat'> }} [limit]
+   * @param {Amount<'nat'>}                                       collateralAmount
+   * @param {{ goal: Amount<'nat'> }}                             [limit]
    */
   const setupCollateralAuction = async (issuerKit, collateralAmount, limit) => {
     const collateralBrand = collateralAmount.brand;

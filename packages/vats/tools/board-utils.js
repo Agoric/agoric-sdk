@@ -32,7 +32,7 @@ import { prepareBoardKit } from '../src/lib-board.js';
 export * from '@agoric/internal/src/marshal.js';
 
 /**
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} fakeStorageKit
+ * @param   {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} fakeStorageKit
  * @returns {AgoricNamesRemotes}
  */
 export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
@@ -81,9 +81,9 @@ harden(makeAgoricNamesRemotesFromFakeStorage);
  * upgrade. Suitable only for use in tests.
  *
  * @param {bigint | number} [initSequence]
- * @param {object} [options]
- * @param {string} [options.prefix]
- * @param {number} [options.crcDigits]
+ * @param {object}          [options]
+ * @param {string}          [options.prefix]
+ * @param {number}          [options.crcDigits]
  */
 export const makeFakeBoard = (initSequence = 0, options = {}) => {
   const make = prepareBoardKit(makeScalarBigMapStore('baggage'));

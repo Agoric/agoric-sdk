@@ -27,7 +27,7 @@ const asNotifier = mixed => {
 
 /**
  * @template {object} N
- * @param {import('ava').ExecutionContext} t
+ * @param {import('ava').ExecutionContext}                                                               t
  * @param {| AsyncIterable<N, N>
  *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} subscription
  */
@@ -77,7 +77,7 @@ export const subscriptionTracker = async (t, subscription) => {
  * For public facets that have a `metrics` topic
  *
  * @template {object} N
- * @param {import('ava').ExecutionContext} t
+ * @param {import('ava').ExecutionContext}                                                  t
  * @param {ERef<{
  *   getPublicTopics?: () => { metrics: { subscriber: Subscriber<N> } };
  * }>} publicFacet
@@ -88,7 +88,7 @@ export const metricsTracker = async (t, publicFacet) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {import('ava').ExecutionContext}                               t
  * @param {import('../src/vaultFactory/vaultManager').CollateralManager} publicFacet
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {

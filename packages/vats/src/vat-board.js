@@ -8,8 +8,8 @@ import { prepareRecorderFactory, prepareBoardKit } from './lib-board.js';
 const THE_BOARD = 'theboard';
 
 /**
- * @param {unknown} _vatPowers
- * @param {unknown} _vatParameters
+ * @param {unknown}                            _vatPowers
+ * @param {unknown}                            _vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export function buildRootObject(_vatPowers, _vatParameters, baggage) {

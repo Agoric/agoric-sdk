@@ -34,9 +34,9 @@ const DAY = SECONDS_PER_HOUR * 24n;
 const marshaller = makeFakeMarshaller();
 
 /**
- * @param {ZCF} zcf
+ * @param {ZCF}                              zcf
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/ertp').Baggage}   baggage
  */
 export async function start(zcf, privateArgs, baggage) {
   console.log(`contract started`);

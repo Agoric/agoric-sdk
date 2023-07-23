@@ -46,14 +46,14 @@ import { liquidationResults } from './liquidation.js';
  * and is wrapped in a try/catch. If at any point the plan revising fails, the
  * plan is returned as is.
  *
- * @param {object} inputs
- * @param {AmountKeywordRecord} inputs.proceeds
- * @param {Amount<'nat'>} inputs.totalDebt
- * @param {Amount<'nat'>} inputs.totalCollateral
- * @param {PriceDescription} inputs.oraclePriceAtStart
- * @param {VaultBalances[]} inputs.vaultsBalances ordered best to worst
- *   collateralized
- * @param {Ratio} inputs.penaltyRate
+ * @param   {object}              inputs
+ * @param   {AmountKeywordRecord} inputs.proceeds
+ * @param   {Amount<'nat'>}       inputs.totalDebt
+ * @param   {Amount<'nat'>}       inputs.totalCollateral
+ * @param   {PriceDescription}    inputs.oraclePriceAtStart
+ * @param   {VaultBalances[]}     inputs.vaultsBalances     ordered best to
+ *   worst collateralized
+ * @param   {Ratio}               inputs.penaltyRate
  * @returns {DistributionPlan}
  */
 export const calculateDistributionPlan = ({

@@ -61,15 +61,15 @@ export const auctioneerParamTypes = harden({
 });
 
 /**
- * @typedef {object} AuctionParams
- * @property {Amount<'set'>} ElectorateInvitationAmount
- * @property {RelativeTime} StartFrequency
- * @property {RelativeTime} ClockStep
- * @property {bigint} StartingRate
- * @property {bigint} LowestRate
- * @property {bigint} DiscountStep
- * @property {RelativeTime} AuctionStartDelay
- * @property {RelativeTime} PriceLockPeriod
+ * @typedef  {object}                                      AuctionParams
+ * @property {Amount<'set'>}                               ElectorateInvitationAmount
+ * @property {RelativeTime}                                StartFrequency
+ * @property {RelativeTime}                                ClockStep
+ * @property {bigint}                                      StartingRate
+ * @property {bigint}                                      LowestRate
+ * @property {bigint}                                      DiscountStep
+ * @property {RelativeTime}                                AuctionStartDelay
+ * @property {RelativeTime}                                PriceLockPeriod
  * @property {import('@agoric/time/src/types').TimerBrand} TimerBrand
  */
 
@@ -115,8 +115,8 @@ harden(makeAuctioneerParams);
 
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
- * @param {ZCF} zcf
- * @param {AuctionParams} initial
+ * @param {ZCF}                                                                        zcf
+ * @param {AuctionParams}                                                              initial
  */
 export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
   return makeParamManager(
@@ -147,10 +147,10 @@ harden(makeAuctioneerParamManager);
 
 /**
  * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} caps
- * @param {ERef<Timer>} timer
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {ERef<AssetReservePublicFacet>} reservePublicFacet
- * @param {AuctionParams} params
+ * @param {ERef<Timer>}                                                      timer
+ * @param {ERef<PriceAuthority>}                                             priceAuthority
+ * @param {ERef<AssetReservePublicFacet>}                                    reservePublicFacet
+ * @param {AuctionParams}                                                    params
  */
 export const makeGovernedTerms = (
   { storageNode: _storageNode, marshaller: _marshaller },

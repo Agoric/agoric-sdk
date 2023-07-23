@@ -27,12 +27,12 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
  * @param {ERef<NameAdmin>} nameAdmin
- * @param {string[][]} paths
+ * @param {string[][]}      paths
  */
 const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
    * @param {ERef<NameAdmin>} nextAdmin
-   * @param {string[]} path
+   * @param {string[]}        path
    */
   const nextPath = async (nextAdmin, path) => {
     const [nextName, ...rest] = path;
@@ -121,8 +121,8 @@ harden(invitePSMCommitteeMembers);
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<StorageNode>} storageNodeRef
- * @param {string} childName
+ * @param   {ERef<StorageNode>}    storageNodeRef
+ * @param   {string}               childName
  * @returns {Promise<StorageNode>}
  */
 async function makeStorageNodeChild(storageNodeRef, childName) {

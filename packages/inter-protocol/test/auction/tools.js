@@ -82,7 +82,7 @@ export const makeFakeAuctioneer = () => {
 /**
  * contract governor wants a committee invitation. give it a random invitation
  *
- * @param {ZoeService} zoe
+ * @param {ZoeService}               zoe
  * @param {AuctionTestInstallations} installations
  */
 export const getInvitation = async (zoe, installations) => {

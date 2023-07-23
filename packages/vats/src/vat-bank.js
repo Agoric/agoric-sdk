@@ -31,13 +31,13 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 });
 
 /**
- * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
+ * @typedef {import('./virtual-purse').VirtualPurseController}            VirtualPurseController
  *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
  */
 
 /**
- * @typedef {object} BalanceUpdater
+ * @typedef  {object}                                  BalanceUpdater
  * @property {(value: string, nonce?: string) => void} update
  */
 
@@ -53,7 +53,7 @@ const BalanceUpdaterI = M.interface('BalanceUpdater', {
  */
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param   {import('@agoric/zone').Zone}                                    zone
  * @returns {(brand: Brand, publisher: Publisher<Amount>) => BalanceUpdater}
  */
 const prepareBalanceUpdater = zone =>
@@ -84,21 +84,21 @@ const prepareBalanceUpdater = zone =>
 /** @param {import('@agoric/zone').Zone} zone */
 const prepareBankPurseController = zone => {
   /**
-   * @param {BridgeChannel} bankBridge
-   * @param {string} denom
-   * @param {Brand} brand
-   * @param {string} address
-   * @param {PublishKit<Amount>} balanceKit
+   * @param   {BridgeChannel}          bankBridge
+   * @param   {string}                 denom
+   * @param   {Brand}                  brand
+   * @param   {string}                 address
+   * @param   {PublishKit<Amount>}     balanceKit
    * @returns {VirtualPurseController}
    */
   const makeBankPurseController = zone.exoClass(
     'BankPurseController',
     VirtualPurseControllerI,
     /**
-     * @param {BridgeChannel} bankBridge
-     * @param {string} denom
-     * @param {Brand} brand
-     * @param {string} address
+     * @param {BridgeChannel}       bankBridge
+     * @param {string}              denom
+     * @param {Brand}               brand
+     * @param {string}              address
      * @param {LatestTopic<Amount>} balanceTopic
      */
     (bankBridge, denom, brand, address, balanceTopic) => ({
@@ -148,8 +148,8 @@ const prepareRewardPurseController = zone =>
     VirtualPurseControllerI,
     /**
      * @param {BridgeChannel} bankChannel
-     * @param {string} denom
-     * @param {Brand} brand
+     * @param {string}        denom
+     * @param {Brand}         brand
      */
     (bankChannel, denom, brand) => ({ bankChannel, denom, brand }),
     {
@@ -232,7 +232,7 @@ async function* concatAsyncIterables(iterables) {
  * TODO: This should be absorbed and zone-ified into the existing publish kit.
  *
  * @template T
- * @param {AsyncIterable<T>} asyncIterable
+ * @param {AsyncIterable<T>}                 asyncIterable
  * @param {(value: T, prior?: T) => unknown} skipValue
  */
 const makeSubscriberFromAsyncIterable = (
@@ -261,8 +261,8 @@ const makeSubscriberFromAsyncIterable = (
 
 /**
  * @template T
- * @param {Iterable<T>} historyValues
- * @param {EachTopic<T>} futureSubscriber
+ * @param {Iterable<T>}                      historyValues
+ * @param {EachTopic<T>}                     futureSubscriber
  * @param {(value: T, prior?: T) => unknown} skipValue
  */
 const makeHistoricalTopic = (historyValues, futureSubscriber, skipValue) => {
@@ -287,8 +287,8 @@ const prepareAssetSubscription = zone => {
   /**
    * Build an exo asset subscription that resumes from its durable components.
    *
-   * @param {MapStore<Brand, AssetDescriptor>} brandToAssetDescriptor
-   * @param {EachTopic<AssetDescriptor>} assetSubscriber
+   * @param   {MapStore<Brand, AssetDescriptor>}   brandToAssetDescriptor
+   * @param   {EachTopic<AssetDescriptor>}         assetSubscriber
    * @returns {IterableEachTopic<AssetDescriptor>}
    */
   const makeAssetSubscription = zone.exoClass(
@@ -345,10 +345,10 @@ const prepareAssetSubscription = zone => {
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {object} AssetIssuerKit
- * @property {ERef<Mint<K>>} [mint]
+ * @typedef  {object}          AssetIssuerKit
+ * @property {ERef<Mint<K>>}   [mint]
  * @property {ERef<Issuer<K>>} issuer
- * @property {Brand<K>} brand
+ * @property {Brand<K>}        brand
  */
 
 const BaseIssuerKitShape = harden({
@@ -363,12 +363,12 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
 /** @typedef {AssetIssuerKit & { denom: string; escrowPurse?: ERef<Purse> }} AssetRecord */
 
 /**
- * @typedef {object} AssetDescriptor
- * @property {Brand} brand
+ * @typedef  {object}       AssetDescriptor
+ * @property {Brand}        brand
  * @property {ERef<Issuer>} issuer
- * @property {string} issuerName
- * @property {string} denom
- * @property {string} proposedName
+ * @property {string}       issuerName
+ * @property {string}       denom
+ * @property {string}       proposedName
  */
 
 /**
@@ -379,11 +379,11 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
  */
 
 /**
- * @typedef {object} Bank
+ * @typedef  {object}                                   Bank
  * @property {() => IterableEachTopic<AssetDescriptor>} getAssetSubscription
  *   Returns assets as they are added to the bank
- * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any
- *   existing vpurse (keyed by address and brand) or create a new one.
+ * @property {(brand: Brand) => Promise<VirtualPurse>}  getPurse
+ *   Find any existing vpurse (keyed by address and brand) or create a new one.
  */
 
 export const BankI = M.interface('Bank', {
@@ -392,11 +392,11 @@ export const BankI = M.interface('Bank', {
 });
 
 /**
- * @param {import('@agoric/zone').Zone} zone
- * @param {object} makers
+ * @param {import('@agoric/zone').Zone}          zone
+ * @param {object}                               makers
  * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
  * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
- * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ * @param {ReturnType<prepareVirtualPurse>}      makers.makeVirtualPurse
  */
 const prepareBank = (
   zone,
@@ -422,13 +422,13 @@ const prepareBank = (
     'Bank',
     BankI,
     /**
-     * @param {object} param0
-     * @param {string} param0.address
-     * @param {EachTopic<AssetDescriptor>} param0.assetSubscriber
-     * @param {MapStore<Brand, AssetDescriptor>} param0.brandToAssetDescriptor
-     * @param {BridgeChannel} [param0.bankChannel]
-     * @param {MapStore<Brand, AssetRecord>} param0.brandToAssetRecord
-     * @param {MapStore<Brand, VirtualPurse>} param0.brandToVPurse
+     * @param {object}                                             param0
+     * @param {string}                                             param0.address
+     * @param {EachTopic<AssetDescriptor>}                         param0.assetSubscriber
+     * @param {MapStore<Brand, AssetDescriptor>}                   param0.brandToAssetDescriptor
+     * @param {BridgeChannel}                                      [param0.bankChannel]
+     * @param {MapStore<Brand, AssetRecord>}                       param0.brandToAssetRecord
+     * @param {MapStore<Brand, VirtualPurse>}                      param0.brandToVPurse
      * @param {MapStore<string, MapStore<string, BalanceUpdater>>} param0.denomToAddressUpdater
      */
     ({
@@ -543,13 +543,13 @@ const BankManagerI = M.interface('BankManager', {
 });
 
 /**
- * @param {import('@agoric/zone').Zone} zone
- * @param {object} makers
- * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
- * @param {ReturnType<prepareBank>} makers.makeBank
- * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
+ * @param {import('@agoric/zone').Zone}              zone
+ * @param {object}                                   makers
+ * @param {ReturnType<prepareAssetSubscription>}     makers.provideAssetSubscription
+ * @param {ReturnType<prepareBank>}                  makers.makeBank
+ * @param {ReturnType<prepareDurablePublishKit>}     makers.makePublishKit
  * @param {ReturnType<prepareRewardPurseController>} makers.makeRewardPurseController
- * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ * @param {ReturnType<prepareVirtualPurse>}          makers.makeVirtualPurse
  */
 const prepareBankManager = (
   zone,
@@ -567,9 +567,9 @@ const prepareBankManager = (
     'BankManager',
     BankManagerI,
     /**
-     * @param {object} args
-     * @param {BridgeChannel} [args.bankChannel]
-     * @param {MapStore<string, MapStore<string, BalanceUpdater>>} args.denomToAddressUpdater
+     * @param {object}                                                       args
+     * @param {BridgeChannel}                                                [args.bankChannel]
+     * @param {MapStore<string, MapStore<string, BalanceUpdater>>}           args.denomToAddressUpdater
      * @param {Pick<import('./types.js').NameHubKit['nameAdmin'], 'update'>} [args.nameAdmin]
      */
     ({ bankChannel, denomToAddressUpdater, nameAdmin }) => {
@@ -622,8 +622,8 @@ const prepareBankManager = (
         );
       },
       /**
-       * @param {string} denom
-       * @param {AssetIssuerKit} feeKit
+       * @param   {string}                                        denom
+       * @param   {AssetIssuerKit}                                feeKit
        * @returns {ERef<import('@endo/far').EOnly<DepositFacet>>}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
@@ -645,9 +645,9 @@ const prepareBankManager = (
       /**
        * Get the address of named module account.
        *
-       * @param {string} moduleName
-       * @returns {Promise<string | null>} address of named module account, or
-       *   null if unimplemented (no bankChannel)
+       * @param   {string}                 moduleName
+       * @returns {Promise<string | null>}            address of named module
+       *   account, or null if unimplemented (no bankChannel)
        */
       async getModuleAccountAddress(moduleName) {
         const { bankChannel } = this.state;
@@ -668,11 +668,12 @@ const prepareBankManager = (
        * Note that AssetInfo has the settled identity of the issuer, not just a
        * promise for it.
        *
-       * @param {string} denom lower-level denomination string
-       * @param {string} issuerName
-       * @param {string} proposedName
-       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer
-       *   kit (mint, brand, issuer)
+       * @param {string}                                       denom
+       *   lower-level denomination string
+       * @param {string}                                       issuerName
+       * @param {string}                                       proposedName
+       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit
+       *   ERTP issuer kit (mint, brand, issuer)
        */
       async addAsset(denom, issuerName, proposedName, kit) {
         const {
@@ -749,7 +750,7 @@ const prepareBankManager = (
       /**
        * Create a new personal bank interface for a given address.
        *
-       * @param {string} address lower-level bank account address
+       * @param   {string}        address lower-level bank account address
        * @returns {Promise<Bank>}
        */
       async getBankForAddress(address) {

@@ -35,9 +35,9 @@ export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 const stablePsmKey = `published.psm.${Stable.symbol}`;
 
 /**
- * @param {[key: string, value: string][]} chainStorageEntries
- * @param {string} keyword
- * @param {{ minted: Brand<'nat'>; anchor: Brand<'nat'> }} brands
+ * @param   {[key: string, value: string][]}                                                   chainStorageEntries
+ * @param   {string}                                                                           keyword
+ * @param   {{ minted: Brand<'nat'>; anchor: Brand<'nat'> }}                                   brands
  * @returns {{
  *   metrics?: MetricsNotification;
  *   governance?: GovernanceSubscriptionState;
@@ -79,11 +79,11 @@ const findOldPSMState = (chainStorageEntries, keyword, brands) => {
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces & ChainStorageVatParams} powers
- * @param {object} [config]
- * @param {bigint} [config.WantMintedFeeBP]
- * @param {bigint} [config.GiveMintedFeeBP]
- * @param {bigint} [config.MINT_LIMIT]
- * @param {{ anchorOptions?: AnchorOptions }} [config.options]
+ * @param {object}                                                           [config]
+ * @param {bigint}                                                           [config.WantMintedFeeBP]
+ * @param {bigint}                                                           [config.GiveMintedFeeBP]
+ * @param {bigint}                                                           [config.MINT_LIMIT]
+ * @param {{ anchorOptions?: AnchorOptions }}                                [config.options]
  */
 export const startPSM = async (
   {
@@ -286,7 +286,7 @@ export const startPSM = async (
 harden(startPSM);
 
 /**
- * @typedef {object} AnchorOptions
+ * @typedef  {object} AnchorOptions
  * @property {string} [denom]
  * @property {string} [keyword]
  * @property {number} [decimalPlaces]
@@ -303,7 +303,7 @@ harden(startPSM);
  * TODO: address redundancy with publishInterchainAssetFromBank
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces & ChainStorageVatParams} powers
- * @param {{ options: { anchorOptions?: AnchorOptions } }} config
+ * @param {{ options: { anchorOptions?: AnchorOptions } }}                   config
  */
 export const makeAnchorAsset = async (
   {

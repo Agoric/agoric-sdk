@@ -30,19 +30,20 @@ const { details: X, quote: q, Fail } = assert;
  */
 
 /**
- * @typedef {object} ProvisionPoolKitReferences
- * @property {ERef<BankManager>} bankManager
- * @property {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+ * @typedef  {object}                                                                                                ProvisionPoolKitReferences
+ * @property {ERef<BankManager>}                                                                                     bankManager
+ * @property {ERef<import('@agoric/vats').NameAdmin>}                                                                namesByAddressAdmin
  * @property {ERef<
  *   import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']
  * >} walletFactory
  */
 
 /**
- * @typedef {object} MetricsNotification Metrics naming scheme is that nouns are
- *   present values and past-participles are accumulative.
- * @property {bigint} walletsProvisioned count of new wallets provisioned
- * @property {Amount<'nat'>} totalMintedProvided running sum of Minted provided
+ * @typedef  {object}        MetricsNotification  Metrics naming scheme is that
+ *   nouns are present values and past-participles are accumulative.
+ * @property {bigint}        walletsProvisioned   count of new wallets
+ *   provisioned
+ * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted provided
  *   to new wallets
  * @property {Amount<'nat'>} totalMintedConverted running sum of Minted ever
  *   received by the contract from PSM
@@ -52,10 +53,10 @@ const { details: X, quote: q, Fail } = assert;
  * Given attenuated access to the funding purse, handle requests to provision
  * smart wallets.
  *
- * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
- * @param {() => void} onProvisioned
+ * @param   {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
+ * @param   {() => void}                                 onProvisioned
  *
- * @typedef {import('./vat-bank.js').Bank} Bank
+ * @typedef {import('./vat-bank.js').Bank}               Bank
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
   /** @param {ProvisionPoolKitReferences} refs */
@@ -92,7 +93,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
 };
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage}                                                                                                                                   baggage
  * @param {{
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   params: any;
@@ -135,10 +136,10 @@ export const prepareProvisionPoolKit = (
       }),
     },
     /**
-     * @param {object} opts
+     * @param {object}       opts
      * @param {Purse<'nat'>} opts.fundPurse
-     * @param {Brand} opts.poolBrand
-     * @param {StorageNode} opts.metricsNode
+     * @param {Brand}        opts.poolBrand
+     * @param {StorageNode}  opts.metricsNode
      */
     ({ fundPurse, poolBrand, metricsNode }) => {
       /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>} */
@@ -215,7 +216,7 @@ export const prepareProvisionPoolKit = (
           });
         },
         /**
-         * @param {Brand} brand
+         * @param {Brand}       brand
          * @param {PsmInstance} instance
          */
         initPSM(brand, instance) {
@@ -246,8 +247,8 @@ export const prepareProvisionPoolKit = (
           return wallet;
         },
         /**
-         * @param {string} address
-         * @returns {boolean} isRevive
+         * @param   {string}  address
+         * @returns {boolean}         isRevive
          */
         ackWallet(address) {
           const { revivableAddresses } = this.state;
@@ -322,7 +323,7 @@ export const prepareProvisionPoolKit = (
             });
         },
         /**
-         * @param {object} [options]
+         * @param {object}              [options]
          * @param {MetricsNotification} [options.metrics]
          */
         start({ metrics } = {}) {
@@ -401,8 +402,8 @@ export const prepareProvisionPoolKit = (
         },
         /**
          * @param {ERef<Payment>} payIn
-         * @param {Amount} amount
-         * @param {PsmInstance} instance
+         * @param {Amount}        amount
+         * @param {PsmInstance}   instance
          */
         async swap(payIn, amount, instance) {
           const {
@@ -440,8 +441,8 @@ export const prepareProvisionPoolKit = (
   /**
    * Prepare synchronous values before passing to real Exo maker
    *
-   * @param {object} opts
-   * @param {Brand} opts.poolBrand
+   * @param {object}            opts
+   * @param {Brand}             opts.poolBrand
    * @param {ERef<StorageNode>} opts.storageNode
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {

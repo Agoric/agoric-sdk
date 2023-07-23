@@ -51,7 +51,7 @@ export const bootstrapMethods = {
 /**
  * @template {PropertyKey} K
  * @template V
- * @param {K[]} keys
+ * @param {K[]}                      keys
  * @param {(key: K, i: number) => V} valueMaker
  */
 const keysToObject = (keys, valueMaker) => {
@@ -65,9 +65,9 @@ const keysToObject = (keys, valueMaker) => {
  * @param {{
  *   deepEqual: (a: unknown, b: unknown, message?: string) => void;
  * }} t
- * @param {PropertyKey[]} a
- * @param {PropertyKey[]} b
- * @param {string} [message]
+ * @param {PropertyKey[]}                                                        a
+ * @param {PropertyKey[]}                                                        b
+ * @param {string}                                                               [message]
  */
 export const keyArrayEqual = (t, a, b, message) => {
   const aobj = keysToObject(a, () => 1);
@@ -77,7 +77,7 @@ export const keyArrayEqual = (t, a, b, message) => {
 
 /**
  * @param {import('@agoric/swingset-vat/src/controller/controller').SwingsetController} controller
- * @param {(..._: any[]) => any} log
+ * @param {(..._: any[]) => any}                                                        log
  */
 export const makeRunUtils = (controller, log = (..._) => {}) => {
   let cranksRun = 0;
@@ -88,7 +88,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   /**
    * @template {() => any} T
-   * @param {T} thunk
+   * @param   {T}                      thunk
    * @returns {Promise<ReturnType<T>>}
    */
   const runThunk = async thunk => {
@@ -218,9 +218,9 @@ export const getNodeTestVaultsConfig = async (
 };
 
 /**
- * @param {object} powers
+ * @param {object}                                                    powers
  * @param {Pick<typeof import('node:child_process'), 'execFileSync'>} powers.childProcess
- * @param {typeof import('node:fs/promises')} powers.fs
+ * @param {typeof import('node:fs/promises')}                         powers.fs
  */
 const makeProposalExtractor = ({ childProcess, fs }) => {
   const getPkgPath = (pkg, fileName = '') =>
@@ -260,9 +260,9 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
   };
 
   /**
-   * @param {object} options
-   * @param {string} options.package
-   * @param {string} options.packageScriptName
+   * @param {object}                 options
+   * @param {string}                 options.package
+   * @param {string}                 options.packageScriptName
    * @param {Record<string, string>} [options.env]
    */
   const buildAndExtract = async ({
@@ -321,10 +321,12 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
  * a timeout error). Use t.after.always(shutdown), because the normal t.after()
  * hooks are not run if a test fails.
  *
- * @param {import('ava').ExecutionContext} t
- * @param {string} bundleDir directory to write bundles and config to
- * @param {object} [options]
- * @param {string} [options.configSpecifier] bootstrap config specifier
+ * @param {import('ava').ExecutionContext}                                      t
+ * @param {string}                                                              bundleDir
+ *   directory to write bundles and config to
+ * @param {object}                                                              [options]
+ * @param {string}                                                              [options.configSpecifier]
+ *   bootstrap config specifier
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
  */
 export const makeSwingsetTestKit = async (
@@ -351,7 +353,7 @@ export const makeSwingsetTestKit = async (
    * changes there will sometimes require changes here.
    *
    * @param {string} bridgeId
-   * @param {any} obj
+   * @param {any}    obj
    */
   const bridgeOutbound = (bridgeId, obj) => {
     switch (bridgeId) {
@@ -461,7 +463,7 @@ export const makeSwingsetTestKit = async (
     }
   };
   /**
-   * @param {number} n
+   * @param {number}                                   n
    * @param {'seconds' | 'minutes' | 'hours' | 'days'} unit
    */
   const advanceTimeBy = (n, unit) => {

@@ -32,21 +32,22 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
  */
 
 /**
- * @typedef {object} IBCPacket
- * @property {Bytes} [data]
+ * @typedef  {object}       IBCPacket
+ * @property {Bytes}        [data]
  * @property {IBCChannelID} source_channel
- * @property {IBCPortID} source_port
+ * @property {IBCPortID}    source_port
  * @property {IBCChannelID} destination_channel
- * @property {IBCPortID} destination_port
+ * @property {IBCPortID}    destination_port
  */
 
 /**
  * Create a handler for the IBC protocol, both from the network and from the
  * bridge.
  *
- * @param {typeof import('@endo/far').E} E
- * @param {(method: string, params: any) => Promise<any>} rawCallIBCDevice
- * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
+ * @param   {typeof import('@endo/far').E}                  E
+ * @param   {(method: string, params: any) => Promise<any>} rawCallIBCDevice
+ * @returns {ProtocolHandler & BridgeHandler}
+ *   Protocol/Bridge handler
  */
 export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   // Nonce for creating port identifiers.
@@ -60,21 +61,21 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   const channelKeyToConnP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
-   * @typedef {object} Counterparty
-   * @property {string} port_id
-   * @property {string} channel_id
+   * @typedef  {object}                                                                                                                                         Counterparty
+   * @property {string}                                                                                                                                         port_id
+   * @property {string}                                                                                                                                         channel_id
    *
-   * @typedef {object} ConnectingInfo
-   * @property {'ORDERED' | 'UNORDERED'} order
-   * @property {string[]} connectionHops
-   * @property {string} portID
-   * @property {string} channelID
-   * @property {Counterparty} counterparty
-   * @property {string} version
+   * @typedef  {object}                                                                                                                                         ConnectingInfo
+   * @property {'ORDERED' | 'UNORDERED'}                                                                                                                        order
+   * @property {string[]}                                                                                                                                       connectionHops
+   * @property {string}                                                                                                                                         portID
+   * @property {string}                                                                                                                                         channelID
+   * @property {Counterparty}                                                                                                                                   counterparty
+   * @property {string}                                                                                                                                         version
    *
-   * @typedef {PromiseRecord<AttemptDescription>} OnConnectP
+   * @typedef  {PromiseRecord<AttemptDescription>}                                                                                                              OnConnectP
    *
-   * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
+   * @typedef  {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
    *   localAddr: Endpoint;
    *   onConnectP: OnConnectP;
    *   counterparty: { port_id: string };
@@ -98,9 +99,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   /**
    * Send a packet out via the IBC device.
    *
-   * @param {IBCPacket} packet
+   * @param {IBCPacket}                               packet
    * @param {LegacyMap<number, PromiseRecord<Bytes>>} seqToAck
-   * @param {bigint} [relativeTimeoutNs]
+   * @param {bigint}                                  [relativeTimeoutNs]
    */
   async function ibcSendPacket(
     packet,
@@ -125,11 +126,11 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   }
 
   /**
-   * @param {string} channelID
-   * @param {string} portID
-   * @param {string} rChannelID
-   * @param {string} rPortID
-   * @param {'ORDERED' | 'UNORDERED'} order
+   * @param   {string}                  channelID
+   * @param   {string}                  portID
+   * @param   {string}                  rChannelID
+   * @param   {string}                  rPortID
+   * @param   {'ORDERED' | 'UNORDERED'} order
    * @returns {ConnectionHandler}
    */
   function makeIBCConnectionHandler(
@@ -145,12 +146,13 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     channelKeyToSeqAck.init(channelKey, seqToAck);
 
     /**
-     * @param {Connection} _conn
-     * @param {Bytes} packetBytes
-     * @param {ConnectionHandler} _handler
-     * @param {object} root0
-     * @param {bigint} [root0.relativeTimeoutNs]
-     * @returns {Promise<Bytes>} Acknowledgement data
+     * @param   {Connection}        _conn
+     * @param   {Bytes}             packetBytes
+     * @param   {ConnectionHandler} _handler
+     * @param   {object}            root0
+     * @param   {bigint}            [root0.relativeTimeoutNs]
+     * @returns {Promise<Bytes>}                              Acknowledgement
+     *   data
      */
     let onReceive = async (
       _conn,
@@ -218,11 +220,11 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   let protocolImpl;
 
   /**
-   * @typedef {object} OutboundCircuitRecord
-   * @property {IBCConnectionID} dst
-   * @property {'ORDERED' | 'UNORDERED'} order
-   * @property {string} version
-   * @property {IBCPacket} packet
+   * @typedef  {object}                           OutboundCircuitRecord
+   * @property {IBCConnectionID}                  dst
+   * @property {'ORDERED' | 'UNORDERED'}          order
+   * @property {string}                           version
+   * @property {IBCPacket}                        packet
    * @property {PromiseRecord<ConnectionHandler>} deferredHandler
    */
 

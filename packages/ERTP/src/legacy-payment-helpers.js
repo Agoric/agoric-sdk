@@ -22,9 +22,9 @@ const { Fail } = assert;
 
 /**
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>} srcPaymentP
- * @param {Pattern} [optAmountShape]
+ * @param   {ERef<Purse<K>>}      recoveryPurse
+ * @param   {ERef<Payment<K>>}    srcPaymentP
+ * @param   {Pattern}             [optAmountShape]
  * @returns {Promise<Payment<K>>}
  */
 export const claim = async (
@@ -48,9 +48,9 @@ harden(claim);
  * origin.
  *
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>[]} srcPaymentsPs
- * @param {Pattern} [optTotalAmount]
+ * @param   {ERef<Purse<K>>}      recoveryPurse
+ * @param   {ERef<Payment<K>>[]}  srcPaymentsPs
+ * @param   {Pattern}             [optTotalAmount]
  * @returns {Promise<Payment<K>>}
  */
 export const combine = async (
@@ -88,9 +88,9 @@ harden(combine);
  * argument `recoveryPurse`.
  *
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>} srcPaymentP
- * @param {Amount<K>} paymentAmountA
+ * @param   {ERef<Purse<K>>}        recoveryPurse
+ * @param   {ERef<Payment<K>>}      srcPaymentP
+ * @param   {Amount<K>}             paymentAmountA
  * @returns {Promise<Payment<K>[]>}
  */
 export const split = async (recoveryPurse, srcPaymentP, paymentAmountA) => {
@@ -114,9 +114,9 @@ harden(split);
  * will be in the argument `recoveryPurse`.
  *
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>} srcPaymentP
- * @param {Amount<K>[]} amounts
+ * @param   {ERef<Purse<K>>}     recoveryPurse
+ * @param   {ERef<Payment<K>>}   srcPaymentP
+ * @param   {Amount<K>[]}        amounts
  * @returns {Promise<Payment[]>}
  */
 export const splitMany = async (recoveryPurse, srcPaymentP, amounts) => {

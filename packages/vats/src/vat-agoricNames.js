@@ -37,8 +37,8 @@ const prepareNatBrand = zone => {
 };
 
 /**
- * @param {unknown} _vatPowers
- * @param {unknown} _vatParameters
+ * @param {unknown}                            _vatPowers
+ * @param {unknown}                            _vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
@@ -52,8 +52,8 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
 
   /**
    * @param {ERef<StorageNode>} nameStorage
-   * @param {ERef<BoardVat>} vatBoard
-   * @param {string[]} kinds brand, issuer, ...
+   * @param {ERef<BoardVat>}    vatBoard
+   * @param {string[]}          kinds       brand, issuer, ...
    */
   const publishNameHubs = async (nameStorage, vatBoard, kinds) => {
     await Promise.all(
@@ -77,7 +77,7 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
     /**
      * Provide a brand, with no associated mint nor issuer.
      *
-     * @param {string} keyword
+     * @param {string}      keyword
      * @param {DisplayInfo} displayInfo
      */
     provideInertBrand: (keyword, displayInfo) =>

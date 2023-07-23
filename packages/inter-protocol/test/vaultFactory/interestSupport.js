@@ -19,10 +19,10 @@ export const makeCompoundedStabilityFeeProvider = brand => {
   };
 };
 /**
- * @param {VaultId} vaultId
- * @param {Amount<'nat'>} initDebt
- * @param {Amount<'nat'>} [initCollateral]
- * @param {any} [manager]
+ * @param   {VaultId}                               vaultId
+ * @param   {Amount<'nat'>}                         initDebt
+ * @param   {Amount<'nat'>}                         [initCollateral]
+ * @param   {any}                                   [manager]
  * @returns {Vault & { setDebt: (Amount) => void }}
  */
 

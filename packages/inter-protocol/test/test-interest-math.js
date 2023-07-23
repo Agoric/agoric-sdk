@@ -7,9 +7,9 @@ import { calculateCurrentDebt, reverseInterest } from '../src/interest-math.js';
 const brand = makeIssuerKit('foo').brand;
 
 /**
- * @param {any} t
+ * @param {any}                               t
  * @param {readonly [bigint, bigint, bigint]} input
- * @param {bigint} result
+ * @param {bigint}                            result
  */
 function checkDebt(t, [debt, interest, compounded], result) {
   /** @type {Amount<'nat'>} */

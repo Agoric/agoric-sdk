@@ -12,7 +12,7 @@ import { reserveThenGetNames } from './utils.js';
 export * from './startPSM.js';
 
 /**
- * @typedef {object} InterchainAssetOptions
+ * @typedef  {object} InterchainAssetOptions
  * @property {string} [issuerBoardId]
  * @property {string} [denom]
  * @property {number} [decimalPlaces]
@@ -24,8 +24,8 @@ export * from './startPSM.js';
 
 /**
  * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {object} config.options
+ * @param {object}                 config
+ * @param {object}                 config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const publishInterchainAssetFromBoardId = async (
@@ -49,8 +49,8 @@ export const publishInterchainAssetFromBoardId = async (
 
 /**
  * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {object} config.options
+ * @param {object}                 config
+ * @param {object}                 config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const publishInterchainAssetFromBank = async (
@@ -101,9 +101,9 @@ export const publishInterchainAssetFromBank = async (
 };
 
 /**
- * @param {BootstrapPowers} powers
- * @param {object} config
- * @param {object} config.options
+ * @param {BootstrapPowers}        powers
+ * @param {object}                 config
+ * @param {object}                 config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const registerScaledPriceAuthority = async (
@@ -207,12 +207,12 @@ export const registerScaledPriceAuthority = async (
 /** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
 
 /**
- * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {object} config.options
- * @param {InterchainAssetOptions} config.options.interchainAssetOptions
+ * @param {EconomyBootstrapPowers}   powers
+ * @param {object}                   config
+ * @param {object}                   config.options
+ * @param {InterchainAssetOptions}   config.options.interchainAssetOptions
  * @param {bigint | number | string} config.options.debtLimitValue
- * @param {bigint} config.options.stabilityFeeValue
+ * @param {bigint}                   config.options.stabilityFeeValue
  */
 export const addAssetToVault = async (
   {

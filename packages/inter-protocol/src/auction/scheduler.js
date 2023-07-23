@@ -41,7 +41,7 @@ const MAX_LATE_TICK = 300n;
 const makeCancelToken = makeCancelTokenMaker('scheduler');
 
 /**
- * @typedef {object} AuctionDriver
+ * @typedef  {object}     AuctionDriver
  * @property {() => void} reducePriceAndTrade
  * @property {() => void} finalize
  * @property {() => void} startRound
@@ -49,10 +49,11 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
  */
 
 /**
- * @typedef {object} ScheduleNotification
- * @property {Timestamp | null} activeStartTime start time of current auction if
- *   auction is active
- * @property {Timestamp | null} nextStartTime start time of next auction
+ * @typedef  {object}           ScheduleNotification
+ * @property {Timestamp | null} activeStartTime        start time of current
+ *   auction if auction is active
+ * @property {Timestamp | null} nextStartTime          start time of next
+ *   auction
  * @property {Timestamp | null} nextDescendingStepTime when the next descending
  *   step will take place
  */
@@ -70,12 +71,12 @@ const nominalStartTime = nextSchedule =>
   TimeMath.subtractAbsRel(nextSchedule.startTime, nextSchedule.startDelay);
 
 /**
- * @param {AuctionDriver} auctionDriver
- * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {Awaited<import('./params.js').AuctionParamManager>} params
- * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
+ * @param {AuctionDriver}                                                                        auctionDriver
+ * @param {import('@agoric/time/src/types').TimerService}                                        timer
+ * @param {Awaited<import('./params.js').AuctionParamManager>}                                   params
+ * @param {import('@agoric/time/src/types').TimerBrand}                                          timerBrand
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
- * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
+ * @param {StoredSubscription<GovernanceSubscriptionState>}                                      paramUpdateSubscription
  */
 export const makeScheduler = async (
   auctionDriver,
@@ -135,7 +136,7 @@ export const makeScheduler = async (
   };
 
   /**
-   * @param {Schedule | null} schedule
+   * @param   {Schedule | null} schedule
    * @returns {void}
    */
   const clockTick = schedule => {
@@ -343,18 +344,18 @@ export const makeScheduler = async (
 };
 
 /**
- * @typedef {object} Schedule
+ * @typedef  {object}                                           Schedule
  * @property {import('@agoric/time/src/types').TimestampRecord} startTime
  * @property {import('@agoric/time/src/types').TimestampRecord} endTime
- * @property {NatValue} steps
- * @property {NatValue} endRate
- * @property {RelativeTime} startDelay
- * @property {RelativeTime} clockStep
- * @property {Timestamp} [lockTime]
+ * @property {NatValue}                                         steps
+ * @property {NatValue}                                         endRate
+ * @property {RelativeTime}                                     startDelay
+ * @property {RelativeTime}                                     clockStep
+ * @property {Timestamp}                                        [lockTime]
  */
 
 /**
- * @typedef {object} FullSchedule
+ * @typedef  {object}          FullSchedule
  * @property {Schedule | null} nextAuctionSchedule
  * @property {Schedule | null} liveAuctionSchedule
  */

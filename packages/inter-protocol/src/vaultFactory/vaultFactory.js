@@ -59,7 +59,7 @@ export const privateArgsShape = M.splitRecord(
 harden(privateArgsShape);
 
 /**
- * @param {VaultFactoryZCF} zcf
+ * @param {VaultFactoryZCF}                                                                                                                                                                       zcf
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
@@ -67,7 +67,7 @@ harden(privateArgsShape);
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
  * }} privateArgs
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/ertp').Baggage}                                                                                                                                                        baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);

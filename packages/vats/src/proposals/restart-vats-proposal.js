@@ -26,8 +26,8 @@ const vatUpgradeStatus = {
 /**
  * @param {BootstrapPowers &
  *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} space
- * @param {object} config
- * @param {{ skip: string[] }} config.options
+ * @param {object}                                                                                                     config
+ * @param {{ skip: string[] }}                                                                                         config.options
  */
 export const restartVats = async ({ consume }, { options }) => {
   console.log(HR);
@@ -53,8 +53,8 @@ export const restartVats = async ({ consume }, { options }) => {
 
   const failures = [];
   /**
-   * @param {string} debugName
-   * @param {Instance} instance
+   * @param {string}           debugName
+   * @param {Instance}         instance
    * @param {ERef<AdminFacet>} adminFacet
    */
   const tryRestartContract = async (debugName, instance, adminFacet) => {

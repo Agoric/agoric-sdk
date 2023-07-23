@@ -183,7 +183,7 @@ export const ParametersShape = M.splitRecord(
  * @param {{
  *   D: DProxy;
  *   logger?: (msg: string) => void;
- * }} vatPowers
+ * }}                                                               vatPowers
  * @param {{
  *   economicCommitteeAddresses: Record<string, string>;
  *   anchorAssets: { denom: string; keyword?: string }[];
@@ -325,7 +325,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
     /**
      * Allow kernel to provide things to CORE_EVAL.
      *
-     * @param {string} name
+     * @param {string}  name
      * @param {unknown} resolution
      */
     produceItem: (name, resolution) => {

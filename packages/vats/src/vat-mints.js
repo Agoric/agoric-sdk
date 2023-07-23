@@ -35,7 +35,8 @@ export function buildRootObject() {
     /** @param {string[]} issuerNames */
     getMints: issuerNames => issuerNames.map(api.getMint),
     /**
-     * @param {any} issuerNameSingular For example, 'moola', or 'simolean'
+     * @param {any}                        issuerNameSingular For example,
+     *   'moola', or 'simolean'
      * @param {[AssetKind?, DisplayInfo?]} issuerArgs
      */
     makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {

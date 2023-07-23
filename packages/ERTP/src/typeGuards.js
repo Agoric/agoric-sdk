@@ -84,7 +84,7 @@ export const RatioShape = harden({
 /**
  * Returns true if value is a Nat bigint.
  *
- * @param {AmountValue} value
+ * @param   {AmountValue}                            value
  * @returns {value is import('./types.js').NatValue}
  */
 export const isNatValue = value => matches(value, NatValueShape);
@@ -93,7 +93,7 @@ harden(isNatValue);
 /**
  * Returns true if value is a CopySet
  *
- * @param {AmountValue} value
+ * @param   {AmountValue}      value
  * @returns {value is CopySet}
  */
 export const isCopySetValue = value => matches(value, CopySetValueShape);
@@ -105,7 +105,7 @@ harden(isCopySetValue);
  *
  * @deprecated Please change from using array-based SetValues to CopySet-based
  *   CopySetValues.
- * @param {AmountValue} value
+ * @param   {AmountValue}       value
  * @returns {value is SetValue}
  */
 export const isSetValue = value => matches(value, SetValueShape);
@@ -114,7 +114,7 @@ harden(isSetValue);
 /**
  * Returns true if value is a CopyBag
  *
- * @param {AmountValue} value
+ * @param   {AmountValue}      value
  * @returns {value is CopyBag}
  */
 export const isCopyBagValue = value => matches(value, CopyBagValueShape);

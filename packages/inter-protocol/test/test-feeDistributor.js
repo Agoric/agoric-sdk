@@ -38,12 +38,12 @@ const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
   });
 };
 /**
- * @param {any} t
+ * @param {any}                t
  * @param {Promise<Payment[]>} paymentsP
- * @param {number} count
- * @param {any} values
- * @param {Issuer} issuer
- * @param {Brand} brand
+ * @param {number}             count
+ * @param {any}                values
+ * @param {Issuer}             issuer
+ * @param {Brand}              brand
  */
 const assertPaymentArray = async (
   t,

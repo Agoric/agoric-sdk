@@ -26,9 +26,9 @@ import { PowerFlags } from '../src/walletFlags.js';
 import { makeFakeBankKit } from '../tools/bank-utils.js';
 
 /**
- * @typedef {import('../src/vat-bank.js').Bank} Bank
+ * @typedef {import('../src/vat-bank.js').Bank}                                 Bank
  *
- * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
+ * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet}     SmartWallet
  *
  * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
  */

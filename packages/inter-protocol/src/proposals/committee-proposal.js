@@ -10,7 +10,7 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
 
 /**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers}       powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteCommitteeMembers = async (
@@ -126,7 +126,7 @@ export const addGovernorsToEconCharter = async ({
 harden(addGovernorsToEconCharter);
 
 /**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers}       powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteToEconCharter = async (

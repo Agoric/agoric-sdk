@@ -30,14 +30,14 @@ const trace = makeTracer('AR', true);
  *   GovernanceTerms<{}> & {
  *     governedApis: ['burnFeesToReduceShortfall'];
  *   }
- * >} zcf
+ * >}                                                       zcf
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
  *   marshaller: ERef<Marshaller>;
  *   storageNode: ERef<StorageNode>;
  * }} privateArgs
- * @param {Baggage} baggage
+ * @param {Baggage}                                                                                                                                     baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   trace('prepare', Object.keys(privateArgs), [...baggage.keys()]);
@@ -109,15 +109,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 harden(prepare);
 
 /**
- * @typedef {object} ShortfallReporter
+ * @typedef  {object}                      ShortfallReporter
  * @property {(shortfall: Amount) => void} increaseLiquidationShortfall
  * @property {(shortfall: Amount) => void} reduceLiquidationShortfall
  */
 
 /**
- * @typedef {object} AssetReserveLimitedCreatorFacet
- * @property {(issuer: Issuer, kwd: string) => void} addIssuer
- * @property {() => Allocation} getAllocations
+ * @typedef  {object}                                       AssetReserveLimitedCreatorFacet
+ * @property {(issuer: Issuer, kwd: string) => void}        addIssuer
+ * @property {() => Allocation}                             getAllocations
  * @property {() => Promise<Invitation<ShortfallReporter>>} makeShortfallReportingInvitation
  */
 

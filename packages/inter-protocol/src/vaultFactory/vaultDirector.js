@@ -46,13 +46,13 @@ const trace = makeTracer('VD', true);
  * @typedef {{
  *   collaterals: Brand[];
  *   rewardPoolAllocation: AmountKeywordRecord;
- * }} MetricsNotification
+ * }}                                                                                                                                                                                                         MetricsNotification
  *
- * @typedef {Readonly<{}>} ImmutableState
+ * @typedef {Readonly<{}>}                                                                                                                                                                                                                                                                     ImmutableState
  *
- * @typedef {{}} MutableState
+ * @typedef {{}}                                                                                                                                                                                                                                                                               MutableState
  *
- * @typedef {ImmutableState & MutableState} State
+ * @typedef {ImmutableState & MutableState}                                                                                                                                                                                                                                                    State
  *
  * @typedef {{
  *   burnDebt: BurnDebt;
@@ -67,25 +67,25 @@ const trace = makeTracer('VD', true);
  *
  * @typedef {Readonly<{
  *   state: State;
- * }>} MethodContext
+ * }>}                                                                                                                                                                                                                                                    MethodContext
  *
  * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<
  *     import('./params.js').VaultDirectorParams
- *   >} VaultDirectorParamManager
+ *   >}                                                                                                                                       VaultDirectorParamManager
  */
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
- * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {VaultDirectorParamManager} directorParamManager
- * @param {ZCFMint<'nat'>} debtMint
- * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {import('@agoric/ertp').Baggage}                                         baggage
+ * @param {import('./vaultFactory.js').VaultFactoryZCF}                            zcf
+ * @param {VaultDirectorParamManager}                                              directorParamManager
+ * @param {ZCFMint<'nat'>}                                                         debtMint
+ * @param {ERef<import('@agoric/time/src/types').TimerService>}                    timer
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>}         auctioneer
+ * @param {ERef<StorageNode>}                                                      storageNode
+ * @param {ERef<Marshaller>}                                                       marshaller
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit}  makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  */
 const prepareVaultDirector = (
@@ -222,7 +222,7 @@ const prepareVaultDirector = (
     },
     /**
      * @param {Amount<'nat'>} toBurn
-     * @param {ZCFSeat} seat
+     * @param {ZCFSeat}       seat
      */
     burnDebt: (toBurn, seat) => {
       debtMint.burnLosses(harden({ Minted: toBurn }), seat);
@@ -275,8 +275,8 @@ const prepareVaultDirector = (
    * "Director" of the vault factory, overseeing "vault managers".
    *
    * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
-   * @param {VaultDirectorParamManager} directorParamManager
-   * @param {ZCFMint<'nat'>} debtMint
+   * @param {VaultDirectorParamManager}                   directorParamManager
+   * @param {ZCFMint<'nat'>}                              debtMint
    */
   const makeVaultDirector = prepareExoClassKit(
     baggage,
@@ -351,8 +351,8 @@ const prepareVaultDirector = (
       machine: {
         // TODO move this under governance #3924
         /**
-         * @param {Issuer<'nat'>} collateralIssuer
-         * @param {Keyword} collateralKeyword
+         * @param {Issuer<'nat'>}           collateralIssuer
+         * @param {Keyword}                 collateralKeyword
          * @param {VaultManagerParamValues} initialParamValues
          */
         async addVaultType(

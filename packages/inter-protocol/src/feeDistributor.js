@@ -23,19 +23,19 @@ export const customTermsShape = harden({
  */
 
 /**
- * @typedef {object} FeeCollector
+ * @typedef  {object}                     FeeCollector
  * @property {() => ERef<Payment<'nat'>>} collectFees
  */
 
 /**
- * @typedef {object} PeriodicFeeCollector
- * @property {() => FeeCollector} getCollector
+ * @typedef  {object}              PeriodicFeeCollector
+ * @property {() => FeeCollector}  getCollector
  * @property {() => Promise<void>} collectAndDistributeNow
- * @property {() => void} stop
+ * @property {() => void}          stop
  */
 
 /**
- * @typedef {object} CollectibleContractFacet
+ * @typedef  {object}                                   CollectibleContractFacet
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
  */
 
@@ -43,7 +43,7 @@ export const customTermsShape = harden({
  * wrapper to take the a creatorFacet (e.g. vaultFactory) and make a call that
  * will request an invitation and return a promise for a payment.
  *
- * @param {ERef<ZoeService>} zoe
+ * @param {ERef<ZoeService>}               zoe
  * @param {ERef<CollectibleContractFacet>} creatorFacet
  */
 export const makeContractFeeCollector = (zoe, creatorFacet) => {
@@ -63,12 +63,12 @@ export const makeContractFeeCollector = (zoe, creatorFacet) => {
  * for fees that have been collected to date and send that payment to the
  * depositFacet.
  *
- * @param {() => Promise<unknown>} schedulePayments - distribute to the
+ * @param {() => Promise<unknown>} schedulePayments     - distribute to the
  *   destinations
- * @param {ERef<TimerService>} timerService - timer that is used to schedule
- *   collections
- * @param {RelativeTime} [collectionInterval] - how often to collect fees in the
- *   `timerService` unit
+ * @param {ERef<TimerService>}     timerService         - timer that is used to
+ *   schedule collections
+ * @param {RelativeTime}           [collectionInterval] - how often to collect
+ *   fees in the `timerService` unit
  */
 export const startDistributing = (
   schedulePayments,
@@ -102,8 +102,8 @@ export const startDistributing = (
  * @typedef {{
  *   pushPayment: (payment: Payment, issuer: ERef<Issuer>) => Promise<Amount>;
  * }} FeeDestination
- * @param {Record<Keyword, ERef<FeeDestination>>} [destinations]
- * @param {Record<Keyword, NatValue>} [keywordShares]
+ * @param   {Record<Keyword, ERef<FeeDestination>>}                                           [destinations]
+ * @param   {Record<Keyword, NatValue>}                                                       [keywordShares]
  */
 export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
   let totalShares = 0n;
@@ -125,9 +125,9 @@ export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
 /**
  * Split and deposit a payment given a share configuration.
  *
- * @param {Payment<'nat'>} payment
+ * @param {Payment<'nat'>}      payment
  * @param {ERef<Issuer<'nat'>>} issuer
- * @param {ShareConfig} shareConfig
+ * @param {ShareConfig}         shareConfig
  */
 export const sharePayment = async (
   payment,
@@ -192,7 +192,7 @@ export const sharePayment = async (
 };
 
 /**
- * @param {ERef<Issuer<'nat'>>} feeIssuer
+ * @param {ERef<Issuer<'nat'>>}                                                                                                     feeIssuer
  * @param {{
  *   keywordShares: Record<Keyword, NatValue>;
  *   timerService: ERef<TimerService>;
@@ -235,7 +235,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
     /**
      * Start distributing fees from this collector.
      *
-     * @param {string} debugName
+     * @param {string}             debugName
      * @param {ERef<FeeCollector>} collectorP
      */
     startPeriodicCollection: async (debugName, collectorP) => {
@@ -277,10 +277,10 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
      * Create a destination that generates invitations and makes Zoe offers.
      *
      * @param {ERef<ZoeService>} zoe
-     * @param {string} keyword
-     * @param {unknown} target
-     * @param {PropertyKey} makeInvitationMethod
-     * @param {unknown[]} [args]
+     * @param {string}           keyword
+     * @param {unknown}          target
+     * @param {PropertyKey}      makeInvitationMethod
+     * @param {unknown[]}        [args]
      */
     makeOfferDestination: (
       zoe,

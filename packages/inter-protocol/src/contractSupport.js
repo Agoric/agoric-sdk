@@ -20,9 +20,9 @@ export const ratioPattern = harden({
  * number (so we use a "loss" that will be subtracted).
  *
  * @template {AssetKind} K
- * @param {Amount<K>} base
- * @param {Amount<K>} gain
- * @param {Amount<K>} loss
+ * @param   {Amount<K>} base
+ * @param   {Amount<K>} gain
+ * @param   {Amount<K>} loss
  * @returns {Amount<K>}
  */
 export const addSubtract = (base, gain, loss) =>
@@ -30,8 +30,8 @@ export const addSubtract = (base, gain, loss) =>
 
 /**
  * @template {Amount} T
- * @param {T} left
- * @param {T} right
+ * @param   {T} left
+ * @param   {T} right
  * @returns {T}
  */
 export const subtractToEmpty = (left, right) =>
@@ -43,7 +43,7 @@ export const subtractToEmpty = (left, right) =>
  * Verifies that every key in the proposal is in the provided list
  *
  * @param {ProposalRecord} proposal
- * @param {string[]} keys
+ * @param {string[]}       keys
  */
 export const assertOnlyKeys = (proposal, keys) => {
   /** @param {AmountKeywordRecord} clause */
@@ -54,7 +54,7 @@ export const assertOnlyKeys = (proposal, keys) => {
 };
 
 /**
- * @param {Amount[]} amounts
+ * @param   {Amount[]} amounts
  * @returns {boolean}
  */
 export const allEmpty = amounts => {
@@ -62,10 +62,10 @@ export const allEmpty = amounts => {
 };
 
 /**
- * @param {Amount<'nat'>} debtLimit
- * @param {Amount<'nat'>} totalDebt
- * @param {Amount<'nat'>} toMint
- * @throws if minting would exceed total debt
+ * @param  {Amount<'nat'>} debtLimit
+ * @param  {Amount<'nat'>} totalDebt
+ * @param  {Amount<'nat'>} toMint
+ * @throws           if minting would exceed total debt
  */
 export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
   const debtPost = AmountMath.add(totalDebt, toMint);
@@ -77,20 +77,20 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 
 /**
  * @template T
- * @typedef {object} MetricsPublisherKit<T>
- * @property {IterationObserver<T>} metricsPublication
+ * @typedef  {object}                MetricsPublisherKit<T>
+ * @property {IterationObserver<T>}  metricsPublication
  * @property {StoredSubscription<T>} metricsSubscription
  */
 
 /**
  * @template T
- * @typedef {object} MetricsPublishKit<T>
- * @property {Publisher<T>} metricsPublisher
+ * @typedef  {object}              MetricsPublishKit<T>
+ * @property {Publisher<T>}        metricsPublisher
  * @property {StoredSubscriber<T>} metricsSubscriber
  */
 
 /**
- * @param {Brand} brand must be a 'nat' brand, not checked
+ * @param {Brand}    brand must be a 'nat' brand, not checked
  * @param {NatValue} [min]
  */
 export const makeNatAmountShape = (brand, min) =>

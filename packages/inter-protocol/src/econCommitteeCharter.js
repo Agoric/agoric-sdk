@@ -22,10 +22,10 @@ import { E } from '@endo/far';
 export const INVITATION_MAKERS_DESC = 'charter member invitation';
 
 /**
- * @typedef {object} ParamChangesOfferArgs
- * @property {bigint} deadline
- * @property {Instance} instance
- * @property {Record<string, unknown>} params
+ * @typedef  {object}                         ParamChangesOfferArgs
+ * @property {bigint}                         deadline
+ * @property {Instance}                       instance
+ * @property {Record<string, unknown>}        params
  * @property {{ paramPath: { key: string } }} [path]
  */
 const ParamChangesOfferArgsShape = M.splitRecord(
@@ -46,8 +46,8 @@ export const customTermsShape = harden({
 
 /**
  * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
- * @param {undefined} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {undefined}                                            privateArgs
+ * @param {import('@agoric/vat-data').Baggage}                   baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
@@ -59,7 +59,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const makeParamInvitation = () => {
     /**
-     * @param {ZCFSeat} seat
+     * @param {ZCFSeat}               seat
      * @param {ParamChangesOfferArgs} args
      */
     const voteOnParamChanges = (seat, args) => {
@@ -94,9 +94,9 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   };
 
   /**
-   * @param {Instance} instance
-   * @param {string} methodName
-   * @param {string[]} methodArgs
+   * @param {Instance}                              instance
+   * @param {string}                                methodName
+   * @param {string[]}                              methodArgs
    * @param {import('@agoric/time').TimestampValue} deadline
    */
   const makeApiInvocationInvitation = (
@@ -165,9 +165,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     charterCreatorI,
     {
       /**
-       * @param {Instance} governedInstance
+       * @param {Instance}                  governedInstance
        * @param {GovernorCreatorFacet<any>} governorFacet
-       * @param {string} [label] for diagnostic use only
+       * @param {string}                    [label]          for diagnostic use
+       *   only
        */
       addInstance: (governedInstance, governorFacet, label) => {
         console.log('charter: adding instance', label);

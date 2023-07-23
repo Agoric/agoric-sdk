@@ -58,7 +58,7 @@ test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
 
 /**
  * @param {CentralSupplyTestContext} t
- * @param {bigint} bootstrapPaymentValue
+ * @param {bigint}                   bootstrapPaymentValue
  */
 const startContract = (t, bootstrapPaymentValue) => {
   const {

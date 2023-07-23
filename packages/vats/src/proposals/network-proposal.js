@@ -11,7 +11,7 @@ const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
 /**
- * @param {SoloVats | NetVats} vats
+ * @param {SoloVats | NetVats}                              vats
  * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
@@ -73,21 +73,21 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
- * @param {BootstrapPowers & {
+ * @param   {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
  *   produce: { networkVat: Producer<any> };
  * }} powers
- * @param {object} options
- * @param {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }} options.options
+ * @param   {object}                                                                                                          options
+ * @param   {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }}                                                              options.options
  *   // TODO: why doesn't overloading VatLoader work???
  *
- * @typedef {((name: 'network') => NetworkVat) & ((name: 'ibc') => IBCVat)} VatLoader2
+ * @typedef {((name: 'network') => NetworkVat) & ((name: 'ibc') => IBCVat)}                                                   VatLoader2
  *
  * @typedef {{
  *   network: ERef<NetworkVat>;
  *   ibc: ERef<IBCVat>;
  *   provisioning: ERef<ProvisioningVat | undefined>;
- * }} NetVats
+ * }}        NetVats
  */
 export const setupNetworkProtocols = async (
   {

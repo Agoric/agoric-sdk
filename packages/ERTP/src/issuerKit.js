@@ -14,19 +14,19 @@ import './types-ambient.js';
 
 /**
  * @template {AssetKind} K
- * @typedef {object} IssuerRecord
- * @property {string} name
- * @property {K} assetKind
+ * @typedef  {object}                IssuerRecord
+ * @property {string}                name
+ * @property {K}                     assetKind
  * @property {AdditionalDisplayInfo} displayInfo
- * @property {Pattern} elementShape
+ * @property {Pattern}               elementShape
  */
 
 /**
  * @template {AssetKind} K
- * @param {IssuerRecord<K>} issuerRecord
- * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
+ * @param   {IssuerRecord<K>}     issuerRecord
+ * @param   {Baggage}             issuerBaggage
+ * @param   {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
+ *   in the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
  *   provided, then the failed atomic action will call it, so that some larger
  *   unit of computation, like the enclosing vat, can be shutdown before
@@ -79,9 +79,9 @@ const INSTANCE_KEY = 'issuer';
 
 /**
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
+ * @param   {Baggage}             issuerBaggage
+ * @param   {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
+ *   in the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
  *   provided, then the failed atomic action will call it, so that some larger
  *   unit of computation, like the enclosing vat, can be shutdown before
@@ -121,18 +121,18 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {Baggage} issuerBaggage
- * @param {string} name
- * @param {K} [assetKind=AssetKind.NAT]
- * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
+ * @param   {Baggage}               issuerBaggage
+ * @param   {string}                name
+ * @param   {K}                     [assetKind=AssetKind.NAT]
+ * @param   {AdditionalDisplayInfo} [displayInfo={}]
+ * @param   {ShutdownWithFailure}   [optShutdownWithFailure]  If this issuer
+ *   fails in the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
  *   provided, then the failed atomic action will call it, so that some larger
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {IssuerOptionsRecord} [options]
+ * @param   {IssuerOptionsRecord}   [options]
  * @returns {IssuerKit<K>}
  */
 export const makeDurableIssuerKit = (
@@ -163,17 +163,17 @@ harden(makeDurableIssuerKit);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {string} name
- * @param {K} [assetKind='nat']
- * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
+ * @param   {string}                name
+ * @param   {K}                     [assetKind='nat']
+ * @param   {AdditionalDisplayInfo} [displayInfo={}]
+ * @param   {ShutdownWithFailure}   [optShutdownWithFailure] If this issuer
+ *   fails in the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
  *   provided, then the failed atomic action will call it, so that some larger
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {IssuerOptionsRecord} [options]
+ * @param   {IssuerOptionsRecord}   [options]
  * @returns {IssuerKit<K>}
  */
 export const makeIssuerKit = (

@@ -17,13 +17,13 @@ const trace = makeTracer('TestVault', false);
 /**
  * The properties will be asssigned by `setTestJig` in the contract.
  *
- * @typedef {object} TestContext
- * @property {ZCF} zcf
- * @property {ZCFMint} stableMint
+ * @typedef  {object}    TestContext
+ * @property {ZCF}       zcf
+ * @property {ZCFMint}   stableMint
  * @property {IssuerKit} collateralKit
- * @property {Vault} vault
- * @property {Function} advanceRecordingPeriod
- * @property {Function} setStabilityFee
+ * @property {Vault}     vault
+ * @property {Function}  advanceRecordingPeriod
+ * @property {Function}  setStabilityFee
  */
 let testJig;
 /** @param {TestContext} jig */
@@ -39,7 +39,7 @@ trace('makeZoe');
 
 /**
  * @param {ERef<ZoeService>} zoeP
- * @param {string} sourceRoot
+ * @param {string}           sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
   const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);

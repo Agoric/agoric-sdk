@@ -22,9 +22,9 @@ const faucetRoot = './test/vaultFactory/faucet.js';
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
- * @param {any} t
+ * @param {any}                     t
  * @param {ManualTimer | undefined} timer
- * @param {FarZoeKit} farZoeKit
+ * @param {FarZoeKit}               farZoeKit
  */
 const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   const space = /** @type {any} */ (makePromiseSpace());
@@ -63,9 +63,9 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
- * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>}          t
  * @param {{ committeeName: string; committeeSize: number }} electorateTerms
- * @param {ManualTimer} [timer]
+ * @param {ManualTimer}                                      [timer]
  */
 export const setupReserveServices = async (
   t,

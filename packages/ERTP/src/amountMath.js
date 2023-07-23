@@ -112,7 +112,7 @@ const assertValueGetAssetKind = value => {
  * Made available only for testing, but it is harmless for other uses.
  *
  * @template {AmountValue} V
- * @param {V} value
+ * @param   {V}              value
  * @returns {MathHelpers<V>}
  */
 export const assertValueGetHelpers = value =>
@@ -132,9 +132,9 @@ const optionalBrandCheck = (allegedBrand, brand) => {
 
 /**
  * @template {AssetKind} K
- * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
- * @param {Brand<K> | undefined} brand
+ * @param   {Amount<K>}            leftAmount
+ * @param   {Amount<K>}            rightAmount
+ * @param   {Brand<K> | undefined} brand
  * @returns {MathHelpers<any>}
  */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
@@ -159,9 +159,9 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
 
 /**
  * @template {AssetKind} K
- * @param {MathHelpers<AssetValueForKind<K>>} h
- * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
+ * @param   {MathHelpers<AssetValueForKind<K>>} h
+ * @param   {Amount<K>}                         leftAmount
+ * @param   {Amount<K>}                         rightAmount
  * @returns {[K, K]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
@@ -177,9 +177,9 @@ const coerceLR = (h, leftAmount, rightAmount) => {
  * the logic in MathHelpers.
  *
  * @template {AssetKind} K
- * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
- * @param {Brand<K>} [brand]
+ * @param   {Amount<K>} leftAmount
+ * @param   {Amount<K>} rightAmount
+ * @param   {Brand<K>}  [brand]
  * @returns {boolean}
  */
 const isGTE = (leftAmount, rightAmount, brand = undefined) => {
@@ -200,8 +200,8 @@ const AmountMath = {
    * Make an amount from a value by adding the brand.
    *
    * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {AssetValueForKind<K>} allegedValue
+   * @param   {Brand<K>}             brand
+   * @param   {AssetValueForKind<K>} allegedValue
    * @returns {Amount<K>}
    */
   // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
@@ -216,8 +216,8 @@ const AmountMath = {
    * amount if so.
    *
    * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {Amount<K>} allegedAmount
+   * @param   {Brand<K>}  brand
+   * @param   {Amount<K>} allegedAmount
    * @returns {Amount<K>}
    */
   coerce: (brand, allegedAmount) => {
@@ -233,8 +233,8 @@ const AmountMath = {
    * Extract and return the value.
    *
    * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {Amount<K>} amount
+   * @param   {Brand<K>}             brand
+   * @param   {Amount<K>}            amount
    * @returns {AssetValueForKind<K>}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
@@ -258,7 +258,7 @@ const AmountMath = {
    * template for the brand and assetKind.
    *
    * @template {AssetKind} K
-   * @param {Amount<K>} amount
+   * @param   {Amount<K>} amount
    * @returns {Amount<K>}
    */
   makeEmptyFromAmount: amount => {
@@ -272,8 +272,8 @@ const AmountMath = {
   /**
    * Return true if the Amount is empty. Otherwise false.
    *
-   * @param {Amount} amount
-   * @param {Brand} [brand]
+   * @param   {Amount}  amount
+   * @param   {Brand}   [brand]
    * @returns {boolean}
    */
   isEmpty: (amount, brand = undefined) => {
@@ -290,9 +290,9 @@ const AmountMath = {
    * isGTE is true in both directions, isEqual is also true
    *
    * @template {AssetKind} K
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>} [brand]
+   * @param   {Amount<K>} leftAmount
+   * @param   {Amount<K>} rightAmount
+   * @param   {Brand<K>}  [brand]
    * @returns {boolean}
    */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
@@ -307,9 +307,9 @@ const AmountMath = {
    * right.
    *
    * @template {AssetKind} K
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>} [brand]
+   * @param   {Amount<K>} leftAmount
+   * @param   {Amount<K>} rightAmount
+   * @param   {Brand<K>}  [brand]
    * @returns {Amount<K>}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
@@ -325,9 +325,9 @@ const AmountMath = {
    * equivalent to set subtraction.
    *
    * @template {AssetKind} K
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>} [brand]
+   * @param   {Amount<K>} leftAmount
+   * @param   {Amount<K>} rightAmount
+   * @param   {Brand<K>}  [brand]
    * @returns {Amount<K>}
    */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
@@ -339,9 +339,9 @@ const AmountMath = {
    * Returns the min value between x and y using isGTE
    *
    * @template {AssetKind} K
-   * @param {Amount<K>} x
-   * @param {Amount<K>} y
-   * @param {Brand<K>} [brand]
+   * @param   {Amount<K>} x
+   * @param   {Amount<K>} y
+   * @param   {Brand<K>}  [brand]
    * @returns {Amount<K>}
    */
   min: (x, y, brand = undefined) =>
@@ -355,9 +355,9 @@ const AmountMath = {
    * Returns the max value between x and y using isGTE
    *
    * @template {AssetKind} K
-   * @param {Amount<K>} x
-   * @param {Amount<K>} y
-   * @param {Brand<K>} [brand]
+   * @param   {Amount<K>} x
+   * @param   {Amount<K>} y
+   * @param   {Brand<K>}  [brand]
    * @returns {Amount<K>}
    */
   max: (x, y, brand = undefined) =>

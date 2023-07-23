@@ -26,7 +26,7 @@ const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
 /**
  * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {FarZoeKit} [farZoeKit]
+ * @param {FarZoeKit}                                     [farZoeKit]
  */
 export const setupPsmBootstrap = async (
   timer = buildManualTimer(console.log),
@@ -61,10 +61,10 @@ export const setupPsmBootstrap = async (
 };
 
 /**
- * @param {any} t
+ * @param {any}                                              t
  * @param {{ committeeName: string; committeeSize: number }} electorateTerms
- * @param {ManualTimer} [timer]
- * @param {FarZoeKit} [farZoeKit]
+ * @param {ManualTimer}                                      [timer]
+ * @param {FarZoeKit}                                        [farZoeKit]
  */
 export const setupPsm = async (
   t,

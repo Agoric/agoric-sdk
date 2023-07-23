@@ -35,8 +35,8 @@ export const instanceNameFor = (inBrandName, outBrandName) =>
 /**
  * Create inert brands (no mint or issuer) referred to by price oracles.
  *
- * @param {ChainBootstrapSpace & NamedVatPowers} space
- * @param {{ options: { priceFeedOptions: PriceFeedOptions } }} opt
+ * @param   {ChainBootstrapSpace & NamedVatPowers}                space
+ * @param   {{ options: { priceFeedOptions: PriceFeedOptions } }} opt
  * @returns {Promise<[Brand<'nat'>, Brand<'nat'>]>}
  */
 export const ensureOracleBrands = async (
@@ -80,7 +80,7 @@ export const ensureOracleBrands = async (
 };
 
 /**
- * @param {ChainBootstrapSpace} powers
+ * @param {ChainBootstrapSpace}                                                                                                                                                                                                                                                                        powers
  * @param {{
  *   options: {
  *     priceFeedOptions: {
@@ -236,9 +236,9 @@ const t = 'priceFeed';
  * Add a price feed to a running chain, returning the manifest, installations,
  * and options.
  *
- * @param {object} utils
+ * @param {object}                             utils
  * @param {(ref: unknown) => Promise<unknown>} [utils.restoreRef]
- * @param {PriceFeedOptions} priceFeedOptions
+ * @param {PriceFeedOptions}                   priceFeedOptions
  */
 export const getManifestForPriceFeed = async (
   { restoreRef },
@@ -292,9 +292,9 @@ export const getManifestForPriceFeed = async (
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {object} [config]
- * @param {object} [config.options]
- * @param {string[]} [config.options.demoOracleAddresses]
+ * @param {object}                                            [config]
+ * @param {object}                                            [config.options]
+ * @param {string[]}                                          [config.options.demoOracleAddresses]
  */
 export const startPriceFeeds = async (
   {

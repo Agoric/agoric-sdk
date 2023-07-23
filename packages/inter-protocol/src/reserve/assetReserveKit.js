@@ -16,16 +16,18 @@ const { quote: q } = assert;
 const trace = makeTracer('ReserveKit', true);
 
 /**
- * @typedef {object} MetricsNotification
+ * @typedef  {object}              MetricsNotification
  * @property {AmountKeywordRecord} allocations
- * @property {Amount<'nat'>} shortfallBalance shortfall from liquidation that
- *   has not yet been compensated.
- * @property {Amount<'nat'>} totalFeeMinted total Fee tokens minted to date
- * @property {Amount<'nat'>} totalFeeBurned total Fee tokens burned to date
+ * @property {Amount<'nat'>}       shortfallBalance    shortfall from
+ *   liquidation that has not yet been compensated.
+ * @property {Amount<'nat'>}       totalFeeMinted      total Fee tokens minted
+ *   to date
+ * @property {Amount<'nat'>}       totalFeeBurned      total Fee tokens burned
+ *   to date
  */
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage}                                                                                                                               baggage
  * @param {{
  *   feeMint: ZCFMint<'nat'>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
@@ -112,7 +114,7 @@ export const prepareAssetReserveKit = async (
         },
 
         /**
-         * @param {Brand} brand
+         * @param {Brand}   brand
          * @param {Keyword} keyword
          */
         saveBrandKeyword(brand, keyword) {
@@ -135,7 +137,7 @@ export const prepareAssetReserveKit = async (
       },
       governedApis: {
         /**
-         * @param {Amount<'nat'>} reduction
+         * @param   {Amount<'nat'>} reduction
          * @returns {void}
          */
         burnFeesToReduceShortfall(reduction) {

@@ -32,11 +32,11 @@ export const makeBrandedRatioPattern = (
 };
 
 /**
- * @param {Ratio} bidScaling
- * @param {Ratio} currentPrice
- * @param {Ratio} oraclePrice
- * @returns {boolean} TRUE iff the discount(/markup) applied to the price is
- *   higher than the quote.
+ * @param   {Ratio}   bidScaling
+ * @param   {Ratio}   currentPrice
+ * @param   {Ratio}   oraclePrice
+ * @returns {boolean}              TRUE iff the discount(/markup) applied to the
+ *   price is higher than the quote.
  */
 export const isScaledBidPriceHigher = (bidScaling, currentPrice, oraclePrice) =>
   ratioGTE(multiplyRatios(oraclePrice, bidScaling), currentPrice);

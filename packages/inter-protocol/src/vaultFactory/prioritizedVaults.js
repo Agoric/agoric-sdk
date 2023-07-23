@@ -19,8 +19,8 @@ import {
 const trace = makeTracer('PVaults', true);
 
 /**
- * @param {Amount<'nat'>} debtAmount
- * @param {Amount<'nat'>} collateralAmount
+ * @param   {Amount<'nat'>} debtAmount
+ * @param   {Amount<'nat'>} collateralAmount
  * @returns {Ratio}
  */
 const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
@@ -34,7 +34,7 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
 };
 
 /**
- * @param {Vault} vault
+ * @param   {Vault} vault
  * @returns {Ratio}
  */
 export const currentDebtToCollateral = vault =>
@@ -73,8 +73,8 @@ export const makePrioritizedVaults = store => {
 
   /**
    * @param {NormalizedDebt} oldDebt
-   * @param {Amount<'nat'>} oldCollateral
-   * @param {string} vaultId
+   * @param {Amount<'nat'>}  oldCollateral
+   * @param {string}         vaultId
    */
   const hasVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
     const key = toVaultKey(oldDebt, oldCollateral, vaultId);
@@ -82,7 +82,7 @@ export const makePrioritizedVaults = store => {
   };
 
   /**
-   * @param {string} key
+   * @param   {string} key
    * @returns {Vault}
    */
   const removeVault = key => {
@@ -92,8 +92,8 @@ export const makePrioritizedVaults = store => {
 
   /**
    * @param {NormalizedDebt} oldDebt
-   * @param {Amount<'nat'>} oldCollateral
-   * @param {string} vaultId
+   * @param {Amount<'nat'>}  oldCollateral
+   * @param {string}         vaultId
    */
   const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
     const key = toVaultKey(oldDebt, oldCollateral, vaultId);
@@ -102,7 +102,7 @@ export const makePrioritizedVaults = store => {
 
   /**
    * @param {VaultId} vaultId
-   * @param {Vault} vault
+   * @param {Vault}   vault
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);

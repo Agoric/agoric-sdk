@@ -28,7 +28,7 @@ const HUNDRED_THOUSAND = 100000n;
  * duration constants as RelativeTime and use this adapter for those cases where
  * it was used as a Timestamp.
  *
- * @param {RelativeTime} rel
+ * @param   {RelativeTime} rel
  * @returns {Timestamp}
  */
 const fromZero = rel => TimeMath.addAbsRel(0n, rel);
@@ -36,7 +36,7 @@ const fromZero = rel => TimeMath.addAbsRel(0n, rel);
 /**
  * Absolute day starting from absolute zero
  *
- * @param {bigint} count
+ * @param   {bigint}    count
  * @returns {Timestamp}
  */
 const dayN = count => fromZero(TimeMath.multiplyRelNat(ONE_DAY, count));

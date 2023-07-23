@@ -52,6 +52,7 @@
           "jsdocAddDefaultToDescription": false,
           "jsdocParser": true,
           "jsdocCapitalizeDescription": false,
+          "jsdocVerticalAlignment": true,
           "tsdoc": true
         }
       }

@@ -50,11 +50,11 @@ const installKeyGroups = {
 /**
  * @template I
  * @template R
- * @param {object} opts
- * @param {(i: I) => R} opts.publishRef
- * @param {(m: string, b: string, opts?: any) => I} opts.install
- * @param {<T>(f: T) => T} [opts.wrapInstall]
- * @param {object} [options]
+ * @param {object}                                             opts
+ * @param {(i: I) => R}                                        opts.publishRef
+ * @param {(m: string, b: string, opts?: any) => I}            opts.install
+ * @param {<T>(f: T) => T}                                     [opts.wrapInstall]
+ * @param {object}                                             [options]
  * @param {{ committeeName?: string; committeeSize?: number }} [options.econCommitteeOptions]
  */
 export const committeeProposalBuilder = async (
@@ -85,10 +85,10 @@ export const committeeProposalBuilder = async (
 /**
  * @template I
  * @template R
- * @param {object} opts
- * @param {(i: I) => R} opts.publishRef
+ * @param {object}                                  opts
+ * @param {(i: I) => R}                             opts.publishRef
  * @param {(m: string, b: string, opts?: any) => I} opts.install
- * @param {<T>(f: T) => T} [opts.wrapInstall]
+ * @param {<T>(f: T) => T}                          [opts.wrapInstall]
  */
 export const mainProposalBuilder = async ({
   publishRef,

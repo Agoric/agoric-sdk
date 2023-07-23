@@ -11,7 +11,7 @@ import { Fail } from '@agoric/assert';
 import { TimeMath } from '@agoric/time';
 
 /**
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').Timestamp}    Timestamp
  *
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
  */
@@ -25,9 +25,9 @@ const LARGE_DENOMINATOR = BASIS_POINTS * BASIS_POINTS;
 const COMPOUNDED_INTEREST_DENOMINATOR = 10n ** 20n;
 
 /**
- * @param {Ratio} annualRate
- * @param {RelativeTime} chargingPeriod
- * @param {RelativeTime} recordingPeriod
+ * @param   {Ratio}         annualRate
+ * @param   {RelativeTime}  chargingPeriod
+ * @param   {RelativeTime}  recordingPeriod
  * @returns {CalculatorKit}
  */
 export const makeInterestCalculator = (
@@ -112,7 +112,7 @@ export const makeInterestCalculator = (
 /**
  * compoundedStabilityFee *= (new debt) / (prior total debt)
  *
- * @param {Ratio} priorCompoundedStabilityFee
+ * @param {Ratio}    priorCompoundedStabilityFee
  * @param {NatValue} priorDebt
  * @param {NatValue} newDebt
  */
@@ -132,7 +132,7 @@ export const calculateCompoundedStabilityFee = (
 /**
  * @template {AssetKind} K
  * @param {ZCFMint<K>} mint
- * @param {Amount<K>} debt
+ * @param {Amount<K>}  debt
  */
 const validatedBrand = (mint, debt) => {
   const { brand: debtBrand } = debt;
@@ -146,23 +146,23 @@ const validatedBrand = (mint, debt) => {
  * Charge interest accrued between `latestStabilityFeeUpdate` and
  * `accruedUntil`.
  *
- * @param {{
+ * @param   {{
  *   mint: ZCFMint<'nat'>;
  *   mintAndTransferWithFee: MintAndTransfer;
  *   poolIncrementSeat: ZCFSeat;
  *   seatAllocationKeyword: Keyword;
  * }} powers
- * @param {{
+ * @param   {{
  *   stabilityFee: Ratio;
  *   chargingPeriod: RelativeTime;
  *   recordingPeriod: RelativeTime;
- * }} params
- * @param {{
+ * }}                                            params
+ * @param   {{
  *   latestStabilityFeeUpdate: Timestamp;
  *   compoundedStabilityFee: Ratio;
  *   totalDebt: Amount<'nat'>;
- * }} prior
- * @param {Timestamp} accruedUntil
+ * }}                                prior
+ * @param   {Timestamp}                                                                                                                              accruedUntil
  * @returns {{
  *   compoundedStabilityFee: Ratio;
  *   latestStabilityFeeUpdate: Timestamp;

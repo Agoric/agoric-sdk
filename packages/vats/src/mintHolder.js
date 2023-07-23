@@ -21,7 +21,7 @@ import {
 /**
  * @template {AssetKind} K
  * @param {ZCF<IssuerInfo<K>>} zcf
- * @param {Baggage} baggage
+ * @param {Baggage}            baggage
  */
 function provideIssuerKit(zcf, baggage) {
   if (!hasIssuer(baggage)) {
@@ -38,8 +38,8 @@ function provideIssuerKit(zcf, baggage) {
  *
  * @template {AssetKind} K
  * @param {ZCF<IssuerInfo<K>>} zcf
- * @param {undefined} _privateArgs
- * @param {Baggage} instanceBaggage
+ * @param {undefined}          _privateArgs
+ * @param {Baggage}            instanceBaggage
  */
 export const prepare = (zcf, _privateArgs, instanceBaggage) => {
   const { mint, issuer } = provideIssuerKit(zcf, instanceBaggage);

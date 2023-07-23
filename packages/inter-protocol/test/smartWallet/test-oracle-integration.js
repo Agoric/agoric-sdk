@@ -75,7 +75,7 @@ const makeTestSpace = async (log, bundleCache) => {
     OUT_BRAND_DECIMALS: '6',
   };
   /**
-   * @param {string} name
+   * @param {string}          name
    * @param {number | string} decimals
    */
   const ensureOracleBrand = (name, decimals) => {
@@ -106,7 +106,7 @@ test.before(async t => {
 
 /**
  * @param {import('ava').ExecutionContext<TestContext>} t
- * @param {string[]} oracleAddresses
+ * @param {string[]}                                    oracleAddresses
  */
 const setupFeedWithWallets = async (t, oracleAddresses) => {
   const { agoricNames } = t.context.consume;
@@ -154,10 +154,11 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 
 let pushPriceCounter = 0;
 /**
- * @param {any} wallet
- * @param {string} adminOfferId
- * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
- * @returns {Promise<string>} offer id
+ * @param   {any}                                                                    wallet
+ * @param   {string}                                                                 adminOfferId
+ * @param   {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
+ * @returns {Promise<string>}
+ *   offer id
  */
 const pushPrice = async (wallet, adminOfferId, priceRound) => {
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
@@ -195,9 +196,10 @@ test.serial('invitations', async t => {
   /**
    * get invitation details the way a user would
    *
-   * @param {string} desc
-   * @param {number} len
-   * @param {any} balances XXX please improve this
+   * @param   {string}                                                 desc
+   * @param   {number}                                                 len
+   * @param   {any}                                                    balances
+   *   XXX please improve this
    * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) => {
@@ -385,9 +387,9 @@ test.serial('govern oracles list', async t => {
   /**
    * get invitation details the way a user would
    *
-   * @param {string} desc
-   * @param {number} len
-   * @param {{ get: (b: Brand) => Amount | undefined }} balances
+   * @param   {string}                                                 desc
+   * @param   {number}                                                 len
+   * @param   {{ get: (b: Brand) => Amount | undefined }}              balances
    * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) =>

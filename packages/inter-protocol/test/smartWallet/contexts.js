@@ -35,7 +35,7 @@ export const importBootTestUtils = async (log, bundleCache) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {import('ava').ExecutionContext}                  t
  * @param {(logger, cache) => Promise<ChainBootstrapSpace>} makeSpace
  */
 export const makeDefaultTestContext = async (t, makeSpace) => {
@@ -140,8 +140,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   /**
    * @param {string[]} oracleAddresses
-   * @param {string} inBrandName
-   * @param {string} outBrandName
+   * @param {string}   inBrandName
+   * @param {string}   outBrandName
    */
   const simpleCreatePriceFeed = async (
     oracleAddresses,
@@ -217,7 +217,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
- * @param {Brand<'nat'>} brand
+ * @param {Brand<'nat'>}                                                          brand
  */
 export const currentPurseBalance = (record, brand) => {
   const purses = Array.from(record.purses.values());
@@ -233,8 +233,8 @@ export const currentPurseBalance = (record, brand) => {
  * Voting yes (first position) on the one open question using the continuing
  * offer.
  *
- * @param {ERef<CommitteeElectoratePublic>} committeePublic
- * @param {string} voterAcceptanceOID
+ * @param   {ERef<CommitteeElectoratePublic>}                                                      committeePublic
+ * @param   {string}                                                                               voterAcceptanceOID
  * @returns {Promise<
  *   import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec
  * >}

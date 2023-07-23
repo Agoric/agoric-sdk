@@ -30,8 +30,8 @@ export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
  * }} vatPowers
  * @param {{
  *   coreProposalCode?: string;
- * }} vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * }}                      vatParameters
+ * @param {import('@agoric/vat-data').Baggage}                    baggage
  */
 export const buildRootObject = (vatPowers, vatParameters, baggage) => {
   console.debug(`chain bootstrap starting`);

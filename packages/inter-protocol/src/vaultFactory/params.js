@@ -36,10 +36,10 @@ export const vaultDirectorParamTypes = {
 harden(vaultDirectorParamTypes);
 
 /**
- * @param {Amount<'set'>} electorateInvitationAmount
- * @param {Amount<'nat'>} minInitialDebt
- * @param {Amount<'set'>} shortfallInvitationAmount
- * @param {string} referencedUi
+ * @param {Amount<'set'>}  electorateInvitationAmount
+ * @param {Amount<'nat'>}  minInitialDebt
+ * @param {Amount<'set'>}  shortfallInvitationAmount
+ * @param {string}         referencedUi
  * @param {InterestTiming} interestTiming
  */
 const makeVaultDirectorParams = (
@@ -87,7 +87,7 @@ const zeroRatio = liquidationMargin =>
 
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
- * @param {VaultManagerParamValues} initial
+ * @param {VaultManagerParamValues}                                                    initial
  */
 export const makeVaultParamManager = (
   publisherKit,
@@ -173,7 +173,7 @@ harden(makeGovernedTerms);
  * NB: changes from initial values will be lost upon restart
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshaller>}                   marshaller
  */
 export const provideVaultParamManagers = (baggage, marshaller) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
@@ -205,8 +205,8 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
 
   return {
     /**
-     * @param {Brand} brand
-     * @param {StorageNode} storageNode
+     * @param {Brand}                   brand
+     * @param {StorageNode}             storageNode
      * @param {VaultManagerParamValues} initialParamValues
      */
     addParamManager(brand, storageNode, initialParamValues) {

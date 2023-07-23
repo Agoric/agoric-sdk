@@ -20,9 +20,9 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 const { details: X, quote: q, Fail } = assert;
 
 /**
- * @param {Brand} brand
+ * @param {Brand}     brand
  * @param {AssetKind} assetKind
- * @param {Pattern} elementShape
+ * @param {Pattern}   elementShape
  */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;
@@ -74,12 +74,12 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * minting and transfer authority originates here.
  *
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
- * @param {string} name
- * @param {K} assetKind
- * @param {DisplayInfo<K>} displayInfo
- * @param {Pattern} elementShape
- * @param {ShutdownWithFailure} [optShutdownWithFailure]
+ * @param   {Baggage}             issuerBaggage
+ * @param   {string}              name
+ * @param   {K}                   assetKind
+ * @param   {DisplayInfo<K>}      displayInfo
+ * @param   {Pattern}             elementShape
+ * @param   {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
@@ -173,8 +173,8 @@ export const preparePaymentLedger = (
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
    * `initPayment` should contain the only call to `paymentLedger.init`.
    *
-   * @param {Payment} payment
-   * @param {Amount} amount
+   * @param {Payment}           payment
+   * @param {Amount}            amount
    * @param {SetStore<Payment>} [optRecoverySet]
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
@@ -215,8 +215,8 @@ export const preparePaymentLedger = (
    *
    * Note: `optAmountShape` is user-supplied with no previous validation.
    *
-   * @param {Amount} paymentBalance
-   * @param {Pattern} [optAmountShape]
+   * @param   {Amount}  paymentBalance
+   * @param   {Pattern} [optAmountShape]
    * @returns {void}
    */
   const assertAmountConsistent = (paymentBalance, optAmountShape) => {
@@ -226,7 +226,7 @@ export const preparePaymentLedger = (
   };
 
   /**
-   * @param {Payment} payment
+   * @param   {Payment} payment
    * @returns {void}
    */
   const assertLivePayment = payment => {
@@ -239,12 +239,12 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.deposit
    *
-   * @param {Amount} currentBalance - the current balance of the purse before a
-   *   deposit
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
-   *   purse balance
-   * @param {Payment} srcPayment
-   * @param {Pattern} [optAmountShape]
+   * @param   {Amount}                            currentBalance     - the
+   *   current balance of the purse before a deposit
+   * @param   {(newPurseBalance: Amount) => void} updatePurseBalance - commit
+   *   the purse balance
+   * @param   {Payment}                           srcPayment
+   * @param   {Pattern}                           [optAmountShape]
    * @returns {Amount}
    */
   const depositInternal = (
@@ -278,12 +278,13 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.withdraw
    *
-   * @param {Amount} currentBalance - the current balance of the purse before a
-   *   withdrawal
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
-   *   purse balance
-   * @param {Amount} amount - the amount to be withdrawn
-   * @param {SetStore<Payment>} recoverySet
+   * @param   {Amount}                            currentBalance     - the
+   *   current balance of the purse before a withdrawal
+   * @param   {(newPurseBalance: Amount) => void} updatePurseBalance - commit
+   *   the purse balance
+   * @param   {Amount}                            amount             - the
+   *   amount to be withdrawn
+   * @param   {SetStore<Payment>}                 recoverySet
    * @returns {Payment}
    */
   const withdrawInternal = (
@@ -352,7 +353,7 @@ export const preparePaymentLedger = (
       return paymentLedger.get(payment);
     },
     /**
-     * @param {Payment} payment awaited by callWhen
+     * @param {Payment} payment        awaited by callWhen
      * @param {Pattern} optAmountShape
      */
     burn(payment, optAmountShape = undefined) {

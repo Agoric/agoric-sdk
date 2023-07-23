@@ -32,7 +32,7 @@ const modules = harden({ behaviors: { ...behaviors }, utils: { ...utils } });
  * }} vatPowers
  * @param {{
  *   coreProposalCode?: string;
- * }} vatParameters
+ * }}                      vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
   console.debug(`sim bootstrap starting`);

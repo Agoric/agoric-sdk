@@ -29,7 +29,7 @@ const PUBLIC_TOPICS = {
 };
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/ertp').Baggage}                                        baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareVaultHolder = (baggage, makeRecorderKit) => {
@@ -46,8 +46,8 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
       }),
     },
     /**
-     * @param {Vault} vault
-     * @param {StorageNode} storageNode
+     * @param   {Vault}       vault
+     * @param   {StorageNode} storageNode
      * @returns {State}
      */
     (vault, storageNode) => {

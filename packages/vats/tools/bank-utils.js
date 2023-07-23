@@ -31,10 +31,12 @@ export const makeFakeBankKit = issuerKits => {
   const { subscription, publication } = makeSubscriptionKit();
 
   /**
-   * @param {string} denom lower-level denomination string
-   * @param {string} issuerName
-   * @param {string} proposedName
-   * @param {import('../src/vat-bank.js').AssetIssuerKit} kit ERTP issuer kit
+   * @param {string}                                      denom
+   *   lower-level denomination string
+   * @param {string}                                      issuerName
+   * @param {string}                                      proposedName
+   * @param {import('../src/vat-bank.js').AssetIssuerKit} kit          ERTP
+   *   issuer kit
    */
   const addAsset = (denom, issuerName, proposedName, kit) => {
     issuers.init(kit.brand, kit.issuer);
