@@ -18,23 +18,28 @@ export HOME="$(mktemp -d -t deployment-integration-home.XXXXX)"
 # While it'd be great if these [tests were more hermetic](https://github.com/Agoric/agoric-sdk/issues/8059),
 # this manual runner must currently reset paths relative to the SDK to ensure
 # reproducible tests.
-rm -rf "$SDK_SRC/chaintest" "$SDK_SRC/../testnet-load-generator/_agstate/agoric-servers/testnet-8000"
+rm -rf "$SDK_SRC/../testnet-load-generator/_agstate/agoric-servers/testnet-8000"
+
+export OUTPUT_PATH="$SDK_SRC/../deployment-test-results/networks-$(date +%s)"
+mkdir -p "$OUTPUT_PATH"
 
 cd "$SDK_SRC"
 sudo ./packages/deployment/scripts/install-deps.sh
 yarn install && XSNAP_RANDOM_INIT=1 yarn build && make -C packages/cosmic-swingset/
+
+cd "$OUTPUT_PATH"
 # change to "false" to skip extraction on success like in CI
 testfailure="unknown"
 DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
 LOADGEN=1 \
-packages/deployment/scripts/integration-test.sh || {
+$SDK_SRC/packages/deployment/scripts/integration-test.sh || {
   echo "Test failed!!!"
   testfailure="true"
 }
 
-packages/deployment/scripts/setup.sh play stop || true
-packages/deployment/scripts/capture-integration-results.sh $testfailure
-echo yes | packages/deployment/scripts/setup.sh destroy || true
+$SDK_SRC/packages/deployment/scripts/setup.sh play stop || true
+$SDK_SRC/packages/deployment/scripts/capture-integration-results.sh $testfailure
+echo yes | $SDK_SRC/packages/deployment/scripts/setup.sh destroy || true
 
 # Not part of CI
-scripts/process-integration-results.sh $NETWORK_NAME/results
+$SDK_SRC/scripts/process-integration-results.sh $NETWORK_NAME/results

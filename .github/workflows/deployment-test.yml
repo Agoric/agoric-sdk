@@ -76,38 +76,42 @@ jobs:
           set -e
           cd packages/cosmic-swingset
           make install
+      - name: Make networks directory
+        run: |
+          set -e
+          mkdir networks
       - name: Run integration test
-        working-directory: ./agoric-sdk
+        working-directory: ./networks
         run: |
           set -xe
-          DOCKER_VOLUMES="$PWD:/usr/src/agoric-sdk" \
+          DOCKER_VOLUMES="$PWD/../agoric-sdk:/usr/src/agoric-sdk" \
           LOADGEN=1 \
-          packages/deployment/scripts/integration-test.sh
+          ../agoric-sdk/packages/deployment/scripts/integration-test.sh
         timeout-minutes: 90
         env:
           NETWORK_NAME: chaintest
       - name: capture results
         if: always()
-        working-directory: ./agoric-sdk
+        working-directory: ./networks
         run: |
           NOW=$(date -u +%Y%m%dT%H%M%S)
           echo "NOW=$NOW" >> "$GITHUB_ENV"
 
           # Stop the chain from running.
-          packages/deployment/scripts/setup.sh play stop || true
+          ../agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
 
           # Get the results.
-          packages/deployment/scripts/capture-integration-results.sh "${{ job.status == 'failure' }}"
+          ../agoric-sdk/packages/deployment/scripts/capture-integration-results.sh "${{ job.status == 'failure' }}"
 
           # Tear down the nodes.
-          echo yes | packages/deployment/scripts/setup.sh destroy || true
+          echo yes | ../agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
         env:
           NETWORK_NAME: chaintest
       - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
-          path: ./agoric-sdk/chaintest/results
+          path: ./networks/chaintest/results
 
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
