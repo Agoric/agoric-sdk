@@ -5,6 +5,10 @@ inputs:
   go-version:
     description: 'The version of Go to use'
     required: true
+  path:
+    description: 'The relative path to the agoric-sdk directory'
+    required: false
+    default: '.'
 
 runs:
   using: composite
@@ -14,11 +18,12 @@ runs:
       shell: bash
     - uses: actions/checkout@v3
       with:
+        path: ${{ inputs.path }}
         clean: 'false'
         submodules: 'true'
     - uses: actions/setup-go@v4
       with:
-        cache-dependency-path: golang/cosmos/go.sum
+        cache-dependency-path: ${{ inputs.path }}/golang/cosmos/go.sum
         go-version: ${{ inputs.go-version }}
     - uses: kenchan0130/actions-system-info@master
       id: system-info
@@ -31,7 +36,7 @@ runs:
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-
     - name: go mod download
-      working-directory: ./golang/cosmos
+      working-directory: ${{ inputs.path }}/golang/cosmos
       run: go mod download
       shell: bash
       if: steps.cache.outputs.cache-hit != 'true'
