@@ -351,6 +351,75 @@ test('import has mismatched transcript span', async t => {
   });
 });
 
+test('import has corrupt transcript span', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+
+  const exportData = new Map();
+  const artifacts = new Map();
+  const t0hash =
+    '57152efdd7fdf75c03371d2b4f1088d5bf3eae7fe643babce527ff81df38998c';
+  exportData.set(
+    `transcript.v1.current`,
+    JSON.stringify({
+      vatID: 'v1',
+      startPos: 0,
+      endPos: 3,
+      hash: t0hash,
+      isCurrent: 1,
+      incarnation: 0,
+    }),
+  );
+  artifacts.set(
+    `transcript.v1.0.3`,
+    'start-worker\nBAD-DELIVERY1\nsave-snapshot\n',
+  );
+
+  const exporter = makeExporter(exportData, artifacts);
+  await t.throwsAsync(async () => importSwingStore(exporter, dbDir), {
+    message: /artifact "transcript.v1.0.3" hash is.*metadata says/,
+  });
+});
+
+test('import has corrupt snapshot', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+
+  const exportData = new Map();
+  const artifacts = new Map();
+  exportData.set(
+    `snapshot.v1.2`,
+    JSON.stringify({
+      vatID: 'v1',
+      snapPos: 2,
+      hash: snapHash,
+      inUse: 1,
+    }),
+  );
+  artifacts.set('snapshot.v1.2', `${snapshotData}WRONG`);
+
+  const exporter = makeExporter(exportData, artifacts);
+  await t.throwsAsync(async () => importSwingStore(exporter, dbDir), {
+    message: /snapshot "snapshot.v1.2" hash is.*metadata says/,
+  });
+});
+
+test('import has corrupt bundle', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+
+  const exportData = new Map();
+  const artifacts = new Map();
+  exportData.set(`bundle.${bundle0ID}`, bundle0ID);
+  const badBundle = { ...bundle0, source: 'WRONG' };
+  artifacts.set(`bundle.${bundle0ID}`, JSON.stringify(badBundle));
+
+  const exporter = makeExporter(exportData, artifacts);
+  await t.throwsAsync(async () => importSwingStore(exporter, dbDir), {
+    message: /bundleID ".*" does not match bundle artifact/,
+  });
+});
+
 test('import has unknown metadata tag', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
