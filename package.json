@@ -84,12 +84,5 @@
   },
   "dependencies": {
     "patch-package": "^6.5.1"
-  },
-  "resolutions": {
-    "**/acorn-globals/acorn": "^8.7.1",
-    "**/acorn-node/acorn": "^8.7.1",
-    "**/espree/acorn": "^8.7.1",
-    "**/eslint/@babel/code-frame": "^7.12.11",
-    "**/@endo/eslint-config/@jessie.js/eslint-plugin": "^0.4.0"
   }
 }
