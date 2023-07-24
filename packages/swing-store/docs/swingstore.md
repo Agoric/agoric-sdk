@@ -11,7 +11,7 @@ The state is broken up into several pieces, or "stores":
 
 ## Incarnations, Spans, Snapshots
 
-The kernel tracks the state of one or more vats. Each vat's execution is split into "incarnations", which are separated by a "vat upgrade" (a call to `E(vatAdminFacet).upgrade(newBundleCap, options)`). Each incarnation gets a new worker, which erases the heap state and only retains durable vatstore data across the upgrade. Every active vat has a "current incarnations", and zero or more "historic incarnations". Only the current incarnation is instantiated.
+The kernel tracks the state of one or more vats. Each vat's execution is split into "incarnations", which are separated by a "vat upgrade" (a call to `E(vatAdminFacet).upgrade(newBundleCap, options)`). Each incarnation gets a new worker, which erases the heap state and only retains durable vatstore data across the upgrade. Every active vat has a "current incarnation", and zero or more "historic incarnations". Only the current incarnation is instantiated.
 
 Within each incarnation, execution is broken into one or more "spans", with a "current span" and zero or more "historic spans". This breaks up the transcript into corresponding spans.
 
