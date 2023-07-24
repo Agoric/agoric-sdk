@@ -49,7 +49,7 @@
     "http-proxy-middleware": "^2.0.6",
     "import-meta-resolve": "^2.2.1",
     "minimist": "^1.2.0",
-    "morgan": "^1.9.1",
+    "morgan": "^1.10.0",
     "node-fetch": "^2.6.0",
     "temp": "^0.9.1",
     "tmp": "^0.2.1",
