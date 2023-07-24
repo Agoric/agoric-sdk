@@ -8,8 +8,8 @@ import fs from 'fs';
 import * as os from 'os';
 import { tmpName } from 'tmp';
 import { xsnap } from '@agoric/xsnap';
-import engineGC from '../src/lib-nodejs/engine-gc.js';
-import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 
 function makeVictim() {
   const victim = { doomed: 'oh no' };

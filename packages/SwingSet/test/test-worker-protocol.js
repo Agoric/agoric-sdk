@@ -5,7 +5,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import {
   arrayEncoderStream,
   arrayDecoderStream,
-} from '../src/lib-nodejs/worker-protocol.js';
+} from '@agoric/internal/src/lib-nodejs/worker-protocol.js';
 import {
   encode,
   netstringEncoderStream,
