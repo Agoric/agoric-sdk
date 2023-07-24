@@ -38,7 +38,6 @@
     "@endo/patterns": "^0.2.3"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@endo/init": "^0.5.57",
     "@endo/ses-ava": "^0.2.41",
