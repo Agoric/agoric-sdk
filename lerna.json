@@ -13,5 +13,6 @@
     "packages/*",
     "packages/wallet/*"
   ],
+  "useWorkspaces": true,
   "version": "independent"
 }
