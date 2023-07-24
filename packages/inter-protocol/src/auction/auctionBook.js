@@ -24,7 +24,11 @@ import { E } from '@endo/captp';
 import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
-import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
+import {
+  BidsDataNotificationShape,
+  preparePriceBook,
+  prepareScaledBidBook,
+} from './offerBook.js';
 import {
   isScaledBidPriceHigher,
   makeBrandedRatioPattern,
@@ -124,31 +128,6 @@ export const BookDataNotificationShape = M.splitRecord(
 harden(BookDataNotificationShape);
 
 /**
- * @typedef {object} ScaledBidData
- * @property {Ratio} bidScaling
- * @property {Amount<'nat'>} wanted
- * @property {boolean} exitAfterBuy
- */
-
-/**
- * @typedef {object} PricedBidData
- * @property {Ratio} price
- * @property {Amount<'nat'>} wanted
- * @property {boolean} exitAfterBuy
- */
-
-/**
- * @typedef {object} BidDataNotification
- * @property {ScaledBidData[]} scaledBids
- * @property {PricedBidData[]} pricedBids
- */
-export const BidDataNotificationShape = {
-  scaledBids: M.arrayOf(M.any()),
-  pricedBids: M.arrayOf(M.any()),
-};
-harden(BidDataNotificationShape);
-
-/**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
@@ -226,10 +205,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           BookDataNotificationShape
         ),
       );
+
+      /** @typedef {import('./offerBook.js').BidDataNotification} BidDataNotification */
+
       const bidsDataKit = makeRecorderKit(
         bidsNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */ (
-          BidDataNotificationShape
+          BidsDataNotificationShape
         ),
       );
 

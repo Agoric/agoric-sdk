@@ -2,7 +2,7 @@
 // discount/markup from the current oracle price.
 
 import { E } from '@endo/captp';
-import { AmountMath, BrandShape } from '@agoric/ertp';
+import { AmountMath, BrandShape, AmountShape, RatioShape } from '@agoric/ertp';
 import { StorageNodeShape } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import {
@@ -12,6 +12,7 @@ import {
   provide,
 } from '@agoric/vat-data';
 import { makePromiseKit } from '@endo/promise-kit';
+import { TimestampShape } from '@agoric/time';
 
 import {
   toBidScalingComparator,
@@ -79,6 +80,56 @@ const makeGetBidDataRecorder = (bidDataKits, bidDataKitPromises) => {
  */
 
 /**
+ * @typedef {object} ScaledBidData
+ * @property {Ratio} bidScaling
+ * @property {Amount<'nat'>} wanted
+ * @property {boolean} exitAfterBuy
+ */
+
+/**
+ * @typedef {object} PricedBidData
+ * @property {Ratio} price
+ * @property {Amount<'nat'>} wanted
+ * @property {boolean} exitAfterBuy
+ */
+
+/**
+ * @typedef {object} BidDataNotification
+ * @property {ScaledBidData[]} scaledBids
+ * @property {PricedBidData[]} pricedBids
+ */
+
+export const BidDataNotificationShape = M.or(
+  {
+    price: RatioShape,
+    originalWant: AmountShape,
+    remainingWant: AmountShape,
+    exitAfterBuy: M.boolean(),
+    timestamp: TimestampShape,
+    balance: AmountShape,
+    sequence: M.bigint(),
+  },
+  {
+    bidScaling: RatioShape,
+    originalWant: AmountShape,
+    remainingWant: AmountShape,
+    exitAfterBuy: M.boolean(),
+    timestamp: TimestampShape,
+    balance: AmountShape,
+    sequence: M.bigint(),
+  },
+  // XXX for deletion. Should go away when we can actually delete
+  M.string(),
+);
+harden(BidDataNotificationShape);
+
+export const BidsDataNotificationShape = {
+  scaledBids: M.arrayOf(BidDataNotificationShape),
+  pricedBids: M.arrayOf(BidDataNotificationShape),
+};
+harden(BidsDataNotificationShape);
+
+/**
  * Prices in this book are expressed as percentage of the full oracle price
  * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above
  * par.
@@ -134,7 +185,11 @@ export const prepareScaledBidBook = (baggage, makeRecorderKit) => {
         const bidDataKitP = makePromiseKit();
         bidDataKitPromises.init(key, bidDataKitP.promise);
         E.when(makeBidNode(bidsNode, seqNum), childBidNode => {
-          const recorderKit = makeRecorderKit(childBidNode);
+          const recorderKit = makeRecorderKit(
+            childBidNode,
+            /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */
+            (BidDataNotificationShape),
+          );
           bidDataKits.init(key, recorderKit);
           bidDataKitP.resolve(recorderKit);
           bidDataKitPromises.delete(key);
@@ -281,7 +336,11 @@ export const preparePriceBook = (baggage, makeRecorderKit) => {
         const bidDataKitP = makePromiseKit();
         bidDataKitPromises.init(key, bidDataKitP.promise);
         E.when(makeBidNode(bidsNode, seqNum), childBidNode => {
-          const recorderKit = makeRecorderKit(childBidNode);
+          const recorderKit = makeRecorderKit(
+            childBidNode,
+            /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */
+            (BidDataNotificationShape),
+          );
           bidDataKits.init(key, recorderKit);
           bidDataKitP.resolve(recorderKit);
           bidDataKitPromises.delete(key);
