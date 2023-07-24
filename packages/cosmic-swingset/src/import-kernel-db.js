@@ -13,7 +13,7 @@ import pathPower from 'path';
 
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { Fail, q } from '@agoric/assert';
-import { importSwingStore } from '@agoric/swing-store';
+import { importSwingStore, openSwingStore } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
@@ -45,7 +45,7 @@ export const validateImporterOptions = options => {
   options.blockHeight == null ||
     typeof options.blockHeight === 'number' ||
     Fail`optional blockHeight option not a number`;
-  checkExportDataMode(options.exportDataMode);
+  checkExportDataMode(options.exportDataMode, true);
   checkArtifactMode(options.artifactMode);
   options.includeHistorical === undefined ||
     Fail`deprecated includeHistorical option found`;
@@ -104,6 +104,7 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
  * @param {Pick<import('fs/promises'), 'readFile'> & Pick<import('fs'), 'createReadStream'>} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
  * @param {typeof import('@agoric/swing-store')['importSwingStore']} [powers.importSwingStore]
+ * @param {typeof import('@agoric/swing-store')['openSwingStore']} [powers.openSwingStore]
  * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {Promise<void>}
  */
@@ -113,6 +114,7 @@ export const performStateSyncImport = async (
     fs: { createReadStream, readFile },
     pathResolve,
     importSwingStore: importDB = importSwingStore,
+    openSwingStore: openDB = openSwingStore,
     log = console.log,
   },
 ) => {
@@ -195,6 +197,29 @@ export const performStateSyncImport = async (
     hostStorage.kvStore.set('host.height', String(manifest.blockHeight));
     await hostStorage.commit();
     await hostStorage.close();
+  } else if (exportDataMode === 'repair-metadata') {
+    blockHeight !== 0 || Fail`repair metadata requires a block height`;
+
+    manifest.data || Fail`State-sync manifest missing export data`;
+
+    artifactMode === 'none' ||
+      Fail`Cannot restore artifacts while repairing metadata`;
+
+    const { hostStorage } = openDB(stateDir);
+
+    const savedBlockHeight =
+      Number(hostStorage.kvStore.get('host.height')) || 0;
+
+    if (blockHeight !== savedBlockHeight) {
+      throw Fail`block height doesn't match. requested=${q(
+        blockHeight,
+      )}, current=${q(savedBlockHeight)}`;
+    }
+
+    await hostStorage.repairMetadata(exporter);
+
+    await hostStorage.commit();
+    await hostStorage.close();
   } else if (exportDataMode === 'skip') {
     throw Fail`Repopulation of artifacts not yet supported`;
   } else {
@@ -241,7 +266,7 @@ export const main = async (
   checkArtifactMode(artifactMode);
 
   const exportDataMode = processValue.getFlag('export-data-mode');
-  checkExportDataMode(exportDataMode);
+  checkExportDataMode(exportDataMode, true);
 
   if (
     processValue.getBoolean({ flagName: 'include-historical' }) !== undefined

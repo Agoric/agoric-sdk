@@ -31,6 +31,7 @@ export const ExportManifestFileName = 'export-manifest.json';
 
 /**
  * @typedef {'skip'      // Do not include any "export data" (artifacts only)
+ *   | 'repair-metadata' // Add missing artifact metadata (import only)
  *   | 'all'             // Include all export data, create new swing-store on import
  * } SwingStoreExportDataMode
  */
@@ -60,15 +61,22 @@ export const checkArtifactMode = getEffectiveArtifactMode;
 
 /**
  * @param {string | undefined} mode
+ * @param {boolean} [isImport]
  * @returns {asserts mode is SwingStoreExportDataMode | undefined}
  */
-export const checkExportDataMode = mode => {
+export const checkExportDataMode = (mode, isImport = false) => {
   switch (mode) {
     case 'skip':
     case undefined:
       break;
     case 'all':
       break;
+    case 'repair-metadata': {
+      if (isImport) {
+        break;
+      }
+      // Fall through
+    }
     default:
       throw Fail`Invalid value ${q(mode)} for "export-data-mode"`;
   }

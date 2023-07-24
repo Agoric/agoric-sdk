@@ -185,6 +185,11 @@ const (
 	// an export. ArtifactMode cannot be "none" in this case.
 	SwingStoreExportDataModeSkip = "skip"
 
+	// SwingStoreExportDataModeRepairMetadata indicates the "export data" should be
+	// used to repair the metadata of an existing swing-store for an import
+	// operation. ArtifactMode must be "none" in this case.
+	SwingStoreExportDataModeRepairMetadata = "repair-metadata"
+
 	// SwingStoreExportDataModeAll indicates "export data" should be part of the
 	// export or import. For import, ArtifactMode cannot be "none".
 	SwingStoreExportDataModeAll = "all"
@@ -211,6 +216,12 @@ type SwingStoreRestoreOptions struct {
 	// (None, Operational, Replay, Archival, Debug).
 	// See packages/cosmic-swingset/src/import-kernel-db.js performStateSyncImport
 	ArtifactMode string `json:"artifactMode,omitempty"`
+	// ExportDataMode selects the purpose of the restore, to recreate a
+	// swing-store (SwingStoreExportDataModeAll), or just to import missing
+	// metadata (SwingStoreExportDataModeRepairMetadata).
+	// If RepairMetadata, ArtifactMode should be SwingStoreArtifactModeNone.
+	// If All, ArtifactMode must be at least SwingStoreArtifactModeOperational.
+	ExportDataMode string `json:"exportDataMode,omitempty"`
 }
 
 type swingStoreImportOptions struct {
@@ -219,8 +230,7 @@ type swingStoreImportOptions struct {
 	ExportDir string `json:"exportDir"`
 	// ArtifactMode is a copy of SwingStoreRestoreOptions.ArtifactMode
 	ArtifactMode string `json:"artifactMode,omitempty"`
-	// ExportDataMode must currently be "all" for import, since "export data" is
-	// needed to restore a swing-store.
+	// ExportDataMode is a copy of SwingStoreRestoreOptions.ExportDataMode
 	ExportDataMode string `json:"exportDataMode,omitempty"`
 }
 
@@ -810,7 +820,7 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		Args: [1]swingStoreImportOptions{{
 			ExportDir:      exportDir,
 			ArtifactMode:   restoreOptions.ArtifactMode,
-			ExportDataMode: SwingStoreExportDataModeAll,
+			ExportDataMode: restoreOptions.ExportDataMode,
 		}},
 	}
 
