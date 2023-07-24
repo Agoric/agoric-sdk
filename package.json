@@ -86,9 +86,6 @@
     "patch-package": "^6.5.1"
   },
   "resolutions": {
-    "**/http-errors/depd": "^2.0.0",
-    "**/morgan/depd": "^2.0.0",
-    "**/agentkeepalive/depd": "^2.0.0",
     "**/acorn-globals/acorn": "^8.7.1",
     "**/acorn-node/acorn": "^8.7.1",
     "**/espree/acorn": "^8.7.1",
