@@ -27,7 +27,7 @@ import { createSHA256 } from './hasher.js';
  * @typedef {{
  *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>,
  *   addBundleRecord: (bundleID: string) => void,
- *   importBundle: (name: string, dataProvider: () => Promise<Buffer>) => void,
+ *   importBundle: (name: string, dataProvider: () => Promise<Buffer>) => Promise<void>,
  *   assertComplete: (level: string) => void,
  *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: () => AsyncIterableIterator<string>,
