@@ -304,6 +304,6 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 
 	return snapshotter.swingStoreExportsHandler.RestoreExport(
 		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact},
-		SwingStoreRestoreOptions{ArtifactMode: SwingStoreArtifactModeReplay},
+		SwingStoreRestoreOptions{ArtifactMode: SwingStoreArtifactModeReplay, ExportDataMode: SwingStoreExportDataModeAll},
 	)
 }
