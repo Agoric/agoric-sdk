@@ -123,9 +123,9 @@ const swingStoreExportActionType = "SWING_STORE_EXPORT"
 const initiateRequest = "initiate"
 
 type swingStoreInitiateExportAction struct {
-	Type        string `json:"type"`        // "SWING_STORE_EXPORT"
-	Request     string `json:"request"`     // "initiate"
-	BlockHeight uint64 `json:"blockHeight"` // expected blockHeight
+	Type        string `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string `json:"request"`               // "initiate"
+	BlockHeight uint64 `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
 }
 
 // retrieveRequest is the request type for retrieving an initiated export
@@ -399,7 +399,12 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 		return err
 	}
 
-	logger := exportsHandler.logger.With("height", blockHeight)
+	var logger log.Logger
+	if blockHeight != 0 {
+		logger = exportsHandler.logger.With("height", blockHeight)
+	} else {
+		logger = exportsHandler.logger.With("height", "latest")
+	}
 
 	// Indicate that an export operation has been initiated by setting the global
 	// activeOperation var.
@@ -564,7 +569,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return err
 	}
 
-	if manifest.BlockHeight != blockHeight {
+	if blockHeight != 0 && manifest.BlockHeight != blockHeight {
 		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
