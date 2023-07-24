@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { initSwingStore } from '@agoric/swing-store';
-import engineGC from '../../src/lib-nodejs/engine-gc.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
 import { kser } from '../../src/lib/kmarshal.js';

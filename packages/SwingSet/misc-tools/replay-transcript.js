@@ -21,14 +21,14 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
-import engineGC from '../src/lib-nodejs/engine-gc.js';
 
 const finished = promisify(finishedCallback);
 
