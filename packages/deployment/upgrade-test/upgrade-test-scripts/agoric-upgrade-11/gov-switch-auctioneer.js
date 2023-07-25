@@ -7,7 +7,7 @@ console.log('started switch-auctioneer script');
 // TODO: set these bundle-ids to the revised code
 const bundleIDs = {
   vaultFactory:
-    'b1-c3dda3568055108af36984e4a79636b52c1d1697f3fe77ba1ec469e68eb3e013054aec23fd8d8882b07a08c135f0e0c46873ae5f1d35e9b07e036c821661ec31',
+    'b1-ff68ffba61530568d82f0ec7c30eab6fe6a4bf8f4758c268152687c6b680ecf62466fbc1e6af9ddc95db30feb51878df07e80db7b908a7e6c7c7c2e4ccf2a4e9',
   auctioneer:
     'b1-e85289898e66e0423d7ec1c402ac2ced21573f93cf599d593a0533a1e2355ace624cc95c8c8c18c66d44a921511642e87837accd0e728427c269936b040bb886',
 };
