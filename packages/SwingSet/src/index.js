@@ -2,6 +2,9 @@ export {
   buildVatController,
   makeSwingsetController,
 } from './controller/controller.js';
+
+export { makeTracedSwingsetController } from './lib/tracer.js';
+
 export {
   swingsetIsInitialized,
   initializeSwingset,

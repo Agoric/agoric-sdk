@@ -1,3 +1,5 @@
+import { makeSwingsetController } from '@agoric/swingset-vat';
+
 export function makeTracer(tracer) {
   const asyncTracer = (func, component, namer) => {
     return async (...args) => {
@@ -413,4 +415,37 @@ export function makeTracer(tracer) {
     makeVatTranslators,
     makeHandleCommand,
   };
+}
+
+const asyncTracerHelper = (tracer, func, component, namer) => {
+  return async (...args) => {
+    let name = func.name;
+    if (namer !== undefined) {
+      name = namer(...args);
+    }
+
+    return tracer.trace(name, { service: component }, async () => {
+      return func(...args);
+    });
+  };
+};
+
+export async function makeTracedSwingsetController(...params) {
+  const [datadogTracer, ...controllerParams] = params;
+  const controller = await makeSwingsetController(...controllerParams);
+
+  if (datadogTracer === undefined) {
+    return controller;
+  }
+  const asyncTracer = func => {
+    return asyncTracerHelper(datadogTracer, func, 'controller');
+  };
+
+  const { run, step, ...rest } = controller;
+
+  return harden({
+    run: asyncTracer(run),
+    step: asyncTracer(step),
+    ...rest,
+  });
 }
