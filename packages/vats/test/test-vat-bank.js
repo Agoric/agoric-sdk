@@ -1,16 +1,15 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
-// eslint-disable-next-line import/order
-import { fakeVomKit } from './setup-vat-data.js';
+import { reincarnate } from '@agoric/swingset-vat/tools/setup-vat-data.js';
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
+const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
   const root = fakeVomKit.cm.provideBaggage();
   const zone = makeDurableZone(root);
@@ -20,7 +19,7 @@ const provideBaggage = key => {
 test('provideAssetSubscription - MapStore insertion order preserved', async t => {
   const zones = {
     durableZone: makeDurableZone(provideBaggage('key order')),
-    heapZone,
+    heapZone: makeHeapZone(),
   };
   for (const [name, zone] of Object.entries(zones)) {
     const ids = harden(['a', 'b', 'c', 'd', 'e']);
