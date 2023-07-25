@@ -1,7 +1,7 @@
-diff --git a/node_modules/bl/node_modules/readable-stream/errors.js b/node_modules/bl/node_modules/readable-stream/errors.js
+diff --git a/node_modules/readable-stream/errors.js b/node_modules/readable-stream/errors.js
 index 8471526..a4169da 100644
---- a/node_modules/bl/node_modules/readable-stream/errors.js
-+++ b/node_modules/bl/node_modules/readable-stream/errors.js
+--- a/node_modules/readable-stream/errors.js
++++ b/node_modules/readable-stream/errors.js
 @@ -21,7 +21,18 @@ function createErrorType(code, message, Base) {
      }
    }
