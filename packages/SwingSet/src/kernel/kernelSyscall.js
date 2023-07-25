@@ -4,6 +4,7 @@ import { assert, Fail } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
+import { makeTracer } from '../lib/tracer.js';
 
 /** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);
@@ -17,6 +18,7 @@ export function makeKernelSyscallHandler(tools) {
     doResolve,
     requestTermination,
     deviceHooks,
+    tracer,
   } = tools;
 
   /** @type {{kvStore: KVStore}} */
@@ -287,5 +289,5 @@ export function makeKernelSyscallHandler(tools) {
     }
   }
 
-  return harden(kernelSyscallHandler);
+  return harden(makeTracer(tracer).makeKernelSyscall(kernelSyscallHandler));
 }

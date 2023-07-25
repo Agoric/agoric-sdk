@@ -1,4 +1,5 @@
 import { quote } from '@agoric/assert';
+import { makeTracer } from '../lib/tracer.js';
 
 const IDLE = 'idle';
 const STARTUP = 'startup';
@@ -104,9 +105,10 @@ export function makeDummySlogger(slogCallbacks, dummyConsole) {
 /**
  * @param {*} slogCallbacks
  * @param {*} writeObj
+ * @param {*} tracer
  * @returns {KernelSlog}
  */
-export function makeSlogger(slogCallbacks, writeObj) {
+export function makeSlogger(slogCallbacks, writeObj, tracer) {
   const safeWrite = e => {
     try {
       writeObj(e);
@@ -204,7 +206,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
       write({ type: 'terminate', vatID, shouldReject, info });
     }
 
-    return harden({
+    const vatSlogger = harden({
       vatConsole,
       startup,
       delivery,
@@ -212,6 +214,8 @@ export function makeSlogger(slogCallbacks, writeObj) {
       changeCList,
       terminateVat,
     });
+
+    return makeTracer(tracer).makeVatSlog(vatSlogger);
   }
 
   function provideVatSlogger(

@@ -1,6 +1,8 @@
 #! /usr/bin/env node
 // @jessie-check
 
+import 'dd-trace/init.js';
+
 import '@endo/init/pre.js';
 
 import agcc from '@agoric/cosmos';

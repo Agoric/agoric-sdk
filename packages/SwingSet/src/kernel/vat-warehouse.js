@@ -3,7 +3,7 @@ import { isNat } from '@endo/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
 import djson from '../lib/djson.js';
-
+import { makeTracer } from '../lib/tracer.js';
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
@@ -234,6 +234,7 @@ export const makeLRU = max => {
  * @param { import('../types-internal.js').KernelPanic } details.panic
  * @param { import('../types-external.js').VatWarehousePolicy } details.warehousePolicy
  * @param { import('../types-external.js').KernelSlog } details.kernelSlog
+ * @param details.tracer
  */
 export function makeVatWarehouse({
   kernelSlog,
@@ -242,6 +243,7 @@ export function makeVatWarehouse({
   buildVatSyscallHandler,
   panic,
   warehousePolicy,
+  tracer,
 }) {
   const { maxVatsOnline = 50, restartWorkerOnSnapshot = true } =
     warehousePolicy || {};
@@ -277,7 +279,7 @@ export function makeVatWarehouse({
     if (!translators) {
       // NOTE: makeVatTranslators assumes
       // vatKeeper for this vatID is available.
-      translators = makeVatTranslators(vatID, kernelKeeper);
+      translators = makeVatTranslators(vatID, kernelKeeper, tracer);
       xlate.set(vatID, translators);
     }
     return translators;
@@ -689,7 +691,7 @@ export function makeVatWarehouse({
     snapshotInterval = interval;
   }
 
-  return harden({
+  const vatWarehouse = harden({
     start,
     createDynamicVat,
     loadTestVat,
@@ -708,5 +710,6 @@ export function makeVatWarehouse({
 
     shutdown,
   });
+  return makeTracer(tracer).makeVatWarehouse(vatWarehouse);
 }
 harden(makeVatWarehouse);

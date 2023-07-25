@@ -8,6 +8,7 @@ import {
   legibilizeMessageArgs,
   legibilizeValue,
 } from '../lib/kdebug.js';
+import { makeTracer } from '../lib/tracer.js';
 
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');
@@ -707,14 +708,16 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
   return kernelSyscallResultToVatSyscallResult;
 }
 
-export function makeVatTranslators(vatID, kernelKeeper) {
+export function makeVatTranslators(vatID, kernelKeeper, tracer) {
   const mKD = makeTranslateKernelDeliveryToVatDelivery;
   const mVS = makeTranslateVatSyscallToKernelSyscall;
   const mKSR = makeTranslateKernelSyscallResultToVatSyscallResult;
 
-  return harden({
+  const translators = harden({
     kernelDeliveryToVatDelivery: mKD(vatID, kernelKeeper),
     vatSyscallToKernelSyscall: mVS(vatID, kernelKeeper),
     kernelSyscallResultToVatSyscallResult: mKSR(vatID, kernelKeeper),
   });
+
+  return makeTracer(tracer).makeVatTranslators(translators);
 }

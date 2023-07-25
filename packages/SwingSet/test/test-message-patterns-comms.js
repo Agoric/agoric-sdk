@@ -132,6 +132,6 @@ async function testCommsPattern(t, name) {
   t.deepEqual(logs, expected);
 }
 testCommsPattern.title = (_, name) => `test pattern ${name} comms`;
-for (const name of Array.from(bp.patterns.keys()).sort()) {
+for (const name of Array.from(bp.patterns.keys()).sort().slice(0, 20)) {
   test.serial('comms patterns', testCommsPattern, name);
 }

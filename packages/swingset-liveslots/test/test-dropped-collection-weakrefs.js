@@ -37,7 +37,16 @@ test('droppedCollectionWeakRefs', async t => {
   }
 
   const makeNS = () => ({ buildRootObject });
-  const ls = makeLiveSlots(syscall, 'vatA', {}, {}, gcTools, undefined, makeNS);
+  const ls = makeLiveSlots(
+    syscall,
+    'vatA',
+    {},
+    {},
+    gcTools,
+    undefined,
+    undefined,
+    makeNS,
+  );
   const { dispatch, testHooks } = ls;
   await dispatch(makeStartVat(kser()));
 

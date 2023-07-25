@@ -54,10 +54,12 @@
     "ansi-styles": "^6.2.1",
     "anylogger": "^0.21.0",
     "better-sqlite3": "^8.2.0",
+    "dd-trace": "^4.2.0",
     "import-meta-resolve": "^2.2.1",
     "microtime": "^3.1.0",
     "semver": "^6.3.0",
     "tmp": "^0.2.1",
+    "winston": "^3.9.0",
     "yargs-parser": "^21.1.1"
   },
   "peerDependencies": {

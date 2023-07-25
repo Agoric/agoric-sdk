@@ -22,6 +22,7 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
+import { hostTracer } from './ddTracer.js';
 
 import {
   makeDefaultMeterProvider,
@@ -674,179 +675,183 @@ export async function launch({
   // Some actions that are integration specific may be handled by the caller
   // For example COSMOS_SNAPSHOT and AG_COSMOS_INIT are handled in chain-main.js
   async function blockingSend(action) {
-    if (decohered) {
-      throw decohered;
-    }
-
-    await afterCommitWorkDone;
-
-    // blockManagerConsole.warn(
-    //   'FIGME: blockHeight',
-    //   action.blockHeight,
-    //   'received',
-    //   action.type,
-    // );
-    switch (action.type) {
-      case ActionType.BOOTSTRAP_BLOCK: {
-        // This only runs for the very first block on the chain.
-        const { blockTime } = action;
-        verboseBlocks && blockManagerConsole.info('block bootstrap');
-        if (savedHeight !== 0) {
-          throw Error(`Cannot run a bootstrap block at height ${savedHeight}`);
-        }
-        const blockHeight = 0;
-        const runNum = 0;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-bootstrap-block-start',
-          blockTime,
-        });
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-run-start',
-          blockHeight,
-          runNum,
-        });
-        await processAction(action.type, async () =>
-          bootstrapBlock(blockHeight, blockTime),
-        );
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-run-finish',
-          blockHeight,
-          runNum,
-        });
-        await pendingSwingStoreExport;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-bootstrap-block-finish',
-          blockTime,
-        });
-        return undefined;
+    return hostTracer.trace(`${action.type}`, async () => {
+      if (decohered) {
+        throw decohered;
       }
 
-      case ActionType.COMMIT_BLOCK: {
-        const { blockHeight, blockTime } = action;
-        verboseBlocks &&
-          blockManagerConsole.info('block', blockHeight, 'commit');
-        if (blockHeight !== savedHeight) {
-          throw Error(
-            `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
-          );
-        }
+      await afterCommitWorkDone;
 
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-start',
-          blockHeight,
-          blockTime,
-        });
-
-        // Save the kernel's computed state just before the chain commits.
-        const start2 = Date.now();
-        await saveOutsideState(savedHeight);
-        saveTime = Date.now() - start2;
-
-        blockParams = undefined;
-
-        blockManagerConsole.debug(
-          `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
-        );
-
-        return undefined;
-      }
-
-      case ActionType.AFTER_COMMIT_BLOCK: {
-        const { blockHeight, blockTime } = action;
-
-        const fullSaveTime = Date.now() - endBlockFinish;
-
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
-          blockHeight,
-          blockTime,
-          saveTime: saveTime / 1000,
-          chainTime: chainTime / 1000,
-          fullSaveTime: fullSaveTime / 1000,
-        });
-
-        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
-
-        return undefined;
-      }
-
-      case ActionType.BEGIN_BLOCK: {
-        const { blockHeight, blockTime, params } = action;
-        blockParams = parseParams(params);
-        verboseBlocks &&
-          blockManagerConsole.info('block', blockHeight, 'begin');
-        runTime = 0;
-
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-begin-block',
-          blockHeight,
-          blockTime,
-          inboundQueueStats: inboundQueueMetrics.getStats(),
-        });
-
-        return undefined;
-      }
-
-      case ActionType.END_BLOCK: {
-        const { blockHeight, blockTime } = action;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-end-block-start',
-          blockHeight,
-          blockTime,
-        });
-
-        blockParams || Fail`blockParams missing`;
-
-        if (!blockNeedsExecution(blockHeight)) {
-          // We are reevaluating, so do not do any work, and send exactly the
-          // same downcalls to the chain.
-          //
-          // This is necessary only after a restart when Tendermint is reevaluating the
-          // block that was interrupted and not committed.
-          //
-          // We assert that the return values are identical, which allows us to silently
-          // clear the queue.
-          try {
-            replayChainSends();
-          } catch (e) {
-            // Very bad!
-            decohered = e;
-            throw e;
+      // blockManagerConsole.warn(
+      //   'FIGME: blockHeight',
+      //   action.blockHeight,
+      //   'received',
+      //   action.type,
+      // );
+      switch (action.type) {
+        case ActionType.BOOTSTRAP_BLOCK: {
+          // This only runs for the very first block on the chain.
+          const { blockTime } = action;
+          verboseBlocks && blockManagerConsole.info('block bootstrap');
+          if (savedHeight !== 0) {
+            throw Error(
+              `Cannot run a bootstrap block at height ${savedHeight}`,
+            );
           }
-        } else {
-          // And now we actually process the queued actions down here, during
-          // END_BLOCK, but still reentrancy-protected.
-
-          provideInstallationPublisher();
-
+          const blockHeight = 0;
+          const runNum = 0;
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-bootstrap-block-start',
+            blockTime,
+          });
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-run-start',
+            blockHeight,
+            runNum,
+          });
           await processAction(action.type, async () =>
-            endBlock(blockHeight, blockTime, blockParams),
+            bootstrapBlock(blockHeight, blockTime),
+          );
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-run-finish',
+            blockHeight,
+            runNum,
+          });
+          await pendingSwingStoreExport;
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-bootstrap-block-finish',
+            blockTime,
+          });
+          return undefined;
+        }
+
+        case ActionType.COMMIT_BLOCK: {
+          const { blockHeight, blockTime } = action;
+          verboseBlocks &&
+            blockManagerConsole.info('block', blockHeight, 'commit');
+          if (blockHeight !== savedHeight) {
+            throw Error(
+              `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
+            );
+          }
+
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-commit-block-start',
+            blockHeight,
+            blockTime,
+          });
+
+          // Save the kernel's computed state just before the chain commits.
+          const start2 = Date.now();
+          await saveOutsideState(savedHeight);
+          saveTime = Date.now() - start2;
+
+          blockParams = undefined;
+
+          blockManagerConsole.debug(
+            `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
           );
 
-          // We write out our on-chain state as a number of chainSends.
-          const start = Date.now();
-          await Promise.all([saveChainState(), pendingSwingStoreExport]);
-          chainTime = Date.now() - start;
-
-          // Advance our saved state variables.
-          savedHeight = blockHeight;
+          return undefined;
         }
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-end-block-finish',
-          blockHeight,
-          blockTime,
-          inboundQueueStats: inboundQueueMetrics.getStats(),
-        });
 
-        endBlockFinish = Date.now();
+        case ActionType.AFTER_COMMIT_BLOCK: {
+          const { blockHeight, blockTime } = action;
 
-        return undefined;
+          const fullSaveTime = Date.now() - endBlockFinish;
+
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-commit-block-finish',
+            blockHeight,
+            blockTime,
+            saveTime: saveTime / 1000,
+            chainTime: chainTime / 1000,
+            fullSaveTime: fullSaveTime / 1000,
+          });
+
+          afterCommitWorkDone = afterCommit(blockHeight, blockTime);
+
+          return undefined;
+        }
+
+        case ActionType.BEGIN_BLOCK: {
+          const { blockHeight, blockTime, params } = action;
+          blockParams = parseParams(params);
+          verboseBlocks &&
+            blockManagerConsole.info('block', blockHeight, 'begin');
+          runTime = 0;
+
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-begin-block',
+            blockHeight,
+            blockTime,
+            inboundQueueStats: inboundQueueMetrics.getStats(),
+          });
+
+          return undefined;
+        }
+
+        case ActionType.END_BLOCK: {
+          const { blockHeight, blockTime } = action;
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-end-block-start',
+            blockHeight,
+            blockTime,
+          });
+
+          blockParams || Fail`blockParams missing`;
+
+          if (!blockNeedsExecution(blockHeight)) {
+            // We are reevaluating, so do not do any work, and send exactly the
+            // same downcalls to the chain.
+            //
+            // This is necessary only after a restart when Tendermint is reevaluating the
+            // block that was interrupted and not committed.
+            //
+            // We assert that the return values are identical, which allows us to silently
+            // clear the queue.
+            try {
+              replayChainSends();
+            } catch (e) {
+              // Very bad!
+              decohered = e;
+              throw e;
+            }
+          } else {
+            // And now we actually process the queued actions down here, during
+            // END_BLOCK, but still reentrancy-protected.
+
+            provideInstallationPublisher();
+
+            await processAction(action.type, async () =>
+              endBlock(blockHeight, blockTime, blockParams),
+            );
+
+            // We write out our on-chain state as a number of chainSends.
+            const start = Date.now();
+            await Promise.all([saveChainState(), pendingSwingStoreExport]);
+            chainTime = Date.now() - start;
+
+            // Advance our saved state variables.
+            savedHeight = blockHeight;
+          }
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-end-block-finish',
+            blockHeight,
+            blockTime,
+            inboundQueueStats: inboundQueueMetrics.getStats(),
+          });
+
+          endBlockFinish = Date.now();
+
+          return undefined;
+        }
+
+        default: {
+          throw Fail`Unrecognized action ${action}; are you sure you didn't mean to queue it?`;
+        }
       }
-
-      default: {
-        throw Fail`Unrecognized action ${action}; are you sure you didn't mean to queue it?`;
-      }
-    }
+    });
   }
 
   async function shutdown() {

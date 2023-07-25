@@ -12,6 +12,7 @@ import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
 import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
 import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
+import { tracer } from '../lib/ddTracer.js';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -26,7 +27,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   insistStorageAPI(kernelStorage.kvStore);
 
   const kernelSlog = null;
-  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog, tracer);
   const optionRecorder = makeVatOptionRecorder(kernelKeeper, bundleHandler);
 
   const wasInitialized = kernelKeeper.getInitialized();

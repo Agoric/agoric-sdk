@@ -15,6 +15,10 @@ import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
 import { checkBundle } from '@endo/check-bundle/lite.js';
+import { tracer } from '../lib/ddTracer.js';
+
+import { makeTracer } from '../lib/tracer.js';
+
 import engineGC from '../lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
@@ -137,6 +141,7 @@ export async function makeSwingsetController(
     spawn,
     fs,
     tmpName,
+    tracer,
     debug: !!env.XSNAP_DEBUG,
     workerTraceRootPath: env.XSNAP_TEST_RECORD,
   });
@@ -223,6 +228,7 @@ export async function makeSwingsetController(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize: makeGcAndFinalize(engineGC),
+    tracer,
     bundleHandler,
   };
 
@@ -287,7 +293,7 @@ export async function makeSwingsetController(
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
-  const controller = harden({
+  let controller = harden({
     log(str) {
       kernel.log(str);
     },
@@ -363,6 +369,7 @@ export async function makeSwingsetController(
       kernelStorage.emitCrankHashes();
       return result;
     },
+
     vatNameToID(vatName) {
       return kernel.vatNameToID(vatName);
     },
@@ -411,6 +418,8 @@ export async function makeSwingsetController(
   });
 
   writeSlogObject({ type: 'kernel-init-finish' });
+
+  controller = makeTracer(tracer).makeController(controller);
 
   return controller;
 }

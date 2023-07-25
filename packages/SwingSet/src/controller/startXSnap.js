@@ -2,6 +2,7 @@ import path from 'path';
 import { Fail } from '@agoric/assert';
 import { type as osType } from 'os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
+import { makeTracer } from '../lib/tracer.js';
 
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
@@ -41,6 +42,7 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
  *   overrideBundles?: import('../types-external.js').Bundle[],
+ *   tracer?,
  * }} options
  */
 export function makeStartXSnap(options) {
@@ -54,6 +56,7 @@ export function makeStartXSnap(options) {
     snapStore,
     workerTraceRootPath,
     overrideBundles,
+    tracer = undefined,
     debug = false,
   } = options;
 
@@ -138,6 +141,7 @@ export function makeStartXSnap(options) {
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     const snapshotLoadOpts = getSnapshotLoadOptions(initDetails);
+    handleCommand = makeTracer(tracer).makeHandleCommand(handleCommand);
     await null;
     if (snapshotLoadOpts) {
       const xs = await doXSnap({

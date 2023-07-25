@@ -140,6 +140,7 @@ export function makeXsSubprocessFactory({
     /** @type {ReturnType<typeof makeRevokableHandleCommandKit> | undefined} */
     let handleCommandKit = makeRevokableHandleCommandKit(handleUpstream);
 
+
     // start the worker and establish a connection
     let worker = await startXSnap(nameDisplayArg, {
       bundleIDs,

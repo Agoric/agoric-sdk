@@ -28,6 +28,8 @@ import {
   deletePrefixedKeys,
 } from './storageHelper.js';
 
+import { makeTracer } from '../../lib/tracer.js';
+
 const enableKernelGC = true;
 
 /**
@@ -167,8 +169,9 @@ const FIRST_METER_ID = 1n;
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {KernelSlog|null} kernelSlog
+ * @param tracer
  */
-export default function makeKernelKeeper(kernelStorage, kernelSlog) {
+export default function makeKernelKeeper(kernelStorage, kernelSlog, tracer) {
   const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
@@ -1528,7 +1531,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     });
   }
 
-  return harden({
+  const kernelKeeper = harden({
     getInitialized,
     setInitialized,
     createStartingKernelState,
@@ -1633,4 +1636,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
     dump,
   });
+
+  return makeTracer(tracer).makeKernelKeeper(kernelKeeper);
 }

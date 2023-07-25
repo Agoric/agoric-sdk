@@ -1,10 +1,10 @@
 import path from 'path';
 import tmp from 'tmp';
 import { PromiseAllOrErrors } from '@agoric/internal';
+import { ddlogger } from '@agoric/swingset-vat/src/lib/winston.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
-export const DEFAULT_SLOGSENDER_MODULE =
-  '@agoric/telemetry/src/flight-recorder.js';
+export const DEFAULT_SLOGSENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
 export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
 
 export const DEFAULT_SLOGSENDER_AGENT = 'self';
@@ -152,6 +152,7 @@ export const makeSlogSender = async (opts = {}) => {
       for (const sender of senders) {
         try {
           sender(slogObj, jsonObj);
+          ddlogger.log('info', jsonObj);
         } catch (err) {
           sendErrors.push(err);
         }

@@ -9,6 +9,9 @@ import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
+
+import { makeTracer } from '../lib/tracer.js';
+
 import {
   kdebug,
   kdebugEnable,
@@ -98,6 +101,7 @@ export default function buildKernel(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
+    tracer,
     bundleHandler,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
@@ -112,10 +116,10 @@ export default function buildKernel(
 
   /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
-    ? makeSlogger(slogCallbacks, writeSlogObject)
+    ? makeSlogger(slogCallbacks, writeSlogObject, tracer)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
-  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog, tracer);
 
   /** @type {ReturnType<makeVatWarehouse>} */
   let vatWarehouse;
@@ -353,6 +357,7 @@ export default function buildKernel(
     doResolve,
     requestTermination,
     deviceHooks,
+    tracer,
   });
 
   /**
@@ -1425,6 +1430,7 @@ export default function buildKernel(
     gcAndFinalize,
     meterControl: makeDummyMeterControl(),
   });
+
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
@@ -1486,6 +1492,7 @@ export default function buildKernel(
       if (ksc) {
         try {
           // this can throw if kernel is buggy
+
           kres = kernelSyscallHandler(ksc);
 
           // kres is a KernelResult: ['ok', value] or ['error', problem],
@@ -1534,6 +1541,7 @@ export default function buildKernel(
     buildVatSyscallHandler,
     panic,
     warehousePolicy,
+    tracer,
   });
 
   /**
@@ -2002,5 +2010,5 @@ export default function buildKernel(
     addDeviceHook,
   });
 
-  return kernel;
+  return makeTracer(tracer).makeKernel(kernel);
 }
