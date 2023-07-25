@@ -14,13 +14,13 @@ const brand = makeIssuerKit('foo').brand;
 function checkDebt(t, [debt, interest, compounded], result) {
   /** @type {Amount<'nat'>} */
   const debtSnapshot = AmountMath.make(brand, debt);
-  const stabilityFeeSnapshot = makeRatio(100n + interest, brand);
-  const currentCompoundedStabilityFee = makeRatio(100n + compounded, brand);
+  const interestSnapshot = makeRatio(100n + interest, brand);
+  const currentCompoundedInterest = makeRatio(100n + compounded, brand);
   t.is(
     calculateCurrentDebt(
       debtSnapshot,
-      stabilityFeeSnapshot,
-      currentCompoundedStabilityFee,
+      interestSnapshot,
+      currentCompoundedInterest,
     ).value,
     result,
   );

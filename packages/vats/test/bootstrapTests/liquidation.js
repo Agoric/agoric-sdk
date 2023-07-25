@@ -146,7 +146,7 @@ export const makeLiquidationTestContext = async t => {
     t.like(readLatest(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
-        StabilityFee: {
+        InterestRate: {
           type: 'ratio',
           value: { numerator: { value: 1n }, denominator: { value: 100n } },
         },

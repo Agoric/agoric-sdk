@@ -50,7 +50,7 @@ export const defaultParamValues = debtBrand =>
     // penalty upon liquidation as proportion of debt
     liquidationPenalty: makeRatio(10n, debtBrand),
     // periodic interest rate (per charging period)
-    stabilityFee: makeRatio(100n, debtBrand, BASIS_POINTS),
+    interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
     mintFee: makeRatio(500n, debtBrand, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
