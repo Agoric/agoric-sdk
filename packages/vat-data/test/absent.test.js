@@ -1,9 +1,13 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import '@endo/init/debug.js';
+import test from 'ava';
+
 /* global globalThis */
 delete globalThis.VatData;
 
 /** @see present.test.js */
 test('methods available that throw', async t => {
   const { defineKind } = await import('../src/index.js');
-  t.throws(defineKind, { message: /VatData unavailable/ });
+  t.throws(() => defineKind('someTag', () => {}, {}), {
+    message: /VatData unavailable/,
+  });
 });
