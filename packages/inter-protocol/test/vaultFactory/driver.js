@@ -66,7 +66,7 @@ const defaultParamValues = debt =>
     // penalty upon liquidation as proportion of debt
     liquidationPenalty: debt.makeRatio(10n),
     // periodic interest rate (per charging period)
-    stabilityFee: debt.makeRatio(100n, BASIS_POINTS),
+    interestRate: debt.makeRatio(100n, BASIS_POINTS),
     // charge to create or increase loan balance
     mintFee: debt.makeRatio(500n, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
