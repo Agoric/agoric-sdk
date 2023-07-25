@@ -158,7 +158,8 @@ to pass.
 
 ```sh
 # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
-yarn lerna publish from-package
+# without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
+yarn lerna publish --concurrency 1 from-package
 ```
 
 - [ ] Merge the release PR into the base branch.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE
