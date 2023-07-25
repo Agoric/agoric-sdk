@@ -19,6 +19,7 @@ defineExoClassKit;
  * @property {typeof makeExo} exo create a singleton exo-object instance bound to this zone
  * @property {typeof defineExoClass} exoClass create a maker function that can be used to create exo-objects bound to this zone
  * @property {typeof defineExoClassKit} exoClassKit create a "kit" maker function that can be used to create a record of exo-objects sharing the same state
+ * @property {<T>(key: string, maker: (key: string) => T) => T} makeOnce create or retrieve a singleton object bound to this zone
  * @property {(label: string, options?: StoreOptions) => Zone} subZone create a new Zone that can be passed to untrusted consumers without exposing the storage of the parent zone
  */
 
