@@ -1051,7 +1051,7 @@ export const prepareVaultManagerKit = (
           );
 
           state.lockedQuote = storedCollateralQuote;
-          facets.helper.writeMetrics();
+          void facets.helper.writeMetrics();
           return storedCollateralQuote;
         },
         /** @param {ERef<AuctioneerPublicFacet>} auctionPF */
@@ -1101,6 +1101,7 @@ export const prepareVaultManagerKit = (
           state.lockedQuote = undefined;
 
           if (vaultData.getSize() === 0) {
+            void helper.writeMetrics();
             return;
           }
           trace(
@@ -1164,7 +1165,7 @@ export const prepareVaultManagerKit = (
             liquidatingVaults.delete(vault);
           }
 
-          await facets.helper.writeMetrics();
+          void helper.writeMetrics();
         },
       },
     },
