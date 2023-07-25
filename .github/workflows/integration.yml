@@ -104,7 +104,8 @@ jobs:
           npm whoami
 
           # Publish the packages to our local service.
-          yarn lerna publish --conventional-prerelease --canary --exact \
+          # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
+          yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$dist_tag --preid=dev-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
 
