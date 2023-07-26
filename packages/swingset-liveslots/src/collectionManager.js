@@ -432,6 +432,9 @@ export function makeCollectionManager(
           }
         }
       }
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        failNotFound(label, key);
+      }
       const dbKey = keyToDBKey(key);
       const rawBefore = syscall.vatstoreGet(dbKey) || failNotFound(label, key);
       const before = JSON.parse(rawBefore);
