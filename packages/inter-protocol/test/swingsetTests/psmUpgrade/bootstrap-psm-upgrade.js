@@ -24,7 +24,7 @@ const anchor = withAmountUtils(makeIssuerKit('bucks'));
 const firstGive = anchor.units(21);
 const secondGive = anchor.units(3);
 
-/** @typedef {import('../../../src/psm/psm.js').prepare} PsmSF */
+/** @typedef {import('../../../src/psm/psm.js').start} PsmSF */
 
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('psmUpgradeTest');
@@ -67,7 +67,7 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<
-   *     import('@agoric/governance/src/committee.js')['prepare']
+   *     import('@agoric/governance/src/committee.js')['start']
    *   >;
    *   psmV1?: Installation<PsmSF>;
    *   puppetContractGovernor?: Installation<

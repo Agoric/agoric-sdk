@@ -40,10 +40,10 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<
-   *     import('@agoric/governance/src/committee.js')['prepare']
+   *     import('@agoric/governance/src/committee.js')['start']
    *   >;
    *   fluxAggregatorV1?: Installation<
-   *     import('../../../src/price/fluxAggregatorContract').prepare
+   *     import('../../../src/price/fluxAggregatorContract').start
    *   >;
    *   puppetContractGovernor?: Installation<
    *     import('@agoric/governance/tools/puppetContractGovernor').start
@@ -57,7 +57,7 @@ export const buildRootObject = async () => {
    * @type {ReturnType<
    *   Awaited<
    *     ReturnType<
-   *       import('../../../src/price/fluxAggregatorContract.js').prepare
+   *       import('../../../src/price/fluxAggregatorContract.js').start
    *     >
    *   >['creatorFacet']['getLimitedCreatorFacet']
    * >}
@@ -74,7 +74,7 @@ export const buildRootObject = async () => {
   /**
    * @type {Omit<
    *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
-   *     import('../../../src/price/fluxAggregatorContract.js').prepare
+   *     import('../../../src/price/fluxAggregatorContract.js').start
    *   >['terms'],
    *   'issuers' | 'brands'
    * >}

@@ -11,6 +11,12 @@ const { Fail } = assert;
 
 const trace = makeTracer('CGov', false);
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * Validate that the question details correspond to a parameter change question
  * that the electorate hosts, and that the voteCounter and other details are
@@ -147,8 +153,8 @@ harden(validateQuestionFromCounter);
  * }>}
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
-  trace('prepare');
+export const start = async (zcf, privateArgs, baggage) => {
+  trace('start');
   const zoe = zcf.getZoeService();
   trace('getTerms', zcf.getTerms());
   const {
@@ -202,9 +208,9 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   // Specifically, to the vat of the governed contract for its API names. The exo
   // defers that until API governance is requested to be invoked or validated.
 
-  trace('prepare complete');
+  trace('start complete');
 
   // CRUCIAL: only contractGovernor should get the ability to update params
   return { creatorFacet: governorKit.creator, publicFacet: governorKit.public };
 };
-harden(prepare);
+harden(start);

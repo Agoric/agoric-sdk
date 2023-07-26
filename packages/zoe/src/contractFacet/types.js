@@ -221,6 +221,13 @@
  */
 
 /**
+ * @typedef ContractMeta
+ * @property {CopyRecord<Pattern>} [customTermsShape]
+ * @property {CopyRecord<Pattern>} [privateArgsShape]
+ * @property {'canBeUpgraded' | 'canUpgrade'} [upgradability]
+ */
+
+/**
  * API for a contract start function.
  *
  * CAVEAT: assumes synchronous
@@ -234,6 +241,7 @@
  * @callback ContractStartFn
  * @param {ZCF<CT>} zcf
  * @param {PA} privateArgs
+ * @param {MapStore} [baggage]
  * @returns {ContractStartFnResult<PF, CF>}
  */
 

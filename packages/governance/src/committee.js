@@ -23,11 +23,15 @@ const { ceilDivide } = natSafeMath;
  * }} CommitteeElectorateCreatorFacet
  */
 
-export const privateArgsShape = {
-  storageNode: StorageNodeShape,
-  marshaller: M.remotable('Marshaller'),
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: {
+    storageNode: StorageNodeShape,
+    marshaller: M.remotable('Marshaller'),
+  },
+  upgradability: 'canUpgrade',
 };
-harden(privateArgsShape);
+harden(meta);
 
 /**
  * Each Committee (an Electorate) represents a particular set of voters. The
@@ -46,7 +50,7 @@ harden(privateArgsShape);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
-export const prepare = (zcf, privateArgs, baggage) => {
+export const start = (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = provideDurableMapStore(baggage, 'Question');
 
@@ -170,5 +174,4 @@ export const prepare = (zcf, privateArgs, baggage) => {
 
   return { publicFacet, creatorFacet };
 };
-
-harden(prepare);
+harden(start);

@@ -18,7 +18,7 @@ const trace = makeTracer('StartWF');
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Installation<
- *   import('@agoric/smart-wallet/src/walletFactory').prepare
+ *   import('@agoric/smart-wallet/src/walletFactory').start
  * >} inst
  *
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
@@ -66,7 +66,7 @@ const publishRevivableWalletState = async (
  *     econCharterKit: {
  *       creatorFacet: Awaited<
  *         ReturnType<
- *           import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']
+ *           import('@agoric/inter-protocol/src/econCommitteeCharter.js')['start']
  *         >
  *       >['creatorFacet'];
  *       adminFacet: AdminFacet;

@@ -22,22 +22,27 @@ const trace = makeTracer('FluxAgg', false);
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
  */
 
-export const privateArgsShape = M.splitRecord(
-  harden({
-    storageNode: StorageNodeShape,
-    marshaller: M.eref(M.remotable('marshaller')),
-    namesByAddressAdmin: M.any(),
-  }),
-  harden({
-    // always optional. XXX some code is including the key, set to null
-    highPrioritySendersManager: M.or(
-      M.remotable('prioritySenders manager'),
-      M.null(),
-    ),
-    // only necessary on first invocation, not subsequent
-    initialPoserInvitation: M.remotable('Invitation'),
-  }),
-);
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: M.splitRecord(
+    {
+      storageNode: StorageNodeShape,
+      marshaller: M.eref(M.remotable('marshaller')),
+      namesByAddressAdmin: M.any(),
+    },
+    {
+      // always optional. XXX some code is including the key, set to null
+      highPrioritySendersManager: M.or(
+        M.remotable('prioritySenders manager'),
+        M.null(),
+      ),
+      // only necessary on first invocation, not subsequent
+      initialPoserInvitation: M.remotable('Invitation'),
+    },
+  ),
+  upgradability: 'canUpgrade',
+};
+harden(meta);
 
 /**
  * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`,
@@ -62,7 +67,7 @@ export const privateArgsShape = M.splitRecord(
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare with baggage keys', [...baggage.keys()]);
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
@@ -188,4 +193,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet: faKit.public,
   });
 };
-harden(prepare);
+harden(start);

@@ -25,7 +25,7 @@ const { details: X, quote: q, Fail } = assert;
 
 /**
  * @typedef {import('@agoric/zoe/src/zoeService/utils').Instance<
- *   import('@agoric/inter-protocol/src/psm/psm.js').prepare
+ *   import('@agoric/inter-protocol/src/psm/psm.js').start
  * >} PsmInstance
  */
 
