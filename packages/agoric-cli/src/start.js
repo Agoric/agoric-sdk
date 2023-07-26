@@ -528,7 +528,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const agServerResolve = spec =>
       require.resolve(spec, { paths: [serverDir] });
     const coreConfigPath = agServerResolve(
-      '@agoric/vats/decentral-core-config.json',
+      '@agoric/boot/decentral-core-config.json',
     );
     const economyTemplPath = agServerResolve(
       '@agoric/cosmic-swingset/economy-template.json',

@@ -1,0 +1,47 @@
+{
+  "name": "@agoric/boot",
+  "version": "0.1.0",
+  "description": "Config and utilities to bootstrap an Agoric chain",
+  "type": "module",
+  "main": "./index.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "scripts": {
+    "build": "exit 0",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
+    "test": "ava",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint ."
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/vats": "^0.15.1"
+  },
+  "devDependencies": {},
+  "files": [
+    "CHANGELOG.md",
+    "src/",
+    "scripts/",
+    "tools/",
+    "*.json",
+    "globals.d.ts",
+    "exported.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "20m",
+    "workerThreads": false
+  }
+}

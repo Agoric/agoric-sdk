@@ -16,7 +16,7 @@ const { Fail } = assert;
 /** @file Bootstrap test of restarting (almost) all vats */
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
-const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
+const PLATFORM_CONFIG = '@agoric/boot/decentral-itest-vaults-config.json';
 /** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
 
 export const makeTestContext = async t => {
