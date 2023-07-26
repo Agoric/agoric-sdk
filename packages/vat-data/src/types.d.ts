@@ -15,7 +15,7 @@ import type {
   WeakSetStore,
 } from '@agoric/store';
 
-export type { Pattern };
+export type { MapStore, Pattern };
 
 export type Baggage = MapStore<string, unknown>;
 

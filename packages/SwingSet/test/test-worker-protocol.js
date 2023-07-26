@@ -1,4 +1,5 @@
 /* global Buffer */
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import {
@@ -9,7 +10,7 @@ import {
   encode,
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../src/lib/netstring.js';
+} from '@agoric/internal/src/netstring.js';
 
 test('arrayEncoderStream', async t => {
   const e = arrayEncoderStream();

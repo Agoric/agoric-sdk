@@ -196,7 +196,7 @@ harden(isCallback);
  * @param {import('@agoric/zone').Zone} zone The zone in which to allocate attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
- * @param {InterfaceGuard} [opts.interfaceGuard] An interface guard for the
+ * @param {import('@endo/patterns').InterfaceGuard} [opts.interfaceGuard] An interface guard for the
  * new attenuator.
  * @param {string} [opts.tag] A tag for the new attenuator exoClass.
  */
@@ -306,7 +306,7 @@ harden(prepareAttenuator);
  * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
  *
  * @param {import('@agoric/zone').Zone} zone
- * @param {InterfaceGuard} interfaceGuard
+ * @param {import('@endo/patterns').InterfaceGuard} interfaceGuard
  * @param {object} [opts]
  * @param {string} [opts.tag]
  */

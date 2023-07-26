@@ -15,10 +15,10 @@ import {
   insistVatDeliveryObject,
   insistVatSyscallResult,
 } from '@agoric/swingset-liveslots';
+import { encode, decode } from '@agoric/internal/src/netstring.js';
 import engineGC from '../../lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../../kernel/dummyMeterControl.js';
-import { encode, decode } from '../../lib/netstring.js';
 import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
 import {
   makeSupervisorDispatch,
