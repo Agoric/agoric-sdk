@@ -39,17 +39,21 @@ const ParamChangesOfferArgsShape = M.splitRecord(
   },
 );
 
-/** A pattern for Zoe to check custom terms before `start()`ing the contract. */
-export const customTermsShape = harden({
-  binaryVoteCounterInstallation: InstallationShape,
-});
+/** @type {ContractMeta} */
+export const meta = {
+  customTermsShape: {
+    binaryVoteCounterInstallation: InstallationShape,
+  },
+  upgradability: 'canUpgrade',
+};
+harden(meta);
 
 /**
  * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
  * @param {undefined} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
   /** @type {MapStore<Instance, GovernorCreatorFacet<any>>} */
   const instanceToGovernor = provideDurableMapStore(
@@ -180,3 +184,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   return harden({ creatorFacet });
 };
+harden(start);

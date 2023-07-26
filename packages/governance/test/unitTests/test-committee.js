@@ -37,7 +37,7 @@ const setupContract = async () => {
     bundleSource(counterRoot),
   ]);
   // install the contract
-  /** @typedef {Installation<import('../../src/committee.js')['prepare']>} CommitteInstallation */
+  /** @typedef {Installation<import('../../src/committee.js')['start']>} CommitteInstallation */
   /** @typedef {Installation<import('../../src/binaryVoteCounter.js').start>} CounterInstallation */
   /** @type {[CommitteInstallation, CounterInstallation] } */
   const [electorateInstallation, counterInstallation] = await Promise.all([

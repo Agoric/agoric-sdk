@@ -248,18 +248,16 @@
  *         Installation<import('@agoric/vats/src/centralSupply.js').start>
  *       >;
  *       committee: Promise<
- *         Installation<
- *           import('@agoric/governance/src/committee.js')['prepare']
- *         >
+ *         Installation<import('@agoric/governance/src/committee.js')['start']>
  *       >;
  *       contractGovernor: Promise<
  *         Installation<
- *           import('@agoric/governance/src/contractGovernor.js')['prepare']
+ *           import('@agoric/governance/src/contractGovernor.js')['start']
  *         >
  *       >;
  *       econCommitteeCharter: Promise<
  *         Installation<
- *           import('@agoric/inter-protocol/src/econCommitteeCharter.js')['prepare']
+ *           import('@agoric/inter-protocol/src/econCommitteeCharter.js')['start']
  *         >
  *       >;
  *       feeDistributor: Promise<
@@ -268,29 +266,29 @@
  *         >
  *       >;
  *       mintHolder: Promise<
- *         Installation<import('@agoric/vats/src/mintHolder.js').prepare>
+ *         Installation<import('@agoric/vats/src/mintHolder.js').start>
  *       >;
  *       psm: Promise<
  *         Installation<
- *           import('@agoric/inter-protocol/src/psm/psm.js')['prepare']
+ *           import('@agoric/inter-protocol/src/psm/psm.js')['start']
  *         >
  *       >;
  *       provisionPool: Promise<
- *         Installation<import('@agoric/vats/src/provisionPool.js')['prepare']>
+ *         Installation<import('@agoric/vats/src/provisionPool.js')['start']>
  *       >;
  *       reserve: Promise<
  *         Installation<
- *           import('@agoric/inter-protocol/src/reserve/assetReserve.js')['prepare']
+ *           import('@agoric/inter-protocol/src/reserve/assetReserve.js')['start']
  *         >
  *       >;
  *       VaultFactory: Promise<
  *         Installation<
- *           import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js')['prepare']
+ *           import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js')['start']
  *         >
  *       >;
  *       walletFactory: Promise<
  *         Installation<
- *           import('@agoric/smart-wallet/src/walletFactory.js').prepare
+ *           import('@agoric/smart-wallet/src/walletFactory.js').start
  *         >
  *       >;
  *     };

@@ -64,40 +64,42 @@ const { Fail } = assert;
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
-export const customTermsShape = {
-  anchorBrand: BrandShape,
-  anchorPerMinted: RatioShape,
-  electionManager: InstanceHandleShape,
-  governedParams: {
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: AmountShape,
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+  customTermsShape: {
+    anchorBrand: BrandShape,
+    anchorPerMinted: RatioShape,
+    electionManager: InstanceHandleShape,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: AmountShape,
+      },
+      WantMintedFee: {
+        type: ParamTypes.RATIO,
+        value: RatioShape,
+      },
+      GiveMintedFee: {
+        type: ParamTypes.RATIO,
+        value: RatioShape,
+      },
+      MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
     },
-    WantMintedFee: {
-      type: ParamTypes.RATIO,
-      value: RatioShape,
-    },
-    GiveMintedFee: {
-      type: ParamTypes.RATIO,
-      value: RatioShape,
-    },
-    MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
   },
+  privateArgsShape: M.splitRecord(
+    {
+      marshaller: M.remotable('Marshaller'),
+      storageNode: StorageNodeShape,
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      feeMintAccess: FeeMintAccessShape,
+      initialPoserInvitation: InvitationShape,
+    },
+  ),
 };
-harden(customTermsShape);
-
-export const privateArgsShape = M.splitRecord(
-  harden({
-    marshaller: M.remotable('Marshaller'),
-    storageNode: StorageNodeShape,
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    feeMintAccess: FeeMintAccessShape,
-    initialPoserInvitation: InvitationShape,
-  }),
-);
-harden(privateArgsShape);
+harden(meta);
 
 /**
  * @param {ZCF<
@@ -118,7 +120,7 @@ harden(privateArgsShape);
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
@@ -443,5 +445,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet,
   });
 };
+harden(start);
 
-/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} PsmPublicFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */

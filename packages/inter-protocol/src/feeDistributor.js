@@ -9,12 +9,15 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
 
-/** A pattern for Zoe to check custom terms before `start()`ing the contract. */
-export const customTermsShape = harden({
-  keywordShares: KeywordSharesShape,
-  timerService: M.eref(M.remotable('TimerService')),
-  collectionInterval: RelativeTimeShape,
-});
+/** @type {ContractMeta} */
+export const meta = {
+  customTermsShape: {
+    keywordShares: KeywordSharesShape,
+    timerService: M.eref(M.remotable('TimerService')),
+    collectionInterval: RelativeTimeShape,
+  },
+};
+harden(meta);
 
 /**
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
