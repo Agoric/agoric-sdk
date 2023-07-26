@@ -50,7 +50,7 @@ function throwNotDurable(value, slotIndex, serializedValue) {
   Fail`value is not durable: ${value} at slot ${q(slotIndex)} of ${serializedValue.body}`;
 }
 
-function failNotFound(label, key) {
+function failNotFound(key, label) {
   Fail`key ${key} not found in collection ${q(label)}`;
 }
 
@@ -354,14 +354,19 @@ export function makeCollectionManager(
       }
     }
 
+    function mustGet(key, label) {
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        failNotFound(key, label);
+      }
+      const dbKey = keyToDBKey(key);
+      const result = syscall.vatstoreGet(dbKey) || failNotFound(key, label);
+      return { dbKey, result };
+    }
+
     function get(key) {
       const { keyShape, label } = getSchema();
       mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
-      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
-        failNotFound(label, key);
-      }
-      const result =
-        syscall.vatstoreGet(keyToDBKey(key)) || failNotFound(label, key);
+      const { result } = mustGet(key, label);
       return unserializeValue(JSON.parse(result));
     }
 
@@ -432,11 +437,7 @@ export function makeCollectionManager(
           }
         }
       }
-      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
-        failNotFound(label, key);
-      }
-      const dbKey = keyToDBKey(key);
-      const rawBefore = syscall.vatstoreGet(dbKey) || failNotFound(label, key);
+      const { dbKey, result: rawBefore } = mustGet(key, label);
       const before = JSON.parse(rawBefore);
       vrm.updateReferenceCounts(before.slots, after.slots);
       syscall.vatstoreSet(dbKey, JSON.stringify(after));
@@ -445,11 +446,7 @@ export function makeCollectionManager(
     function deleteInternal(key) {
       const { keyShape, label } = getSchema();
       mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
-      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
-        failNotFound(label, key);
-      }
-      const dbKey = keyToDBKey(key);
-      const rawValue = syscall.vatstoreGet(dbKey) || failNotFound(label, key);
+      const { dbKey, result: rawValue } = mustGet(key, label);
       const value = JSON.parse(rawValue);
       const doMoreGC1 = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(dbKey);
