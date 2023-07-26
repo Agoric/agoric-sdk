@@ -21,7 +21,7 @@ import { TimeMath } from '@agoric/time';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
-} from '../../tools/board-utils.js';
+} from '@agoric/vats/tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
 E;

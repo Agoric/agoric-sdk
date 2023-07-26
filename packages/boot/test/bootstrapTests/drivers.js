@@ -6,12 +6,12 @@ import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
 
-import { boardSlottingMarshaller } from '../../tools/board-utils.js';
+import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 
 /**
  * @param {ReturnType<typeof import('./supports.js').makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  */
 export const makeWalletFactoryDriver = async (
   runUtils,
@@ -20,7 +20,7 @@ export const makeWalletFactoryDriver = async (
 ) => {
   const { EV } = runUtils;
 
-  /** @type {import('../../src/core/startWalletFactory.js').WalletFactoryStartResult} */
+  /** @type {import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult} */
   const walletFactoryStartResult = await EV.vat('bootstrap').consumeItem(
     'walletFactoryStartResult',
   );
@@ -145,7 +145,7 @@ export const makeWalletFactoryDriver = async (
 
 /**
  * @param {string} collateralBrandKey
- * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
  * @param {string[]} oracleAddresses
  */
@@ -210,7 +210,7 @@ export const makePriceFeedDriver = async (
 
 /**
  * @param {SwingsetTestKit} testKit
- * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
  * @param {string[]} committeeAddresses
  */
