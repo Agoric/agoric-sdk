@@ -25,6 +25,7 @@ var _ types.QueryServer = Querier{}
 // /agoric.vstorage.Query/Data
 // ===================================================================
 
+// /agoric.vstorage.Query/Data returns data for a specified path.
 func (k Querier) Data(c context.Context, req *types.QueryDataRequest) (*types.QueryDataResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -67,7 +68,7 @@ var capDataTransformationFormats = map[string]string{
 var capDataRemotableValueFormats = map[string]string{
 	FormatRemotableAsObject: FormatRemotableAsObject,
 	FormatRemotableAsString: FormatRemotableAsString,
-	// No default.
+	// No default because both formats are lossy.
 }
 
 // flatten converts data into a flat structure in which each deep leaf entry is replaced with
@@ -160,6 +161,9 @@ func capdataRemotableToObject(r *capdata.CapdataRemotable) interface{} {
 	return map[string]interface{}{"id": r.Id, "allegedName": iface}
 }
 
+// /agoric.vstorage.Query/CapData returns data for a specified path,
+// interpreted as CapData in a StreamCell (auto-promoting isolated CapData
+// into a single-item StreamCell) and transformed as specified.
 func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*types.QueryCapDataResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -241,6 +245,10 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 // /agoric.vstorage.Query/Children
 // ===================================================================
 
+// /agoric.vstorage.Query/Children returns the list of path segments
+// that exist immediately underneath a specified path, including
+// those corresponding with "empty non-terminals" having children
+// but no data of their own.
 func (k Querier) Children(c context.Context, req *types.QueryChildrenRequest) (*types.QueryChildrenResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
