@@ -39,7 +39,18 @@ if [[ "$DEST" != "1" ]]; then
   voting_period_s=10
   latest_height=$(agd status | jq -r .SyncInfo.latest_block_height)
   height=$(( $latest_height + $voting_period_s + 10 ))
-  agd tx gov submit-proposal software-upgrade "$UPGRADE_TO" --upgrade-height="$height" --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" --from=validator --chain-id="$CHAINID" --yes --keyring-backend=test
+  info=${UPGRADE_INFO-"{}"}
+  if echo "$info" | jq .; then :
+  else
+    status=$?
+    echo "Upgrade info is not valid JSON: $info"
+    exit $status
+  fi
+  agd tx gov submit-proposal software-upgrade "$UPGRADE_TO" \
+    --upgrade-height="$height" --upgrade-info="$info" \
+    --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" \
+    --from=validator --chain-id="$CHAINID" \
+    --yes --keyring-backend=test
   waitForBlock
 
   voteLatestProposalAndWait

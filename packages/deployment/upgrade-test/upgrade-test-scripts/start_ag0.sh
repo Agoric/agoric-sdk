@@ -65,7 +65,18 @@ if [[ "$BOOTSTRAP_MODE" == "test" ]]; then
   UPGRADE_TO=${UPGRADE_TO//agoric-/agorictest-}
 fi
 
-ag0 tx gov submit-proposal software-upgrade "$UPGRADE_TO" --upgrade-height="$height" --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" --from=validator --chain-id="$CHAINID" --yes --keyring-backend=test
+info=${UPGRADE_INFO-"{}"}
+if echo "$info" | jq .; then :
+else
+  status=$?
+  echo "Upgrade info is not valid JSON: $info"
+  exit $status
+fi
+ag0 tx gov submit-proposal software-upgrade "$UPGRADE_TO" \
+  --upgrade-height="$height" --upgrade-info="$info" \
+  --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" \
+  --from=validator --chain-id="$CHAINID" \
+  --yes --keyring-backend=test
 waitForBlock
 
 voteLatestProposalAndWait
