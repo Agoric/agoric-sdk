@@ -1,6 +1,6 @@
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 import engineGC from '../../src/lib-nodejs/engine-gc.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
