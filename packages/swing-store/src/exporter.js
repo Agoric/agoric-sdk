@@ -142,7 +142,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
     if (type === 'snapshot') {
       return snapStore.exportSnapshot(name);
     } else if (type === 'transcript') {
-      return transcriptStore.exportSpan(name, exportHistoricalTranscripts);
+      return transcriptStore.exportSpan(name);
     } else if (type === 'bundle') {
       return bundleStore.exportBundle(name);
     } else {

@@ -15,9 +15,9 @@ The kernel tracks the state of one or more vats. Each vat's execution is split i
 
 Within each incarnation, execution is broken into one or more "spans", with a "current span" and zero or more "historic spans". This breaks up the transcript into corresponding spans.
 
-Each historic span ends with a `save-snapshot` entry which records the creation and saving of an XS heap snapshot. The initial span starts with a `start-worker` entry, while all non-initial spans start with a `load-snapshot` entry.
+Each historic span ends with a `save-snapshot` entry which records the creation and saving of an XS heap snapshot. The initial span starts with a `start-worker` entry, while all non-initial spans start with a `load-snapshot` entry. The final span of historic incarnations each end with a `shutdown-worker` entry.
 
-Each `save-snapshot` entry adds a new snapshot to the `snapStore`, so each vat has zero or more snapshots, of which the last one is called the "current snapshot", and the earlier ones are called "historical snapshots".
+Each `save-snapshot` entry adds a new snapshot to the `snapStore`, so each vat has zero or more snapshots, of which the last one is called the "current" or "in-use" snapshot, and the earlier ones are called "historical snapshots".
 
 (note: the `deliveryNum` counter is scoped to the vat and does not reset at incarnation or span boundaries)
 

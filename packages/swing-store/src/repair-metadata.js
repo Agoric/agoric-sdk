@@ -78,5 +78,5 @@ export async function repairMetadata(dirPath, exporter) {
   // and do a completeness check
   assertComplete(internal, 'operational');
   await exporter.close();
-  hostStorage.commit();
+  await hostStorage.commit();
 }

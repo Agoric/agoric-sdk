@@ -81,7 +81,7 @@ INSERT INTO bundles (bundleID, bundle) VALUES (?, NULL)
   sqlHasBundleRecord.pluck();
 
   const sqlPopulateBundleRecord = db.prepare(`
-    UPDATE bundles SET bundle = ? WHERE bundleID = ?
+    UPDATE bundles SET bundle = $serialized WHERE bundleID = $bundleID
   `);
 
   function addBundleRecord(bundleID) {
@@ -92,7 +92,7 @@ INSERT INTO bundles (bundleID, bundle) VALUES (?, NULL)
   function populateBundle(bundleID, serialized) {
     ensureTxn();
     sqlHasBundleRecord.run(bundleID) || Fail`missing ${bundleID}`;
-    sqlPopulateBundleRecord.run(serialized, bundleID);
+    sqlPopulateBundleRecord.run({ bundleID, serialized });
   }
 
   function serializeBundle(bundleID, bundle) {
@@ -277,7 +277,11 @@ INSERT INTO bundles (bundleID, bundle) VALUES (?, NULL)
    */
   async function importBundle(name, dataProvider) {
     await 0; // no synchronous prefix
-    const [_tag, bundleID] = name.split('.', 2);
+    const parts = name.split('.');
+    if (parts[0] !== 'bundle' || parts.length !== 2) {
+      throw Fail`expected name like 'bundle.{bundleID}', got '${q(name)}'`;
+    }
+    const bundleID = parts[1];
     const data = await dataProvider();
     if (bundleID.startsWith('b0-')) {
       // we dissect and reassemble the bundle, to exclude unexpected properties

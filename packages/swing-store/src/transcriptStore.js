@@ -22,7 +22,7 @@ import { createSHA256 } from './hasher.js';
  * }} TranscriptStore
  *
  * @typedef {{
- *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterableIterator<Uint8Array>
+ *   exportSpan: (name: string) => AsyncIterableIterator<Uint8Array>
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
  *   addTranscriptSpanRecord: (metadata: Map) => void,
@@ -471,11 +471,10 @@ export function makeTranscriptStore(
    *   `transcript.${vatID}.${startPos}.${endPos}`
    *
    * @param {string} name  The name of the transcript artifact to be read
-   * @param {boolean} includeHistorical
    * @returns {AsyncIterableIterator<Uint8Array>}
    * @yields {Uint8Array}
    */
-  async function* exportSpan(name, includeHistorical) {
+  async function* exportSpan(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
     const parts = name.split('.');
     const [type, vatID, pos] = parts;
@@ -484,9 +483,6 @@ export function makeTranscriptStore(
       Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${q(name)}`;
     const isCurrent = sqlGetSpanIsCurrent.get(vatID, pos);
     isCurrent !== undefined || Fail`transcript span ${q(name)} not available`;
-    isCurrent ||
-      includeHistorical ||
-      Fail`transcript span ${q(name)} not available`;
     const startPos = Number(pos);
     for (const entry of readSpan(vatID, startPos)) {
       yield Buffer.from(`${entry}\n`);
@@ -533,6 +529,11 @@ export function makeTranscriptStore(
       Fail`transcript metadata missing isCurrent: ${metadata}`;
     incarnation !== undefined ||
       Fail`transcript metadata missing incarnation: ${metadata}`;
+
+    // sqlWriteSpan is an INSERT, so the PRIMARY KEY (vatID, position)
+    // constraint will catch broken export-data errors like trying to
+    // add two different versions of the same span (e.g. one holding
+    // items 4..8, a second holding 4..9)
 
     sqlWriteSpan.run(
       vatID,
@@ -603,12 +604,6 @@ export function makeTranscriptStore(
     // commit. So we're done.
   }
 
-  const sqlCountPopulatedSpanItems = db.prepare(`
-    SELECT COUNT(*) FROM transcriptItems
-      WHERE vatID = ? AND incarnation = ? AND position >= ? AND position < ?
-  `);
-  sqlCountPopulatedSpanItems.pluck();
-
   function repairTranscriptSpanRecord(metadata) {
     const { vatID, startPos, endPos, hash, isCurrent, incarnation } = metadata;
     const existing = sqlGetSpanMetadataFor.get(vatID, startPos, endPos);
@@ -631,6 +626,17 @@ export function makeTranscriptStore(
       );
     }
   }
+
+  // 'position' is not recycled across incarnations, so strictly
+  // speaking this query doesn't need to filter on 'incarnation = ?',
+  // but this will catch problems like items with incorrect or missing
+  // incarnation values
+
+  const sqlCountPopulatedSpanItems = db.prepare(`
+    SELECT COUNT(*) FROM transcriptItems
+      WHERE vatID = ? AND incarnation = ? AND position >= ? AND position < ?
+  `);
+  sqlCountPopulatedSpanItems.pluck();
 
   function assertComplete(level) {
     assert.equal(level, 'operational'); // for now

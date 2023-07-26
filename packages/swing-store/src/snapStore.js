@@ -91,7 +91,21 @@ export function makeSnapStore(
       PRIMARY KEY (vatID, snapPos),
       UNIQUE (vatID, inUse)
     )
-`);
+  `);
+
+  // NOTE: there are two versions of this schema. The original, which we'll
+  // call "version 1A", has a:
+  //   CHECK(compressedSnapshot is not null or inUse is null)
+  // in the table. Version 1B is missing that constraint. Any DB
+  // created by the original code will use 1A. Any DB created by the
+  // new version will use 1B. The import process needs to temporarily
+  // violate that check, but any DB created by `importSwingStore` is
+  // (by definition) new, so it will use 1B, which doesn't enforce the
+  // check. We expect to implement schema migration
+  // (https://github.com/Agoric/agoric-sdk/issues/8089) soon, which
+  // will upgrade both 1A and 1B to "version 2", which will omit the
+  // check (in addition to any other changes we need at that point)
+
   // pruned snapshots will have compressedSnapshot of NULL, and might
   // also have NULL for uncompressedSize and compressedSize
 
