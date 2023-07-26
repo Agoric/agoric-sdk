@@ -74,7 +74,7 @@ test('upgrade vat-board', async t => {
   const { bfile } = t.context;
   const bundles = {
     board: {
-      sourceSpec: bfile('../../src/vat-board.js'),
+      sourceSpec: bfile('../../../vats/src/vat-board.js'),
     },
   };
 
@@ -131,7 +131,7 @@ test.skip('upgrade bootstrap vat', async t => {
 test('upgrade vat-bridge', async t => {
   const { bfile } = t.context;
   const bundles = {
-    bridge: { sourceSpec: bfile('../../src/vat-bridge.js') },
+    bridge: { sourceSpec: bfile('../../../vats/src/vat-bridge.js') },
   };
   const devices = {
     bridge: { sourceSpec: bfile('./device-bridge.js') },
@@ -242,8 +242,8 @@ test('upgrade vat-bridge', async t => {
 test('upgrade vat-bank', async t => {
   const { bfile } = t.context;
   const bundles = {
-    bank: { sourceSpec: bfile('../../src/vat-bank.js') },
-    bridge: { sourceSpec: bfile('../../src/vat-bridge.js') },
+    bank: { sourceSpec: bfile('../../../vats/src/vat-bank.js') },
+    bridge: { sourceSpec: bfile('../../../vats/src/vat-bridge.js') },
     mint: { sourceSpec: bfile('./vat-mint.js') },
   };
   const devices = {
@@ -433,7 +433,7 @@ test('upgrade vat-priceAuthority', async t => {
   const { bfile } = t.context;
   const bundles = {
     priceAuthority: {
-      sourceSpec: bfile('../../src/vat-priceAuthority.js'),
+      sourceSpec: bfile('../../../vats/src/vat-priceAuthority.js'),
     },
   };
 

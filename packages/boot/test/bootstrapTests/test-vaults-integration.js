@@ -11,7 +11,7 @@ import { makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
-} from '../../tools/board-utils.js';
+} from '@agoric/vats/tools/board-utils.js';
 import { makeWalletFactoryDriver } from './drivers.js';
 import { makeSwingsetTestKit } from './supports.js';
 

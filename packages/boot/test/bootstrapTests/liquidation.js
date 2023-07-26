@@ -3,7 +3,7 @@ import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,
 } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import {
   makeGovernanceDriver,
   makePriceFeedDriver,
@@ -39,7 +39,7 @@ export const makeLiquidationTestContext = async t => {
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  /** @type {import('../../tools/board-utils.js').AgoricNamesRemotes} */
+  /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */
   const agoricNamesRemotes = {};
   const refreshAgoricNamesRemotes = () => {
     Object.assign(
