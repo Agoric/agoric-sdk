@@ -53,15 +53,9 @@
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/smart-wallet": "^0.5.3",
-    "@agoric/swing-store": "^0.9.1",
-    "@agoric/swingset-liveslots": "^0.10.2",
     "@endo/bundle-source": "^2.5.2",
-    "@endo/captp": "^3.1.2",
-    "@endo/eventual-send": "^0.17.3",
-    "@endo/stream": "^0.3.26",
     "ava": "^5.3.0",
     "c8": "^7.13.0"
   },
