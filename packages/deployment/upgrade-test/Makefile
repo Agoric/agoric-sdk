@@ -14,23 +14,30 @@ endif
 local_sdk:
 	(cd ../ && make docker-build-sdk)
 
+BUILD = docker build --progress=plain $(BUILD_OPTS) \
+	--build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) \
+	-f Dockerfile upgrade-test-scripts
+
 agoric-upgrade-7-2:
-	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-7-2 -t $(REPOSITORY):agoric-upgrade-7-2 -f Dockerfile upgrade-test-scripts
+	$(BUILD) --target agoric-upgrade-7-2 -t $(REPOSITORY):agoric-upgrade-7-2
 
 agoric-upgrade-8: agoric-upgrade-7-2
-	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-8 -t $(REPOSITORY):agoric-upgrade-8 -f Dockerfile upgrade-test-scripts
+	$(BUILD) --target agoric-upgrade-8 -t $(REPOSITORY):agoric-upgrade-8
 
 agoric-upgrade-8-1: agoric-upgrade-8
-	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-8-1 -t $(REPOSITORY):agoric-upgrade-8-1 -f Dockerfile upgrade-test-scripts
+	$(BUILD) --target agoric-upgrade-8-1 -t $(REPOSITORY):agoric-upgrade-8-1
 
 agoric-upgrade-9: agoric-upgrade-8-1
-	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-9 -t $(REPOSITORY):agoric-upgrade-9 -f Dockerfile upgrade-test-scripts
+	$(BUILD) --target agoric-upgrade-9 -t $(REPOSITORY):agoric-upgrade-9
 
 agoric-upgrade-10: agoric-upgrade-9
-	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-10 -t $(REPOSITORY):agoric-upgrade-10 -f Dockerfile upgrade-test-scripts
+	$(BUILD) --target agoric-upgrade-10 -t $(REPOSITORY):agoric-upgrade-10
 
-agoric-upgrade-11: agoric-upgrade-10
-	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11 -f Dockerfile upgrade-test-scripts
+agoric-upgrade-10-to-11: agoric-upgrade-10
+	$(BUILD) --target agoric-upgrade-10-to-11 -t $(REPOSITORY):agoric-upgrade-10-to-11
+
+agoric-upgrade-11: agoric-upgrade-10-to-11
+	$(BUILD) --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11
 
 # build main bootstrap
 build: $(TARGET)
