@@ -37,7 +37,7 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 const endoZipBase64Sha512Shape = harden({
   moduleFormat: 'endoZipBase64',
   endoZipBase64: M.string(),
-  endoZipBase64Sha512: M.string(),
+  endoZipBase64Sha512: M.string(harden({ stringLengthLimit: Infinity })),
 });
 
 /** @param {Uint8Array} bytes */
