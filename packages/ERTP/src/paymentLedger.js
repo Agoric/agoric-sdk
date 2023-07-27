@@ -70,8 +70,8 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
 };
 
 /**
- * Make the paymentLedger, the source of truth for the balances of
- * payments. All minting and transfer authority originates here.
+ * Make the paymentLedger, the source of truth for the balances of payments. All
+ * minting and transfer authority originates here.
  *
  * @template {AssetKind} K
  * @param {Baggage} issuerBaggage
@@ -146,22 +146,21 @@ export const preparePaymentLedger = (
   );
 
   /**
-   * A withdrawn live payment is associated with the recovery set of
-   * the purse it was withdrawn from. Let's call these "recoverable"
-   * payments. All recoverable payments are live, but not all live
-   * payments are recoverable. We do the bookkeeping for payment recovery
-   * with this weakmap from recoverable payments to the recovery set they are
-   * in.
-   * A bunch of interesting invariants here:
-   *    * Every payment that is a key in the outer `paymentRecoverySets`
-   *      weakMap is also in the recovery set indexed by that payment.
-   *    * Implied by the above but worth stating: the payment is only
-   *      in at most one recovery set.
-   *    * A recovery set only contains such payments.
-   *    * Every purse is associated with exactly one recovery set unique to
-   *      it.
-   *    * A purse's recovery set only contains payments withdrawn from
-   *      that purse and not yet consumed.
+   * A withdrawn live payment is associated with the recovery set of the purse
+   * it was withdrawn from. Let's call these "recoverable" payments. All
+   * recoverable payments are live, but not all live payments are recoverable.
+   * We do the bookkeeping for payment recovery with this weakmap from
+   * recoverable payments to the recovery set they are in. A bunch of
+   * interesting invariants here:
+   *
+   * - Every payment that is a key in the outer `paymentRecoverySets` weakMap is
+   *   also in the recovery set indexed by that payment.
+   * - Implied by the above but worth stating: the payment is only in at most one
+   *   recovery set.
+   * - A recovery set only contains such payments.
+   * - Every purse is associated with exactly one recovery set unique to it.
+   * - A purse's recovery set only contains payments withdrawn from that purse and
+   *   not yet consumed.
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
@@ -172,8 +171,7 @@ export const preparePaymentLedger = (
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
-   * `initPayment` should contain the only
-   * call to `paymentLedger.init`.
+   * `initPayment` should contain the only call to `paymentLedger.init`.
    *
    * @param {Payment} payment
    * @param {Amount} amount
@@ -189,8 +187,7 @@ export const preparePaymentLedger = (
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
-   * `deletePayment` should contain the only
-   * call to `paymentLedger.delete`.
+   * `deletePayment` should contain the only call to `paymentLedger.delete`.
    *
    * @param {Payment} payment
    */
@@ -203,19 +200,18 @@ export const preparePaymentLedger = (
     }
   };
 
-  /** @type {(left: Amount, right: Amount) => Amount } */
+  /** @type {(left: Amount, right: Amount) => Amount} */
   const add = (left, right) => AmountMath.add(left, right, brand);
-  /** @type {(left: Amount, right: Amount) => Amount } */
+  /** @type {(left: Amount, right: Amount) => Amount} */
   const subtract = (left, right) => AmountMath.subtract(left, right, brand);
   /** @type {(allegedAmount: Amount) => Amount} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
-  /** @type {(left: Amount, right: Amount) => boolean } */
+  /** @type {(left: Amount, right: Amount) => boolean} */
 
   /**
-   * Methods like deposit() have an optional second parameter
-   * `optAmountShape`
-   * which, if present, is supposed to match the balance of the
-   * payment. This helper function does that check.
+   * Methods like deposit() have an optional second parameter `optAmountShape`
+   * which, if present, is supposed to match the balance of the payment. This
+   * helper function does that check.
    *
    * Note: `optAmountShape` is user-supplied with no previous validation.
    *
@@ -243,10 +239,10 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.deposit
    *
-   * @param {Amount} currentBalance - the current balance of the purse
-   * before a deposit
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
-   * commit the purse balance
+   * @param {Amount} currentBalance - the current balance of the purse before a
+   *   deposit
+   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
+   *   purse balance
    * @param {Payment} srcPayment
    * @param {Pattern} [optAmountShape]
    * @returns {Amount}
@@ -282,10 +278,10 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.withdraw
    *
-   * @param {Amount} currentBalance - the current balance of the purse
-   * before a withdrawal
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
-   * commit the purse balance
+   * @param {Amount} currentBalance - the current balance of the purse before a
+   *   withdrawal
+   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
+   *   purse balance
    * @param {Amount} amount - the amount to be withdrawn
    * @param {SetStore<Payment>} recoverySet
    * @returns {Payment}
@@ -378,9 +374,9 @@ export const preparePaymentLedger = (
   /**
    * Provides for the recovery of newly minted but not-yet-deposited payments.
    *
-   * Because the `mintRecoveryPurse` is placed in baggage, even if the
-   * caller of `makeIssuerKit` drops it on the floor, it can still be
-   * recovered in an emergency upgrade.
+   * Because the `mintRecoveryPurse` is placed in baggage, even if the caller of
+   * `makeIssuerKit` drops it on the floor, it can still be recovered in an
+   * emergency upgrade.
    *
    * @type {Purse<K>}
    */

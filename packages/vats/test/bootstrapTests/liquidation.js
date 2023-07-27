@@ -71,7 +71,12 @@ export const makeLiquidationTestContext = async t => {
   );
   console.timeLog('DefaultTestContext', 'governanceDriver');
 
-  /** @type {Record<string, Awaited<ReturnType<typeof makePriceFeedDriver>>>} */
+  /**
+   * @type {Record<
+   *   string,
+   *   Awaited<ReturnType<typeof makePriceFeedDriver>>
+   * >}
+   */
   const priceFeedDrivers = {};
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
@@ -79,7 +84,6 @@ export const makeLiquidationTestContext = async t => {
   console.timeEnd('DefaultTestContext');
 
   /**
-   *
    * @param {object} opts
    * @param {string} opts.collateralBrandKey
    * @param {number} opts.managerIndex
@@ -142,7 +146,7 @@ export const makeLiquidationTestContext = async t => {
     t.like(readLatest(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
-        StabilityFee: {
+        InterestRate: {
           type: 'ratio',
           value: { numerator: { value: 1n }, denominator: { value: 100n } },
         },

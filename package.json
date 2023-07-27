@@ -14,8 +14,8 @@
     "@jessie.js/eslint-plugin": "^0.4.0",
     "@types/express": "^4.17.17",
     "@types/node": "^16.13.0",
-    "@typescript-eslint/eslint-plugin": "^5.61.0",
-    "@typescript-eslint/parser": "^5.61.0",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
     "ava": "^5.3.0",
     "c8": "^7.13.0",
     "conventional-changelog-conventionalcommits": "^4.6.0",
@@ -26,10 +26,11 @@
     "eslint-plugin-github": "^4.8.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jsdoc": "^46.4.3",
-    "eslint-plugin-prettier": "^5.0.0-alpha.2",
-    "lerna": "^3.22.1",
+    "eslint-plugin-prettier": "^5.0.0",
+    "lerna": "^5.6.2",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.0.0",
+    "prettier-plugin-jsdoc": "^1.0.0",
     "typescript": "~5.1.6"
   },
   "engines": {
@@ -37,6 +38,24 @@
   },
   "prettier": {
     "arrowParens": "avoid",
+    "overrides": [
+      {
+        "files": [
+          "packages/ERTP/**/*.{js,ts}",
+          "packages/inter-protocol/**/*.{js,ts}",
+          "packages/vats/**/*.{js,ts}"
+        ],
+        "options": {
+          "plugins": [
+            "prettier-plugin-jsdoc"
+          ],
+          "jsdocAddDefaultToDescription": false,
+          "jsdocParser": true,
+          "jsdocCapitalizeDescription": false,
+          "tsdoc": true
+        }
+      }
+    ],
     "singleQuote": true
   },
   "scripts": {
@@ -65,15 +84,5 @@
   },
   "dependencies": {
     "patch-package": "^6.5.1"
-  },
-  "resolutions": {
-    "**/http-errors/depd": "^2.0.0",
-    "**/morgan/depd": "^2.0.0",
-    "**/agentkeepalive/depd": "^2.0.0",
-    "**/acorn-globals/acorn": "^8.7.1",
-    "**/acorn-node/acorn": "^8.7.1",
-    "**/espree/acorn": "^8.7.1",
-    "**/eslint/@babel/code-frame": "^7.12.11",
-    "**/@endo/eslint-config/@jessie.js/eslint-plugin": "^0.4.0"
   }
 }

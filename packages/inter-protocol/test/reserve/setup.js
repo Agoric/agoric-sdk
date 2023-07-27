@@ -17,21 +17,19 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
 
-/**
- * @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit
- */
+/** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
- * @param {*} t
+ * @param {any} t
  * @param {ManualTimer | undefined} timer
  * @param {FarZoeKit} farZoeKit
  */
 const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
-    /** @type { import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
+    /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */ (
       space
     );
 
@@ -56,17 +54,17 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
 
 /**
  * @typedef {{
- * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveLimitedCreatorFacet,
- * reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet,
- * instance: Instance,
+ *   reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveLimitedCreatorFacet;
+ *   reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet;
+ *   instance: Instance;
  * }} ReserveKit
  */
 
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
- * @param {import("ava").ExecutionContext<unknown>} t
- * @param {{ committeeName: string, committeeSize: number}} electorateTerms
+ * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {{ committeeName: string; committeeSize: number }} electorateTerms
  * @param {ManualTimer} [timer]
  */
 export const setupReserveServices = async (

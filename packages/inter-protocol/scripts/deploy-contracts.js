@@ -43,14 +43,24 @@ export default async (homeP, endowments) => {
   });
 
   console.log('getting installCache...');
-  /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
+  /**
+   * @type {CopyMap<
+   *   string,
+   *   { installation: Installation; boardId: string; path?: string }
+   * >}
+   */
   const initial = await provideWhen(scratch, 'installCache', () =>
     makeCopyMap([]),
   );
   console.log('initially:', initial.payload.keys.length, 'entries');
 
   // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
-  /** @type {Map<string, {installation: Installation, boardId: string, path?: string}>} */
+  /**
+   * @type {Map<
+   *   string,
+   *   { installation: Installation; boardId: string; path?: string }
+   * >}
+   */
   const working = new Map(getCopyMapEntries(initial));
 
   let added = 0;

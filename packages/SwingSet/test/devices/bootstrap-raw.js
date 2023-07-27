@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 

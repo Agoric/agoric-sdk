@@ -22,7 +22,7 @@ const makeTestContext = t => {
     return JSON.parse(txt);
   };
 
-  /** @param {{ module: string, entrypoint: string}} proposal */
+  /** @param {{ module: string; entrypoint: string }} proposal */
   const loadEntryPoint = async proposal => {
     const { module, entrypoint } = proposal;
     t.is(typeof module, 'string');

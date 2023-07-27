@@ -298,7 +298,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {ZCFSeat} fromSeat
  *   The seat in contractA to take the offer payments from.
  *
- * @param {ZCFSeat} [toSeat=fromSeat]
+ * @param {ZCFSeat} [toSeat]
  *   The seat in contractA to deposit the payout of the offer to.
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *

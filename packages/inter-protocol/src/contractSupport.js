@@ -13,11 +13,11 @@ export const ratioPattern = harden({
 });
 
 /**
- * Apply a delta to the `base` Amount, where the delta is represented as
- * an amount to gain and an amount to lose. Typically one of those will
- * be empty because gain/loss comes from the give/want for a specific asset
- * on a proposal. We use two Amounts because an Amount cannot represent
- * a negative number (so we use a "loss" that will be subtracted).
+ * Apply a delta to the `base` Amount, where the delta is represented as an
+ * amount to gain and an amount to lose. Typically one of those will be empty
+ * because gain/loss comes from the give/want for a specific asset on a
+ * proposal. We use two Amounts because an Amount cannot represent a negative
+ * number (so we use a "loss" that will be subtracted).
  *
  * @template {AssetKind} K
  * @param {Amount<K>} base

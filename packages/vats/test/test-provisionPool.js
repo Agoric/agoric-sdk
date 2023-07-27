@@ -27,7 +27,9 @@ import { makeFakeBankKit } from '../tools/bank-utils.js';
 
 /**
  * @typedef {import('../src/vat-bank.js').Bank} Bank
+ *
  * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
+ *
  * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
  */
 
@@ -61,7 +63,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool')['prepare']>} */
+  /** @type {Installation<import('../src/provisionPool')['start']>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -268,10 +270,9 @@ test('provisionPool trades provided assets for IST', async t => {
 });
 
 /**
- * This is a bit of a short-cut; rather than scaffold
- * everything needed to make a walletFactory, we factored
- * out the part that had a bug as `publishDepositFacet`
- * and we make a mock walletFactory that uses it.
+ * This is a bit of a short-cut; rather than scaffold everything needed to make
+ * a walletFactory, we factored out the part that had a bug as
+ * `publishDepositFacet` and we make a mock walletFactory that uses it.
  *
  * @param {string[]} addresses
  */

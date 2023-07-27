@@ -21,7 +21,7 @@ export const DEBT_LIMIT_KEY = 'DebtLimit';
 export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const LIQUIDATION_PADDING_KEY = 'LiquidationPadding';
 export const LIQUIDATION_PENALTY_KEY = 'LiquidationPenalty';
-export const STABILITY_FEE_KEY = 'StabilityFee';
+export const INTEREST_RATE_KEY = 'InterestRate';
 export const MINT_FEE_KEY = 'MintFee';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
@@ -75,7 +75,11 @@ const makeVaultDirectorParams = (
 };
 harden(makeVaultDirectorParams);
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
+/**
+ * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<
+ *     ReturnType<typeof makeVaultDirectorParams>
+ *   >} VaultDirectorParams
+ */
 
 /** @type {(liquidationMargin: Ratio) => Ratio} */
 const zeroRatio = liquidationMargin =>
@@ -89,7 +93,7 @@ export const makeVaultParamManager = (
   publisherKit,
   {
     debtLimit,
-    stabilityFee,
+    interestRate,
     liquidationMargin,
     liquidationPadding = zeroRatio(liquidationMargin),
     liquidationPenalty,
@@ -98,7 +102,7 @@ export const makeVaultParamManager = (
 ) =>
   makeParamManagerSync(publisherKit, {
     [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, debtLimit],
-    [STABILITY_FEE_KEY]: [ParamTypes.RATIO, stabilityFee],
+    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, interestRate],
     [LIQUIDATION_PADDING_KEY]: [ParamTypes.RATIO, liquidationPadding],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, liquidationMargin],
     [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
@@ -110,7 +114,7 @@ export const vaultParamPattern = M.splitRecord(
   {
     liquidationMargin: ratioPattern,
     liquidationPenalty: ratioPattern,
-    stabilityFee: ratioPattern,
+    interestRate: ratioPattern,
     mintFee: ratioPattern,
     debtLimit: amountPattern,
   },
@@ -122,16 +126,16 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {{
- *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
- *   electorateInvitationAmount: Amount<'set'>,
- *   minInitialDebt: Amount<'nat'>,
- *   bootstrapPaymentValue: bigint,
- *   priceAuthority: ERef<PriceAuthority>,
- *   timer: ERef<import('@agoric/time/src/types').TimerService>,
- *   reservePublicFacet: AssetReservePublicFacet,
- *   interestTiming: InterestTiming,
- *   shortfallInvitationAmount: Amount<'set'>,
- *   referencedUi?: string,
+ *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>;
+ *   electorateInvitationAmount: Amount<'set'>;
+ *   minInitialDebt: Amount<'nat'>;
+ *   bootstrapPaymentValue: bigint;
+ *   priceAuthority: ERef<PriceAuthority>;
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>;
+ *   reservePublicFacet: AssetReservePublicFacet;
+ *   interestTiming: InterestTiming;
+ *   shortfallInvitationAmount: Amount<'set'>;
+ *   referencedUi?: string;
  * }} opts
  */
 export const makeGovernedTerms = ({
@@ -163,8 +167,8 @@ export const makeGovernedTerms = ({
 };
 harden(makeGovernedTerms);
 /**
- * Stop-gap which restores initial param values
- * UNTIL https://github.com/Agoric/agoric-sdk/issues/5200
+ * Stop-gap which restores initial param values UNTIL
+ * https://github.com/Agoric/agoric-sdk/issues/5200
  *
  * NB: changes from initial values will be lost upon restart
  *
@@ -176,7 +180,12 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   const managers = makeScalarMapStore();
 
   // the managers aren't durable but their arguments are
-  /** @type {MapStore<Brand, {storageNode: StorageNode, initialParamValues: VaultManagerParamValues}>} */
+  /**
+   * @type {MapStore<
+   *   Brand,
+   *   { storageNode: StorageNode; initialParamValues: VaultManagerParamValues }
+   * >}
+   */
   const managerArgs = provideDurableMapStore(
     baggage,
     'vault param manager parts',
@@ -196,7 +205,6 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
 
   return {
     /**
-     *
      * @param {Brand} brand
      * @param {StorageNode} storageNode
      * @param {VaultManagerParamValues} initialParamValues
@@ -206,9 +214,7 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
       managerArgs.init(brand, args);
       return makeManager(brand, args);
     },
-    /**
-     * @param {Brand} brand
-     */
+    /** @param {Brand} brand */
     get(brand) {
       return managers.get(brand);
     },

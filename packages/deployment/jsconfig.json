@@ -3,6 +3,7 @@
   "extends": "../../tsconfig.json",
   "include": [
     "src/**/*.js",
-    "test/**/*.js"
+    "test/**/*.js",
+    "upgrade-test/**/*.js"
   ]
 }

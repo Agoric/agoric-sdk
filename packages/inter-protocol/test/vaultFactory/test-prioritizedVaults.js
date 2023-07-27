@@ -13,7 +13,7 @@ import {
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import {
-  makeCompoundedStabilityFeeProvider,
+  makeCompoundedInterestProvider,
   makeFakeVault,
 } from './interestSupport.js';
 
@@ -29,10 +29,7 @@ const makeCollector = () => {
   /** @type {Ratio[]} */
   const ratios = [];
 
-  /**
-   *
-   * @param {[string, Vault]} record
-   */
+  /** @param {[string, Vault]} record */
   function lookForRatio([_, vault]) {
     ratios.push(currentDebtToCollateral(vault));
   }
@@ -199,7 +196,7 @@ test('stable ordering as interest accrues', async t => {
   const vaults = makePrioritizedVaults(store);
 
   const fakeVaultID1 = 'id-fakeVault1';
-  const m = makeCompoundedStabilityFeeProvider(stableBrand);
+  const m = makeCompoundedInterestProvider(stableBrand);
 
   // ACTUAL DEBTS AFTER 100% DAILY INTEREST
   // day 0

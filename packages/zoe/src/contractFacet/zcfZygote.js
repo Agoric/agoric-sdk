@@ -210,6 +210,16 @@ export const makeZCFZygote = async (
   });
   const handleOfferObj = makeHandleOfferObj(taker);
 
+  /**
+   * @type {() => Promise< {
+   * buildRootObject: any,
+   * start: undefined,
+   * meta: undefined,
+   * } | {
+   * buildRootObject: undefined,
+   * start: ContractStartFn,
+   * meta?: ContractMeta,
+}>} */
   const evaluateContract = () => {
     let bundle;
     if (passStyleOf(contractBundleCap) === 'remotable') {
@@ -222,22 +232,18 @@ export const makeZCFZygote = async (
     return evalContractBundle(bundle);
   };
   // evaluate the contract (either the first version, or an upgrade)
-  const {
-    start,
-    buildRootObject,
-    privateArgsShape,
-    customTermsShape,
-    prepare,
-  } = await evaluateContract();
+  const { start, buildRootObject, meta = {} } = await evaluateContract();
 
-  if (start === undefined && prepare === undefined) {
+  if (start === undefined) {
     buildRootObject === undefined ||
       Fail`Did you provide a vat bundle instead of a contract bundle?`;
-    Fail`contract exports missing start/prepare`;
+    throw Fail`contract exports missing start`;
   }
-  !start ||
-    !prepare ||
-    Fail`contract must provide exactly one of "start" and "prepare"`;
+
+  start.length <= 3 || Fail`invalid start parameters`;
+  const durabilityRequired = meta.upgradability
+    ? ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability)
+    : false;
 
   /** @type {ZCF} */
   // Using Remotable rather than Far because there are too many complications
@@ -301,6 +307,7 @@ export const makeZCFZygote = async (
       const terms = getInstanceRecHolder().getTerms();
 
       // If the contract provided customTermsShape, validate the customTerms.
+      const { customTermsShape } = meta;
       if (customTermsShape) {
         const { brands: _b, issuers: _i, ...customTerms } = terms;
         mustMatch(harden(customTerms), customTermsShape, 'customTerms');
@@ -373,13 +380,13 @@ export const makeZCFZygote = async (
       instantiateIssuerStorage(issuerStorageFromZoe);
       zcfBaggage.init('instanceRecHolder', instanceRecHolder);
 
-      const startFn = start || prepare;
+      const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
       // start a contract for the first time
       return E.when(
-        startFn(zcf, privateArgs, contractBaggage),
+        start(zcf, privateArgs, contractBaggage),
         ({
           creatorFacet = undefined,
           publicFacet = undefined,
@@ -388,18 +395,16 @@ export const makeZCFZygote = async (
         }) => {
           const unexpectedKeys = Object.keys(unexpected);
           unexpectedKeys.length === 0 ||
-            Fail`contract ${
-              prepare ? 'prepare' : 'start'
-            } returned unrecognized properties ${unexpectedKeys}`;
+            Fail`contract "start" returned unrecognized properties ${unexpectedKeys}`;
 
           const areDurable = objectMap(
             { creatorFacet, publicFacet, creatorInvitation },
             canBeDurable,
           );
           const allDurable = Object.values(areDurable).every(Boolean);
-          if (prepare) {
+          if (durabilityRequired) {
             allDurable ||
-              Fail`values from prepare() must be durable ${areDurable}`;
+              Fail`with ${meta.upgradability}, values from start() must be durable ${areDurable}`;
           }
 
           if (allDurable) {
@@ -419,18 +424,21 @@ export const makeZCFZygote = async (
     },
 
     restartContract: async (privateArgs = undefined) => {
-      prepare || Fail`prepare must be defined to upgrade a contract`;
+      if (meta.upgradability) {
+        meta.upgradability === 'canUpgrade' || Fail`contract cannot upgrade`;
+      }
       zoeInstanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintKind();
 
+      const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
 
       // restart an upgradeable contract
       return E.when(
-        prepare(zcf, privateArgs, contractBaggage),
+        start(zcf, privateArgs, contractBaggage),
         ({
           creatorFacet = undefined,
           publicFacet = undefined,

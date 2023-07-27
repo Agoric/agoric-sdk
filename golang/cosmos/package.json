@@ -19,7 +19,7 @@
     "postpack": "git clean -f git-revision.txt",
     "build": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "eslint '**/*.{cjs,js}'"
+    "lint": "exit 0"
   },
   "dependencies": {
     "bindings": "^1.2.1",

@@ -22,7 +22,8 @@ const makeCancelToken = makeCancelTokenMaker('liq');
 
 /**
  * This will normally be set. If the schedule goes sideways, we'll unschedule
- * all events and unset it. When auction params are changed, we'll restart the schedule
+ * all events and unset it. When auction params are changed, we'll restart the
+ * schedule
  *
  * @type {object | undefined}
  */
@@ -47,15 +48,16 @@ const cancelWakeups = timer => {
 };
 
 /**
- * Schedule wakeups for the *next* auction round.
+ * Schedule wakeups for the _next_ auction round.
  *
- * In practice, there are these cases to handle (with N as "live" and N+1 is "next"):
+ * In practice, there are these cases to handle (with N as "live" and N+1 is
+ * "next"):
  *
- * | when (now within the range)      | what                                    |
- * | -------------------------------- | --------------------------------------- |
- * | [start N, nominalStart N+1]      | good: schedule normally the three wakers|
- * | (nominalStart N+1, endTime N+1]  | recover: skip round N+1 and schedule N+2|
- * | (endTime N+1, ∞)                 | give up: wait for repair by governance  |
+ * | when (now within the range)     | what                                     |
+ * | ------------------------------- | ---------------------------------------- |
+ * | [start N, nominalStart N+1]     | good: schedule normally the three wakers |
+ * | (nominalStart N+1, endTime N+1] | recover: skip round N+1 and schedule N+2 |
+ * | (endTime N+1, ∞)                | give up: wait for repair by governance   |
  *
  * @param {object} opts
  * @param {ERef<TimerService>} opts.timer
@@ -132,7 +134,7 @@ const setWakeups = ({
 };
 
 /**
- * Schedule wakeups for the *next* auction round.
+ * Schedule wakeups for the _next_ auction round.
  *
  * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
  * time there's a "reschedule" wakeup.
@@ -185,7 +187,7 @@ harden(setWakeupsForNextAuction);
 /**
  * @param {Amount<'nat'>} debt
  * @param {Amount<'nat'>} minted
- * @returns {{ overage: Amount<'nat'>, shortfall: Amount<'nat'>}}
+ * @returns {{ overage: Amount<'nat'>; shortfall: Amount<'nat'> }}
  */
 export const liquidationResults = (debt, minted) => {
   if (AmountMath.isEmpty(minted)) {
@@ -240,15 +242,21 @@ export const watchForGovernanceChange = (
  * @param {PriceQuote} collateralizationDetails.quote
  * @param {Ratio} collateralizationDetails.interest
  * @param {Ratio} collateralizationDetails.margin
- * @param {ReturnType<typeof import('./prioritizedVaults.js').makePrioritizedVaults>} prioritizedVaults
+ * @param {ReturnType<
+ *   typeof import('./prioritizedVaults.js').makePrioritizedVaults
+ * >} prioritizedVaults
  * @param {SetStore<Vault>} liquidatingVaults
  * @param {Brand<'nat'>} debtBrand
  * @param {Brand<'nat'>} collateralBrand
  * @returns {{
- *    vaultData: MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>,
- *    totalDebt: Amount<'nat'>,
- *    totalCollateral: Amount<'nat'>,
- *    liqSeat: ZCFSeat}}
+ *   vaultData: MapStore<
+ *     Vault,
+ *     { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
+ *   >;
+ *   totalDebt: Amount<'nat'>;
+ *   totalCollateral: Amount<'nat'>;
+ *   liqSeat: ZCFSeat;
+ * }}
  */
 export const getLiquidatableVaults = (
   zcf,
@@ -261,7 +269,12 @@ export const getLiquidatableVaults = (
   const vaultsToLiquidate = prioritizedVaults.removeVaultsBelow(
     collateralizationDetails,
   );
-  /** @type {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} */
+  /**
+   * @type {MapStore<
+   *   Vault,
+   *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
+   * >}
+   */
   const vaultData = makeScalarMapStore();
 
   const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();

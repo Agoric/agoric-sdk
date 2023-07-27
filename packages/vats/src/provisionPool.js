@@ -14,37 +14,41 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
-export const privateArgsShape = M.splitRecord(
-  harden({
-    poolBank: M.eref(M.remotable('bank')),
-    storageNode: M.eref(M.remotable('storageNode')),
-    marshaller: M.eref(M.remotable('marshaller')),
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    initialPoserInvitation: InvitationShape,
-    metricsOverride: M.recordOf(M.string()),
-  }),
-);
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: M.splitRecord(
+    {
+      poolBank: M.eref(M.remotable('bank')),
+      storageNode: M.eref(M.remotable('storageNode')),
+      marshaller: M.eref(M.remotable('marshaller')),
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      initialPoserInvitation: InvitationShape,
+      metricsOverride: M.recordOf(M.string()),
+    },
+  ),
+  upgradability: 'canUpgrade',
+};
+harden(meta);
 
 /**
- * @typedef {StandardTerms & GovernanceTerms<{
- *    PerAccountInitialAmount: 'amount',
+ * @typedef {StandardTerms &
+ *   GovernanceTerms<{
+ *     PerAccountInitialAmount: 'amount';
  *   }>} ProvisionTerms
- *
- * TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
- *
+ *   TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: import('@endo/far').ERef<import('./vat-bank.js').Bank>,
- *   initialPoserInvitation: Invitation,
- *   storageNode: StorageNode,
- *   marshaller: Marshaller,
- *   metricsOverride?: import('./provisionPoolKit').MetricsNotification,
+ *   poolBank: import('@endo/far').ERef<import('./vat-bank.js').Bank>;
+ *   initialPoserInvitation: Invitation;
+ *   storageNode: StorageNode;
+ *   marshaller: Marshaller;
+ *   metricsOverride?: import('./provisionPoolKit').MetricsNotification;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -110,4 +114,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   });
 };
 
-harden(prepare);
+harden(start);

@@ -30,7 +30,7 @@ import '../types.js';
  *
  * @deprecated switch to ScalarMap if possible, Map otherwise
  * @template K,V
- * @param {string} [tag='key'] - tag for debugging
+ * @param {string} [tag] - tag for debugging
  * @returns {LegacyMap<K,V>}
  */
 export const makeLegacyMap = (tag = 'key') => {

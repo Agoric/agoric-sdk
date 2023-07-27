@@ -5,7 +5,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { Stake } from '@agoric/inter-protocol/src/tokens.js';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
@@ -26,16 +26,18 @@ import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 
 /**
  * @typedef {{
- *   (n: 'board'): BoardVat
- *   (n: 'mint'): MintsVat
+ *   (n: 'board'): BoardVat;
+ *   (n: 'mint'): MintsVat;
  * }} LoadVat
  */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
-  const { consume, produce } =
-    /** @type { BootstrapPowers & DemoFaucetPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
-      space
-    );
+  const { consume, produce } = /**
+   * @type {BootstrapPowers &
+   *   DemoFaucetPowers & {
+   *     consume: { loadVat: LoadVat; loadCriticalVat: LoadVat };
+   *   }}
+   */ (space);
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -129,7 +131,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type { import('../src/core/demoIssuers.js').UserPaymentRecord[] } */
+  /** @type {import('../src/core/demoIssuers.js').UserPaymentRecord[]} */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(
@@ -148,7 +150,7 @@ test('connectFaucet produces payments', async t => {
 test('myAddressNameAdmin mixin', async t => {
   const addr = 'agoric123';
   const kit = makeNameHubKit();
-  const mixinMyAddress = prepareMixinMyAddress(heapZone);
+  const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
   const my = mixinMyAddress(kit.nameAdmin, addr);
   t.is(my.getMyAddress(), addr);
 });
@@ -158,7 +160,7 @@ test('namesByAddressAdmin provideChild', async t => {
   const baggage = makeScalarBigMapStore('fake baggage', { durable: true });
   const provisioning = buildProvisioningRoot(undefined, undefined, baggage);
   const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
-  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin}} */
+  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin }} */
   // @ts-expect-error XXX why doesn't the provideChild override work?
   const { nameAdmin } = E.get(E(namesByAddressAdmin).provideChild(addr));
   t.is(await E(nameAdmin).getMyAddress(), addr);

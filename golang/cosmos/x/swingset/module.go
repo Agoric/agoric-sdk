@@ -80,14 +80,16 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 
 type AppModule struct {
 	AppModuleBasic
-	keeper Keeper
+	keeper             Keeper
+	setBootstrapNeeded func()
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k Keeper) AppModule {
+func NewAppModule(k Keeper, setBootstrapNeeded func()) AppModule {
 	am := AppModule{
-		AppModuleBasic: AppModuleBasic{},
-		keeper:         k,
+		AppModuleBasic:     AppModuleBasic{},
+		keeper:             k,
+		setBootstrapNeeded: setBootstrapNeeded,
 	}
 	return am
 }
@@ -147,7 +149,11 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	return InitGenesis(ctx, am.keeper, &genesisState)
+	bootstrapNeeded := InitGenesis(ctx, am.keeper, &genesisState)
+	if bootstrapNeeded {
+		am.setBootstrapNeeded()
+	}
+	return []abci.ValidatorUpdate{}
 }
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {

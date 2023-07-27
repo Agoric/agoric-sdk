@@ -8,7 +8,8 @@ import { prepareVaultHolder } from './vaultHolder.js';
 const trace = makeTracer('VK', true);
 
 /**
- * Wrap the VaultHolder duration object in a record suitable for the result of an invitation.
+ * Wrap the VaultHolder duration object in a record suitable for the result of
+ * an invitation.
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
@@ -43,4 +44,4 @@ export const prepareVaultKit = (baggage, makeRecorderKit) => {
   return makeVaultKit;
 };
 
-/** @typedef {(ReturnType<ReturnType<typeof prepareVaultKit>>)} VaultKit */
+/** @typedef {ReturnType<ReturnType<typeof prepareVaultKit>>} VaultKit */

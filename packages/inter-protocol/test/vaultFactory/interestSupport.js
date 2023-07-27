@@ -6,13 +6,13 @@ import {
 import { Far } from '@endo/marshal';
 import { reverseInterest } from '../../src/interest-math.js';
 
-export const makeCompoundedStabilityFeeProvider = brand => {
-  let compoundedStabilityFee = makeRatio(100n, brand);
+export const makeCompoundedInterestProvider = brand => {
+  let compoundedInterest = makeRatio(100n, brand);
   return {
-    getCompoundedStabilityFee: () => compoundedStabilityFee,
+    getCompoundedInterest: () => compoundedInterest,
     chargeHundredPercentInterest: () => {
-      compoundedStabilityFee = makeRatio(
-        compoundedStabilityFee.numerator.value * 2n,
+      compoundedInterest = makeRatio(
+        compoundedInterest.numerator.value * 2n,
         brand,
       );
     },
@@ -22,19 +22,19 @@ export const makeCompoundedStabilityFeeProvider = brand => {
  * @param {VaultId} vaultId
  * @param {Amount<'nat'>} initDebt
  * @param {Amount<'nat'>} [initCollateral]
- * @param {*} [manager]
- * @returns {Vault & {setDebt: (Amount) => void}}
+ * @param {any} [manager]
+ * @returns {Vault & { setDebt: (Amount) => void }}
  */
 
 export const makeFakeVault = (
   vaultId,
   initDebt,
   initCollateral = AmountMath.make(initDebt.brand, 100n),
-  manager = makeCompoundedStabilityFeeProvider(initDebt.brand),
+  manager = makeCompoundedInterestProvider(initDebt.brand),
 ) => {
   let normalizedDebt = reverseInterest(
     initDebt,
-    manager.getCompoundedStabilityFee(),
+    manager.getCompoundedInterest(),
   );
   let collateral = initCollateral;
   const fakeSeat = {};
@@ -42,11 +42,11 @@ export const makeFakeVault = (
     getCollateralAmount: () => collateral,
     getNormalizedDebt: () => normalizedDebt,
     getCurrentDebt: () =>
-      floorMultiplyBy(normalizedDebt, manager.getCompoundedStabilityFee()),
+      floorMultiplyBy(normalizedDebt, manager.getCompoundedInterest()),
     setDebt: newDebt =>
       (normalizedDebt = reverseInterest(
         newDebt,
-        manager.getCompoundedStabilityFee(),
+        manager.getCompoundedInterest(),
       )),
     setCollateral: newCollateral => (collateral = newCollateral),
     getIdInManager: () => vaultId,

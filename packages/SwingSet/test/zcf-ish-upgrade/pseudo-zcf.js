@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global VatData */
 /* eslint-disable no-unused-vars */
 

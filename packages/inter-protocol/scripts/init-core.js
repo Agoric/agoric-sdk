@@ -1,7 +1,8 @@
 /* global process */
 /**
- * @file can be run with `agoric deploy` after a chain is running (depends on chain state)
- * Only works with "local" chain and not sim-chain b/c it needs governance votes (n/a on sim-chain).
+ * @file can be run with `agoric deploy` after a chain is running (depends on
+ *   chain state) Only works with "local" chain and not sim-chain b/c it needs
+ *   governance votes (n/a on sim-chain).
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { objectMap } from '@agoric/internal';
@@ -53,9 +54,8 @@ const installKeyGroups = {
  * @param {(i: I) => R} opts.publishRef
  * @param {(m: string, b: string, opts?: any) => I} opts.install
  * @param {<T>(f: T) => T} [opts.wrapInstall]
- *
  * @param {object} [options]
- * @param {{ committeeName?: string, committeeSize?: number}} [options.econCommitteeOptions]
+ * @param {{ committeeName?: string; committeeSize?: number }} [options.econCommitteeOptions]
  */
 export const committeeProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
@@ -85,7 +85,6 @@ export const committeeProposalBuilder = async (
 /**
  * @template I
  * @template R
- *
  * @param {object} opts
  * @param {(i: I) => R} opts.publishRef
  * @param {(m: string, b: string, opts?: any) => I} opts.install
@@ -127,7 +126,7 @@ export const defaultProposalBuilder = async (
   options = {},
   { env = process.env } = {},
 ) => {
-  /** @param {string|undefined} s */
+  /** @param {string | undefined} s */
   const optBigInt = s => s && BigInt(s);
   const {
     vaultFactoryControllerAddress = env.VAULT_FACTORY_CONTROLLER_ADDR,

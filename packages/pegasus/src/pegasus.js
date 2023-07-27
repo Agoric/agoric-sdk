@@ -316,8 +316,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
     /**
      * Return a handler that can be used with the Network API.
      *
-     * @param {ERef<TransferProtocol>} [transferProtocol=DEFAULT_TRANSFER_PROTOCOL]
-     * @param {ERef<DenomTransformer>} [denomTransformer=DEFAULT_DENOM_TRANSFORMER]
+     * @param {ERef<TransferProtocol>} [transferProtocol]
+     * @param {ERef<DenomTransformer>} [denomTransformer]
      * @returns {PegasusConnectionKit}
      */
     makePegasusConnectionKit(

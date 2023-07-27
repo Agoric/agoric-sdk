@@ -22,9 +22,7 @@ import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-/**
- * @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit
- */
+/** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
 /**
  * @param {import('@agoric/time/src/types').TimerService} timer
@@ -39,7 +37,7 @@ export const setupPsmBootstrap = async (
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
-    /** @type { import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
+    /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */ (
       space
     );
 
@@ -63,8 +61,8 @@ export const setupPsmBootstrap = async (
 };
 
 /**
- * @param {*} t
- * @param {{ committeeName: string, committeeSize: number}} electorateTerms
+ * @param {any} t
+ * @param {{ committeeName: string; committeeSize: number }} electorateTerms
  * @param {ManualTimer} [timer]
  * @param {FarZoeKit} [farZoeKit]
  */

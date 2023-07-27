@@ -8,11 +8,9 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
 import { mustMatch } from '@agoric/store';
-import { makeFeeDistributor, customTermsShape } from '../src/feeDistributor.js';
+import { makeFeeDistributor, meta } from '../src/feeDistributor.js';
 
-/**
- * @param {Issuer} feeIssuer
- */
+/** @param {Issuer} feeIssuer */
 const makeFakeFeeDepositFacetKit = feeIssuer => {
   const depositPayments = [];
 
@@ -40,10 +38,10 @@ const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
   });
 };
 /**
- * @param {*} t
+ * @param {any} t
  * @param {Promise<Payment[]>} paymentsP
  * @param {number} count
- * @param {*} values
+ * @param {any} values
  * @param {Issuer} issuer
  * @param {Brand} brand
  */
@@ -256,7 +254,7 @@ test('feeDistributor custom terms shape catches non-Nat bigint', t => {
           timerService,
           collectionInterval: 2n,
         }),
-        customTermsShape,
+        meta.customTermsShape,
       ),
     { message: 'keywordShares: Reserve: [1]: "[-1n]" - Must be non-negative' },
   );

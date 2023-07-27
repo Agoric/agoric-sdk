@@ -10,7 +10,11 @@ import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const PROD_CONFIG_FILES = [
@@ -40,7 +44,7 @@ const NON_UPGRADEABLE_VATS = [
 export const pspawn =
   (bin, { spawn }) =>
   (args = [], opts = {}) => {
-    /** @type {ReturnType<typeof import('child_process').spawn> | undefined } */
+    /** @type {ReturnType<typeof import('child_process').spawn> | undefined} */
     let child;
     const exit = new Promise((resolve, reject) => {
       // console.debug('spawn', bin, args, { cwd: makefileDir, ...opts });

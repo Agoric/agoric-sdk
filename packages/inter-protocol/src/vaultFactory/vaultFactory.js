@@ -34,40 +34,46 @@ import { provideDirector } from './vaultDirector.js';
 const trace = makeTracer('VF', true);
 
 /**
- * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
- *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
- *   priceAuthority: ERef<PriceAuthority>,
- *   reservePublicFacet: AssetReservePublicFacet,
- *   timerService: import('@agoric/time/src/types').TimerService,
- * }>} VaultFactoryZCF
+ * @typedef {ZCF<
+ *   GovernanceTerms<import('./params').VaultDirectorParams> & {
+ *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
+ *     priceAuthority: ERef<PriceAuthority>;
+ *     reservePublicFacet: AssetReservePublicFacet;
+ *     timerService: import('@agoric/time/src/types').TimerService;
+ *   }
+ * >} VaultFactoryZCF
  */
 
-export const privateArgsShape = M.splitRecord(
-  harden({
-    marshaller: M.remotable('Marshaller'),
-    storageNode: StorageNodeShape,
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    feeMintAccess: FeeMintAccessShape,
-    initialPoserInvitation: InvitationShape,
-    initialShortfallInvitation: InvitationShape,
-  }),
-);
-harden(privateArgsShape);
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: M.splitRecord(
+    {
+      marshaller: M.remotable('Marshaller'),
+      storageNode: StorageNodeShape,
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      feeMintAccess: FeeMintAccessShape,
+      initialPoserInvitation: InvitationShape,
+      initialShortfallInvitation: InvitationShape,
+    },
+  ),
+  upgradability: 'canUpgrade',
+};
+harden(meta);
 
 /**
  * @param {VaultFactoryZCF} zcf
  * @param {{
- *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Invitation,
- *   initialShortfallInvitation: Invitation,
- *   storageNode: ERef<StorageNode>,
- *   marshaller: ERef<Marshaller>,
+ *   feeMintAccess: FeeMintAccess;
+ *   initialPoserInvitation: Invitation;
+ *   initialShortfallInvitation: Invitation;
+ *   storageNode: ERef<StorageNode>;
+ *   marshaller: ERef<Marshaller>;
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);
   const {
     initialPoserInvitation,
@@ -145,5 +151,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet: director.public,
   });
 };
+harden(start);
 
-/** @typedef {ContractOf<typeof prepare>} VaultFactoryContract */
+/** @typedef {ContractOf<typeof start>} VaultFactoryContract */

@@ -1,24 +1,25 @@
+// @ts-check
 // @jessie-check
 
+import { Far } from '@endo/far';
+import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
 import {
-  makeExo,
-  defineExoClass,
-  defineExoClassKit,
   makeScalarMapStore,
   makeScalarSetStore,
   makeScalarWeakMapStore,
   makeScalarWeakSetStore,
-  M,
 } from '@agoric/store';
 
-import { Far } from '@endo/far';
+import { makeOnceKit } from './make-once.js';
+import { agoricVatDataKeys as keys } from './keys.js';
+import { isPassable } from './is-passable.js';
 
 /**
  * @type {import('.').Stores}
  */
-const heapStores = Far('heapStores', {
-  detached: () => heapStores,
-  isStorable: _specimen => true,
+const detachedHeapStores = Far('heapStores', {
+  detached: () => detachedHeapStores,
+  isStorable: isPassable,
 
   setStore: makeScalarSetStore,
   mapStore: makeScalarMapStore,
@@ -27,16 +28,35 @@ const heapStores = Far('heapStores', {
 });
 
 /**
- * A heap (in-memory) zone that uses the default exo and store implementations.
+ * Create a heap (in-memory) zone that uses the default exo and store implementations.
  *
- * @type {import('.').Zone}
+ * @param {string} [baseLabel]
+ * @returns {import('.').Zone}
  */
-export const heapZone = Far('heapZone', {
-  exoClass: defineExoClass,
-  exoClassKit: defineExoClassKit,
-  exo: makeExo,
-  subZone: (_label, _options) => heapZone,
-  ...heapStores,
-});
+export const makeHeapZone = (baseLabel = 'heapZone') => {
+  const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);
 
-export { M };
+  /**
+   * @param {string} label
+   * @param {any} _options
+   */
+  const makeSubZone = (label, _options) =>
+    makeHeapZone(`${baseLabel}.${label}`);
+
+  return Far('heapZone', {
+    exo: wrapProvider(makeExo, keys.exo),
+    exoClass: wrapProvider(defineExoClass, keys.exoClass),
+    exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
+    subZone: wrapProvider(makeSubZone),
+
+    makeOnce,
+    detached: detachedHeapStores.detached,
+    isStorable: detachedHeapStores.isStorable,
+
+    mapStore: wrapProvider(detachedHeapStores.mapStore),
+    setStore: wrapProvider(detachedHeapStores.setStore),
+    weakMapStore: wrapProvider(detachedHeapStores.weakMapStore),
+    weakSetStore: wrapProvider(detachedHeapStores.weakSetStore),
+  });
+};
+harden(makeHeapZone);

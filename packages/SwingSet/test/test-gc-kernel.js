@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import anylogger from 'anylogger';

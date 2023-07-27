@@ -13,6 +13,12 @@ const { details: X } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * @see original version in .../zoe/src/contracts/coveredCall.js and upgradeable
  * version in contracts/coveredCall-durable.js.
@@ -24,7 +30,7 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
  * @param {unknown} _privateArgs
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
-const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+export const start = async (zcf, _privateArgs, instanceBaggage) => {
   const firstTime = !instanceBaggage.has('DidStart');
   if (firstTime) {
     instanceBaggage.init('DidStart', true);
@@ -98,6 +104,4 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   );
   return harden({ creatorFacet });
 };
-
-harden(prepare);
-export { prepare };
+harden(start);

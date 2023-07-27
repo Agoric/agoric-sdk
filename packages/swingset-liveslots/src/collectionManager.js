@@ -380,11 +380,11 @@ export function makeCollectionManager(
       currentGenerationNumber += 1;
       assertAcceptableSyscallCapdataSize([serializedValue]);
       if (durable) {
-        serializedValue.slots.forEach((vref, slotIndex) => {
+        for (const [slotIndex, vref] of serializedValue.slots.entries()) {
           if (!vrm.isDurable(vref)) {
             throwNotDurable(value, slotIndex, serializedValue);
           }
-        });
+        }
       }
       if (passStyleOf(key) === 'remotable') {
         /** @type {string} */
@@ -400,7 +400,9 @@ export function makeCollectionManager(
           vrm.addReachableVref(vref);
         }
       }
-      serializedValue.slots.forEach(vrm.addReachableVref);
+      for (const vref of serializedValue.slots) {
+        vrm.addReachableVref(vref);
+      }
       syscall.vatstoreSet(keyToDBKey(key), JSON.stringify(serializedValue));
       updateEntryCount(1);
     };
@@ -419,11 +421,11 @@ export function makeCollectionManager(
       const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
-        after.slots.forEach((vref, i) => {
+        for (const [i, vref] of after.slots.entries()) {
           if (!vrm.isDurable(vref)) {
             throwNotDurable(value, i, after);
           }
-        });
+        }
       }
       const dbKey = keyToDBKey(key);
       const rawBefore = syscall.vatstoreGet(dbKey);
@@ -793,13 +795,15 @@ export function makeCollectionManager(
     }
     const schemataCapData = serialize(harden(schemata));
     if (isDurable) {
-      schemataCapData.slots.forEach((vref, slotIndex) => {
+      for (const [slotIndex, vref] of schemataCapData.slots.entries()) {
         if (!vrm.isDurable(vref)) {
           throwNotDurable(vref, slotIndex, schemataCapData);
         }
-      });
+      }
     }
-    schemataCapData.slots.forEach(vrm.addReachableVref);
+    for (const vref of schemataCapData.slots) {
+      vrm.addReachableVref(vref);
+    }
 
     schemaCache.set(
       collectionID,
@@ -896,7 +900,7 @@ export function makeCollectionManager(
    * Produce a big map.
    *
    * @template K,V
-   * @param {string} [label='map'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {MapStore<K,V>}
    */
@@ -940,7 +944,7 @@ export function makeCollectionManager(
    * Produce a weak big map.
    *
    * @template K,V
-   * @param {string} [label='weakMap'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakMapStore<K,V>}
    */
@@ -969,7 +973,7 @@ export function makeCollectionManager(
    * Produce a big set.
    *
    * @template K
-   * @param {string} [label='set'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {SetStore<K>}
    */
@@ -996,7 +1000,7 @@ export function makeCollectionManager(
    * Produce a weak big set.
    *
    * @template K
-   * @param {string} [label='weakSet'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakSetStore<K>}
    */
@@ -1073,7 +1077,7 @@ export function makeCollectionManager(
    * remotables.
    *
    * @template K,V
-   * @param {string} [label='map'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {MapStore<K,V>}
    */
@@ -1085,7 +1089,7 @@ export function makeCollectionManager(
    * primitives, or remotables.
    *
    * @template K,V
-   * @param {string} [label='weakMap'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakMapStore<K,V>}
    */
@@ -1097,7 +1101,7 @@ export function makeCollectionManager(
    * remotables.
    *
    * @template K
-   * @param {string} [label='set'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {SetStore<K>}
    */
@@ -1109,7 +1113,7 @@ export function makeCollectionManager(
    * primitives, or remotables.
    *
    * @template K
-   * @param {string} [label='weakSet'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakSetStore<K>}
    */

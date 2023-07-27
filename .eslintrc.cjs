@@ -36,6 +36,8 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: lintTypes
     ? {
+        // this is not yet compatible with eslint lsp so it's conditioned on AGORIC_ESLINT_TYPES
+        EXPERIMENTAL_useProjectService: true,
         sourceType: 'module',
         project: [
           './packages/*/jsconfig.json',

@@ -25,12 +25,14 @@ const nextSequenceNumber = () => {
 
 /**
  * @typedef {{
- * seat: ZCFSeat,
- * wanted: Amount<'nat'>,
- * seqNum: NatValue,
- * received: Amount<'nat'>,
- * } &  {exitAfterBuy: boolean} & ({ bidScaling: Pattern, price: undefined } | { bidScaling: undefined, price: Ratio})
- * } BidderRecord
+ *   seat: ZCFSeat;
+ *   wanted: Amount<'nat'>;
+ *   seqNum: NatValue;
+ *   received: Amount<'nat'>;
+ * } & { exitAfterBuy: boolean } & (
+ *     | { bidScaling: Pattern; price: undefined }
+ *     | { bidScaling: undefined; price: Ratio }
+ *   )} BidderRecord
  */
 
 const ScaledBidBookStateShape = harden({
@@ -41,7 +43,8 @@ const ScaledBidBookStateShape = harden({
 
 /**
  * Prices in this book are expressed as percentage of the full oracle price
- * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
+ * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above
+ * par.
  *
  * @param {Baggage} baggage
  */
@@ -51,7 +54,6 @@ export const prepareScaledBidBook = baggage =>
     'scaledBidBook',
     undefined,
     /**
-     *
      * @param {Pattern} bidScalingPattern
      * @param {Brand} collateralBrand
      */
@@ -134,8 +136,8 @@ const PriceBookStateShape = harden({
 });
 
 /**
- * Prices in this book are actual prices expressed in terms of bid amount
- * and collateral amount.
+ * Prices in this book are actual prices expressed in terms of bid amount and
+ * collateral amount.
  *
  * @param {Baggage} baggage
  */
@@ -145,7 +147,6 @@ export const preparePriceBook = baggage =>
     'priceBook',
     undefined,
     /**
-     *
      * @param {Pattern} priceRatioPattern
      * @param {Brand} collateralBrand
      */

@@ -5,7 +5,11 @@ import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const { Fail } = assert;
@@ -21,10 +25,7 @@ const makeCallOutbound = t => (srcID, obj) => {
   return obj;
 };
 
-/**
- * NOTE: limit ambient authority such as import.meta.url
- * to test.before()
- */
+/** NOTE: limit ambient authority such as import.meta.url to test.before() */
 test.before(async t => {
   t.context = await makeTestContext(import.meta.url);
 });

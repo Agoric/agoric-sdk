@@ -43,12 +43,12 @@ import {
 
 /**
  * @typedef {Record<string, any> & {
- * aeth: IssuerKit & import('../supports.js').AmountUtils,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
- * rates: VaultManagerParamValues,
- * interestTiming: InterestTiming,
- * zoe: ZoeService,
+ *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   rates: VaultManagerParamValues;
+ *   interestTiming: InterestTiming;
+ *   zoe: ZoeService;
  * }} Context
  */
 /** @type {import('ava').TestFn<Context>} */
@@ -126,7 +126,7 @@ test.before(async t => {
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {import('ava').ExecutionContext<Context>} t
- * @param {Array<NatValue> | Ratio} priceOrList
+ * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
@@ -217,7 +217,16 @@ const setupServices = async (
     'AEth',
     rates,
   );
-  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, PriceAuthority, CollateralManager]} */
+  /**
+   * @type {[
+   *   any,
+   *   VaultFactoryCreatorFacet,
+   *   VFC['publicFacet'],
+   *   VaultManager,
+   *   PriceAuthority,
+   *   CollateralManager,
+   * ]}
+   */
   const [
     governorInstance,
     vaultFactory, // creator
@@ -375,7 +384,7 @@ test('interest on multiple vaults', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
   const rates = {
     ...defaultRates,
-    stabilityFee: makeRatio(5n, run.brand),
+    interestRate: makeRatio(5n, run.brand),
   };
   t.context.rates = rates;
   // charging period is 1 week. Clock ticks by days
@@ -489,24 +498,24 @@ test('interest on multiple vaults', async t => {
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  // 160n is initial fee. stabilityFee is ~3n/week. compounding is in the noise.
+  // 160n is initial fee. interest is ~3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
       bobUpdate.value.debtSnapshot.debt,
-      bobUpdate.value.debtSnapshot.stabilityFee,
-      assetUpdate.value.compoundedStabilityFee,
+      bobUpdate.value.debtSnapshot.interest,
+      assetUpdate.value.compoundedInterest,
     ),
     run.make(3200n + bobAddedDebt),
   );
 
-  // 236 is the initial fee. stabilityFee is ~4n/week
+  // 236 is the initial fee. Interest is ~4n/week
   const aliceAddedDebt = 236n + 4n;
   t.deepEqual(
     calculateCurrentDebt(
       aliceUpdate.value.debtSnapshot.debt,
-      aliceUpdate.value.debtSnapshot.stabilityFee,
-      assetUpdate.value.compoundedStabilityFee,
+      aliceUpdate.value.debtSnapshot.interest,
+      assetUpdate.value.compoundedInterest,
     ),
     run.make(4700n + aliceAddedDebt),
     `should have collected ${aliceAddedDebt}`,
@@ -514,7 +523,7 @@ test('interest on multiple vaults', async t => {
   // but no change to the snapshot
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(4935n),
-    stabilityFee: makeRatio(100n, run.brand, 100n),
+    interest: makeRatio(100n, run.brand, 100n),
   });
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
@@ -522,7 +531,7 @@ test('interest on multiple vaults', async t => {
   t.is(
     rewardAllocation.Minted.value,
     rewardRunCount,
-    // reward includes 5% fees on two loans plus 1% stabilityFee three times on each
+    // reward includes 5% fees on two loans plus 1% interest three times on each
     `Should be ${rewardRunCount}, was ${rewardAllocation.Minted.value}`,
   );
 
@@ -543,7 +552,7 @@ test('interest on multiple vaults', async t => {
   // Advance another 7 days, past one charging and recording period
   await manualTimer.tickN(8);
 
-  // open a vault when manager's stabilityFee already compounded
+  // open a vault when manager's interest already compounded
   const wantedRun = 1_000n;
   /** @type {UserSeat<VaultKit>} */
   const danVaultSeat = await E(zoe).offer(
@@ -631,7 +640,7 @@ test('adjust balances', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(5250n),
-    stabilityFee: makeRatio(100n, run.brand),
+    interest: makeRatio(100n, run.brand),
   });
 
   // increase collateral 1 ///////////////////////////////////// (give both)
@@ -728,7 +737,7 @@ test('adjust balances', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: run.make(5253n),
-    stabilityFee: run.makeRatio(100n),
+    interest: run.makeRatio(100n),
   });
 
   // reduce collateral  ///////////////////////////////////// (want both)
@@ -889,12 +898,12 @@ test('adjust balances - withdraw RUN', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, debtLevel);
 });
 
-test('adjust balances after stabilityFee charges', async t => {
+test('adjust balances after interest charges', async t => {
   const OPEN1 = 450n;
   const AMPLE = 100_000n;
   const { aeth, run } = t.context;
 
-  // charge stabilityFee on every tick
+  // charge interest on every tick
   const manualTimer = buildManualTimer(trace, 0n, {
     timeStep: SECONDS_PER_DAY,
   });
@@ -904,7 +913,7 @@ test('adjust balances after stabilityFee charges', async t => {
   };
   t.context.rates = {
     ...t.context.rates,
-    stabilityFee: run.makeRatio(20n),
+    interestRate: run.makeRatio(20n),
   };
 
   const services = await setupServices(
@@ -931,7 +940,7 @@ test('adjust balances after stabilityFee charges', async t => {
   );
   const { vault } = await E(vaultSeat).getOfferResult();
 
-  trace('1. Charge stabilityFee');
+  trace('1. Charge interest');
   await manualTimer.tick();
   await manualTimer.tick();
 
@@ -1022,7 +1031,7 @@ test('transfer vault', async t => {
     customDetails: {
       debtSnapshot: {
         debt: debtAmount,
-        stabilityFee: aliceFinish.value.debtSnapshot.stabilityFee,
+        interest: aliceFinish.value.debtSnapshot.interest,
       },
       locked: collateralAmount,
       vaultState: 'active',
@@ -1217,7 +1226,7 @@ test('collect fees from vault', async t => {
     recordingPeriod: SECONDS_PER_WEEK,
   };
 
-  // charge stabilityFee on every tick
+  // charge interest on every tick
   const manualTimer = buildManualTimer(t.log, 0n, {
     timeStep: SECONDS_PER_WEEK,
     eventLoopIteration,
@@ -1515,11 +1524,12 @@ test('debt too small - MinInitialDebt', async t => {
 });
 
 /**
- * Each vaultManager manages one collateral type and has a governed parameter, `debtLimit`,
- * that specifies a cap on the amount of debt the manager will allow.
+ * Each vaultManager manages one collateral type and has a governed parameter,
+ * `debtLimit`, that specifies a cap on the amount of debt the manager will
+ * allow.
  *
- * Attempts to adjust balances on vaults beyond the debt limit fail.
- * In other words, minting for anything other than charging stabilityFee fails.
+ * Attempts to adjust balances on vaults beyond the debt limit fail. In other
+ * words, minting for anything other than charging interest fails.
  */
 test('excessive debt on collateral type - debtLimit', async t => {
   const { zoe, aeth, run } = t.context;
@@ -1603,7 +1613,7 @@ test('addVaultType: extra, unexpected params', async t => {
 
   const params = { ...defaultParamValues(aeth.brand), shoeSize: 10 };
   const extraParams = { ...params, shoeSize: 10 };
-  const { stabilityFee: _1, ...missingParams } = {
+  const { interestRate: _1, ...missingParams } = {
     ...defaultParamValues(aeth.brand),
     shoeSize: 10,
   };
@@ -1613,7 +1623,7 @@ test('addVaultType: extra, unexpected params', async t => {
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
     {
       message:
-        /initialParamValues: .* - Must have missing properties \["stabilityFee"\]/,
+        /initialParamValues: .* - Must have missing properties \["interestRate"\]/,
     },
   );
 
@@ -1679,7 +1689,7 @@ test('manager notifiers, with snapshot', async t => {
   };
   t.context.rates = {
     ...t.context.rates,
-    stabilityFee: run.makeRatio(20n),
+    interestRate: run.makeRatio(20n),
   };
 
   const services = await setupServices(
@@ -1815,7 +1825,7 @@ test('manager notifiers, with snapshot', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
 
-  trace('6. Loan stabilityFee');
+  trace('6. Loan interest');
   vaultSeat = await E(services.zoe).offer(
     await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
@@ -1836,9 +1846,9 @@ test('manager notifiers, with snapshot', async t => {
   });
   m.addDebt(DEBT2);
   await manualTimer.tickN(5);
-  const stabilityFeeAccrued = (await E(vault).getCurrentDebt()).value - DEBT1;
-  m.addDebt(stabilityFeeAccrued);
-  t.is(stabilityFeeAccrued, 9n);
+  const interestAccrued = (await E(vault).getCurrentDebt()).value - DEBT1;
+  m.addDebt(interestAccrued);
+  t.is(interestAccrued, 9n);
 
   trace('7. make another loan to trigger a publish');
   vaultSeat = await E(services.zoe).offer(
@@ -1938,7 +1948,11 @@ test('manager notifiers, with snapshot', async t => {
     totalDebt: { value: totalDebt },
   });
 
-  /** @type {ReturnType<import('@agoric/internal/src/storage-test-utils.js').makeMockChainStorageRoot>} */
+  /**
+   * @type {ReturnType<
+   *   import('@agoric/internal/src/storage-test-utils.js').makeMockChainStorageRoot
+   * >}
+   */
   // @ts-expect-error mock
   const storage = await services.space.consume.chainStorage;
   const doc = {
@@ -2000,15 +2014,15 @@ test('governance publisher', async t => {
   // can't deepEqual because of non-literal objects so check keys and then partial shapes
   t.deepEqual(Object.keys(current), [
     'DebtLimit',
+    'InterestRate',
     'LiquidationMargin',
     'LiquidationPadding',
     'LiquidationPenalty',
     'MintFee',
-    'StabilityFee',
   ]);
   t.like(current, {
     DebtLimit: { type: 'amount' },
-    StabilityFee: { type: 'ratio' },
+    InterestRate: { type: 'ratio' },
     LiquidationMargin: { type: 'ratio' },
     LiquidationPadding: { type: 'ratio' },
     LiquidationPenalty: { type: 'ratio' },

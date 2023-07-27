@@ -32,6 +32,7 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
+ *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
  */
 
@@ -44,10 +45,14 @@ const BalanceUpdaterI = M.interface('BalanceUpdater', {
   update: M.call(M.string()).optional(M.string()).returns(),
 });
 
-/** @typedef {Pick<import('./types.js').ScopedBridgeManager, 'fromBridge' | 'toBridge'>} BridgeChannel */
+/**
+ * @typedef {Pick<
+ *   import('./types.js').ScopedBridgeManager,
+ *   'fromBridge' | 'toBridge'
+ * >} BridgeChannel
+ */
 
 /**
- *
  * @param {import('@agoric/zone').Zone} zone
  * @returns {(brand: Brand, publisher: Publisher<Amount>) => BalanceUpdater}
  */
@@ -76,9 +81,7 @@ const prepareBalanceUpdater = zone =>
     },
   );
 
-/**
- * @param {import('@agoric/zone').Zone} zone
- */
+/** @param {import('@agoric/zone').Zone} zone */
 const prepareBankPurseController = zone => {
   /**
    * @param {BridgeChannel} bankBridge
@@ -170,16 +173,12 @@ const prepareRewardPurseController = zone =>
     },
   );
 
-/**
- * @param {import('@agoric/zone').Zone} zone
- */
+/** @param {import('@agoric/zone').Zone} zone */
 const prepareBankChannelHandler = zone =>
   zone.exoClass(
     'BankChannelHandler',
     BridgeHandlerI,
-    /**
-     * @param {MapStore<string, MapStore<string, BalanceUpdater>>} denomToAddressUpdater
-     */
+    /** @param {MapStore<string, MapStore<string, BalanceUpdater>>} denomToAddressUpdater */
     denomToAddressUpdater => ({ denomToAddressUpdater }),
     {
       async fromBridge(obj) {
@@ -221,7 +220,7 @@ const prepareBankChannelHandler = zone =>
  * Concatenate multiple iterables to form a new one.
  *
  * @template T
- * @param {Array<Iterable<T> | AsyncIterable<T>>} iterables
+ * @param {(Iterable<T> | AsyncIterable<T>)[]} iterables
  */
 async function* concatAsyncIterables(iterables) {
   for (const asyncIterable of iterables) {
@@ -273,12 +272,15 @@ const makeHistoricalTopic = (historyValues, futureSubscriber, skipValue) => {
   return makeSubscriberFromAsyncIterable(allHistory, skipValue);
 };
 
-/** @type {WeakMap<MapStore<Brand, AssetDescriptor>, Promise<PublicationRecord<AssetDescriptor>>>} */
+/**
+ * @type {WeakMap<
+ *   MapStore<Brand, AssetDescriptor>,
+ *   Promise<PublicationRecord<AssetDescriptor>>
+ * >}
+ */
 const fullAssetPubLists = new WeakMap();
 
-/**
- * @param {import('@agoric/zone').Zone} zone
- */
+/** @param {import('@agoric/zone').Zone} zone */
 const prepareAssetSubscription = zone => {
   const assetSubscriptionCache = zone.weakMapStore('assetSubscriptionCache');
 
@@ -358,9 +360,7 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
   mint: M.remotable('Mint'),
 });
 
-/**
- * @typedef {AssetIssuerKit & { denom: string, escrowPurse?: ERef<Purse> }} AssetRecord
- */
+/** @typedef {AssetIssuerKit & { denom: string; escrowPurse?: ERef<Purse> }} AssetRecord */
 
 /**
  * @typedef {object} AssetDescriptor
@@ -372,18 +372,18 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
  */
 
 /**
- * @typedef { AssetDescriptor & {
- *   issuer: Issuer<'nat'>, // settled identity
- *   displayInfo: DisplayInfo,
+ * @typedef {AssetDescriptor & {
+ *   issuer: Issuer<'nat'>; // settled identity
+ *   displayInfo: DisplayInfo;
  * }} AssetInfo
  */
 
 /**
  * @typedef {object} Bank
- * @property {() => IterableEachTopic<AssetDescriptor>} getAssetSubscription Returns
- * assets as they are added to the bank
- * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any existing vpurse
- * (keyed by address and brand) or create a new one.
+ * @property {() => IterableEachTopic<AssetDescriptor>} getAssetSubscription
+ *   Returns assets as they are added to the bank
+ * @property {(brand: Brand) => Promise<VirtualPurse>} getPurse Find any
+ *   existing vpurse (keyed by address and brand) or create a new one.
  */
 
 export const BankI = M.interface('Bank', {
@@ -410,7 +410,12 @@ const prepareBank = (
   // we decide to partition the provider and use `brandToVPurse` directly, we'd
   // need ephemera for each `makeBank` call.
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
-  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<string, VirtualPurse>} */
+  /**
+   * @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<
+   *     string,
+   *     VirtualPurse
+   *   >}
+   */
   const purseProvider = makeAtomicProvider(addressDenomToPurse);
 
   const makeBank = zone.exoClass(
@@ -574,12 +579,17 @@ const prepareBankManager = (
       const brandToAssetDescriptor = detachedZone.mapStore(
         'brandToAssetDescriptor',
       );
-      /** @type {MapStore<string, { bank: Bank, brandToVPurse: MapStore<Brand, VirtualPurse> }>} */
+      /**
+       * @type {MapStore<
+       *   string,
+       *   { bank: Bank; brandToVPurse: MapStore<Brand, VirtualPurse> }
+       * >}
+       */
       const addressToBank = detachedZone.mapStore('addressToBank');
 
       /**
        * CAVEAT: The history for the assetSubscriber needs to be loaded into the
-       * heap on first use in this incarnation.  Use provideAssetSubscription to
+       * heap on first use in this incarnation. Use provideAssetSubscription to
        * set that up.
        *
        * @type {PublishKit<AssetDescriptor>}
@@ -637,7 +647,7 @@ const prepareBankManager = (
        *
        * @param {string} moduleName
        * @returns {Promise<string | null>} address of named module account, or
-       * null if unimplemented (no bankChannel)
+       *   null if unimplemented (no bankChannel)
        */
       async getModuleAccountAddress(moduleName) {
         const { bankChannel } = this.state;
@@ -652,16 +662,17 @@ const prepareBankManager = (
       },
 
       /**
-       * Add an asset to the bank, and publish it to the subscriptions.
-       * If nameAdmin is defined, update with denom to AssetInfo entry.
+       * Add an asset to the bank, and publish it to the subscriptions. If
+       * nameAdmin is defined, update with denom to AssetInfo entry.
        *
-       * Note that AssetInfo has the settled identity of the issuer,
-       * not just a promise for it.
+       * Note that AssetInfo has the settled identity of the issuer, not just a
+       * promise for it.
        *
        * @param {string} denom lower-level denomination string
        * @param {string} issuerName
        * @param {string} proposedName
-       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer kit (mint, brand, issuer)
+       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer
+       *   kit (mint, brand, issuer)
        */
       async addAsset(denom, issuerName, proposedName, kit) {
         const {
@@ -722,7 +733,7 @@ const prepareBankManager = (
           ([issuer, displayInfo]) =>
             E(nameAdmin).update(
               denom,
-              /** @type { AssetInfo } */ (
+              /** @type {AssetInfo} */ (
                 harden({
                   brand,
                   issuer,
@@ -774,9 +785,7 @@ const prepareBankManager = (
   return makeBankManager;
 };
 
-/**
- * @param {MapStore<string, any>} baggage
- */
+/** @param {MapStore<string, any>} baggage */
 const prepareFromBaggage = baggage => {
   const rootZone = makeDurableZone(baggage);
 
@@ -797,9 +806,7 @@ const prepareFromBaggage = baggage => {
   const makeRewardPurseController = prepareRewardPurseController(rootZone);
   const makeBankChannelHandler = prepareBankChannelHandler(rootZone);
 
-  /**
-   * @type {import('@agoric/internal/src/callback.js').MakeAttenuator<BridgeChannel>}
-   */
+  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<BridgeChannel>} */
   const makeBridgeChannelAttenuator = prepareGuardedAttenuator(
     rootZone.subZone('attenuators'),
     BridgeChannelI,
@@ -839,11 +846,11 @@ export function buildRootObject(_vatPowers, _args, baggage) {
 
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP] a bridge
-     * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
-     * (such as on sim-chain), we just use local purses.
-     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP] update facet of
-     *   a NameAdmin; see addAsset() for detail.
+     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP]
+     *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
+     *   supplied (such as on sim-chain), we just use local purses.
+     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP]
+     *   update facet of a NameAdmin; see addAsset() for detail.
      */
     async makeBankManager(
       bankBridgeManagerP = undefined,
@@ -856,9 +863,7 @@ export function buildRootObject(_vatPowers, _args, baggage) {
         'denomToAddressUpdater',
       );
 
-      /**
-       * @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr]
-       */
+      /** @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr] */
       async function getBankChannel(bankBridgeMgr) {
         // We do the logic here if the bridge manager is available.  Otherwise,
         // the bank is not "remote" (such as on sim-chain), so we just use

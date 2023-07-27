@@ -6,7 +6,7 @@
 import { E } from '@endo/eventual-send';
 import { expectType } from 'tsd';
 
-import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
+import type { start as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 
 {
   const zoe = {} as ZoeService;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import test from 'ava';
 import '@endo/init/debug.js';
 
@@ -489,7 +490,9 @@ test('map fail on concurrent modification', t => {
   const primeMap = makeScalarBigMapStore('fmap', {
     keyShape: M.number(),
   });
-  primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
+  for (const [i, v] of primes.entries()) {
+    primeMap.init(v, `${v} is prime #${i + 1}`);
+  }
 
   let iter = primeMap.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
@@ -517,7 +520,9 @@ test('set fail on concurrent modification', t => {
   const primeSet = makeScalarBigSetStore('fset', {
     keyShape: M.number(),
   });
-  primes.forEach(v => primeSet.add(v));
+  for (const v of primes) {
+    primeSet.add(v);
+  }
 
   let iter = primeSet.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
@@ -545,7 +550,9 @@ test('map ok with concurrent deletion', t => {
   const primeMap = makeScalarBigMapStore('fmap', {
     keyShape: M.number(),
   });
-  primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
+  for (const [i, v] of primes.entries()) {
+    primeMap.init(v, `${v} is prime #${i + 1}`);
+  }
   const iter = primeMap.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
   primeMap.delete(3);
@@ -560,7 +567,9 @@ test('set ok with concurrent deletion', t => {
   const primeSet = makeScalarBigSetStore('fset', {
     keyShape: M.number(),
   });
-  primes.forEach(v => primeSet.add(v));
+  for (const v of primes) {
+    primeSet.add(v);
+  }
 
   const iter = primeSet.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
@@ -875,7 +884,9 @@ test('complex map queries', t => {
   const primeStore = makeScalarBigMapStore('prime map', {
     keyShape: M.number(),
   });
-  primes.forEach((v, i) => primeStore.init(v, `${v} is prime #${i + 1}`));
+  for (const [i, v] of primes.entries()) {
+    primeStore.init(v, `${v} is prime #${i + 1}`);
+  }
 
   t.deepEqual(Array.from(primeStore.values()), [
     '2 is prime #1',
@@ -1050,7 +1061,9 @@ test('complex set queries', t => {
   const primeStore = makeScalarBigSetStore('prime set', {
     keyShape: M.number(),
   });
-  primes.forEach(v => primeStore.add(v));
+  for (const v of primes) {
+    primeStore.add(v);
+  }
 
   t.deepEqual(
     Array.from(primeStore.values()),

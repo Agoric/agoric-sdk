@@ -14,7 +14,9 @@ const { Fail, quote: q } = assert;
 /**
  * We reserve these keys in name hubs.
  *
- * @type {{ [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string } }}
+ * @type {{
+ *   [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string };
+ * }}
  */
 export const agoricNamesReserved = harden({
   issuer: {
@@ -74,7 +76,7 @@ export const agoricNamesReserved = harden({
   },
 });
 
-/** @type { FeeIssuerConfig } */
+/** @type {FeeIssuerConfig} */
 export const feeIssuerConfig = {
   name: Stable.symbol,
   assetKind: Stable.assetKind,
@@ -85,7 +87,7 @@ export const feeIssuerConfig = {
  * Wire up a remote between the comms vat and vattp.
  *
  * @param {string} addr
- * @param {{ vats: { vattp: VattpVat, comms: CommsVatRoot }}} powers
+ * @param {{ vats: { vattp: VattpVat; comms: CommsVatRoot } }} powers
  */
 export const addRemote = async (addr, { vats: { comms, vattp } }) => {
   const { transmitter, setReceiver } = await E(vattp).addRemote(addr);
@@ -94,17 +96,19 @@ export const addRemote = async (addr, { vats: { comms, vattp } }) => {
 harden(addRemote);
 
 /**
- * @param {Array<(...args) => Record<string, unknown>>} builders
- * @param  {...unknown} args
+ * @param {((...args) => Record<string, unknown>)[]} builders
+ * @param {...unknown} args
  * @returns {Record<string, unknown>}
  */
 export const callProperties = (builders, ...args) =>
   fromEntries(builders.map(fn => entries(fn(...args))).flat());
 
 /**
- * Attenuate `specimen` to only allow acccess to properties specified in `template`
+ * Attenuate `specimen` to only allow acccess to properties specified in
+ * `template`
  *
- * @param {true | string | Record<string, *>} template true or vat name string or recursive object
+ * @param {true | string | Record<string, any>} template true or vat name string
+ *   or recursive object
  * @param {unknown} specimen
  * @param {string[]} [path]
  */
@@ -143,7 +147,8 @@ export const extract = (template, specimen, path = []) => {
 harden(extract);
 
 /**
- * @param {true | string | Record<string, *>} permit the permit supplied by the manifest
+ * @param {true | string | Record<string, any>} permit the permit supplied by
+ *   the manifest
  * @param {unknown} allPowers the powers to attenuate
  */
 export const extractPowers = (permit, allPowers) => {
@@ -164,7 +169,7 @@ harden(extractPowers);
  * @param {unknown} opts.allPowers
  * @param {Record<string, unknown>} opts.behaviors
  * @param {Record<string, Record<string, unknown>>} opts.manifest
- * @param { (name: string, permit: Record<string, unknown>) => unknown} opts.makeConfig
+ * @param {(name: string, permit: Record<string, unknown>) => unknown} opts.makeConfig
  */
 export const runModuleBehaviors = ({
   allPowers,
@@ -194,7 +199,6 @@ harden(runModuleBehaviors);
 const noop = harden(() => {});
 
 /**
- *
  * @param {ERef<import('../types').NameAdmin>} nameAdmin
  * @param {typeof console.log} [log]
  */
@@ -241,7 +245,7 @@ export const makeWellKnownSpaces = async (
     }),
   );
   const spaces = Object.fromEntries(spaceEntries);
-  const typedSpaces = /** @type { WellKnownSpaces } */ (
+  const typedSpaces = /** @type {WellKnownSpaces} */ (
     /** @type {any} */ (spaces)
   );
   return typedSpaces;
@@ -249,23 +253,20 @@ export const makeWellKnownSpaces = async (
 
 /**
  * Make the well-known agoricNames namespace so that we can
- * E(home.agoricNames).lookup('issuer', 'IST') and likewise
- * for brand, installation, instance, etc.
- *
- * @param {typeof console.log} [log]
- * @param {Record<string, Record<string, unknown>>} reserved a property
- *   for each of issuer, brand, etc. with a value whose keys are names
- *   to reserve.
- *
- * For static typing and integrating with the bootstrap permit system,
- * return { produce, consume } spaces rather than NameAdmins.
+ * E(home.agoricNames).lookup('issuer', 'IST') and likewise for brand,
+ * installation, instance, etc.
  *
  * @deprecated use vat-agoricNames, makeWellKnownSpaces
+ * @param {typeof console.log} [log]
+ * @param {Record<string, Record<string, unknown>>} reserved a property for each
+ *   of issuer, brand, etc. with a value whose keys are names to reserve.
  *
+ *   For static typing and integrating with the bootstrap permit system, return {
+ *   produce, consume } spaces rather than NameAdmins.
  * @returns {Promise<{
- *   agoricNames: import('../types.js').NameHub,
- *   agoricNamesAdmin: import('../types.js').NameAdmin,
- *   spaces: WellKnownSpaces,
+ *   agoricNames: import('../types.js').NameHub;
+ *   agoricNamesAdmin: import('../types.js').NameAdmin;
+ *   spaces: WellKnownSpaces;
  * }>}
  */
 export const makeAgoricNamesAccess = async (
@@ -280,7 +281,7 @@ export const makeAgoricNamesAccess = async (
     Object.keys(reserved),
   );
 
-  const typedSpaces = /** @type { WellKnownSpaces } */ (
+  const typedSpaces = /** @type {WellKnownSpaces} */ (
     /** @type {any} */ (spaces)
   );
   return {
@@ -291,9 +292,8 @@ export const makeAgoricNamesAccess = async (
 };
 
 /**
- * @param {string} address
- *
  * @deprecated use nameAdmin.provideChild() instead
+ * @param {string} address
  */
 export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
@@ -317,7 +317,9 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {(...args: any) => void} [log]
  * @param {string} [label]
  *
- * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
+ *   as from createVatByName
+ *
  * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatSpace = (

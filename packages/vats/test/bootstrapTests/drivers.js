@@ -77,7 +77,8 @@ export const makeWalletFactoryDriver = async (
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
-     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M offer maker function
+     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M
+     *   offer maker function
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]
@@ -88,7 +89,8 @@ export const makeWalletFactoryDriver = async (
       return this.executeOffer(offer);
     },
     /**
-     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M offer maker function
+     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M
+     *   offer maker function
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]
@@ -99,9 +101,7 @@ export const makeWalletFactoryDriver = async (
       return this.sendOffer(offer);
     },
 
-    /**
-     * @returns {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord}
-     */
+    /** @returns {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
     getCurrentWalletRecord() {
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
@@ -112,9 +112,7 @@ export const makeWalletFactoryDriver = async (
       );
     },
 
-    /**
-     * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
-     */
+    /** @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord} */
     getLatestUpdateRecord() {
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
@@ -326,7 +324,6 @@ export const makeGovernanceDriver = async (
 
   return {
     /**
-     *
      * @param {Instance} instance
      * @param {object} params
      * @param {object} [path]
