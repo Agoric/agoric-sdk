@@ -174,6 +174,16 @@ OFFER=$(mktemp -t agops.XXX)
 agops vaults close --vaultId vault2 --giveMinted 5.75 --from $USER2ADDR --keyring-backend="test" >|"$OFFER"
 agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
-# # TODO test bidding
-# # TODO liquidations
-# # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
+# replicate state-sync of node
+# this will cause the swing-store to prune some data
+killAgd
+EXPORT_DIR=$(mktemp -t -d swing-store-export-upgrade-10-XXX)
+make_swing_store_snapshot $EXPORT_DIR || fail "Couldn't make swing-store snapshot"
+test_val "$(compare_swing_store_export_data $EXPORT_DIR)" "match" "swing-store export data"
+restore_swing_store_snapshot $EXPORT_DIR || fail "Couldn't restore swing-store snapshot"
+rm -rf $EXPORT_DIR
+startAgd
+
+# # TODO fully test bidding
+# # TODO test liquidations
+agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
