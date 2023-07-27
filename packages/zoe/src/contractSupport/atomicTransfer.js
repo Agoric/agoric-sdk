@@ -1,22 +1,10 @@
-import { mustMatch, M } from '@agoric/store';
-import { assertRightsConserved } from '../contractFacet/rightsConservation.js';
+import { M } from '@agoric/store';
 import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
-
-const { Fail, quote: q } = assert;
 
 export const TransferPartShape = M.splitArray(
   harden([M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)]),
   harden([M.opt(AmountKeywordRecordShape)]),
 );
-
-/**
- * @typedef {[
- *   fromSeat?: ZCFSeat,
- *   toSeat?: ZCFSeat,
- *   fromAmounts?: AmountKeywordRecord,
- *   toAmounts?: AmountKeywordRecord
- * ]} TransferPart
- */
 
 /**
  * Asks Zoe (via zcf) to rearrange the allocations among the seats
@@ -52,86 +40,13 @@ export const TransferPartShape = M.splitArray(
  * which will remain helpers. These helper are for convenience
  * in expressing atomic rearrangements clearly.
  *
+ * @deprecated use the zcf builtin instead
+ *
  * @param {ZCF} zcf
  * @param {TransferPart[]} transfers
  */
 export const atomicRearrange = (zcf, transfers) => {
-  mustMatch(transfers, M.arrayOf(M.array()), 'transfers');
-  const uniqueSeatSet = new Set();
-  for (const [
-    fromSeat = undefined,
-    toSeat = undefined,
-    fromAmounts = undefined,
-    toAmounts = undefined,
-  ] of transfers) {
-    if (fromSeat) {
-      if (!fromAmounts) {
-        throw Fail`Transfer from ${fromSeat} must say how much`;
-      }
-      uniqueSeatSet.add(fromSeat);
-      if (toSeat) {
-        // Conserved transfer between seats
-        if (toAmounts) {
-          // distinct amounts, so we check conservation.
-          assertRightsConserved(
-            Object.values(fromAmounts),
-            Object.values(toAmounts),
-          );
-        } // else fromAmounts will be used as toAmounts
-        uniqueSeatSet.add(toSeat);
-      } else {
-        // Transfer only from fromSeat
-        !toAmounts ||
-          Fail`Transfer without toSeat cannot have toAmounts ${toAmounts}`;
-      }
-    } else {
-      toSeat || Fail`Transfer must have at least one of fromSeat or toSeat`;
-      // Transfer only to toSeat
-      !fromAmounts ||
-        Fail`Transfer without fromSeat cannot have fromAmounts ${fromAmounts}`;
-      toAmounts || Fail`Transfer to ${toSeat} must say how much`;
-      uniqueSeatSet.add(toSeat);
-    }
-  }
-
-  const uniqueSeats = harden([...uniqueSeatSet.keys()]);
-  for (const seat of uniqueSeats) {
-    !seat.hasStagedAllocation() ||
-      Fail`Cannot mix atomicRearrange with seat stagings: ${seat}`;
-  }
-
-  // At this point the basic shape has been validated
-
-  try {
-    for (const [
-      fromSeat = undefined,
-      toSeat = undefined,
-      fromAmounts = undefined,
-      toAmounts = toSeat && fromAmounts,
-    ] of transfers) {
-      if (fromSeat && fromAmounts) {
-        // testing both just to satisfy the type checker
-        fromSeat.decrementBy(fromAmounts);
-      }
-      if (toSeat && toAmounts) {
-        // testing both just to satisfy the type checker
-        toSeat.incrementBy(toAmounts);
-      }
-    }
-
-    // Perhaps deprecate this >= 2 restriction?
-    uniqueSeats.length >= 2 ||
-      Fail`Can only commit a reallocation among at least 2 seats: ${q(
-        uniqueSeats.length,
-      )}`;
-    // Take it apart and put it back together to satisfy the type checker
-    const [seat0, seat1, ...restSeats] = uniqueSeats;
-    zcf.reallocate(seat0, seat1, ...restSeats);
-  } finally {
-    for (const seat of uniqueSeats) {
-      seat.clear();
-    }
-  }
+  zcf.atomicRearrange(transfers);
 };
 
 /**
@@ -179,4 +94,4 @@ export const atomicTransfer = (
   toSeat = undefined,
   fromAmounts = undefined,
   toAmounts = undefined,
-) => atomicRearrange(zcf, harden([[fromSeat, toSeat, fromAmounts, toAmounts]]));
+) => zcf.atomicRearrange(harden([[fromSeat, toSeat, fromAmounts, toAmounts]]));

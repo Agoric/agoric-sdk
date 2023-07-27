@@ -104,6 +104,7 @@
       "test/unitTests/zcf/test-reallocate-empty.js",
       "test/unitTests/zcf/test-zoeHelpersWZcf.js",
       "test/unitTests/zcf/test-reallocateForZCFMint.js",
+      "test/unitTests/zcf/test-atomicRearrange.js",
       "test/unitTests/zcf/test-zcf.js",
       "test/unitTests/zcf/test-allStagedSeatsUsed.js",
       "# ManualTimer.setWakeup: no function",

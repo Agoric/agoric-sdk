@@ -1,14 +1,12 @@
 /** @file DEPRECATED use the vault test driver instead */
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
 import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
 import {
-  atomicRearrange,
   prepareRecorderKit,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -101,14 +99,14 @@ export async function start(zcf, privateArgs, baggage) {
   const mintAndTransfer = (mintReceiver, toMint, fee, nonMintTransfers) => {
     const kept = AmountMath.subtract(toMint, fee);
     stableMint.mintGains(harden({ Minted: toMint }), mintSeat);
-    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+    /** @type {TransferPart[]} */
     const transfers = [
       ...nonMintTransfers,
       [mintSeat, vaultFactorySeat, { Minted: fee }],
       [mintSeat, mintReceiver, { Minted: kept }],
     ];
     try {
-      atomicRearrange(zcf, harden(transfers));
+      zcf.atomicRearrange(harden(transfers));
     } catch (e) {
       console.error('mintAndTransfer caught', e);
       stableMint.burnLosses(harden({ Minted: toMint }), mintSeat);
