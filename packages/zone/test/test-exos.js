@@ -6,7 +6,7 @@ import {
   test,
 } from './prepare-test-env-ava.js';
 
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import * as vatData from '@agoric/vat-data';
 
 import { makeDurableZone } from '../durable.js';
