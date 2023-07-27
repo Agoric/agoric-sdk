@@ -97,10 +97,13 @@ var capDataRemotableValueFormats = map[string]string{
 // cf. https://github.com/Agoric/agoric-sdk/blob/6e5b422b80e47c4dac151404f43faea5ab41e9b0/scripts/get-flattened-publication.sh
 func flatten(input interface{}, output map[string]interface{}, key string, top bool) error {
 	// Act on the raw representation of a Remotable.
-	if capdata, ok := input.(*capdata.CapdataRemotable); ok {
-		repr, _ := json.Marshal(capdata)
+	if remotable, ok := input.(*capdata.CapdataRemotable); ok {
 		var replacement interface{}
-		if err := json.Unmarshal(repr, &replacement); err != nil {
+		repr, err := capdata.JsonMarshal(remotable)
+		if err == nil {
+			err = json.Unmarshal(repr, &replacement)
+		}
+		if err != nil {
 			return err
 		}
 		input = replacement
@@ -225,13 +228,11 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 		}
 		switch mediaType {
 		case JSONLines:
-			transformedJson, err := json.Marshal(item)
+			jsonText, err := capdata.JsonMarshal(item)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			responseItems[i] = string(transformedJson)
-		default:
-			return nil, status.Error(codes.InvalidArgument, "invalid media_type")
+			responseItems[i] = string(jsonText)
 		}
 	}
 
