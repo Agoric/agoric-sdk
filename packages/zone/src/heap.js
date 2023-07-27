@@ -8,7 +8,7 @@ import {
   makeScalarSetStore,
   makeScalarWeakMapStore,
   makeScalarWeakSetStore,
-} from '@agoric/store';
+} from '@agoric/vat-data';
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
