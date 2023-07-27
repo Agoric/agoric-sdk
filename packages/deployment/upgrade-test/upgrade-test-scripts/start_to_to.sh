@@ -3,7 +3,7 @@
 grep -qF 'env_setup.sh' /root/.bashrc || echo ". ./upgrade-test-scripts/env_setup.sh" >> /root/.bashrc
 grep -qF 'printKeys' /root/.bashrc || echo "printKeys" >> /root/.bashrc
 
-tmux -V || apt install -y tmux
+tmux -V 2>/dev/null || apt-get install -y tmux
 
 if [[ "$DEST" == "1" ]] && [[ "$TMUX" == "" ]]; then
   echo "launching entrypoint"
@@ -14,10 +14,7 @@ fi
 
 . ./upgrade-test-scripts/env_setup.sh
 
-agd start --log_level warn &
-AGD_PID=$!
-wait_for_bootstrap
-waitForBlock 2
+startAgd
 
 if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
   runActions "pre_test"
@@ -61,9 +58,9 @@ if [[ "$DEST" != "1" ]]; then
   done
 
   sleep 2
-  kill $AGD_PID
+  killAgd
   echo "ready for upgrade to $UPGRADE_TO"
 else
 
-  wait $AGD_PID
+  waitAgd
 fi
