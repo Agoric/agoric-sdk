@@ -1,15 +1,14 @@
 import { E } from '@endo/far';
 
 /**
- * @param { BootstrapPowers & {
+ * @param {BootstrapPowers & {
  *   consume: {
- *     vatAdminSvc: VatAdminSve,
- *     vatStore: MapStore<string, CreateVatResults>,
- *   }
+ *     vatAdminSvc: VatAdminSve;
+ *     vatStore: MapStore<string, CreateVatResults>;
+ *   };
  * }} powers
- *
  * @param {object} options
- * @param {{zoeRef: VatSourceRef, zcfRef: VatSourceRef}} options.options
+ * @param {{ zoeRef: VatSourceRef; zcfRef: VatSourceRef }} options.options
  */
 export const upgradeZcf = async (
   { consume: { vatAdminSvc, vatStore } },

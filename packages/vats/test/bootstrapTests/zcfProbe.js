@@ -19,7 +19,7 @@ const ZcfProbeI = M.interface('ZCF Probe', {
 
 /**
  * @param {ZCF} zcf
- * @param {{storageNode: StorageNode}} privateArgs
+ * @param {{ storageNode: StorageNode }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
