@@ -176,12 +176,24 @@ agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-ba
 
 # replicate state-sync of node
 # this will cause the swing-store to prune some data
+# we will save the pruned artifact for later
 killAgd
 EXPORT_DIR=$(mktemp -t -d swing-store-export-upgrade-10-XXX)
 make_swing_store_snapshot $EXPORT_DIR || fail "Couldn't make swing-store snapshot"
 test_val "$(compare_swing_store_export_data $EXPORT_DIR)" "match" "swing-store export data"
+EXPORT_DIR_ALL_ARTIFACTS=$(mktemp -t -d swing-store-export-upgrade-10-all-artifacts-XXX)
+make_swing_store_snapshot $EXPORT_DIR_ALL_ARTIFACTS --export-mode archival || fail "Couldn't make swing-store snapshot for historical artifacts"
 restore_swing_store_snapshot $EXPORT_DIR || fail "Couldn't restore swing-store snapshot"
+(
+    cd $EXPORT_DIR_ALL_ARTIFACTS
+    mkdir $HOME/.agoric/data/agoric/swing-store-historical-artifacts
+    for i in *; do
+        [ -f $EXPORT_DIR/$i ] && continue
+        mv $i $HOME/.agoric/data/agoric/swing-store-historical-artifacts/
+    done
+)
 rm -rf $EXPORT_DIR
+rm -rf $EXPORT_DIR_ALL_ARTIFACTS
 startAgd
 
 # # TODO fully test bidding

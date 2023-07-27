@@ -109,7 +109,8 @@ submitDeliverInbound() {
 
 make_swing_store_snapshot() {( set -euo pipefail
   EXPORT_DIR="$1"
-  /usr/src/agoric-sdk/packages/cosmic-swingset/src/export-kernel-db.js --home "$HOME/.agoric" --export-dir "$EXPORT_DIR" --verbose --include-export-data
+  shift
+  /usr/src/agoric-sdk/packages/cosmic-swingset/src/export-kernel-db.js --home "$HOME/.agoric" --export-dir "$EXPORT_DIR" --verbose --include-export-data "$@"
 
   EXPORT_MANIFEST_FILE="$EXPORT_DIR/export-manifest.json"
   EXPORT_DATA_FILE="$EXPORT_DIR/$(cat "$EXPORT_MANIFEST_FILE" | jq -r .data)"
