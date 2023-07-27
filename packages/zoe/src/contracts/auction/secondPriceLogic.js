@@ -1,5 +1,4 @@
 import { AmountMath } from '@agoric/ertp';
-import { atomicRearrange } from '../../contractSupport/index.js';
 
 /**
  * @param {ZCF} zcf
@@ -48,8 +47,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   }
 
   // Everyone else gets a refund so their values remain the same.
-  atomicRearrange(
-    zcf,
+  zcf.atomicRearrange(
     harden([
       [
         highestBidSeat,

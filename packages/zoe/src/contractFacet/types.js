@@ -26,6 +26,7 @@
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  *
+ * @property {(transfers: TransferPart[]) => void} atomicRearrange - atomically reallocate amounts among seats.
  * @property {Reallocate} reallocate - reallocate amounts among seats.
  * Deprecated: Use atomicRearrange instead.
  * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
@@ -59,6 +60,8 @@
  */
 
 /**
+ * @deprecated reallocate(). Use zcf.atomicRearrange() instead
+ *
  * @typedef {(seat1: ZCFSeat, seat2: ZCFSeat, ...seatRest:
  * Array<ZCFSeat>) => void} Reallocate
  *
@@ -81,6 +84,15 @@
  * allocations will change. Since rights are conserved for the change,
  * overall rights will be unchanged, and a reallocation can only
  * effect offer safety for seats whose allocations change.
+ */
+
+/**
+ * @typedef {[
+ *   fromSeat?: ZCFSeat,
+ *   toSeat?: ZCFSeat,
+ *   fromAmounts?: AmountKeywordRecord,
+ *   toAmounts?: AmountKeywordRecord
+ * ]} TransferPart
  */
 
 /**
