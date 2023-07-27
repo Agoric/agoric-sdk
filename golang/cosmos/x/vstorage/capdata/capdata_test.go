@@ -13,7 +13,7 @@ func ptr[T any](v T) *T {
 }
 
 func mustJsonMarshal(val any) string {
-	jsonText, err := json.Marshal(val)
+	jsonText, err := JsonMarshal(val)
 	if err != nil {
 		panic(err)
 	}
@@ -36,6 +36,35 @@ func remotableToString(r *CapdataRemotable) interface{} {
 		iface = *r.Iface
 	}
 	return fmt.Sprintf("remotable:%s{%s}", iface, r.Id)
+}
+
+func Test_JsonMarshal(t *testing.T) {
+	type testCase struct {
+		input       string
+		expected    string
+		errContains *string
+	}
+	testCases := []testCase{
+		{
+			input:    "<>&\u2028\u2029",
+			expected: `"<>&\u2028\u2029"`,
+		},
+	}
+	for _, desc := range testCases {
+		label := fmt.Sprintf("%q", desc.input)
+		result, err := JsonMarshal(desc.input)
+		if desc.errContains == nil {
+			if err != nil {
+				t.Errorf("%s: got unexpected error %v", label, err)
+			} else if string(result) != desc.expected {
+				t.Errorf("%s: wrong result: %#q", label, result)
+			}
+		} else if err == nil {
+			t.Errorf("%s: got no error, want error %q", label, *desc.errContains)
+		} else if !strings.Contains(err.Error(), *desc.errContains) {
+			t.Errorf("%s: got error %v, want error %q", label, err, *desc.errContains)
+		}
+	}
 }
 
 func Test_DecodeSerializedCapdata(t *testing.T) {
@@ -307,7 +336,7 @@ func Test_DecodeSerializedCapdata(t *testing.T) {
 				if err != nil {
 					t.Errorf("%s: got unexpected error %v", label, err)
 				} else if !reflect.DeepEqual(got, expected) {
-					result, err := json.Marshal(got)
+					result, err := JsonMarshal(got)
 					if err != nil {
 						panic(fmt.Errorf("%s: %v", label, err))
 					}

@@ -1,12 +1,27 @@
 package capdata
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+// JsonMarshal returns JSON text representing its input,
+// without special replacement of "<", ">", "&", U+2028, or U+2029.
+func JsonMarshal(val any) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	encoder := json.NewEncoder(buf)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(val); err != nil {
+		return nil, err
+	}
+	// Return without a trailing line feed.
+	lineTerminatedJson := buf.Bytes()
+	return bytes.TrimSuffix(lineTerminatedJson, []byte("\n")), nil
+}
 
 // cf. https://github.com/endojs/endo/tree/master/packages/marshal
 
@@ -36,7 +51,7 @@ func NewCapdataBigint(str string) *CapdataBigint {
 }
 
 func (r *CapdataRemotable) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.Representation)
+	return JsonMarshal(r.Representation)
 }
 
 type CapdataValueTransformations struct {

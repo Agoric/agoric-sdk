@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,7 +10,7 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-	//"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/capdata"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/capdata"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,7 +21,7 @@ func ptr[T any](v T) *T {
 }
 
 func mustJsonMarshal(val any) string {
-	jsonText, err := json.Marshal(val)
+	jsonText, err := capdata.JsonMarshal(val)
 	if err != nil {
 		panic(err)
 	}
