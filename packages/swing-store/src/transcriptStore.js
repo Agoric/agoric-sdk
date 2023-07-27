@@ -383,6 +383,17 @@ export function makeTranscriptStore(
     }
   }
 
+  // 'position' is not recycled across incarnations, so strictly
+  // speaking this query doesn't need to filter on 'incarnation = ?',
+  // but this will catch problems like items with incorrect or missing
+  // incarnation values
+
+  const sqlCountPopulatedSpanItems = db.prepare(`
+    SELECT COUNT(*) FROM transcriptItems
+      WHERE vatID = ? AND incarnation = ? AND position >= ? AND position < ?
+  `);
+  sqlCountPopulatedSpanItems.pluck();
+
   /**
    * Obtain artifact names for spans contained in this store.
    *
@@ -398,6 +409,13 @@ export function makeTranscriptStore(
       ? sqlGetAllSpanMetadata
       : sqlGetCurrentSpanMetadata;
     for (const rec of sql.iterate()) {
+      const { vatID, incarnation, startPos, endPos } = rec;
+      if (
+        !sqlCountPopulatedSpanItems.get(vatID, incarnation, startPos, endPos)
+      ) {
+        continue;
+      }
+
       yield spanArtifactName(rec);
     }
   }
@@ -438,15 +456,22 @@ export function makeTranscriptStore(
       }
     }
     startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
+    const expectedCount = endPos - startPos;
 
     function* reader() {
+      let count = 0;
       for (const { item } of sqlReadSpanItems.iterate(
         vatID,
         startPos,
         endPos,
       )) {
         yield item;
+        count += 1;
       }
+      count === expectedCount ||
+        Fail`read ${q(count)} transcript entries (expected ${q(
+          expectedCount,
+        )})`;
     }
 
     if (startPos === endPos) {
@@ -626,17 +651,6 @@ export function makeTranscriptStore(
       );
     }
   }
-
-  // 'position' is not recycled across incarnations, so strictly
-  // speaking this query doesn't need to filter on 'incarnation = ?',
-  // but this will catch problems like items with incorrect or missing
-  // incarnation values
-
-  const sqlCountPopulatedSpanItems = db.prepare(`
-    SELECT COUNT(*) FROM transcriptItems
-      WHERE vatID = ? AND incarnation = ? AND position >= ? AND position < ?
-  `);
-  sqlCountPopulatedSpanItems.pluck();
 
   function assertComplete(level) {
     assert.equal(level, 'operational'); // for now
