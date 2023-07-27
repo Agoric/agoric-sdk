@@ -35,3 +35,11 @@ test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.vaultState') "closed" "vault2 is closed"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.locked.value') "0" "vault2 contains no collateral"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.debtSnapshot.debt.value') "0" "vault2 has no debt"
+
+# verify state-sync would be broken
+killAgd
+EXPORT_DIR=$(mktemp -t -d swing-store-export-upgrade-10-XXX)
+make_swing_store_snapshot $EXPORT_DIR || fail "Couldn't make swing-store snapshot"
+test_val "$(compare_swing_store_export_data $EXPORT_DIR)" "mismatch" "swing-store broken state-sync"
+rm -rf $EXPORT_DIR
+startAgd
