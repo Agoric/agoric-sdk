@@ -202,12 +202,18 @@ voteLatestProposalAndWait() {
 
   while true; do
     status=$($binary q gov proposal $proposal -ojson | jq -r .status)
-    if [ "$status" == "PROPOSAL_STATUS_PASSED" ]; then
+    case $status in
+    PROPOSAL_STATUS_PASSED)
       break
-    else
-      echo "Waiting for proposal to pass"
+      ;;
+    PROPOSAL_STATUS_REJECTED)
+      echo "Proposal rejected"
+      exit 1
+      ;;
+    *)
+      echo "Waiting for proposal to pass (status=$status)"
       sleep 1
-    fi
+    esac
   done
 }
 
