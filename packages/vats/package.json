@@ -14,7 +14,6 @@
     "build:boot-viz-sim": "node src/authorityViz.js --sim-chain >docs/boot-sim.dot && dot -Tsvg docs/boot-sim.dot >docs/boot-sim.dot.svg",
     "build:boot-viz-sim-gov": "node src/authorityViz.js --sim-chain --gov >docs/boot-sim-gov.dot && dot -Tsvg docs/boot-sim-gov.dot >docs/boot-sim-gov.dot.svg",
     "build:restart-vats-proposal": "agoric run scripts/restart-vats.js",
-    "build:add-STARS-proposal": "agoric run scripts/add-STARS.js",
     "build:zcf-proposal": "agoric run scripts/replace-zoe.js",
     "prepack": "tsc --build jsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
