@@ -8,11 +8,6 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
-    "build:docs": "yarn build:boot-viz && yarn build:boot-viz-gov && yarn build:boot-viz-sim && yarn build:boot-viz-sim-gov",
-    "build:boot-viz": "node src/authorityViz.js >docs/boot.dot && dot -Tsvg docs/boot.dot >docs/boot.dot.svg",
-    "build:boot-viz-gov": "node src/authorityViz.js --gov>docs/boot-gov.dot && dot -Tsvg docs/boot-gov.dot >docs/boot-gov.dot.svg",
-    "build:boot-viz-sim": "node src/authorityViz.js --sim-chain >docs/boot-sim.dot && dot -Tsvg docs/boot-sim.dot >docs/boot-sim.dot.svg",
-    "build:boot-viz-sim-gov": "node src/authorityViz.js --sim-chain --gov >docs/boot-sim-gov.dot && dot -Tsvg docs/boot-sim-gov.dot >docs/boot-sim-gov.dot.svg",
     "build:restart-vats-proposal": "agoric run scripts/restart-vats.js",
     "build:zcf-proposal": "agoric run scripts/replace-zoe.js",
     "prepack": "tsc --build jsconfig.build.json",
