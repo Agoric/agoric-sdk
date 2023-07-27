@@ -1,5 +1,5 @@
 // @ts-nocheck
-// #xxxport { E } from '@endo/far';
+// xxport { E } from '@endo/far';
 /* global E */
 
 console.log('started switch-auctioneer script');
@@ -7,7 +7,7 @@ console.log('started switch-auctioneer script');
 // TODO: set these bundle-ids to the revised code
 const bundleIDs = {
   vaultFactory:
-    'b1-ff68ffba61530568d82f0ec7c30eab6fe6a4bf8f4758c268152687c6b680ecf62466fbc1e6af9ddc95db30feb51878df07e80db7b908a7e6c7c7c2e4ccf2a4e9',
+    'b1-4755fb5c079fc2a17e6ea5a887d27787cd6d48df179e046466c4dbf4b9e78ac7dceee183a395de3d6a09c5f162415e12f42685269b84c64b58c5f65eab6b0de1',
   auctioneer:
     'b1-e85289898e66e0423d7ec1c402ac2ced21573f93cf599d593a0533a1e2355ace624cc95c8c8c18c66d44a921511642e87837accd0e728427c269936b040bb886',
 };
@@ -26,7 +26,7 @@ const allValues = async obj => {
   return harden(fromEntries(zip(keys(obj), resolved)));
 };
 
-// /** @param {#xxxport('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} permittedPowers */
+// /** @param {xxport('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} permittedPowers */
 const switchAuctioneer = async permittedPowers => {
   console.log('switchAuctioneer: extracting permitted powers...');
   // see gov-switch-auctioneer-permit.json
@@ -40,6 +40,7 @@ const switchAuctioneer = async permittedPowers => {
       zoe,
       chainStorage,
       board,
+      reserveKit,
     },
     produce: { auctioneerKit },
     instance: {
@@ -121,7 +122,7 @@ const switchAuctioneer = async permittedPowers => {
     // @ts-expect-error cast XXX privateArgs missing from type
     const { privateArgs } = kit;
 
-    /** @type {#xxxport('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
+    /** @type {xxport('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
     const newPrivateArgs = harden({
       ...privateArgs,
       auctioneerPublicFacet: newAuctionKit.publicFacet,
@@ -130,6 +131,13 @@ const switchAuctioneer = async permittedPowers => {
       bundleIDs.vaultFactory,
       newPrivateArgs,
     );
+
+    const shortfallInvitation = await E(
+      E.get(reserveKit).creatorFacet,
+    ).makeShortfallReportingInvitation();
+
+    await E(kit.creatorFacet).updateShortfallReporter(shortfallInvitation);
+
     console.log('upgraded vaultVactory.', upgradeResult);
   };
   await upgradeVaultFactory();

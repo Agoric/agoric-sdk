@@ -4,7 +4,10 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
-import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
+import {
+  GovernorFacetShape,
+  InvitationShape,
+} from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import {
@@ -140,28 +143,36 @@ const prepareVaultDirector = (
   const writeMetrics = () => E(metricsKit.recorderP).write(sampleMetrics());
 
   const updateShortfallReporter = async () => {
-    const oldInvitation = baggage.has(shortfallInvitationKey)
-      ? baggage.get(shortfallInvitationKey)
-      : undefined;
-    const newInvitation = await directorParamManager.getInternalParamValue(
-      SHORTFALL_INVITATION_KEY,
+    console.warn(
+      'updateShortfallReporter is deprecated. We no longer update shortFall from governance',
     );
 
-    if (newInvitation === oldInvitation) {
-      shortfallReporter ||
-        Fail`updateShortFallReported called with repeat invitation and no prior shortfallReporter`;
-      return;
-    }
+    // const oldInvitation = baggage.has(shortfallInvitationKey)
+    //   ? baggage.get(shortfallInvitationKey)
+    //   : undefined;
+    // console.log('@@@@@ Old Invitation', oldInvitation);
 
-    // Update the values
-    const zoe = zcf.getZoeService();
-    // @ts-expect-error cast
-    shortfallReporter = E(E(zoe).offer(newInvitation)).getOfferResult();
-    if (oldInvitation === undefined) {
-      baggage.init(shortfallInvitationKey, newInvitation);
-    } else {
-      baggage.set(shortfallInvitationKey, newInvitation);
-    }
+    // const newInvitation = await directorParamManager.getInternalParamValue(
+    //   SHORTFALL_INVITATION_KEY,
+    // );
+
+    // console.log('@@@@@ New Invitation', newInvitation);
+
+    // if (newInvitation === oldInvitation) {
+    //   shortfallReporter ||
+    //     Fail`updateShortFallReported called with repeat invitation and no prior shortfallReporter`;
+    //   return;
+    // }
+
+    // // Update the values
+    // const zoe = zcf.getZoeService();
+    // // @ts-expect-error cast
+    // shortfallReporter = E(E(zoe).offer(newInvitation)).getOfferResult();
+    // if (oldInvitation === undefined) {
+    //   baggage.init(shortfallInvitationKey, newInvitation);
+    // } else {
+    //   baggage.set(shortfallInvitationKey, newInvitation);
+    // }
   };
 
   const factoryPowers = Far('vault factory powers', {
@@ -294,6 +305,7 @@ const prepareVaultDirector = (
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
         makeReschedulerWaker: M.call().returns(M.remotable('TimerWaker')),
+        updateShortfallReporter: M.call(InvitationShape).returns(M.promise()),
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
@@ -437,6 +449,12 @@ const prepareVaultDirector = (
           return makeWaker('priceLockWaker', () => {
             allManagersDo(vm => vm.lockOraclePrices());
           });
+        },
+        async updateShortfallReporter(newInvitation) {
+          const zoe = zcf.getZoeService();
+          shortfallReporter = await E(
+            E(zoe).offer(newInvitation),
+          ).getOfferResult();
         },
       },
       public: {
