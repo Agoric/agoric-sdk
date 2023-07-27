@@ -206,8 +206,10 @@ export const makePriceFeedDriver = async (
   };
 };
 
+/** @typedef {Awaited<ReturnType<import('./supports.js').makeSwingsetTestKit>>} SwingsetTestKit */
+
 /**
- * @param {import('./supports.js').SwingsetTestKit} testKit
+ * @param {SwingsetTestKit} testKit
  * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
  * @param {string[]} committeeAddresses
@@ -339,9 +341,6 @@ export const makeGovernanceDriver = async (
   };
 };
 
-/**
- * @param {import('./supports.js').SwingsetTestKit} testKit
- */
 export const makeZoeDriver = async testKit => {
   const { EV } = testKit.runUtils;
   const zoe = await EV.vat('bootstrap').consumeItem('zoe');
