@@ -142,24 +142,24 @@ func capdataBigintToDigits(bigint *capdata.CapdataBigint) interface{} {
 }
 
 // capdataRemotableToString represents a Remotable as a bracketed string
-// containing its alleged name (e.g., "[Foo {}]").
+// containing its alleged name and id from `slots`
+// (e.g., "[Alleged: IST brand <board007>]").
 func capdataRemotableToString(r *capdata.CapdataRemotable) interface{} {
 	iface := "Remotable"
 	if r.Iface != nil || *r.Iface != "" {
 		iface = *r.Iface
 	}
-	return fmt.Sprintf("[%s {}]", iface)
+	return fmt.Sprintf("[%s <%s>]", iface, r.Id)
 }
 
 // capdataRemotableToObject represents a Remotable as an object containing
-// its id from `slots` and alleged name minus any "Alleged:" prefix or "brand"
-// suffix (e.g., `{ "id": "board007", "allegedName": "IST" }`).
+// its id from `slots` and its alleged name minus any "Alleged:" prefix
+// (e.g., `{ "id": "board007", "allegedName": "IST brand" }`).
 func capdataRemotableToObject(r *capdata.CapdataRemotable) interface{} {
 	iface := "Remotable"
 	if r.Iface != nil || *r.Iface != "" {
 		iface = *r.Iface
 		iface, _ = strings.CutPrefix(iface, "Alleged: ")
-		iface, _ = strings.CutSuffix(iface, " brand")
 	}
 	return map[string]interface{}{"id": r.Id, "allegedName": iface}
 }
@@ -177,6 +177,9 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 		Bigint: capdataBigintToDigits,
 	}
 
+	// A response Value is "<prefix><separator-joined items><suffix>".
+	prefix, separator, suffix := "", "\n", ""
+
 	// Read options.
 	mediaType, ok := capDataResponseMediaTypes[req.MediaType]
 	if !ok {
@@ -186,14 +189,12 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 	if !ok {
 		return nil, status.Error(codes.InvalidArgument, "invalid item_format")
 	}
-	remotableFormat, ok := capDataRemotableValueFormats[req.RemotableValueFormat]
-	if !ok {
+	switch remotableFormat, ok := capDataRemotableValueFormats[req.RemotableValueFormat]; {
+	case !ok:
 		return nil, status.Error(codes.InvalidArgument, "invalid remotable_value_format")
-	}
-	switch remotableFormat {
-	case FormatRemotableAsObject:
+	case remotableFormat == FormatRemotableAsObject:
 		valueTransformations.Remotable = capdataRemotableToObject
-	case FormatRemotableAsString:
+	case remotableFormat == FormatRemotableAsString:
 		valueTransformations.Remotable = capdataRemotableToString
 	}
 
@@ -238,7 +239,7 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 
 	return &types.QueryCapDataResponse{
 		BlockHeight: cell.BlockHeight,
-		Value:       strings.Join(responseItems, "\n"),
+		Value:       prefix + strings.Join(responseItems, separator) + suffix,
 	}, nil
 }
 

@@ -156,11 +156,11 @@ func TestCapData(t *testing.T) {
 	// and deriving expectations from marshalling to avoid spurious mismatches
 	// from Go's unpredictable field ordering (e.g., `{"a":0,"b":1}` vs. `{"b":1,"a":0}`).
 	slots := []any{"a"}
-	deepSmallcapsBody := `{"arr":[{"bigint":"+42","remotable":"$0.Foo","ref2":"$0"}]}`
+	deepSmallcapsBody := `{"arr":[{"bigint":"+42","remotable":"$0.Alleged: Foo brand","ref2":"$0"}]}`
 	deepLegacyBody := deepSmallcapsBody
 	legacyFromSmallcaps := [][2]string{
 		[2]string{`"+42"`, `{"@qclass":"bigint","digits":"42"}`},
-		[2]string{`"$0.Foo"`, `{"@qclass":"slot","index":0,"iface":"Foo"}`},
+		[2]string{`"$0.Alleged: Foo brand"`, `{"@qclass":"slot","index":0,"iface":"Alleged: Foo brand"}`},
 		[2]string{`"$0"`, `{"@qclass":"slot","index":0}`},
 	}
 	for _, pair := range legacyFromSmallcaps {
@@ -183,8 +183,8 @@ func TestCapData(t *testing.T) {
 				"arr": []any{
 					map[string]any{
 						"bigint":    "42",
-						"remotable": "[Foo {}]",
-						"ref2":      "[Foo {}]",
+						"remotable": "[Alleged: Foo brand <a>]",
+						"ref2":      "[Alleged: Foo brand <a>]",
 					},
 				},
 			}),
@@ -197,8 +197,8 @@ func TestCapData(t *testing.T) {
 			BlockHeight: "1",
 			Value: mustMarshalTwoLines(map[string]any{
 				"arr-0-bigint":    "42",
-				"arr-0-remotable": "[Foo {}]",
-				"arr-0-ref2":      "[Foo {}]",
+				"arr-0-remotable": "[Alleged: Foo brand <a>]",
+				"arr-0-ref2":      "[Alleged: Foo brand <a>]",
 			}),
 		},
 	})
@@ -211,8 +211,8 @@ func TestCapData(t *testing.T) {
 				"arr": []any{
 					map[string]any{
 						"bigint":    "42",
-						"remotable": map[string]any{"id": "a", "allegedName": "Foo"},
-						"ref2":      map[string]any{"id": "a", "allegedName": "Foo"},
+						"remotable": map[string]any{"id": "a", "allegedName": "Foo brand"},
+						"ref2":      map[string]any{"id": "a", "allegedName": "Foo brand"},
 					},
 				},
 			}),
@@ -226,9 +226,9 @@ func TestCapData(t *testing.T) {
 			Value: mustMarshalTwoLines(map[string]any{
 				"arr-0-bigint":                "42",
 				"arr-0-remotable-id":          "a",
-				"arr-0-remotable-allegedName": "Foo",
+				"arr-0-remotable-allegedName": "Foo brand",
 				"arr-0-ref2-id":               "a",
-				"arr-0-ref2-allegedName":      "Foo",
+				"arr-0-ref2-allegedName":      "Foo brand",
 			}),
 		},
 	})
