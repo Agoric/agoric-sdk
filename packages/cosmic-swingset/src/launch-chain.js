@@ -24,6 +24,7 @@ import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
+import * as BlockingSendType from './blocking-send-types.js';
 import {
   makeDefaultMeterProvider,
   makeInboundQueueMetrics,
@@ -673,7 +674,7 @@ export async function launch({
 
   // Handle block related actions
   // Some actions that are integration specific may be handled by the caller
-  // For example COSMOS_SNAPSHOT and AG_COSMOS_INIT are handled in chain-main.js
+  // For example COSMOS_SNAPSHOT is handled in chain-main.js
   async function blockingSend(action) {
     if (decohered) {
       throw decohered;
@@ -688,9 +689,12 @@ export async function launch({
     //   action.type,
     // );
     switch (action.type) {
-      case ActionType.BOOTSTRAP_BLOCK: {
+      case BlockingSendType.AG_COSMOS_INIT: {
+        const { isBootstrap, blockTime } = action;
         // This only runs for the very first block on the chain.
-        const { blockTime } = action;
+        if (!isBootstrap) {
+          return true;
+        }
         verboseBlocks && blockManagerConsole.info('block bootstrap');
         if (savedHeight !== 0) {
           throw Error(`Cannot run a bootstrap block at height ${savedHeight}`);
@@ -719,10 +723,10 @@ export async function launch({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
         });
-        return undefined;
+        return true;
       }
 
-      case ActionType.COMMIT_BLOCK: {
+      case BlockingSendType.COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'commit');
@@ -752,7 +756,7 @@ export async function launch({
         return undefined;
       }
 
-      case ActionType.AFTER_COMMIT_BLOCK: {
+      case BlockingSendType.AFTER_COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
 
         const fullSaveTime = Date.now() - endBlockFinish;
@@ -771,7 +775,7 @@ export async function launch({
         return undefined;
       }
 
-      case ActionType.BEGIN_BLOCK: {
+      case BlockingSendType.BEGIN_BLOCK: {
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
         verboseBlocks &&
@@ -788,7 +792,7 @@ export async function launch({
         return undefined;
       }
 
-      case ActionType.END_BLOCK: {
+      case BlockingSendType.END_BLOCK: {
         const { blockHeight, blockTime } = action;
         controller.writeSlogObject({
           type: 'cosmic-swingset-end-block-start',
