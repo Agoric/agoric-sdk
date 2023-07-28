@@ -6,7 +6,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import anylogger from 'anylogger';
 import { Fail } from '@agoric/assert';
 import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';

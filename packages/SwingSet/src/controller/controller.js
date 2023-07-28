@@ -15,10 +15,10 @@ import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
 import { checkBundle } from '@endo/check-bundle/lite.js';
-import engineGC from '../lib-nodejs/engine-gc.js';
-import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
-import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import { kslot } from '../lib/kmarshal.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import {

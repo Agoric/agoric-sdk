@@ -1,5 +1,5 @@
-import { mustMatch } from '@agoric/store';
 import { Nat } from '@endo/nat';
+import { mustMatch } from '@endo/patterns';
 import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
 const { Fail, quote: q } = assert;

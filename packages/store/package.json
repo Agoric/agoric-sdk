@@ -31,13 +31,13 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
+    "@agoric/internal": "^0.3.2",
     "@endo/exo": "^0.2.3",
     "@endo/marshal": "^0.8.6",
     "@endo/pass-style": "^0.1.4",
     "@endo/patterns": "^0.2.3"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@endo/init": "^0.5.57",
     "@endo/ses-ava": "^0.2.41",

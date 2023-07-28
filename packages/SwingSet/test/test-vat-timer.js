@@ -6,8 +6,8 @@ import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { buildRootObject, debugTools } from '../src/vats/timer/vat-timer.js';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 
 test('schedule', t => {
   const schedule = makeScalarMapStore();

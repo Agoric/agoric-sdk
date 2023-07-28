@@ -8,7 +8,7 @@ import fs from 'node:fs';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';

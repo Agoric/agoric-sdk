@@ -12,7 +12,7 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.js';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 
 import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';

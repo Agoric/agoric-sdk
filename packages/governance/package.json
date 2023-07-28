@@ -50,7 +50,6 @@
     "import-meta-resolve": "^2.2.1"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/vats": "^0.15.1",
     "@endo/bundle-source": "^2.5.2",
     "@endo/init": "^0.5.57",
