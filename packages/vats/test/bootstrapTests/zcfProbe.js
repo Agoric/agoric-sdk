@@ -53,7 +53,16 @@ export const start = async (zcf, privateArgs, baggage) => {
           let result;
           try {
             atomicRearrange(zcf, harden([[seat, stashSeat, { Ducats: one }]]));
-            result = true;
+
+            // the helper can fail silently if the most recent version of the
+            // library calls zcf.atomicRearrange() directly while running with a
+            // zcf that doesn't yet have atomicRearrange. This can happen when
+            // the prober bundle is built in a later version and run under
+            // docker in an earlier version.
+            result = !AmountMath.isEqual(
+              originalAlloc,
+              stashSeat.getCurrentAllocation().Ducats,
+            );
           } catch (e) {
             result = false;
           }
