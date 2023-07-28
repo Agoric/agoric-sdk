@@ -341,7 +341,6 @@ export const makeGovernanceDriver = async (
   };
 };
 
-/** @param {SwingsetTestKit} testKit */
 export const makeZoeDriver = async testKit => {
   const { EV } = testKit.runUtils;
   const zoe = await EV.vat('bootstrap').consumeItem('zoe');
