@@ -673,13 +673,8 @@ export async function launch({
   // Handle block related actions
   // Some actions that are integration specific may be handled by the caller
   // For example COSMOS_SNAPSHOT is handled in chain-main.js
-  async function blockingSend(action) {
-    if (decohered) {
-      throw decohered;
-    }
-
-    await afterCommitWorkDone;
-
+  async function doBlockingSend(action) {
+    await null;
     // blockManagerConsole.warn(
     //   'FIGME: blockHeight',
     //   action.blockHeight,
@@ -842,7 +837,7 @@ export async function launch({
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
-          await Promise.all([saveChainState(), pendingSwingStoreExport]);
+          await saveChainState();
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
@@ -864,6 +859,15 @@ export async function launch({
         throw Fail`Unrecognized action ${action}; are you sure you didn't mean to queue it?`;
       }
     }
+  }
+  async function blockingSend(action) {
+    if (decohered) {
+      throw decohered;
+    }
+
+    await afterCommitWorkDone;
+
+    return doBlockingSend(action).finally(() => pendingSwingStoreExport);
   }
 
   async function shutdown() {
