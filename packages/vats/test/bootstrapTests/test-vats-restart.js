@@ -1,29 +1,27 @@
 // @ts-check
 /** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import { Fail } from '@agoric/assert';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+
+import processAmbient from 'child_process';
+import { promises as fsAmbientPromises } from 'fs';
+
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeWalletFactoryDriver } from './drivers.js';
-import { makeSwingsetTestKit } from './supports.js';
+import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
 
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
- */
-const test = anyTest;
+const { Fail } = assert;
+
+/** @file Bootstrap test of restarting (almost) all vats */
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
+/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
 
-// presently all these tests use one collateral manager
-const collateralBrandKey = 'ATOM';
-
-const makeTestContext = async t => {
+export const makeTestContext = async t => {
   console.time('DefaultTestContext');
+  /** @type {SwingsetTestKit} */
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
     configSpecifier: PLATFORM_CONFIG,
   });
@@ -54,12 +52,27 @@ const makeTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
+  const buildProposal = makeProposalExtractor({
+    childProcess: processAmbient,
+    fs: fsAmbientPromises,
+  });
+
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
+    buildProposal,
   };
 };
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
+const test = anyTest;
+
+// presently all these tests use one collateral manager
+const collateralBrandKey = 'ATOM';
 
 test.before(async t => {
   t.context = await makeTestContext(t);
