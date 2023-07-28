@@ -123,6 +123,7 @@ test('run restart-vats proposal', async t => {
   const source = `${dirname}/${ZCF_PROBE_SRC}`;
 
   const zcfProbeBundle = await bundleSource(source);
+  await controller.validateAndInstallBundle(zcfProbeBundle);
   // This test self-sufficiently builds all the artifacts it needs. The test in
   // .../packages/deployment/upgradeTest/upgradeTest-scripts/agoric-upgrade-11/zoe-upgrade/
   // needs a bundled copy of ./zcfProbe.js as of the final commit that will be

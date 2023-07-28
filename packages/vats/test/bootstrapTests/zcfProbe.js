@@ -1,3 +1,5 @@
+import '@agoric/zoe/exported.js';
+
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import {
@@ -17,17 +19,21 @@ const ZcfProbeI = M.interface('ZCF Probe', {
   makeFaucetInvitation: M.call().returns(M.promise()),
 });
 
+// /** @type {ContractMeta} */
+// export const meta = { upgradability: 'canUpgrade' };
+// harden(meta);
+
 /**
  * @param {ZCF} zcf
  * @param {{ storageNode: StorageNode }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { probeMint } = await provideAll(baggage, {
     probeMint: () => zcf.makeZCFMint('Ducats'),
   });
 
-  const { storageNode } = privateArgs;
+  const storageNode = privateArgs?.storageNode;
   const makeZcfProbe = await prepareExoClass(
     baggage,
     'zcfProbe',
@@ -77,7 +83,9 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
           trace('Intrinsics', result);
           // write to vstorage so a test can detect it.
-          void E(storageNode).setValue(`${result}`);
+          if (storageNode) {
+            void E(storageNode).setValue(`${result}`);
+          }
 
           return result;
         };
