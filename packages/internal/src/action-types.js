@@ -1,6 +1,6 @@
 // @jessie-check
 
-export const BOOTSTRAP_BLOCK = 'BOOTSTRAP_BLOCK';
+export const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 export const COSMOS_SNAPSHOT = 'COSMOS_SNAPSHOT';
 export const BEGIN_BLOCK = 'BEGIN_BLOCK';
 export const CALCULATE_FEES_IN_BEANS = 'CALCULATE_FEES_IN_BEANS';
