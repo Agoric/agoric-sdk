@@ -45,8 +45,6 @@ import { performStateSyncImport } from './import-kernel-db.js';
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
 
-const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
-
 const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
 const toNumber = specimen => {
@@ -619,7 +617,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     await null;
 
     switch (action.type) {
-      case AG_COSMOS_INIT: {
+      case ActionType.AG_COSMOS_INIT: {
         // console.error('got AG_COSMOS_INIT', action);
 
         !blockingSend || Fail`Swingset already initialized`;
@@ -644,7 +642,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         // Ensure that initialization has completed.
         blockingSend = await launchAndInitializeSwingSet(action);
 
-        return true;
+        return blockingSend(action);
       }
 
       // Snapshot actions are specific to cosmos chains and handled here

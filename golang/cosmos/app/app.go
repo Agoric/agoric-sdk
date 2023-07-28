@@ -828,6 +828,7 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 type cosmosInitAction struct {
 	Type        string             `json:"type"`
 	ChainID     string             `json:"chainID"`
+	BlockTime   int64              `json:"blockTime,omitempty"`
 	IsBootstrap bool               `json:"isBootstrap"`
 	Params      swingset.Params    `json:"params"`
 	SupplyCoins sdk.Coins          `json:"supplyCoins"`
@@ -850,11 +851,6 @@ func (app *GaiaApp) CheckControllerInited(expected bool) {
 	}
 }
 
-type bootstrapBlockAction struct {
-	Type      string `json:"type"`
-	BlockTime int64  `json:"blockTime"`
-}
-
 // initController sends the initialization message to the VM.
 // Exits if the controller has already been initialized.
 // The init message will contain any upgrade plan if we're starting after an
@@ -862,11 +858,17 @@ type bootstrapBlockAction struct {
 func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	app.CheckControllerInited(false)
 	app.controllerInited = true
+
+	var blockTime int64 = 0
+	if bootstrap || app.upgradePlan != nil {
+		blockTime = ctx.BlockTime().Unix()
+	}
+
 	// Begin initializing the controller here.
-	var action vm.Jsonable
-	action = &cosmosInitAction{
+	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
+		BlockTime:   blockTime,
 		IsBootstrap: bootstrap,
 		Params:      app.SwingSetKeeper.GetParams(ctx),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
@@ -891,26 +893,6 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	}
 	if !res {
 		panic(fmt.Errorf("controller negative init response"))
-	}
-
-	if !bootstrap {
-		return
-	}
-
-	stdlog.Println("Running SwingSet until bootstrap is ready")
-	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
-	// business.
-	action = &bootstrapBlockAction{
-		Type:      "BOOTSTRAP_BLOCK",
-		BlockTime: ctx.BlockTime().Unix(),
-	}
-
-	_, err = app.SwingSetKeeper.BlockingSend(ctx, action)
-	// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
-	if err != nil {
-		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
-		// Panic here, in the hopes that a replay from scratch will fix the problem.
-		panic(err)
 	}
 }
 

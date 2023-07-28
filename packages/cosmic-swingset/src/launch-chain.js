@@ -672,7 +672,7 @@ export async function launch({
 
   // Handle block related actions
   // Some actions that are integration specific may be handled by the caller
-  // For example COSMOS_SNAPSHOT and AG_COSMOS_INIT are handled in chain-main.js
+  // For example COSMOS_SNAPSHOT is handled in chain-main.js
   async function blockingSend(action) {
     if (decohered) {
       throw decohered;
@@ -687,9 +687,12 @@ export async function launch({
     //   action.type,
     // );
     switch (action.type) {
-      case ActionType.BOOTSTRAP_BLOCK: {
+      case ActionType.AG_COSMOS_INIT: {
+        const { isBootstrap, blockTime } = action;
         // This only runs for the very first block on the chain.
-        const { blockTime } = action;
+        if (!isBootstrap) {
+          return true;
+        }
         verboseBlocks && blockManagerConsole.info('block bootstrap');
         if (savedHeight !== 0) {
           throw Error(`Cannot run a bootstrap block at height ${savedHeight}`);
@@ -718,7 +721,7 @@ export async function launch({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
         });
-        return undefined;
+        return true;
       }
 
       case ActionType.COMMIT_BLOCK: {
