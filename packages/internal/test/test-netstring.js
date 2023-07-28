@@ -1,12 +1,13 @@
 /* global Buffer */
-import { test } from '../tools/prepare-test-env-ava.js';
+import '@endo/init/debug.js';
+import test from 'ava';
 
 import {
   encode,
   decode,
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../src/lib/netstring.js';
+} from '../src/netstring.js';
 
 const umlaut = 'ümlaut';
 const umlautBuffer = Buffer.from(umlaut, 'utf-8');

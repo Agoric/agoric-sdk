@@ -11,8 +11,8 @@ import tmpfs from 'tmp';
 import { fork } from 'node:child_process';
 
 import { E } from '@endo/far';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
-import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import {
   importMailbox,
   exportMailbox,

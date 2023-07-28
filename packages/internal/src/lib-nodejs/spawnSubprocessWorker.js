@@ -6,7 +6,7 @@ import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import {
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../lib/netstring.js';
+} from '../netstring.js';
 
 // Start a subprocess from a given executable, and arrange a bidirectional
 // message channel with a "supervisor" within that process. Return a {
