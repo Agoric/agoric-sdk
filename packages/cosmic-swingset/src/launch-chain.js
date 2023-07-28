@@ -688,39 +688,53 @@ export async function launch({
     // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
-        const { isBootstrap, blockTime } = action;
+        const { isBootstrap, upgradePlan, blockTime } = action;
         // This only runs for the very first block on the chain.
-        if (!isBootstrap) {
-          return true;
+        if (isBootstrap) {
+          verboseBlocks && blockManagerConsole.info('block bootstrap');
+          savedHeight === 0 ||
+            Fail`Cannot run a bootstrap block at height ${savedHeight}`;
+          const blockHeight = 0;
+          const runNum = 0;
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-bootstrap-block-start',
+            blockTime,
+          });
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-run-start',
+            blockHeight,
+            runNum,
+          });
+          await processAction(action.type, async () =>
+            bootstrapBlock(blockHeight, blockTime),
+          );
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-run-finish',
+            blockHeight,
+            runNum,
+          });
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-bootstrap-block-finish',
+            blockTime,
+          });
         }
-        verboseBlocks && blockManagerConsole.info('block bootstrap');
-        if (savedHeight !== 0) {
-          throw Error(`Cannot run a bootstrap block at height ${savedHeight}`);
+        if (upgradePlan) {
+          const blockHeight = upgradePlan.height;
+          if (blockNeedsExecution(blockHeight)) {
+            controller.writeSlogObject({
+              type: 'cosmic-swingset-upgrade-start',
+              blockHeight,
+              blockTime,
+              upgradePlan,
+            });
+            // TODO: Process upgrade plan
+            controller.writeSlogObject({
+              type: 'cosmic-swingset-upgrade-finish',
+              blockHeight,
+              blockTime,
+            });
+          }
         }
-        const blockHeight = 0;
-        const runNum = 0;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-bootstrap-block-start',
-          blockTime,
-        });
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-run-start',
-          blockHeight,
-          runNum,
-        });
-        await processAction(action.type, async () =>
-          bootstrapBlock(blockHeight, blockTime),
-        );
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-run-finish',
-          blockHeight,
-          runNum,
-        });
-        await pendingSwingStoreExport;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-bootstrap-block-finish',
-          blockTime,
-        });
         return true;
       }
 
