@@ -12,6 +12,7 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.js';
+import { buildTimer } from '@agoric/swingset-vat';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 
 import { initSwingStore, openSwingStore } from '@agoric/swing-store';
@@ -73,6 +74,7 @@ FLAGS may be:
   --benchmark N    - perform an N round benchmark after the initial run
   --indirect       - launch swingset from a vat instead of launching directly
   --config FILE    - read swingset config from FILE instead of inferring it
+  --timer          - create a timer service
 
 CMD is one of:
   help   - print this helpful usage information
@@ -180,6 +182,7 @@ export async function main() {
   let initOnly = false;
   let useXS = false;
   let activityHash = false;
+  let createTimer = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -284,6 +287,9 @@ export async function main() {
       case '--verbose':
         verbose = true;
         break;
+      case '--timer':
+        createTimer = true;
+        break;
       default:
         fail(`invalid flag ${flag}`, true);
     }
@@ -327,19 +333,28 @@ export async function main() {
     config = loadBasedir(basedir);
   }
   const deviceEndowments = {};
+  config.devices = {};
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
-    config.devices = {
-      loopbox: {
+    config.devices.loopbox = {
         sourceSpec: loopboxSrcPath,
         parameters: {
           senders: config.loopboxSenders,
         },
-      },
     };
+
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
+
+  if (createTimer) {
+    const timer = buildTimer();
+    config.devices.timer = {
+        sourceSpec: timer.srcPath,
+    };
+    deviceEndowments.timer = { ...timer.endowments };
+  }
+
   if (!config.defaultManagerType) {
     if (useXS) {
       config.defaultManagerType = 'xs-worker';

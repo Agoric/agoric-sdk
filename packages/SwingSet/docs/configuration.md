@@ -131,7 +131,7 @@ the kernel should prompt each vat (by delivering it a `bringOutYourDead`
 directive) to perform garbage collection and notify the kernel of any dropped or
 released references that result.  This should either be an integer, indicating
 the number of deliveries that should be made to the vat before reaping, or the
-string `'never'`, indicating that such activity should never happen.  If
+string `'never'`, indicating that such activity should never happen.  It
 defaults (yes, the default has a default) to 1.
 
 The `relaxDurabilityRules` property, if `true`, allows vat code running inside
@@ -181,8 +181,8 @@ passed to the vat or device as one of its creation parameters as the second
 argument to the `buildRootObject` function.  The second argument to
 `buildVatController` or `initializeSwingset` is an array of strings, nominally
 representing command line parameters such as would be given when launching a
-statically defined vat group via a command line tool such as `swingset-runner`
-or `ag-solo`.  If such command line parameters are given to one of the vat
+statically defined vat group via a command line tool such as `swingset-runner`.
+If such command line parameters are given to one of the vat
 initiation functions, they are added to the bootstrap vat's `parameters` object
 as the property `argv`.
 
