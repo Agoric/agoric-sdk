@@ -120,6 +120,141 @@ func (m *QueryDataResponse) GetValue() string {
 	return ""
 }
 
+// QueryCapDataRequest contains a path and formatting configuration.
+type QueryCapDataRequest struct {
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path" yaml:"path"`
+	// mediaType must be an actual media type in the registry at
+	// https://www.iana.org/assignments/media-types/media-types.xhtml
+	// or a special value that does not conflict with the media type syntax.
+	// The only valid value is "JSON Lines", which is also the default.
+	MediaType string `protobuf:"bytes,2,opt,name=media_type,json=mediaType,proto3" json:"mediaType" yaml:"mediaType"`
+	// itemFormat, if present, must be the special value "flat" to indicate that
+	// the deep structure of each item should be flattened into a single level
+	// with kebab-case keys (e.g., `{ "metrics": { "min": 0, "max": 88 } }` as
+	// `{ "metrics-min": 0, "metrics-max": 88 }`).
+	ItemFormat string `protobuf:"bytes,3,opt,name=item_format,json=itemFormat,proto3" json:"itemFormat" yaml:"itemFormat"`
+	// remotableValueFormat indicates how to transform references to opaque but
+	// distinguishable Remotables into readable embedded representations.
+	// * "object" represents each Remotable as an `{ id, allegedName }` object.
+	// * "string" represents each Remotable as a bracketed string such as `[Alleged: IST brand {}]`.
+	RemotableValueFormat string `protobuf:"bytes,10,opt,name=remotable_value_format,json=remotableValueFormat,proto3" json:"remotableValueFormat" yaml:"remotableValueFormat"`
+}
+
+func (m *QueryCapDataRequest) Reset()         { *m = QueryCapDataRequest{} }
+func (m *QueryCapDataRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryCapDataRequest) ProtoMessage()    {}
+func (*QueryCapDataRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a26d6d1a170e94ae, []int{2}
+}
+func (m *QueryCapDataRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryCapDataRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryCapDataRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryCapDataRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryCapDataRequest.Merge(m, src)
+}
+func (m *QueryCapDataRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryCapDataRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryCapDataRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryCapDataRequest proto.InternalMessageInfo
+
+func (m *QueryCapDataRequest) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *QueryCapDataRequest) GetMediaType() string {
+	if m != nil {
+		return m.MediaType
+	}
+	return ""
+}
+
+func (m *QueryCapDataRequest) GetItemFormat() string {
+	if m != nil {
+		return m.ItemFormat
+	}
+	return ""
+}
+
+func (m *QueryCapDataRequest) GetRemotableValueFormat() string {
+	if m != nil {
+		return m.RemotableValueFormat
+	}
+	return ""
+}
+
+// QueryCapDataResponse represents the result with the requested formatting,
+// reserving space for future metadata such as media type.
+type QueryCapDataResponse struct {
+	BlockHeight string `protobuf:"bytes,1,opt,name=block_height,json=blockHeight,proto3" json:"blockHeight" yaml:"blockHeight"`
+	Value       string `protobuf:"bytes,10,opt,name=value,proto3" json:"value" yaml:"value"`
+}
+
+func (m *QueryCapDataResponse) Reset()         { *m = QueryCapDataResponse{} }
+func (m *QueryCapDataResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryCapDataResponse) ProtoMessage()    {}
+func (*QueryCapDataResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a26d6d1a170e94ae, []int{3}
+}
+func (m *QueryCapDataResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryCapDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryCapDataResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryCapDataResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryCapDataResponse.Merge(m, src)
+}
+func (m *QueryCapDataResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryCapDataResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryCapDataResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryCapDataResponse proto.InternalMessageInfo
+
+func (m *QueryCapDataResponse) GetBlockHeight() string {
+	if m != nil {
+		return m.BlockHeight
+	}
+	return ""
+}
+
+func (m *QueryCapDataResponse) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 // QueryChildrenRequest is the vstorage path children query.
 type QueryChildrenRequest struct {
 	Path       string             `protobuf:"bytes,1,opt,name=path,proto3" json:"path" yaml:"path"`
@@ -130,7 +265,7 @@ func (m *QueryChildrenRequest) Reset()         { *m = QueryChildrenRequest{} }
 func (m *QueryChildrenRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryChildrenRequest) ProtoMessage()    {}
 func (*QueryChildrenRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a26d6d1a170e94ae, []int{2}
+	return fileDescriptor_a26d6d1a170e94ae, []int{4}
 }
 func (m *QueryChildrenRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -183,7 +318,7 @@ func (m *QueryChildrenResponse) Reset()         { *m = QueryChildrenResponse{} }
 func (m *QueryChildrenResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryChildrenResponse) ProtoMessage()    {}
 func (*QueryChildrenResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a26d6d1a170e94ae, []int{3}
+	return fileDescriptor_a26d6d1a170e94ae, []int{5}
 }
 func (m *QueryChildrenResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -229,6 +364,8 @@ func (m *QueryChildrenResponse) GetPagination() *query.PageResponse {
 func init() {
 	proto.RegisterType((*QueryDataRequest)(nil), "agoric.vstorage.QueryDataRequest")
 	proto.RegisterType((*QueryDataResponse)(nil), "agoric.vstorage.QueryDataResponse")
+	proto.RegisterType((*QueryCapDataRequest)(nil), "agoric.vstorage.QueryCapDataRequest")
+	proto.RegisterType((*QueryCapDataResponse)(nil), "agoric.vstorage.QueryCapDataResponse")
 	proto.RegisterType((*QueryChildrenRequest)(nil), "agoric.vstorage.QueryChildrenRequest")
 	proto.RegisterType((*QueryChildrenResponse)(nil), "agoric.vstorage.QueryChildrenResponse")
 }
@@ -236,38 +373,49 @@ func init() {
 func init() { proto.RegisterFile("agoric/vstorage/query.proto", fileDescriptor_a26d6d1a170e94ae) }
 
 var fileDescriptor_a26d6d1a170e94ae = []byte{
-	// 481 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0xb1, 0x6f, 0x13, 0x3f,
-	0x14, 0x8e, 0xf3, 0x6b, 0x7f, 0x6a, 0x5d, 0xa4, 0x82, 0x55, 0x44, 0x08, 0xd5, 0x5d, 0xb0, 0xa0,
-	0x44, 0x20, 0x6c, 0xb5, 0x6c, 0x74, 0x40, 0x84, 0x0a, 0x56, 0x38, 0x89, 0x85, 0xed, 0x25, 0xb1,
-	0x9c, 0x13, 0x97, 0xf3, 0xf5, 0xec, 0x44, 0x44, 0x88, 0xa5, 0x8c, 0x2c, 0x48, 0xcc, 0xfc, 0x3f,
-	0x8c, 0x95, 0x58, 0x98, 0x4e, 0x28, 0x61, 0xca, 0x98, 0xbf, 0x00, 0x9d, 0xed, 0xb4, 0xd1, 0x51,
-	0x51, 0x89, 0xed, 0xde, 0xf7, 0xbd, 0xf7, 0xbd, 0xef, 0x3e, 0xdb, 0xf8, 0x16, 0x48, 0x95, 0xc7,
-	0x3d, 0x3e, 0xd6, 0x46, 0xe5, 0x20, 0x05, 0x3f, 0x1e, 0x89, 0x7c, 0xc2, 0xb2, 0x5c, 0x19, 0x45,
-	0xb6, 0x1d, 0xc9, 0x96, 0x64, 0x73, 0x47, 0x2a, 0xa9, 0x2c, 0xc7, 0xcb, 0x2f, 0xd7, 0xd6, 0xbc,
-	0xdf, 0x53, 0x7a, 0xa8, 0x34, 0xef, 0x82, 0xf6, 0xf3, 0x7c, 0xbc, 0xdf, 0x15, 0x06, 0xf6, 0x79,
-	0x06, 0x32, 0x4e, 0xc1, 0xc4, 0x2a, 0xf5, 0xbd, 0xbb, 0x52, 0x29, 0x99, 0x08, 0x0e, 0x59, 0xcc,
-	0x21, 0x4d, 0x95, 0xb1, 0xa4, 0x76, 0x2c, 0x7d, 0x82, 0xaf, 0xbe, 0x2a, 0xe7, 0x8f, 0xc0, 0x40,
-	0x24, 0x8e, 0x47, 0x42, 0x1b, 0xf2, 0x00, 0xaf, 0x65, 0x60, 0x06, 0x0d, 0xd4, 0x42, 0xed, 0xcd,
-	0xce, 0x8d, 0x79, 0x11, 0xda, 0x7a, 0x51, 0x84, 0x5b, 0x13, 0x18, 0x26, 0x8f, 0x69, 0x59, 0xd1,
-	0xc8, 0x82, 0xf4, 0x08, 0x5f, 0x5b, 0x11, 0xd0, 0x99, 0x4a, 0xb5, 0x20, 0x1c, 0xaf, 0x8f, 0x21,
-	0x19, 0x09, 0x2f, 0x71, 0x73, 0x5e, 0x84, 0x0e, 0x58, 0x14, 0xe1, 0x15, 0xa7, 0x61, 0x4b, 0x1a,
-	0x39, 0x98, 0x7e, 0x42, 0x78, 0xc7, 0xca, 0x3c, 0x1b, 0xc4, 0x49, 0x3f, 0x17, 0xe9, 0xbf, 0x78,
-	0x21, 0xcf, 0x31, 0x3e, 0xff, 0xfd, 0x46, 0xbd, 0x85, 0xda, 0x5b, 0x07, 0x7b, 0xcc, 0x65, 0xc5,
-	0xca, 0xac, 0x98, 0xcb, 0xda, 0x67, 0xc5, 0x5e, 0x82, 0x14, 0x7e, 0x51, 0xb4, 0x32, 0x49, 0xbf,
-	0x22, 0x7c, 0xbd, 0xe2, 0xc6, 0xff, 0xd8, 0x21, 0xde, 0xe8, 0x79, 0xac, 0x81, 0x5a, 0xff, 0xb5,
-	0x37, 0x3b, 0xe1, 0xbc, 0x08, 0xcf, 0xb0, 0x45, 0x11, 0x6e, 0x3b, 0x5b, 0x4b, 0x84, 0x46, 0x67,
-	0x24, 0x79, 0x71, 0x81, 0xbd, 0x7b, 0x97, 0xda, 0x73, 0x9b, 0x57, 0xfd, 0x1d, 0x9c, 0xd4, 0xf1,
-	0xba, 0xf5, 0x47, 0x34, 0x5e, 0x2b, 0x83, 0x27, 0xb7, 0x59, 0xe5, 0xe2, 0xb0, 0xea, 0xa9, 0x36,
-	0xe9, 0xdf, 0x5a, 0xdc, 0x12, 0x7a, 0xe7, 0xe4, 0xfb, 0xaf, 0x2f, 0xf5, 0x80, 0xec, 0xf2, 0xea,
-	0x25, 0xed, 0x83, 0x01, 0xfe, 0xbe, 0x4c, 0xf9, 0x03, 0xf9, 0x88, 0xf0, 0xc6, 0x32, 0x19, 0x72,
-	0xf7, 0x62, 0xd9, 0xca, 0x39, 0x36, 0xf7, 0x2e, 0x6b, 0xf3, 0x0e, 0xda, 0xd6, 0x01, 0x25, 0xad,
-	0x3f, 0x1c, 0x2c, 0x63, 0xf4, 0x2e, 0x3a, 0xaf, 0xbf, 0x4d, 0x03, 0x74, 0x3a, 0x0d, 0xd0, 0xcf,
-	0x69, 0x80, 0x3e, 0xcf, 0x82, 0xda, 0xe9, 0x2c, 0xa8, 0xfd, 0x98, 0x05, 0xb5, 0x37, 0x87, 0x32,
-	0x36, 0x83, 0x51, 0x97, 0xf5, 0xd4, 0x90, 0x3f, 0x75, 0x2a, 0x4e, 0xec, 0xa1, 0xee, 0xbf, 0xe5,
-	0x52, 0x25, 0x90, 0x4a, 0xee, 0x5f, 0xd0, 0xbb, 0xf3, 0x05, 0x66, 0x92, 0x09, 0xdd, 0xfd, 0xdf,
-	0xbe, 0x8b, 0x47, 0xbf, 0x03, 0x00, 0x00, 0xff, 0xff, 0x0a, 0x1d, 0x3e, 0x9b, 0xa7, 0x03, 0x00,
-	0x00,
+	// 669 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xcf, 0x4f, 0xd4, 0x40,
+	0x14, 0xa6, 0xfc, 0x50, 0x98, 0x25, 0x01, 0x46, 0xd4, 0x75, 0x21, 0x1d, 0x18, 0xf9, 0x15, 0x8d,
+	0x9d, 0x80, 0x07, 0x13, 0x39, 0xa8, 0x48, 0x90, 0xa3, 0x36, 0xea, 0xc1, 0xcb, 0x66, 0x76, 0x77,
+	0xec, 0x36, 0xb4, 0x9d, 0xd2, 0xce, 0x12, 0x37, 0xc6, 0x98, 0xc8, 0xd1, 0x8b, 0xc6, 0xb3, 0x7f,
+	0x88, 0xff, 0x81, 0x47, 0x12, 0x2f, 0x9e, 0x1a, 0x03, 0x9e, 0x7a, 0xdc, 0xbf, 0xc0, 0x74, 0x66,
+	0xb6, 0x5b, 0x96, 0x55, 0x0c, 0xb7, 0xce, 0xf7, 0xbe, 0xf7, 0xbd, 0xaf, 0xf3, 0xde, 0x3c, 0x30,
+	0x47, 0x1d, 0x1e, 0xb9, 0x75, 0x72, 0x10, 0x0b, 0x1e, 0x51, 0x87, 0x91, 0xfd, 0x16, 0x8b, 0xda,
+	0x56, 0x18, 0x71, 0xc1, 0xe1, 0x94, 0x0a, 0x5a, 0xdd, 0x60, 0x65, 0xd6, 0xe1, 0x0e, 0x97, 0x31,
+	0x92, 0x7d, 0x29, 0x5a, 0xe5, 0x56, 0x9d, 0xc7, 0x3e, 0x8f, 0x49, 0x8d, 0xc6, 0x3a, 0x9f, 0x1c,
+	0xac, 0xd7, 0x98, 0xa0, 0xeb, 0x24, 0xa4, 0x8e, 0x1b, 0x50, 0xe1, 0xf2, 0x40, 0x73, 0xe7, 0x1d,
+	0xce, 0x1d, 0x8f, 0x11, 0x1a, 0xba, 0x84, 0x06, 0x01, 0x17, 0x32, 0x18, 0xab, 0x28, 0x7e, 0x00,
+	0xa6, 0x9f, 0x65, 0xf9, 0xdb, 0x54, 0x50, 0x9b, 0xed, 0xb7, 0x58, 0x2c, 0xe0, 0x6d, 0x30, 0x1a,
+	0x52, 0xd1, 0x2c, 0x1b, 0x0b, 0xc6, 0xda, 0xc4, 0xd6, 0xf5, 0x34, 0x41, 0xf2, 0xdc, 0x49, 0x50,
+	0xa9, 0x4d, 0x7d, 0xef, 0x3e, 0xce, 0x4e, 0xd8, 0x96, 0x20, 0xde, 0x06, 0x33, 0x05, 0x81, 0x38,
+	0xe4, 0x41, 0xcc, 0x20, 0x01, 0x63, 0x07, 0xd4, 0x6b, 0x31, 0x2d, 0x71, 0x23, 0x4d, 0x90, 0x02,
+	0x3a, 0x09, 0x9a, 0x54, 0x1a, 0xf2, 0x88, 0x6d, 0x05, 0xe3, 0x6f, 0xc3, 0xe0, 0x8a, 0x94, 0x79,
+	0x4c, 0xc3, 0x8b, 0x5a, 0x81, 0x0f, 0x01, 0xf0, 0x59, 0xc3, 0xa5, 0x55, 0xd1, 0x0e, 0x59, 0x79,
+	0x58, 0xa6, 0x2c, 0xa6, 0x09, 0x9a, 0x90, 0xe8, 0xf3, 0x76, 0x98, 0x95, 0x9f, 0x56, 0x79, 0x39,
+	0x84, 0xed, 0x5e, 0x18, 0x6e, 0x83, 0x92, 0x2b, 0x98, 0x5f, 0x7d, 0xcd, 0x23, 0x9f, 0x8a, 0xf2,
+	0x88, 0x94, 0xb8, 0x99, 0x26, 0x08, 0x64, 0xf0, 0x8e, 0x44, 0x3b, 0x09, 0x9a, 0x51, 0x1a, 0x3d,
+	0x0c, 0xdb, 0x05, 0x02, 0xf4, 0xc1, 0xb5, 0x88, 0xf9, 0x5c, 0xd0, 0x9a, 0xc7, 0xaa, 0xf2, 0xff,
+	0xba, 0x82, 0x40, 0x0a, 0xde, 0x4b, 0x13, 0x34, 0x9b, 0x33, 0x5e, 0x66, 0x84, 0x5c, 0x7a, 0x4e,
+	0x49, 0x0f, 0x8a, 0x62, 0x7b, 0x60, 0x12, 0xfe, 0x6c, 0x80, 0xd9, 0xd3, 0x77, 0xa7, 0xbb, 0xb0,
+	0x0b, 0x26, 0x6b, 0x1e, 0xaf, 0xef, 0x55, 0x9b, 0xcc, 0x75, 0x9a, 0x42, 0x5f, 0xe2, 0x72, 0x9a,
+	0xa0, 0x92, 0xc4, 0x77, 0x25, 0xdc, 0x49, 0x10, 0x54, 0x45, 0x0b, 0x20, 0xb6, 0x8b, 0x94, 0x5e,
+	0x3f, 0xc1, 0x7f, 0xf6, 0xf3, 0x63, 0xee, 0xa9, 0xe9, 0x7a, 0x8d, 0x88, 0x05, 0x17, 0x6a, 0xe8,
+	0x0e, 0x00, 0xbd, 0x71, 0x96, 0x0d, 0x2d, 0x6d, 0xac, 0x58, 0x6a, 0xf6, 0xad, 0x6c, 0xf6, 0x2d,
+	0xf5, 0x76, 0xf4, 0xec, 0x5b, 0x4f, 0xa9, 0xc3, 0x74, 0x21, 0xbb, 0x90, 0x89, 0xbf, 0x1a, 0xe0,
+	0x6a, 0x9f, 0x1b, 0x7d, 0x45, 0x9b, 0x60, 0xbc, 0xae, 0xb1, 0xb2, 0xb1, 0x30, 0xb2, 0x36, 0xb1,
+	0x85, 0xd2, 0x04, 0xe5, 0x58, 0x27, 0x41, 0x53, 0xca, 0x56, 0x17, 0xc1, 0x76, 0x1e, 0x84, 0x4f,
+	0x06, 0xd8, 0x5b, 0x3d, 0xd7, 0x9e, 0xaa, 0x5c, 0xf4, 0xb7, 0x71, 0x38, 0x02, 0xc6, 0xa4, 0x3f,
+	0x18, 0x83, 0xd1, 0xac, 0x85, 0x70, 0xd1, 0xea, 0x5b, 0x04, 0x56, 0xff, 0x2b, 0xad, 0xe0, 0x7f,
+	0x51, 0x54, 0x11, 0xbc, 0xf4, 0xe1, 0xc7, 0xef, 0x2f, 0xc3, 0x26, 0x9c, 0x27, 0xfd, 0x4b, 0xa7,
+	0x41, 0x05, 0x25, 0x6f, 0xb3, 0x5b, 0x7e, 0x07, 0xdf, 0x83, 0xcb, 0x7a, 0x74, 0xe0, 0xd2, 0x60,
+	0xd1, 0xd3, 0xaf, 0xb2, 0xb2, 0x7c, 0x0e, 0x4b, 0x57, 0x5f, 0x95, 0xd5, 0x17, 0x21, 0x3a, 0x53,
+	0xbd, 0x4e, 0xc3, 0xa2, 0x81, 0x43, 0x03, 0x8c, 0x77, 0x5b, 0x03, 0xff, 0x26, 0x7e, 0x7a, 0x90,
+	0x2a, 0x2b, 0xe7, 0xd1, 0xb4, 0x89, 0x35, 0x69, 0x02, 0xc3, 0x85, 0xb3, 0x26, 0x34, 0x55, 0xbb,
+	0xd8, 0x7a, 0xf1, 0xfd, 0xd8, 0x34, 0x8e, 0x8e, 0x4d, 0xe3, 0xd7, 0xb1, 0x69, 0x7c, 0x3a, 0x31,
+	0x87, 0x8e, 0x4e, 0xcc, 0xa1, 0x9f, 0x27, 0xe6, 0xd0, 0xab, 0x4d, 0xc7, 0x15, 0xcd, 0x56, 0xcd,
+	0xaa, 0x73, 0x9f, 0x3c, 0x52, 0x2a, 0x4a, 0xec, 0x4e, 0xdc, 0xd8, 0x23, 0x0e, 0xf7, 0x68, 0xe0,
+	0x10, 0xbd, 0x92, 0xdf, 0xf4, 0x0a, 0x64, 0x6b, 0x28, 0xae, 0x5d, 0x92, 0x8b, 0xf6, 0xee, 0x9f,
+	0x00, 0x00, 0x00, 0xff, 0xff, 0xf3, 0x08, 0x4f, 0xc5, 0xf8, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -282,8 +430,11 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// Return an arbitrary vstorage datum.
+	// Return the raw string value of an arbitrary vstorage datum.
 	Data(ctx context.Context, in *QueryDataRequest, opts ...grpc.CallOption) (*QueryDataResponse, error)
+	// Return a formatted representation of a vstorage datum that must be
+	// a valid StreamCell with CapData values, or standalone CapData.
+	CapData(ctx context.Context, in *QueryCapDataRequest, opts ...grpc.CallOption) (*QueryCapDataResponse, error)
 	// Return the children of a given vstorage path.
 	Children(ctx context.Context, in *QueryChildrenRequest, opts ...grpc.CallOption) (*QueryChildrenResponse, error)
 }
@@ -305,6 +456,15 @@ func (c *queryClient) Data(ctx context.Context, in *QueryDataRequest, opts ...gr
 	return out, nil
 }
 
+func (c *queryClient) CapData(ctx context.Context, in *QueryCapDataRequest, opts ...grpc.CallOption) (*QueryCapDataResponse, error) {
+	out := new(QueryCapDataResponse)
+	err := c.cc.Invoke(ctx, "/agoric.vstorage.Query/CapData", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryClient) Children(ctx context.Context, in *QueryChildrenRequest, opts ...grpc.CallOption) (*QueryChildrenResponse, error) {
 	out := new(QueryChildrenResponse)
 	err := c.cc.Invoke(ctx, "/agoric.vstorage.Query/Children", in, out, opts...)
@@ -316,8 +476,11 @@ func (c *queryClient) Children(ctx context.Context, in *QueryChildrenRequest, op
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// Return an arbitrary vstorage datum.
+	// Return the raw string value of an arbitrary vstorage datum.
 	Data(context.Context, *QueryDataRequest) (*QueryDataResponse, error)
+	// Return a formatted representation of a vstorage datum that must be
+	// a valid StreamCell with CapData values, or standalone CapData.
+	CapData(context.Context, *QueryCapDataRequest) (*QueryCapDataResponse, error)
 	// Return the children of a given vstorage path.
 	Children(context.Context, *QueryChildrenRequest) (*QueryChildrenResponse, error)
 }
@@ -328,6 +491,9 @@ type UnimplementedQueryServer struct {
 
 func (*UnimplementedQueryServer) Data(ctx context.Context, req *QueryDataRequest) (*QueryDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Data not implemented")
+}
+func (*UnimplementedQueryServer) CapData(ctx context.Context, req *QueryCapDataRequest) (*QueryCapDataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CapData not implemented")
 }
 func (*UnimplementedQueryServer) Children(ctx context.Context, req *QueryChildrenRequest) (*QueryChildrenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Children not implemented")
@@ -351,6 +517,24 @@ func _Query_Data_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).Data(ctx, req.(*QueryDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_CapData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCapDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).CapData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/agoric.vstorage.Query/CapData",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).CapData(ctx, req.(*QueryCapDataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -380,6 +564,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Data",
 			Handler:    _Query_Data_Handler,
+		},
+		{
+			MethodName: "CapData",
+			Handler:    _Query_CapData_Handler,
 		},
 		{
 			MethodName: "Children",
@@ -444,6 +632,94 @@ func (m *QueryDataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.Value)
 		copy(dAtA[i:], m.Value)
 		i = encodeVarintQuery(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryCapDataRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryCapDataRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryCapDataRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.RemotableValueFormat) > 0 {
+		i -= len(m.RemotableValueFormat)
+		copy(dAtA[i:], m.RemotableValueFormat)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.RemotableValueFormat)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.ItemFormat) > 0 {
+		i -= len(m.ItemFormat)
+		copy(dAtA[i:], m.ItemFormat)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ItemFormat)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.MediaType) > 0 {
+		i -= len(m.MediaType)
+		copy(dAtA[i:], m.MediaType)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.MediaType)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Path) > 0 {
+		i -= len(m.Path)
+		copy(dAtA[i:], m.Path)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Path)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryCapDataResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryCapDataResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryCapDataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.BlockHeight) > 0 {
+		i -= len(m.BlockHeight)
+		copy(dAtA[i:], m.BlockHeight)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.BlockHeight)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -566,6 +842,48 @@ func (m *QueryDataResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryCapDataRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Path)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.MediaType)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.ItemFormat)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.RemotableValueFormat)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryCapDataResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.BlockHeight)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	l = len(m.Value)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
@@ -727,6 +1045,298 @@ func (m *QueryDataResponse) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryCapDataRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryCapDataRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryCapDataRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Path = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MediaType", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MediaType = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ItemFormat", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ItemFormat = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RemotableValueFormat", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RemotableValueFormat = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryCapDataResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryCapDataResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryCapDataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockHeight = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
 			}
