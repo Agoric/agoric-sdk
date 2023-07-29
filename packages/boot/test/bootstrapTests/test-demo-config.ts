@@ -67,6 +67,10 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
   t.is(actual, addr, 'my address');
   keyArrayEqual(t, keys(home).sort(), homeKeys);
+  const namesByAddress = await EV.vat('bootstrap').consumeItem(
+    'namesByAddress',
+  );
+  await t.notThrowsAsync(EV(namesByAddress).lookup(addr));
 });
 
 test('sim/demo config launches Vaults as expected by loadgen', async t => {

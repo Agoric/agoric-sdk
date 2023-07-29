@@ -91,7 +91,6 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   const makeNamesByAddressAdmin = prepareSpecializedNameAdmin(zone);
 
   const nameHubKit = provide(baggage, 'nameHubKit', () => makeNameHubKit());
-  const { nameHub: namesByAddress } = makeNameHubKit();
   const namesByAddressAdmin = makeNamesByAddressAdmin(nameHubKit.nameAdmin);
 
   // xxx end-user ag-solo provisioning stuff (devnet only)
@@ -168,6 +167,7 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   return Far('root', {
     register,
     pleaseProvision,
-    getNamesByAddressKit: () => harden({ namesByAddress, namesByAddressAdmin }),
+    getNamesByAddressKit: () =>
+      harden({ namesByAddress: nameHubKit.nameHub, namesByAddressAdmin }),
   });
 }
