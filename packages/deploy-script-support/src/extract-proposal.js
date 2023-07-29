@@ -41,6 +41,19 @@ const findModule = (initDir, srcSpec) =>
     : req.resolve(srcSpec);
 
 /**
+ * @param {{ bundleID?: string, bundleName?: string }} handle - mutated then hardened
+ * @param {string} sourceSpec - the specifier of a module to load
+ * @param {number} sequence - the sequence number of the proposal
+ * @param {string} piece - the piece of the proposal
+ * @returns {Promise<[string, any]>}
+ */
+const namedHandleToBundleSpec = async (handle, sourceSpec, sequence, piece) => {
+  handle.bundleName = `coreProposal${sequence}_${piece}`;
+  harden(handle);
+  return harden([handle.bundleName, { sourceSpec }]);
+};
+
+/**
  * Format core proposals to be run at bootstrap:
  * SwingSet `bundles` configuration
  * and `code` to execute them, interpolating functions
@@ -54,26 +67,28 @@ const findModule = (initDir, srcSpec) =>
  * @param {ConfigProposal[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
- * @param {typeof makeEnactCoreProposalsFromBundleRef} [makeEnactCoreProposals]
- * @param {(i: number) => number} [getSequenceForProposal]
+ * @param {object} [opts]
+ * @param {typeof makeEnactCoreProposalsFromBundleRef} [opts.makeEnactCoreProposals]
+ * @param {(i: number) => number} [opts.getSequenceForProposal]
+ * @param {typeof namedHandleToBundleSpec} [opts.handleToBundleSpec]
  */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
-  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleRef,
-  getSequenceForProposal,
+  opts,
 ) => {
-  if (!getSequenceForProposal) {
-    // Deterministic proposal numbers.
-    getSequenceForProposal = i => i;
-  }
+  const {
+    makeEnactCoreProposals = makeEnactCoreProposalsFromBundleRef,
+    getSequenceForProposal = i => i,
+    handleToBundleSpec = namedHandleToBundleSpec,
+  } = opts || {};
 
   dirname = pathResolve(dirname);
   dirname = await fs.promises
     .stat(dirname)
     .then(stbuf => (stbuf.isDirectory() ? dirname : path.dirname(dirname)));
 
-  /** @type {Map<{ bundleName?: string }, { source: string, bundle?: string }>} */
+  /** @type {Map<{ bundleID?: string, bundleName?: string }, { source: string, bundle?: string }>} */
   const bundleHandleToAbsolutePaths = new Map();
 
   const bundleToSource = new Map();
@@ -151,29 +166,30 @@ export const extractCoreProposalBundles = async (
       );
 
       // Add the proposal bundle handles in sorted order.
-      const bundleSpecEntries = [...thisProposalBundleHandles.keys()]
-        .map(handle => [handle, bundleHandleToAbsolutePaths.get(handle)])
-        .sort(([_hnda, { source: a }], [_hndb, { source: b }]) => {
-          if (a < b) {
-            return -1;
-          }
-          if (a > b) {
-            return 1;
-          }
-          return 0;
-        })
-        .map(([handle, absolutePaths], j) => {
-          // Transform the bundle handle identity into a bundleName reference.
-          handle.bundleName = `coreProposal${thisProposalSequence}_${j}`;
-          harden(handle);
-
-          /** @type {[string, { sourceSpec: string }]} */
-          const specEntry = [
-            handle.bundleName,
-            { sourceSpec: absolutePaths.source },
-          ];
-          return specEntry;
-        });
+      const bundleSpecEntries = await Promise.all(
+        [...thisProposalBundleHandles.keys()]
+          .map(handle => [handle, bundleHandleToAbsolutePaths.get(handle)])
+          .sort(([_hnda, { source: a }], [_hndb, { source: b }]) => {
+            if (a < b) {
+              return -1;
+            }
+            if (a > b) {
+              return 1;
+            }
+            return 0;
+          })
+          .map(async ([handle, absolutePaths], j) => {
+            // Transform the bundle handle identity into a bundleName reference.
+            const specEntry = await handleToBundleSpec(
+              handle,
+              absolutePaths.source,
+              thisProposalSequence,
+              String(j),
+            );
+            harden(handle);
+            return specEntry;
+          }),
+      );
 
       // Now that we've assigned all the bundleNames and hardened the
       // handles, we can extract the behavior bundle.
@@ -192,21 +208,21 @@ export const extractCoreProposalBundles = async (
         exportedGetManifest
       ](harden({ restoreRef: () => null }), ...manifestArgs);
 
-      const behaviorBundleHandle = harden({
-        bundleName: `coreProposal${thisProposalSequence}_behaviors`,
-      });
-      const behaviorAbsolutePaths = harden({
-        source: behaviorSource,
-      });
+      const behaviorBundleHandle = {};
+      const specEntry = await handleToBundleSpec(
+        behaviorBundleHandle,
+        behaviorSource,
+        thisProposalSequence,
+        'behaviors',
+      );
+      bundleSpecEntries.unshift(specEntry);
+
       bundleHandleToAbsolutePaths.set(
         behaviorBundleHandle,
-        behaviorAbsolutePaths,
+        harden({
+          source: behaviorSource,
+        }),
       );
-
-      bundleSpecEntries.unshift([
-        behaviorBundleHandle.bundleName,
-        { sourceSpec: behaviorAbsolutePaths.source },
-      ]);
 
       return harden({
         ref: behaviorBundleHandle,
