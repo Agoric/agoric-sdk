@@ -1,8 +1,18 @@
 import { E } from '@endo/far';
 
+var Q = Promise;
+
+var Qjoin = (p1, p2) =>
+  Q.all([p1, p2]).then(([r1, r2]) => {
+    if (!Object.is(r1, r2)) {
+      throw Error('join failed');
+    }
+    return r1;
+  });
+
 var transfer = (decisionP, srcPurseP, dstPurseP, amount) => {
-  var makeEscrowPurseP = Q.join(E.get(srcPurseP).makePurse,
-                                E.get(dstPurseP).makePurse);
+  var makeEscrowPurseP = Qjoin(E.get(srcPurseP).makePurse,
+                               E.get(dstPurseP).makePurse);
   var escrowPurseP = E(makeEscrowPurseP)();
   Q(decisionP).then( // setup phase 2
     _ => { E(dstPurseP).deposit(amount, escrowPurseP); },
