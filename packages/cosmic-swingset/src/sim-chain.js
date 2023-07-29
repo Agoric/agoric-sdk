@@ -201,11 +201,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       return;
     }
     // The before-first-block is special... do it now.
-    // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
+    // This emulates what x/swingset does when bootstrapping
     // before continuing with the real initialHeight.
     await blockingSend({
-      type: 'BOOTSTRAP_BLOCK',
+      type: 'AG_COSMOS_INIT',
       blockTime: scaleBlockTime(Date.now()),
+      isBootstrap: true,
     });
     blockHeight = initialHeight;
   };
