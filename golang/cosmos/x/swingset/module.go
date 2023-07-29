@@ -80,16 +80,18 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 
 type AppModule struct {
 	AppModuleBasic
-	keeper             Keeper
-	setBootstrapNeeded func()
+	keeper                 Keeper
+	setBootstrapNeeded     func()
+	ensureControllerInited func(sdk.Context)
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k Keeper, setBootstrapNeeded func()) AppModule {
+func NewAppModule(k Keeper, setBootstrapNeeded func(), ensureControllerInited func(sdk.Context)) AppModule {
 	am := AppModule{
-		AppModuleBasic:     AppModuleBasic{},
-		keeper:             k,
-		setBootstrapNeeded: setBootstrapNeeded,
+		AppModuleBasic:         AppModuleBasic{},
+		keeper:                 k,
+		setBootstrapNeeded:     setBootstrapNeeded,
+		ensureControllerInited: ensureControllerInited,
 	}
 	return am
 }
@@ -127,6 +129,8 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	am.ensureControllerInited(ctx)
+
 	err := BeginBlock(ctx, req, am.keeper)
 	if err != nil {
 		fmt.Println("BeginBlock error:", err)
