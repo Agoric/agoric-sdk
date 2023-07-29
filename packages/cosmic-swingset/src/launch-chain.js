@@ -24,6 +24,7 @@ import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
+import * as BlockingSendType from './blocking-send-types.js';
 import {
   makeDefaultMeterProvider,
   makeInboundQueueMetrics,
@@ -673,14 +674,9 @@ export async function launch({
 
   // Handle block related actions
   // Some actions that are integration specific may be handled by the caller
-  // For example COSMOS_SNAPSHOT and AG_COSMOS_INIT are handled in chain-main.js
-  async function blockingSend(action) {
-    if (decohered) {
-      throw decohered;
-    }
-
-    await afterCommitWorkDone;
-
+  // For example COSMOS_SNAPSHOT is handled in chain-main.js
+  async function doBlockingSend(action) {
+    await null;
     // blockManagerConsole.warn(
     //   'FIGME: blockHeight',
     //   action.blockHeight,
@@ -688,41 +684,58 @@ export async function launch({
     //   action.type,
     // );
     switch (action.type) {
-      case ActionType.BOOTSTRAP_BLOCK: {
+      case BlockingSendType.AG_COSMOS_INIT: {
+        const { isBootstrap, upgradePlan, blockTime } = action;
         // This only runs for the very first block on the chain.
-        const { blockTime } = action;
-        verboseBlocks && blockManagerConsole.info('block bootstrap');
-        if (savedHeight !== 0) {
-          throw Error(`Cannot run a bootstrap block at height ${savedHeight}`);
+        if (isBootstrap) {
+          verboseBlocks && blockManagerConsole.info('block bootstrap');
+          savedHeight === 0 ||
+            Fail`Cannot run a bootstrap block at height ${savedHeight}`;
+          const blockHeight = 0;
+          const runNum = 0;
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-bootstrap-block-start',
+            blockTime,
+          });
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-run-start',
+            blockHeight,
+            runNum,
+          });
+          await processAction(action.type, async () =>
+            bootstrapBlock(blockHeight, blockTime),
+          );
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-run-finish',
+            blockHeight,
+            runNum,
+          });
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-bootstrap-block-finish',
+            blockTime,
+          });
         }
-        const blockHeight = 0;
-        const runNum = 0;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-bootstrap-block-start',
-          blockTime,
-        });
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-run-start',
-          blockHeight,
-          runNum,
-        });
-        await processAction(action.type, async () =>
-          bootstrapBlock(blockHeight, blockTime),
-        );
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-run-finish',
-          blockHeight,
-          runNum,
-        });
-        await pendingSwingStoreExport;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-bootstrap-block-finish',
-          blockTime,
-        });
-        return undefined;
+        if (upgradePlan) {
+          const blockHeight = upgradePlan.height;
+          if (blockNeedsExecution(blockHeight)) {
+            controller.writeSlogObject({
+              type: 'cosmic-swingset-upgrade-start',
+              blockHeight,
+              blockTime,
+              upgradePlan,
+            });
+            // TODO: Process upgrade plan
+            controller.writeSlogObject({
+              type: 'cosmic-swingset-upgrade-finish',
+              blockHeight,
+              blockTime,
+            });
+          }
+        }
+        return true;
       }
 
-      case ActionType.COMMIT_BLOCK: {
+      case BlockingSendType.COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'commit');
@@ -752,7 +765,7 @@ export async function launch({
         return undefined;
       }
 
-      case ActionType.AFTER_COMMIT_BLOCK: {
+      case BlockingSendType.AFTER_COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
 
         const fullSaveTime = Date.now() - endBlockFinish;
@@ -771,7 +784,7 @@ export async function launch({
         return undefined;
       }
 
-      case ActionType.BEGIN_BLOCK: {
+      case BlockingSendType.BEGIN_BLOCK: {
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
         verboseBlocks &&
@@ -788,7 +801,7 @@ export async function launch({
         return undefined;
       }
 
-      case ActionType.END_BLOCK: {
+      case BlockingSendType.END_BLOCK: {
         const { blockHeight, blockTime } = action;
         controller.writeSlogObject({
           type: 'cosmic-swingset-end-block-start',
@@ -826,7 +839,7 @@ export async function launch({
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
-          await Promise.all([saveChainState(), pendingSwingStoreExport]);
+          await saveChainState();
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
@@ -848,6 +861,15 @@ export async function launch({
         throw Fail`Unrecognized action ${action}; are you sure you didn't mean to queue it?`;
       }
     }
+  }
+  async function blockingSend(action) {
+    if (decohered) {
+      throw decohered;
+    }
+
+    await afterCommitWorkDone;
+
+    return doBlockingSend(action).finally(() => pendingSwingStoreExport);
   }
 
   async function shutdown() {

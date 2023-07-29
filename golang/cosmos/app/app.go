@@ -598,7 +598,7 @@ func NewAgoricApp(
 		transferModule,
 		icaModule,
 		vstorage.NewAppModule(app.VstorageKeeper),
-		swingset.NewAppModule(app.SwingSetKeeper, setBootstrapNeeded),
+		swingset.NewAppModule(app.SwingSetKeeper, setBootstrapNeeded, app.ensureControllerInited),
 		vibcModule,
 		vbankModule,
 		lienModule,
@@ -631,6 +631,8 @@ func NewAgoricApp(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		vstorage.ModuleName,
+		// This will cause the swingset controller to init if it hadn't yet, passing
+		// any upgrade plan or bootstrap flag when starting at an upgrade height
 		swingset.ModuleName,
 		vibc.ModuleName,
 		vbank.ModuleName,
@@ -792,6 +794,7 @@ func NewAgoricApp(
 // upgrade11Handler performs standard upgrade actions plus custom actions for upgrade-11.
 func upgrade11Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		app.CheckControllerInited(false)
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
 
@@ -825,6 +828,7 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 type cosmosInitAction struct {
 	Type        string             `json:"type"`
 	ChainID     string             `json:"chainID"`
+	BlockTime   int64              `json:"blockTime,omitempty"`
 	IsBootstrap bool               `json:"isBootstrap"`
 	Params      swingset.Params    `json:"params"`
 	SupplyCoins sdk.Coins          `json:"supplyCoins"`
@@ -849,13 +853,22 @@ func (app *GaiaApp) CheckControllerInited(expected bool) {
 
 // initController sends the initialization message to the VM.
 // Exits if the controller has already been initialized.
+// The init message will contain any upgrade plan if we're starting after an
+// upgrade, and a flag indicating whether this is a bootstrap of the controller.
 func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	app.CheckControllerInited(false)
 	app.controllerInited = true
+
+	var blockTime int64 = 0
+	if bootstrap || app.upgradePlan != nil {
+		blockTime = ctx.BlockTime().Unix()
+	}
+
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
+		BlockTime:   blockTime,
 		IsBootstrap: bootstrap,
 		Params:      app.SwingSetKeeper.GetParams(ctx),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
@@ -883,33 +896,24 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	}
 }
 
-type bootstrapBlockAction struct {
-	Type      string `json:"type"`
-	BlockTime int64  `json:"blockTime"`
-}
-
-// BootstrapController initializes the controller (with the bootstrap flag) and sends a bootstrap action.
-func (app *GaiaApp) BootstrapController(ctx sdk.Context) error {
-	app.initController(ctx, true)
-
-	stdlog.Println("Running SwingSet until bootstrap is ready")
-	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
-	// business.
-	action := &bootstrapBlockAction{
-		Type:      "BOOTSTRAP_BLOCK",
-		BlockTime: ctx.BlockTime().Unix(),
+// ensureControllerInited inits the controller if needed. It's used by the
+// x/swingset module's BeginBlock to lazily start the JS controller.
+// We cannot init early as we don't know when starting the software if this
+// might be a simple restart, or a chain init from genesis or upgrade which
+// require the controller to not be inited yet.
+func (app *GaiaApp) ensureControllerInited(ctx sdk.Context) {
+	if app.controllerInited {
+		return
 	}
 
-	_, err := app.SwingSetKeeper.BlockingSend(ctx, action)
-	return err
+	// While we don't expect it anymore, some upgrade may want to throw away
+	// the current JS state and bootstrap again (bulldozer). In that case the
+	// upgrade handler can just set the bootstrapNeeded flag.
+	app.initController(ctx, app.bootstrapNeeded)
 }
 
 // BeginBlocker application updates every begin block
 func (app *GaiaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	if !app.controllerInited {
-		app.initController(ctx, false)
-	}
-
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -933,14 +937,9 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
 
+	// Init early (before first BeginBlock) to run the potentially lengthy bootstrap
 	if app.bootstrapNeeded {
-		err := app.BootstrapController(ctx)
-		// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
-		if err != nil {
-			// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
-			// Panic here, in the hopes that a replay from scratch will fix the problem.
-			panic(err)
-		}
+		app.initController(ctx, true)
 	}
 
 	// Agoric: report the genesis time explicitly.
