@@ -908,6 +908,17 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         dbTransactionManager.end();
         break;
       }
+      case 'cosmic-swingset-upgrade-start': {
+        dbTransactionManager.begin();
+        assert(!spans.top());
+        spans.push(['upgrade', slogAttrs.blockHeight]);
+        break;
+      }
+      case 'cosmic-swingset-upgrade-finish': {
+        spans.pop(['slogAttrs.blockHeight', slogAttrs.blockHeight]);
+        dbTransactionManager.end();
+        break;
+      }
       case 'cosmic-swingset-begin-block': {
         if (spans.topKind() === 'intra-block') {
           spans.pop('intra-block');
