@@ -49,7 +49,16 @@ In either the single- or multi-faceted case, the individual behavior functions m
 
 where `context` describes the invocation context of the method and `...args` are whatever arguments were passed to the method when it was invoked.  In the case of a single facet VDO, `context` will take the form `{ state, self }`, where `state` is the VDO state and `self` is a reference to the VDO itself.  In the case of a multi-facet VDO, `context` will instead be `{ state, facets }`, where `facets` is an object whose named properties are the facets of the VDO.
 
-The `options` parameter is optional. It provides additional parameters to characterize the VDO.  Currently there is only one supported option, `finish`, though we anticipate more options may be added in future versions of the API.
+## Kind Options
+
+The (optional) `options` parameter provides additional parameters to characterize the VDO.  Currently there are four options, although more may be added in the future:
+
+* `finish`: a function to run after object initialization
+* `stateShape`: a constraint on `state` data
+* `interfaceGuard`: a constraint on the method definitions
+* `thisfulMethods`: changes the invocation signature to support class/`this`-like usage
+
+### `finish` option
 
 The `finish` option is a function that, if present, will be called at the end of
 instance initialization.  It will be invoked after the VDO is created but before
@@ -104,7 +113,65 @@ This defines a simple virtual counter object with two properties in its state: a
   console.log(`${barCounter.getName()} count is ${barCounter.getCount()`); // "bar count is 2"
 ```
 
-Suppose you instead wanted to provide a version with the increment and decrement capabilities made available as independent facets.  A simplified version of the above (without the name property, counter registry, and `setCount` method) might look like:
+### `stateShape` option
+
+By default, the `state` of each VDO instance can be any serializable record: an object with string property names and arbitrary values (of course durable objects can only hold durable state). Whatever the `initialize` function returns is used as the state of that one object. The property names are then fixed for the lifetime of that object (although see below about upgrade). Behavior methods can change the values of each property, but cannot add new properties, or remove the existing ones.
+
+By default, each instance can have a different "shape": different property names, and the values can have different types. For example, while it's not recommended (behavior methods would need to adapt), `initialize` is within its rights to do the following:
+
+```js
+const initialize = (arg1, arg2) => {
+  if (arg1 === 'foo') {
+    return { foo: arg2 };
+  }
+  return { count: 0, bar: arg2 };
+}
+```
+
+To prevent accidental variation in the shape of the generated `state` object, as well as to provide some amount of documentation, the `stateShape` option can be used to establish a [Pattern](https://github.com/endojs/endo/tree/master/packages/patterns) that will be imposed upon both the return value of `initialize`, and upon any changes made to `state` by behavior methods.
+
+```js
+import { M } from '@endo/patterns';
+
+const counterPattern = { counter: M.number(), name: M.string() };
+const initCounter = ..;
+const counterBehavior = ..;
+const makeCounter = defineKind('counter', initCounter, counterBehavior,
+                               { stateShape: counterPattern });
+```
+
+In the future, the `stateShape` option may enable a space-saving optimization: the state data can be "compressed" by only recording the variable portions. In our example, instead of each instance recording a full record (with its own copy of the `counter:` and `name:` property strings), it could be recorded as a simple array (`[1, 'name']`). For high-cardinality objects, with complex/nested state instances, this could save a significant amount of disk space.
+
+### `interfaceGuard` option
+
+The `interfaceGuard` option provides a data structure which constrains the methods and arguments of the behavior record. In particular, it can enforce runtime type checks on the incoming arguments, before the behavior methods are invoked. This both serves as a form of documentation for callers, and can replace some internal argument validation which would otherwise live at the beginning of each behavior method.
+
+
+### `thisfulMethods` option
+
+VDO methods receive a "context" object: either `{ state, self }` or `{ state, facets }` (for multi-facet objects). By default, this is injected as the first argument of the behavior method invocation, e.g. `setCount({ state, self }, count)`. Behavior methods must be written to anticipate the context in this position. An invocation like `counter.setCount(count)` is received by code like:
+
+```js
+    setCount: ({state}, count) => {
+      state.counter = count;
+    },
+```
+
+If `options.thisfulMethods = true`, the context is delivered through the JavaScript `this` variable, instead of being added to the method arguments. As a result, the received method arguments are exactly the same as the invocation. `counter.setCount(count)` would be received by code like:
+
+```js
+    setCount: (count) => {
+      const { state } = this;
+      state.counter = count;
+    },
+```
+
+This is more convenient for class-like VDO definitions, and is used extensively by the vat-data "Exo" tools defined elsewhere.
+
+
+## Multiple Facets
+
+Suppose you wanted to change our `makeCounter` example create independent facets for the increment and decrement capabilities. The `defineKindMulti` function is used to define a single Kind with multiple facets (independent objects which share the same state). A simplified version of the above (without the name property, counter registry, and `setCount` method) might look like:
 
 ```javascript
   const initFacetedCounter = () => ({ counter: 0 });
@@ -150,9 +217,9 @@ In either case you'd use it like:
   console.log(`count is ${incr.getCount()`); // "count is 1"
 ```
 
-Additional important details:
+## Additional Details
 
-- The set of state properties is completely determined by the named enumerable properties of the object that `init` returns.  State properties cannot thereafter be added or removed from the instance.  Currently there is no requirement that all instances of a given kind have the same set of properties, but code authors should not rely on this as such enforcement may be added in the future.
+- The set of state properties is completely determined by the named enumerable properties of the object that `init` returns.  State properties cannot thereafter be added or removed from the instance.  Currently there is no requirement that all instances of a given kind have the same set of properties, but code authors should not rely on this as such enforcement may be added in the future (and `options.stateShape` provides a way to opt-in to such enforcement.
 
 - The values a state property may take are limited to things that are serializable and which may be hardened (and, in fact, _are_ hardened and serialized the moment they are assigned).  You can replace the value of a state property, but you cannot mutate it.  In other words, you can do things like:
 
