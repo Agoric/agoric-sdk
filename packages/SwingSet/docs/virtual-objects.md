@@ -254,14 +254,15 @@ To support this, the four `defineKind` functions accept `currentVersion` and `up
 
 and these version annotations will remain in place until the object is upgraded or deleted.
 
-`upgradeState` is a synchronous function which takes `(oldVersion, oldState)` and is responsible for returning `newState`. Every time an old record is accessed (i.e. when a behavior method is invoked, to supply it with `context.state`), if the record's version does not match `currentVersion`, the upgrade function is called. The `newState` is immediately stored back into the DB, with the new version number (so the migration only happens once per record).
+`upgradeState` is a synchronous function which takes `(oldVersion, oldState)` and is responsible for returning the new state. Every time an old record is accessed (i.e. when a behavior method is invoked, to supply it with `context.state`), if the record's version does not match `currentVersion`, the upgrade function is called. The new `state` is immediately stored back into the DB, with the new version number (so the migration only happens once per record).
+
+The actual return value of `upgradeState` is `{ version, state }`. The upgrade process asserts that the returned `version` is equal to `currentVersion`, to catch mistakes where the upgrade function skips a step or has not been updated to match the Kind definition.
 
 `upgradeState` must be prepared to handle data from any historical version. To avoid gaps, authors are encouraged to use a pattern which retains every single-step delta, like this:
 
 ```js
-function upgradeState(oldVersion, oldState) {
-  let version = oldVersion;
-  let state = copy(oldState);
+function upgradeState(version, oldState) {
+  let state = { ...oldState }; // shallowly-mutable copy
   // add comment here describing initial schema
   if (version === 0) {
     state.newThing = INITIAL_VALUE;
@@ -275,12 +276,11 @@ function upgradeState(oldVersion, oldState) {
   // add comment here describing schema for version 2
   // in the future: add a new clause here for each new version
 
-  assert.equal(version, 2); // to match current `currentVersion`
-  return state;
+  return { version, state };
 }
 ```
 
-(TODO: consider returning `{ state, version }`, and have the VOM `assert.equal(version, kind.currentVersion)`, to catch accidents where `currentVersion` is updated but `upgradeState` is not, or failures inside `upgradeState` that skip a step)
+(TODO: consider making `oldState` a shallow-mutable object, instead of a fully hardened object, to make it easier to add/remove top-level properties. However it wouldn't help with deeper mutations. Naming it `state` might make it look like it could be modified in-place, and I think it's better to require it as a return value.)
 
 The current version's `stateShape` constraint is enforced upon the return value from any calls to `upgradeState` during that incarnation, in addition to `initialize` state (for new objects) and the state that results when behavior methods mutate their `state`.
 
