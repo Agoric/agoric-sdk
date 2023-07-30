@@ -712,6 +712,17 @@ jobs:
       matrix:
         bootstrap-version: ['test', 'main']
     steps:
+      - name: free up additional worker space
+        run: |
+          # Workaround to provide additional free space for testing.
+          #   https://github.com/actions/virtual-environments/issues/2840
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
       - uses: actions/checkout@v3
       - name: docker build (sdk)
         run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
