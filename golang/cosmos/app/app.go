@@ -233,12 +233,13 @@ type GaiaApp struct { // nolint: golint
 	FeeGrantKeeper feegrantkeeper.Keeper
 	AuthzKeeper    authzkeeper.Keeper
 
-	SwingSetKeeper      swingset.Keeper
-	SwingSetSnapshotter swingset.Snapshotter
-	VstorageKeeper      vstorage.Keeper
-	VibcKeeper          vibc.Keeper
-	VbankKeeper         vbank.Keeper
-	LienKeeper          lien.Keeper
+	SwingStoreExportsHandler swingset.SwingStoreExportsHandler
+	SwingSetSnapshotter      swingset.ExtensionSnapshotter
+	SwingSetKeeper           swingset.Keeper
+	VstorageKeeper           vstorage.Keeper
+	VibcKeeper               vibc.Keeper
+	VbankKeeper              vbank.Keeper
+	LienKeeper               lien.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -457,9 +458,8 @@ func NewAgoricApp(
 		callToController,
 	)
 
-	app.SwingSetSnapshotter = swingsetkeeper.NewSwingsetSnapshotter(
-		bApp,
-		app.SwingSetKeeper.ExportSwingStore,
+	app.SwingStoreExportsHandler = *swingsetkeeper.NewSwingStoreExportsHandler(
+		app.Logger(),
 		func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
 			if mustNotBeInited {
 				app.CheckControllerInited(false)
@@ -471,6 +471,11 @@ func NewAgoricApp(
 			}
 			return sendToController(true, string(bz))
 		},
+	)
+	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
+		bApp,
+		&app.SwingStoreExportsHandler,
+		app.SwingSetKeeper.ExportSwingStore,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
@@ -954,10 +959,10 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 
 // Commit tells the controller that the block is commited
 func (app *GaiaApp) Commit() abci.ResponseCommit {
-	err := app.SwingSetSnapshotter.WaitUntilSnapshotStarted()
+	err := swingsetkeeper.WaitUntilSwingStoreExportStarted()
 
 	if err != nil {
-		app.Logger().Error("swingset snapshot failed to start", "err", err)
+		app.Logger().Error("swing-store export failed to start", "err", err)
 	}
 
 	// Frontrun the BaseApp's Commit method

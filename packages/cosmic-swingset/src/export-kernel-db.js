@@ -21,6 +21,10 @@ import { makeProcessValue } from './helpers/process-value.js';
 
 /** @typedef {'current' | 'archival' | 'debug'} SwingStoreExportMode */
 
+// ExportManifestFilename is the manifest filename which must be synchronized
+// with the golang SwingStoreExportsHandler in golang/cosmos/x/swingset/keeper/swing_store_exports_handler.go
+export const ExportManifestFileName = 'export-manifest.json';
+
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {string | undefined} mode
@@ -74,6 +78,25 @@ const checkExportMode = mode => {
  */
 
 /**
+ * @param {object} options
+ * @returns {asserts options is StateSyncExporterOptions}
+ */
+export const validateExporterOptions = options => {
+  typeof options === 'object' || Fail`options is not an object`;
+  typeof options.stateDir === 'string' ||
+    Fail`required stateDir option not a string`;
+  typeof options.exportDir === 'string' ||
+    Fail`required exportDir option not a string`;
+  options.blockHeight == null ||
+    typeof options.blockHeight === 'number' ||
+    Fail`optional blockHeight option not a number`;
+  checkExportMode(options.exportMode);
+  options.includeExportData == null ||
+    typeof options.includeExportData === 'boolean' ||
+    Fail`optional includeExportData option not a boolean`;
+};
+
+/**
  * @param {StateSyncExporterOptions} options
  * @param {object} powers
  * @param {Pick<import('fs/promises'), 'open' | 'writeFile'>} powers.fs
@@ -113,7 +136,7 @@ export const initiateSwingStoreExport = (
   const cleanup = [];
 
   const exportDone = (async () => {
-    const manifestPath = pathResolve(exportDir, 'export-manifest.json');
+    const manifestPath = pathResolve(exportDir, ExportManifestFileName);
     const manifestFile = await open(manifestPath, 'wx');
     cleanup.push(async () => manifestFile.close());
 
