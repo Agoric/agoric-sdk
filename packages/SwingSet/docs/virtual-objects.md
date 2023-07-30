@@ -232,3 +232,65 @@ In either case you'd use it like:
 - A VDO can be passed as a parameter in messages to other vats.  It will be passed by presence, just like any other non-data object you might send in a message parameter.
 
 - A VDO's state may include references to other VDOs. The latter objects will be persisted separately and only deserialized as needed, so "swapping in" a VDO that references other VDOs does not entail swapping in the entire associated object graph.
+
+## Upgrading Durable Object State and StateShape
+
+(Summary: objects hold a hidden `version` number, Kind definitions can supply a `currentVersion` number and an `upgradeState` function, object state is upgraded lazily upon behavior invocation).
+
+The total lifetime of each vat is broken up into multiple "incarnations"; a new is created each time the vat is upgraded. Durable objects and collections are the only form of data which survive this transition: virtual objects and ephemeral Remotables are abandoned, all exported promises are rejected, and the entire JS engine state is erased.
+
+The new incarnation can (and is required) to provide new behavior for every durable Kind that was present in the previous version. This new behavior can be different than the previous version (which in fact is usually the main reason for the upgrade): it might add new methods, or change the code of an existing method. Authors are responsible for providing backwards compatibility to clients, so it is better to add methods, add new positional arguments, or add new options to an option bag argument, than to remove methods or remove arguments.
+
+If the new Kind definition wants to store different data than previous versions, it is free to do so, however we must address both the `stateShape` constraint (if supplied), and provide a way to safely handle `state` records created by previous versions.
+
+To support this, the four `defineKind` functions accept `currentVersion` and `upgradeState` options. These do not need to be supplied in the initial Kind definition call, nor in any subsequent version that uses the same `state` data. However, the first time a different `stateShape` is needed, or when the `state` contents need to be migrated/updated in any way, that version's `defineKind` call must supply both options. Every subsequent version must do the same.
+
+`currentVersion` is an integer, which defaults to 0. Each `state` record is recorded with this version. If the first incarnation of a vat omits `currentVersion` and creates object A and B, then the second incarnation provides `currentVersion: 1` and creates objects C and D, then the durable-object database will remember:
+
+* A: `version: 0`
+* B: `version: 0`
+* C: `version: 1`
+* D: `version: 1`
+
+and these version annotations will remain in place until the object is upgraded or deleted.
+
+`upgradeState` is a synchronous function which takes `(oldVersion, oldState)` and is responsible for returning `newState`. Every time an old record is accessed (i.e. when a behavior method is invoked, to supply it with `context.state`), if the record's version does not match `currentVersion`, the upgrade function is called. The `newState` is immediately stored back into the DB, with the new version number (so the migration only happens once per record).
+
+`upgradeState` must be prepared to handle data from any historical version. To avoid gaps, authors are encouraged to use a pattern which retains every single-step delta, like this:
+
+```js
+function upgradeState(oldVersion, oldState) {
+  let version = oldVersion;
+  let state = copy(oldState);
+  // add comment here describing initial schema
+  if (version === 0) {
+    state.newThing = INITIAL_VALUE;
+    version = 1;
+  }
+  // add comment here describing schema for version 1
+  if (version === 1) {
+    state.thing = state.thing + 1; // e.g. change from 1-indexed to 0-indexed
+    version = 2;
+  }
+  // add comment here describing schema for version 2
+  // in the future: add a new clause here for each new version
+
+  assert.equal(version, 2); // to match current `currentVersion`
+  return state;
+}
+```
+
+(TODO: consider returning `{ state, version }`, and have the VOM `assert.equal(version, kind.currentVersion)`, to catch accidents where `currentVersion` is updated but `upgradeState` is not, or failures inside `upgradeState` that skip a step)
+
+The current version's `stateShape` constraint is enforced upon the return value from any calls to `upgradeState` during that incarnation, in addition to `initialize` state (for new objects) and the state that results when behavior methods mutate their `state`.
+
+Old objects (where `obj.version !== currentVersion`) were constrained by the *old* `stateShape` that was active in the incarnation which last modified them, but are not affected by the current `stateShape`. This is not observable by user code, however, because objects are upgraded before the current behavior code can see them.
+
+State upgrades are performed lazily: no record is touched until absolutely necessary. However they are upgraded transparently and reliably: Kind behavior methods in version 2 will only ever see `state` objects with the matching version. If the `upgradeState` function throws an Error, the original `state` record (and `version` annotation) is left alone, the behavior method is never invoked, and the caller receives an error.
+
+This lazy upgrade policy means the performance impact of upgrade should be minimal. However if user code were to iterate over a large number of durable objects (invoking a method on every one), this would trigger an upgrade of them all. Such iteration is discouraged, as it increases the memory footprint of the enclosing crank.
+
+The `currentVersion` integer should be monotonically incremented in each new incarnation which needs to change the contents of `state` records. This will definitely happen if the `stateShape` changes in a way that would reject old states, but even the most tightly-fitting `stateShape` cannot express semantic constraints on how the data is used.  For example, suppose `state.tokens` in the first version was used to count milli-BLD tokens (so `state.tokens: 1_000` means 1.0 BLD). But later, we realize that more resolution is required, so the field is revised to store micro-BLD (so 1.0 BLD means `state.tokens: 1_000_000`). The upgrade function must do `state.tokens *= 1_000`, even though the `stateShape` does not change. (Note: while this may let the code do the right thing, humans reading the code and the historical state are likely to get confused, so the safest approach is to change the *name* of the field at the same time you change its semantics).
+
+
+## (TODO) Virtual Collections
