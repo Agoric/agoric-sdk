@@ -17,6 +17,11 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
+// This module implements an Cosmos ExtensionSnapshotter to capture and restore
+// state-sync Swingset state that is not part of the Cosmos DB.
+// See docs/architecture/state-sync.md for a sequence diagram of how this
+// module fits within the state-sync process.
+
 var _ snapshots.ExtensionSnapshotter = &ExtensionSnapshotter{}
 
 // SnapshotFormat 1 defines all extension payloads to be SwingStoreArtifact proto messages
