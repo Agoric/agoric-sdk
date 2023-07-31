@@ -9,13 +9,13 @@ sequenceDiagram
     participant A-M as App
     participant SSES-M as SwingSet ExtensionSnapshotter
     participant SSEH-M as SwingStoreExportsHandler
-    participant SM-M as Snapshot Manager
   end
 
   box whitesmoke App snapshot goroutine
     participant SSEH-AS as SwingStoreExportsHandler
     participant SSES-AS as SwingSet ExtensionSnapshotter
     participant A-AS as App
+    participant SM-AS as Snapshot manager
   end
 
   box whitesmoke Cosmos snapshot goroutine
@@ -75,26 +75,29 @@ sequenceDiagram
     CM->>+D: MkDir(exportDir)
     D-->>-CM: 
     CM-)+SSE: initiateSwingStoreExport(exportDir)
-    CM->>+SSE: await started
-    SSE-->>-CM: 
+    CM->>CM: await started<br/>(blocking)
     CM-->>-SSEH-AS: 
     alt not initiated
-      SSEH-AS->>SSEH-AS: exportStartedResult<-err<br/>close(exportStartedResult)
-      SSEH-AS->>SSEH-AS: exportDone<-err
+      SSEH-AS-)SSEH-M: exportStartedResult<-err<br/>close(exportStartedResult)
+      SSEH-AS-)SSEH-M: exportDone<-err
     else initiated
-    SSEH-AS->>SSEH-AS: close(exportStartedResult)
+    SSEH-AS-)SSEH-M: close(exportStartedResult)
     alt retrieval
     SSEH-AS->>+SSES-AS: ExportInitiated()
     SSES-AS->>+A-AS: BaseApp.Snapshot()
-    A-AS-)+SM-CS: go createSnapshot()
+    A-AS->>+SM-AS: Create()
+    SM-AS-)+SM-CS: go createSnapshot()
     SM-CS->>+MS-CS: Snapshot()
-    MS-CS-)A-AS: Write()
+    loop each IAVL node
+      MS-CS->>+SM-CS: WriteMsg()
+      SM-CS-)SM-AS: chunks <- chunk
+      SM-CS-->>-MS-CS: 
+    end
     MS-CS-->>-SM-CS: 
     SM-CS->>+SSES-CS: SnapshotExtension()
     SSES-CS->>+SSEH-CS: retrieveExport()
     SSEH-CS->>+CM: SWING_STORE_EXPORT/retrieve
-    CM->>+SSE: await done
-    SSE-->>-CM: 
+    CM->>CM: await done<br/>(blocking)
     CM-->>-SSEH-CS: exportDir
     SSEH-CS->>+D-CS: Read(export-manifest.json)
     D-CS-->>-SSEH-CS: 
@@ -104,56 +107,60 @@ sequenceDiagram
       SSEH-CS->>+D-CS: Read(artifactFile)
       D-CS-->>-SSEH-CS: 
       SSEH-CS-->>-SSES-CS: artifact{name, data}
-      SSES-CS-)A-AS: payloadWriter(artifact)
+      SSES-CS->>+SM-CS: payloadWriter(artifact)
+      SM-CS-)SM-AS: chunk <- chunks
+      SM-CS-->>-SSES-CS: 
     end
     SSES-CS-->>-SSEH-CS: 
     SSEH-CS->>+D-CS: Delete(exportDir)
     D-CS-->>-SSEH-CS: 
     SSEH-CS-->>-SSES-CS: 
     SSES-CS-->>-SM-CS: 
-    A-AS--xSM-CS: 
-    deactivate SM-CS
-    A-AS->>A-AS: Save()
+    SM-CS-)-SM-AS: close(chunks)
+    SM-AS->>SM-AS: Save()
+    SM-AS-->>-A-AS: 
     A-AS-->>-SSES-AS: 
     SSES-AS-->>-SSEH-AS: 
     else no retrieval
       SSEH-AS->>+SSES-AS: ExportInitiated()
       SSES-AS-->>-SSEH-AS: 
       SSEH-AS->>+CM: SWING_STORE_EXPORT/discard
-      CM->>SSE: Stop()
-      SSE->>SSE: done::reject()
-      SSE-->>CM: 
+      CM-)SSE: Stop()
+      SSE-)CM: done::reject()
+      CM->>CM: await done
       CM->>+D: Delete(exportDir)
       D-->-CM: 
       CM-->>-SSEH-AS: 
-      SSEH-AS->>SSEH-AS: exportDone<-err
+      SSEH-AS-)SSEH-M: exportDone <- err
     end
     end
-    SSEH-AS->>SSEH-AS: close(exportDone)
+    SSEH-AS-)SSEH-M: close(exportDone)
     deactivate SSEH-AS
   end
 
   par JS SwingStore export
     SSE->>Exporter: makeExporter()
     Exporter->>SSE: 
-    SSE->>SSE: started::resolve()
-    opt Export Data
+    SSE-)CM: started::resolve()
+    opt Export Data, not used in state-sync
     SSE->>Exporter: getExportData()
     Exporter-)SSE: export data iterator
     loop each data entry
-      SSE->>+D-E: Append(export-data.jsonl, JSON(entry typle))
+      SSE->>+D-E: Append(export-data.jsonl, "JSON(entry tuple)\n")
       D-E-->>-SSE: 
     end
     end
     SSE->>Exporter: getArtifactNames()
-    Exporter-)SSE: name async iterator
-    loop each name
+    Exporter--)SSE: names async iterator
+    loop each artifact name
       SSE->>Exporter: getArtifact(name)
-      Exporter-)SSE: artifactStream
+      Exporter--)SSE: artifactStream
       SSE->>+D-E: Write(name, artifactStream)
       D-E-->>-SSE: 
     end
-    SSE->>SSE: done::resolve()
+    SSE->>+D-E: Write(export-manifest.jsonl, manifest)
+    D-E-->>-SSE: 
+    SSE-)CM: done::resolve()
     deactivate SSE
   end
 
@@ -161,12 +168,10 @@ sequenceDiagram
 
   TM->>+A-M: Commit
   A-M->>+SSEH-M: WaitUntilSwingStoreExportStarted()
-  SSEH-M->>+SSEH-AS: err<-activeSnapshot.exportStartedResult
-  SSEH-AS-->>-SSEH-M: 
+  SSEH-M->>SSEH-M: err <- exportStartedResult<br/>(blocking)
   SSEH-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
-  CM->>+SSE: await started
-  SSE-->>-CM: 
+  CM->>CM: await started<br/>(blocking)
   CM->>CM: swingStore.commit()
   CM-->>-A-M: 
   A-M->>A-M: BaseApp.CommitWithoutSnapshot()
