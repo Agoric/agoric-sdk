@@ -180,3 +180,127 @@ sequenceDiagram
   A-M->>A-M: isSnapshotHeight: false
   A-M-->>-TM: 
 ```
+
+## Restoring Snapshot
+
+```mermaid
+sequenceDiagram
+  box whitesmoke Main goroutine
+    participant TM as Tendermint
+    participant A-M as BaseApp
+    participant SM-M as Snapshot Manager
+  end
+
+  box whitesmoke Cosmos snapshot goroutine
+    participant SM-CS as Snapshot manager
+    participant MS-CS as MultiStore
+    participant SSES-CS as SwingSet ExtensionSnapshotter
+    participant SSEH-CS as SwingStoreExportsHandler
+    participant D-CS as Disk
+  end
+
+  box whitesmoke JS Main process
+    participant CM as Chain Main
+    participant D as Disk
+    participant SSI as StateSyncImport
+    participant ISS as importSwingStore
+    participant SS as SwingStore
+  end
+
+  TM->>+A-M: OfferSnapshot
+  A-M->>+SM-M: Restore()
+  SM-M-)+SM-CS: go restoreSnapshot()
+  SM-M-->>-A-M: 
+  A-M-->>-TM: 
+
+  par Snapshot Restore
+    SM-CS->>+MS-CS: Restore()
+    loop IAVL snapshot items
+      MS-CS->>+SM-CS: protoReader.ReadMsg()
+      SM-CS->>+SM-M: chunk <- chunks
+      SM-M-->>-SM-CS: 
+      SM-CS-->>-MS-CS: 
+      MS-CS->>MS-CS: importer.Add(node)
+    end
+    MS-CS-->>-SM-CS: 
+
+    opt loop over extensions
+      SM-CS->>+SSES-CS: RestoreExtension()
+      SSES-CS->>+SSEH-CS: RestoreExport()
+      SSEH-CS->>SSEH-CS: checkNotActive()
+      SSEH-CS->>SSEH-CS: activeExport = exportOperation{}
+      SSEH-CS->>+D-CS: MkDir(exportDir)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS->>+SSES-CS: provider.GetExportData()
+      SSES-CS->>+MS-CS: iterate prefixed entries
+      MS-CS-->>-SSES-CS: export data entries
+      SSES-CS-->>-SSEH-CS: 
+      loop each data entry
+        SSEH-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
+        D-CS-->>-SSEH-CS: 
+      end
+      loop extension snapshot items
+        SSEH-CS->>+SSES-CS: provider.readArtifact()
+        SSES-CS->>+SM-CS: payloadReader()
+        SM-CS->>+SM-M: chunk <- chunks
+        SM-M-->>-SM-CS: 
+        SM-CS-->>-SSES-CS: extension payloadBytes
+        SSES-CS->>SSES-CS: artifact = parse(payloadBytes)
+        SSES-CS->>-SSEH-CS: artifact
+        SSEH-CS->>+D-CS: Write(sanitizedFilename, artifactData)
+        D-CS-->>-SSEH-CS: 
+      end
+      SSEH-CS->>+D-CS: Write(export-manifest.jsonl, manifest)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS->>+CM: SWING_STORE_EXPORT/restore
+      CM->>+SSI: performStateSyncImport()
+      SSI->>+D: Read(export-manifest.json)
+      D-->>-SSI: 
+      SSI->>+ISS: importSwingStore()
+      ISS->>ISS: initSwingStore()
+      ISS->>+SSI: exporter.getExportData()
+      SSI->>+D: Read(export-data.json)
+      D-->>-SSI: 
+      SSI-->>-ISS: export data iterator
+      ISS->>+SS: restore kv and metadata
+      SS-->>-ISS: 
+      ISS->>+SSI: exporter.getArtifactNames()
+      SSI--)-ISS: names async iterator
+      loop each artifact name
+        ISS->>+SSI: provider.getArtifact()
+        SSI->>+D: Read(artifactFilename)
+        D-->>-SSI: 
+        SSI--)-ISS: artifactStream
+        ISS->>+SS: restore artifact
+        SS-->>-ISS: 
+      end
+      ISS-->>-SSI: 
+      SSI->>+SS: set(host.blockHeight)
+      SS-->>-SSI: 
+      SSI-->>-CM: 
+      CM-->>-SSEH-CS: 
+      SSEH-CS->>+D-CS: Delete(exportDir)
+      D-CS-->>-SSEH-CS: 
+      SSEH-CS-->>-SSES-CS: 
+      SSES-CS-->>-SM-CS: 
+    end
+    SM-CS-)-SM-M: chRestoreDone <- restoreDone{}<br/>close(chRestoreDone)
+  end
+
+  TM->>+A-M: ApplySnapshotChunk
+  A-M->>+SM-M: RestoreChunk()
+  SM-M->>SM-M: select chRestoreDone, default
+  alt done (abnormal)
+    SM-M-->>A-M: false, error
+  else normal
+    SM-M-)SM-M: chunks <- chunk
+    alt chunks remaining
+      SM-M-->>A-M: false
+    else last chunk
+      SM-M->>SM-M: <- chRestoreDone<br/>(blocking)
+      SM-M-->>-A-M: true
+    end
+  end
+  A-M-->>-TM: 
+
+```
