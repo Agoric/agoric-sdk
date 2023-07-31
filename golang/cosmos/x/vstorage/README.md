@@ -37,8 +37,10 @@ This is used by the SwingSet "bridge".
 
 ## External protobuf interface
 
-gRPC via [Querier](./keeper/keeper.go)
-and CometBFT method "abci_query" with params `{ "path": "/agoric.vstorage.Query/...", "data": "<hexadecimal representation of serialized protobuf>" }` via the same
+RPC via [Querier](./keeper/grpc_query.go)
+and [CometBFT method "abci_query"](https://docs.cometbft.com/v0.37/rpc/#/ABCI/abci_query)
+with params `{ "path": "/agoric.vstorage.Query/...", "data": "<hexadecimal representation of serialized protobuf>" }`
+via the same
 * /agoric.vstorage.Query/CapData
 * /agoric.vstorage.Query/Children
 * /agoric.vstorage.Query/Data
