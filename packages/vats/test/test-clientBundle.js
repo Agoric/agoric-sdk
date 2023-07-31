@@ -6,7 +6,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeHeapZone } from '@agoric/zone';
-import { Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { Stake } from '@agoric/internal/src/tokens.js';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, feeIssuerConfig } from '../src/core/utils.js';

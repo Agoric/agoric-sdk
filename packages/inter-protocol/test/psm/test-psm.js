@@ -31,7 +31,7 @@ import {
 import { E, Far } from '@endo/far';
 import path from 'path';
 import { makeHeapZone } from '@agoric/zone';
-import { Stable } from '../../src/tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,

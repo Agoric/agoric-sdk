@@ -2,7 +2,7 @@
 
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   BridgeId,
   deeplyFulfilledObject,

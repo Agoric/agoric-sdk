@@ -34,7 +34,7 @@ import {
 } from '@agoric/vats/src/core/startWalletFactory.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeHeapZone } from '@agoric/zone';
-import { Stable, Stake } from '../../src/tokens.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
