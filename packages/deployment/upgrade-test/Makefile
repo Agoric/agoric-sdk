@@ -14,6 +14,7 @@ endif
 local_sdk:
 	(cd ../ && make docker-build-sdk)
 
+# NOTE: ensure these steps are mirrored in CI (.github/workflows/test-all-packages.yml)
 agoric-upgrade-7-2:
 	docker build --build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) --progress=plain --target agoric-upgrade-7-2 -t $(REPOSITORY):agoric-upgrade-7-2 -f Dockerfile upgrade-test-scripts
 
