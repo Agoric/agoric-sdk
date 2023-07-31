@@ -150,7 +150,7 @@ message Egress {
     ];
 }
 
-// SwingStoreArtifact encodes the artifacts of a swing-store export.
+// SwingStoreArtifact encodes an artifact of a swing-store export.
 message SwingStoreArtifact {
     option (gogoproto.equal) = false;
     string name = 1 [

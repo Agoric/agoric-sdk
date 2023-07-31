@@ -38,7 +38,7 @@ type snapshotDetails struct {
 	// artifacts used to populate this state-sync extension's payloads.
 	retrieveExport func() error
 	// payloadWriter is the callback provided by the state-sync snapshot manager
-	// to write the extension's payloads into the under-construction snapshot
+	// for an extension to write a payload into the under-construction snapshot
 	// stream. It may be called multiple times, and often is (currently once per
 	// SwingStore export artifact).
 	payloadWriter snapshots.ExtensionPayloadWriter

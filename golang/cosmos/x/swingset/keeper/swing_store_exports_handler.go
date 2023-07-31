@@ -526,8 +526,10 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(exportRetrieved fu
 	nextArtifact := 0
 
 	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
-		if nextArtifact >= len(manifest.Artifacts) {
+		if nextArtifact == len(manifest.Artifacts) {
 			return artifact, io.EOF
+		} else if nextArtifact > len(manifest.Artifacts) {
+			return artifact, fmt.Errorf("exceeded expected artifact count: %d > %d", nextArtifact, len(manifest.Artifacts))
 		}
 
 		artifactEntry := manifest.Artifacts[nextArtifact]
