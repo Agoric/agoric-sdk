@@ -7,6 +7,7 @@ sequenceDiagram
   box whitesmoke Main goroutine
     participant TM as Tendermint
     participant A-M as App
+    participant MS-M as MultiStore
     participant SSES-M as SwingSet ExtensionSnapshotter
     participant SSEH-M as SwingStoreExportsHandler
   end
@@ -49,7 +50,21 @@ sequenceDiagram
   A-M->>A-M: isSnapshotHeight: false
   A-M-->>-TM: 
 
-  Note over TM, A-M: BeginBlock, EndBlock
+  TM->>+A-M: BeginBlock
+  A-M->>+CM: BEGIN_BLOCK
+  CM-->>-A-M: 
+  A-M-->>-TM: 
+
+  TM->>+A-M: EndBlock
+  A-M->>+CM: END_BLOCK
+  CM->>CM: runKernel()
+  CM-)A-M: vstorage->setWithoutNotify(prefixedExportDataEntries)
+  loop each data entry
+    A-M->>+MS-M: vstorage.SetStorage()
+    MS-M-->>-A-M: 
+  end
+  CM-->>-A-M: 
+  A-M-->>-TM: 
 
   TM->>+A-M: Commit
   A-M->>+SSEH-M: WaitUntilSwingStoreExportStarted()
@@ -232,8 +247,8 @@ sequenceDiagram
       SSEH-CS->>+D-CS: MkDir(exportDir)
       D-CS-->>-SSEH-CS: 
       SSEH-CS->>+SSES-CS: provider.GetExportData()
-      SSES-CS->>+MS-CS: iterate prefixed entries
-      MS-CS-->>-SSES-CS: export data entries
+      SSES-CS->>+MS-CS: ExportStorageFromPrefix<br/>("swingStore.")
+      MS-CS-->>-SSES-CS: vstorage data entries
       SSES-CS-->>-SSEH-CS: 
       loop each data entry
         SSEH-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
