@@ -19,7 +19,6 @@ export default [
   "@agoric/notifier",
   "@agoric/pegasus",
   "@agoric/same-structure",
-  "@agoric/sharing-service",
   "@agoric/smart-wallet",
   "@agoric/solo",
   "@agoric/sparse-ints",
