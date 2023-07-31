@@ -707,6 +707,8 @@ jobs:
 
   test-docker-build:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1 
     timeout-minutes: 60
     strategy:
       matrix:
@@ -724,6 +726,8 @@ jobs:
           df -h
 
       - uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: docker build (sdk)
         run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
       - name: docker build upgrade test
