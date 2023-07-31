@@ -8,23 +8,23 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
-func newTestExtensionSnapshotter() ExtensionSnapshotter {
+func newTestExtensionSnapshotter() *ExtensionSnapshotter {
 	logger := log.NewNopLogger() // log.NewTMLogger(log.NewSyncWriter( /* os.Stdout*/ io.Discard)).With("module", "sdk/app")
-	return ExtensionSnapshotter{
+	return &ExtensionSnapshotter{
 		isConfigured:             func() bool { return true },
 		newRestoreContext:        func(height int64) sdk.Context { return sdk.Context{} },
 		logger:                   logger,
-		swingStoreExportsHandler: newTestSwingStoreSnapshotter(),
+		swingStoreExportsHandler: newTestSwingStoreExportsHandler(),
 	}
 }
 
 func TestExtensionSnapshotterInProgress(t *testing.T) {
-	swingsetSnapshotter := newTestExtensionSnapshotter()
+	extensionSnapshotter := newTestExtensionSnapshotter()
 	ch := make(chan struct{})
-	swingsetSnapshotter.takeAppSnapshot = func(height int64) {
+	extensionSnapshotter.takeAppSnapshot = func(height int64) {
 		<-ch
 	}
-	err := swingsetSnapshotter.InitiateSnapshot(123)
+	err := extensionSnapshotter.InitiateSnapshot(123)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,12 +33,12 @@ func TestExtensionSnapshotterInProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = swingsetSnapshotter.InitiateSnapshot(456)
+	err = extensionSnapshotter.InitiateSnapshot(456)
 	if err == nil {
 		t.Error("wanted error for snapshot in progress")
 	}
 
-	err = swingsetSnapshotter.RestoreExtension(
+	err = extensionSnapshotter.RestoreExtension(
 		456, SnapshotFormat,
 		func() ([]byte, error) {
 			return nil, io.EOF
@@ -53,27 +53,31 @@ func TestExtensionSnapshotterInProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = swingsetSnapshotter.InitiateSnapshot(456)
+	err = extensionSnapshotter.InitiateSnapshot(456)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = WaitUntilSwingStoreExportDone()
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestExtensionSnapshotterNotConfigured(t *testing.T) {
-	swingsetSnapshotter := newTestExtensionSnapshotter()
-	swingsetSnapshotter.isConfigured = func() bool { return false }
-	err := swingsetSnapshotter.InitiateSnapshot(123)
+	extensionSnapshotter := newTestExtensionSnapshotter()
+	extensionSnapshotter.isConfigured = func() bool { return false }
+	err := extensionSnapshotter.InitiateSnapshot(123)
 	if err == nil {
 		t.Error("wanted error for unconfigured snapshot manager")
 	}
 }
 
 func TestExtensionSnapshotterSecondCommit(t *testing.T) {
-	swingsetSnapshotter := newTestExtensionSnapshotter()
+	extensionSnapshotter := newTestExtensionSnapshotter()
 
 	// Use a channel to block the snapshot goroutine after it has started but before it exits.
 	ch := make(chan struct{})
-	swingsetSnapshotter.takeAppSnapshot = func(height int64) {
+	extensionSnapshotter.takeAppSnapshot = func(height int64) {
 		<-ch
 	}
 
@@ -82,7 +86,7 @@ func TestExtensionSnapshotterSecondCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = swingsetSnapshotter.InitiateSnapshot(123)
+	err = extensionSnapshotter.InitiateSnapshot(123)
 	if err != nil {
 		t.Fatal(err)
 	}
