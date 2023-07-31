@@ -22,17 +22,20 @@ var _ snapshots.ExtensionSnapshotter = &ExtensionSnapshotter{}
 // SnapshotFormat 1 defines all extension payloads to be SwingStoreArtifact proto messages
 const SnapshotFormat = 1
 
+// snapshotDetails describes an in-progress state-sync snapshot
 type snapshotDetails struct {
 	// blockHeight is the block height of this in-progress snapshot.
 	blockHeight uint64
 	// logger is the destination for this snapshot's log messages.
 	logger log.Logger
-	// retrieveExport retrieves the SwingStore's export provider which allow to
-	// read the export's artifact used to populate this snapshot's payloads.
+	// retrieveExport is the callback provided by the SwingStoreExportsHandler to
+	// retrieve the SwingStore's export provider which allows to read the export's
+	// artifacts used to populate this state-sync extension's payloads.
 	retrieveExport func() error
-	// payloadWriter writes bytes into the under-construction protobuf message
-	// for a snapshot. It may be called multiple times, and often is (currently
-	// once per SwingStore export artifact).
+	// payloadWriter is the callback provided by the state-sync snapshot manager
+	// to write the extension's payloads into the under-construction snapshot
+	// stream. It may be called multiple times, and often is (currently once per
+	// SwingStore export artifact).
 	payloadWriter snapshots.ExtensionPayloadWriter
 }
 
@@ -47,12 +50,11 @@ type snapshotDetails struct {
 // SwingStore "export data" from the already restored cosmos DB, to produce a
 // full SwingStore export that can be imported to create a new JS swing-store DB.
 //
-// By leveraging SwingStoreExportsHandler to generate and restore SwingStore
-// exports, the extension ensures insensitivity to sub-block timing of
-// communication with the JS side, and enforcing concurrency requirements
-// (non blocking state-sync snapshots).
-// The application must still arrange block level commit synchronization,
-// to ensure the results are deterministic.
+// The SwingStoreExportsHandler also helps with the synchronization needed to
+// generate consistent exports, even while other SwingSet activities are performed
+// during the next block. However this relies on the application calling
+// WaitUntilSwingStoreExportStarted before instructing swingset to commit a new
+// block.
 type ExtensionSnapshotter struct {
 	isConfigured                      func() bool
 	takeAppSnapshot                   func(height int64)
@@ -107,7 +109,8 @@ func (snapshotter *ExtensionSnapshotter) SupportedFormats() []uint32 {
 func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 	if !snapshotter.isConfigured() {
 		return fmt.Errorf("snapshot manager not configured")
-	} else if height <= 0 {
+	}
+	if height <= 0 {
 		return fmt.Errorf("block height must not be negative or 0")
 	}
 

@@ -531,7 +531,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(exportRetrieved fu
 		}
 
 		artifactEntry := manifest.Artifacts[nextArtifact]
-		nextArtifact += 1
+		nextArtifact++
 
 		artifactName := artifactEntry[0]
 		fileName := artifactEntry[1]
