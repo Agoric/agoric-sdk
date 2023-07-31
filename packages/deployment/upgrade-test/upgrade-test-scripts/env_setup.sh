@@ -54,6 +54,26 @@ if [[ "$binary" == "agd" ]]; then
   sed -i 's/minSubmissionCount": 3/minSubmissionCount": 1/g' /usr/src/agoric-sdk/packages/vats/*.json
 fi
 
+startAgd() {
+  agd start --log_level warn "$@" &
+  AGD_PID=$!
+  echo $AGD_PID > $HOME/.agoric/agd.pid
+  wait_for_bootstrap
+  waitForBlock 2
+}
+
+killAgd() {
+  AGD_PID=$(cat $HOME/.agoric/agd.pid)
+  kill $AGD_PID
+  rm $HOME/.agoric/agd.pid
+  wait $AGD_PID || true
+}
+
+waitAgd() {
+  wait $(cat $HOME/.agoric/agd.pid)
+  rm $HOME/.agoric/agd.pid
+}
+
 provisionSmartWallet() {
   i="$1"
   amount="$2"
