@@ -26,7 +26,7 @@ import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { TimeMath } from '@agoric/time';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { Stable } from '../src/tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import {
   setupBootstrap,
   setUpZoeForTest,

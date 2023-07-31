@@ -7,7 +7,7 @@ import {
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
-import { Stake, Stable } from '@agoric/inter-protocol/src/tokens.js';
+import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
 const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;

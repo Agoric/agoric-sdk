@@ -13,7 +13,7 @@ import {
 } from '@agoric/internal/src/marshal.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { Stable } from '../tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 
 import { reserveThenGetNamePaths } from './utils.js';
 
