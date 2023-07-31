@@ -28,12 +28,13 @@ sequenceDiagram
 
   box whitesmoke JS Main process
     participant CM as Chain Main
+    participant D as Disk
   end
 
   box whitesmoke JS Export process
     participant SSE as SwingStoreExport 
-    participant D-E as Disk
     participant Exporter as Exporter 
+    participant D-E as Disk
   end
 
   TM->>+A-M: Commit
@@ -63,6 +64,7 @@ sequenceDiagram
   A-M->>+SSES-M: InitiateSnapshot()
   SSES-M->>+SSEH-M: InitiateExport()
   SSEH-M->>SSEH-M: checkNotActive()
+  SSEH-M->>SSEH-M: activeExport = exportOperation{}
   SSEH-M-)+SSEH-AS: go
   SSEH-M-->>-SSES-M: 
   SSES-M-->>-A-M: 
@@ -70,7 +72,8 @@ sequenceDiagram
 
   par App Snapshot
     SSEH-AS->>+CM: SWING_STORE_EXPORT/initiate
-    CM->>CM: mkdir exportDir
+    CM->>+D: MkDir(exportDir)
+    D-->>-CM: 
     CM-)+SSE: initiateSwingStoreExport(exportDir)
     CM->>+SSE: await started
     SSE-->>-CM: 
@@ -80,7 +83,7 @@ sequenceDiagram
       SSEH-AS->>SSEH-AS: exportDone<-err
     else initiated
     SSEH-AS->>SSEH-AS: close(exportStartedResult)
-    alt success
+    alt retrieval
     SSEH-AS->>+SSES-AS: ExportInitiated()
     SSES-AS->>+A-AS: BaseApp.Snapshot()
     A-AS-)+SM-CS: go createSnapshot()
@@ -93,17 +96,19 @@ sequenceDiagram
     CM->>+SSE: await done
     SSE-->>-CM: 
     CM-->>-SSEH-CS: exportDir
-    SSEH-CS->>+D-CS: read(export-manifest.json)
+    SSEH-CS->>+D-CS: Read(export-manifest.json)
     D-CS-->>-SSEH-CS: 
     SSEH-CS->>+SSES-CS: ExportRetrieved()
     loop
       SSES-CS->>+SSEH-CS: provider.ReadArtifact()
-      SSEH-CS->>+D-CS: read(artifactFile)
+      SSEH-CS->>+D-CS: Read(artifactFile)
       D-CS-->>-SSEH-CS: 
       SSEH-CS-->>-SSES-CS: artifact{name, data}
       SSES-CS-)A-AS: payloadWriter(artifact)
     end
     SSES-CS-->>-SSEH-CS: 
+    SSEH-CS->>+D-CS: Delete(exportDir)
+    D-CS-->>-SSEH-CS: 
     SSEH-CS-->>-SSES-CS: 
     SSES-CS-->>-SM-CS: 
     A-AS--xSM-CS: 
@@ -111,15 +116,15 @@ sequenceDiagram
     A-AS->>A-AS: Save()
     A-AS-->>-SSES-AS: 
     SSES-AS-->>-SSEH-AS: 
-    else not retrieved
+    else no retrieval
       SSEH-AS->>+SSES-AS: ExportInitiated()
       SSES-AS-->>-SSEH-AS: 
       SSEH-AS->>+CM: SWING_STORE_EXPORT/discard
       CM->>SSE: Stop()
       SSE->>SSE: done::reject()
       SSE-->>CM: 
-      CM->>+D-E: Delete(exportDir)
-      D-E-->-CM: 
+      CM->>+D: Delete(exportDir)
+      D-->-CM: 
       CM-->>-SSEH-AS: 
       SSEH-AS->>SSEH-AS: exportDone<-err
     end
@@ -132,6 +137,14 @@ sequenceDiagram
     SSE->>Exporter: makeExporter()
     Exporter->>SSE: 
     SSE->>SSE: started::resolve()
+    opt Export Data
+    SSE->>Exporter: getExportData()
+    Exporter-)SSE: export data iterator
+    loop each data entry
+      SSE->>+D-E: Append(export-data.jsonl, JSON(entry typle))
+      D-E-->>-SSE: 
+    end
+    end
     SSE->>Exporter: getArtifactNames()
     Exporter-)SSE: name async iterator
     loop each name
