@@ -14,7 +14,7 @@ test('zoe vat upgrade trauma', async t => {
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('../../../../SwingSet/test/bootstrap-relay.js'),
+        sourceSpec: bfile('../../../../SwingSet/tools/bootstrap-relay.js'),
       },
       // TODO: Move vat-ertp-service.js up a level.
       ertp: { sourceSpec: bfile('../upgradeCoveredCall/vat-ertp-service.js') },

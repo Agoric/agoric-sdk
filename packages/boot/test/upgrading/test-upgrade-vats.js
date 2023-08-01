@@ -50,7 +50,7 @@ const makeScenario = async (
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('../../../SwingSet/test/bootstrap-relay.js'),
+        sourceSpec: bfile('../../../SwingSet/tools/bootstrap-relay.js'),
       },
     },
     bundleCachePath: 'bundles',
