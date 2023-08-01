@@ -111,7 +111,6 @@ export const buildRootObject = async () => {
       const payment = moolaKit.mint.mintPayment(
         AmountMath.make(moolaKit.brand, 100n),
       );
-      // @ts-expect-error casting far for test
       await E(depositFacet).receive(payment);
 
       return true;
