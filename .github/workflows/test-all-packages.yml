@@ -142,9 +142,6 @@ jobs:
       - name: yarn test (same-structure)
         if: (success() || failure())
         run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (sharing-service)
-        if: (success() || failure())
-        run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
