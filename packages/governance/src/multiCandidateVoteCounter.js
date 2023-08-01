@@ -2,7 +2,7 @@ import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
-  buildQuestion,
+  prepareDurableQuestionKit,
   ChoiceMethod,
   coerceQuestionSpec,
   ElectionType,
@@ -32,19 +32,16 @@ const validateQuestionSpec = questionSpec => {
 
 /** @type {BuildMultiVoteCounter} */
 const makeMultiCandidateVoteCounter = (
-  questionSpec,
+  question,
   threshold,
   instance,
   publisher,
 ) => {
-  validateQuestionSpec(questionSpec);
-
-  const question = buildQuestion(questionSpec, instance);
   const details = question.getDetails();
 
   let isOpen = true;
-  const positions = questionSpec.positions;
-  const maxChoices = questionSpec.maxChoices;
+  const positions = details.positions;
+  const maxChoices = details.maxChoices;
 
   /** @type { PromiseRecord<Position[]> } */
   const outcomePromise = makePromiseKit();
@@ -107,7 +104,7 @@ const makeMultiCandidateVoteCounter = (
     let winningPositions = [];
     for (const position of sortedPositions) {
       if (position.total > 0n) {
-        if (winningPositions.length < questionSpec.maxWinners) {
+        if (winningPositions.length < details.maxWinners) {
           winningPositions.push(position);
         } else if (
           winningPositions[winningPositions.length - 1].total === position.total
@@ -125,15 +122,15 @@ const makeMultiCandidateVoteCounter = (
     winningPositions = winningPositions.map(p => p.position);
 
     if (winningPositions.length === 0) {
-      outcomePromise.resolve([questionSpec.tieOutcome]);
-    } else if (winningPositions.length <= questionSpec.maxWinners) {
+      outcomePromise.resolve([details.tieOutcome]);
+    } else if (winningPositions.length <= details.maxWinners) {
       outcomePromise.resolve(winningPositions);
     } else {
       const untiedPositions = winningPositions.slice(0, tieIndex);
       const tiedPositions = winningPositions.slice(tieIndex);
       const tieWinners = breakTie(
         tiedPositions,
-        questionSpec.maxWinners - untiedPositions.length,
+        details.maxWinners - untiedPositions.length,
       );
 
       outcomePromise.resolve(untiedPositions.concat(tieWinners));
@@ -216,16 +213,22 @@ const makeMultiCandidateVoteCounter = (
   });
 };
 
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
 /**
  * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint }>} zcf
  * @param {{outcomePublisher: Publisher<MultiOutcomeRecord>}} outcomePublisher
+ * @param {Baggage} baggage
  */
-const start = (zcf, { outcomePublisher }) => {
+const start = (zcf, { outcomePublisher }, baggage) => {
   const { questionSpec, quorumThreshold } = zcf.getTerms();
+  const makeDurableQuestionKit = prepareDurableQuestionKit(baggage);
+  validateQuestionSpec(questionSpec);
+  const question = makeDurableQuestionKit(questionSpec, zcf.getInstance());
 
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       quorumThreshold,
       zcf.getInstance(),
       outcomePublisher,

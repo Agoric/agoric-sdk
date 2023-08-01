@@ -1,5 +1,7 @@
-import { makeExo, mustMatch, keyEQ, M } from '@agoric/store';
-import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { mustMatch, keyEQ, M } from '@agoric/store';
+import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
+import { prepareExoClass } from '@agoric/vat-data';
+import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 
 import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 
@@ -13,13 +15,14 @@ import { QuestionI, QuestionSpecShape } from './typeGuards.js';
  * "unranked" is more formally known as "approval" voting, but this is hard for
  * people to intuit when there are only two alternatives.
  */
-const ChoiceMethod = /** @type {const} */ ({
+export const ChoiceMethod = /** @type {const} */ ({
   UNRANKED: 'unranked',
   ORDER: 'order',
   PLURALITY: 'plurality',
 });
+harden(ChoiceMethod);
 
-const ElectionType = /** @type {const} */ ({
+export const ElectionType = /** @type {const} */ ({
   // A parameter is named, and a new value proposed
   PARAM_CHANGE: 'param_change',
   // choose one or multiple winners, depending on ChoiceMethod
@@ -29,22 +32,26 @@ const ElectionType = /** @type {const} */ ({
   API_INVOCATION: 'api_invocation',
   OFFER_FILTER: 'offer_filter',
 });
+harden(ElectionType);
 
-const QuorumRule = /** @type {const} */ ({
+export const QuorumRule = /** @type {const} */ ({
   MAJORITY: 'majority',
   NO_QUORUM: 'no_quorum',
   // The election isn't valid unless all voters vote
   ALL: 'all',
 });
+harden(QuorumRule);
 
 /** @type {PositionIncluded} */
-const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
+export const positionIncluded = (positions, p) =>
+  positions.some(e => keyEQ(e, p));
+harden(positionIncluded);
 
 /**
  * @param {QuestionSpec} allegedQuestionSpec
  * @returns {QuestionSpec}
  */
-const coerceQuestionSpec = ({
+export const coerceQuestionSpec = ({
   method,
   issue,
   positions,
@@ -77,38 +84,46 @@ const coerceQuestionSpec = ({
 
   return question;
 };
-
-/** @type {BuildQuestion} */
-const buildQuestion = (questionSpec, counterInstance) => {
-  const questionHandle = makeHandle('Question');
-
-  /** @type {Question} */
-  return makeExo('question details', QuestionI, {
-    getVoteCounter() {
-      return counterInstance;
-    },
-    getDetails() {
-      return harden({
-        ...questionSpec,
-        questionHandle,
-        counterInstance,
-      });
-    },
-  });
-};
-
-harden(buildQuestion);
-harden(ChoiceMethod);
-harden(ElectionType);
 harden(coerceQuestionSpec);
-harden(positionIncluded);
-harden(QuorumRule);
 
-export {
-  buildQuestion,
-  ChoiceMethod,
-  ElectionType,
-  coerceQuestionSpec,
-  positionIncluded,
-  QuorumRule,
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+/**
+ * @param {Baggage} baggage
+ * @returns {BuildQuestion}
+ */
+export const prepareDurableQuestionKit = baggage => {
+  const makeDurableHandle = defineDurableHandle(baggage, 'question');
+  return prepareExoClass(
+    baggage,
+    'question details',
+    QuestionI,
+    (questionSpec, counterInstance) => ({
+      questionSpec,
+      counterInstance,
+      questionHandle: makeDurableHandle(),
+    }),
+    {
+      getVoteCounter() {
+        return this.state.counterInstance;
+      },
+      getDetails() {
+        const { state } = this;
+
+        return harden({
+          ...state.questionSpec,
+          questionHandle: state.questionHandle,
+          counterInstance: state.counterInstance,
+        });
+      },
+    },
+    {
+      stateShape: harden({
+        questionSpec: QuestionSpecShape,
+        counterInstance: InstanceHandleShape,
+        questionHandle: M.remotable('Question'),
+      }),
+    },
+  );
 };
+harden(prepareDurableQuestionKit);

@@ -122,7 +122,7 @@ test('committee-open question:one', async t => {
           text: 'why not?',
         },
       ],
-      questionHandle: Far('QuestionHandle'),
+      questionHandle: questions[0],
       quorumRule: 'majority',
       tieOutcome: {
         text: 'why not?',

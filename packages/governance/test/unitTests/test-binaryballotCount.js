@@ -9,16 +9,18 @@ import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import {
   ChoiceMethod,
-  ElectionType,
-  QuorumRule,
   coerceQuestionSpec,
+  ElectionType,
   makeParamChangePositions,
+  QuorumRule,
 } from '../../src/index.js';
 import { makeBinaryVoteCounter } from '../../src/binaryVoteCounter.js';
+import { prepareDurableQuestionKit } from '../../src/question.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
@@ -52,6 +54,8 @@ function makePublisherFromFakes() {
   return { publisher: publishKit.publisher, storageRoot };
 }
 
+const makeDurableQuestion = prepareDurableQuestionKit(makeScalarMapStore());
+
 test('binary question', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
@@ -64,9 +68,11 @@ test('binary question', async t => {
     tieOutcome: BAIT,
     maxWinners: 1,
   });
+
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    question,
     0n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -104,7 +110,7 @@ test('binary spoiled', async t => {
 
   const { publisher } = makePublisherFromFakes();
   const { publicFacet, creatorFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     0n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -139,7 +145,7 @@ test('binary tied', async t => {
 
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     2n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -176,7 +182,7 @@ test('binary bad vote', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { creatorFacet, publicFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     0n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -214,7 +220,7 @@ test('binary no votes', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     0n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -245,7 +251,7 @@ test('binary varying share weights', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     1n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -285,7 +291,7 @@ test('binary contested', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     3n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -325,7 +331,7 @@ test('binary revote', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     5n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -366,7 +372,7 @@ test('binary question too many positions', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     1n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -409,7 +415,7 @@ test('binary no quorum', async t => {
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE),
     2n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -431,6 +437,7 @@ test('binary no quorum', async t => {
     reason: 'No quorum',
   });
 });
+
 test('binary too many positions', async t => {
   t.notThrows(() =>
     coerceQuestionSpec({

@@ -3,10 +3,10 @@ import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import {
-  buildQuestion,
   ChoiceMethod,
   coerceQuestionSpec,
   positionIncluded,
+  prepareDurableQuestionKit,
 } from './question.js';
 import { scheduleClose } from './closingRule.js';
 import {
@@ -38,19 +38,11 @@ const validateBinaryQuestionSpec = questionSpec => {
 // independently. The standard Zoe start function is at the bottom of this file.
 
 /** @type {BuildVoteCounter} */
-const makeBinaryVoteCounter = (
-  questionSpec,
-  threshold,
-  instance,
-  publisher,
-) => {
-  validateBinaryQuestionSpec(questionSpec);
-
-  const question = buildQuestion(questionSpec, instance);
+const makeBinaryVoteCounter = (question, threshold, instance, publisher) => {
   const details = question.getDetails();
 
   let isOpen = true;
-  const positions = questionSpec.positions;
+  const positions = question.getDetails().positions;
   /** @type { PromiseRecord<Position> } */
   const outcomePromise = makePromiseKit();
   /** @type { PromiseRecord<VoteStatistics> } */
@@ -118,7 +110,7 @@ const makeBinaryVoteCounter = (
     } else if (tally[1] > tally[0]) {
       outcomePromise.resolve(positions[1]);
     } else {
-      outcomePromise.resolve(questionSpec.tieOutcome);
+      outcomePromise.resolve(question.getDetails().tieOutcome);
     }
 
     // XXX if we should distinguish ties, publish should be called in if above
@@ -201,20 +193,28 @@ const makeBinaryVoteCounter = (
 // It schedules the closing of the vote, finally inserting the contract
 // instance in the publicFacet before returning public and creator facets.
 
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
 /**
  * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint}>} zcf
  * @param {{outcomePublisher: Publisher<OutcomeRecord>}} outcomePublisher
+ * @param {Baggage} baggage
  */
-const start = (zcf, { outcomePublisher }) => {
+const start = (zcf, { outcomePublisher }, baggage) => {
   // There are a variety of ways of counting quorums. The parameters must be
   // visible in the terms. We're doing a simple threshold here. If we wanted to
   // discount abstentions, we could refactor to provide the quorumCounter as a
   // component.
   // TODO(hibbert) checking the quorum should be pluggable and legible.
   const { questionSpec, quorumThreshold } = zcf.getTerms();
+  const makeDurableQuestionKit = prepareDurableQuestionKit(baggage);
+
+  validateBinaryQuestionSpec(questionSpec);
+  const question = makeDurableQuestionKit(questionSpec, zcf.getInstance());
+
   // The closeFacet is exposed for testing, but doesn't escape from a contract
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
-    questionSpec,
+    question,
     quorumThreshold,
     zcf.getInstance(),
     outcomePublisher,

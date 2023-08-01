@@ -246,7 +246,7 @@
 
 /**
  * @callback BuildVoteCounter
- * @param {QuestionSpec} questionSpec
+ * @param {Question} question
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
  *    converts that to a number that the counter can enforce.
  * @param {Instance} instance
@@ -256,7 +256,7 @@
 
 /**
  * @callback BuildMultiVoteCounter
- * @param {QuestionSpec} questionSpec
+ * @param {Question} question
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
  *    converts that to a number that the counter can enforce.
  * @param {Instance} instance

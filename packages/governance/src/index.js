@@ -11,7 +11,7 @@ export {
   QuorumRule,
   coerceQuestionSpec,
   positionIncluded,
-  buildQuestion,
+  prepareDurableQuestionKit,
 } from './question.js';
 
 export {

@@ -8,10 +8,13 @@ import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-util
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
+import { makeScalarMapStore } from '@agoric/vat-data';
+
 import {
   ChoiceMethod,
   coerceQuestionSpec,
   ElectionType,
+  prepareDurableQuestionKit,
   QuorumRule,
 } from '../../src/index.js';
 import { makeMultiCandidateVoteCounter } from '../../src/multiCandidateVoteCounter.js';
@@ -40,6 +43,8 @@ function makePublisherFromFakes() {
   return { publisher: publishKit.publisher, storageRoot };
 }
 
+const makeDurableQuestion = prepareDurableQuestionKit(makeScalarMapStore());
+
 test('multi candidate contested', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.PLURALITY,
@@ -52,10 +57,11 @@ test('multi candidate contested', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BEEF,
   });
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -100,10 +106,11 @@ test('multi candidate tie outcome', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BEEF,
   });
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -159,10 +166,11 @@ test('multi candidate tie outcome case #2', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BEEF,
   });
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -216,9 +224,10 @@ test('multi candidate spoiled', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher } = makePublisherFromFakes();
   const { publicFacet, creatorFacet } = makeMultiCandidateVoteCounter(
-    questionSpec,
+    question,
     0n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -251,10 +260,11 @@ test('multi candidate revote', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -292,9 +302,10 @@ test('multi candidate no votes', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BEEF,
   });
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, closeFacet } = makeMultiCandidateVoteCounter(
-    questionSpec,
+    question,
     0n,
     FAKE_COUNTER_INSTANCE,
     publisher,
@@ -324,10 +335,11 @@ test('multi candidate no quorum', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       3n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -369,10 +381,11 @@ test('multi candidate specify multiple chocies', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -416,10 +429,11 @@ test('multi candidate specify multiple chocies with varying share weights', asyn
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -459,10 +473,11 @@ test('multi candidate winners less than max winners', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -503,10 +518,11 @@ test('multi candidate single winner', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -548,10 +564,11 @@ test('multi candidate single winner tie outcome', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } =
     makeMultiCandidateVoteCounter(
-      questionSpec,
+      question,
       0n,
       FAKE_COUNTER_INSTANCE,
       publisher,
@@ -590,9 +607,10 @@ test('multi candidate exceeds max choices', async t => {
     tieOutcome: BEEF,
   });
 
+  const question = makeDurableQuestion(questionSpec, FAKE_COUNTER_INSTANCE);
   const { publisher } = makePublisherFromFakes();
   const { publicFacet, creatorFacet } = makeMultiCandidateVoteCounter(
-    questionSpec,
+    question,
     3n,
     FAKE_COUNTER_INSTANCE,
     publisher,
