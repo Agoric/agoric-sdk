@@ -93,8 +93,8 @@ sequenceDiagram
     CM->>CM: await started<br/>(blocking)
     CM-->>-SSEH-AS: 
     alt not initiated
-      SSEH-AS-)SSEH-M: exportStartedResult<-err<br/>close(exportStartedResult)
-      SSEH-AS-)SSEH-M: exportDone<-err
+      SSEH-AS-)SSEH-M: exportStartedResult <- err<br/>close(exportStartedResult)
+      SSEH-AS-)SSEH-M: exportDone <- err
     else initiated
     SSEH-AS-)SSEH-M: close(exportStartedResult)
     alt retrieval
@@ -123,7 +123,7 @@ sequenceDiagram
       D-CS-->>-SSEH-CS: 
       SSEH-CS-->>-SSES-CS: artifact{name, data}
       SSES-CS->>+SM-CS: payloadWriter(artifact)
-      SM-CS-)SM-AS: chunk <- chunks
+      SM-CS-)SM-AS: chunks <- chunk
       SM-CS-->>-SSES-CS: 
     end
     SSES-CS-->>-SSEH-CS: 
@@ -183,7 +183,7 @@ sequenceDiagram
 
   TM->>+A-M: Commit
   A-M->>+SSEH-M: WaitUntilSwingStoreExportStarted()
-  SSEH-M->>SSEH-M: err <- exportStartedResult<br/>(blocking)
+  SSEH-M->>SSEH-M: err = <-exportStartedResult<br/>(blocking)
   SSEH-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: await started<br/>(blocking)
@@ -232,7 +232,7 @@ sequenceDiagram
     SM-CS->>+MS-CS: Restore()
     loop IAVL snapshot items
       MS-CS->>+SM-CS: protoReader.ReadMsg()
-      SM-CS->>+SM-M: chunk <- chunks
+      SM-CS->>+SM-M: chunk = <-chunks
       SM-M-->>-SM-CS: 
       SM-CS-->>-MS-CS: 
       MS-CS->>MS-CS: importer.Add(node)
@@ -257,7 +257,7 @@ sequenceDiagram
       loop extension snapshot items
         SSEH-CS->>+SSES-CS: provider.readArtifact()
         SSES-CS->>+SM-CS: payloadReader()
-        SM-CS->>+SM-M: chunk <- chunks
+        SM-CS->>+SM-M: chunk = <-chunks
         SM-M-->>-SM-CS: 
         SM-CS-->>-SSES-CS: extension payloadBytes
         SSES-CS->>SSES-CS: artifact = parse(payloadBytes)
@@ -312,7 +312,7 @@ sequenceDiagram
     alt chunks remaining
       SM-M-->>A-M: false
     else last chunk
-      SM-M->>SM-M: <- chRestoreDone<br/>(blocking)
+      SM-M->>SM-M: <-chRestoreDone<br/>(blocking)
       SM-M-->>-A-M: true
     end
   end
