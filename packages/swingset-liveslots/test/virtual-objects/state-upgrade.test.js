@@ -204,3 +204,5 @@ test.failing('upgrader does not match state shape', async t => {
     });
   });
 });
+
+// TODO: examine saved DurableKindDescriptor.stateShapeCapData for updates
