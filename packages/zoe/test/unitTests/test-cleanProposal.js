@@ -233,7 +233,7 @@ test('cleanProposal - other wrong stuff', t => {
     'nat',
     // TODO The outer pattern is here only as a temporary measure to tolerate
     // the property order being sorted and not.
-    /"foo" - Must be a copyRecord to match a copyRecord pattern: \{("deadline":.*|,|"timer":.*)*\}/,
+    /"foo" - Must be a copyRecord to match a copyRecord pattern: \{("deadline":.*|,|"timer":.*){3}\}/,
   );
   proposeBad(
     t,
@@ -253,7 +253,7 @@ test('cleanProposal - other wrong stuff', t => {
     'nat',
     // TODO The pattern is here only as a temporary measure to tolerate
     // the property order being sorted and not.
-    /proposal: exit: afterDeadline\?: \{("deadline":"\[3n\]"|,|"extra":"foo"|,|"timer":"\[Alleged: ManualTimer\]")*\} - Must not have unexpected properties: \["extra"\]/,
+    /proposal: exit: afterDeadline\?: \{("deadline":"\[3n\]"|,|"extra":"foo"|,|"timer":"\[Alleged: ManualTimer\]"){5}\} - Must not have unexpected properties: \["extra"\]/,
   );
   proposeBad(
     t,

@@ -74,7 +74,7 @@ test('assertAmountsEqual - Nat vs. Set', async t => {
   const message =
     // TODO The pattern is here only as a temporary measure to tolerate
     // the property order being sorted and not.
-    /Asset kinds must match: got \[\{("description":"hat"|,|"name":"hat"|,|"power":"shiny")*\}\], expected "\[0n\]"/;
+    /Asset kinds must match: got \[\{("description":"hat"|,|"name":"hat"|,|"power":"shiny"){5}\}\], expected "\[0n\]"/;
   t.assert(message.test(fakeT.getError()));
   await t.throwsAsync(resultP, { message });
 });
@@ -91,7 +91,7 @@ test('assertAmountsEqual - false Set', async t => {
   const message =
     // TODO The pattern is here only as a temporary measure to tolerate
     // the property order being sorted and not.
-    /Values must match: got \[\{("description":"hat"|,|"name":"hat"|,|"power":"shiny")*\}\], expected \[\{("description":"hat"|,|"name":"hat"|,|"power":"sparkly)*"\}\]/;
+    /Values must match: got \[\{("description":"hat"|,|"name":"hat"|,|"power":"shiny"){5}\}\], expected \[\{("description":"hat"|,|"name":"hat"|,|"power":"sparkly){5}"\}\]/;
   t.assert(message.test(fakeT.getError()));
   await t.throwsAsync(resultP, { message });
 });
