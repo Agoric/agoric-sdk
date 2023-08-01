@@ -123,7 +123,6 @@ test('want stable', async t => {
   t.log('Fund the wallet');
   assert(anchor.mint);
   const payment = anchor.mint.mintPayment(anchor.make(swapSize));
-  // @ts-expect-error deposit does take a FarRef<Payment>
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
@@ -169,7 +168,6 @@ test('want stable (insufficient funds)', async t => {
   t.log('Fund the wallet insufficiently');
   assert(anchor.mint);
   const payment = anchor.mint.mintPayment(anchor.make(anchorFunding));
-  // @ts-expect-error deposit does take a FarRef<Payment>
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
@@ -382,7 +380,6 @@ test('deposit multiple payments to unknown brand', async t => {
   // assume that if the call succeeds then it's in durable storage.
   for await (const amt of [1n, 2n]) {
     const payment = rial.mint.mintPayment(rial.make(amt));
-    // @ts-expect-error deposit does take a FarRef<Payment>
     const result = await wallet.getDepositFacet().receive(harden(payment));
     // successful request but not deposited
     t.deepEqual(result, { brand: rial.brand, value: 0n });
