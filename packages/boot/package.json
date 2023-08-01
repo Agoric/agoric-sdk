@@ -22,6 +22,7 @@
   "dependencies": {
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
+    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
@@ -44,7 +45,6 @@
     "@agoric/store": "^0.9.2",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-liveslots": "^0.10.2",
-    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "ava": "^5.3.0",
     "c8": "^7.13.0"

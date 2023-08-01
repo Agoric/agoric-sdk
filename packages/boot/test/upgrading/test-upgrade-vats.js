@@ -1,6 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
@@ -13,6 +14,9 @@ import { makeRunUtils } from '../bootstrapTests/supports.js';
 const test = anyTest;
 
 const { Fail } = assert;
+
+const importSpec = spec =>
+  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
 const makeTestContext = async metaUrl => {
   const bfile = name => new URL(name, metaUrl).pathname;
@@ -41,8 +45,6 @@ const makeScenario = async (
   kernelConfigOverrides = {},
   deviceEndowments,
 ) => {
-  const { bfile } = t.context;
-
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
@@ -50,7 +52,9 @@ const makeScenario = async (
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('../../../SwingSet/tools/bootstrap-relay.js'),
+        sourceSpec: await importSpec(
+          '@agoric/swingset-vat/tools/bootstrap-relay.js',
+        ),
       },
     },
     bundleCachePath: 'bundles',
@@ -71,10 +75,9 @@ const makeScenario = async (
 };
 
 test('upgrade vat-board', async t => {
-  const { bfile } = t.context;
   const bundles = {
     board: {
-      sourceSpec: bfile('../../../vats/src/vat-board.js'),
+      sourceSpec: await importSpec('@agoric/vats/src/vat-board.js'),
     },
   };
 
@@ -103,9 +106,10 @@ test('upgrade vat-board', async t => {
 });
 
 test.skip('upgrade bootstrap vat', async t => {
-  const { bfile } = t.context;
   const bundles = {
-    chain: { sourceSpec: bfile('../src/core/boot-chain.js') },
+    chain: {
+      sourceSpec: await importSpec('@agoric/vats/src/core/boot-chain.js'),
+    },
   };
   // @ts-expect-error error in skipped test
   const { EV } = await makeScenario(t, bundles);
@@ -131,7 +135,7 @@ test.skip('upgrade bootstrap vat', async t => {
 test('upgrade vat-bridge', async t => {
   const { bfile } = t.context;
   const bundles = {
-    bridge: { sourceSpec: bfile('../../../vats/src/vat-bridge.js') },
+    bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
   };
   const devices = {
     bridge: { sourceSpec: bfile('./device-bridge.js') },
@@ -242,8 +246,8 @@ test('upgrade vat-bridge', async t => {
 test('upgrade vat-bank', async t => {
   const { bfile } = t.context;
   const bundles = {
-    bank: { sourceSpec: bfile('../../../vats/src/vat-bank.js') },
-    bridge: { sourceSpec: bfile('../../../vats/src/vat-bridge.js') },
+    bank: { sourceSpec: await importSpec('@agoric/vats/src/vat-bank.js') },
+    bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
     mint: { sourceSpec: bfile('./vat-mint.js') },
   };
   const devices = {
@@ -430,10 +434,9 @@ test('upgrade vat-bank', async t => {
 });
 
 test('upgrade vat-priceAuthority', async t => {
-  const { bfile } = t.context;
   const bundles = {
     priceAuthority: {
-      sourceSpec: bfile('../../../vats/src/vat-priceAuthority.js'),
+      sourceSpec: await importSpec('@agoric/vats/src/vat-priceAuthority.js'),
     },
   };
 
