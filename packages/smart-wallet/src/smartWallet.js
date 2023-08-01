@@ -102,9 +102,6 @@ const { Fail, quote: q } = assert;
  * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
  */
 
-// imports
-/** @typedef {import('./types').RemotePurse} RemotePurse */
-
 /**
  * @typedef {{
  *   address: string,
@@ -133,10 +130,10 @@ const { Fail, quote: q } = assert;
  *
  * @typedef {Readonly<UniqueParams & {
  *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
- *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
+ *   offerToInvitationMakers: MapStore<string, import('./types').InvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
- *   purseBalances: MapStore<RemotePurse, Amount>,
+ *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
  *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
@@ -303,7 +300,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           !used || Fail`cannot re-use offer id ${id}`;
         },
         /**
-         * @param {RemotePurse} purse
+         * @param {Purse} purse
          * @param {Amount<any>} balance
          */
         updateBalance(purse, balance) {
@@ -342,7 +339,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           });
         },
 
-        /** @type {(purse: ERef<RemotePurse>) => Promise<void>} */
+        /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
           const { address } = this.state;
 
@@ -445,14 +442,13 @@ export const prepareSmartWallet = (baggage, shared) => {
               ),
               /**
                * @param {Brand} brand
-               * @returns {Promise<RemotePurse>}
+               * @returns {Promise<Purse>}
                */
               purseForBrand: async brand => {
                 if (registry.has(brand)) {
-                  // @ts-expect-error RemotePurse cast
+                  // @ts-expect-error virtual purse
                   return E(bank).getPurse(brand);
                 } else if (invitationBrand === brand) {
-                  // @ts-expect-error RemotePurse cast
                   return invitationPurse;
                 }
                 throw Fail`cannot find/make purse for ${brand}`;
@@ -479,7 +475,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               }
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
+            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,
@@ -604,7 +600,6 @@ export const prepareSmartWallet = (baggage, shared) => {
         const { invitationPurse } = state;
         const { helper } = facets;
 
-        // @ts-expect-error RemotePurse cast
         void helper.watchPurse(invitationPurse);
       },
     },
