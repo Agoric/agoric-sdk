@@ -1,4 +1,5 @@
 import { E, passStyleOf } from '@endo/far';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { makePaymentsHelper } from './payments.js';
 
 /**
@@ -80,14 +81,14 @@ export const makeOfferExecutor = ({
         // 1. Prepare values and validate synchronously.
         const { id, invitationSpec, proposal, offerArgs } = offerSpec;
 
+        /** @type {PaymentKeywordRecord | undefined} */
+        const paymentKeywordRecord = await (proposal?.give &&
+          deeplyFulfilledObject(paymentsManager.withdrawGive(proposal.give)));
+
         const invitation = invitationFromSpec(invitationSpec);
         const invitationAmount = await E(invitationIssuer).getAmountOf(
           invitation,
         );
-
-        const paymentKeywordRecord = proposal?.give
-          ? paymentsManager.withdrawGive(proposal.give)
-          : undefined;
 
         // 2. Begin executing offer
         // No explicit signal to user that we reached here but if anything above
