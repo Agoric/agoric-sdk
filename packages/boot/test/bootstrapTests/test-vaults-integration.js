@@ -345,7 +345,12 @@ test('propose change to auction governance param', async t => {
 
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const key = `published.committees.Economic_Committee.latestQuestion`;
-  const lastQuestion = unmarshalFromVstorage(storage.data, key, fromCapData);
+  const lastQuestion = unmarshalFromVstorage(
+    storage.data,
+    key,
+    fromCapData,
+    -1,
+  );
   const changes = lastQuestion?.issue?.spec?.changes;
   t.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });

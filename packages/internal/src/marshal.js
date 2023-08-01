@@ -65,11 +65,12 @@ harden(assertCapData);
  * @param {Map<string, string>} data
  * @param {string} key
  * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
- * @param {number} [index] index of the desired value in a deserialized stream cell
+ * @param {number} index index of the desired value in a deserialized stream cell
  */
-export const unmarshalFromVstorage = (data, key, fromCapData, index = -1) => {
+export const unmarshalFromVstorage = (data, key, fromCapData, index) => {
   const serialized = data.get(key) || Fail`no data for ${key}`;
   assert.typeof(serialized, 'string');
+  assert.typeof(index, 'number');
 
   const streamCell = JSON.parse(serialized);
   if (!isStreamCell(streamCell)) {
@@ -102,7 +103,7 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   const vsMap = new Map(entries);
   const fromCapData = (...args) =>
     Reflect.apply(board.fromCapData, board, args);
-  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData);
+  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData, -1);
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
     return harden([
