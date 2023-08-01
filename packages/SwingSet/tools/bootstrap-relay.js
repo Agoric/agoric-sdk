@@ -1,8 +1,8 @@
 import { assert } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
-import { buildManualTimer } from '../tools/manual-timer.js';
-import { makePassableEncoding } from '../tools/passableEncoding.js';
+import { buildManualTimer } from './manual-timer.js';
+import { makePassableEncoding } from './passableEncoding.js';
 
 const { Fail, quote: q } = assert;
 

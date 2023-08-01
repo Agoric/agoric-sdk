@@ -226,7 +226,7 @@ test('local promises are rejected by vat upgrade', async t => {
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('./bootstrap-relay.js'),
+        sourceSpec: bfile('../tools/bootstrap-relay.js'),
       },
     },
     bundles: {
