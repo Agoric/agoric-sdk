@@ -29,13 +29,7 @@ const CONFIG_FILES = [
   ...PROD_CONFIG_FILES,
 ];
 
-const NON_UPGRADEABLE_VATS = [
-  'vat-network',
-  'vat-ibc',
-  'pegasus',
-  'mints',
-  'sharing',
-];
+const NON_UPGRADEABLE_VATS = ['vat-network', 'vat-ibc', 'pegasus', 'mints'];
 
 /**
  * @param {string} bin
