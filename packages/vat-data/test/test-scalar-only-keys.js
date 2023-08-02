@@ -1,9 +1,9 @@
 // From https://github.com/Agoric/agoric-sdk/pull/6903#discussion_r1098067133
 
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
+import test from 'ava';
 import { M, makeScalarMapStore } from '@agoric/store';
-
 import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
 
 test('scalar maps should reject non-scalar keys', t => {
