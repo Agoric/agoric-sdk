@@ -20,6 +20,9 @@ import {
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
 
+// TODO Why is this here but commented out? If no longer relevant, remove
+// import { kdebug } from './kdebug.js';
+
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
 /**
