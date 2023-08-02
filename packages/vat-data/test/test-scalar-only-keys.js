@@ -8,7 +8,7 @@ import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
 
 test('scalar maps should reject non-scalar keys', t => {
   const bigMap = makeScalarMapStore('dummy', { keyShape: M.key() });
-  t.throws(() => bigMap.init(harden({ label: 'not a scalar' })), {
+  t.throws(() => bigMap.init(harden({ label: 'not a scalar' }), 'val'), {
     message:
       /A "copyRecord" cannot be a scalar key: \{"label":"not a scalar"\}/,
   });

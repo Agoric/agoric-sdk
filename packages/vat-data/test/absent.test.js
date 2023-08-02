@@ -2,6 +2,7 @@ import '@endo/init/debug.js';
 import test from 'ava';
 
 /* global globalThis */
+// @ts-expect-error VatData not optional
 delete globalThis.VatData;
 
 /** @see present.test.js */

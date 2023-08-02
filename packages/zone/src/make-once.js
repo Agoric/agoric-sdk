@@ -8,7 +8,7 @@ harden(defaultLabelToKeys);
 /**
  * @param {string} debugName Only used internally for diagnostics, not available to user code
  * @param {import('.').Stores} stores
- * @param {import('@agoric/vat-data/src/types').MapStore<string, any>} [backingStore]
+ * @param {import('@agoric/swingset-liveslots/src/vatDataTypes').MapStore<string, any>} [backingStore]
  */
 export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
   // We need a detached setStore so that it isn't persisted as part of the zone.

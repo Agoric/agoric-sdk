@@ -1,5 +1,11 @@
 /* eslint-disable no-use-before-define */
 import { expectType } from 'tsd';
+import type {
+  KindFacets,
+  DurableKindHandle,
+  KindFacet,
+  FunctionsPlusContext,
+} from '@agoric/swingset-liveslots';
 import {
   defineKind,
   defineKindMulti,
@@ -7,12 +13,6 @@ import {
   defineDurableKind,
   partialAssign,
 } from '.';
-import {
-  KindFacets,
-  DurableKindHandle,
-  KindFacet,
-  FunctionsPlusContext,
-} from './types.js';
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
