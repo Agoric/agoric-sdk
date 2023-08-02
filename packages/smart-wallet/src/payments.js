@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 /**
  * Used in an offer execution to manage payments state safely.
  *
- * @param {(brand: Brand) => Promise<import('./types').RemotePurse>} purseForBrand
+ * @param {(brand: Brand) => Promise<Purse>} purseForBrand
  * @param {{ receive: (payment: *) => Promise<Amount> }} depositFacet
  */
 export const makePaymentsHelper = (purseForBrand, depositFacet) => {
@@ -15,7 +15,7 @@ export const makePaymentsHelper = (purseForBrand, depositFacet) => {
   /**
    * Tracks from whence our payment came.
    *
-   * @type {Map<Payment, import('./types').RemotePurse>}
+   * @type {Map<Payment, Purse>}
    */
   const paymentToPurse = new Map();
 
@@ -28,7 +28,7 @@ export const makePaymentsHelper = (purseForBrand, depositFacet) => {
       !keywordPaymentPromises ||
         Fail`withdrawPayments can be called once per helper`;
       keywordPaymentPromises = objectMap(give, amount => {
-        /** @type {Promise<import('./types').RemotePurse<any>>} */
+        /** @type {Promise<Purse>} */
         const purseP = purseForBrand(amount.brand);
         return Promise.all([purseP, E(purseP).withdraw(amount)]).then(
           ([purse, payment]) => {
