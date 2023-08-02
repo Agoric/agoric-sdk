@@ -3,8 +3,8 @@
 /* global WeakRef FinalizationRegistry */
 /* eslint-disable no-constant-condition */
 import fs from 'fs';
-// import '@endo/init';
-import '../tools/install-ses-debug.js';
+import '@agoric/internal/src/install-ses-debug.js';
+
 import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';

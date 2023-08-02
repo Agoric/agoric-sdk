@@ -23,6 +23,7 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/zone": "^0.2.2",
     "@endo/far": "^0.2.19",
+    "@endo/init": "^0.5.57",
     "@endo/marshal": "^0.8.6",
     "@endo/patterns": "^0.2.3",
     "@endo/promise-kit": "^0.2.57",
