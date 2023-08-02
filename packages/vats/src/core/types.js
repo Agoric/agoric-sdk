@@ -173,7 +173,7 @@
  */
 
 /**
- * @typedef {import('@agoric/inter-protocol/src/tokens.js').TokenKeyword} TokenKeyword
+ * @typedef {import('@agoric/internal/src/tokens.js').TokenKeyword} TokenKeyword
  *
  * @typedef {{
  *   issuer: TokenKeyword | 'Invitation' | 'AUSD';

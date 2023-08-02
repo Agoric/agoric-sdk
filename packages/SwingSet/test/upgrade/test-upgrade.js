@@ -121,7 +121,7 @@ const initKernelForTest = async (t, bundleData, config, options = {}) => {
 };
 
 const testNullUpgrade = async (t, defaultManagerType) => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType,
     defaultReapInterval: 'never',
     bundlePaths: {
@@ -180,7 +180,7 @@ test('null upgrade - xsnap', async t => {
 });
 
 test('kernel sends bringOutYourDead for vat upgrade', async t => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultReapInterval: 'never',
     snapshotInitial: 10000, // effectively disabled
     snapshotInterval: 10000, // effectively disabled
@@ -533,7 +533,7 @@ test('vat upgrade - omit vatParameters', async t => {
 });
 
 test('non-durable exports are abandoned by upgrade of liveslots vat', async t => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType: 'xs-worker',
     bundlePaths: {
       exporter: '../vat-exporter.js',
@@ -662,7 +662,7 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
 });
 
 test('non-durable exports are abandoned by upgrade of non-liveslots vat', async t => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType: 'xs-worker',
   });
   config.vats.exporter = {

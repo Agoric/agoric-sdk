@@ -239,7 +239,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('../../SwingSet/test/bootstrap-relay.js'),
+        sourceSpec: bfile('../../SwingSet/tools/bootstrap-relay.js'),
       },
     },
     bundles: {

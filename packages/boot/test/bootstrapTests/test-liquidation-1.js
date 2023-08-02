@@ -421,7 +421,7 @@ test.serial('add STARS collateral', async t => {
   t.log({ bridgeMessage });
 
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('../../src/types.js').BridgeHandler>} */
+  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );

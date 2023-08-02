@@ -39,13 +39,15 @@ test('upgrade mintHolder', async t => {
     vats: {
       // TODO refactor to use bootstrap-relay.js
       bootstrap: { sourceSpec: bfile('./bootstrap.js') },
-      zoe: { sourceSpec: bfile('../../src/vat-zoe.js') },
+      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
     },
     bundles: {
       zcf: {
         sourceSpec: await importSpec('@agoric/zoe/contractFacet.js'),
       },
-      mintHolder: { sourceSpec: bfile('../../src/mintHolder.js') },
+      mintHolder: {
+        sourceSpec: await importSpec('@agoric/vats/src/mintHolder.js'),
+      },
     },
   });
   // console.debug('config', JSON.stringify(config, null, 2));

@@ -8,7 +8,7 @@ import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { Stable } from '../tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
