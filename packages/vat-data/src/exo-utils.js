@@ -6,17 +6,17 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
-/** @typedef {import('./types.js').Baggage} Baggage */
-/** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
-/** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
-/** @template T @typedef {import('./types.js').KindFacets<T>} KindFacets */
-/** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
+/** @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage} Baggage */
+/** @template T @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').DefineKindOptions<T>} DefineKindOptions */
+/** @template T @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').KindFacet<T>} KindFacet */
+/** @template T @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').KindFacets<T>} KindFacets */
+/** @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').DurableKindHandle} DurableKindHandle */
 
 /**
  * Make a version of the argument function that takes a kind context but
  * ignores it.
  *
- * @type {<T extends Function>(fn: T) => import('./types.js').PlusContext<never, T>}
+ * @type {<T extends Function>(fn: T) => import('@agoric/swingset-liveslots/src/vatDataTypes').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
@@ -45,7 +45,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @deprecated Use prepareExoClass instead
-   * @type {import('./types.js').PrepareKind}
+   * @type {import('@agoric/swingset-liveslots/src/vatDataTypes').PrepareKind}
    */
   const prepareKind = (
     baggage,
@@ -64,7 +64,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @deprecated Use prepareExoClassKit instead
-   * @type {import('./types.js').PrepareKindMulti}
+   * @type {import('@agoric/swingset-liveslots/src/vatDataTypes').PrepareKindMulti}
    */
   const prepareKindMulti = (
     baggage,
