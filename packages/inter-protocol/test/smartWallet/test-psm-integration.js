@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { Stable } from '../../src/tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { buildRootObject as buildPSMRootObject } from './boot-psm.js';
 import {

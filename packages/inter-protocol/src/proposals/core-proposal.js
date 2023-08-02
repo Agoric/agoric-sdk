@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Stable } from '../tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 

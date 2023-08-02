@@ -1,5 +1,5 @@
 // @ts-check
-import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';

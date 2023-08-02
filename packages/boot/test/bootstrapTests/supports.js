@@ -21,7 +21,7 @@ import { TimeMath } from '@agoric/time';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
-} from '../../tools/board-utils.js';
+} from '@agoric/vats/tools/board-utils.js';
 
 // to retain for ESlint, used by typedef
 E;
@@ -186,7 +186,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
-  specifier = '@agoric/vats/decentral-itest-vaults-config.json',
+  specifier = '@agoric/boot/decentral-itest-vaults-config.json',
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,

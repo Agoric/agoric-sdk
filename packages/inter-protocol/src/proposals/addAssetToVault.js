@@ -5,7 +5,7 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
-import { Stable } from '../tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { instanceNameFor } from './price-feed-proposal.js';
 import { reserveThenGetNames } from './utils.js';
 

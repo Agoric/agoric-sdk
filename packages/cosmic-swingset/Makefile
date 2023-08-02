@@ -141,18 +141,18 @@ scenario2-setup:
 
 t1/decentral-economy-config.json: $(ECONOMY_PROPOSALS)
 	jq -s '.[0] * { coreProposals: .[1] }' \
-		../vats/decentral-core-config.json \
+		../boot/decentral-core-config.json \
 		'$(ECONOMY_PROPOSALS)' > t1/decentral-economy-config.json
 
 scenario2-run-chain-economy: t1/decentral-economy-config.json
-	echo "DEPRECATED use: CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vats/decentral-itest-vaults-config.json scenario2-run-chain"
+	echo "DEPRECATED use: CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/boot/decentral-itest-vaults-config.json scenario2-run-chain"
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
 		$(MAKE) scenario2-run-chain
 
 # We want to use the same configuration that will be deployed to the next
 # devnet.agoric.net so that developers can test their code against it locally.
-scenario2-run-chain: ../vats/decentral-devnet-config.json
-	CHAIN_BOOTSTRAP_VAT_CONFIG="$${CHAIN_BOOTSTRAP_VAT_CONFIG-$$PWD/../vats/decentral-devnet-config.json}" \
+scenario2-run-chain: ../boot/decentral-devnet-config.json
+	CHAIN_BOOTSTRAP_VAT_CONFIG="$${CHAIN_BOOTSTRAP_VAT_CONFIG-$$PWD/../boot/decentral-devnet-config.json}" \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 

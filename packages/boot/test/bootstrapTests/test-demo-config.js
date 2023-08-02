@@ -1,7 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { PowerFlags } from '../../src/walletFlags.js';
+import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 
 import { makeSwingsetTestKit, keyArrayEqual } from './supports.js';
 
@@ -15,7 +15,7 @@ const test = anyTest;
 
 const makeDefaultTestContext = async t => {
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/demo-config', {
-    configSpecifier: '@agoric/vats/decentral-demo-config.json',
+    configSpecifier: '@agoric/boot/decentral-demo-config.json',
   });
   return swingsetTestKit;
 };

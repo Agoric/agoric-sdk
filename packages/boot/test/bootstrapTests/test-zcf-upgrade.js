@@ -8,7 +8,7 @@ import path from 'path';
 import processAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeZoeDriver } from './drivers.js';
 import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
 
@@ -43,7 +43,7 @@ export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
   /** @type {SwingsetTestKit} */
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
-    configSpecifier: '@agoric/vats/decentral-demo-config.json',
+    configSpecifier: '@agoric/boot/decentral-demo-config.json',
   });
 
   const { controller, runUtils } = swingsetTestKit;
@@ -115,7 +115,7 @@ test('run restart-vats proposal', async t => {
     };
 
     t.log({ bridgeMessage });
-    /** @type {ERef<import('../../src/types.js').BridgeHandler>} */
+    /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
     const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
       'coreEvalBridgeHandler',
     );

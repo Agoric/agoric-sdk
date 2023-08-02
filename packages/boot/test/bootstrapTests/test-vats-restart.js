@@ -7,7 +7,7 @@ import processAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeWalletFactoryDriver } from './drivers.js';
 import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
 
@@ -16,7 +16,7 @@ const { Fail } = assert;
 /** @file Bootstrap test of restarting (almost) all vats */
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
-const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
+const PLATFORM_CONFIG = '@agoric/boot/decentral-itest-vaults-config.json';
 /** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
 
 export const makeTestContext = async t => {
@@ -121,7 +121,7 @@ test.serial('run restart-vats proposal', async t => {
   };
   t.log({ bridgeMessage });
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('../../src/types.js').BridgeHandler>} */
+  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );

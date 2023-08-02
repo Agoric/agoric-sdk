@@ -1,4 +1,5 @@
 {
+  "$deprecated": "use the one in @agoric/boot. This is still here because part of the deployment upgrade test history expects it.",
   "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vaults in a decentralized network in an automated fashion. It includes coreProposals to start vaults. Its testing facilities are limited to known testing keys for EC and Oracle operators.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
