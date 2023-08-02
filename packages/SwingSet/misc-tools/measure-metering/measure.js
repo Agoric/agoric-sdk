@@ -2,7 +2,7 @@
 // run as `node tools/measure-metering/measure.js`
 
 // eslint-disable-next-line import/order
-import '../../tools/prepare-test-env.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';

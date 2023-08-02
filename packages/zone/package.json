@@ -32,7 +32,6 @@
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "^0.10.2",
-    "@agoric/swingset-vat": "^0.32.2",
     "@endo/patterns": "^0.2.3",
     "ava": "^5.3.0"
   },
