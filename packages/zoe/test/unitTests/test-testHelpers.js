@@ -72,8 +72,10 @@ test('assertAmountsEqual - Nat vs. Set', async t => {
     harden({ brand: shinyAmount.brand, value: 0n }),
   );
   const message =
-    'Asset kinds must match: got [{"name":"hat","description":"hat","power":"shiny"}], expected "[0n]"';
-  t.is(fakeT.getError(), message);
+    // TODO The pattern is here only as a temporary measure to tolerate
+    // the property order being sorted and not.
+    /Asset kinds must match: got \[\{("description":"hat"|,|"name":"hat"|,|"power":"shiny"){5}\}\], expected "\[0n\]"/;
+  t.assert(message.test(fakeT.getError()));
   await t.throwsAsync(resultP, { message });
 });
 
@@ -87,8 +89,10 @@ test('assertAmountsEqual - false Set', async t => {
   const fakeT = makeFakeT();
   const resultP = assertAmountsEqual(fakeT, shinyAmount, sparklyAmount);
   const message =
-    'Values must match: got [{"name":"hat","description":"hat","power":"shiny"}], expected [{"name":"hat","description":"hat","power":"sparkly"}]';
-  t.is(fakeT.getError(), message);
+    // TODO The pattern is here only as a temporary measure to tolerate
+    // the property order being sorted and not.
+    /Values must match: got \[\{("description":"hat"|,|"name":"hat"|,|"power":"shiny"){5}\}\], expected \[\{("description":"hat"|,|"name":"hat"|,|"power":"sparkly){5}"\}\]/;
+  t.assert(message.test(fakeT.getError()));
   await t.throwsAsync(resultP, { message });
 });
 
