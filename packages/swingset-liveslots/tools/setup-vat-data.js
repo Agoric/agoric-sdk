@@ -3,7 +3,7 @@
 // This file produces the globalThis.VatData property outside of a running
 // SwingSet so that it can be used by '@agoric/vat-data' (which only *consumes*
 // `globalThis.VatData`) in code under test.
-import { makeFakeVirtualStuff } from '@agoric/swingset-liveslots/tools/fakeVirtualSupport.js';
+import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { WeakMap, WeakSet } = globalThis;
 
