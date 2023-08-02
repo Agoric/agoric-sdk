@@ -46,6 +46,24 @@ and `data` \<serialized protobuf per [vstorage/query.proto](../../proto/agoric/v
 * /agoric.vstorage.Query/Children
 * /agoric.vstorage.Query/Data
 
+## External JSON interface
+
+As described at [Cosmos SDK: Using the REST Endpoints](https://docs.cosmos.network/main/run-node/interact-node#using-the-rest-endpoints), a blockchain node whose [`app.toml` configuration](https://docs.cosmos.network/main/run-node/run-node#configuring-the-node-using-apptoml-and-configtoml) enables the "REST" API server uses [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) and `google.api.http` annotations in [vstorage/query.proto](../../proto/agoric/vstorage/query.proto) to automatically translate the protobuf-based RPC endpoints into URL paths that accept query parameters and emit JSON.
+* /agoric/vstorage/capdata/$path?remotableValueFormat={object,string}[&mediaType=JSON%20Lines][&itemFormat=flat]
+* /agoric/vstorage/children/$path
+* /agoric/vstorage/data/$path
+
+Example:
+```sh
+$ curl -sS 'https://main.api.agoric.net/agoric/vstorage/children/published.committees'
+{
+  "children": [
+    "Economic_Committee"
+  ],
+  "pagination": null
+}
+```
+
 ## Arbitrary-response HTTP interface
 
 This depends upon appModule `LegacyQuerierHandler` functionality that is [removed from cosmos-sdk as of v0.47](https://github.com/cosmos/cosmos-sdk/blob/fa4d87ef7e6d87aaccc94c337ffd2fe90fcb7a9d/CHANGELOG.md#api-breaking-changes-3)
