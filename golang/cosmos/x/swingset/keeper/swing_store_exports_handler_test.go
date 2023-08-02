@@ -20,16 +20,16 @@ func newTestSwingStoreExportsHandler() *SwingStoreExportsHandler {
 var _ SwingStoreExportEventHandler = testSwingStoreEventHandler{}
 
 type testSwingStoreEventHandler struct {
-	exportInitiated func(height uint64, retrieveExport func() error) error
-	exportRetrieved func(provider SwingStoreExportProvider) error
+	onExportStarted   func(height uint64, retrieveExport func() error) error
+	onExportRetrieved func(provider SwingStoreExportProvider) error
 }
 
 func newTestSwingStoreEventHandler() testSwingStoreEventHandler {
 	return testSwingStoreEventHandler{
-		exportInitiated: func(height uint64, retrieveExport func() error) error {
+		onExportStarted: func(height uint64, retrieveExport func() error) error {
 			return retrieveExport()
 		},
-		exportRetrieved: func(provider SwingStoreExportProvider) error {
+		onExportRetrieved: func(provider SwingStoreExportProvider) error {
 			for {
 				_, err := provider.ReadArtifact()
 				if err == io.EOF {
@@ -42,19 +42,19 @@ func newTestSwingStoreEventHandler() testSwingStoreEventHandler {
 	}
 }
 
-func (taker testSwingStoreEventHandler) ExportInitiated(height uint64, retrieveExport func() error) error {
-	return taker.exportInitiated(height, retrieveExport)
+func (taker testSwingStoreEventHandler) OnExportStarted(height uint64, retrieveExport func() error) error {
+	return taker.onExportStarted(height, retrieveExport)
 }
 
-func (taker testSwingStoreEventHandler) ExportRetrieved(provider SwingStoreExportProvider) error {
-	return taker.exportRetrieved(provider)
+func (taker testSwingStoreEventHandler) OnExportRetrieved(provider SwingStoreExportProvider) error {
+	return taker.onExportRetrieved(provider)
 }
 
 func TestSwingStoreSnapshotterInProgress(t *testing.T) {
 	exportsHandler := newTestSwingStoreExportsHandler()
 	ch := make(chan struct{})
 	exportEventHandler := newTestSwingStoreEventHandler()
-	exportEventHandler.exportInitiated = func(height uint64, retrieveExport func() error) error {
+	exportEventHandler.onExportStarted = func(height uint64, retrieveExport func() error) error {
 		<-ch
 		return nil
 	}
@@ -98,7 +98,7 @@ func TestSwingStoreSnapshotterSecondCommit(t *testing.T) {
 	exportEventHandler := newTestSwingStoreEventHandler()
 	// Use a channel to block the snapshot goroutine after it has started but before it exits.
 	ch := make(chan struct{})
-	exportEventHandler.exportInitiated = func(height uint64, retrieveExport func() error) error {
+	exportEventHandler.onExportStarted = func(height uint64, retrieveExport func() error) error {
 		<-ch
 		return nil
 	}
@@ -131,7 +131,8 @@ func TestSwingStoreSnapshotterInitiateFails(t *testing.T) {
 	exportsHandler := newTestSwingStoreExportsHandler()
 	exportEventHandler := newTestSwingStoreEventHandler()
 	exportsHandler.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
-		if action.(*swingStoreExportAction).Request == "initiate" {
+		initiateAction, ok := action.(*swingStoreInitiateExportAction)
+		if ok && initiateAction.Request == "initiate" {
 			return "", errors.New("initiate failed")
 		}
 		return "", nil
@@ -163,7 +164,8 @@ func TestSwingStoreSnapshotterRetrievalFails(t *testing.T) {
 	exportsHandler := newTestSwingStoreExportsHandler()
 	var retrieveError error
 	exportsHandler.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
-		if action.(*swingStoreExportAction).Request == "retrieve" {
+		retrieveAction, ok := action.(*swingStoreRetrieveExportAction)
+		if ok && retrieveAction.Request == "retrieve" {
 			retrieveError = errors.New("retrieve failed")
 			return "", retrieveError
 		}
@@ -172,7 +174,7 @@ func TestSwingStoreSnapshotterRetrievalFails(t *testing.T) {
 	exportEventHandler := newTestSwingStoreEventHandler()
 	var savedErr error
 	ch := make(chan struct{})
-	exportEventHandler.exportInitiated = func(height uint64, retrieveExport func() error) error {
+	exportEventHandler.onExportStarted = func(height uint64, retrieveExport func() error) error {
 		savedErr = retrieveExport()
 		<-ch
 		return savedErr
@@ -201,15 +203,16 @@ func TestSwingStoreSnapshotterDiscard(t *testing.T) {
 	discardCalled := false
 	exportsHandler := newTestSwingStoreExportsHandler()
 	exportsHandler.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
-		if action.(*swingStoreExportAction).Request == "discard" {
+		discardAction, ok := action.(*swingStoreDiscardExportAction)
+		if ok && discardAction.Request == "discard" {
 			discardCalled = true
 		}
 		return "", nil
 	}
 
-	// simulate a exportInitiated which successfully calls retrieveExport()
+	// simulate an onExportStarted which successfully calls retrieveExport()
 	exportEventHandler := newTestSwingStoreEventHandler()
-	exportEventHandler.exportInitiated = func(height uint64, retrieveExport func() error) error {
+	exportEventHandler.onExportStarted = func(height uint64, retrieveExport func() error) error {
 		activeOperation.exportRetrieved = true
 		return nil
 	}
@@ -225,9 +228,9 @@ func TestSwingStoreSnapshotterDiscard(t *testing.T) {
 		t.Error("didn't want discard called")
 	}
 
-	// simulate a exportInitiated which doesn't call retrieveExport()
+	// simulate an onExportStarted which doesn't call retrieveExport()
 	exportEventHandler = newTestSwingStoreEventHandler()
-	exportEventHandler.exportInitiated = func(height uint64, retrieveExport func() error) error {
+	exportEventHandler.onExportStarted = func(height uint64, retrieveExport func() error) error {
 		return nil
 	}
 	err = exportsHandler.InitiateExport(456, exportEventHandler, SwingStoreExportOptions{})

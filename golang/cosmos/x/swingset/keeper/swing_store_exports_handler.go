@@ -29,10 +29,11 @@ import (
 // - The JS swing-store cannot access historical states. To generate
 //   deterministic exports, the export operations that cannot block must be able
 //   to synchronize with commit points that will change the JS swing-store.
-// - The JS swing-store export logic does however support mutation of the state
-//   after an export operation has started, even if it has not yet completed.
-//   This implies the synchronization is only necessary until the JS side of
-//   the export operation has started.
+// - The JS swing-store export logic does however support mutation of the
+//   JS swing-store state after an export operation has started. Such mutations
+//	 do not affect the export that is produced, and can span multiple blocks.
+// - This implies the commit synchronization is only necessary until the JS
+// 	 side of the export operation has started.
 // - Some components, in particular state-sync, may need to perform other work
 //   alongside generating a swing-store export. This work similarly cannot block
 //   the main execution, but must allow for the swing-store synchronization
@@ -45,8 +46,8 @@ import (
 // SwingStoreExportEventHandler, and provides some synchronization methods to
 // let the application enforce mutation boundaries.
 //
-// There should be a single SwingStoreExportHandler instance, and all its method
-// calls should be performed from the same thread (no mutex enforcement).
+// There should be a single SwingStoreExportsHandler instance, and all its method
+// calls should be performed from the same goroutine (no mutex enforcement).
 //
 // The process of generating a SwingStore export proceeds as follow:
 // - The component invokes swingStoreExportsHandler.InitiateExport with an
@@ -54,21 +55,21 @@ import (
 // - InitiateExport verifies no other export operation is in progress and
 //   starts a goroutine to perform the export operation. It requests the JS
 //   side to start generating an export of the swing-store, and calls the
-//   eventHandler's ExportInitiated method with a function param allowing it to
+//   eventHandler's OnExportStarted method with a function param allowing it to
 //   retrieve the export.
 // - The cosmos app will call WaitUntilSwingStoreExportStarted before
 //   instructing the JS controller to commit its work, satisfying the
 //   deterministic exports requirement.
-// - ExportInitiated must call the retrieve function before returning, however
+// - OnExportStarted must call the retrieve function before returning, however
 //   it may perform other work before. For cosmos state-sync snapshots,
-//   ExportInitiated will call app.Snapshot which will invoke the swingset
+//   OnExportStarted will call app.Snapshot which will invoke the swingset
 //   module's ExtensionSnapshotter that will retrieve and process the
 //   swing-store export.
 // - When the retrieve function is called, it blocks until the JS export is
 //   ready, then creates a SwingStoreExportProvider that abstract accessing
-//   the content of the export. The eventHandler's ExportRetrieved is called
+//   the content of the export. The eventHandler's OnExportRetrieved is called
 //   with the export provider.
-// - ExportRetrieved reads the export using the provider.
+// - OnExportRetrieved reads the export using the provider.
 //
 // Restoring a swing-store export does not have similar non-blocking requirements.
 // The component simply invokes swingStoreExportHandler.RestoreExport with a
@@ -115,14 +116,20 @@ func sanitizeArtifactName(name string) string {
 
 type operationDetails struct {
 	// isRestore indicates whether the operation in progress is a restore.
+	// It is assigned at creation and never mutated.
 	isRestore bool
 	// blockHeight is the block height of this in-progress operation.
+	// It is assigned at creation and never mutated.
 	blockHeight uint64
 	// logger is the destination for this operation's log messages.
+	// It is assigned at creation and never mutated.
 	logger log.Logger
 	// exportStartedResult is used to synchronize the commit boundary by the
 	// component performing the export operation to ensure export determinism
 	// unused for restore operations
+	// It is assigned at creation and never mutated. The started goroutine
+	// writes into the channel and closes it. The main goroutine reads from the
+	// channel.
 	exportStartedResult chan error
 	// exportRetrieved is an internal flag indicating whether the JS generated
 	// export was retrieved. It can be false regardless of the component's
@@ -134,10 +141,24 @@ type operationDetails struct {
 	exportRetrieved bool
 	// exportDone is a channel that is closed when the active export operation
 	// is complete.
+	// It is assigned at creation and never mutated. The started goroutine
+	// writes into the channel and closes it. The main goroutine reads from the
+	// channel.
 	exportDone chan error
 }
 
-// Only modified by the main goroutine.
+// activeOperation is a global variable reflecting a swing-store import or
+// export in progress on the JS side.
+// This variable is only assigned to through calls of the public methods of
+// SwingStoreExportsHandler, which rely on the exportDone channel getting
+// closed to nil this variable.
+// Only the calls to InitiateExport and RestoreExport set this to a non-nil
+// value. The goroutine in which these calls occur is referred to as the
+// "main goroutine". That goroutine may be different over time, but it's the
+// caller's responsibility to ensure those goroutines do not overlap calls to
+// the SwingStoreExportsHandler public methods.
+// See also the details of each field for the conditions under which they are
+// accessed.
 var activeOperation *operationDetails
 
 // WaitUntilSwingStoreExportStarted synchronizes with an export operation in
@@ -150,6 +171,8 @@ var activeOperation *operationDetails
 // If no operation is in progress (InitiateExport hasn't been called or
 // already completed), or if we previously checked if the operation had started,
 // returns immediately.
+//
+// Must be called by the main goroutine
 func WaitUntilSwingStoreExportStarted() error {
 	operationDetails := activeOperation
 	if operationDetails == nil {
@@ -186,6 +209,8 @@ func WaitUntilSwingStoreExportStarted() error {
 // If no export operation is in progress (InitiateExport hasn't been called or
 // already completed), or if we previously checked if an export had completed,
 // returns immediately.
+//
+// Must be called by the main goroutine
 func WaitUntilSwingStoreExportDone() error {
 	operationDetails := activeOperation
 	if operationDetails == nil {
@@ -202,6 +227,8 @@ func WaitUntilSwingStoreExportDone() error {
 }
 
 // checkNotActive returns an error if there is an active operation.
+//
+// Always internally called by the main goroutine
 func checkNotActive() error {
 	operationDetails := activeOperation
 	if operationDetails != nil {
@@ -219,10 +246,22 @@ func checkNotActive() error {
 	return nil
 }
 
-// SwingStoreExportProvider gives access to a SwingStore export data and the
+// SwingStoreExportProvider gives access to a SwingStore "export data" and the
 // related artifacts.
+// A JS swing-store export is composed of optional "export data" (a set of
+// key/value pairs), and opaque artifacts (a name and data as bytes) that
+// complement the "export data".
 // The abstraction is similar to the JS side swing-store export abstraction,
 // but without the ability to list artifacts or random access them.
+//
+// A swing-store export for creating a state-sync snapshot will not contain any
+// "export data" since this information is reflected every block into the
+// verified cosmos DB.
+// On state-sync snapshot restore, the swingset ExtensionSnapshotter will
+// synthesize a provider for this module with "export data" sourced from the
+// restored cosmos DB, and artifacts from the extension's payloads. When
+// importing, the JS swing-store will verify that the artifacts match hashes
+// contained in the trusted "export data".
 type SwingStoreExportProvider struct {
 	// BlockHeight is the block height of the SwingStore export.
 	BlockHeight uint64
@@ -235,38 +274,77 @@ type SwingStoreExportProvider struct {
 }
 
 // SwingStoreExportEventHandler is used to handle events that occur while generating
-// a swing-store export. It defines the mandatory interface of the component
-// handling these events, and which is provided to InitiateExport.
+// a swing-store export. It is provided to SwingStoreExportsHandler.InitiateExport.
 type SwingStoreExportEventHandler interface {
-	// ExportInitiated is called by InitiateExport in a goroutine after the
-	// swing-store export was initiated.
+	// OnExportStarted is called by InitiateExport in a goroutine after the
+	// swing-store export has successfully started.
 	// This is where the component performing the export must initiate its own
-	// off main thread work, which results in retrieving and processing the
+	// off main goroutine work, which results in retrieving and processing the
 	// swing-store export.
 	//
 	// Must call the retrieveExport function before returning, which will in turn
-	// synchronously invoke ExportRetrieved once the swing-store export is ready.
-	ExportInitiated(blockHeight uint64, retrieveExport func() error) error
-	// ExportRetrieved is called when the swing-store export has been retrieved,
+	// synchronously invoke OnExportRetrieved once the swing-store export is ready.
+	OnExportStarted(blockHeight uint64, retrieveExport func() error) error
+	// OnExportRetrieved is called when the swing-store export has been retrieved,
 	// during the retrieveExport invocation.
 	// The provider is not a return value to retrieveExport in order to
 	// report errors in components that are unable to propagate errors back to the
-	// ExportInitiated result, like cosmos state-sync ExtensionSnapshotter.
+	// OnExportStarted result, like cosmos state-sync ExtensionSnapshotter.
 	// The implementation must synchronously consume the provider, which becomes
 	// invalid after the method returns.
-	ExportRetrieved(provider SwingStoreExportProvider) error
+	OnExportRetrieved(provider SwingStoreExportProvider) error
 }
 
-type swingStoreExportAction struct {
-	Type        string            `json:"type"` // SWING_STORE_EXPORT
-	BlockHeight uint64            `json:"blockHeight,omitempty"`
-	Request     string            `json:"request"` // "initiate", "discard", "retrieve", or "restore"
-	Args        []json.RawMessage `json:"args,omitempty"`
+const swingStoreExportActionType = "SWING_STORE_EXPORT"
+
+const initiateRequest = "initiate"
+
+type swingStoreInitiateExportAction struct {
+	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string                     `json:"request"`               // "initiate"
+	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if no blockHeight request (latest)
+	Args        [1]SwingStoreExportOptions `json:"args"`
 }
+
+const retrieveRequest = "retrieve"
+
+type swingStoreRetrieveExportAction struct {
+	Type    string `json:"type"`    // "SWING_STORE_EXPORT"
+	Request string `json:"request"` // "retrieve"
+}
+
+const discardRequest = "discard"
+
+type swingStoreDiscardExportAction struct {
+	Type    string `json:"type"`    // "SWING_STORE_EXPORT"
+	Request string `json:"request"` // "discard"
+}
+
+const restoreRequest = "restore"
+
+type swingStoreRestoreExportAction struct {
+	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string                     `json:"request"`               // "restore"
+	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if deferring blockHeight to manifest
+	Args        [1]swingStoreImportOptions `json:"args"`
+}
+
+// SwingStoreExportModeCurrent represents the minimal set of artifacts needed
+// to operate a node.
+const SwingStoreExportModeCurrent = "current"
+
+// SwingStoreExportModeArchival represents the set of all artifacts needed to
+// not lose any historical state.
+const SwingStoreExportModeArchival = "archival"
+
+// SwingStoreExportModeDebug represents the maximal set of artifacts available
+// in the JS swing-store, including any kept around for debugging purposed only
+// (like previous XS heap snapshots)
+const SwingStoreExportModeDebug = "debug"
 
 // SwingStoreExportOptions are configurable options provided to the JS swing-store export
 type SwingStoreExportOptions struct {
-	// The export mode can be "current", "archival" or "debug"
+	// The export mode can be "current", "archival" or "debug" (SwingStoreExportMode* const)
 	// See packages/cosmic-swingset/src/export-kernel-db.js initiateSwingStoreExport and
 	// packages/swing-store/src/swingStore.js makeSwingStoreExporter
 	ExportMode string `json:"exportMode,omitempty"`
@@ -284,8 +362,11 @@ type SwingStoreRestoreOptions struct {
 }
 
 type swingStoreImportOptions struct {
-	ExportDir         string `json:"exportDir"`
-	IncludeHistorical bool   `json:"includeHistorical,omitempty"`
+	// ExportDir is the directory created by RestoreExport that JS swing-store
+	// should import from.
+	ExportDir string `json:"exportDir"`
+	// IncludeHistorical is a copy of SwingStoreRestoreOptions.IncludeHistorical
+	IncludeHistorical bool `json:"includeHistorical,omitempty"`
 }
 
 // SwingStoreExportsHandler exclusively manages the communication with the JS side
@@ -317,20 +398,20 @@ func NewSwingStoreExportsHandler(logger log.Logger, blockingSend func(action vm.
 
 // InitiateExport synchronously verifies that there is not already an export or
 // import operation in progress and initiates a new export in a goroutine,
-// delegating some of the process to the provided eventHandler.
+// via a dedicated SWING_STORE_EXPORT blockingSend action independent of other
+// block related blockingSends, calling the given eventHandler when a related
+// blockingSend completes. If the eventHandler doesn't retrieve the export,
+// then it sends another blockingSend action to discard it.
 //
 // eventHandler is invoked solely from the spawned goroutine.
 // The "started" and "done" events can be used for synchronization with an
 // active operation taking place in the goroutine, by calling respectively the
 // WaitUntilSwingStoreExportStarted and WaitUntilSwingStoreExportDone methods
-// from the thread that initiated the export.
+// from the goroutine that initiated the export.
+//
+// Must be called by the main goroutine
 func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64, eventHandler SwingStoreExportEventHandler, exportOptions SwingStoreExportOptions) error {
 	err := checkNotActive()
-	if err != nil {
-		return err
-	}
-
-	encodedExportOptions, err := json.Marshal(exportOptions)
 	if err != nil {
 		return err
 	}
@@ -380,15 +461,15 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 			}
 		}()
 
-		action := &swingStoreExportAction{
-			Type:        "SWING_STORE_EXPORT",
+		initiateAction := &swingStoreInitiateExportAction{
+			Type:        swingStoreExportActionType,
 			BlockHeight: blockHeight,
-			Request:     "initiate",
-			Args:        []json.RawMessage{encodedExportOptions},
+			Request:     initiateRequest,
+			Args:        [1]SwingStoreExportOptions{exportOptions},
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
-		_, startedErr = exportsHandler.blockingSend(action, false)
+		_, startedErr = exportsHandler.blockingSend(initiateAction, false)
 
 		if startedErr != nil {
 			logger.Error("failed to initiate swing-store export", "err", startedErr)
@@ -403,14 +484,14 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 
 		// The user provided ExportStarted function should call retrieveExport()
 		var retrieveErr error
-		err = eventHandler.ExportInitiated(blockHeight, func() error {
+		err = eventHandler.OnExportStarted(blockHeight, func() error {
 			activeOperationDetails := activeOperation
 			if activeOperationDetails != operationDetails || operationDetails.exportRetrieved {
 				// shouldn't happen, but return an error if it does
 				return errors.New("export operation no longer active")
 			}
 
-			retrieveErr = exportsHandler.retrieveExport(eventHandler.ExportRetrieved)
+			retrieveErr = exportsHandler.retrieveExport(eventHandler.OnExportRetrieved)
 
 			return retrieveErr
 		})
@@ -431,12 +512,11 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 		// Discarding the export so invalidate retrieveExport
 		operationDetails.exportRetrieved = true
 
-		action = &swingStoreExportAction{
-			Type:        "SWING_STORE_EXPORT",
-			BlockHeight: blockHeight,
-			Request:     "discard",
+		discardAction := &swingStoreDiscardExportAction{
+			Type:    swingStoreExportActionType,
+			Request: discardRequest,
 		}
-		_, discardErr := exportsHandler.blockingSend(action, false)
+		_, discardErr := exportsHandler.blockingSend(discardAction, false)
 
 		if discardErr != nil {
 			logger.Error("failed to discard swing-store export", "err", err)
@@ -454,12 +534,22 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 	return nil
 }
 
-// retrieveExport retrieves an initiated export and calls exportRetrieved with
-// the retrieved export.
+// retrieveExport retrieves an initiated export then invokes onExportRetrieved
+// with the retrieved export.
+//
+// It performs a SWING_STORE_EXPORT blockingSend which on success returns a
+// string of the directory containing the JS swing-store export. It then reads
+// the export manifest generated by the JS side, and synthesizes a
+// SwingStoreExportProvider for the onExportRetrieved callback to access the
+// retrieved swing-store export.
+// The export manifest format is described by the exportManifest struct.
+//
+// After calling onExportRetrieved, the export directory and its contents are
+// deleted.
 //
 // This will block until the export is ready. Internally invoked by the
 // InitiateExport logic in the export operation's goroutine.
-func (exportsHandler SwingStoreExportsHandler) retrieveExport(exportRetrieved func(provider SwingStoreExportProvider) error) (err error) {
+func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved func(provider SwingStoreExportProvider) error) (err error) {
 	operationDetails := activeOperation
 	if operationDetails == nil {
 		// shouldn't happen, but return an error if it does
@@ -468,10 +558,9 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(exportRetrieved fu
 
 	blockHeight := operationDetails.blockHeight
 
-	action := &swingStoreExportAction{
-		Type:        "SWING_STORE_EXPORT",
-		BlockHeight: blockHeight,
-		Request:     "retrieve",
+	action := &swingStoreRetrieveExportAction{
+		Type:    swingStoreExportActionType,
+		Request: retrieveRequest,
 	}
 	out, err := exportsHandler.blockingSend(action, false)
 
@@ -558,7 +647,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(exportRetrieved fu
 		return artifact, err
 	}
 
-	err = exportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadArtifact: readArtifact})
+	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadArtifact: readArtifact})
 	if err != nil {
 		return err
 	}
@@ -573,6 +662,8 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(exportRetrieved fu
 }
 
 // RestoreExport restores the JS swing-store using previously exported data and artifacts.
+//
+// Must be called by the main goroutine
 func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStoreExportProvider, restoreOptions SwingStoreRestoreOptions) error {
 	err := checkNotActive()
 	if err != nil {
@@ -583,13 +674,13 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 
 	// We technically don't need to create an active operation here since both
 	// InitiateExport and RestoreExport should only be called from the main
-	// thread, but it doesn't cost much to add in case things go wrong.
+	// goroutine, but it doesn't cost much to add in case things go wrong.
 	operationDetails := &operationDetails{
 		isRestore:   true,
 		blockHeight: blockHeight,
 		logger:      exportsHandler.logger,
 		// goroutine synchronization is unnecessary since anything checking should
-		// be called from the same thread.
+		// be called from the same goroutine.
 		// Effectively WaitUntilSwingStoreExportStarted would block infinitely and
 		// exportsHandler.InitiateExport will error when calling checkNotActive.
 		exportStartedResult: nil,
@@ -651,11 +742,13 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		}
 
 		if artifact.Name != UntrustedExportDataArtifactName {
-			// Artifact verifiable on import from the export data
-			// Since we cannot trust the state-sync artifact at this point, we generate
-			// a safe and unique filename from the artifact name we received, by
-			// substituting any non letters-digits-hyphen-underscore-dot by a hyphen,
-			// and prefixing with an incremented id.
+			// An artifact is only verifiable by the JS swing-store import using the
+			// information contained in the "export data".
+			// Since we cannot trust the source of the artifact at this point,
+			// including that the artifact's name is genuine, we generate a safe and
+			// unique filename from the artifact's name we received, by substituting
+			// any non letters-digits-hyphen-underscore-dot by a hyphen, and
+			// prefixing with an incremented id.
 			// The filename is not used for any purpose in the export logic.
 			filename := sanitizeArtifactName(artifact.Name)
 			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
@@ -680,21 +773,14 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		return err
 	}
 
-	importOptions := swingStoreImportOptions{
-		ExportDir:         exportDir,
-		IncludeHistorical: restoreOptions.IncludeHistorical,
-	}
-
-	encodedImportOptions, err := json.Marshal(importOptions)
-	if err != nil {
-		return err
-	}
-
-	action := &swingStoreExportAction{
-		Type:        "SWING_STORE_EXPORT",
+	action := &swingStoreRestoreExportAction{
+		Type:        swingStoreExportActionType,
 		BlockHeight: blockHeight,
-		Request:     "restore",
-		Args:        []json.RawMessage{encodedImportOptions},
+		Request:     restoreRequest,
+		Args: [1]swingStoreImportOptions{{
+			ExportDir:         exportDir,
+			IncludeHistorical: restoreOptions.IncludeHistorical,
+		}},
 	}
 
 	_, err = exportsHandler.blockingSend(action, true)

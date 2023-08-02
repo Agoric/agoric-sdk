@@ -98,7 +98,7 @@ sequenceDiagram
     else initiated
     SSEH-AS-)SSEH-M: close(exportStartedResult)
     alt retrieval
-    SSEH-AS->>+SSES-AS: ExportInitiated()
+    SSEH-AS->>+SSES-AS: OnExportStarted()
     SSES-AS->>+A-AS: BaseApp.Snapshot()
     A-AS->>+SM-AS: Create()
     SM-AS-)+SM-CS: go createSnapshot()
@@ -116,7 +116,7 @@ sequenceDiagram
     CM-->>-SSEH-CS: exportDir
     SSEH-CS->>+D-CS: Read(export-manifest.json)
     D-CS-->>-SSEH-CS: 
-    SSEH-CS->>+SSES-CS: ExportRetrieved()
+    SSEH-CS->>+SSES-CS: OnExportRetrieved()
     loop
       SSES-CS->>+SSEH-CS: provider.ReadArtifact()
       SSEH-CS->>+D-CS: Read(artifactFile)
@@ -137,7 +137,7 @@ sequenceDiagram
     A-AS-->>-SSES-AS: 
     SSES-AS-->>-SSEH-AS: 
     else no retrieval
-      SSEH-AS->>+SSES-AS: ExportInitiated()
+      SSEH-AS->>+SSES-AS: OnExportStarted()
       SSES-AS-->>-SSEH-AS: 
       SSEH-AS->>+CM: SWING_STORE_EXPORT/discard
       CM-)SSE: Stop()

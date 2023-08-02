@@ -23,6 +23,7 @@ import (
 // module fits within the state-sync process.
 
 var _ snapshots.ExtensionSnapshotter = &ExtensionSnapshotter{}
+var _ SwingStoreExportEventHandler = &ExtensionSnapshotter{}
 
 // SnapshotFormat 1 defines all extension payloads to be SwingStoreArtifact proto messages
 const SnapshotFormat = 1
@@ -46,7 +47,7 @@ type snapshotDetails struct {
 
 // ExtensionSnapshotter is the cosmos state-sync extension snapshotter for the
 // x/swingset module.
-// It handles the Swingset state that is not part of the Cosmos DB. Currently
+// It handles the SwingSet state that is not part of the Cosmos DB. Currently
 // that state is solely composed of the SwingStore artifacts, as a copy of the
 // SwingStore "export data" is streamed into the cosmos DB during execution.
 // When performing a snapshot, the extension leverages the SwingStoreExportsHandler
@@ -55,13 +56,17 @@ type snapshotDetails struct {
 // SwingStore "export data" from the already restored cosmos DB, to produce a
 // full SwingStore export that can be imported to create a new JS swing-store DB.
 //
-// The SwingStoreExportsHandler also helps with the synchronization needed to
-// generate consistent exports, even while other SwingSet activities are performed
-// during the next block. However this relies on the application calling
-// WaitUntilSwingStoreExportStarted before instructing swingset to commit a new
-// block.
+// Since swing-store is not able to open its DB at historical commit points,
+// the export operation must start before new changes are committed, aka before
+// Swingset is instructed to commit the next block. For that reason the cosmos
+// snapshot operation is currently mediated by the SwingStoreExportsHandler,
+// which helps with the synchronization needed to generate consistent exports,
+// while allowing SwingSet activity to proceed for the next block. This relies
+// on the application calling WaitUntilSwingStoreExportStarted before
+// instructing SwingSet to commit a new block.
 type ExtensionSnapshotter struct {
-	isConfigured                      func() bool
+	isConfigured func() bool
+	// takeAppSnapshot is called by OnExportStarted when creating a snapshot
 	takeAppSnapshot                   func(height int64)
 	newRestoreContext                 func(height int64) sdk.Context
 	swingStoreExportsHandler          *SwingStoreExportsHandler
@@ -91,15 +96,16 @@ func (snapshotter *ExtensionSnapshotter) SnapshotName() string {
 	return types.ModuleName
 }
 
-// SnapshotFormat returns the default format the extension snapshotter uses to encode the
-// payloads when taking a snapshot.
-// It's defined within the extension, different from the global format for the whole state-sync snapshot.
+// SnapshotFormat returns the extension specific format used to encode the
+// extension payloads when creating a snapshot. It's independent of the format
+// used for the overall state-sync snapshot.
 // Implements ExtensionSnapshotter
 func (snapshotter *ExtensionSnapshotter) SnapshotFormat() uint32 {
 	return SnapshotFormat
 }
 
-// SupportedFormats returns a list of formats it can restore from.
+// SupportedFormats returns a list of extension specific payload formats it can
+// restore from.
 // Implements ExtensionSnapshotter
 func (snapshotter *ExtensionSnapshotter) SupportedFormats() []uint32 {
 	return []uint32{SnapshotFormat}
@@ -108,9 +114,9 @@ func (snapshotter *ExtensionSnapshotter) SupportedFormats() []uint32 {
 // InitiateSnapshot initiates a snapshot for the given block height.
 // If a snapshot is already in progress, or if no snapshot manager is
 // configured, this will fail.
-// The snapshot operation is performed in a goroutine managed by the
-// SwingStoreExportsHandler. Use WaitUntilSwingStoreExportStarted to
-// synchronize commit boundaries.
+//
+// The snapshot operation is performed in a goroutine.
+// Use WaitUntilSwingStoreExportStarted to synchronize commit boundaries.
 func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 	if !snapshotter.isConfigured() {
 		return fmt.Errorf("snapshot manager not configured")
@@ -122,12 +128,12 @@ func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 	blockHeight := uint64(height)
 
 	return snapshotter.swingStoreExportsHandler.InitiateExport(blockHeight, snapshotter, SwingStoreExportOptions{
-		ExportMode:        "current",
+		ExportMode:        SwingStoreExportModeCurrent,
 		IncludeExportData: false,
 	})
 }
 
-// ExportInitiated performs the actual cosmos state-sync app snapshot.
+// OnExportStarted performs the actual cosmos state-sync app snapshot.
 // The cosmos implementation will ultimately call SnapshotExtension, which can
 // retrieve and process the SwingStore artifacts.
 // This method is invoked by the SwingStoreExportsHandler in a goroutine
@@ -135,7 +141,7 @@ func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 // already in progress.
 //
 // Implements SwingStoreExportEventHandler
-func (snapshotter *ExtensionSnapshotter) ExportInitiated(blockHeight uint64, retrieveExport func() error) error {
+func (snapshotter *ExtensionSnapshotter) OnExportStarted(blockHeight uint64, retrieveExport func() error) error {
 	logger := snapshotter.logger.With("height", blockHeight)
 
 	if blockHeight > math.MaxInt64 {
@@ -159,10 +165,15 @@ func (snapshotter *ExtensionSnapshotter) ExportInitiated(blockHeight uint64, ret
 	return nil
 }
 
-// SnapshotExtension writes extension payloads into the underlying protobuf stream.
-// This operation is invoked by the snapshot manager in the goroutine started by
-// the SwingStoreSnapshotter, during the call to ExportInitiated, and delegates
-// actually writing extension payloads to ExportRetrieved.
+// SnapshotExtension is the method invoked by cosmos to write extension payloads
+// into the underlying protobuf stream of the state-sync snapshot.
+// This method is invoked by the cosmos snapshot manager in a goroutine it
+// started during the call to OnExportStarted. However the snapshot manager
+// fully synchronizes its goroutine with the goroutine started by the
+// SwingStoreSnapshotter, making it safe to invoke callbacks of the
+// SwingStoreSnapshotter. SnapshotExtension actually delegates writing
+// extension payloads to OnExportRetrieved.
+//
 // Implements ExtensionSnapshotter
 func (snapshotter *ExtensionSnapshotter) SnapshotExtension(blockHeight uint64, payloadWriter snapshots.ExtensionPayloadWriter) error {
 	logError := func(err error) error {
@@ -188,13 +199,13 @@ func (snapshotter *ExtensionSnapshotter) SnapshotExtension(blockHeight uint64, p
 	return snapshotDetails.retrieveExport()
 }
 
-// ExportRetrieved handles the SwingStore export retrieved by the SwingStoreExportsHandler
+// OnExportRetrieved handles the SwingStore export retrieved by the SwingStoreExportsHandler
 // and writes it out to the SnapshotExtension's payloadWriter.
-// This operation is invoked by the SwingStoreExportsHandler nested in the
-// goroutine started by InitiateExport.
+// This operation is invoked by the SwingStoreExportsHandler in the snapshot
+// manager goroutine synchronized with SwingStoreExportsHandler's own goroutine.
 //
 // Implements SwingStoreExportEventHandler
-func (snapshotter *ExtensionSnapshotter) ExportRetrieved(provider SwingStoreExportProvider) error {
+func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreExportProvider) error {
 	snapshotDetails := snapshotter.activeSnapshot
 	if snapshotDetails == nil || snapshotDetails.payloadWriter == nil {
 		// shouldn't happen, but return an error if it does

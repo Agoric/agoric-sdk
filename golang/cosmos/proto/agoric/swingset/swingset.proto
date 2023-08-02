@@ -151,6 +151,9 @@ message Egress {
 }
 
 // SwingStoreArtifact encodes an artifact of a swing-store export.
+// Artifacts may be stored or transmitted in any order. Most handlers do
+// maintain the artifact order from their original source as an effect of how
+// they handle the artifacts.
 message SwingStoreArtifact {
     option (gogoproto.equal) = false;
     string name = 1 [
