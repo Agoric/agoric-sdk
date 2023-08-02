@@ -371,12 +371,15 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // Use the same verbosity as our caller did for us.
   let verbosity;
-  if (process.env.DEBUG === undefined) {
-    verbosity = [];
-  } else if (process.env.DEBUG.includes('agoric')) {
+  const DEBUG_LIST = (process.env.DEBUG || '').split(',');
+  if (
+    DEBUG_LIST.find(selector => ['agoric:debug', 'agoric'].includes(selector))
+  ) {
     verbosity = ['-vv'];
-  } else {
+  } else if (DEBUG_LIST.includes('agoric:info')) {
     verbosity = ['-v'];
+  } else {
+    verbosity = [];
   }
 
   // Launch the agoric wallet deploys (if any).  The assumption is that the CLI

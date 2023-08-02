@@ -61,6 +61,7 @@
     "@endo/bundle-source": "^3.0.2",
     "@endo/captp": "^4.0.2",
     "@endo/compartment-mapper": "^1.1.0",
+    "@endo/env-options": "^1.1.0",
     "@endo/far": "^1.0.2",
     "@endo/init": "^1.0.2",
     "@endo/marshal": "^1.1.0",

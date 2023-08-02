@@ -1,6 +1,7 @@
 /* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
+import { environmentOptionsListHas } from '@endo/env-options';
 import { assert, Fail } from '@agoric/assert';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
@@ -13,6 +14,9 @@ import {
   assessFacetiousness,
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
+
+// TODO Why is this here but commented out? If no longer relevant, remove
+// import { kdebug } from './kdebug.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
@@ -29,22 +33,10 @@ import {
 const { hasOwn, defineProperty, getOwnPropertyNames, entries, fromEntries } =
   Object;
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
-
-// See https://github.com/Agoric/agoric-sdk/issues/8005
-// Once agoric-sdk is upgraded to depend on endo post
-// https://github.com/endojs/endo/pull/1606 then remove this
-// definition of `b` and say instead
-// ```js
-//   const { quote: q, base: b } = assert;
-// ```
-const b = index => q(Number(index));
-
-// import { kdebug } from './kdebug.js';
-
-// TODO Use environment-options.js currently in ses/src after factoring it out
-// to a new package.
-const env = (globalThis.process || {}).env || {};
+// TODO https://github.com/Agoric/agoric-sdk/issues/8005
+// TODO https://github.com/endojs/endo/issues/1703
+// @ts-expect-error
+const { quote: q, bare: b } = assert;
 
 // Turn on to give each exo instance its own toStringTag value which exposes
 // the SwingSet vref.
@@ -53,9 +45,7 @@ const env = (globalThis.process || {}).env || {};
 // confidential object-creation activity, so this must not be something
 // that unprivileged vat code (including unprivileged contracts) can do
 // for themselves.
-const LABEL_INSTANCES = (env.DEBUG || '')
-  .split(':')
-  .includes('label-instances');
+const LABEL_INSTANCES = environmentOptionsListHas('DEBUG', 'label-instances');
 
 // This file implements the "Virtual Objects" system, currently documented in
 // {@link https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md})

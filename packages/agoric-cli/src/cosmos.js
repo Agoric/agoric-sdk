@@ -14,10 +14,10 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
   const pspawnEnv = { ...process.env };
   if (popts.verbose > 1) {
     // Enable verbose logs.
-    pspawnEnv.DEBUG = 'agoric';
+    pspawnEnv.DEBUG = 'agoric:info';
   } else if (!popts.verbose) {
     // Disable more logs.
-    pspawnEnv.DEBUG = '';
+    pspawnEnv.DEBUG = 'agoric:none';
   }
 
   const pspawn = makePspawn({ env: pspawnEnv, log, spawn, chalk });

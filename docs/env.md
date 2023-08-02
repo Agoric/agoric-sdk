@@ -49,8 +49,8 @@ Affects: agoric (CLI), ag-chain-cosmos, ag-solo
 
 Purpose: to change the meaning of `console.log` and other console methods
 
-Description: uses `anylogger` to change whether the following methods (in order
-of increasing severity) are active for a given context:
+Description: uses `anylogger` to change whether the following methods are active
+for a given context, in order of increasing severity:
 
 1. `console.debug`
 2. `console.log`
@@ -61,14 +61,17 @@ of increasing severity) are active for a given context:
 If not set, then default (`console.info` and above) logging is enabled.
 (`console.log` and `console.debug` logging is disabled.)
 
-If set to an empty string, or running in `ag-chain-cosmos start` mode, don't
-print any logs.  This is part of "consensus mode."
+Otherwise, set to a comma-separated list of strings.
 
-If set to a value that contains the substring `agoric`, then print all console
-messages for the entire SDK.
+If one of those strings is
+- `agoric:${level}`, then don't print `agoric-sdk` console messages below `${level}`.
+- `agoric:none`, then silence all `agoric-sdk` console messages.
+- `agoric` (an alias for `agoric:debug`) print all `agoric-sdk` console messages.
+- `track-turns`, then log errors at the top of the event-loop that may otherwise be unreported. See also the TRACK_TURNS environment variable below.
+- `label-instances`, then log exo instances with a unique label per instance. HAZARD This causes an information leak in the messages of thrown errors, which are available even to code without access to the console. Use with care.
 
-Otherwise, set to a comma-separated list of prefixes, where each prefix is the
-context given to `makeConsole`.  For example:
+For each of those strings beginning with a prefix recognized as indicating what
+console messages to enable, pass it to `makeConsole`. For example:
 
 - `DEBUG=SwingSet:ls` enable all console messages for liveslots, regardless of vat.
 - `DEBUG=SwingSet:ls:v13` enable for liveslots in vat 13.
@@ -96,6 +99,10 @@ Description: When nonempty, create pretend prepopulated tokens like "moola" and
 "simoleans".
 
 Lifetime: until chain is mature enough not to need any pretend tokens
+
+## LOCKDOWN_*
+
+For the envoronment variables beginning with `LOCKDOWN_` , see [`lockdown` Options](https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md).
 
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
@@ -238,3 +245,8 @@ records individually. `config.defaultManagerType` has a higher priority so that
 tests which require a specific worker (e.g. which exercise XS heap snapshots,
 or metering) can override the env var, so they won't break under `yarn
 test:xs`.
+
+## TRACK_TURNS
+
+Log the deep causality stack behind logged errors if possible. See also the
+`DEBUG` setting `DEBUG=track-turns` above.
