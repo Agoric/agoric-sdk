@@ -266,7 +266,6 @@ type SwingStoreExportProvider struct {
 	// BlockHeight is the block height of the SwingStore export.
 	BlockHeight uint64
 	// GetExportData is a function to return the "export data" of the SwingStore export, if any.
-	// It errors with io.EOF if the export contains no "export data".
 	GetExportData func() ([]*vstoragetypes.DataEntry, error)
 	// ReadArtifact is a function to return the next unread artifact in the SwingStore export.
 	// It errors with io.EOF upon reaching the end of the artifact list.
@@ -350,7 +349,7 @@ type SwingStoreExportOptions struct {
 	ExportMode string `json:"exportMode,omitempty"`
 	// A flag indicating whether "export data" should be part of the swing-store export
 	// If false, the resulting SwingStoreExportProvider's GetExportData will
-	// error with io.EOF
+	// return an empty list of "export data" entries.
 	IncludeExportData bool `json:"includeExportData,omitempty"`
 }
 
@@ -593,8 +592,9 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 	}
 
 	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
+		entries := []*vstoragetypes.DataEntry{}
 		if manifest.Data == "" {
-			return nil, io.EOF
+			return entries, nil
 		}
 
 		dataFile, err := os.Open(filepath.Join(exportDir, manifest.Data))
@@ -603,7 +603,6 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		}
 		defer dataFile.Close()
 
-		entries := []*vstoragetypes.DataEntry{}
 		decoder := json.NewDecoder(dataFile)
 		for {
 			var jsonEntry []string
@@ -702,8 +701,11 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	}
 
 	exportDataEntries, err := provider.GetExportData()
+	if err != nil {
+		return err
+	}
 
-	if err == nil {
+	if len(exportDataEntries) > 0 {
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
@@ -725,8 +727,6 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		if err != nil {
 			return err
 		}
-	} else if err != io.EOF {
-		return err
 	}
 
 	writeExportFile := func(filename string, data []byte) error {

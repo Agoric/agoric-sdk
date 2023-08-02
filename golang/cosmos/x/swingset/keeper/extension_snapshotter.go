@@ -245,10 +245,11 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	}
 
 	swingStoreExportDataEntries, err := provider.GetExportData()
-	if err == io.EOF {
-		return nil
-	} else if err != nil {
+	if err != nil {
 		return err
+	}
+	if len(swingStoreExportDataEntries) == 0 {
+		return nil
 	}
 
 	// For debugging, write out any retrieved export data as a single untrusted artifact
