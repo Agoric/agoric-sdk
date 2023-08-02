@@ -1,4 +1,4 @@
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
 import { buildVatController } from '@agoric/swingset-vat';
 import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
