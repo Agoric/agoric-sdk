@@ -357,11 +357,27 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 
 	go func() {
 		var err error
+		var startedErr error
 		defer func() {
+			if err == nil {
+				err = startedErr
+			}
 			if err != nil {
 				operationDetails.exportDone <- err
 			}
+			// First, indicate an export is no longer in progress. This ensures that
+			// for an operation with a start error, a call to WaitUntilSwingStoreExportStarted
+			// waiting on exportStartedResult will always find the operation has
+			// completed, and clear the active operation instead of racing if the
+			// channel close order was reversed.
 			close(operationDetails.exportDone)
+			// Then signal the current export operation that it failed to start,
+			// which will be reported to a waiting WaitUntilSwingStoreExportStarted,
+			// or the next call otherwise.
+			if startedErr != nil {
+				operationDetails.exportStartedResult <- startedErr
+				close(operationDetails.exportStartedResult)
+			}
 		}()
 
 		action := &swingStoreExportAction{
@@ -372,21 +388,17 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
-		_, err = exportsHandler.blockingSend(action, false)
+		_, startedErr = exportsHandler.blockingSend(action, false)
 
-		if err != nil {
-			// First indicate an export is no longer in progress if the call to
-			// WaitUntilSwingStoreExportStarted has't happened yet.
-			// Then signal the current export operation if a call to
-			// WaitUntilSwingStoreExportStarted was already waiting.
-			operationDetails.exportStartedResult <- err
-			close(operationDetails.exportStartedResult)
-			logger.Error("failed to initiate swing-store export", "err", err)
+		if startedErr != nil {
+			logger.Error("failed to initiate swing-store export", "err", startedErr)
+			// The deferred function will communicate the error and close channels
+			// in the appropriate order.
 			return
 		}
 
-		// Signal that the export operation has started in the goroutine. Calls to
-		// WaitUntilSwingStoreExportStarted will no longer block.
+		// Signal that the export operation has started successfully in the goroutine.
+		// Calls to WaitUntilSwingStoreExportStarted will no longer block.
 		close(operationDetails.exportStartedResult)
 
 		// The user provided ExportStarted function should call retrieveExport()
