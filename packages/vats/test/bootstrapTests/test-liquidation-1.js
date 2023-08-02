@@ -276,7 +276,7 @@ const checkFlow1 = async (
 
     console.log(collateralBrandKey, 'step 2 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readLatest(`published.auction.books.book${managerIndex}`), {
       collateralAvailable: { value: scale6(setup.auction.start.collateral) },
       startCollateral: { value: scale6(setup.auction.start.collateral) },
       startProceedsGoal: { value: scale6(setup.auction.start.debt) },
@@ -311,7 +311,7 @@ const checkFlow1 = async (
 
     console.log(collateralBrandKey, 'step 6 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readLatest(`published.auction.books.book${managerIndex}`), {
       collateralAvailable: { value: 9659301n },
     });
 

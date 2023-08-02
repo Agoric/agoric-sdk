@@ -21,9 +21,9 @@ import {
   makeRatioFromAmounts,
   makeRecorderTopic,
   natSafeMath,
+  offerTo,
   prepareRecorder,
   provideEmptySeat,
-  offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
@@ -32,7 +32,7 @@ import { Far } from '@endo/marshal';
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeOfferSpecShape, prepareAuctionBook } from './auctionBook.js';
 import { auctioneerParamTypes } from './params.js';
-import { makeScheduler } from './scheduler.js';
+import { makeScheduler, ScheduleNotificationShape } from './scheduler.js';
 import { AuctionState } from './util.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -441,7 +441,7 @@ export const start = async (zcf, privateArgs, baggage) => {
      * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
      *     import('./scheduler.js').ScheduleNotification
      *   >}
-     */ (M.any()),
+     */ (ScheduleNotificationShape),
   );
 
   /**
@@ -636,11 +636,12 @@ export const start = async (zcf, privateArgs, baggage) => {
          * @param {ZCFSeat} zcfSeat
          * @param {import('./auctionBook.js').OfferSpec} offerSpec
          */
-        const newBidHandler = (zcfSeat, offerSpec) => {
+        const newBidHandler = async (zcfSeat, offerSpec) => {
           // xxx consider having Zoe guard the offerArgs with a provided shape
           mustMatch(offerSpec, offerSpecShape);
           const auctionBook = books.get(collateralBrand);
-          auctionBook.addOffer(offerSpec, zcfSeat, isActive());
+          const timestamp = await E(timer).getCurrentTimestamp();
+          auctionBook.addOffer(offerSpec, zcfSeat, isActive(), timestamp);
           return 'Your bid has been accepted';
         };
 
@@ -687,6 +688,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     ),
   );
 
+  const booksNode = await E(privateArgs.storageNode).makeChildNode('books');
   const creatorFacet = makeFarGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
@@ -701,13 +703,18 @@ export const start = async (zcf, privateArgs, baggage) => {
 
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
-        const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
+
+        const bookNodeP = E(booksNode).makeChildNode(bookId);
+        const [bookNode, bidsNode] = await Promise.all([
+          bookNodeP,
+          E(bookNodeP).makeChildNode('bids'),
+        ]);
 
         const newBook = await makeAuctionBook(
           brands.Bid,
           brand,
           priceAuthority,
-          bNode,
+          [bookNode, bidsNode],
         );
 
         // These three store.init() calls succeed or fail atomically

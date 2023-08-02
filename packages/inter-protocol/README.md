@@ -52,9 +52,10 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
               - `vaults`
                 - `vault0`
     - `auction` - [snapshot of details](./test/auction/snapshots/test-auctionContract.js.md)
-        - `schedule`
+        - `schedule` - for global schedule info
         - `governance`
-        - `book0`
+        - `books.book0` - stats about the bid book for one collateral
+        - `books.book0.bids.bid0` - data about one bid
     - `reserve` - [snapshot of details](./test/reserve/snapshots/test-reserve.js.md)
       - `governance`
       - `metrics`

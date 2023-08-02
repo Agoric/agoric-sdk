@@ -1,9 +1,10 @@
 import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/time';
+import { TimeMath, TimestampShape } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
+import { M } from '@agoric/store';
 import { AuctionState, makeCancelTokenMaker } from './util.js';
 import {
   computeRoundTiming,
@@ -56,6 +57,12 @@ const makeCancelToken = makeCancelTokenMaker('scheduler');
  * @property {Timestamp | null} nextDescendingStepTime when the next descending
  *   step will take place
  */
+export const ScheduleNotificationShape = {
+  activeStartTime: M.or(null, TimestampShape),
+  nextStartTime: M.or(null, TimestampShape),
+  nextDescendingStepTime: M.or(null, TimestampShape),
+};
+harden(ScheduleNotificationShape);
 
 const safelyComputeRoundTiming = (params, baseTime) => {
   try {

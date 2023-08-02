@@ -2,9 +2,13 @@ import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import {
+  M,
+  prepareExoClassKit,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
@@ -20,7 +24,11 @@ import { E } from '@endo/captp';
 import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
-import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
+import {
+  BidsDataNotificationShape,
+  preparePriceBook,
+  prepareScaledBidBook,
+} from './offerBook.js';
 import {
   isScaledBidPriceHigher,
   makeBrandedRatioPattern,
@@ -72,8 +80,8 @@ const trace = makeTracer('AucBook', true);
  * @param {Brand<'nat'>} collateralBrand
  */
 export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
-  const bidAmountShape = makeNatAmountShape(bidBrand);
-  const collateralAmountShape = makeNatAmountShape(collateralBrand);
+  const bidAmountShape = makeNatAmountShape(bidBrand, 0n);
+  const collateralAmountShape = makeNatAmountShape(collateralBrand, 0n);
   return M.splitRecord(
     { maxBuy: collateralAmountShape },
     {
@@ -106,6 +114,18 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  * @property {Amount<'nat'> | null} collateralAvailable The amount of collateral
  *   remaining
  */
+export const BookDataNotificationShape = M.splitRecord(
+  {
+    startPrice: M.or(RatioShape, null),
+    currentPriceLevel: M.or(RatioShape, null),
+    startCollateral: AmountShape,
+    collateralAvailable: M.or(AmountShape, null),
+  },
+  {
+    proceedsRaised: AmountShape,
+  },
+);
+harden(BookDataNotificationShape);
 
 /**
  * @param {Baggage} baggage
@@ -113,8 +133,9 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
-  const makeScaledBidBook = prepareScaledBidBook(baggage);
-  const makePriceBook = preparePriceBook(baggage);
+  const bidDataKits = provideDurableMapStore(baggage, 'bidDataKits');
+  const makeScaledBidBook = prepareScaledBidBook(baggage, makeRecorderKit);
+  const makePriceBook = preparePriceBook(baggage, makeRecorderKit);
 
   const AuctionBookStateShape = harden({
     collateralBrand: M.any(),
@@ -126,6 +147,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     priceAuthority: M.any(),
     updatingOracleQuote: M.any(),
     bookDataKit: M.any(),
+    bidDataKits: M.any(),
+    bidsDataKit: M.any(),
     priceBook: M.any(),
     scaledBidBook: M.any(),
     startCollateral: M.any(),
@@ -143,9 +166,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      * @param {Brand<'nat'>} bidBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {StorageNode} node
+     * @param {[bookNode: StorageNode, bidsNode: StorageNode]} nodes
      */
-    (bidBrand, collateralBrand, pAuthority, node) => {
+    (bidBrand, collateralBrand, pAuthority, nodes) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
       const zeroBid = makeEmpty(bidBrand);
       const zeroRatio = makeRatioFromAmounts(
@@ -159,23 +182,36 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       // returned to the funders.
       const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
       const { zcfSeat: bidHoldingSeat } = zcf.makeEmptySeatKit();
+      const [bookNode, bidsNode] = nodes;
 
-      const bidAmountShape = makeNatAmountShape(bidBrand);
-      const collateralAmountShape = makeNatAmountShape(collateralBrand);
+      const bidAmountShape = makeNatAmountShape(bidBrand, 0n);
+      const collateralAmountShape = makeNatAmountShape(collateralBrand, 0n);
+
       const scaledBidBook = makeScaledBidBook(
         makeBrandedRatioPattern(bidAmountShape, bidAmountShape),
         collateralBrand,
+        bidsNode,
       );
 
       const priceBook = makePriceBook(
         makeBrandedRatioPattern(bidAmountShape, collateralAmountShape),
         collateralBrand,
+        bidsNode,
       );
 
       const bookDataKit = makeRecorderKit(
-        node,
+        bookNode,
         /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
-          M.any()
+          BookDataNotificationShape
+        ),
+      );
+
+      /** @typedef {import('./offerBook.js').BidDataNotification} BidDataNotification */
+
+      const bidsDataKit = makeRecorderKit(
+        bidsNode,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BidDataNotification>} */ (
+          BidsDataNotificationShape
         ),
       );
 
@@ -191,6 +227,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         updatingOracleQuote: zeroRatio,
 
         bookDataKit,
+        bidDataKits,
+        bidsDataKit,
 
         priceBook,
         scaledBidBook,
@@ -346,7 +384,6 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           return collateralTarget;
         },
-
         /**
          * Accept an offer expressed as a price. If the auction is active,
          * attempt to buy collateral. If any of the offer remains add it to the
@@ -355,14 +392,17 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @param {ZCFSeat} seat
          * @param {Ratio} price
          * @param {Amount<'nat'>} maxBuy
+         * @param {Timestamp} timestamp
          * @param {object} opts
          * @param {boolean} opts.trySettle
          * @param {boolean} [opts.exitAfterBuy]
          */
+
         acceptPriceOffer(
           seat,
           price,
           maxBuy,
+          timestamp,
           { trySettle, exitAfterBuy = false },
         ) {
           const { priceBook, curAuctionPrice } = this.state;
@@ -389,7 +429,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             seat.exit();
           } else {
             trace('added Offer ', price, stillWant.value);
-            priceBook.add(seat, price, stillWant, exitAfterBuy);
+            priceBook.add(seat, price, stillWant, exitAfterBuy, timestamp);
           }
 
           void helper.publishBookData();
@@ -403,6 +443,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @param {ZCFSeat} seat
          * @param {Ratio} bidScaling
          * @param {Amount<'nat'>} maxBuy
+         * @param {Timestamp} timestamp
          * @param {object} opts
          * @param {boolean} opts.trySettle
          * @param {boolean} [opts.exitAfterBuy]
@@ -411,6 +452,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           seat,
           bidScaling,
           maxBuy,
+          timestamp,
           { trySettle, exitAfterBuy = false },
         ) {
           trace(this.state.collateralBrand, 'accept scaledBid offer');
@@ -443,7 +485,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           ) {
             seat.exit();
           } else {
-            scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
+            scaledBidBook.add(
+              seat,
+              bidScaling,
+              stillWant,
+              exitAfterBuy,
+              timestamp,
+            );
           }
 
           void helper.publishBookData();
@@ -466,6 +514,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
+
           return state.bookDataKit.recorder.write(bookData);
         },
       },
@@ -588,7 +637,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { remainingProceedsGoal } = state;
           const { helper } = facets;
           for (const [key, seatRecord] of prioritizedOffers) {
-            const { seat, price: p, wanted, exitAfterBuy } = seatRecord;
+            const { seat, price: p } = seatRecord;
             if (
               remainingProceedsGoal &&
               AmountMath.isEmpty(remainingProceedsGoal)
@@ -597,18 +646,19 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             } else if (seat.hasExited()) {
               helper.removeFromItsBook(key, p);
             } else {
-              const collateralSold = helper.settle(seat, wanted);
+              const { remainingWant, originalWant, exitAfterBuy } = seatRecord;
+              const collateralSold = helper.settle(seat, remainingWant);
 
               const alloc = seat.getCurrentAllocation();
               if (
                 (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
                 AmountMath.isEmpty(alloc.Bid) ||
                 ('Collateral' in alloc &&
-                  AmountMath.isGTE(alloc.Collateral, wanted))
+                  AmountMath.isGTE(alloc.Collateral, originalWant))
               ) {
                 seat.exit();
                 helper.removeFromItsBook(key, p);
-              } else if (!AmountMath.isGTE(collateralSold, wanted)) {
+              } else if (!AmountMath.isGTE(collateralSold, remainingWant)) {
                 helper.updateItsBook(key, collateralSold, p);
               }
             }
@@ -652,8 +702,9 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @param {OfferSpec} offerSpec
          * @param {ZCFSeat} seat
          * @param {boolean} trySettle
+         * @param {Timestamp} timestamp
          */
-        addOffer(offerSpec, seat, trySettle) {
+        addOffer(offerSpec, seat, trySettle, timestamp) {
           const { bidBrand, collateralBrand } = this.state;
           const offerSpecShape = makeOfferSpecShape(bidBrand, collateralBrand);
 
@@ -669,6 +720,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               seat,
               offerSpec.offerPrice,
               offerSpec.maxBuy,
+              timestamp,
               {
                 trySettle,
                 exitAfterBuy,
@@ -679,6 +731,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               seat,
               offerSpec.offerBidScaling,
               offerSpec.maxBuy,
+              timestamp,
               {
                 trySettle,
                 exitAfterBuy,
@@ -718,6 +771,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               'Auction schedule',
               this.state.bookDataKit,
             ),
+            bids: makeRecorderTopic('Auction Bids', this.state.bidsDataKit),
           };
         },
       },
