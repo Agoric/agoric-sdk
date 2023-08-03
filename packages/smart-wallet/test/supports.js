@@ -94,8 +94,10 @@ export const makeMockTestSpace = async log => {
     /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
       space
     );
-  const { agoricNames, spaces } = await makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
