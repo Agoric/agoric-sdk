@@ -737,7 +737,12 @@ jobs:
       - name: docker build (sdk)
         run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
       - name: docker build upgrade test
-        run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
+        run: |
+          cd packages/deployment/upgrade-test && \
+            docker build \
+              --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} \
+              --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
+              -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
         run: docker run --env "DEST=0" docker-upgrade-test:latest
       - name: notify on failure
