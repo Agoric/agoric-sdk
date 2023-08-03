@@ -396,7 +396,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
 };
 
 /**
- * @param {import('../../vat-data/src/types.js').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {string} kindName
  */
 export const prepareDurablePublishKit = (baggage, kindName) => {

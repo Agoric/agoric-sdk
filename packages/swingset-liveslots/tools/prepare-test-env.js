@@ -7,7 +7,7 @@
 
 import '@endo/init/pre.js';
 
-import './install-ses-debug.js';
+import '@agoric/internal/src/install-ses-debug.js';
 import { reincarnate } from './setup-vat-data.js';
 
 // Install the VatData globals.

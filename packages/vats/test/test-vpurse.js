@@ -1,6 +1,6 @@
 // @ts-check
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { reincarnate } from '@agoric/swingset-vat/tools/setup-vat-data.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
