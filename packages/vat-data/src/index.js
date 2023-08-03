@@ -42,9 +42,9 @@ export {
   prepareSingleton,
 } from './exo-utils.js';
 
-/** @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage} Baggage */
-/** @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').DurableKindHandle} DurableKindHandle */
-/** @template T @typedef {import('@agoric/swingset-liveslots/src/vatDataTypes').DefineKindOptions<T>} DefineKindOptions */
+/** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
+/** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
+/** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
 
 // //////////////////////////// deprecated /////////////////////////////////////
 

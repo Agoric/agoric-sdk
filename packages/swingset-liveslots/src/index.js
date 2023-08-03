@@ -1,3 +1,4 @@
+/* eslint-disable import/export -- types files have no named runtime exports */
 export { makeLiveSlots, makeMarshaller } from './liveslots.js';
 
 export {
@@ -8,5 +9,5 @@ export {
   insistVatSyscallResult,
 } from './message.js';
 
-// eslint-disable-next-line import/export -- no named exports
 export * from './types.js';
+export * from './vatDataTypes.js';
