@@ -1,5 +1,5 @@
 // @ts-nocheck
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import path from 'path';
 

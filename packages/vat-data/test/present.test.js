@@ -1,7 +1,13 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import '@endo/init/debug.js';
+import test from 'ava';
+
+const mockDefineKind = /** @type {any} */ (harden({}));
+
+/* global globalThis */
+// @ts-expect-error missing fields
+globalThis.VatData ||= { defineKind: mockDefineKind };
 
 test('methods available', async t => {
   const { defineKind } = await import('../src/index.js');
-  defineKind('test', () => {}, {});
-  t.pass();
+  t.is(defineKind, mockDefineKind);
 });

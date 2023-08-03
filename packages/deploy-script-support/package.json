@@ -40,6 +40,7 @@
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/store": "^0.9.2",
+    "@agoric/time": "^0.3.2",
     "@agoric/zoe": "^0.26.2",
     "@endo/base64": "^0.2.32",
     "@endo/bundle-source": "^2.5.2",

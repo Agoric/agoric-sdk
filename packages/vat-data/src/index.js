@@ -42,9 +42,9 @@ export {
   prepareSingleton,
 } from './exo-utils.js';
 
-/** @typedef {import('./types.js').Baggage} Baggage */
-/** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
-/** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
+/** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
+/** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
+/** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
 
 // //////////////////////////// deprecated /////////////////////////////////////
 
