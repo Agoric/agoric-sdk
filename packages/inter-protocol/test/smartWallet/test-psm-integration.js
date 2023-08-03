@@ -380,9 +380,9 @@ test('deposit multiple payments to unknown brand', async t => {
   // assume that if the call succeeds then it's in durable storage.
   for await (const amt of [1n, 2n]) {
     const payment = rial.mint.mintPayment(rial.make(amt));
-    const result = await wallet.getDepositFacet().receive(harden(payment));
-    // successful request but not deposited
-    t.deepEqual(result, { brand: rial.brand, value: 0n });
+    await t.throwsAsync(wallet.getDepositFacet().receive(harden(payment)), {
+      message: /cannot deposit .*: no purse/,
+    });
   }
 });
 
