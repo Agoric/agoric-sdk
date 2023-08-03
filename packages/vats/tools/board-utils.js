@@ -54,6 +54,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
       data,
       `published.agoricNames.${kind}`,
       fromCapData,
+      -1,
     );
     for (const [name, remote] of parts) {
       reverse[remote.getBoardId()] = name;
@@ -67,6 +68,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
       data,
       `published.agoricNames.vbankAsset`,
       fromCapData,
+      -1,
     ).map(([_denom, info]) => [
       info.issuerName,
       { ...info, brand: tables.brand[info.issuerName] },

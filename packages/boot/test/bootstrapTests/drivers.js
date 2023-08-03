@@ -110,6 +110,7 @@ export const makeWalletFactoryDriver = async (
         storage.data,
         `published.wallet.${walletAddress}.current`,
         fromCapData,
+        -1,
       );
     },
 
@@ -121,6 +122,7 @@ export const makeWalletFactoryDriver = async (
         storage.data,
         `published.wallet.${walletAddress}`,
         fromCapData,
+        -1,
       );
     },
   });

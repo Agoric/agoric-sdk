@@ -215,14 +215,15 @@ export const makeMockChainStorageRoot = () => {
      *
      * @param {string} path
      * @param {import('./lib-chainStorage.js').Marshaller} marshaller
+     * @param {number} [index]
      * @returns {unknown}
      */
-    getBody: (path, marshaller = defaultMarshaller) => {
+    getBody: (path, marshaller = defaultMarshaller, index = -1) => {
       data.size || Fail`no data in storage`;
       /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
-      return unmarshalFromVstorage(data, path, fromCapData);
+      return unmarshalFromVstorage(data, path, fromCapData, index);
     },
     keys: () => [...data.keys()],
   });

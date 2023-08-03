@@ -1,5 +1,4 @@
 import {
-  AmountMath,
   AmountShape,
   BrandShape,
   DisplayInfoShape,
@@ -7,15 +6,23 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import { StorageNodeShape } from '@agoric/internal';
+import { StorageNodeShape, makeTracer } from '@agoric/internal';
 import { observeNotifier } from '@agoric/notifier';
 import { M, mustMatch } from '@agoric/store';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
-  prepareRecorderKit,
+  appendToStoredArray,
+  provideLazy,
+} from '@agoric/store/src/stores/store-utils.js';
+import {
+  makeScalarBigMapStore,
+  makeScalarBigWeakMapStore,
+  prepareExoClassKit,
+  provide,
+} from '@agoric/vat-data';
+import {
   SubscriberShape,
   TopicsRecordShape,
+  prepareRecorderKit,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
@@ -24,6 +31,8 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 
 const { Fail, quote: q } = assert;
+
+const trace = makeTracer('SmrtWlt');
 
 /**
  * @file Smart wallet module
@@ -129,7 +138,7 @@ const { Fail, quote: q } = assert;
  * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
  * @typedef {Readonly<UniqueParams & {
- *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
+ *   paymentQueues: MapStore<Brand, Array<Payment>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').InvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
@@ -140,16 +149,66 @@ const { Fail, quote: q } = assert;
  *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
  * }>} ImmutableState
  *
+ * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
  * @typedef {{
  * }} MutableState
  */
+
+/**
+ * NameHub reverse-lookup, finding 0 or more names for a target value
+ *
+ * TODO: consider moving to nameHub.js?
+ *
+ * @param {unknown} target - passable Key
+ * @param {ERef<NameHub>} nameHub
+ */
+const namesOf = async (target, nameHub) => {
+  const entries = await E(nameHub).entries();
+  const matches = [];
+  for (const [name, candidate] of entries) {
+    if (candidate === target) {
+      matches.push(name);
+    }
+  }
+  return harden(matches);
+};
+
+/**
+ * Check that an issuer and its brand belong to each other.
+ *
+ * TODO: move to ERTP?
+ *
+ * @param {Issuer} issuer
+ * @param {Brand} brand
+ * @returns {Promise<boolean>} true iff the the brand and issuer match
+ */
+const checkMutual = (issuer, brand) =>
+  Promise.all([
+    E(issuer)
+      .getBrand()
+      .then(b => b === brand),
+    E(brand).isMyIssuer(issuer),
+  ]).then(checks => checks.every(Boolean));
+
+export const BRAND_TO_PURSES_KEY = 'brandToPurses';
+
+const getBrandToPurses = (walletPurses, key) => {
+  const brandToPurses = provideLazy(walletPurses, key, _k => {
+    /** @type {MapStore<Brand, PurseRecord[]>} */
+    const store = makeScalarBigMapStore('purses by brand', {
+      durable: true,
+    });
+    return store;
+  });
+  return brandToPurses;
+};
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {SharedParams} shared
  */
 export const prepareSmartWallet = (baggage, shared) => {
-  const { registry: _, ...passableShared } = shared;
+  const { registry: _r, ...passableShared } = shared;
   mustMatch(
     harden(passableShared),
     harden({
@@ -163,6 +222,15 @@ export const prepareSmartWallet = (baggage, shared) => {
   );
 
   const makeRecorderKit = prepareRecorderKit(baggage, shared.publicMarshaller);
+
+  const walletPurses = provide(baggage, BRAND_TO_PURSES_KEY, () => {
+    trace('make purses by wallet and save in baggage at', BRAND_TO_PURSES_KEY);
+    /** @type {WeakMapStore<unknown, MapStore<Brand, PurseRecord[]>>} */
+    const store = makeScalarBigWeakMapStore('purses by wallet', {
+      durable: true,
+    });
+    return store;
+  });
 
   /**
    *
@@ -242,6 +310,9 @@ export const prepareSmartWallet = (baggage, shared) => {
     helper: M.interface('helperFacetI', {
       assertUniqueOfferId: M.call(M.string()).returns(),
       updateBalance: M.call(PurseShape, AmountShape).optional('init').returns(),
+      getPurseIfKnownBrand: M.call(BrandShape)
+        .optional(M.eref(M.remotable()))
+        .returns(M.promise()),
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
     }),
@@ -366,6 +437,63 @@ export const prepareSmartWallet = (baggage, shared) => {
             },
           });
         },
+
+        /**
+         * Provide a purse given a NameHub of issuers and their
+         * brands.
+         *
+         * We current support only one NameHub, agoricNames, and
+         * hence one purse per brand. But we store an array of them
+         * to facilitate a transition to decentralized introductions.
+         *
+         * @param {Brand} brand
+         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
+         * @returns {Promise<Purse | undefined>} undefined if brand is not known
+         */
+        async getPurseIfKnownBrand(brand, known) {
+          const { helper, self } = this.facets;
+          const brandToPurses = getBrandToPurses(walletPurses, self);
+
+          if (brandToPurses.has(brand)) {
+            const purses = brandToPurses.get(brand);
+            if (purses.length > 0) {
+              // UNTIL https://github.com/Agoric/agoric-sdk/issues/6126
+              // multiple purses
+              return purses[0].purse;
+            }
+          }
+
+          const found = await namesOf(brand, E(known).lookup('brand'));
+          if (found.length === 0) {
+            return undefined;
+          }
+          const [edgeName] = found;
+          const issuer = await E(known).lookup('issuer', edgeName);
+
+          // Even though we rely on this nameHub, double-check
+          // that the issuer and the brand belong to each other.
+          if (!(await checkMutual(issuer, brand))) {
+            // if they don't, it's not a "known" brand in a coherent way
+            return undefined;
+          }
+
+          // Accept the issuer; rely on it in future offers.
+          const [displayInfo, purse] = await Promise.all([
+            E(issuer).getDisplayInfo(),
+            E(issuer).makeEmptyPurse(),
+          ]);
+
+          // adopt edgeName as petname
+          // NOTE: for decentralized introductions, qualify edgename by nameHub petname
+          const petname = edgeName;
+          const assetInfo = { petname, brand, issuer, purse, displayInfo };
+          appendToStoredArray(brandToPurses, brand, assetInfo);
+          // NOTE: when we decentralize introduction of issuers,
+          // process queued payments for this brand.
+
+          void helper.watchPurse(purse);
+          return purse;
+        },
       },
       /**
        * Similar to {DepositFacet} but async because it has to look up the purse.
@@ -376,10 +504,12 @@ export const prepareSmartWallet = (baggage, shared) => {
          *
          * If the purse doesn't exist, we hold the payment in durable storage.
          *
-         * @param {import('@endo/far').FarRef<Payment>} payment
-         * @returns {Promise<Amount>} amounts for deferred deposits will be empty
+         * @param {Payment} payment
+         * @returns {Promise<Amount>}
+         * @throws if there's not yet a purse, though the payment is held to try again when there is
          */
         async receive(payment) {
+          const { helper } = this.facets;
           const { paymentQueues: queues, bank, invitationPurse } = this.state;
           const { registry, invitationBrand } = shared;
           const brand = await E(payment).getAllegedBrand();
@@ -387,17 +517,24 @@ export const prepareSmartWallet = (baggage, shared) => {
           // When there is a purse deposit into it
           if (registry.has(brand)) {
             const purse = E(bank).getPurse(brand);
-            // @ts-expect-error deposit does take a FarRef<Payment>
             return E(purse).deposit(payment);
           } else if (invitationBrand === brand) {
-            // @ts-expect-error deposit does take a FarRef<Payment>
+            // @ts-expect-error narrow assetKind to 'set'
             return E(invitationPurse).deposit(payment);
+          }
+
+          const purse = await helper.getPurseIfKnownBrand(
+            brand,
+            shared.agoricNames,
+          );
+          if (purse) {
+            return E(purse).deposit(payment);
           }
 
           // When there is no purse, save the payment into a queue.
           // It's not yet ever read but a future version of the contract can
           appendToStoredArray(queues, brand, payment);
-          return AmountMath.makeEmpty(brand);
+          throw Fail`cannot deposit payment with brand ${brand}: no purse`;
         },
       },
       offers: {
@@ -445,11 +582,20 @@ export const prepareSmartWallet = (baggage, shared) => {
                * @returns {Promise<Purse>}
                */
               purseForBrand: async brand => {
+                const { helper } = facets;
                 if (registry.has(brand)) {
                   // @ts-expect-error virtual purse
                   return E(bank).getPurse(brand);
                 } else if (invitationBrand === brand) {
                   return invitationPurse;
+                }
+
+                const purse = await helper.getPurseIfKnownBrand(
+                  brand,
+                  shared.agoricNames,
+                );
+                if (purse) {
+                  return purse;
                 }
                 throw Fail`cannot find/make purse for ${brand}`;
               },

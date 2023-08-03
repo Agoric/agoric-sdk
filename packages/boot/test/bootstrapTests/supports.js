@@ -341,7 +341,7 @@ export const makeSwingsetTestKit = async (
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
   const readLatest = path => {
-    const data = unmarshalFromVstorage(storage.data, path, fromCapData);
+    const data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
     trace('readLatest', path, 'returning', inspect(data, false, 20, true));
     return data;
   };
