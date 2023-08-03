@@ -74,7 +74,9 @@ test.serial('avoid O(wallets) storage writes for a new asset', async t => {
   };
 
   const simulate = async (qty, denom, name) => {
-    range(qty).forEach(startUser);
+    for (const idx of range(qty)) {
+      void startUser(idx);
+    }
     await eventLoopIteration();
     const initialWrites = chainStorageWrites;
 
