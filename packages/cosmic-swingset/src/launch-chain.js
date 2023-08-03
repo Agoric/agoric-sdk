@@ -67,7 +67,7 @@ const getHostKey = path => `host.${path}`;
  * @param {Map<*, *>} mailboxStorage
  * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {string} vatconfig absolute path
+ * @param {string | (() => string | Promise<string>)} vatconfig absolute path
  * @param {unknown} bootstrapArgs JSON-serializable data
  * @param {{}} env
  * @param {*} options
@@ -82,42 +82,48 @@ export async function buildSwingset(
   { debugName = undefined, slogCallbacks, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  let config = await loadSwingsetConfigFile(vatconfig);
-  if (config === null) {
-    config = loadBasedir(vatconfig);
-  }
-
   const mbs = buildMailboxStateMap(mailboxStorage);
-  const timer = buildTimer();
-  const mb = buildMailbox(mbs);
-  config.devices = {
-    mailbox: {
-      sourceSpec: mb.srcPath,
-    },
-    timer: {
-      sourceSpec: timer.srcPath,
-    },
-  };
-  const deviceEndowments = {
-    mailbox: { ...mb.endowments },
-    timer: { ...timer.endowments },
-  };
 
-  let bridgeInbound;
-  if (bridgeOutbound) {
-    const bd = buildBridge(bridgeOutbound);
-    config.devices.bridge = {
-      sourceSpec: bd.srcPath,
-    };
-    deviceEndowments.bridge = { ...bd.endowments };
-    bridgeInbound = bd.deliverInbound;
+  const bridgeDevice = bridgeOutbound && buildBridge(bridgeOutbound);
+  const mailboxDevice = buildMailbox(mbs);
+  const timerDevice = buildTimer();
+
+  const deviceEndowments = {
+    mailbox: { ...mailboxDevice.endowments },
+    timer: { ...timerDevice.endowments },
+  };
+  if (bridgeDevice) {
+    deviceEndowments.bridge = { ...bridgeDevice.endowments };
   }
 
   async function ensureSwingsetInitialized() {
     if (swingsetIsInitialized(kernelStorage)) {
       return;
     }
-    if (!config) throw Fail`config not yet set`;
+
+    const configLocation = await (typeof vatconfig === 'function'
+      ? vatconfig()
+      : vatconfig);
+    let config = await loadSwingsetConfigFile(configLocation);
+    if (config === null) {
+      config = loadBasedir(configLocation);
+    }
+
+    config.devices = {
+      mailbox: {
+        sourceSpec: mailboxDevice.srcPath,
+      },
+      timer: {
+        sourceSpec: timerDevice.srcPath,
+      },
+    };
+
+    if (bridgeDevice) {
+      config.devices.bridge = {
+        sourceSpec: bridgeDevice.srcPath,
+      };
+    }
+
     const {
       coreProposals,
       clearStorageSubtrees,
@@ -131,11 +137,10 @@ export async function buildSwingset(
       swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
     // Find the entrypoints for all the core proposals.
-    await null;
     if (coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
         coreProposals,
-        vatconfig, // for path resolution
+        configLocation, // for path resolution
       );
       swingsetConfig.bundles = { ...swingsetConfig.bundles, ...bundles };
 
@@ -162,6 +167,7 @@ export async function buildSwingset(
       debugPrefix,
     });
   }
+
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
     kernelStorage,
@@ -176,7 +182,12 @@ export async function buildSwingset(
   // We DON'T want to run the kernel yet, only when the application decides
   // (either on bootstrap block (0) or in endBlock).
 
-  return { controller, mb, bridgeInbound, timer };
+  return {
+    controller,
+    mb: mailboxDevice,
+    bridgeInbound: bridgeDevice && bridgeDevice.deliverInbound,
+    timer: timerDevice,
+  };
 }
 
 /**
