@@ -55,7 +55,7 @@ make scenario2-setup-nobuild >>"$CHAIN_LOG" 2>&1
 echo "Starting the chain..."
 # use -economy target to get the kitchen sink
 # disable pruning to keep all history https://docs.desmos.network/fullnode/overview/
-make AGC_START_ARGS="--pruning=nothing" CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/boot/decentral-itest-vaults-config.json scenario2-run-chain >>"$CHAIN_LOG" 2>&1 &
+make AGC_START_ARGS="--pruning=nothing" CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vm-config/decentral-itest-vaults-config.json scenario2-run-chain >>"$CHAIN_LOG" 2>&1 &
 make wait-for-cosmos
 
 # xxx sleep to let it settle

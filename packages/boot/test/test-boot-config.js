@@ -13,7 +13,7 @@ import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 const importConfig = configName =>
-  importMetaResolve(`../${configName}`, import.meta.url).then(
+  importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url).then(
     u => new URL(u).pathname,
   );
 
@@ -187,7 +187,7 @@ test('no test-only code is in production proposals', async t => {
 test('bootstrap permit visualization snapshot', async t => {
   const { runViz } = t.context;
 
-  const cmd = runViz(['@agoric/boot/decentral-itest-vaults-config.json']);
+  const cmd = runViz(['@agoric/vm-config/decentral-itest-vaults-config.json']);
   const output = async () => {
     const parts = [];
     cmd.child.stdout?.on('data', chunk => parts.push(chunk));

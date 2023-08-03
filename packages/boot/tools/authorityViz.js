@@ -230,7 +230,7 @@ const loadConfig = async (specifier, { resolve, readFile }) => {
  */
 const main = async (args, { stdout, fsp, meta }) => {
   const [specifier, ...opts] = args;
-  specifier || Fail`Usage: $0 @agoric/boot/decentral-...json`;
+  specifier || Fail`Usage: $0 @agoric/vm-config/decentral-...json`;
 
   const config = await loadConfig(specifier, {
     resolve: meta.resolve,
