@@ -33,7 +33,9 @@ async function makeMapStorage(file) {
   const map = new Map();
   map.commit = async () => {
     const obj = {};
-    [...map.entries()].forEach(([k, v]) => (obj[k] = exportMailbox(v)));
+    for (const [k, v] of map.entries()) {
+      obj[k] = exportMailbox(v);
+    }
     const json = stringify(obj);
     await fs.promises.writeFile(file, json);
   };
@@ -42,8 +44,11 @@ async function makeMapStorage(file) {
     content = await fs.promises.readFile(file);
     return JSON.parse(content);
   })().then(
-    obj =>
-      Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v))),
+    obj => {
+      for (const [k, v] of Object.entries(obj)) {
+        map.set(k, importMailbox(v));
+      }
+    },
     () => {},
   );
 
@@ -69,12 +74,15 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     },
   };
 
-  const url = await importMetaResolve(
-    process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-      argv.bootMsg.params.bootstrap_vat_config,
-    import.meta.url,
-  );
-  const vatconfig = new URL(url).pathname;
+  const getVatConfig = async () => {
+    const url = await importMetaResolve(
+      process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+        argv.bootMsg.params.bootstrap_vat_config,
+      import.meta.url,
+    );
+    const vatconfig = new URL(url).pathname;
+    return vatconfig;
+  };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
     Fail`Replay not implemented`;
@@ -107,7 +115,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     mailboxStorage,
     clearChainSends,
     replayChainSends,
-    vatconfig,
+    vatconfig: getVatConfig,
     argv,
     debugName: GCI,
     metricsProvider,
