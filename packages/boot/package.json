@@ -11,6 +11,7 @@
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava 'test/bootstrapTests/**/test-*.js' 'test/upgrading/**/test-*.js'",
+    "bench": "ava --config ./ava.bench.config.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc -p jsconfig.json",
