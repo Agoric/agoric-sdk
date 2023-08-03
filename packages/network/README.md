@@ -1,7 +1,7 @@
 # Network API
 <!--
   content should remain synchronized with
-  https://github.com/Agoric/documentation/blob/HEAD/main/repl/networking.md
+  https://github.com/Agoric/documentation/blob/main/main/reference/repl/networking.md
 -->
 
 Suitably-empowered code inside a vat can access a "network API" that works
