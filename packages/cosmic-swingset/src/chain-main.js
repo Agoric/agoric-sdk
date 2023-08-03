@@ -353,12 +353,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const argv = {
       bootMsg,
     };
-    const vatHref = await importMetaResolve(
-      env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-        argv.bootMsg.params.bootstrap_vat_config,
-      import.meta.url,
-    );
-    const vatconfig = new URL(vatHref).pathname;
+    const getVatConfig = async () => {
+      const vatHref = await importMetaResolve(
+        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+          argv.bootMsg.params.bootstrap_vat_config,
+        import.meta.url,
+      );
+      const vatconfig = new URL(vatHref).pathname;
+      return vatconfig;
+    };
 
     // Delay makeShutdown to override the golang interrupts
     const { registerShutdown } = makeShutdown();
@@ -457,7 +460,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       clearChainSends,
       replayChainSends,
       bridgeOutbound: doOutboundBridge,
-      vatconfig,
+      vatconfig: getVatConfig,
       argv,
       env,
       verboseBlocks: true,
