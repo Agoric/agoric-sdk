@@ -25,6 +25,7 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
+    "@agoric/vm-config": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@endo/marshal": "^0.8.6",
     "@endo/bundle-source": "^2.5.2",
