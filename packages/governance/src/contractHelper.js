@@ -155,7 +155,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
+    /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),

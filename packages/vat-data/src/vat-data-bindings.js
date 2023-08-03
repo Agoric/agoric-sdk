@@ -3,7 +3,7 @@
 import { Fail } from '@agoric/assert';
 import { provideLazy } from '@agoric/store';
 
-/** @type {import('@agoric/swingset-liveslots/src/vatDataTypes').VatData} */
+/** @type {import('@agoric/swingset-liveslots').VatData} */
 let VatDataGlobal;
 if ('VatData' in globalThis) {
   globalThis.VatData || Fail`VatData defined in global as null or undefined`;
@@ -62,7 +62,7 @@ export const {
  *
  *     const makeFoo = pickFacet(makeFooBase, 'self');
  *
- * @type {import('@agoric/swingset-liveslots/src/vatDataTypes').PickFacet}
+ * @type {import('@agoric/swingset-liveslots').PickFacet}
  */
 export const pickFacet =
   (maker, facetName) =>
@@ -107,8 +107,8 @@ harden(partialAssign);
  *   intended to eventually be durable has not yet been made durable.  A store
  *   marked as fakeDurable will appear to operate normally but any attempt to
  *   upgrade its containing vat will fail with an error.
- * @property {import('@agoric/swingset-liveslots/src/vatDataTypes').Pattern} [keyShape]
- * @property {import('@agoric/swingset-liveslots/src/vatDataTypes').Pattern} [valueShape]
+ * @property {import('@agoric/swingset-liveslots').Pattern} [keyShape]
+ * @property {import('@agoric/swingset-liveslots').Pattern} [valueShape]
  */
 /**
  * Unlike `provideLazy`, `provide` should be called at most once
@@ -138,12 +138,12 @@ harden(partialAssign);
 
 export const provide =
   // XXX cast because provideLazy is `any` due to broken type import
-  /** @type {<K, V>(baggage: import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage, key: K, makeValue: (key: K) => V) => V} */ (
+  /** @type {<K, V>(baggage: import('@agoric/swingset-liveslots').Baggage, key: K, makeValue: (key: K) => V) => V} */ (
     provideLazy
   );
 
 // TODO: Find a good home for this function used by @agoric/vat-data and testing code
-/** @param {import('@agoric/swingset-liveslots/src/vatDataTypes').VatData} VatData */
+/** @param {import('@agoric/swingset-liveslots').VatData} VatData */
 export const makeStoreUtils = VatData => {
   const {
     // eslint-disable-next-line no-shadow -- these literally do shadow the globals
@@ -157,7 +157,7 @@ export const makeStoreUtils = VatData => {
   } = VatData;
 
   /**
-   * @param {import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage} baggage
+   * @param {import('@agoric/swingset-liveslots').Baggage} baggage
    * @param {string} name
    * @param {Omit<StoreOptions, 'durable'>} options
    */
@@ -168,7 +168,7 @@ export const makeStoreUtils = VatData => {
   harden(provideDurableMapStore);
 
   /**
-   * @param {import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage} baggage
+   * @param {import('@agoric/swingset-liveslots').Baggage} baggage
    * @param {string} name
    * @param {Omit<StoreOptions, 'durable'>} options
    */
@@ -179,7 +179,7 @@ export const makeStoreUtils = VatData => {
   harden(provideDurableWeakMapStore);
 
   /**
-   * @param {import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage} baggage
+   * @param {import('@agoric/swingset-liveslots').Baggage} baggage
    * @param {string} name
    * @param {Omit<StoreOptions, 'durable'>} options
    */
@@ -190,7 +190,7 @@ export const makeStoreUtils = VatData => {
   harden(provideDurableSetStore);
 
   /**
-   * @param {import('@agoric/swingset-liveslots/src/vatDataTypes').Baggage} baggage
+   * @param {import('@agoric/swingset-liveslots').Baggage} baggage
    * @param {string} name
    * @param {Omit<StoreOptions, 'durable'>} options
    */
