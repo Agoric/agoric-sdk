@@ -21,6 +21,10 @@ import { makeProcessValue } from './helpers/process-value.js';
 
 /** @typedef {'current' | 'archival' | 'debug'} SwingStoreExportMode */
 
+// ExportManifestFilename is the manifest filename which must be synchronized
+// with the golang SwingSetSnapshotter in golang/cosmos/x/swingset/keeper/snapshotter.go
+export const ExportManifestFileName = 'export-manifest.json';
+
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {string | undefined} mode
@@ -113,7 +117,7 @@ export const initiateSwingStoreExport = (
   const cleanup = [];
 
   const exportDone = (async () => {
-    const manifestPath = pathResolve(exportDir, 'export-manifest.json');
+    const manifestPath = pathResolve(exportDir, ExportManifestFileName);
     const manifestFile = await open(manifestPath, 'wx');
     cleanup.push(async () => manifestFile.close());
 
