@@ -81,7 +81,7 @@ sequenceDiagram
   A-M-->>-TM: 
 
   par App Snapshot
-    SSES-AS->>+CM: COSMOS_SNAPSHOT/initiate
+    SSES-AS->>+CM: SWING_STORE_EXPORT/initiate
     CM->>+D: MkDir(exportDir)
     D-->>-CM: 
     CM-)+SSE: initiateSwingStoreExport(exportDir)
@@ -104,7 +104,7 @@ sequenceDiagram
     end
     MS-CS-->>-SM-CS: 
     SM-CS->>+SSES-CS: SnapshotExtension()
-    SSES-CS->>+CM: COSMOS_SNAPSHOT/retrieve
+    SSES-CS->>+CM: SWING_STORE_EXPORT/retrieve
     CM->>CM: await done<br/>(blocking)
     CM-->>-SSES-CS: exportDir
     SSES-CS->>+D-CS: Read(export-manifest.json)
@@ -126,7 +126,7 @@ sequenceDiagram
     else no retrieval
       SSES-AS->>+A-AS: BaseApp.Snapshot()
       A-AS-->>-SSES-AS: 
-      SSES-AS->>+CM: COSMOS_SNAPSHOT/discard
+      SSES-AS->>+CM: SWING_STORE_EXPORT/discard
       CM-)SSE: Stop()
       SSE-)CM: done::reject()
       CM->>CM: await done
@@ -248,7 +248,7 @@ sequenceDiagram
       end
       SSES-CS->>+D-CS: Write(export-manifest.jsonl, manifest)
       D-CS-->>-SSES-CS: 
-      SSES-CS->>+CM: COSMOS_SNAPSHOT/restore
+      SSES-CS->>+CM: SWING_STORE_EXPORT/restore
       CM->>+SSI: performStateSyncImport()
       SSI->>+D: Read(export-manifest.json)
       D-->>-SSI: 

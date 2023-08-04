@@ -17,6 +17,7 @@ import { importSwingStore } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
+import { ExportManifestFileName } from './export-kernel-db.js';
 
 /**
  * @typedef {object} StateSyncImporterOptions
@@ -52,7 +53,7 @@ export const performStateSyncImport = async (
     return resolvedPath;
   };
 
-  const manifestPath = safeExportFileResolve('export-manifest.json');
+  const manifestPath = safeExportFileResolve(ExportManifestFileName);
   /** @type {Readonly<import('./export-kernel-db.js').StateSyncManifest>} */
   const manifest = await readFile(manifestPath, { encoding: 'utf-8' }).then(
     data => JSON.parse(data),
