@@ -112,10 +112,10 @@ const assertKeywordNotInBoth = (want, give) => {
   const wantKeywordSet = new Set(ownKeys(want));
   const giveKeywords = ownKeys(give);
 
-  giveKeywords.forEach(keyword => {
+  for (const keyword of giveKeywords) {
     !wantKeywordSet.has(keyword) ||
       Fail`a keyword cannot be in both 'want' and 'give'`;
-  });
+  }
 };
 
 /**
