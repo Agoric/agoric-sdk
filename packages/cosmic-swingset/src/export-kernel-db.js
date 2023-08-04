@@ -22,7 +22,7 @@ import { makeProcessValue } from './helpers/process-value.js';
 /** @typedef {'current' | 'archival' | 'debug'} SwingStoreExportMode */
 
 // ExportManifestFilename is the manifest filename which must be synchronized
-// with the golang SwingSetSnapshotter in golang/cosmos/x/swingset/keeper/snapshotter.go
+// with the golang SwingStoreExportsHandler in golang/cosmos/x/swingset/keeper/swing_store_exports_handler.go
 export const ExportManifestFileName = 'export-manifest.json';
 
 // eslint-disable-next-line jsdoc/require-returns-check
