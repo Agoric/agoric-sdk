@@ -1,2 +1,4 @@
-export * from '@agoric/base-zone';
-export * from '@agoric/base-zone/heap.js';
+export { makeHeapZone } from '@agoric/base-zone/heap.js';
+
+// eslint-disable-next-line import/export
+export * from './exports.js';
