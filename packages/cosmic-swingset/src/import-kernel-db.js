@@ -17,6 +17,7 @@ import { importSwingStore } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
+import { ExportManifestFileName } from './export-kernel-db.js';
 
 /**
  * @typedef {object} StateSyncImporterOptions
@@ -25,6 +26,24 @@ import { makeProcessValue } from './helpers/process-value.js';
  * @property {number} [blockHeight] block height to check for
  * @property {boolean} [includeHistorical] whether to include historical artifacts in the export
  */
+
+/**
+ * @param {object} options
+ * @returns {asserts options is StateSyncImporterOptions}
+ */
+export const validateImporterOptions = options => {
+  typeof options === 'object' || Fail`options is not an object`;
+  typeof options.stateDir === 'string' ||
+    Fail`required stateDir option not a string`;
+  typeof options.exportDir === 'string' ||
+    Fail`required exportDir option not a string`;
+  options.blockHeight == null ||
+    typeof options.blockHeight === 'number' ||
+    Fail`optional blockHeight option not a number`;
+  options.includeHistorical == null ||
+    typeof options.includeHistorical === 'boolean' ||
+    Fail`optional includeHistorical option not a boolean`;
+};
 
 /**
  * @param {StateSyncImporterOptions} options
@@ -52,7 +71,7 @@ export const performStateSyncImport = async (
     return resolvedPath;
   };
 
-  const manifestPath = safeExportFileResolve('export-manifest.json');
+  const manifestPath = safeExportFileResolve(ExportManifestFileName);
   /** @type {Readonly<import('./export-kernel-db.js').StateSyncManifest>} */
   const manifest = await readFile(manifestPath, { encoding: 'utf-8' }).then(
     data => JSON.parse(data),

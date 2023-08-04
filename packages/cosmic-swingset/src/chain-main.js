@@ -39,8 +39,14 @@ import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { makeProcessValue } from './helpers/process-value.js';
-import { spawnSwingStoreExport } from './export-kernel-db.js';
-import { performStateSyncImport } from './import-kernel-db.js';
+import {
+  spawnSwingStoreExport,
+  validateExporterOptions,
+} from './export-kernel-db.js';
+import {
+  performStateSyncImport,
+  validateImporterOptions,
+} from './import-kernel-db.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -494,28 +500,46 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
   let blockingSend;
 
-  async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
+  async function handleSwingStoreExport(blockHeight, request, requestArgs) {
     switch (request) {
       case 'restore': {
-        const exportDir = requestArgs[0];
-        if (typeof exportDir !== 'string') {
-          throw Fail`Invalid exportDir argument ${q(exportDir)}`;
-        }
+        const requestOptions =
+          typeof requestArgs[0] === 'string'
+            ? { exportDir: requestArgs[0] }
+            : requestArgs[0] || {};
+        const options = {
+          ...requestOptions,
+          stateDir: stateDBDir,
+          blockHeight,
+        };
+        validateImporterOptions(options);
         !stateSyncExport ||
           Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
         !blockingSend || Fail`Cannot restore snapshot after init`;
         console.info(
           'Restoring SwingSet state from snapshot at block height',
           blockHeight,
+          'with options',
+          JSON.stringify(requestOptions),
         );
-        return performStateSyncImport(
-          { exportDir, stateDir: stateDBDir, blockHeight },
-          { fs: { ...fs, ...fsPromises }, pathResolve, log: null },
-        );
+        return performStateSyncImport(options, {
+          fs: { ...fs, ...fsPromises },
+          pathResolve,
+          log: null,
+        });
       }
       case 'initiate': {
         !stateSyncExport ||
           Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
+
+        const requestOptions = requestArgs[0] || {};
+
+        validateExporterOptions({
+          ...requestOptions,
+          stateDir: stateDBDir,
+          exportDir: '',
+          blockHeight,
+        });
 
         const exportData =
           /** @type {Required<NonNullable<typeof stateSyncExport>>} */ ({
@@ -560,9 +584,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         console.info(
           'Initiating SwingSet state snapshot at block height',
           blockHeight,
+          'with options',
+          JSON.stringify(requestOptions),
         );
         exportData.exporter = spawnSwingStoreExport(
           {
+            ...requestOptions,
             stateDir: stateDBDir,
             exportDir: exportData.exportDir,
             blockHeight,
@@ -646,7 +673,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
 
       // Snapshot actions are specific to cosmos chains and handled here
-      case BlockingSendType.COSMOS_SNAPSHOT: {
+      case BlockingSendType.SWING_STORE_EXPORT: {
         const { blockHeight, request, args: requestArgs } = action;
         writeSlogObject?.({
           type: 'cosmic-swingset-snapshot-start',
@@ -655,7 +682,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           args: requestArgs,
         });
 
-        const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
+        const resultP = handleSwingStoreExport(
+          blockHeight,
+          request,
+          requestArgs,
+        );
 
         resultP.then(
           result => {

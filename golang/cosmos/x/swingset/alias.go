@@ -21,10 +21,11 @@ var (
 )
 
 type (
-	Keeper            = keeper.Keeper
-	Snapshotter       = keeper.SwingsetSnapshotter
-	Egress            = types.Egress
-	MsgDeliverInbound = types.MsgDeliverInbound
-	MsgProvision      = types.MsgProvision
-	Params            = types.Params
+	Keeper                   = keeper.Keeper
+	SwingStoreExportsHandler = keeper.SwingStoreExportsHandler
+	ExtensionSnapshotter     = keeper.ExtensionSnapshotter
+	Egress                   = types.Egress
+	MsgDeliverInbound        = types.MsgDeliverInbound
+	MsgProvision             = types.MsgProvision
+	Params                   = types.Params
 )
