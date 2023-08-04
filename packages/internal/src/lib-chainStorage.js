@@ -2,7 +2,7 @@
 
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { makeHeapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
 
 const { Fail } = assert;
@@ -123,7 +123,7 @@ harden(assertPathSegment);
  */
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {import('@agoric/base-zone').Zone} zone
  */
 export const prepareChainStorageNode = zone => {
   /**
