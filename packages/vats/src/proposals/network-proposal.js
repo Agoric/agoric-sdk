@@ -1,11 +1,11 @@
 // @ts-check
 import { E, Far } from '@endo/far';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
   makeNonceMaker,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+} from '@agoric/network';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';

@@ -1,18 +1,15 @@
 // @ts-check
 
-import {
-  dataToBase64,
-  base64ToBytes,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
 
-import '@agoric/store/exported.js';
-import '@agoric/swingset-vat/src/vats/network/types.js';
-
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { dataToBase64, base64ToBytes } from '@agoric/network';
+
+import '@agoric/store/exported.js';
+import '@agoric/network/exported.js';
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.

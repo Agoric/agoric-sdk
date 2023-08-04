@@ -18,6 +18,7 @@ export default [
   "@agoric/import-manager",
   "@agoric/inter-protocol",
   "@agoric/internal",
+  "@agoric/network",
   "@agoric/notifier",
   "@agoric/pegasus",
   "@agoric/same-structure",
