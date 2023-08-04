@@ -24,6 +24,7 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
+import { fileURLToPath } from 'url';
 
 import {
   makeDefaultMeterProvider,
@@ -70,7 +71,7 @@ const getHostKey = path => `host.${path}`;
  * @param {Map<*, *>} mailboxStorage
  * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {string | (() => string | Promise<string>)} vatconfig absolute path
+ * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
  * @param {{}} env
  * @param {*} options
@@ -773,8 +774,10 @@ export async function launch({
           return undefined;
         }
 
+        // Find scripts relative to our location.
+        const myFilename = fileURLToPath(import.meta.url);
         const { bundles, code: coreEvalCode } =
-          await extractCoreProposalBundles(coreProposals, vatconfig, {
+          await extractCoreProposalBundles(coreProposals, myFilename, {
             handleToBundleSpec: async (handle, source, _sequence, _piece) => {
               const bundle = await bundleSource(source);
               const { endoZipBase64Sha512: hash } = bundle;
