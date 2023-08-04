@@ -41,6 +41,7 @@
     "@agoric/ertp": "^0.16.2",
     "@agoric/inter-protocol": "^0.16.1",
     "@agoric/internal": "^0.3.2",
+    "@agoric/network": "^0.1.0",
     "@agoric/smart-wallet": "^0.5.3",
     "@agoric/store": "^0.9.2",
     "@agoric/swingset-vat": "^0.32.2",

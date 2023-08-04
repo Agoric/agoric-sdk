@@ -1,6 +1,5 @@
-// @ts-nocheck
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/far';
@@ -12,19 +11,17 @@ import {
   makeLoopbackProtocolHandler,
   makeNetworkProtocol,
   makeRouter,
-} from '../src/vats/network/index.js';
+} from '../src/index.js';
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
 
 /**
- * @param {*} t
- * @returns {import('../src/vats/network').ProtocolHandler} A testing handler
+ * @param {any} t
+ * @returns {import('../src').ProtocolHandler} A testing handler
  */
 const makeProtocolHandler = t => {
-  /**
-   * @type {import('../src/vats/network').ListenHandler}
-   */
+  /** @type {import('../src').ListenHandler} */
   let l;
   let lp;
   let nonce = 0;
@@ -112,9 +109,7 @@ test('protocol connection listen', async t => {
 
   const port = await protocol.bind('/net/ordered/ordered/some-portname');
 
-  /**
-   * @type {import('../src/vats/network').ListenHandler}
-   */
+  /** @type {import('../src').ListenHandler} */
   const listener = Far('listener', {
     async onListen(p, listenHandler) {
       t.is(p, port, `port is tracked in onListen`);
@@ -198,9 +193,7 @@ test('loopback protocol', async t => {
 
   const port = await protocol.bind('/loopback/foo');
 
-  /**
-   * @type {import('../src/vats/network').ListenHandler}
-   */
+  /** @type {import('../src').ListenHandler} */
   const listener = Far('listener', {
     async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
       return harden({
