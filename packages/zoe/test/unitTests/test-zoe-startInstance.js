@@ -124,3 +124,35 @@ test('unexpected properties', async t => {
       'contract "start" returned unrecognized properties ["unexpectedProperty"]',
   });
 });
+
+test('prepare and start', async t => {
+  const { zoe } = setup();
+
+  const contractPath = `${dirname}/redundantPrepareContract.js`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+
+  await t.throwsAsync(() => E(zoe).startInstance(installation), {
+    message: 'contract must provide exactly one of "start" and "prepare"',
+  });
+});
+
+test('before meta', async t => {
+  const { zoe } = setup();
+
+  const contractPath = `${dirname}/beforeMetaContract.js`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+
+  await t.throwsAsync(() => E(zoe).startInstance(installation), {
+    message: 'privateArgs: "[undefined]" - Must be: {"greeting":"hello"}',
+  });
+
+  const kit = await E(zoe).startInstance(
+    installation,
+    {},
+    {},
+    { greeting: 'hello' },
+  );
+  t.true('creatorFacet' in kit);
+});
