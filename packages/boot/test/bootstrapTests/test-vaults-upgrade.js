@@ -222,7 +222,7 @@ test.serial('audit bootstrap exports', async t => {
     return anObj;
   };
   const m = makeMarshal(undefined, saveBootstrapIface);
-  oids.forEach(oid => {
+  for (const oid of oids) {
     for (const [_ix, ev] of transcript) {
       for (const sc of ev.sc) {
         if (sc.s[0] === 'send') {
@@ -240,7 +240,7 @@ test.serial('audit bootstrap exports', async t => {
         }
       }
     }
-  });
+  }
 
   const exportedInterfaces = Object.fromEntries(
     [...toIface.values()].map(iface => [iface.replace(/^Alleged: /, ''), true]),
@@ -485,9 +485,9 @@ test.serial(
       'vattp',
       'timer',
     ].map(vatNamed);
-    swingsetVats.forEach(vatID => {
+    for (const vatID of swingsetVats) {
       delete todo[vatID];
-    });
+    }
 
     // TODO? test that powerStore is in baggage?
     // by inspection, we see that it is:

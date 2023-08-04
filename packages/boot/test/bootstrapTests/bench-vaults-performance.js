@@ -106,7 +106,7 @@ test.after.always(t => t.context.shutdown());
 
 const rows = [];
 const perfObserver = new PerformanceObserver(items => {
-  items.getEntries().forEach(entry => {
+  for (const entry of items.getEntries()) {
     // @ts-expect-error cast
     const { vaultsOpened, round } = entry.detail;
     rows.push({
@@ -114,7 +114,7 @@ const perfObserver = new PerformanceObserver(items => {
       durationMs: entry.duration,
       avgPerVaultMs: entry.duration / vaultsOpened,
     });
-  });
+  }
 });
 perfObserver.observe({ entryTypes: ['measure'] });
 
