@@ -25,8 +25,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/base-zone": "^1.0.0",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/exo": "^0.2.3",
     "@endo/far": "^0.2.19",
     "@endo/pass-style": "^0.1.4"
   },
