@@ -1,7 +1,7 @@
 // @jessie-check
 
 export const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
-export const COSMOS_SNAPSHOT = 'COSMOS_SNAPSHOT';
+export const SWING_STORE_EXPORT = 'SWING_STORE_EXPORT';
 export const BEGIN_BLOCK = 'BEGIN_BLOCK';
 export const CALCULATE_FEES_IN_BEANS = 'CALCULATE_FEES_IN_BEANS';
 export const CORE_EVAL = 'CORE_EVAL';
