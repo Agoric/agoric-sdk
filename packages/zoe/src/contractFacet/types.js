@@ -236,7 +236,7 @@
  * @typedef ContractMeta
  * @property {CopyRecord<Pattern>} [customTermsShape]
  * @property {CopyRecord<Pattern>} [privateArgsShape]
- * @property {'canBeUpgraded' | 'canUpgrade'} [upgradability]
+ * @property {'none' | 'canBeUpgraded' | 'canUpgrade'} [upgradability='none']
  */
 
 /**
