@@ -1,0 +1,6 @@
+{
+    "extends": [
+        "./jsconfig.json",
+        "../../tsconfig-build-options.json"
+    ]
+}
