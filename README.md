@@ -132,12 +132,12 @@ that rolls up all the Zoe contract vat sources. This bundle file is needed by al
 
 ## Adding a new package
 
-To create a new (empty) package (e.g. spinning Zoe out from ERTP):
+To create a new (empty) package:
 
-* mkdir `packages/zoe`
-* add your sources/tests/etc to `packages/zoe/src/` etc
-* populate a new `packages/zoe/package.json`, using other packages as a template
-* edit the top-level `package.json` to add `packages/zoe` to `"workspaces"`
+* mkdir `packages/foo`
+* add your sources/tests/etc to `packages/foo/src/` etc
+* populate a new `packages/foo/package.json`, using other packages as a template
+* update `agoric-cli/src/sdk-package-names.js`
 * run `yarn install`, and commit the resulting changes to `yarn.lock`
 * check the output of `yarn workspaces info` to make sure there are no
   `mismatchedWorkspaceDependencies`, adjust the new package's dependencies
