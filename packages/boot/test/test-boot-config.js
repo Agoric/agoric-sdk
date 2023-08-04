@@ -1,21 +1,26 @@
 // @ts-check
-import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
+import anyTest from 'ava';
 import { spawn as ambientSpawn } from 'child_process';
 import { promises as fsPromises } from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import path from 'path';
 
+import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
- */
-const test = anyTest;
+const importConfig = configName =>
+  importMetaResolve(`../${configName}`, import.meta.url).then(
+    u => new URL(u).pathname,
+  );
+
+const test =
+  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (
+    anyTest
+  );
 
 const PROD_CONFIG_FILES = [
   'decentral-main-vaults-config.json',
@@ -59,7 +64,6 @@ const makeTestContext = async () => {
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
   const pathResolve = (...ps) => path.join(dirname, ...ps);
-  const asset = (...ps) => fsPromises.readFile(pathResolve(...ps), 'utf-8');
 
   const cacheDir = pathResolve('..', 'bundles');
   const bundleCache = await provideBundleCache(cacheDir, {}, s => import(s));
@@ -68,7 +72,6 @@ const makeTestContext = async () => {
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
   return {
-    asset,
     bundleCache,
     cacheDir,
     pathResolve,
@@ -83,11 +86,9 @@ test.before(async t => {
 //#endregion
 
 test('Bootstrap SwingSet config file syntax', async t => {
-  const { asset } = t.context;
-
   await Promise.all(
     CONFIG_FILES.map(async f => {
-      const txt = await asset('..', f);
+      const txt = await fsPromises.readFile(await importConfig(f), 'utf-8');
       const config = harden(JSON.parse(txt));
       t.notThrows(() => mustMatch(config, ssShape.SwingSetConfig), f);
     }),
@@ -140,14 +141,13 @@ const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
 };
 
 test('no test-only code is in production configs', async t => {
-  const { pathResolve } = t.context;
   const { entries } = Object;
 
   const seen = new Set();
 
   for await (const configSpec of PROD_CONFIG_FILES) {
     t.log('checking config', configSpec);
-    const fullPath = pathResolve('..', configSpec);
+    const fullPath = await importConfig(configSpec);
     const config = await loadSwingsetConfigFile(fullPath);
     if (!config) throw t.truthy(config, configSpec); // if/throw refines type
     const { bundles } = config;
@@ -162,14 +162,12 @@ test('no test-only code is in production configs', async t => {
 });
 
 test('no test-only code is in production proposals', async t => {
-  const { pathResolve } = t.context;
-
   const seen = new Set();
 
   for await (const configSpec of PROD_CONFIG_FILES) {
     t.log('checking config', configSpec);
     const getProposals = async () => {
-      const fullPath = pathResolve('..', configSpec);
+      const fullPath = await importConfig(configSpec);
       const config = await loadSwingsetConfigFile(fullPath);
       if (!config) throw t.truthy(config, configSpec); // if/throw refines type
       const { coreProposals } = /** @type {any} */ (config);
