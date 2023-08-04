@@ -1,14 +1,12 @@
 {
   "name": "@agoric/boot",
   "version": "0.1.0",
+  "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",
-  "main": "./index.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
-    "prepack": "tsc --build jsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava 'test/bootstrapTests/**/test-*.js' 'test/upgrading/**/test-*.js'",
     "bench": "ava --config ./ava.bench.config.js",
