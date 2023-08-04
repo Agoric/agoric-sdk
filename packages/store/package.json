@@ -31,7 +31,6 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@agoric/internal": "^0.3.2",
     "@endo/exo": "^0.2.3",
     "@endo/marshal": "^0.8.6",
     "@endo/pass-style": "^0.1.4",
