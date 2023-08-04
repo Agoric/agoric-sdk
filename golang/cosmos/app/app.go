@@ -954,10 +954,10 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 
 // Commit tells the controller that the block is commited
 func (app *GaiaApp) Commit() abci.ResponseCommit {
-	err := app.SwingSetSnapshotter.WaitUntilSnapshotStarted()
+	err := swingsetkeeper.WaitUntilSwingStoreExportStarted()
 
 	if err != nil {
-		app.Logger().Error("swingset snapshot failed to start", "err", err)
+		app.Logger().Error("swing-store export failed to start", "err", err)
 	}
 
 	// Frontrun the BaseApp's Commit method

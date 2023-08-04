@@ -31,7 +31,7 @@ func TestSnapshotInProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	err = WaitUntilSwingStoreExportStarted()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,8 +51,16 @@ func TestSnapshotInProgress(t *testing.T) {
 	}
 
 	close(ch)
-	<-swingsetSnapshotter.activeSnapshot.done
+	err = WaitUntilSwingStoreExportDone()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = swingsetSnapshotter.InitiateSnapshot(456)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = WaitUntilSwingStoreExportDone()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +85,7 @@ func TestSecondCommit(t *testing.T) {
 	}
 
 	// First run through app.Commit()
-	err := swingsetSnapshotter.WaitUntilSnapshotStarted()
+	err := WaitUntilSwingStoreExportStarted()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,14 +95,17 @@ func TestSecondCommit(t *testing.T) {
 	}
 
 	// Second run through app.Commit() - should return right away
-	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	err = WaitUntilSwingStoreExportStarted()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// close the signaling channel to let goroutine exit
 	close(ch)
-	<-swingsetSnapshotter.activeSnapshot.done
+	err = WaitUntilSwingStoreExportDone()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestInitiateFails(t *testing.T) {
@@ -111,7 +122,7 @@ func TestInitiateFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	err = WaitUntilSwingStoreExportStarted()
 	if err == nil {
 		t.Fatal("wanted initiation error")
 	}
@@ -119,18 +130,24 @@ func TestInitiateFails(t *testing.T) {
 		t.Errorf(`wanted error "initiate failed", got "%s"`, err.Error())
 	}
 	// another wait should succeed without error
-	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	err = WaitUntilSwingStoreExportStarted()
 	if err != nil {
 		t.Error(err)
+	}
+	err = WaitUntilSwingStoreExportDone()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestRetrievalFails(t *testing.T) {
 	swingsetSnapshotter := newTestSnapshotter()
+	var retrieveError error
 	swingsetSnapshotter.blockingSend = func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
 		retrieveAction, ok := action.(*swingStoreRetrieveExportAction)
 		if ok && retrieveAction.Request == "retrieve" {
-			return "", errors.New("retrieve failed")
+			retrieveError = errors.New("retrieve failed")
+			return "", retrieveError
 		}
 		return "", nil
 	}
@@ -147,17 +164,18 @@ func TestRetrievalFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = swingsetSnapshotter.WaitUntilSnapshotStarted()
+	err = WaitUntilSwingStoreExportStarted()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	close(ch)
-	if savedErr == nil {
-		t.Fatal("wanted retrieval error")
+	if savedErr != retrieveError {
+		t.Errorf(`wanted retrieval error, got "%v"`, savedErr)
 	}
-	if savedErr.Error() != "retrieve failed" {
-		t.Errorf(`wanted error "retrieve failed", got "%s"`, savedErr.Error())
+	err = WaitUntilSwingStoreExportDone()
+	if err != retrieveError {
+		t.Errorf(`wanted retrieval error, got "%v"`, err)
 	}
 }
 
@@ -174,13 +192,16 @@ func TestDiscard(t *testing.T) {
 
 	// simulate a normal Snapshot() call which calls SnapshotExtension()
 	swingsetSnapshotter.takeSnapshot = func(height int64) {
-		swingsetSnapshotter.activeSnapshot.retrieved = true
+		activeOperation.exportRetrieved = true
 	}
 	err := swingsetSnapshotter.InitiateSnapshot(123)
 	if err != nil {
 		t.Fatal(err)
 	}
-	<-swingsetSnapshotter.activeSnapshot.done
+	err = WaitUntilSwingStoreExportDone()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if discardCalled {
 		t.Error("didn't want discard called")
 	}
@@ -191,7 +212,10 @@ func TestDiscard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	<-swingsetSnapshotter.activeSnapshot.done
+	err = WaitUntilSwingStoreExportDone()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !discardCalled {
 		t.Error("wanted discard called")
 	}
