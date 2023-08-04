@@ -1,6 +1,6 @@
 # Agoric CLI
 
-If you just want to use the Agoric CLI for your own smart contract, please see the [Getting Started website](https://agoric.com/documentation/getting-started/) for information.
+If you just want to use the Agoric CLI for your own smart contract, please see the [Getting Started website](https://docs.agoric.com/guides/getting-started/) for information.
 
 ## Relaying via IBC
 

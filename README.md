@@ -1,5 +1,6 @@
 ![banner-1500x500](https://user-images.githubusercontent.com/273868/115044279-34983d80-9e8a-11eb-81dc-474764b0ed5b.png)
 
+[![Chain deployment test](https://github.com/Agoric/agoric-sdk/actions/workflows/deployment-test.yml/badge.svg?branch=master)](https://github.com/Agoric/agoric-sdk/actions/workflows/deployment-test.yml) [![Integration tests](https://github.com/Agoric/agoric-sdk/actions/workflows/integration.yml/badge.svg?branch=master)](https://github.com/Agoric/agoric-sdk/actions/workflows/integration.yml) [![Test all Packages](https://github.com/Agoric/agoric-sdk/actions/workflows/test-all-packages.yml/badge.svg?branch=master)](https://github.com/Agoric/agoric-sdk/actions/workflows/test-all-packages.yml)
 # Agoric Platform SDK
 
 This repository contains most of the packages that make up the upper
@@ -8,7 +9,7 @@ layers of the Agoric platform, with
 providing the lower layers.
 If you want to build on top of this platform, you don't need these
 repositories: instead you should
-[follow our instructions for getting started](https://agoric.com/documentation/getting-started/)
+[follow our instructions for getting started](https://docs.agoric.com/guides/getting-started/)
 with the Agoric SDK.
 
 But if you are improving the platform itself, these are the repositories
@@ -89,7 +90,7 @@ To run the unit tests of just a single package (e.g. `eventual-send`):
 
 ## Run the larger demo
 
-Visit [https://agoric.com/documentation/](https://agoric.com/documentation/getting-started/before-using-agoric.html) for getting started instructions.
+Visit [https://docs.agoric.com/guides/getting-started/](https://docs.agoric.com/guides/getting-started/) for getting started instructions.
 
 TL;DR:
 
@@ -147,3 +148,17 @@ To create a new (empty) package (e.g. spinning Zoe out from ERTP):
 * commit everything to a new branch, push, check the GitHub `Actions` tab to
   make sure CI tested everything properly
 * merge with a PR
+
+# Related repositories
+
+XS JavaScript engine and Endo helps create sandbox environment for Vats.
+
+  * https://github.com/agoric-labs/moddable.git
+  * https://github.com/agoric-labs/xsnap-pub
+  * https://github.com/endojs/endo
+
+# Agoric tutorials
+
+* [Chainboard Academy Bootcamp Lectures](https://www.youtube.com/watch?v=wWQxJnmZttE&list=PLZUbmHar_o80AEV_JjoxLZwxFIc-8uQAq) - [Lecture notes](https://github.com/Chainboard-Academy/agoric-lecture-content)
+* [Agoric Tech Talks](https://www.youtube.com/watch?v=iyuo0ymTt4g&list=PLhuBigpl7lqth_Ow_eQWZs7NFxmeDw9W8)
+* [Agoric Patterns](https://ilyasmercan.github.io/AgoricPatterns/)
