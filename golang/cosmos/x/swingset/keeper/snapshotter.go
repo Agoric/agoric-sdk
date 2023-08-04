@@ -27,7 +27,7 @@ import (
 
 var _ snapshots.ExtensionSnapshotter = &SwingsetSnapshotter{}
 
-// SnapshotFormat 1 is a proto message containing an artifact name, and the binary artifact data
+// SnapshotFormat 1 defines all extension payloads to be SwingStoreArtifact proto messages
 const SnapshotFormat = 1
 
 // exportManifest represents the content of the JS swing-store export manifest.
@@ -179,6 +179,27 @@ func NewSwingsetSnapshotter(
 	}
 }
 
+// SnapshotName returns the name of the snapshotter, it should be unique in the manager.
+// Implements ExtensionSnapshotter
+func (snapshotter *SwingsetSnapshotter) SnapshotName() string {
+	return types.ModuleName
+}
+
+// SnapshotFormat returns the extension specific format used to encode the
+// extension payloads when creating a snapshot. It's independent of the format
+// used for the overall state-sync snapshot.
+// Implements ExtensionSnapshotter
+func (snapshotter *SwingsetSnapshotter) SnapshotFormat() uint32 {
+	return SnapshotFormat
+}
+
+// SupportedFormats returns a list of extension specific payload formats it can
+// restore from.
+// Implements ExtensionSnapshotter
+func (snapshotter *SwingsetSnapshotter) SupportedFormats() []uint32 {
+	return []uint32{SnapshotFormat}
+}
+
 // checkNotActive returns an error if there is an active snapshot.
 func (snapshotter *SwingsetSnapshotter) checkNotActive() error {
 	active := snapshotter.activeSnapshot
@@ -317,29 +338,13 @@ func (snapshotter *SwingsetSnapshotter) WaitUntilSnapshotStarted() error {
 	return startErr
 }
 
-// SnapshotName returns the name of snapshotter, it should be unique in the manager.
-// Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SnapshotName() string {
-	return types.ModuleName
-}
-
-// SnapshotFormat returns the default format the extension snapshotter uses to encode the
-// payloads when taking a snapshot.
-// It's defined within the extension, different from the global format for the whole state-sync snapshot.
-// Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SnapshotFormat() uint32 {
-	return SnapshotFormat
-}
-
-// SupportedFormats returns a list of formats it can restore from.
-// Implements ExtensionSnapshotter
-func (snapshotter *SwingsetSnapshotter) SupportedFormats() []uint32 {
-	return []uint32{SnapshotFormat}
-}
-
-// SnapshotExtension writes extension payloads into the underlying protobuf stream.
-// This operation is invoked by the snapshot manager in the goroutine started by
-// `InitiateSnapshot`.
+// SnapshotExtension is the method invoked by cosmos to write extension payloads
+// into the underlying protobuf stream of the state-sync snapshot.
+// This method is invoked by the cosmos snapshot manager in a goroutine it
+// started during the call to takeAppSnapshot. However the snapshot manager
+// fully synchronizes its goroutine with the goroutine started by this
+// SwingsetSnapshotter.
+//
 // Implements ExtensionSnapshotter
 func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, payloadWriter snapshots.ExtensionPayloadWriter) (err error) {
 	defer func() {
@@ -364,7 +369,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 	}
 
 	if activeSnapshot.blockHeight != blockHeight {
-		return fmt.Errorf("swingset snapshot requested for unexpected height %d (expected %d)", blockHeight, activeSnapshot.blockHeight)
+		return fmt.Errorf("swingset extension snapshot requested for unexpected height %d (expected %d)", blockHeight, activeSnapshot.blockHeight)
 	}
 
 	action := &swingStoreRetrieveExportAction{
@@ -447,7 +452,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 }
 
 // RestoreExtension restores an extension state snapshot,
-// the payload reader returns `io.EOF` when it reaches the extension boundaries.
+// the payload reader returns io.EOF when it reaches the extension boundaries.
 // Implements ExtensionSnapshotter
 func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, format uint32, payloadReader snapshots.ExtensionPayloadReader) error {
 	if format != SnapshotFormat {
@@ -498,9 +503,9 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	// AppHash, which means the SwingStore data it contains can be used as the
 	// trusted root against which to validate the artifacts.
 	ctx := snapshotter.newRestoreContext(height)
-	swingStoreEntries := snapshotter.getSwingStoreExportData(ctx)
+	exportDataEntries := snapshotter.getSwingStoreExportData(ctx)
 
-	if len(swingStoreEntries) > 0 {
+	if len(exportDataEntries) > 0 {
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
@@ -510,7 +515,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 
 		encoder := json.NewEncoder(exportDataFile)
 		encoder.SetEscapeHTML(false)
-		for _, dataEntry := range swingStoreEntries {
+		for _, dataEntry := range exportDataEntries {
 			entry := []string{dataEntry.Path, dataEntry.Value}
 			err := encoder.Encode(entry)
 			if err != nil {
@@ -522,7 +527,6 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		if err != nil {
 			return err
 		}
-		exportDataFile.Close()
 	}
 
 	writeExportFile := func(filename string, data []byte) error {
