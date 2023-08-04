@@ -193,7 +193,7 @@ harden(isCallback);
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
  * @template {PropertyKey} M
- * @param {import('@agoric/zone').Zone} zone The zone in which to allocate attenuators.
+ * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
  * @param {import('@endo/patterns').InterfaceGuard} [opts.interfaceGuard] An interface guard for the
@@ -305,7 +305,7 @@ harden(prepareAttenuator);
 /**
  * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
  *
- * @param {import('@agoric/zone').Zone} zone
+ * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('@endo/patterns').InterfaceGuard} interfaceGuard
  * @param {object} [opts]
  * @param {string} [opts.tag]
