@@ -683,7 +683,7 @@ export async function launch({
 
   // Handle block related actions
   // Some actions that are integration specific may be handled by the caller
-  // For example COSMOS_SNAPSHOT is handled in chain-main.js
+  // For example SWING_STORE_EXPORT is handled in chain-main.js
   async function doBlockingSend(action) {
     await null;
     // blockManagerConsole.warn(
