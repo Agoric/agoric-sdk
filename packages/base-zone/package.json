@@ -1,0 +1,50 @@
+{
+  "name": "@agoric/base-zone",
+  "version": "0.1.0",
+  "description": "Allocation zone abstraction library and heap implementation",
+  "type": "module",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "main": "./src/index.js",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint ."
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./heap.js": "./heap.js",
+    "./tools/*": "./tools/*"
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/store": "^0.9.2",
+    "@endo/exo": "^0.2.3",
+    "@endo/far": "^0.2.19",
+    "@endo/pass-style": "^0.1.4",
+    "@endo/patterns": "^0.2.3"
+  },
+  "devDependencies": {
+    "@endo/init": "^0.5.57",
+    "ava": "^5.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "20m",
+    "workerThreads": false
+  }
+}
