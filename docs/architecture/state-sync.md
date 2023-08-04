@@ -36,7 +36,7 @@ sequenceDiagram
   end
 
   TM->>+A-M: Commit
-  A-M->>+SSES-M: WaitUntilSnapshotStarted()
+  A-M->>+SSES-M: WaitUntilSwingStoreExportStarted()
   SSES-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: swingStore.commit()
@@ -64,7 +64,7 @@ sequenceDiagram
   A-M-->>-TM: 
 
   TM->>+A-M: Commit
-  A-M->>+SSES-M: WaitUntilSnapshotStarted()
+  A-M->>+SSES-M: WaitUntilSwingStoreExportStarted()
   SSES-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: swingStore.commit()
@@ -75,7 +75,7 @@ sequenceDiagram
   A-M->>A-M: isSnapshotHeight: true
   A-M->>+SSES-M: InitiateSnapshot()
   SSES-M->>SSES-M: checkNotActive()
-  SSES-M->>SSES-M: active = activeSnapshot{}
+  SSES-M->>SSES-M: activeOperation = operationDetails{}
   SSES-M-)+SSES-AS: go
   SSES-M-->>-A-M: 
   A-M-->>-TM: 
@@ -88,10 +88,10 @@ sequenceDiagram
     CM->>CM: await started<br/>(blocking)
     CM-->>-SSES-AS: 
     alt not initiated
-      SSES-AS-)SSES-M: startedResult <- err<br/>close(startedResult)
-      SSES-AS-)SSES-M: done <- err
+      SSES-AS-)SSES-M: exportStartedResult <- err<br/>close(exportStartedResult)
+      SSES-AS-)SSES-M: exportDone <- err
     else initiated
-    SSES-AS-)SSES-M: close(startedResult)
+    SSES-AS-)SSES-M: close(exportStartedResult)
     alt retrieval
     SSES-AS->>+A-AS: BaseApp.Snapshot()
     A-AS->>+SM-AS: Create()
@@ -133,10 +133,10 @@ sequenceDiagram
       CM->>+D: Delete(exportDir)
       D-->-CM: 
       CM-->>-SSES-AS: 
-      SSES-AS-)SSES-M: done <- err
+      SSES-AS-)SSES-M: exportDone <- err
     end
     end
-    SSES-AS-)SSES-M: close(done)
+    SSES-AS-)SSES-M: close(exportDone)
     deactivate SSES-AS
   end
 
@@ -169,8 +169,8 @@ sequenceDiagram
   Note over TM, A-M: BeginBlock, EndBlock
 
   TM->>+A-M: Commit
-  A-M->>+SSES-M: WaitUntilSnapshotStarted()
-  SSES-M->>SSES-M: err = <-startedResult<br/>(blocking)
+  A-M->>+SSES-M: WaitUntilSwingStoreExportStarted()
+  SSES-M->>SSES-M: err = <-exportStartedResult<br/>(blocking)
   SSES-M-->>-A-M: 
   A-M->>+CM: COMMIT_BLOCK
   CM->>CM: await started<br/>(blocking)
@@ -228,7 +228,7 @@ sequenceDiagram
     opt loop over extensions
       SM-CS->>+SSES-CS: RestoreExtension()
       SSES-CS->>SSES-CS: checkNotActive()
-      SSES-CS->>SSES-CS: activeExport = exportOperation{}
+      SSES-CS->>SSES-CS: activeOperation = operationDetails{}
       SSES-CS->>+D-CS: MkDir(exportDir)
       D-CS-->>-SSES-CS: 
       SSES-CS->>+MS-CS: ExportStorageFromPrefix<br/>("swingStore.")

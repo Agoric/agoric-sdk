@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	snapshots "github.com/cosmos/cosmos-sdk/snapshots/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
@@ -118,23 +119,143 @@ func sanitizeArtifactName(name string) string {
 	return disallowedArtifactNameChar.ReplaceAllString(name, "-")
 }
 
-type activeSnapshot struct {
-	// Whether the operation in progress is a restore
+type operationDetails struct {
+	// isRestore indicates whether the operation in progress is a restore.
+	// It is assigned at creation and never mutated.
 	isRestore bool
-	// The block height of the snapshot in progress
+	// blockHeight is the block height of this in-progress operation.
+	// It is assigned at creation and never mutated.
 	blockHeight uint64
-	// The logger for this snapshot
+	// logger is the destination for this operation's log messages.
+	// It is assigned at creation and never mutated.
 	logger log.Logger
-	// Use to synchronize the commit boundary
-	startedResult chan error
-	// Internal flag indicating whether the snapshot was retrieved
-	// Only read or written by the snapshot worker goroutine.
-	retrieved bool
+	// exportStartedResult is used to synchronize the commit boundary by the
+	// component performing the export operation to ensure export determinism.
+	// unused for restore operations
+	// It is assigned at creation and never mutated. The started goroutine
+	// writes into the channel and closes it. The main goroutine reads from the
+	// channel.
+	exportStartedResult chan error
+	// exportRetrieved is an internal flag indicating whether the JS generated
+	// the "retrieve" blockingSend was performed or not, and used to control
+	// whether to send a "discard" request if the JS side stayed responsible for
+	// the generated but un-retrieved export.
+	// It is only read or written by the export operation's goroutine.
+	exportRetrieved bool
 	// Internal plumbing of any error that happen during `SnapshotExtension`
 	// Only read or written by the snapshot worker goroutine.
 	retrieveError error
-	// Closed when this snapshot is complete
-	done chan struct{}
+	// exportDone is a channel that is closed when the active export operation
+	// is complete.
+	// It is assigned at creation and never mutated. The started goroutine
+	// writes into the channel and closes it. The main goroutine reads from the
+	// channel.
+	exportDone chan error
+}
+
+// activeOperation is a global variable reflecting a swing-store import or
+// export in progress on the JS side.
+// This variable is only assigned to through calls of the public methods of
+// SwingsetSnapshotter, which rely on the exportDone channel getting
+// closed to nil this variable.
+// Only the calls to InitiateSnapshot and RestoreSnapshot set this to a non-nil
+// value. The goroutine in which these calls occur is referred to as the
+// "main goroutine". That goroutine may be different over time, but it's the
+// caller's responsibility to ensure those goroutines do not overlap calls to
+// the SwingsetSnapshotter public methods.
+// See also the details of each field for the conditions under which they are
+// accessed.
+var activeOperation *operationDetails
+
+// WaitUntilSwingStoreExportStarted synchronizes with an export operation in
+// progress, if any.
+// The JS swing-store export must have started before a new block is committed
+// to ensure the content of the export is the one expected. The app must call
+// this method before sending a commit action to the JS controller.
+//
+// Waits for a just initiated export operation to have started in its goroutine.
+// If no operation is in progress (InitiateSnapshot hasn't been called or
+// already completed), or if we previously checked if the operation had started,
+// returns immediately.
+//
+// Must be called by the main goroutine
+func WaitUntilSwingStoreExportStarted() error {
+	operationDetails := activeOperation
+	if operationDetails == nil {
+		return nil
+	}
+	// Block until the active operation has started, saving the result.
+	// The operation's goroutine only produces a value in case of an error,
+	// and closes the channel once the export has started or failed.
+	// Only the first call after an export was initiated will report an error.
+	startErr := <-operationDetails.exportStartedResult
+
+	// Check if the active export operation is done, and if so, nil it out so
+	// future calls are faster.
+	select {
+	case <-operationDetails.exportDone:
+		// If there was a start error, the channel is already closed at this point.
+		activeOperation = nil
+	default:
+		// don't wait for it to finish
+		// If there is no start error, the operation may take an arbitrary amount
+		// of time to terminate, likely spanning multiple blocks. However this
+		// function will only ever observe the expected activeOperation since the
+		// internal checkNotActive() called immediately on InitiateSnapshot will
+		// nil-out activeOperation if a stale value was sill sitting around.
+	}
+
+	return startErr
+}
+
+// WaitUntilSwingStoreExportDone synchronizes with the completion of an export
+// operation in progress, if any.
+// Only a single swing-store operation may execute at a time. Calling
+// InitiateSnapshot or RestoreSnapshot will fail if a swing-store operation is
+// already in progress. Furthermore, a component may need to know once an
+// export it initiated has completed. Once this method call returns, the
+// goroutine is guaranteed to have terminated.
+//
+// Reports any error that may have occurred from InitiateSnapshot.
+// If no export operation is in progress (InitiateSnapshot hasn't been called or
+// already completed), or if we previously checked if an export had completed,
+// returns immediately.
+//
+// Must be called by the main goroutine
+func WaitUntilSwingStoreExportDone() error {
+	operationDetails := activeOperation
+	if operationDetails == nil {
+		return nil
+	}
+	// Block until the active export has completed.
+	// The export operation's goroutine only produces a value in case of an error,
+	// and closes the channel once the export has completed or failed.
+	// Only the first call after an export was initiated will report an error.
+	exportErr := <-operationDetails.exportDone
+	activeOperation = nil
+
+	return exportErr
+}
+
+// checkNotActive returns an error if there is an active operation.
+//
+// Always internally called by the main goroutine
+func checkNotActive() error {
+	operationDetails := activeOperation
+	if operationDetails != nil {
+		select {
+		case <-operationDetails.exportDone:
+			// nil-out any stale operation
+			activeOperation = nil
+		default:
+			if operationDetails.isRestore {
+				return fmt.Errorf("restore operation already in progress for height %d", operationDetails.blockHeight)
+			} else {
+				return fmt.Errorf("export operation already in progress for height %d", operationDetails.blockHeight)
+			}
+		}
+	}
+	return nil
 }
 
 type SwingsetSnapshotter struct {
@@ -144,8 +265,6 @@ type SwingsetSnapshotter struct {
 	logger                  log.Logger
 	getSwingStoreExportData func(ctx sdk.Context) []*vstoragetypes.DataEntry
 	blockingSend            func(action vm.Jsonable, mustNotBeInited bool) (string, error)
-	// Only modified by the main goroutine.
-	activeSnapshot *activeSnapshot
 }
 
 // NewSwingsetSnapshotter creates a SwingsetSnapshotter which exclusively
@@ -175,7 +294,6 @@ func NewSwingsetSnapshotter(
 		logger:                  app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "snapshotter"),
 		getSwingStoreExportData: getSwingStoreExportData,
 		blockingSend:            blockingSend,
-		activeSnapshot:          nil,
 	}
 }
 
@@ -200,31 +318,14 @@ func (snapshotter *SwingsetSnapshotter) SupportedFormats() []uint32 {
 	return []uint32{SnapshotFormat}
 }
 
-// checkNotActive returns an error if there is an active snapshot.
-func (snapshotter *SwingsetSnapshotter) checkNotActive() error {
-	active := snapshotter.activeSnapshot
-	if active != nil {
-		select {
-		case <-active.done:
-			snapshotter.activeSnapshot = nil
-		default:
-			if active.isRestore {
-				return fmt.Errorf("snapshot restore already in progress for height %d", active.blockHeight)
-			} else {
-				return fmt.Errorf("snapshot already in progress for height %d", active.blockHeight)
-			}
-		}
-	}
-	return nil
-}
-
-// InitiateSnapshot synchronously initiates a snapshot for the given height.
-// If a snapshot is already in progress, or if no snapshot manager is configured,
-// this will fail.
-// The snapshot operation is performed in a goroutine, and synchronized with the
-// main thread through the `WaitUntilSnapshotStarted` method.
+// InitiateSnapshot initiates a snapshot for the given block height.
+// If a snapshot is already in progress, or if no snapshot manager is
+// configured, this will fail.
+//
+// The snapshot operation is performed in a goroutine.
+// Use WaitUntilSwingStoreExportStarted to synchronize commit boundaries.
 func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
-	err := snapshotter.checkNotActive()
+	err := checkNotActive()
 	if err != nil {
 		return err
 	}
@@ -240,20 +341,42 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 
 	logger := snapshotter.logger.With("height", blockHeight)
 
-	// Indicate that a snapshot has been initiated by setting `activeSnapshot`.
+	// Indicate that an export operation has been initiated by setting the global
+	// activeOperation var.
 	// This structure is used to synchronize with the goroutine spawned below.
-	// It's nilled-out before exiting (and is the only code that does so).
-	active := &activeSnapshot{
-		blockHeight:   blockHeight,
-		logger:        logger,
-		startedResult: make(chan error, 1),
-		retrieved:     false,
-		done:          make(chan struct{}),
+	operationDetails := &operationDetails{
+		blockHeight:         blockHeight,
+		logger:              logger,
+		exportStartedResult: make(chan error, 1),
+		exportRetrieved:     false,
+		exportDone:          make(chan error, 1),
 	}
-	snapshotter.activeSnapshot = active
+	activeOperation = operationDetails
 
 	go func() {
-		defer close(active.done)
+		var err error
+		var startedErr error
+		defer func() {
+			if err == nil {
+				err = startedErr
+			}
+			if err != nil {
+				operationDetails.exportDone <- err
+			}
+			// First, indicate an export is no longer in progress. This ensures that
+			// for an operation with a start error, a call to WaitUntilSwingStoreExportStarted
+			// waiting on exportStartedResult will always find the operation has
+			// completed, and clear the active operation instead of racing if the
+			// channel close order was reversed.
+			close(operationDetails.exportDone)
+			// Then signal the current export operation that it failed to start,
+			// which will be reported to a waiting WaitUntilSwingStoreExportStarted,
+			// or the next call otherwise.
+			if startedErr != nil {
+				operationDetails.exportStartedResult <- startedErr
+				close(operationDetails.exportStartedResult)
+			}
+		}()
 
 		initiateAction := &swingStoreInitiateExportAction{
 			Type:        swingStoreExportActionType,
@@ -262,34 +385,30 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
-		_, err = snapshotter.blockingSend(initiateAction, false)
+		_, startedErr = snapshotter.blockingSend(initiateAction, false)
 
-		if err != nil {
-			// First indicate a snapshot is no longer in progress if the call to
-			// `WaitUntilSnapshotStarted` has't happened yet.
-			// Then signal the current snapshot operation if a call to
-			// `WaitUntilSnapshotStarted` was already waiting.
-			active.startedResult <- err
-			close(active.startedResult)
-			logger.Error("failed to initiate swingset snapshot", "err", err)
+		if startedErr != nil {
+			logger.Error("failed to initiate swing-store export", "err", startedErr)
+			// The deferred function will communicate the error and close channels
+			// in the appropriate order.
 			return
 		}
 
-		// Signal that the snapshot operation has started in the goroutine. Calls to
-		// `WaitUntilSnapshotStarted` will no longer block.
-		close(active.startedResult)
+		// Signal that the export operation has started successfully in the goroutine.
+		// Calls to WaitUntilSwingStoreExportStarted will no longer block.
+		close(operationDetails.exportStartedResult)
 
 		// In production this should indirectly call SnapshotExtension().
 		snapshotter.takeSnapshot(height)
 
 		// Restore any retrieve error swallowed by `takeSnapshot`
-		err = active.retrieveError
+		err = activeOperation.retrieveError
 		if err != nil {
-			logger.Error("failed to make swingset snapshot", "err", err)
+			logger.Error("failed to process swing-store export", "err", err)
 		}
 
-		// Check whether the JS generated snapshot was retrieved by `SnapshotExtension`
-		if active.retrieved {
+		// Check whether the JS generated export was retrieved by SnapshotExtension
+		if operationDetails.exportRetrieved {
 			return
 		}
 
@@ -300,42 +419,19 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 		_, discardErr := snapshotter.blockingSend(discardAction, false)
 
 		if discardErr != nil {
-			logger.Error("failed to discard swing-store snapshot", "err", err)
+			logger.Error("failed to discard swing-store export", "err", err)
+		}
+
+		if err == nil {
+			err = discardErr
+		} else if discardErr != nil {
+			// Safe to wrap error and use detailed error info since this error
+			// will not go back into swingset layers
+			err = sdkerrors.Wrapf(err, "failed to discard swing-store export after failing to process export: %+v", discardErr)
 		}
 	}()
 
 	return nil
-}
-
-// WaitUntilSnapshotStarted synchronizes with a snapshot in progress, if any.
-// The JS SwingStore export must have started before a new block is committed.
-// The app must call this method before sending a commit action to SwingSet.
-//
-// Waits for a just initiated snapshot to have started in its goroutine.
-// If no snapshot is in progress (`InitiateSnapshot` hasn't been called or
-// already completed), or if we previously checked if the snapshot had started,
-// returns immediately.
-func (snapshotter *SwingsetSnapshotter) WaitUntilSnapshotStarted() error {
-	activeSnapshot := snapshotter.activeSnapshot
-	if activeSnapshot == nil {
-		return nil
-	}
-	// Block until the active snapshot has started, saving the result.
-	// The snapshot goroutine only produces a value in case of an error,
-	// and closes the channel once the snapshot has started or failed.
-	// Only the first call after a snapshot was initiated will report an error.
-	startErr := <-activeSnapshot.startedResult
-
-	// Check if the active snapshot is done, and if so, nil it out so future
-	// calls are faster.
-	select {
-	case <-activeSnapshot.done:
-		snapshotter.activeSnapshot = nil
-	default:
-		// don't wait for it to finish
-	}
-
-	return startErr
 }
 
 // SnapshotExtension is the method invoked by cosmos to write extension payloads
@@ -353,23 +449,23 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		// a value was provided to a `return` statement.
 		// See https://go.dev/blog/defer-panic-and-recover for details
 		if err != nil {
-			activeSnapshot := snapshotter.activeSnapshot
-			if activeSnapshot != nil {
-				activeSnapshot.retrieveError = err
+			operationDetails := activeOperation
+			if operationDetails != nil {
+				operationDetails.retrieveError = err
 			} else {
 				snapshotter.logger.Error("swingset snapshot extension failed", "err", err)
 			}
 		}
 	}()
 
-	activeSnapshot := snapshotter.activeSnapshot
-	if activeSnapshot == nil {
+	operationDetails := activeOperation
+	if operationDetails == nil {
 		// shouldn't happen, but return an error if it does
-		return errors.New("no active swingset snapshot")
+		return errors.New("no active swing-store export operation")
 	}
 
-	if activeSnapshot.blockHeight != blockHeight {
-		return fmt.Errorf("swingset extension snapshot requested for unexpected height %d (expected %d)", blockHeight, activeSnapshot.blockHeight)
+	if operationDetails.blockHeight != blockHeight {
+		return fmt.Errorf("swingset extension snapshot requested for unexpected height %d (expected %d)", blockHeight, operationDetails.blockHeight)
 	}
 
 	action := &swingStoreRetrieveExportAction{
@@ -381,7 +477,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 	if err != nil {
 		return err
 	}
-	activeSnapshot.retrieved = true
+	operationDetails.exportRetrieved = true
 
 	var exportDir swingStoreRetrieveResult
 	err = json.Unmarshal([]byte(out), &exportDir)
@@ -446,7 +542,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		}
 	}
 
-	activeSnapshot.logger.Info("retrieved swing-store export", "exportDir", exportDir)
+	operationDetails.logger.Info("retrieved swing-store export", "exportDir", exportDir)
 
 	return nil
 }
@@ -464,7 +560,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	}
 	height := int64(blockHeight)
 
-	err := snapshotter.checkNotActive()
+	err := checkNotActive()
 	if err != nil {
 		return err
 	}
@@ -472,20 +568,20 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	// We technically don't need to create an active snapshot here since both
 	// `InitiateSnapshot` and `RestoreExtension` should only be called from the
 	// main thread, but it doesn't cost much to add in case things go wrong.
-	active := &activeSnapshot{
+	operationDetails := &operationDetails{
 		isRestore:   true,
 		blockHeight: blockHeight,
 		logger:      snapshotter.logger,
 		// goroutine synchronization is unnecessary since anything checking should
-		// be called from the same thread.
-		// Effectively `WaitUntilSnapshotStarted` would block infinitely and
-		// and `InitiateSnapshot` will error when calling `checkNotActive`.
-		startedResult: nil,
-		done:          nil,
+		// be called from the same goroutine.
+		// Effectively WaitUntilSwingStoreExportStarted would block infinitely and
+		// exportsHandler.InitiateExport will error when calling checkNotActive.
+		exportStartedResult: nil,
+		exportDone:          nil,
 	}
-	snapshotter.activeSnapshot = active
+	activeOperation = operationDetails
 	defer func() {
-		snapshotter.activeSnapshot = nil
+		activeOperation = nil
 	}()
 
 	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", blockHeight))
