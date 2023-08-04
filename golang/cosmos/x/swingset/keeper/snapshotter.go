@@ -30,12 +30,84 @@ var _ snapshots.ExtensionSnapshotter = &SwingsetSnapshotter{}
 // SnapshotFormat 1 is a proto message containing an artifact name, and the binary artifact data
 const SnapshotFormat = 1
 
-// The manifest filename must be synchronized with the JS export/import tooling
+// exportManifest represents the content of the JS swing-store export manifest.
+// The export is exchanged between Cosmos and JS using the file system, and only
+// the directory containing the export is exchanged with a blockingSend. The
+// manifest is a JSON file with the agreed upon file name of
+// "export-manifest.json" in the export directory. It contains the file names
+// for the "export data" (described in the godoc for exportDataFilename), and
+// for the opaque artifacts of the export.
+type exportManifest struct {
+	// BlockHeight is the block height of the manifest.
+	BlockHeight uint64 `json:"blockHeight,omitempty"`
+	// Data is the filename of the export data.
+	Data string `json:"data,omitempty"`
+	// Artifacts is the list of [artifact name, file name] pairs.
+	Artifacts [][2]string `json:"artifacts"`
+}
+
+// ExportManifestFilename is the manifest filename which must be synchronized with the JS export/import tooling
+// See packages/cosmic-swingset/src/export-kernel-db.js and packages/cosmic-swingset/src/import-kernel-db.js
 const ExportManifestFilename = "export-manifest.json"
-const ExportDataFilename = "export-data.jsonl"
+
+// For restore operations, the swing-store "export data" is exchanged with the
+// JS side as a file which encodes "export data" entries as a sequence of
+// [key, value] JSON arrays each terminated by a new line.
+// NB: this is not technically jsonlines since the entries are new line
+// terminated instead of being new line separated, however the parsers in both
+// JS and golang handle such extra whitespace.
+const exportDataFilename = "export-data.jsonl"
+
+// UntrustedExportDataArtifactName is a special artifact name to indicate the
+// presence of a synthetic artifact containing untrusted "export data". This
+// artifact must not end up in the list of artifacts imported by the JS import
+// tooling (which would fail).
 const UntrustedExportDataArtifactName = "UNTRUSTED-EXPORT-DATA"
-const UntrustedExportDataFilename = "untrusted-export-data.jsonl"
-const ExportedFilesMode = 0644
+const untrustedExportDataFilename = "untrusted-export-data.jsonl"
+
+const exportedFilesMode = 0644
+
+// swingStoreExportActionType is the action type used for all swing-store
+// export blockingSend, and synchronized with the JS side in
+// packages/internal/src/action-types.js
+const swingStoreExportActionType = "SWING_STORE_EXPORT"
+
+// initiateRequest is the request type for initiating an export
+const initiateRequest = "initiate"
+
+type swingStoreInitiateExportAction struct {
+	Type        string `json:"type"`        // "SWING_STORE_EXPORT"
+	Request     string `json:"request"`     // "initiate"
+	BlockHeight uint64 `json:"blockHeight"` // expected blockHeight
+}
+
+// retrieveRequest is the request type for retrieving an initiated export
+const retrieveRequest = "retrieve"
+
+type swingStoreRetrieveExportAction struct {
+	Type    string `json:"type"`    // "SWING_STORE_EXPORT"
+	Request string `json:"request"` // "retrieve"
+}
+type swingStoreRetrieveResult = string
+
+// discardRequest is the request type for discarding an initiated but an export
+// that was not retrieved
+const discardRequest = "discard"
+
+type swingStoreDiscardExportAction struct {
+	Type    string `json:"type"`    // "SWING_STORE_EXPORT"
+	Request string `json:"request"` // "discard"
+}
+
+// restoreRequest is the request type for restoring an export
+const restoreRequest = "restore"
+
+type swingStoreRestoreExportAction struct {
+	Type        string    `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string    `json:"request"`               // "restore"
+	BlockHeight uint64    `json:"blockHeight,omitempty"` // empty if deferring blockHeight to the manifest
+	Args        [1]string `json:"args"`                  // args[1] is the directory in which the export to restore from is located
+}
 
 var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
 
@@ -65,14 +137,6 @@ type activeSnapshot struct {
 	done chan struct{}
 }
 
-type exportManifest struct {
-	BlockHeight uint64 `json:"blockHeight,omitempty"`
-	// The filename of the export data
-	Data string `json:"data,omitempty"`
-	// The list of artifact names and their corresponding filenames
-	Artifacts [][2]string `json:"artifacts"`
-}
-
 type SwingsetSnapshotter struct {
 	isConfigured            func() bool
 	takeSnapshot            func(height int64)
@@ -82,13 +146,6 @@ type SwingsetSnapshotter struct {
 	blockingSend            func(action vm.Jsonable, mustNotBeInited bool) (string, error)
 	// Only modified by the main goroutine.
 	activeSnapshot *activeSnapshot
-}
-
-type snapshotAction struct {
-	Type        string            `json:"type"` // COSMOS_SNAPSHOT
-	BlockHeight uint64            `json:"blockHeight"`
-	Request     string            `json:"request"` // "initiate", "discard", "retrieve", or "restore"
-	Args        []json.RawMessage `json:"args,omitempty"`
 }
 
 // NewSwingsetSnapshotter creates a SwingsetSnapshotter which exclusively
@@ -177,14 +234,14 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 	go func() {
 		defer close(active.done)
 
-		action := &snapshotAction{
-			Type:        "COSMOS_SNAPSHOT",
+		initiateAction := &swingStoreInitiateExportAction{
+			Type:        swingStoreExportActionType,
 			BlockHeight: blockHeight,
-			Request:     "initiate",
+			Request:     initiateRequest,
 		}
 
-		// blockingSend for COSMOS_SNAPSHOT action is safe to call from a goroutine
-		_, err := snapshotter.blockingSend(action, false)
+		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
+		_, err = snapshotter.blockingSend(initiateAction, false)
 
 		if err != nil {
 			// First indicate a snapshot is no longer in progress if the call to
@@ -215,15 +272,14 @@ func (snapshotter *SwingsetSnapshotter) InitiateSnapshot(height int64) error {
 			return
 		}
 
-		action = &snapshotAction{
-			Type:        "COSMOS_SNAPSHOT",
-			BlockHeight: blockHeight,
-			Request:     "discard",
+		discardAction := &swingStoreDiscardExportAction{
+			Type:    swingStoreExportActionType,
+			Request: discardRequest,
 		}
-		_, discardErr := snapshotter.blockingSend(action, false)
+		_, discardErr := snapshotter.blockingSend(discardAction, false)
 
 		if discardErr != nil {
-			logger.Error("failed to discard swingset snapshot", "err", err)
+			logger.Error("failed to discard swing-store snapshot", "err", err)
 		}
 	}()
 
@@ -311,10 +367,9 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		return fmt.Errorf("swingset snapshot requested for unexpected height %d (expected %d)", blockHeight, activeSnapshot.blockHeight)
 	}
 
-	action := &snapshotAction{
-		Type:        "COSMOS_SNAPSHOT",
-		BlockHeight: blockHeight,
-		Request:     "retrieve",
+	action := &swingStoreRetrieveExportAction{
+		Type:    swingStoreExportActionType,
+		Request: retrieveRequest,
 	}
 	out, err := snapshotter.blockingSend(action, false)
 
@@ -323,7 +378,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 	}
 	activeSnapshot.retrieved = true
 
-	var exportDir string
+	var exportDir swingStoreRetrieveResult
 	err = json.Unmarshal([]byte(out), &exportDir)
 	if err != nil {
 		return err
@@ -386,7 +441,7 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(blockHeight uint64, pa
 		}
 	}
 
-	activeSnapshot.logger.Info("retrieved snapshot", "exportDir", exportDir)
+	activeSnapshot.logger.Info("retrieved swing-store export", "exportDir", exportDir)
 
 	return nil
 }
@@ -446,8 +501,8 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	swingStoreEntries := snapshotter.getSwingStoreExportData(ctx)
 
 	if len(swingStoreEntries) > 0 {
-		manifest.Data = ExportDataFilename
-		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, ExportDataFilename), os.O_CREATE|os.O_WRONLY, ExportedFilesMode)
+		manifest.Data = exportDataFilename
+		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
 			return err
 		}
@@ -471,7 +526,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 	}
 
 	writeExportFile := func(filename string, data []byte) error {
-		return os.WriteFile(filepath.Join(exportDir, filename), data, ExportedFilesMode)
+		return os.WriteFile(filepath.Join(exportDir, filename), data, exportedFilesMode)
 	}
 
 	for {
@@ -488,12 +543,14 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		}
 
 		if artifact.Name != UntrustedExportDataArtifactName {
-			// Artifact verifiable on import from the export data
-			// Since we cannot trust the state-sync artifact at this point, we generate
-			// a safe and unique filename from the artifact name we received, by
-			// substituting any non letters-digits-hyphen-underscore-dot by a hyphen,
-			// and prefixing with an incremented id.
-			// The filename is not used for any purpose in the snapshotting logic.
+			// An artifact is only verifiable by the JS swing-store import using the
+			// information contained in the "export data".
+			// Since we cannot trust the source of the artifact at this point,
+			// including that the artifact's name is genuine, we generate a safe and
+			// unique filename from the artifact's name we received, by substituting
+			// any non letters-digits-hyphen-underscore-dot by a hyphen, and
+			// prefixing with an incremented id.
+			// The filename is not used for any purpose in the import logic.
 			filename := sanitizeArtifactName(artifact.Name)
 			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
 			manifest.Artifacts = append(manifest.Artifacts, [2]string{artifact.Name, filename})
@@ -501,7 +558,7 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		} else {
 			// Pseudo artifact containing untrusted export data which may have been
 			// saved separately for debugging purposes (not referenced from the manifest)
-			err = writeExportFile(UntrustedExportDataFilename, artifact.Data)
+			err = writeExportFile(untrustedExportDataFilename, artifact.Data)
 		}
 		if err != nil {
 			return err
@@ -517,16 +574,11 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(blockHeight uint64, for
 		return err
 	}
 
-	encodedExportDir, err := json.Marshal(exportDir)
-	if err != nil {
-		return err
-	}
-
-	action := &snapshotAction{
-		Type:        "COSMOS_SNAPSHOT",
+	action := &swingStoreRestoreExportAction{
+		Type:        swingStoreExportActionType,
 		BlockHeight: blockHeight,
-		Request:     "restore",
-		Args:        []json.RawMessage{encodedExportDir},
+		Request:     restoreRequest,
+		Args:        [1]string{exportDir},
 	}
 
 	_, err = snapshotter.blockingSend(action, true)

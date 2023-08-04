@@ -494,7 +494,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
   let blockingSend;
 
-  async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
+  async function handleSwingStoreExport(blockHeight, request, requestArgs) {
     switch (request) {
       case 'restore': {
         const exportDir = requestArgs[0];
@@ -646,7 +646,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
 
       // Snapshot actions are specific to cosmos chains and handled here
-      case BlockingSendType.COSMOS_SNAPSHOT: {
+      case BlockingSendType.SWING_STORE_EXPORT: {
         const { blockHeight, request, args: requestArgs } = action;
         writeSlogObject?.({
           type: 'cosmic-swingset-snapshot-start',
@@ -655,7 +655,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           args: requestArgs,
         });
 
-        const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
+        const resultP = handleSwingStoreExport(
+          blockHeight,
+          request,
+          requestArgs,
+        );
 
         resultP.then(
           result => {
