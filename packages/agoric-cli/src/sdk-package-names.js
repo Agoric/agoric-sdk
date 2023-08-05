@@ -6,6 +6,7 @@ export default [
   "@agoric/assert",
   "@agoric/base-zone",
   "@agoric/boot",
+  "@agoric/builders",
   "@agoric/cache",
   "@agoric/casting",
   "@agoric/cosmic-proto",
