@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@agoric/zone": "^0.2.2",
+    "@agoric/base-zone": "^0.1.0",
     "@endo/far": "^0.2.19",
     "@endo/init": "^0.5.57",
     "@endo/marshal": "^0.8.6",

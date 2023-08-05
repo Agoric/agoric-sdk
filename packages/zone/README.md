@@ -12,18 +12,18 @@ An example of making a Zone-aware vat might look something like this:
 
 ```js
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { zoneFrobulator } from 'frob-package';
-import { zoneWidget } from 'widget-package';
+import { prepareFrobulator } from 'frob-package';
+import { prepareWidget } from 'widget-package';
 
 export const buildRootObject = (vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
 
   // Ensure that Widgets cannot interfere with Frobs.
-  const makeWidget = zoneWidget(zone.subZone('Widgets'));
+  const makeWidget = prepareWidget(zone.subZone('Widgets'));
 
   // Create a collection of frobulators.
   const frobZone = zone.subZone('Frobs');
-  const makeFrobulator = zoneFrobulator(frobZone);
+  const makeFrobulator = prepareFrobulator(frobZone);
   const widgetToFrob = frobZone.mapStore('widgetToFrob');
 
   return Far('WidgetFrobulator', {

@@ -113,9 +113,9 @@ harden(provideAll);
  * @returns {Promise<Awaited<ReturnType<T>>>}
  */
 export const provideSingleton = (mapStore, key, makeValue, withValue) => {
-  const stored =
-    mapStore.has(key) ||
-    E.when(makeValue(), v => mapStore.init(key, harden(v)));
+  const stored = mapStore.has(key)
+    ? undefined
+    : E.when(makeValue(), v => mapStore.init(key, harden(v)));
 
   return E.when(stored, () => {
     const value = mapStore.get(key);

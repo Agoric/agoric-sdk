@@ -106,7 +106,7 @@ export function buildRootObject(vatPowers) {
     setCommandDevice(d) {
       commandDevice = d;
 
-      const replHandler = getReplHandler(replObjects, send, vatPowers);
+      const replHandler = getReplHandler(replObjects, send);
       registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.

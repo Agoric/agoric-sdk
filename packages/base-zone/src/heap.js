@@ -1,5 +1,6 @@
 // @ts-check
 // @jessie-check
+/// <reference path="./store-types.d.ts" />
 
 import { Far } from '@endo/far';
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
@@ -8,14 +9,14 @@ import {
   makeScalarSetStore,
   makeScalarWeakMapStore,
   makeScalarWeakSetStore,
-} from '@agoric/vat-data';
+} from '@agoric/store';
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
 import { isPassable } from './is-passable.js';
 
 /**
- * @type {import('.').Stores}
+ * @type {import('./types.js').Stores}
  */
 const detachedHeapStores = Far('heapStores', {
   detached: () => detachedHeapStores,
@@ -31,7 +32,7 @@ const detachedHeapStores = Far('heapStores', {
  * Create a heap (in-memory) zone that uses the default exo and store implementations.
  *
  * @param {string} [baseLabel]
- * @returns {import('.').Zone}
+ * @returns {import('./types.js').Zone}
  */
 export const makeHeapZone = (baseLabel = 'heapZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);

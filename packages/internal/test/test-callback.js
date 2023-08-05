@@ -3,7 +3,7 @@ import '@endo/init';
 import test from 'ava';
 
 import { Far } from '@endo/far';
-import { makeHeapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from '../src/callback.js';
 
 test('near function callbacks', t => {
