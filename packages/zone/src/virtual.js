@@ -11,9 +11,11 @@ import {
   makeScalarBigWeakSetStore,
 } from '@agoric/vat-data';
 
-import { makeOnceKit } from './make-once.js';
-import { agoricVatDataKeys as keys } from './keys.js';
-import { isPassable } from './is-passable.js';
+import {
+  agoricVatDataKeys as keys,
+  isPassable,
+  makeOnceKit,
+} from '@agoric/base-zone';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);

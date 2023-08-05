@@ -10,11 +10,16 @@ Like all `@agoric` packages it follows Semantic Versioning. Unlike the others, i
 
 # Design
 
-It must be the lowest agoric-sdk package in any import graph. Therefore it must never depend on another agoric-sdk package. If there's a module in an another agoric-package that has no agoric-sdk dependencies, it can be moved into this package.
+It is meant to be a home for modules that have no Agoric-specific dependencies themselves. It does depend on a these other @agoric packages but they are all destined to migrate out of the repo,
+
+- base-zone
+- store
+- assert
+
+This package may not take dependencies on any others in this repository.
 
 It must never export ambient types.
 
 It should not be imported by deep imports. Eventually this will be enforced by [`exports`](https://nodejs.org/api/packages.html#exports) but the tooling isn't ready:
     - https://github.com/import-js/eslint-plugin-import/issues/1810
     - https://github.com/microsoft/TypeScript/issues/33079 (or some related problem with JSdoc types)
-

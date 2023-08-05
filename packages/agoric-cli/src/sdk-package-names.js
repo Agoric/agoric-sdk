@@ -4,6 +4,7 @@
 export default [
   "@agoric/access-token",
   "@agoric/assert",
+  "@agoric/base-zone",
   "@agoric/boot",
   "@agoric/cache",
   "@agoric/casting",

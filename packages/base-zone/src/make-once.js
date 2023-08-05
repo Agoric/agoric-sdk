@@ -7,7 +7,7 @@ harden(defaultLabelToKeys);
 
 /**
  * @param {string} debugName Only used internally for diagnostics, not available to user code
- * @param {import('.').Stores} stores
+ * @param {import('./types.js').Stores} stores
  * @param {import('@agoric/swingset-liveslots').MapStore<string, any>} [backingStore]
  */
 export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
