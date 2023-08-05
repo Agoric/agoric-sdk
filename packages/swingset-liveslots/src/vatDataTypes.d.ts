@@ -17,7 +17,10 @@ import type {
 
 export type { MapStore, Pattern };
 
-export type Baggage = MapStore<string, unknown>;
+// This needs `any` values.  If they were `unknown`, code that uses Baggage
+// would need explicit runtime checks or casts for every fetch, which is
+// onerous.
+export type Baggage = MapStore<string, any>;
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
