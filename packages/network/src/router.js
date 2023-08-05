@@ -9,9 +9,12 @@ import './types.js';
 /**
  * @template T
  * @typedef {object} Router A delimited string router implementation
- * @property {(addr: string) => [string, T][]} getRoutes Return the match and route in order of preference
- * @property {(prefix: string, route: T) => void} register Add a prefix->route to the database
- * @property {(prefix: string, route: T) => void} unregister Remove a prefix->route from the database
+ * @property {(addr: string) => [string, T][]} getRoutes Return the match and
+ *   route in order of preference
+ * @property {(prefix: string, route: T) => void} register Add a prefix->route
+ *   to the database
+ * @property {(prefix: string, route: T) => void} unregister Remove a
+ *   prefix->route from the database
  */
 
 /**
@@ -21,16 +24,12 @@ import './types.js';
  * @returns {Router<T>} a new Router
  */
 export default function makeRouter() {
-  /**
-   * @type {MapStore<string, T>}
-   */
+  /** @type {MapStore<string, T>} */
   const prefixToRoute = makeScalarMapStore('prefix');
   return Far('Router', {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
-      /**
-       * @type {[string, T][]}
-       */
+      /** @type {[string, T][]} */
       const ret = [];
       for (let i = parts.length; i > 0; i -= 1) {
         // Try most specific match.
