@@ -228,7 +228,6 @@ type channelOpenAckEvent struct {
 	Event                 string                    `json:"event"` // channelOpenAck
 	PortID                string                    `json:"portID"`
 	ChannelID             string                    `json:"channelID"`
-	CounterpartyChannelID string                    `json:"counterpartyChannelID"`
 	CounterpartyVersion   string                    `json:"counterpartyVersion"`
 	Counterparty          channeltypes.Counterparty `json:"counterparty"`
 	ConnectionHops        []string                  `json:"connectionHops"`
@@ -247,12 +246,12 @@ func (im IBCModule) OnChanOpenAck(
 	// returns an empty channel object that we can still use without crashing.
 	channel, _ := im.keeper.GetChannel(ctx, portID, channelID)
 
+	channel.Counterparty.ChannelId = counterpartyChannelID
 	event := channelOpenAckEvent{
 		Type:                  "IBC_EVENT",
 		Event:                 "channelOpenAck",
 		PortID:                portID,
 		ChannelID:             channelID,
-		CounterpartyChannelID: counterpartyChannelID,
 		CounterpartyVersion:   counterpartyVersion,
 		Counterparty:          channel.Counterparty,
 		ConnectionHops:        channel.ConnectionHops,

@@ -120,7 +120,7 @@ You can omit any of the methods and those events will simply be ignored. All the
 `onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String due to inter-vat marshalling limitations, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
 
 The return value of `onReceive()` is nominally a Promise for ACK data of the message (that will eventually appear on the other side as resolution of the Promise returned by `connection.send()`).
-For IBC, this Promise must be resolved within the same block as receiving the message, and if it does not resolve (or resolves to an empty value `''`, which is not supported by [Cosmos ibc-go](https://github.com/cosmos/ibc-go)) then the implementation will automatically send a trivial `'\x01'` ACK. This behavior may be different for other network implementations.
+For IBC, if the ACK data settles to an empty value `''` then the implementation will automatically send a trivial `'\x01'` ACK, because empty ACKs are not supported by [Cosmos ibc-go](https://github.com/cosmos/ibc-go). This behavior may be different for other network implementations.
 It is recommended to avoid ACK data where possible.
 
 ## Closing the Connection
