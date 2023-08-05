@@ -303,9 +303,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
         checkAbort = () => {
           throw reason;
         };
-        pegs.forEach(peg => {
+        for (const peg of pegs) {
           pegToDenomState.delete(peg);
-        });
+        }
       },
     });
     return pegasusConnectionActions;
