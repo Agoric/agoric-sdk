@@ -32,12 +32,13 @@ import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
  */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
-  const { consume, produce } = /**
+  /**
    * @type {BootstrapPowers &
    *   DemoFaucetPowers & {
    *     consume: { loadVat: LoadVat; loadCriticalVat: LoadVat };
    *   }}
-   */ (space);
+   */
+  const { consume, produce } = space;
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);

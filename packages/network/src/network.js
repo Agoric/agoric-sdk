@@ -9,8 +9,8 @@ import '@agoric/store/exported.js';
 import './types.js';
 
 /**
- * Compatibility note: this must match what our peers use,
- * so don't change it casually.
+ * Compatibility note: this must match what our peers use, so don't change it
+ * casually.
  */
 export const ENDPOINT_SEPARATOR = '/';
 
@@ -42,13 +42,9 @@ export const makeConnection = (
   current = new Set(),
 ) => {
   let closed;
-  /**
-   * @type {Set<import('@endo/promise-kit').PromiseKit<Bytes>>}
-   */
+  /** @type {Set<import('@endo/promise-kit').PromiseKit<Bytes>>} */
   const pendingAcks = new Set();
-  /**
-   * @type {Connection}
-   */
+  /** @type {Connection} */
   const connection = Far('Connection', {
     getLocalAddress() {
       return localAddr;
@@ -120,17 +116,11 @@ export function crossoverConnection(
   addr1,
   current = new WeakSet(),
 ) {
-  /**
-   * @type {Connection[]}
-   */
+  /** @type {Connection[]} */
   const conns = [];
-  /**
-   * @type {ConnectionHandler[]}
-   */
+  /** @type {ConnectionHandler[]} */
   const handlers = [handler0, handler1];
-  /**
-   * @type {Endpoint[]}
-   */
+  /** @type {Endpoint[]} */
   const addrs = [addr0, addr1];
 
   function makeHalfConnection(l, r) {
@@ -193,9 +183,7 @@ export function crossoverConnection(
 export function getPrefixes(addr) {
   const parts = addr.split(ENDPOINT_SEPARATOR);
 
-  /**
-   * @type {string[]}
-   */
+  /** @type {string[]} */
   const ret = [];
   for (let i = parts.length; i > 0; i -= 1) {
     // Try most specific match.
@@ -217,21 +205,17 @@ export function makeNetworkProtocol(protocolHandler) {
   const currentConnections = makeLegacyMap('port');
 
   /**
-   * Currently must be a single listenHandler.
-   * TODO: Do something sensible with multiple handlers?
+   * Currently must be a single listenHandler. TODO: Do something sensible with
+   * multiple handlers?
    *
    * @type {MapStore<Endpoint, [Port, ListenHandler]>}
    */
   const listening = makeScalarMapStore('localAddr');
 
-  /**
-   * @type {MapStore<string, Port>}
-   */
+  /** @type {MapStore<string, Port>} */
   const boundPorts = makeScalarMapStore('localAddr');
 
-  /**
-   * @param {Endpoint} localAddr
-   */
+  /** @param {Endpoint} localAddr */
   const bind = async localAddr => {
     // Check if we are underspecified (ends in slash)
     const underspecified = localAddr.endsWith(ENDPOINT_SEPARATOR);
@@ -251,24 +235,18 @@ export function makeNetworkProtocol(protocolHandler) {
       return boundPorts.get(localAddr);
     }
 
-    /**
-     * @enum {number}
-     */
+    /** @enum {number} */
     const RevokeState = {
       NOT_REVOKED: 0,
       REVOKING: 1,
       REVOKED: 2,
     };
 
-    /**
-     * @type {RevokeState}
-     */
+    /** @type {RevokeState} */
     let revoked = RevokeState.NOT_REVOKED;
     const openConnections = new Set();
 
-    /**
-     * @type {Port}
-     */
+    /** @type {Port} */
     const port = Far('Port', {
       getLocalAddress() {
         // Works even after revoke().
@@ -318,9 +296,7 @@ export function makeNetworkProtocol(protocolHandler) {
       },
       async connect(remotePort, connectionHandler = {}) {
         !revoked || Fail`Port ${localAddr} is revoked`;
-        /**
-         * @type {Endpoint}
-         */
+        /** @type {Endpoint} */
         const dst = harden(remotePort);
         // eslint-disable-next-line no-use-before-define
         const conn = await protocolImpl.outbound(port, dst, connectionHandler);
@@ -361,9 +337,7 @@ export function makeNetworkProtocol(protocolHandler) {
     return port;
   };
 
-  /**
-   * @type {ProtocolImpl}
-   */
+  /** @type {ProtocolImpl} */
   const protocolImpl = Far('ProtocolImpl', {
     bind,
     async inbound(listenAddr, remoteAddr) {
@@ -515,9 +489,7 @@ export function makeNetworkProtocol(protocolHandler) {
  */
 export function makeEchoConnectionHandler() {
   let closed;
-  /**
-   * @type {Connection}
-   */
+  /** @type {Connection} */
   return Far('ConnectionHandler', {
     async onReceive(_connection, bytes, _connectionHandler) {
       if (closed) {
@@ -551,9 +523,7 @@ export function makeNonceMaker(prefix = '', suffix = '') {
 export function makeLoopbackProtocolHandler(
   onInstantiate = makeNonceMaker('nonce/'),
 ) {
-  /**
-   * @type {MapStore<string, [Port, ListenHandler]>}
-   */
+  /** @type {MapStore<string, [Port, ListenHandler]>} */
   const listeners = makeScalarMapStore('localAddr');
 
   const makePortID = makeNonceMaker('port');

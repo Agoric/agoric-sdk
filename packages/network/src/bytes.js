@@ -39,7 +39,7 @@ export function bytesToString(bytes) {
  * @returns {string} base64 encoding
  */
 export function dataToBase64(data) {
-  /** @type {Uint8Array?} */
+  /** @type {Uint8Array} */
   let bytes;
   if (typeof data === 'string') {
     bytes = new Uint8Array(data.length);
