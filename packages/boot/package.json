@@ -58,9 +58,6 @@
     "globals.d.ts",
     "exported.js"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "engines": {
     "node": ">=14.15.0"
   },
