@@ -10,7 +10,7 @@ if [ -z "$AGORIC_NET" ]; then
 yarn install && yarn build
 
 # local chain running with wallet provisioned
-packages/inter-protocol/scripts/start-local-chain.sh
+packages/builders/scripts/inter-protocol/start-local-chain.sh
 "
   exit 1
 fi

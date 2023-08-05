@@ -42,7 +42,7 @@ export const defaultProposalBuilder = async (
   }
 
   return harden({
-    sourceSpec: '../src/proposals/price-feed-proposal.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/price-feed-proposal.js',
     getManifestCall: [
       'getManifestForPriceFeed',
       {

@@ -404,7 +404,7 @@ test.serial('add STARS collateral', async t => {
 
   t.log('building proposal');
   const proposal = await buildProposal({
-    package: 'inter-protocol',
+    package: 'builders',
     packageScriptName: 'build:add-STARS-proposal',
   });
 

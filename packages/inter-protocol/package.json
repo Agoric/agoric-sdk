@@ -10,7 +10,6 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",
-    "build:add-STARS-proposal": "agoric run scripts/add-STARS.js",
     "prepack": "tsc --build jsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' src/types.js",
     "test": "ava",
@@ -49,7 +48,6 @@
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/smart-wallet": "^0.5.3",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swingset-vat": "^0.32.2",
@@ -65,8 +63,8 @@
     "import-meta-resolve": "^2.2.1"
   },
   "files": [
-    "bundles/",
-    "scripts/",
+    "bundles",
+    "scripts",
     "src/",
     "exported.js",
     "NEWS.md"
