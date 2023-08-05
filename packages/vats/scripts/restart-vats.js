@@ -12,7 +12,7 @@ export const defaultProposalBuilder = async () => {
   ];
 
   return harden({
-    sourceSpec: '../src/proposals/restart-vats-proposal.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/restart-vats-proposal.js',
     getManifestCall: ['getManifestForRestart', harden({ skip })],
   });
 };

@@ -3,7 +3,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
-    sourceSpec: '../src/proposals/zcf-proposal.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/zcf-proposal.js',
     getManifestCall: [
       'getManifestForZoe',
       {

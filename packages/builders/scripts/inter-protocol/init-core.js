@@ -11,8 +11,8 @@ import {
   getManifestForInterProtocol,
   getManifestForEconCommittee,
   getManifestForMain,
-} from '../src/proposals/core-proposal.js';
-import { makeInstallCache } from '../src/proposals/utils.js';
+} from '@agoric/inter-protocol/src/proposals/core-proposal.js';
+import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
 /** @type {Record<string, Record<string, [string, string]>>} */
 const installKeyGroups = {
@@ -32,18 +32,21 @@ const installKeyGroups = {
   },
   main: {
     auctioneer: [
-      '../src/auction/auctioneer.js',
-      '../bundles/bundle-auctioneer.js',
+      '@agoric/inter-protocol/src/auction/auctioneer.js',
+      '../../inter-protocol/bundles/bundle-auctioneer.js',
     ],
     vaultFactory: [
-      '../src/vaultFactory/vaultFactory.js',
-      '../bundles/bundle-vaultFactory.js',
+      '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
+      '../../inter-protocol/bundles/bundle-vaultFactory.js',
     ],
     feeDistributor: [
-      '../src/feeDistributor.js',
-      '../bundles/bundle-feeDistributor.js',
+      '@agoric/inter-protocol/src/feeDistributor.js',
+      '../../inter-protocol/bundles/bundle-feeDistributor.js',
     ],
-    reserve: ['../src/reserve/assetReserve.js', '../bundles/bundle-reserve.js'],
+    reserve: [
+      '@agoric/inter-protocol/src/reserve/assetReserve.js',
+      '../../inter-protocol/bundles/bundle-reserve.js',
+    ],
   },
 };
 
@@ -69,7 +72,7 @@ export const committeeProposalBuilder = async (
       publishRef(install(mod, bundle, { persist: true })),
     );
   return harden({
-    sourceSpec: '../src/proposals/core-proposal.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
       getManifestForEconCommittee.name,
       {
@@ -106,7 +109,7 @@ export const mainProposalBuilder = async ({
       publishRef(install(mod, bundle, { persist })),
     );
   return harden({
-    sourceSpec: '../src/proposals/core-proposal.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
       getManifestForMain.name,
       {
@@ -161,7 +164,7 @@ export const defaultProposalBuilder = async (
   };
 
   return harden({
-    sourceSpec: '../src/proposals/core-proposal.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
       getManifestForInterProtocol.name,
       {

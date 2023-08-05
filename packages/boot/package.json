@@ -21,6 +21,7 @@
   "dependencies": {
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
+    "@agoric/builders": "^0.1.0",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
