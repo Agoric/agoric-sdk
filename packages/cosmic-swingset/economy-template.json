@@ -1,6 +1,6 @@
 [
-  "@agoric/vats/scripts/init-core.js",
-  "@agoric/vats/scripts/init-network.js",
+  "@agoric/builders/scripts/vats/init-core.js",
+  "@agoric/builders/scripts/vats/init-network.js",
   {
     "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
     "entrypoint": "defaultProposalBuilder",

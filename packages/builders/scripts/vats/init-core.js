@@ -3,14 +3,14 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
-    sourceSpec: '../src/core/startWalletFactory.js',
+    sourceSpec: '@agoric/vats/src/core/startWalletFactory.js',
     getManifestCall: [
       'getManifestForWalletFactory',
       {
         installKeys: {
           provisionPool: publishRef(
             install(
-              '../src/provisionPool.js',
+              '@agoric/vats/src/provisionPool.js',
               '../bundles/bundle-provisionPool.js',
             ),
           ),
