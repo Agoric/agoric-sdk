@@ -3,7 +3,7 @@
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [
-    "@agoric/vats/scripts/init-core.js",
+    "@agoric/builders/scripts/vats/init-core.js",
     {
       "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
       "entrypoint": "defaultProposalBuilder",

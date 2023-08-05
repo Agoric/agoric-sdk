@@ -9,6 +9,8 @@
   "scripts": {
     "build": "exit 0",
     "build:add-STARS-proposal": "agoric run scripts/inter-protocol/add-STARS.js",
+    "build:restart-vats-proposal": "agoric run scripts/vats/restart-vats.js",
+    "build:zcf-proposal": "agoric run scripts/vats/replace-zoe.js",
     "prepack": "tsc --build jsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",

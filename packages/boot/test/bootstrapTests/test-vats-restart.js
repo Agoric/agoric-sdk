@@ -105,7 +105,7 @@ test.serial('run restart-vats proposal', async t => {
 
   t.log('building proposal');
   const proposal = await buildProposal({
-    package: 'vats',
+    package: 'builders',
     packageScriptName: 'build:restart-vats-proposal',
   });
 

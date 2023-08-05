@@ -150,7 +150,7 @@ test('run restart-vats proposal', async t => {
   t.log('building proposal');
   // /////// Upgrading ////////////////////////////////
   const zcfPackageSpec = {
-    package: 'vats',
+    package: 'builders',
     packageScriptName: 'build:zcf-proposal',
   };
   await buildAndExecuteProposal(zcfPackageSpec);
