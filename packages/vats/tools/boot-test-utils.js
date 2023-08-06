@@ -155,10 +155,3 @@ export const mockSwingsetVats = mock => {
   };
   return vats;
 };
-
-/** @param {(msg: string) => void} log */
-export const mockPsmBootstrapArgs = log => {
-  const mock = makeMock(log);
-  const vats = mockSwingsetVats(mock);
-  return [vats, mock.devices];
-};
