@@ -2,7 +2,7 @@
 import { AmountShape } from '@agoric/ertp';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { UnguardedHelperI } from '../typeGuards.js';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { Fail } = assert;
 

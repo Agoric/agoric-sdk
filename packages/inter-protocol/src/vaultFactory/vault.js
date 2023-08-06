@@ -9,7 +9,7 @@ import {
   makeNatAmountShape,
 } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { UnguardedHelperI } from '../typeGuards.js';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';

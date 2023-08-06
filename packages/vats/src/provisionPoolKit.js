@@ -1,6 +1,6 @@
 // @ts-check
 import { AmountMath, BrandShape } from '@agoric/ertp';
-import { UnguardedHelperI } from '@agoric/inter-protocol/src/typeGuards.js';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import {
   observeIteration,
   observeNotifier,
