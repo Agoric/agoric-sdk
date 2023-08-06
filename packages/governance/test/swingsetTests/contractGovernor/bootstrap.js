@@ -1,15 +1,15 @@
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { observeIteration, subscribeEach } from '@agoric/notifier';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
-import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 import {
-  CONTRACT_ELECTORATE,
   assertContractElectorate,
+  CONTRACT_ELECTORATE,
 } from '../../../src/index.js';
+import { remoteNullMarshaller } from '../utils.js';
+import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 
 const { quote: q } = assert;
 
@@ -79,7 +79,7 @@ const startElectorate = async (zoe, installations, electorateTerms) => {
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: remoteNullMarshaller,
     });
   return { electorateCreatorFacet, electorateInstance };
 };
