@@ -40,7 +40,9 @@ harden(meta);
  *   TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: import('@endo/far').ERef<import('./vat-bank.js').Bank>;
+ *   poolBank: import('@endo/far').ERef<
+ *     import('@agoric/vats/src/vat-bank.js').Bank
+ *   >;
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;

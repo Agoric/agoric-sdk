@@ -4,29 +4,29 @@ import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import { WalletName } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
+import { buildRootObject as buildBankRoot } from '@agoric/vats/src/vat-bank.js';
+import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
+import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { E, Far } from '@endo/far';
+import path from 'path';
+import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
+import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
   withAmountUtils,
-} from '@agoric/inter-protocol/test/supports.js';
-import { WalletName } from '@agoric/internal';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { E, Far } from '@endo/far';
-import path from 'path';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { makeFakeBoard } from '../tools/board-utils.js';
-import { makeNameHubKit } from '../src/nameHub.js';
-import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
-import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
-import { PowerFlags } from '../src/walletFlags.js';
-import { makeFakeBankKit } from '../tools/bank-utils.js';
+} from './supports.js';
 
 /**
- * @typedef {import('../src/vat-bank.js').Bank} Bank
+ * @typedef {import('@agoric/vats/src/vat-bank.js').Bank} Bank
  *
  * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
  *
@@ -36,7 +36,7 @@ import { makeFakeBankKit } from '../tools/bank-utils.js';
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
-const psmRoot = `${dirname}/../../inter-protocol/src/psm/psm.js`;
+const psmRoot = `${dirname}/../src/psm/psm.js`;
 const policyRoot = `${dirname}/../src/provisionPool.js`;
 
 const scale6 = x => BigInt(Math.round(x * 1_000_000));

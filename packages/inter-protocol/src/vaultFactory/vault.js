@@ -1,5 +1,6 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
-import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { StorageNodeShape, makeTracer } from '@agoric/internal';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
@@ -9,11 +10,10 @@ import {
   makeNatAmountShape,
 } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
+import { calculateDebtCosts } from './math.js';
 import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
-import { calculateDebtCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
 
