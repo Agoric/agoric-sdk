@@ -77,7 +77,7 @@ for this contract.
 
 ### Provision Pool
 
-In `packages/vats/src/provisionPool.js`:
+In `packages/inter-protocol/src/provisionPool.js`:
 
 | Governance Key          | Type    | WP? |
 | ----------------------- | :------ | --- |

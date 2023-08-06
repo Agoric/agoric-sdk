@@ -210,7 +210,7 @@
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
     },
     "provisionPool": {
-      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+      "sourceSpec": "@agoric/inter-protocol/src/provisionPool.js"
     },
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"

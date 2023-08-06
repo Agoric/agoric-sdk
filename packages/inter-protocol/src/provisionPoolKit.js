@@ -12,14 +12,14 @@ import {
   makeScalarBigSetStore,
   prepareExoClassKit,
 } from '@agoric/vat-data';
+import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
-  makeRecorderTopic,
   PublicTopicShape,
+  makeRecorderTopic,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
-import { deeplyFulfilled, Far } from '@endo/marshal';
-import { PowerFlags } from './walletFlags.js';
+import { Far, deeplyFulfilled } from '@endo/marshal';
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -55,7 +55,7 @@ const { details: X, quote: q, Fail } = assert;
  * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
  * @param {() => void} onProvisioned
  *
- * @typedef {import('./vat-bank.js').Bank} Bank
+ * @typedef {import('@agoric/vats/src/vat-bank.js').Bank} Bank
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
   /** @param {ProvisionPoolKitReferences} refs */
