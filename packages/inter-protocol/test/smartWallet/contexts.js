@@ -31,7 +31,7 @@ export const importBootTestUtils = async (log, bundleCache) => {
       bundleCache.validateOrAdd(entrypoint, name),
     ),
   );
-  const utils = await import('@agoric/vats/tools/boot-test-utils.js');
+  const utils = await import('./boot-test-utils.js');
   const mockPsmBootstrapArgs = () => {
     const mock = utils.makeMock(log);
     const vats = utils.mockSwingsetVats(mock);
