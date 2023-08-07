@@ -3,7 +3,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import * as ambientFs from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-const configSpecifier = '@agoric/boot/decentral-itest-vaults-config.json';
+const configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json';
 const noop = harden(() => {});
 
 /** @type {import('ava').TestFn<ReturnType<typeof makeTestContext>>} */

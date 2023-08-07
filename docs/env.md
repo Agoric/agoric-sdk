@@ -28,7 +28,7 @@ Affects: `ag-chain-cosmos`, `ag-solo`
 
 Purpose: to set the specifier for the chain/sim-chain's `vatconfig.json`
 
-Description: defaults to `@agoric/boot/decentral-core-config.json`
+Description: defaults to `@agoric/vm-config/decentral-core-config.json`
 
 Lifetime: until we don't want to allow user control of the chain's vat config
 

@@ -60,7 +60,8 @@ export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
 ];
 
-const defaultBootstrapVatConfig = '@agoric/boot/decentral-demo-config.json';
+const defaultBootstrapVatConfig =
+  '@agoric/vm-config/decentral-demo-config.json';
 
 export const defaultPowerFlagFees = [
   makePowerFlagFee('SMART_WALLET', [makeCoin('ubld', 10_000_000n)]),

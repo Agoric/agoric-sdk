@@ -253,6 +253,9 @@ jobs:
       - name: yarn test (vats)
         if: (success() || failure())
         run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (vm-config)
+        if: (success() || failure())
+        run: cd packages/vm-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (zone)
         if: (success() || failure())
         run: cd packages/zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

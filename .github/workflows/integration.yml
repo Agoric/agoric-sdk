@@ -30,6 +30,7 @@ jobs:
     strategy:
       matrix:
         cli: [link-cli, local-npm]
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v3
         with:

@@ -37,6 +37,7 @@ export default [
   "@agoric/time",
   "@agoric/vat-data",
   "@agoric/vats",
+  "@agoric/vm-config",
   "@agoric/wallet",
   "@agoric/wallet-backend",
   "@agoric/xsnap",
