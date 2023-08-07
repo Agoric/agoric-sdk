@@ -114,13 +114,16 @@ const trace = makeTracer('VM');
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
  *   getRecordingPeriod: () => RelativeTime;
+ *   getMinInitialDebt: () => Amount<'nat'>;
+ * }} DirectorParamGetters
+ *
+ * @typedef {{
  *   getDebtLimit: () => Amount<'nat'>;
  *   getInterestRate: () => Ratio;
  *   getLiquidationPadding: () => Ratio;
  *   getLiquidationMargin: () => Ratio;
  *   getLiquidationPenalty: () => Ratio;
  *   getMintFee: () => Ratio;
- *   getMinInitialDebt: () => Amount<'nat'>;
  * }} GovernedParamGetters
  */
 
@@ -182,7 +185,6 @@ const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
- *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit;
  *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet;
  * }} powers
  */
@@ -276,7 +278,8 @@ export const prepareVaultManagerKit = (
         { sloppy: true },
       ),
       manager: M.interface('manager', {
-        getGovernedParams: M.call().returns(M.remotable('governedParams')),
+        getGovernedParams: M.call().returns(M.record()),
+        getDirectorParams: M.call().returns(M.record()),
         maxDebtFor: M.call(AmountShape).returns(AmountShape),
         mintAndTransfer: M.call(
           SeatShape,
@@ -299,7 +302,7 @@ export const prepareVaultManagerKit = (
         ).returns(),
       }),
       self: M.interface('self', {
-        getGovernedParams: M.call().returns(M.remotable('governedParams')),
+        getGovernedParams: M.call().returns(M.record()),
         makeVaultKit: M.call(SeatShape).returns(M.promise()),
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
@@ -369,19 +372,20 @@ export const prepareVaultManagerKit = (
           trace('helper.start() making periodNotifier');
           const periodNotifier = E(timerService).makeNotifier(
             0n,
-            factoryPowers
-              .getGovernedParams(collateralBrand)
-              .getChargingPeriod(),
+            factoryPowers.getDirectorParams().getChargingPeriod(),
           );
 
           trace('helper.start() starting observe periodNotifier');
           void observeNotifier(periodNotifier, {
-            updateState: updateTime =>
-              facets.helper
+            updateState: updateTime => {
+              trace('charge interest', updateTime);
+
+              return facets.helper
                 .chargeAllVaults(updateTime)
                 .catch(e =>
                   console.error('🚨 vaultManager failed to charge interest', e),
-                ),
+                );
+            },
             fail: reason => {
               zcf.shutdownWithFailure(
                 assert.error(X`Unable to continue without a timer: ${reason}`),
@@ -443,10 +447,10 @@ export const prepareVaultManagerKit = (
             {
               interestRate,
               chargingPeriod: factoryPowers
-                .getGovernedParams(collateralBrand)
+                .getDirectorParams()
                 .getChargingPeriod(),
               recordingPeriod: factoryPowers
-                .getGovernedParams(collateralBrand)
+                .getDirectorParams()
                 .getRecordingPeriod(),
             },
             {
@@ -777,6 +781,9 @@ export const prepareVaultManagerKit = (
           const { collateralBrand } = this.state;
           return factoryPowers.getGovernedParams(collateralBrand);
         },
+        getDirectorParams() {
+          return factoryPowers.getDirectorParams();
+        },
 
         /**
          * Look up the most recent price authority price to determine the max
@@ -956,7 +963,6 @@ export const prepareVaultManagerKit = (
           } = this;
           trace(state.collateralBrand, 'makeVaultKit');
           const { storageNode } = this.state;
-          assert(marshaller, 'makeVaultKit missing marshaller');
           assert(storageNode, 'makeVaultKit missing storageNode');
           assert(zcf, 'makeVaultKit missing zcf');
 

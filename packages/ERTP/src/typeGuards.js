@@ -64,7 +64,7 @@ const SetValueShape = M.arrayOf(M.key());
  */
 const CopyBagValueShape = M.bag();
 
-const AmountValueShape = M.or(
+export const AmountValueShape = M.or(
   NatValueShape,
   CopySetValueShape,
   SetValueShape,
@@ -228,3 +228,9 @@ export const makeIssuerInterfaces = (
   });
 };
 harden(makeIssuerInterfaces);
+
+/** @param {Amount} amount */
+export const makeBrandedAmountPattern = amount => {
+  return { brand: amount.brand, value: M.nat() };
+};
+harden(makeBrandedAmountPattern);

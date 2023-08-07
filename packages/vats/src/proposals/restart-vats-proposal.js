@@ -60,7 +60,7 @@ export const restartVats = async ({ consume }, { options }) => {
   const tryRestartContract = async (debugName, instance, adminFacet) => {
     // TODO document that privateArgs cannot contain promises
     // TODO try making all the contract starts take resolved values
-    const privateArgs = await deeplyFulfilledObject(
+    let privateArgs = await deeplyFulfilledObject(
       harden(instancePrivateArgs.get(instance) || {}),
     );
 
@@ -74,6 +74,16 @@ export const restartVats = async ({ consume }, { options }) => {
       trace('SKIPPED', debugName);
       return;
     }
+
+    // HACK: is there a better way?
+    // @ts-expect-error fishing...
+    if (privateArgs?.walletBridgeManager) {
+      // @ts-expect-error Now we know it's there.
+      const { walletBridgeManager: _wbm, ...newPrivateArgs } = privateArgs;
+      privateArgs = newPrivateArgs;
+      trace(`RVProp  dropped "walletBridgeManager" from`, privateArgs);
+    }
+
     try {
       await E(adminFacet).restartContract(privateArgs);
       trace('RESTARTED', debugName);
@@ -88,7 +98,7 @@ export const restartVats = async ({ consume }, { options }) => {
     const debugName =
       kit.label || getInterfaceOf(kit.publicFacet) || 'UNLABELED';
     if (debugName !== kit.label) {
-      console.warn('MISSING LABEL:', kit);
+      console.warn('MISSING CONTRACT LABEL:', kit);
     }
     await tryRestartContract(debugName, kit.instance, kit.adminFacet);
   }
@@ -98,7 +108,7 @@ export const restartVats = async ({ consume }, { options }) => {
     const debugName =
       kit.label || getInterfaceOf(kit.publicFacet) || 'UNLABELED';
     if (debugName !== kit.label) {
-      console.warn('MISSING LABEL:', kit);
+      console.warn('MISSING GOVERNED LABEL:', kit);
     }
 
     trace('restarting governed', debugName);

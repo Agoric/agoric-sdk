@@ -155,7 +155,7 @@ the Electorate is a required parameter in all governed contracts. Invitations
 are an unusual kind of managed parameter. Most parameters are copy-objects that
 don't carry any power. Since invitations convey rights, only the
 invitation's amount appears in `terms`. The actual invitation must
-be passed  to the contract using `privateArg`. This combination makes it
+be passed  to the contract using `privateArgs`. This combination makes it
 possible for clients to see what the invitation is for, but only the contract
 has the ability to exercise it. Similarly, when there will be a vote to change
 the Electorate (or any other Invitation-valued parameter), observers can see the
@@ -166,36 +166,46 @@ exercised if/when the vote is successful.
 ### ParamManager
 
 `ContractGovernor` expects to work with contracts that use `ParamManager` to
-manage their parameters. `makeParamManager()` is designed to be called
-within the managed contract so that internal access to the parameter values is
+manage their parameters. In order to support upgrade, all governed contracts
+will be durable, upgradeable contracts. When using the `contractHelper`, the way
+to create a paramManager is to call `handleParamGovernance` from within the
+governed contract so that internal access to the parameter values is
 synchronous. A separate facet allows visible management of changes to the
 parameter values.
 
-`makeParamManager(zoe)` makes a ParamManager:
+`handleParamGovernance(zcf, invitation, paramType, ...)` makes a ParamManager:
 
 ```javascript
-  const paramManager = await makeParamManager(
+  const facetHelpers = await handleParamGovernance(
+    zcf,
+    invitation,
     {
       'MyChangeableNumber': ['nat', startingValue],
       'ContractElectorate': ['invitation', initialPoserInvitation],
     },
-    zcf.getZoeService(),
+    makeRecorderKit,
+    storageNode,
   );
 
-  paramManager.getMyChangeableNumber() === startingValue;
-  paramManager.updatetMyChangeableNumber((newValue);
-  paramManager.getMyChangeableNumber() === newValue;
+  const { publicMixin, publicMixinGuards } = facetHelpers;
+  const { augmentPublicFacet, makeGovernorFacet, params } = facetHelpers;
 ```
 
-If you don't need any parameters that depend on the Zoe service, there's
-an alternative function that returns synchronously:
-```javascript
-  const paramManager = await makeParamManagerSync(
-    {
-      'Collateral': ['brand', drachmaBrand],
-    },
-  );
-```
+`augmentPublicFacet` is a function that can be applied to a `publicFacet` to
+produce a publicFacet that also includes accessors for all the defined
+parameters as well as `getParamDescriptions` and `getPublicTopics`.
+
+Similarly, `makeGovernorFacet` can be applied to the `creatorFacet` to create
+the facet that the contractGovernor will use as well as the
+`limitedCreatorFacet` that can be handed out to those outside of governance who
+should have access to the creator functionality of the governed contract.
+
+`makeRecorderKit` and `storageNode` are provided to paramGovernance so it can
+publish the original values and any updates to governed values to the off-chain
+storage. `makeRecorderKit` is a function that creates a durable recorderKit.
+Since durable constructors must be defined exactly once per vat, and
+recorderKits will be needed elsewhere in the contract, it has to be passed in.
+`storageNode` is the node where governance will be able to write updates.
 
 See [ParamTypes definition](./src/constants.js) for all supported types. More
 types will be supported as we learn what contracts need to manage. (If you find
@@ -212,7 +222,7 @@ the methods to be called.
 ### Governed Contracts
 
 `contractHelper` provides support for the vast majority of expected clients that
-will have a single set of parameters to manage. A contract only has to define
+will have a single set of parameters to manage. A contract only has to declare
 the parameters (including `CONTRACT_ELECTORATE`) in a call to
 `handleParamGovernance()`, and add any needed methods to the public and creator
 facets. This will
@@ -222,16 +232,10 @@ facets. This will
 It's convenient for the contract to export a function (e.g. `makeParamTerms`)
 for the use of those starting up the contract to insert in the `terms`. They
 would otherwise need to write boilerplate functions to declare all the required
-parameters.
-
-When a governed contract starts up, it should get the parameter declarations
-from `terms`, use them to create a paramManager, and pass that to
-`handleParamGovernance`. `handleParamGovernance()` returns functions
-(`augmentPublicFacet()` and `makeGovernorFacet()`) that add
-required methods to the public and creator facets. Since the governed contract
-uses the values passed in `terms` to create the paramManager, reviewers of the
-contract can verify that all and only the declared parameters are under the
-control of the paramManager and made visible to the contract's clients.
+parameters. Since the governed contract uses the values passed in `terms` to
+create the paramManager, reviewers of the contract can verify that all and only
+the declared parameters are under the control of the paramManager and made
+visible to the contract's clients.
 
 Governed methods and parameters must be included in terms.
 
@@ -249,10 +253,9 @@ Governed methods and parameters must be included in terms.
 ```
 
 When a contract is written without benefit of `contractHelper`, it is
-responsible for adding `getSubscription`, and
-`getGovernedParams` to its `PublicFacet`, and for adding
-`getParamMgrRetriever`, `getInvitation` and `getLimitedCreatorFacet` to its 
-`CreatorFacet`.
+responsible for adding `getParamDescriptions`, and `getPublicTopics` to its
+`PublicFacet`, and for adding `getParamMgrRetriever`, `getInvitation` and
+`getLimitedCreatorFacet` to its `CreatorFacet`.
 
 ## Scenarios
 

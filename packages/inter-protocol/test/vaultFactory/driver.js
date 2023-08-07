@@ -289,6 +289,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
       aethVaultManager,
     },
     priceAuthority,
+    timer,
   };
 };
 
@@ -368,7 +369,8 @@ export const makeManagerDriver = async (
             Collateral: collUtils.mint.mintPayment(amount),
           }),
         );
-        return E(seat).getOfferResult();
+
+        return seat;
       },
       /**
        * @param {bigint} mintedValue
@@ -391,7 +393,7 @@ export const makeManagerDriver = async (
             Minted: getRunFromFaucet(t, mintedAmount),
           }),
         );
-        return E(seat).getOfferResult();
+        return seat;
       },
       close: async () => {
         currentSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
@@ -459,7 +461,6 @@ export const makeManagerDriver = async (
     },
     currentSeat: () => currentSeat,
     lastOfferResult: () => currentOfferResult,
-    timer: () => timer,
     tick: async (ticks = 1) => {
       await timer.tickN(ticks, 'test driver');
     },

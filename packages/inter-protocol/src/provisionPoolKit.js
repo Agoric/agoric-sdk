@@ -266,7 +266,7 @@ export const prepareProvisionPoolKit = (
             totalMintedConverted,
             totalMintedProvided,
           } = this.state;
-          void metricsRecorderKit.recorder.write(
+          void E(metricsRecorderKit.recorder).write(
             harden({
               walletsProvisioned,
               totalMintedProvided,
@@ -341,7 +341,12 @@ export const prepareProvisionPoolKit = (
             {
               updateState: async desc => {
                 console.log('provisionPool notified of new asset', desc.brand);
-                await zcf.saveIssuer(desc.issuer, desc.issuerName);
+                await null;
+
+                // After upgrade, we can be re-notified.
+                if (!zcf.getTerms().issuers[desc.issuerName]) {
+                  await zcf.saveIssuer(desc.issuer, desc.issuerName);
+                }
                 /** @type {ERef<Purse>} */
                 // @ts-expect-error vbank purse is close enough for our use.
                 const exchangePurse = E(poolBank).getPurse(desc.brand);

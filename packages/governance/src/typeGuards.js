@@ -223,7 +223,7 @@ export const BinaryVoteCounterPublicI = M.interface(
   },
 );
 
-export const VoterHandle = M.remotable();
+export const VoterHandle = M.remotable('Voter handle');
 export const BinaryVoteCounterAdminI = M.interface(
   'BinaryVoteCounter AdminFacet',
   {
@@ -259,12 +259,11 @@ export const VoteCounterCloseI = M.interface('VoteCounter CloseFacet', {
   closeVoting: M.call().returns(),
 });
 
-export const GovernorFacetShape = {
+export const GovernorFacetI = M.interface('governedFacet', {
   getParamMgrRetriever: M.call().returns(M.remotable('paramRetriever')),
   getInvitation: M.call().returns(InvitationShape),
-  getLimitedCreatorFacet: M.call().returns(M.remotable()),
+  getLimitedCreatorFacet: M.call().returns(M.any()),
   getGovernedApis: M.call().returns(M.remotable('governedAPIs')),
   getGovernedApiNames: M.call().returns(M.arrayOf(M.string())),
   setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
-};
-harden(GovernorFacetShape);
+});

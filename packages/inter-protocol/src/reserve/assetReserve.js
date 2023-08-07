@@ -2,6 +2,7 @@
 
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { E } from '@endo/eventual-send';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -57,44 +58,35 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {() => Promise<ZCFMint<'nat'>>} */
-  const takeFeeMint = async () => {
-    if (baggage.has('feeMint')) {
-      return baggage.get('feeMint');
-    }
+  const { feeMint, storageNode, governanceNode } = await provideAll(baggage, {
+    feeMint: () => zcf.registerFeeMint('Fee', privateArgs.feeMintAccess),
+    storageNode: () => privateArgs.storageNode,
+    governanceNode: () =>
+      E(privateArgs.storageNode).makeChildNode('governance'),
+  });
 
-    const feeMintTemp = await zcf.registerFeeMint(
-      'Fee',
-      privateArgs.feeMintAccess,
-    );
-    baggage.init('feeMint', feeMintTemp);
-    return feeMintTemp;
-  };
-  trace('awaiting takeFeeMint');
-  const feeMint = await takeFeeMint();
-  const storageNode = await privateArgs.storageNode;
-  const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
+  const { makeGovernorFacet, publicMixin } = await handleParamGovernance(
+    zcf,
+    baggage,
+    privateArgs.initialPoserInvitation,
+    {},
+    makeRecorderKit,
+    governanceNode,
+  );
+
+  const makeAssetReserveKit = prepareAssetReserveKit(baggage, {
     feeMint,
     makeRecorderKit,
     storageNode,
     zcf,
+    publicMixin,
   });
 
   const { assetReserveKit } = await provideAll(baggage, {
     assetReserveKit: makeAssetReserveKit,
   });
 
-  trace('awaiting handleParamGovernance');
-  const { makeDurableGovernorFacet } = await handleParamGovernance(
-    zcf,
-    privateArgs.initialPoserInvitation,
-    {},
-    privateArgs.storageNode,
-    privateArgs.marshaller,
-  );
-
-  const { governorFacet } = makeDurableGovernorFacet(
-    baggage,
+  const governorFacet = makeGovernorFacet(
     assetReserveKit.machine,
     // reconstruct facet so that the keys are enumerable and that the client can't depend on object identity
     {
@@ -107,9 +99,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     /** @type {GovernedCreatorFacet<typeof assetReserveKit.machine>} */
     creatorFacet: governorFacet,
     /** @type {GovernedPublicFacet<typeof assetReserveKit.public>} */
-    // cast due to missing governance mixins
-    // XXX https://github.com/Agoric/agoric-sdk/issues/5200
-    publicFacet: /** @type {any} */ (assetReserveKit.public),
+    publicFacet: assetReserveKit.public,
   };
 };
 harden(start);

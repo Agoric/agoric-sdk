@@ -38,7 +38,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => Promise<Purse>} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
+ * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord<any> ) => Promise<void>} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,

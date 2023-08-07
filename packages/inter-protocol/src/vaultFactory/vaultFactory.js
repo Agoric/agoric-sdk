@@ -17,16 +17,20 @@ import '@agoric/zoe/src/contracts/exported.js';
 // contractHelper to satisfy contractGovernor. It needs to return a creatorFacet
 // with { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
-import { CONTRACT_ELECTORATE } from '@agoric/governance';
-import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+import {
+  CONTRACT_ELECTORATE,
+  buildParamGovernanceExoMakers,
+  makeParamManagerFromTermsAndMakers,
+} from '@agoric/governance';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
-import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
+import { provide } from '@agoric/vat-data';
+
 import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
@@ -83,8 +87,10 @@ export const start = async (zcf, privateArgs, baggage) => {
   } = privateArgs;
 
   trace('awaiting debtMint');
-  const { debtMint } = await provideAll(baggage, {
+  // on upgrade, this will resolve promptly, start() can complete in one crank
+  const { debtMint, govStorageNode } = await provideAll(baggage, {
     debtMint: () => zcf.registerFeeMint('Minted', privateArgs.feeMintAccess),
+    govStorageNode: () => E(storageNode).makeChildNode('governance'),
   });
 
   zcf.setTestJig(() => ({
@@ -93,35 +99,41 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { timerService, auctioneerPublicFacet } = zcf.getTerms();
 
-  const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
+  // defines kinds. No top-level awaits before this finishes
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+
+  const paramMakerKit = buildParamGovernanceExoMakers(
+    zcf.getZoeService(),
     baggage,
-    marshaller,
   );
 
-  trace('making non-durable publishers');
-  // XXX non-durable, will sever upon vat restart
-  const governanceSubscriptionKit = makeSubscriptionKit();
-  const governanceNode = E(storageNode).makeChildNode('governance');
-  const governanceSubscriber = makeStoredSubscription(
-    governanceSubscriptionKit.subscription,
-    governanceNode,
-    marshaller,
-  );
-  /** a powerful object; can modify the invitation */
-  trace('awaiting makeParamManagerFromTerms');
-  const vaultDirectorParamManager = await makeParamManagerFromTerms(
-    {
-      publisher: governanceSubscriptionKit.publication,
-      subscriber: governanceSubscriber,
-    },
-    zcf,
-    {
-      [CONTRACT_ELECTORATE]: initialPoserInvitation,
-      [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
-    },
-    vaultDirectorParamTypes,
+  const governanceRecorderKit = provide(baggage, 'govRecorderKit', () =>
+    makeRecorderKit(govStorageNode),
   );
 
+  /**
+   * A powerful object; it can modify parameters. including the invitation.
+   * Notice that the only uncontrolled access to it is in the vaultDirector's
+   * creator facet.
+   */
+  const vaultDirectorParamManager = provide(
+    baggage,
+    'vaultDirector ParamManager',
+    () =>
+      makeParamManagerFromTermsAndMakers(
+        governanceRecorderKit,
+        zcf,
+        baggage,
+        {
+          [CONTRACT_ELECTORATE]: initialPoserInvitation,
+          [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
+        },
+        vaultDirectorParamTypes,
+        paramMakerKit,
+      ),
+  );
+
+  // defines kinds. No top-level awaits before this finishes
   const director = provideDirector(
     baggage,
     zcf,
@@ -133,7 +145,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     // XXX remove Recorder makers; remove once we excise deprecated kits for governance
     marshaller,
     makeRecorderKit,
-    makeERecorderKit,
+    paramMakerKit,
   );
 
   // cannot await because it would make remote calls during vat restart
@@ -142,9 +154,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf.shutdownWithFailure(err);
   });
 
-  // validate async to wait for params to be finished
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  void validateElectorate(zcf, vaultDirectorParamManager);
+  await validateElectorate(zcf, vaultDirectorParamManager);
 
   return harden({
     creatorFacet: director.creator,

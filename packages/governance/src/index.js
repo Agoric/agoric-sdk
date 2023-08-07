@@ -19,7 +19,7 @@ export {
   validateQuestionFromCounter,
 } from './contractGovernor.js';
 
-export { handleParamGovernance, publicMixinAPI } from './contractHelper.js';
+export { handleParamGovernance } from './contractHelper.js';
 
 export {
   assertBallotConcernsParam,
@@ -29,18 +29,22 @@ export {
 } from './contractGovernance/governParam.js';
 
 export {
-  assertElectorateMatches,
-  makeParamManagerBuilder,
+  makeParamManagerFromTerms,
+  buildParamGovernanceExoMakers,
+  makeParamManagerFromTermsAndMakers,
 } from './contractGovernance/paramManager.js';
 
 export {
+  assertElectorateMatches,
+  makeParamManagerBuilder,
   makeParamManager,
-  makeParamManagerSync,
-} from './contractGovernance/typedParamManager.js';
+} from './contractGovernance/paramManager.js';
 
 export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
+
+export { GovernorFacetI } from './typeGuards.js';
 
 export { ParamTypes } from './constants.js';

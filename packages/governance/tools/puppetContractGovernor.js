@@ -21,7 +21,7 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord?: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('../src/contractGovernance/typedParamManager.js').InvitationParam }},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('../src/contractGovernance/paramManager.js').InvitationParam }},
  *   }
  * }>} zcf
  * @param {{

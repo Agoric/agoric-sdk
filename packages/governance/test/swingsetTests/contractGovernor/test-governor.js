@@ -97,10 +97,10 @@ test.serial('contract governance', async t => {
     '@@ tick:2 @@',
     '@@ tick:3 @@',
     'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
-    'params update: MalleableNumber',
-    'current value of MalleableNumber is 299792458',
     'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
     'Number after: 299792458',
+    'params update: MalleableNumber',
+    'current value of MalleableNumber is 299792458',
   ]);
 });
 
@@ -119,9 +119,9 @@ test.serial('change electorate', async t => {
     '@@ tick:1 @@',
     '@@ tick:2 @@',
     'vote outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]}}}',
+    'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]}}})',
     'params update: Electorate',
     'current value of MalleableNumber is 602214090000000000000000',
-    'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]}}})',
     'Validation complete',
     '@@ schedule task for:4, currently: 2 @@',
     'Voter Alice voted for {"changes":{"MalleableNumber":"[299792458n]"}}',
@@ -132,9 +132,9 @@ test.serial('change electorate', async t => {
     '@@ tick:3 @@',
     '@@ tick:4 @@',
     'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
+    'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
     'params update: MalleableNumber',
     'current value of MalleableNumber is 299792458',
-    'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
   ]);
 });
 
@@ -162,8 +162,8 @@ test.serial('brokenUpdateStart', async t => {
     // TODO: allow either message
     // 'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
     // 'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-    'vote rejected outcome: Error: A Zoe invitation is required, not (an object)',
-    'update failed: Error: A Zoe invitation is required, not (an object)',
+    'vote rejected outcome: Error: (an object) was not a live payment for brand "[Alleged: Zoe Invitation brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+    'update failed: Error: (an object) was not a live payment for brand "[Alleged: Zoe Invitation brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   ]);
 });
 
@@ -182,10 +182,10 @@ test.serial('changeTwoParams', async t => {
     '@@ tick:1 @@',
     '@@ tick:2 @@',
     'vote outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
-    'params update: Electorate,MalleableNumber',
-    'current value of MalleableNumber is 42',
     'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}})',
     'successful outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}} ',
+    'params update: Electorate,MalleableNumber',
+    'current value of MalleableNumber is 42',
     'Validation complete',
   ]);
 });

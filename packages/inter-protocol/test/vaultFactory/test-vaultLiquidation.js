@@ -27,7 +27,7 @@ import {
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import {
-  reserveInitialState,
+  reserveState,
   subscriptionTracker,
   vaultManagerMetricsTracker,
 } from '../metrics.js';
@@ -382,7 +382,7 @@ test('price drop', async t => {
     .metrics;
   const m = await subscriptionTracker(t, metricsTopic);
 
-  await m.assertInitial(reserveInitialState(run.makeEmpty()));
+  await m.assertInitial(reserveState(run.makeEmpty()));
 
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
@@ -603,7 +603,7 @@ test('price falls precipitously', async t => {
   const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
     .metrics;
   const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(run.makeEmpty()));
+  await m.assertInitial(reserveState(run.makeEmpty()));
   await assertDebtIs(debtAmount.value);
 
   await setClockAndAdvanceNTimes(manualTimer, 2, startTime, 2n);
@@ -696,7 +696,7 @@ test('liquidate two loans', async t => {
   const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
     .metrics;
   const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(run.makeEmpty()));
+  await m.assertInitial(reserveState(run.makeEmpty()));
   let shortfallBalance = 0n;
 
   const cm = await E(aethVaultManager).getPublicFacet();
@@ -1224,7 +1224,7 @@ test('collect fees from loan', async t => {
   const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
     .metrics;
   const reserveMetrics = await subscriptionTracker(t, metricsTopic);
-  await reserveMetrics.assertInitial(reserveInitialState(run.makeEmpty()));
+  await reserveMetrics.assertInitial(reserveState(run.makeEmpty()));
 
   const cm = await E(aethVaultManager).getPublicFacet();
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
@@ -1475,7 +1475,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
     .metrics;
   const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(run.makeEmpty()));
+  await m.assertInitial(reserveState(run.makeEmpty()));
   let shortfallBalance = 0n;
 
   const cm = await E(aethVaultManager).getPublicFacet();
@@ -2269,7 +2269,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
 
   await m.assertState({
-    ...reserveInitialState(run.makeEmpty()),
+    ...reserveState(run.makeEmpty()),
     shortfallBalance: run.make(shortfall),
   });
 });
@@ -2539,7 +2539,7 @@ test('Bug 7346 excess collateral to holder', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
 
   await m.assertState({
-    ...reserveInitialState(run.makeEmpty()),
+    ...reserveState(run.makeEmpty()),
     shortfallBalance: run.makeEmpty(),
     allocations: {
       Aeth: aeth.make(309_852n),
@@ -2951,7 +2951,7 @@ test('Bug 7784 reconstitute both', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
 
   await m.assertState({
-    ...reserveInitialState(run.makeEmpty()),
+    ...reserveState(run.makeEmpty()),
     shortfallBalance: run.make(5_525n),
     allocations: {
       Aeth: aeth.make(1_620n),
@@ -3235,7 +3235,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
 
   await m.assertState({
-    ...reserveInitialState(run.makeEmpty()),
+    ...reserveState(run.makeEmpty()),
     shortfallBalance: run.makeEmpty(),
     allocations: {
       Aeth: aeth.make(309_852n),
@@ -3392,7 +3392,7 @@ test('Bug 7851 & no bidders', async t => {
   const m = await subscriptionTracker(t, metricsTopic);
 
   await m.assertState({
-    ...reserveInitialState(run.makeEmpty()),
+    ...reserveState(run.makeEmpty()),
     shortfallBalance: run.make(0n),
     allocations: {
       Aeth: aeth.make(penalty),

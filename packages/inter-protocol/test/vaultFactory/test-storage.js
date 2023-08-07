@@ -2,12 +2,13 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeTracer } from '@agoric/internal';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { assertTopicPathData, subscriptionKey } from '../supports.js';
-import { makeDriverContext, makeManagerDriver } from './driver.js';
+import { subscribeEach } from '@agoric/notifier';
 
+import { assertTopicPathData } from '../supports.js';
+import { makeDriverContext, makeManagerDriver } from './driver.js';
 import '../../src/vaultFactory/types.js';
+import { subscriptionTracker } from '../metrics.js';
 
 /** @typedef {import('./driver.js').DriverContext & {}} Context */
 /** @type {import('ava').TestFn<Context>} */
@@ -28,14 +29,11 @@ test('storage keys', async t => {
   const vdp = d.getVaultDirectorPublic();
   await assertTopicPathData(
     t,
+    // @ts-expect-error VaultDirector has a compatible getPublicTopics().
     vdp,
     'metrics',
     'mockChainStorageRoot.vaultFactory.metrics',
     ['collaterals', 'rewardPoolAllocation'],
-  );
-  t.is(
-    await subscriptionKey(E(vdp).getElectorateSubscription()),
-    'mockChainStorageRoot.vaultFactory.governance',
   );
 
   // First manager
@@ -69,17 +67,9 @@ test('storage keys', async t => {
       'totalShortfallReceived',
     ],
   );
-  t.is(
-    await subscriptionKey(
-      E(vdp).getSubscription({
-        collateralBrand: aeth.brand,
-      }),
-    ),
-    'mockChainStorageRoot.vaultFactory.managers.manager0.governance',
-  );
 
   // Second manager
-  const [managerC, chit] = await d.addVaultType('Chit');
+  const [managerC] = await d.addVaultType('Chit');
   await assertTopicPathData(
     t,
     E(managerC).getPublicFacet(),
@@ -91,14 +81,6 @@ test('storage keys', async t => {
     E(managerC).getPublicFacet(),
     'metrics',
     'mockChainStorageRoot.vaultFactory.managers.manager1.metrics',
-  );
-  t.is(
-    await subscriptionKey(
-      E(vdp).getSubscription({
-        collateralBrand: chit.brand,
-      }),
-    ),
-    'mockChainStorageRoot.vaultFactory.managers.manager1.governance',
   );
 
   // First aeth vault
@@ -154,27 +136,27 @@ test('quotes storage', async t => {
 test('governance params', async t => {
   const md = await makeManagerDriver(t);
   const vdp = md.getVaultDirectorPublic();
-  // TODO make governance work with publicTopics / assertTopicPathData
-  const governanceSubscription = E(vdp).getElectorateSubscription();
-  t.is(
-    await subscriptionKey(governanceSubscription),
-    'mockChainStorageRoot.vaultFactory.governance',
-  );
+  // @ts-expect-error VDP's getPublicTopics() has governance.
+  const g = await E.get(E(vdp).getPublicTopics()).governance;
+  t.is(await g.storagePath, 'mockChainStorageRoot.vaultFactory.governance');
 
-  const notifier = makeNotifierFromAsyncIterable(governanceSubscription);
+  const gSubscriber = g.subscriber;
 
-  const before = await notifier.getUpdateSince();
-  t.like(before.value.current, {
-    ChargingPeriod: { type: 'nat', value: 2n },
-    Electorate: { type: 'invitation' },
-    ReferencedUI: { type: 'string', value: 'NO REFERENCE' },
-    MinInitialDebt: { type: 'amount' },
-    RecordingPeriod: { type: 'nat', value: 6n },
-    ShortfallInvitation: { type: 'invitation' },
+  const gTrack = await subscriptionTracker(t, subscribeEach(gSubscriber));
+  await gTrack.assertLike({
+    current: {
+      ChargingPeriod: { type: 'nat', value: 2n },
+      Electorate: { type: 'invitation' },
+      ReferencedUI: { type: 'string', value: 'NO REFERENCE' },
+      MinInitialDebt: { type: 'amount' },
+      RecordingPeriod: { type: 'nat', value: 6n },
+      ShortfallInvitation: { type: 'invitation' },
+    },
   });
 
   await md.setGovernedParam('ChargingPeriod', 99n);
 
-  const after = await notifier.getUpdateSince(before.updateCount);
-  t.like(after.value.current, { ChargingPeriod: { value: 99n } });
+  await gTrack.assertChange({
+    current: { ChargingPeriod: { value: 99n } },
+  });
 });

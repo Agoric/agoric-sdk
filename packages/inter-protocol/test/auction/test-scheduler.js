@@ -3,10 +3,12 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { subscribeEach, makePublishKit } from '@agoric/notifier';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
-import { prepareMockRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { objectMap } from '@agoric/internal';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 
 import {
   makeAuctioneerParamManager,
@@ -18,67 +20,107 @@ import {
   getInvitation,
   makeDefaultParams,
   makeFakeAuctioneer,
-  makeGovernancePublisherFromFakes,
   setUpInstallations,
 } from './tools.js';
+import { makeMockChainStorageRoot } from '../supports.js';
 
-/** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
-
-test('schedule start to finish', async t => {
+const setupScheduleTest = async (
+  t,
+  customParams,
+  startTime = 0n,
+  child = '',
+) => {
   const { zcf, zoe } = await setupZCFTest();
+
   const installations = await setUpInstallations(zoe);
+  // @ts-expect-error This  used to work. What's wrong now?
   /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
   const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
+  const { fakeInvitationPayment, fakeInvitationAmount } = await getInvitation(
+    zoe,
+    installations,
+  );
 
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const baggage = makeScalarBigMapStore('baggage');
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const storageNode = makeMockChainStorageRoot();
+
+  let recorderKit;
+  if (child) {
+    recorderKit = makeRecorderKit(storageNode.makeChildNode(child));
+  } else {
+    recorderKit = makeRecorderKit(storageNode);
+  }
 
   const scheduleTracker = await subscriptionTracker(
     t,
     subscribeEach(recorderKit.subscriber),
   );
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  // at 0: capturePrice, at 1: 1st step, at 3: 2nd step,
-  // at 5: 3rd step, reset price, set final
-  defaultParams = {
-    ...defaultParams,
-    AuctionStartDelay: 1n,
-    StartFrequency: 10n,
-    PriceLockPeriod: 5n,
-  };
+
+  const defaultParams = makeDefaultParams(
+    [fakeInvitationPayment, fakeInvitationAmount],
+    timerBrand,
+  );
   /** @type {import('../../src/auction/params.js').AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
+    makeAuctioneerParams({ ...defaultParams, ...customParams }),
     r => r.value,
   );
 
-  /** @type {bigint} */
-  let now = await timer.advanceTo(127n);
+  if (startTime) {
+    await timer.advanceTo(startTime);
+  }
 
-  const { publisher } = makeGovernancePublisherFromFakes();
   const paramManager = await makeAuctioneerParamManager(
-    // @ts-expect-error test fakes
-    { publisher, subscriber: null },
+    recorderKit,
     zcf,
+    makeScalarBigMapStore('baggage'),
     paramValues,
   );
 
   const { subscriber } = makePublishKit();
+  const { behavior: params } = await paramManager.accessors();
   const scheduler = await makeScheduler(
     fakeAuctioneer,
     timer,
-    paramManager,
+    params,
     timer.getTimerBrand(),
     recorderKit.recorder,
-    // @ts-expect-error Oops. Wrong kind of subscriber.
     subscriber,
   );
+  return {
+    zoe,
+    zcf,
+    timer,
+    fakeAuctioneer,
+    scheduleTracker,
+    scheduler,
+    paramManager,
+    installations,
+    storageNode,
+    makeRecorderKit,
+  };
+};
+
+test('schedule start to finish', async t => {
+  // at 0: capturePrice, at 1: 1st step, at 3: 2nd step,
+  // at 5: 3rd step, reset price, set final
+  const customParams = {
+    AuctionStartDelay: 1n,
+    StartFrequency: 10n,
+    PriceLockPeriod: 5n,
+  };
+  const { timer, fakeAuctioneer, scheduleTracker, scheduler } =
+    await setupScheduleTest(t, customParams, 127n);
+  const timerBrand = await timer.getTimerBrand();
   const schedule = scheduler.getSchedule();
+  let now = timer.getCurrentTimestamp();
+
   t.deepEqual(schedule.liveAuctionSchedule, null);
   const firstSchedule = {
     startTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
@@ -91,19 +133,38 @@ test('schedule start to finish', async t => {
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
+  const relative = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
+
   t.false(fakeAuctioneer.getState().final);
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().capturedPrices);
 
   // :08
-  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(TimeMath.addAbsRel(now, 1n));
 
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().final);
   t.false(fakeAuctioneer.getState().capturedPrices);
 
-  await scheduleTracker.assertInitial({
+  await scheduleTracker.assertLike({
+    current: {
+      AuctionStartDelay: {
+        type: 'relativeTime',
+        value: relative(customParams.AuctionStartDelay),
+      },
+      PriceLockPeriod: {
+        type: 'relativeTime',
+        value: relative(customParams.PriceLockPeriod),
+      },
+      StartFrequency: {
+        type: 'relativeTime',
+        value: relative(customParams.StartFrequency),
+      },
+    },
+  });
+  await scheduleTracker.assertChange({
     activeStartTime: null,
+    current: undefined,
     nextDescendingStepTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
     nextStartTime: TimeMath.coerceTimestampRecord(131n, timerBrand),
   });
@@ -120,7 +181,7 @@ test('schedule start to finish', async t => {
   });
 
   // XX:01
-  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(TimeMath.addAbsRel(now, 1n));
   await scheduleTracker.assertChange({
     nextDescendingStepTime: { absValue: 133n },
   });
@@ -256,355 +317,80 @@ test('schedule start to finish', async t => {
 });
 
 test('lowest >= starting', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     LowestRate: 110n,
     StartingRate: 105n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
 
-  await timer.advanceTo(127n);
-
-  const { publisher } = makeGovernancePublisherFromFakes();
-  const paramManager = await makeAuctioneerParamManager(
-    // @ts-expect-error test fakes
-    { publisher, subscriber: null },
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('zero time for auction', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     StartFrequency: 2n,
     ClockStep: 3n,
     AuctionStartDelay: 1n,
     PriceLockPeriod: 1n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
 
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('discountStep 0', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     DiscountStep: 0n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
 
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('discountStep larger than starting rate', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     StartingRate: 10100n,
     DiscountStep: 10500n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
 
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('start Freq 0', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     StartFrequency: 0n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
 
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('delay > freq', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     AuctionStartDelay: 40n,
     StartFrequency: 20n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
 
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 test('lockPeriod > freq', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     PriceLockPeriod: 7200n,
     StartFrequency: 3600n,
     AuctionStartDelay: 500n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
-
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
+  const { scheduler } = await setupScheduleTest(t, customParams, 127n);
   t.is(scheduler.getSchedule().nextAuctionSchedule, null);
 });
 
 // if duration = frequency, we'll cut the duration short to fit.
 test('duration = freq', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead, cut the auction short.
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     PriceLockPeriod: 20n,
     StartFrequency: 360n,
     AuctionStartDelay: 5n,
@@ -613,32 +399,10 @@ test('duration = freq', async t => {
     LowestRate: 40n,
     DiscountStep: 10n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
-
-  await timer.advanceTo(127n);
-
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
-
+  const { timer, scheduler } = await setupScheduleTest(t, customParams, 127n);
+  const timerBrand = await timer.getTimerBrand();
   let schedule = scheduler.getSchedule();
+
   t.deepEqual(schedule.liveAuctionSchedule, null);
   const firstSchedule = {
     startTime: TimeMath.coerceTimestampRecord(365n, timerBrand),
@@ -669,32 +433,14 @@ test('duration = freq', async t => {
 });
 
 test('change Schedule', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
   const startFreq = 360n;
   const lockPeriodT = 20n;
-  const lockPeriod = TimeMath.coerceRelativeTimeRecord(lockPeriodT, timerBrand);
   const startDelayT = 5n;
-  const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
   const clockStep = 60n;
 
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead, cut the auction short.
-
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     PriceLockPeriod: lockPeriodT,
     StartFrequency: startFreq,
     AuctionStartDelay: startDelayT,
@@ -703,34 +449,15 @@ test('change Schedule', async t => {
     LowestRate: 40n,
     DiscountStep: 10n,
   };
-
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
+  const { timer, scheduler, paramManager } = await setupScheduleTest(
+    t,
+    customParams,
+    127n,
   );
-  await timer.advanceTo(127n);
+  const timerBrand = await timer.getTimerBrand();
+  const lockPeriod = TimeMath.coerceRelativeTimeRecord(lockPeriodT, timerBrand);
+  const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
 
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-  // XXX let the value be set async. A concession to upgradability
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  await paramManager.getParams();
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
   let schedule = scheduler.getSchedule();
   t.is(schedule.liveAuctionSchedule, null);
 
@@ -779,9 +506,6 @@ test('change Schedule', async t => {
     StartFrequency: TimeMath.coerceRelativeTimeRecord(newFreq, timerBrand),
     ClockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
   });
-  // XXX let the value be set async. A concession to upgradability
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  await paramManager.getParams();
 
   await timer.advanceTo(expected2ndSchedule.lockTime);
   schedule = scheduler.getSchedule();
@@ -862,32 +586,13 @@ test('change Schedule', async t => {
 });
 
 test('change Schedule late', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-
-  const startFreq = 360n;
-  const lockPeriodT = 20n;
-  const lockPeriod = TimeMath.coerceRelativeTimeRecord(lockPeriodT, timerBrand);
-  const startDelayT = 5n;
-  const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
-  const clockStep = 60n;
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makeGovernancePublisherFromFakes();
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead, cut the auction short.
-
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  defaultParams = {
-    ...defaultParams,
+  const startFreq = 360n;
+  const lockPeriodT = 20n;
+  const startDelayT = 5n;
+  const clockStep = 60n;
+  const customParams = {
     PriceLockPeriod: lockPeriodT,
     StartFrequency: startFreq,
     AuctionStartDelay: startDelayT,
@@ -896,36 +601,19 @@ test('change Schedule late', async t => {
     LowestRate: 40n,
     DiscountStep: 10n,
   };
-
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
+  const { timer, paramManager, scheduler } = await setupScheduleTest(
+    t,
+    customParams,
+    127n,
   );
-  await timer.advanceTo(127n);
+  const timerBrand = await timer.getTimerBrand();
+  let schedule = scheduler.getSchedule();
+
+  const lockPeriod = TimeMath.coerceRelativeTimeRecord(lockPeriodT, timerBrand);
+  const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
+
   await eventLoopIteration();
 
-  const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
-    zcf,
-    paramValues,
-  );
-  // XXX let the value be set async. A concession to upgradability
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  await paramManager.getParams();
-
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. wrong kind of subscriber.
-    subscriber,
-  );
-  let schedule = scheduler.getSchedule();
   t.is(schedule.liveAuctionSchedule, null);
 
   const lockTime = 345n;
@@ -1022,9 +710,6 @@ test('change Schedule late', async t => {
     StartFrequency: TimeMath.coerceRelativeTimeRecord(newFreq, timerBrand),
     ClockStep: TimeMath.coerceRelativeTimeRecord(newStep, timerBrand),
   });
-  // XXX let the value be set async. A concession to upgradability
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  await paramManager.getParams();
 
   schedule = scheduler.getSchedule();
   t.deepEqual(schedule.nextAuctionSchedule, expected3rdSchedule);
@@ -1085,71 +770,52 @@ test('change Schedule late', async t => {
 });
 
 test('schedule anomalies', async t => {
-  const { zcf, zoe } = await setupZCFTest();
-  const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint }} */
-  const timer = buildManualTimer();
-  const timerBrand = await timer.getTimerBrand();
-  const timestamp = time => TimeMath.coerceTimestampRecord(time, timerBrand);
-  const relative = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
-
-  const fakeAuctioneer = makeFakeAuctioneer();
-  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-
-  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
-  const recorderKit = makeRecorderKit(storageNode);
-
-  const scheduleTracker = await subscriptionTracker(
-    t,
-    subscribeEach(recorderKit.subscriber),
-  );
-  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   const oneCycle = 3600n;
   const delay = 30n;
   const lock = 300n;
   const step = 240n;
   const duration = 480n + delay;
-  defaultParams = {
-    ...defaultParams,
+  const customParams = {
     StartFrequency: oneCycle,
     ClockStep: step,
     AuctionStartDelay: delay,
     PriceLockPeriod: lock,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
-  // @ts-expect-error ignore missing values for test
-  const paramValues = objectMap(
-    makeAuctioneerParams(defaultParams),
-    r => r.value,
-  );
 
-  // sometime in November 2023, so we're not using times near zero
   const baseTime = 1700002800n;
-  /** @type {bigint} */
+  const { timer, fakeAuctioneer, scheduler, scheduleTracker } =
+    await setupScheduleTest(t, customParams, baseTime - (lock + 1n), 'current');
+  const timerBrand = await timer.getTimerBrand();
   // ////////////// BEFORE LOCKING ///////////
-  let now = await timer.advanceTo(baseTime - (lock + 1n));
+  let now = await timer.getCurrentTimestamp();
 
-  const { publisher } = makeGovernancePublisherFromFakes();
-  const paramManager = await makeAuctioneerParamManager(
-    // @ts-expect-error test fakes
-    { publisher, subscriber: null },
-    zcf,
-    paramValues,
-  );
+  const timestamp = time => TimeMath.coerceTimestampRecord(time, timerBrand);
+  const relative = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
 
-  const { subscriber } = makePublishKit();
-  const scheduler = await makeScheduler(
-    fakeAuctioneer,
-    timer,
-    paramManager,
-    timer.getTimerBrand(),
-    recorderKit.recorder,
-    // @ts-expect-error Oops. Wrong kind of subscriber.
-    subscriber,
-  );
   const firstStart = baseTime + delay;
-  await scheduleTracker.assertInitial({
+  await scheduleTracker.assertLike({
+    current: {
+      AuctionStartDelay: {
+        type: 'relativeTime',
+        value: relative(customParams.AuctionStartDelay),
+      },
+      PriceLockPeriod: {
+        type: 'relativeTime',
+        value: relative(customParams.PriceLockPeriod),
+      },
+      StartFrequency: {
+        type: 'relativeTime',
+        value: relative(customParams.StartFrequency),
+      },
+      ClockStep: {
+        type: 'relativeTime',
+        value: relative(customParams.ClockStep),
+      },
+    },
+  });
+  await scheduleTracker.assertChange({
     activeStartTime: null,
+    current: undefined,
     nextDescendingStepTime: timestamp(firstStart),
     nextStartTime: TimeMath.coerceTimestampRecord(baseTime + delay, timerBrand),
   });
