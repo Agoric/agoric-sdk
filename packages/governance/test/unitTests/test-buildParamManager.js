@@ -2,45 +2,69 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeParamManagerBuilder, ParamTypes } from '../../src/index.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareMockRecorderKitMakers } from '@agoric/zoe/tools/mockRecorderKit.js';
 
-test('two parameters', t => {
-  const drachmaKit = makeIssuerKit('drachma');
+import {
+  makeParamManagerBuilder,
+  ParamTypes,
+  buildParamGovernanceExoMakers,
+} from '../../src/index.js';
 
-  const drachmaBrand = drachmaKit.brand;
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+const drachmaKit = makeIssuerKit('drachma');
+const drachmaBrand = drachmaKit.brand;
+
+export const makeZoeKit = issuerKit => {
+  const terms = harden({
+    mmr: makeRatio(150n, issuerKit.brand),
+  });
+  const issuerKeywordRecord = harden({
+    Ignore: issuerKit.issuer,
+  });
+  return setupZCFTest(issuerKeywordRecord, terms);
+};
+
+export const makeBuilder = (zcf, zoe) => {
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
+  const baggage = makeScalarBigMapStore('baggage');
+  const paramMakerKit = buildParamGovernanceExoMakers(
+    zcf.getZoeService(),
+    baggage,
+  );
+  return makeParamManagerBuilder(baggage, recorderKit, paramMakerKit, zoe);
+};
+
+test('two parameters', async t => {
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addBrand('Collateral', drachmaBrand)
     .addAmount('Amt', AmountMath.make(drachmaBrand, 37n))
     .build();
 
-  t.is(paramManager.getBrand('Collateral'), drachmaBrand);
-  t.is(paramManager.getCollateral(), drachmaBrand);
-  t.deepEqual(
-    paramManager.getAmount('Amt'),
-    AmountMath.make(drachmaBrand, 37n),
-  );
+  const { behavior: getters } = await paramManager.accessors();
+
+  t.is(getters.getCollateral(), drachmaBrand);
+  t.deepEqual(getters.getAmt(), AmountMath.make(drachmaBrand, 37n));
 });
 
 test('getParams', async t => {
-  const drachmaKit = makeIssuerKit('drachma');
-
-  const drachmaBrand = drachmaKit.brand;
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
   const drachmas = AmountMath.make(drachmaBrand, 37n);
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+
+  const paramManager = await makeBuilder(zcf, zoe)
     .addBrand('Collateral', drachmaBrand)
     .addAmount('Amt', drachmas)
     .build();
 
   t.deepEqual(
-    await paramManager.getParams(),
+    await paramManager.getParamDescriptions(),
     harden({
       Collateral: {
         type: ParamTypes.BRAND,
@@ -57,34 +81,35 @@ test('getParams', async t => {
 test('params duplicate entry', async t => {
   const stuffKey = 'Stuff';
   const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+
   t.throws(
     () =>
-      makeParamManagerBuilder(makeStoredPublisherKit())
+      makeBuilder(zcf, zoe)
         .addNat(stuffKey, 37n)
         .addUnknown(stuffKey, stiltonBrand)
         .build(),
     {
-      message: `"Parameter Name" already registered: "Stuff"`,
+      message:
+        'key "Stuff" already registered in collection "Parameter Holders"',
     },
   );
 });
 
 test('Amount', async t => {
-  const { brand: floorBrand } = makeIssuerKit('floor wax');
+  const waxKit = makeIssuerKit('floor wax');
+  const { brand: floorBrand } = waxKit;
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(waxKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addAmount('Shimmer', AmountMath.make(floorBrand, 2n))
     .build();
-  t.deepEqual(
-    paramManager.getAmount('Shimmer'),
-    AmountMath.make(floorBrand, 2n),
-  );
+  const { behavior: getters } = await paramManager.accessors();
+
+  t.deepEqual(getters.getShimmer(), AmountMath.make(floorBrand, 2n));
 
   await paramManager.updateParams({ Shimmer: AmountMath.make(floorBrand, 5n) });
-  t.deepEqual(
-    paramManager.getAmount('Shimmer'),
-    AmountMath.make(floorBrand, 5n),
-  );
+  t.deepEqual(getters.getShimmer(), AmountMath.make(floorBrand, 5n));
 
   await t.throwsAsync(
     () =>
@@ -93,20 +118,17 @@ test('Amount', async t => {
       }),
     {
       message:
-        'The brand in the allegedAmount {"brand":"[Alleged: dessertTopping brand]","value":"[20n]"} in \'coerce\' didn\'t match the specified brand "[Alleged: floor wax brand]".',
+        /Shimmer must match \[object Object], was \[object Object]: brand: "\[Alleged: dessertTopping brand]" - Must be: "\[Alleged: floor wax brand]"/,
     },
   );
 
   await t.throwsAsync(
     () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
     {
-      message: 'Expected an Amount for "Shimmer", got: "fear,loathing"',
+      message:
+        /Shimmer must match \[object Object], was fear,loathing: "fear,loathing" - Must be a copyRecord to match a copyRecord pattern: {"brand":"\[Alleged: floor wax brand]","value":"\[match:or]"}/,
     },
   );
-
-  t.throws(() => paramManager.getString('Shimmer'), {
-    message: '"Shimmer" is not "string"',
-  });
 });
 
 test('params one installation', async t => {
@@ -118,15 +140,18 @@ test('params one installation', async t => {
     getBundle: () => ({ obfuscated: 42 }),
   });
 
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addInstallation('PName', installationHandle)
     .build();
+  const { behavior: getters } = await paramManager.accessors();
 
-  t.deepEqual(paramManager.getInstallation('PName'), installationHandle);
+  t.deepEqual(getters.getPName(), installationHandle);
   await t.throwsAsync(
     () => paramManager.updateParams({ PName: 18.1 }),
     {
-      message: 'value for "PName" must be an Installation, was 18.1',
+      message:
+        /PName must match .*, was 18.1: 18.1 - Must be a remotable Installation, not number/,
     },
     'value should be an installation',
   );
@@ -136,14 +161,10 @@ test('params one installation', async t => {
     getBundle: () => ({ condensed: '() => {})' }),
   });
   await paramManager.updateParams({ PName: handle2 });
-  t.deepEqual(paramManager.getInstallation('PName'), handle2);
-
-  t.throws(() => paramManager.getNat('PName'), {
-    message: '"PName" is not "nat"',
-  });
+  t.deepEqual(getters.getPName(), handle2);
 
   t.deepEqual(
-    await paramManager.getParams(),
+    await paramManager.getParamDescriptions(),
     harden({
       PName: {
         type: ParamTypes.INSTALLATION,
@@ -159,24 +180,27 @@ test('params one instance', async t => {
   // isInstallation() (#3344), we'll need to make a mockZoe.
   const instanceHandle = makeHandle(handleType);
 
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addInstance('PName', instanceHandle)
     .build();
+  const { behavior: getters } = await paramManager.accessors();
 
-  t.deepEqual(paramManager.getInstance('PName'), instanceHandle);
+  t.deepEqual(getters.getPName(), instanceHandle);
   await t.throwsAsync(
     () => paramManager.updateParams({ PName: 18.1 }),
     {
-      message: 'value for "PName" must be an Instance, was 18.1',
+      message:
+        /PName must match \[object match:remotable], was 18.1: 18.1 - Must be a remotable InstanceHandle, not number/,
     },
     'value should be an instance',
   );
   const handle2 = makeHandle(handleType);
   await paramManager.updateParams({ PName: handle2 });
-  t.deepEqual(paramManager.getInstance('PName'), handle2);
+  t.deepEqual(getters.getPName(), handle2);
 
   t.deepEqual(
-    await paramManager.getParams(),
+    await paramManager.getParamDescriptions(),
     harden({
       PName: {
         type: ParamTypes.INSTANCE,
@@ -187,7 +211,6 @@ test('params one instance', async t => {
 });
 
 test('Invitation', async t => {
-  const drachmaKit = makeIssuerKit('drachma');
   const terms = harden({
     mmr: makeRatio(150n, drachmaKit.brand),
   });
@@ -196,7 +219,7 @@ test('Invitation', async t => {
     Ignore: drachmaKit.issuer,
   });
 
-  const { instance, zoe } = await setupZCFTest(issuerKeywordRecord, terms);
+  const { instance, zoe, zcf } = await setupZCFTest(issuerKeywordRecord, terms);
 
   const invitation = await E(E(zoe).getPublicFacet(instance)).makeInvitation();
 
@@ -204,24 +227,17 @@ test('Invitation', async t => {
     invitation,
   );
 
-  const drachmaBrand = drachmaKit.brand;
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
-  const paramManagerBuilder = makeParamManagerBuilder(
-    makeStoredPublisherKit(),
-    zoe,
-  )
+  const paramManagerBuilder = await makeBuilder(zcf, zoe)
     .addBrand('Collateral', drachmaBrand)
-    .addAmount('Amt', drachmaAmount);
-  // addInvitation is async, so it can't be part of the cascade.
-  await paramManagerBuilder.addInvitation('Invite', invitation);
-  const paramManager = paramManagerBuilder.build();
+    .addAmount('Amt', drachmaAmount)
+    .addInvitation('Invite', invitation);
+  const paramManager = await paramManagerBuilder.build();
+  const { behavior: getters } = await paramManager.accessors();
 
-  t.is(paramManager.getBrand('Collateral'), drachmaBrand);
-  t.is(paramManager.getAmount('Amt'), drachmaAmount);
-  // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  await eventLoopIteration();
-  const invitationActualAmount =
-    paramManager.getInvitationAmount('Invite').value;
+  t.is(getters.getCollateral(), drachmaBrand);
+  t.is(getters.getAmt(), drachmaAmount);
+  const invitationActualAmount = getters.getInvite().value;
   t.deepEqual(invitationActualAmount, invitationAmount.value);
   t.assert(keyEQ(invitationActualAmount, invitationAmount.value));
   t.is(invitationActualAmount[0].description, 'simple');
@@ -229,7 +245,7 @@ test('Invitation', async t => {
   t.is(await paramManager.getInternalParamValue('Invite'), invitation);
 
   t.deepEqual(
-    await paramManager.getParams(),
+    await paramManager.getParamDescriptions(),
     harden({
       Amt: {
         type: ParamTypes.AMOUNT,
@@ -248,23 +264,27 @@ test('Invitation', async t => {
 });
 
 test('two Nats', async t => {
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addNat('Acres', 50n)
     .addNat('SpeedLimit', 299_792_458n)
     .build();
+  const { behavior: getters } = await paramManager.accessors();
 
-  t.is(paramManager.getNat('Acres'), 50n);
-  t.is(paramManager.getNat('SpeedLimit'), 299_792_458n);
+  t.is(getters.getAcres(), 50n);
+  t.is(getters.getSpeedLimit(), 299_792_458n);
 
   await t.throwsAsync(
     () => paramManager.updateParams({ SpeedLimit: 300000000 }),
     {
-      message: '300000000 must be a bigint',
+      message:
+        /SpeedLimit must match \[object match:nat], was 300000000: number 300000000 - Must be a bigint/,
     },
   );
 
   await t.throwsAsync(() => paramManager.updateParams({ SpeedLimit: -37n }), {
-    message: '-37 is negative',
+    message:
+      /SpeedLimit must match \[object match:nat], was -37: "\[-37n]" - Must be non-negative/,
   });
 });
 
@@ -272,21 +292,25 @@ test('Ratio', async t => {
   const unitlessBrand = makeIssuerKit('unitless').brand;
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addRatio('GoldenRatio', ratio)
     .build();
-  t.is(paramManager.getRatio('GoldenRatio'), ratio);
+  const { behavior: getters } = await paramManager.accessors();
+
+  t.is(getters.getGoldenRatio(), ratio);
 
   const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
   await paramManager.updateParams({ GoldenRatio: morePrecise });
-  t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
+  t.is(getters.getGoldenRatio(), morePrecise);
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
 
   await t.throwsAsync(
     () => paramManager.updateParams({ GoldenRatio: 300000000 }),
     {
-      message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
+      message:
+        /GoldenRatio must match .*, was 300000000: 300000000 - Must be a copyRecord to match a copyRecord pattern: {"numerator":{"brand":"\[Alleged: unitless brand]","value":"\[match:nat]"}/,
     },
   );
 
@@ -297,7 +321,7 @@ test('Ratio', async t => {
       }),
     {
       message:
-        'Numerator brand for "GoldenRatio" must be "[Alleged: unitless brand]"',
+        /GoldenRatio must match \[object Object], was \[object Object]: numerator: brand: "\[Alleged: arbitrary brand]"/,
     },
   );
 });
@@ -311,10 +335,13 @@ test('Record', async t => {
     C2: 'Flying',
     D: 'Blue Jay Way',
   });
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addRecord('BestEP', epRecord)
     .build();
-  t.is(paramManager.getRecord('BestEP'), epRecord);
+  const { behavior: getters } = await paramManager.accessors();
+
+  t.is(getters.getBestEP(), epRecord);
 
   const replacement = harden({
     A1: "Wouldn't It Be Nice",
@@ -323,7 +350,7 @@ test('Record', async t => {
     B2: "I Know There's an Answer",
   });
   await paramManager.updateParams({ BestEP: replacement });
-  t.is(paramManager.getRecord('BestEP'), replacement);
+  t.is(getters.getBestEP(), replacement);
 
   const brokenRecord = {
     A1: 'Long Tall Sally',
@@ -331,13 +358,9 @@ test('Record', async t => {
     B1: 'Slow Down',
     B2: 'Matchbox',
   };
-  await t.throwsAsync(
-    () => paramManager.updateParams({ BestEP: brokenRecord }),
-    {
-      message:
-        'Cannot pass non-frozen objects like {"A1":"Long Tall Sally","A2":"I Call Your Name","B1":"Slow Down","B2":"Matchbox"}. Use harden()',
-    },
-  );
+
+  await paramManager.updateParams({ BestEP: brokenRecord });
+  t.is(getters.getBestEP(), brokenRecord);
 
   await t.throwsAsync(
     () =>
@@ -345,7 +368,7 @@ test('Record', async t => {
         duration: '2:37',
       }),
     {
-      message: 'setters[name] is not a function',
+      message: 'key "duration" not found in collection "Parameter Holders"',
     },
   );
 
@@ -355,44 +378,47 @@ test('Record', async t => {
         BestEP: '2:37',
       }),
     {
-      message: '"2:37" must be an object',
+      message:
+        /BestEP must match \[object match:recordOf], was 2:37: string "2:37" - Must be a copyRecord/,
     },
   );
 });
 
 test('Strings', async t => {
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addNat('Acres', 50n)
     .addString('OurWeapons', 'fear')
     .build();
-  t.is(paramManager.getString('OurWeapons'), 'fear');
+  const { behavior: getters } = await paramManager.accessors();
+  t.is(getters.getOurWeapons(), 'fear');
 
   await paramManager.updateParams({ OurWeapons: 'fear,surprise' });
-  t.is(paramManager.getString('OurWeapons'), 'fear,surprise');
+  t.is(getters.getOurWeapons(), 'fear,surprise');
   await t.throwsAsync(
     () =>
       paramManager.updateParams({
         OurWeapons: 300000000,
       }),
     {
-      message: '300000000 must be a string',
+      message:
+        /OurWeapons must match \[object match:string], was 300000000: number 300000000 - Must be a string/,
     },
   );
-
-  t.throws(() => paramManager.getNat('OurWeapons'), {
-    message: '"OurWeapons" is not "nat"',
-  });
 });
 
 test('Unknown', async t => {
-  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
+  const { zcf, zoe } = await makeZoeKit(drachmaKit);
+  const paramManager = await makeBuilder(zcf, zoe)
     .addString('Label', 'birthday')
     .addUnknown('Surprise', 'party')
     .build();
-  t.is(paramManager.getUnknown('Surprise'), 'party');
+  const { behavior: getters } = await paramManager.accessors();
+
+  t.is(getters.getSurprise(), 'party');
 
   await paramManager.updateParams({ Surprise: 'gift' });
-  t.is(paramManager.getUnknown('Surprise'), 'gift');
+  t.is(getters.getSurprise(), 'gift');
   await paramManager.updateParams({ Surprise: ['gift', 'party'] });
-  t.deepEqual(paramManager.getUnknown('Surprise'), ['gift', 'party']);
+  t.deepEqual(getters.getSurprise(), ['gift', 'party']);
 });

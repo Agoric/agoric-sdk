@@ -2,16 +2,17 @@ import '@agoric/zoe/exported.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';
 
 const voteCounterRoot = '../../src/binaryVoteCounter.js';
@@ -22,8 +23,7 @@ const committeeRoot = '../../src/committee.js';
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  return contractBundle;
+  return bundleSource(path);
 };
 
 // makeBundle is a slow step, so we do it once for all the tests.
@@ -98,6 +98,8 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     governorTerms,
     {
       governed: {
+        storageNode: makeMockChainStorageRoot().makeChildNode('governed'),
+        marshaller: remoteNullMarshaller,
         initialPoserInvitation: poserInvitation,
       },
     },
@@ -126,9 +128,8 @@ test('governParam no votes', async t => {
 
   /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
-  const notifier = makeNotifierFromAsyncIterable(
-    await E(publicFacet).getSubscription(),
-  );
+  const topic = await E.get(E(publicFacet).getPublicTopics()).governance;
+  const notifier = makeNotifierFromSubscriber(topic.subscriber);
   const update1 = await notifier.getUpdateSince();
   t.like(update1, {
     value: {
@@ -156,7 +157,7 @@ test('governParam no votes', async t => {
 
   // no update2 because the value didn't change
 
-  t.deepEqual(await E(publicFacet).getGovernedParams(), {
+  t.deepEqual(await E(publicFacet).getParamDescriptions(), {
     Electorate: {
       type: 'invitation',
       value: invitationAmount,
@@ -194,7 +195,7 @@ test('multiple params bad change', async t => {
       ),
     {
       message:
-        /In "getAmountOf" method of \(Zoe Invitation issuer\): arg 0: .*"\[13n\]" - Must be a remotable/,
+        /Proposed value 13 for Electorate must match InvitationShape: "\[13n]" - Must be a remotable Invitation, not bigint/,
     },
   );
 });
@@ -211,16 +212,12 @@ test('change multiple params', async t => {
 
   /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
-  const notifier = makeNotifierFromAsyncIterable(
-    await E(publicFacet).getSubscription(),
-  );
+  const topic = await E.get(E(publicFacet).getPublicTopics()).governance;
+  const notifier = makeNotifierFromSubscriber(topic.subscriber);
   await eventLoopIteration();
   const update1 = await notifier.getUpdateSince();
-  // This value isn't available synchronously
-  // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
-    // @ts-expect-error reaching into {} values
     update1.value.current.Electorate.value.value[0].description,
     'questionPoser',
   );
@@ -279,7 +276,7 @@ test('change multiple params', async t => {
     },
   });
 
-  const paramsAfter = await E(publicFacet).getGovernedParams();
+  const paramsAfter = await E(publicFacet).getParamDescriptions();
   t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
   t.is(paramsAfter.MalleableNumber.value, 42n);
 });
@@ -296,9 +293,8 @@ test('change multiple params used invitation', async t => {
 
   /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
-  const notifier = makeNotifierFromAsyncIterable(
-    await E(publicFacet).getSubscription(),
-  );
+  const topic = await E.get(E(publicFacet).getPublicTopics()).governance;
+  const notifier = makeNotifierFromSubscriber(topic.subscriber);
   const update1 = await notifier.getUpdateSince();
   t.like(update1, {
     value: {
@@ -349,7 +345,7 @@ test('change multiple params used invitation', async t => {
 
   // no update2 because the value didn't change
 
-  const paramsAfter = await E(publicFacet).getGovernedParams();
+  const paramsAfter = await E(publicFacet).getParamDescriptions();
   t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
   // original value
   t.is(paramsAfter.MalleableNumber.value, 602214090000000000000000n);
@@ -367,9 +363,8 @@ test('change param continuing invitation', async t => {
 
   /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
-  const notifier = makeNotifierFromAsyncIterable(
-    await E(publicFacet).getSubscription(),
-  );
+  const topic = await E.get(E(publicFacet).getPublicTopics()).governance;
+  const notifier = makeNotifierFromSubscriber(topic.subscriber);
   const update1 = await notifier.getUpdateSince();
   t.like(update1, {
     value: {
@@ -408,7 +403,7 @@ test('change param continuing invitation', async t => {
   await E(timer).tick();
   await eventLoopIteration();
 
-  const paramsAfter = await E(publicFacet).getGovernedParams();
+  const paramsAfter = await E(publicFacet).getParamDescriptions();
   t.is(paramsAfter.MalleableNumber.value, 42n);
 
   const update2 = await notifier.getUpdateSince(update1.updateCount);

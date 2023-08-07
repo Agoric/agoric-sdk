@@ -2,6 +2,7 @@
 
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { E } from '@endo/eventual-send';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -72,29 +73,33 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
   trace('awaiting takeFeeMint');
   const feeMint = await takeFeeMint();
-  const storageNode = await privateArgs.storageNode;
+  const [storageNode, governanceNode] = await Promise.all([
+    privateArgs.storageNode,
+    E(privateArgs.storageNode).makeChildNode('governance'),
+  ]);
+
+  const { makeGovernorFacet, publicMixin } = await handleParamGovernance(
+    zcf,
+    baggage,
+    privateArgs.initialPoserInvitation,
+    {},
+    makeRecorderKit,
+    governanceNode,
+  );
+
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
     feeMint,
     makeRecorderKit,
     storageNode,
     zcf,
+    getPublicTopics: publicMixin.getPublicTopics,
   });
 
   const { assetReserveKit } = await provideAll(baggage, {
     assetReserveKit: makeAssetReserveKit,
   });
 
-  trace('awaiting handleParamGovernance');
-  const { makeDurableGovernorFacet } = await handleParamGovernance(
-    zcf,
-    privateArgs.initialPoserInvitation,
-    {},
-    privateArgs.storageNode,
-    privateArgs.marshaller,
-  );
-
-  const { governorFacet } = makeDurableGovernorFacet(
-    baggage,
+  const governorFacet = makeGovernorFacet(
     assetReserveKit.machine,
     // reconstruct facet so that the keys are enumerable and that the client can't depend on object identity
     {

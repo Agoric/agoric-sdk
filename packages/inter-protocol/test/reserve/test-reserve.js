@@ -274,15 +274,13 @@ test('storage keys', async t => {
 
   const { reserve } = await setupReserveServices(t, electorateTerms, timer);
 
-  // TODO restore governance public mixin
-  // t.is(
-  //   await subscriptionKey(E(reserve.reservePublicFacet).getSubscription()),
-  //   'mockChainStorageRoot.reserve.governance',
-  // );
-
   const publicTopics = await E(reserve.reservePublicFacet).getPublicTopics();
   t.is(
-    await publicTopics.metrics.storagePath,
+    await E.get(E.get(publicTopics).governance).storagePath,
+    'mockChainStorageRoot.reserve.governance',
+  );
+  t.is(
+    await E.get(E.get(publicTopics).metrics).storagePath,
     'mockChainStorageRoot.reserve.metrics',
   );
 });

@@ -10,7 +10,7 @@ import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
-import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
 import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
@@ -64,6 +64,7 @@ harden(meta);
  *   marshaller: ERef<Marshaller>;
  *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
  *   storageNode: StorageNode;
+ *   recorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -92,7 +93,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
     'Price Aggregator publish kit',
   );
-  const makeRecorder = prepareRecorder(baggage, marshaller);
+  const { makeRecorder, makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    marshaller,
+  );
 
   const makeFluxAggregatorKit = await prepareFluxAggregatorKit(
     baggage,
@@ -100,6 +104,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     timer,
     quoteIssuerKit,
     storageNode,
+    makeRecorderKit(storageNode),
     makeDurablePublishKit,
     makeRecorder,
   );
@@ -109,20 +114,20 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
   trace('got faKit', faKit);
 
-  // cannot be stored in baggage because not durable
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  const { makeDurableGovernorFacet } = handleParamGovernance(
-    // @ts-expect-error FIXME include Governance params
+  const { makeGovernorFacet } = await handleParamGovernance(
+    // TODO(turadg):  Type decl help needed here.
+    // @ts-expect-error parameterized type confusion?
     zcf,
+    baggage,
     initialPoserInvitation,
     {
-      // No governed parameters. Governance just for API methods.
+      /* Only governed parameter is electorate. */
     },
+    makeRecorderKit,
     storageNode,
-    marshaller,
   );
 
-  trace('got makeDurableGovernorFacet', makeDurableGovernorFacet);
+  trace('got makeGovernorFacet', makeGovernorFacet);
 
   /**
    * Initialize a new oracle and send an invitation to control it.
@@ -181,11 +186,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   };
 
-  const { governorFacet } = makeDurableGovernorFacet(
-    baggage,
-    faKit.creator,
-    governedApis,
-  );
+  const governorFacet = makeGovernorFacet(faKit.creator, governedApis);
   trace('made governorFacet', governorFacet);
 
   return harden({

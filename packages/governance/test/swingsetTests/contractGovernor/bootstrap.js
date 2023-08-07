@@ -145,7 +145,8 @@ const watchParams = async (zoe, contractInstanceP, log) => {
   const contractInstance = await contractInstanceP;
   /** @type {GovernedPublicFacetMethods} */
   const contractPublic = E(zoe).getPublicFacet(contractInstance);
-  const subscription = await E(contractPublic).getSubscription();
+  const topic = await E.get(E(contractPublic).getPublicTopics()).governance;
+  const { subscriber } = topic;
   /** @type {any} */
   let prev = await E(contractPublic).getGovernedParams();
   const paramChangeObserver = Far('param observer', {
@@ -167,7 +168,7 @@ const watchParams = async (zoe, contractInstanceP, log) => {
       prev = current;
     },
   });
-  void observeIteration(subscribeEach(subscription), paramChangeObserver);
+  void observeIteration(subscribeEach(subscriber), paramChangeObserver);
 };
 
 const setupParameterChanges = async (
@@ -312,6 +313,8 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   ).startInstance(installations.contractGovernor, {}, governedContractTerms, {
     governed: {
       initialPoserInvitation,
+      storageNode: makeMockChainStorageRoot().makeChildNode('governed'),
+      marshaller: remoteNullMarshaller,
     },
   });
   const governedInstance = E(governor).getInstance();

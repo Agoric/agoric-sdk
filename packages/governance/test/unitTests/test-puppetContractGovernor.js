@@ -1,7 +1,7 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
@@ -54,7 +54,7 @@ test('multiple params bad change', async t => {
     () => E(governorFacets.creatorFacet).changeParams(paramChangesSpec),
     {
       message:
-        'In "getInvitationDetails" method of (ZoeService): arg 0: "[13n]" - Must match one of ["[match:remotable]","[match:kind]"]',
+        /In "getAmountOf" method of \(Zoe Invitation issuer\): arg 0: "\[13n]" - Must be a remotable Payment, not bigint/,
     },
   );
 });
@@ -71,25 +71,21 @@ test('change a param', async t => {
 
   /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
-  const notifier = makeNotifierFromAsyncIterable(
-    await E(publicFacet).getSubscription(),
-  );
+  const topic = await E.get(E(publicFacet).getPublicTopics()).governance;
+  const notifier = makeNotifierFromSubscriber(topic.subscriber);
   const update1 = await notifier.getUpdateSince();
-  publicFacet.getGovernedParams();
-  // This value isn't available synchronously and we don't have access here to the param manager to await its finish
-  // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  // t.is(
-  //   // @ts-expect-error reaching into unknown values
-  //   update1.value.current.Electorate.value.value[0].description,
-  //   'getRefund',
-  // );
-  // t.like(update1, {
-  //   value: {
-  //     current: {
-  //       MalleableNumber: { type: 'nat', value: 602214090000000000000000n },
-  //     },
-  //   },
-  // });
+  publicFacet.getParamDescriptions();
+  t.is(
+    update1.value.current.Electorate.value.value[0].description,
+    'getRefund',
+  );
+  t.like(update1, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 602214090000000000000000n },
+      },
+    },
+  });
 
   // This is the wrong kind of invitation, but governance can't tell
   const { fakeInvitationPayment, fakeInvitationAmount } =
@@ -114,7 +110,7 @@ test('change a param', async t => {
     },
   });
 
-  const paramsAfter = await E(publicFacet).getGovernedParams();
+  const paramsAfter = await E(publicFacet).getParamDescriptions();
   t.deepEqual(paramsAfter.Electorate.value, fakeInvitationAmount);
   t.is(paramsAfter.MalleableNumber.value, 42n);
 });

@@ -525,13 +525,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     }
   };
 
-  const { augmentPublicFacet, makeFarGovernorFacet, params } =
+  const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
+      baggage,
       privateArgs.initialPoserInvitation,
       auctioneerParamTypes,
+      makeRecorderKit,
       privateArgs.storageNode,
-      privateArgs.marshaller,
     );
 
   const tradeEveryBook = () => {
@@ -679,15 +680,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeScheduler(
       driver,
       timer,
-      // @ts-expect-error types are correct. How to convince TS?
       params,
       timerBrand,
       scheduleRecorder,
-      publicFacet.getSubscription(),
+      E.get(E.get(publicFacet.getPublicTopics()).governance).subscriber,
     ),
   );
 
-  const creatorFacet = makeFarGovernorFacet(
+  const creatorFacet = makeGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
        * @param {Issuer} issuer

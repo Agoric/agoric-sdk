@@ -31,11 +31,12 @@ const trace = makeTracer('ReserveKit', true);
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   storageNode: StorageNode;
  *   zcf: ZCF;
+ *   getPublicTopics: any;
  * }} powers
  */
 export const prepareAssetReserveKit = async (
   baggage,
-  { feeMint, makeRecorderKit, storageNode, zcf },
+  { feeMint, makeRecorderKit, storageNode, zcf, getPublicTopics },
 ) => {
   trace('prepareAssetReserveKit', [...baggage.keys()]);
   const feeKit = feeMint.getIssuerRecord();
@@ -233,12 +234,14 @@ export const prepareAssetReserveKit = async (
           };
           return zcf.makeInvitation(handler, 'Add Collateral');
         },
+
         getPublicTopics() {
           return {
             metrics: makeRecorderTopic(
               'Asset Reserve metrics',
               this.state.metricsKit,
             ),
+            ...getPublicTopics(),
           };
         },
       },

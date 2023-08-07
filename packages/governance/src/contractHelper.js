@@ -1,48 +1,33 @@
 import { Far } from '@endo/marshal';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { getMethodNames, objectMap } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
-import { AmountShape, BrandShape } from '@agoric/ertp';
-import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { E } from '@endo/eventual-send';
-import { assertElectorateMatches } from './contractGovernance/paramManager.js';
-import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
-import { GovernorFacetShape } from './typeGuards.js';
+import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
+
+import {
+  assertElectorateMatches,
+  makeParamManagerFromTerms,
+} from './contractGovernance/paramManager.js';
+import { GovernorFacetI } from './typeGuards.js';
 
 const { Fail, quote: q } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 
-const publicMixinAPI = harden({
-  getSubscription: M.call().returns(M.remotable('StoredSubscription')),
-  getGovernedParams: M.call().returns(M.or(M.record(), M.promise())),
-  getAmount: M.call().returns(AmountShape),
-  getBrand: M.call().returns(BrandShape),
-  getInstance: M.call().returns(M.remotable('Instance')),
-  getInstallation: M.call().returns(M.remotable('Installation')),
-  getInvitationAmount: M.call().returns(M.promise()),
-  getNat: M.call().returns(M.bigint()),
-  getRatio: M.call().returns(M.record()),
-  getString: M.call().returns(M.string()),
-  getTimestamp: M.call().returns(TimestampRecordShape),
-  getRelativeTime: M.call().returns(RelativeTimeRecordShape),
-  getUnknown: M.call().returns(M.any()),
-});
-
 /**
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<any>} paramManager
+ * @param {import('./contractGovernance/paramManager').ParamManager<any>} paramManager
  */
 export const validateElectorate = (zcf, paramManager) => {
   const { governedParams } = zcf.getTerms();
-  return E.when(paramManager.getParams(), finishedParams => {
+  return E.when(paramManager.getParamDescriptions(), async finishedParams => {
     try {
       keyEQ(governedParams, finishedParams) ||
         Fail`The 'governedParams' term must be an object like ${q(
-          finishedParams,
-        )}, but was ${q(governedParams)}`;
-      assertElectorateMatches(paramManager, governedParams);
+          governedParams,
+        )}, but was ${q(finishedParams)}`;
+      return assertElectorateMatches(paramManager, governedParams);
     } catch (err) {
       zcf.shutdownWithFailure(err);
     }
@@ -53,61 +38,46 @@ harden(validateElectorate);
 /**
  * Utility function for `makeParamGovernance`.
  *
- * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T
+ * @template {import('./contractGovernance/paramManager.js').ParamTypesMap} T
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
+ * @param {ERef<import('./contractGovernance/paramManager').ParamManager<T>>} paramManagerP
  */
-const facetHelpers = (zcf, paramManager) => {
-  // validate async to wait for params to be finished
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  void validateElectorate(zcf, paramManager);
-
-  const typedAccessors = {
-    getAmount: paramManager.getAmount,
-    getBrand: paramManager.getBrand,
-    getInstance: paramManager.getInstance,
-    getInstallation: paramManager.getInstallation,
-    getInvitationAmount: paramManager.getInvitationAmount,
-    getNat: paramManager.getNat,
-    getRatio: paramManager.getRatio,
-    getString: paramManager.getString,
-    getTimestamp: paramManager.getTimestamp,
-    getRelativeTime: paramManager.getRelativeTime,
-    getUnknown: paramManager.getUnknown,
-  };
+const facetHelpers = async (baggage, zcf, paramManagerP) => {
+  const paramManager = await paramManagerP;
+  await validateElectorate(zcf, paramManager);
 
   const commonPublicMethods = {
-    getSubscription: () => paramManager.getSubscription(),
-    getGovernedParams: () => paramManager.getParams(),
+    getParamDescriptions: () => paramManager.getParamDescriptions(),
+    getPublicTopics: () => paramManager.getPublicTopics(),
+    getGovernedParams: () => paramManager.getParamDescriptions(),
   };
 
+  const { behavior, guards } = await paramManager.accessors();
   /**
-   * Add required methods to publicFacet
+   * Add required methods to publicFacet, for a durable contract
    *
-   * @template {{}} PF public facet
-   * @param {PF} originalPublicFacet
-   * @returns {GovernedPublicFacet<PF>}
-   */
-  const augmentPublicFacet = originalPublicFacet => {
-    return Far('publicFacet', {
-      ...originalPublicFacet,
-      ...commonPublicMethods,
-      ...typedAccessors,
-    });
-  };
-
-  /**
-   * Add required methods to publicFacet, for a virtual/durable contract
-   *
-   * @param {OPF} originalPublicFacet
    * @template {{}} OPF
+   * @param {OPF} originalPublicFacet
+   * @param {Record<string, Pattern>} [publicFacetGuards]
    */
-  const augmentVirtualPublicFacet = originalPublicFacet => {
-    return Far('publicFacet', {
-      ...originalPublicFacet,
-      ...commonPublicMethods,
-      ...objectMap(typedAccessors, ignoreContext),
-    });
+  const augmentPublicFacet = (
+    originalPublicFacet,
+    publicFacetGuards = undefined,
+  ) => {
+    const compiledGuards = publicFacetGuards
+      ? harden({ ...publicFacetGuards, ...guards })
+      : undefined;
+    return prepareExo(
+      baggage,
+      'publicFacet',
+      compiledGuards,
+      harden({
+        ...originalPublicFacet,
+        ...commonPublicMethods,
+        ...objectMap(behavior, ignoreContext),
+      }),
+    );
   };
 
   /**
@@ -116,8 +86,8 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {Record<string, (...any) => unknown>} [governedApis]
    * @returns {GovernedCreatorFacet<CF>}
    */
-  const makeFarGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
-    const governorFacet = Far('governorFacet', {
+  const makeGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
+    const governorFacet = prepareExo(baggage, 'governorFacet', GovernorFacetI, {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
       getInvitation: name => paramManager.getInternalParamValue(name),
@@ -137,100 +107,39 @@ const facetHelpers = (zcf, paramManager) => {
     return governorFacet;
   };
 
-  /**
-   * @template {{}} CF
-   * @param {CF} originalCreatorFacet
-   * @param {{}} [governedApis]
-   * @returns {GovernedCreatorFacet<CF>}
-   */
-  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
-    return makeFarGovernorFacet(originalCreatorFacet, governedApis);
-  };
-
-  /**
-   * Add required methods to a creatorFacet for a durable contract.
-   *
-   * @see {makeDurableGovernorFacet}
-   *
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
-   */
-  const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
-    const governorFacet = harden({
-      getParamMgrRetriever: () =>
-        Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: (_context, /** @type {string} */ name) =>
-        paramManager.getInternalParamValue(name),
-      getLimitedCreatorFacet: ({ facets }) => facets.limitedCreatorFacet,
-      // The contract provides a facet with the APIs that can be invoked by
-      // governance
-      getGovernedApis: ({ facets }) => facets.governedApis,
-      // The facet returned by getGovernedApis is Far, so we can't see what
-      // methods it has. There's no clean way to have contracts specify the APIs
-      // without also separately providing their names.
-      getGovernedApiNames: ({ facets }) =>
-        getMethodNames(facets.governedApis || {}),
-      setOfferFilter: (_context, strings) => zcf.setOfferFilter(strings),
-    });
-
-    return { governorFacet, limitedCreatorFacet };
-  };
-
-  /**
-   * Add required methods to a creatorFacet for a durable contract.
-   *
-   * @see {makeVirtualGovernorFacet}
-   *
-   * @template CF
-   * @param {import('@agoric/vat-data').Baggage} baggage
-   * @param {CF} limitedCreatorFacet
-   * @param {Record<string, (...any) => unknown>} [governedApis]
-   */
-  const makeDurableGovernorFacet = (
-    baggage,
-    limitedCreatorFacet,
-    governedApis = {},
-  ) => {
-    const governorFacet = prepareExo(
+  const makeParamReaderFacet = () => {
+    return prepareExo(
       baggage,
-      'governorFacet',
-      M.interface('governorFacet', GovernorFacetShape),
-      {
-        getParamMgrRetriever: () =>
-          Far('paramRetriever', { get: () => paramManager }),
-        getInvitation: name => paramManager.getInternalParamValue(name),
-        getLimitedCreatorFacet: () => limitedCreatorFacet,
-        // The contract provides a facet with the APIs that can be invoked by
-        // governance
-        /** @type {() => GovernedApis} */
-        getGovernedApis: () => Far('governedAPIs', governedApis),
-        // The facet returned by getGovernedApis is Far, so we can't see what
-        // methods it has. There's no clean way to have contracts specify the APIs
-        // without also separately providing their names.
-        getGovernedApiNames: () => Object.keys(governedApis || {}),
-        setOfferFilter: strings => zcf.setOfferFilter(strings),
-      },
+      'ParamReader',
+      M.interface('ParamReader', guards),
+      behavior,
     );
-
-    return { governorFacet, limitedCreatorFacet };
   };
 
   return harden({
     publicMixin: {
       ...commonPublicMethods,
-      ...typedAccessors,
+      ...behavior,
+    },
+    publicMixinGuards: {
+      getElectorate: M.call().returns(M.any()),
+      getParamDescriptions: M.call().returns(M.any()),
+      getGovernedParams: M.call().returns(M.any()),
+      getPublicTopics: M.call().returns(TopicsRecordShape),
+      ...guards,
     },
     augmentPublicFacet,
-    augmentVirtualPublicFacet,
     makeGovernorFacet,
 
-    makeFarGovernorFacet,
-    makeVirtualGovernorFacet,
-    makeDurableGovernorFacet,
-
-    params: paramManager.readonly(),
+    params: makeParamReaderFacet(),
   });
 };
+
+/**
+ * @typedef {object} TypesAndValues
+ * @property {string} type
+ * @property {any} value
+ */
 
 /**
  * Helper for the 90% of contracts that will have only a single set of
@@ -244,37 +153,31 @@ const facetHelpers = (zcf, paramManager) => {
  * parameter values, and the governance guarantees only hold if they're not used
  * directly by the governed contract.
  *
- * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
+ * @template {import('./contractGovernance/paramManager').ParamTypesMap} M
  *   Map of types of custom governed terms
  * @param {ZCF<GovernanceTerms<M>>} zcf
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {StorageNode} storageNode
  */
-const handleParamGovernance = (
+export const handleParamGovernance = (
   zcf,
+  baggage,
   initialPoserInvitation,
   paramTypesMap,
+  makeRecorderKit,
   storageNode,
-  marshaller,
 ) => {
-  /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
-  const publisherKit = makeStoredPublisherKit(
-    storageNode,
-    marshaller,
-    GOVERNANCE_STORAGE_KEY,
-  );
-  const paramManager = makeParamManagerFromTerms(
-    publisherKit,
+  const paramManagerKit = makeParamManagerFromTerms(
+    makeRecorderKit(storageNode),
     zcf,
+    baggage,
     { Electorate: initialPoserInvitation },
     paramTypesMap,
   );
 
-  return facetHelpers(zcf, paramManager);
+  return facetHelpers(baggage, zcf, paramManagerKit);
 };
-
 harden(handleParamGovernance);
-
-export { handleParamGovernance, publicMixinAPI };

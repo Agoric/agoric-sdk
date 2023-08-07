@@ -218,7 +218,9 @@ export const watchForGovernanceChange = (
   void E.when(E(timer).getCurrentTimestamp(), now =>
     // make one observer that will usually ignore the update.
     observeIteration(
-      subscribeEach(E(auctioneerPublicFacet).getSubscription()),
+      subscribeEach(
+        E.get(E(auctioneerPublicFacet).getPublicTopic()).subscriber,
+      ),
       harden({
         async updateState(_newState) {
           if (!cancelToken) {

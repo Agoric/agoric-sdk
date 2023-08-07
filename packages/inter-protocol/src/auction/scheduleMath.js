@@ -39,12 +39,19 @@ const subtract1 = relTime =>
  * @returns {import('./scheduler.js').Schedule}
  */
 export const computeRoundTiming = (params, baseTime) => {
+  // @ts-expect-error Params types not inferred?
   const freq = params.getStartFrequency();
+  // @ts-expect-error Params types not inferred?
   const clockStep = params.getClockStep();
+  // @ts-expect-error Params types not inferred?
   const startingRate = params.getStartingRate();
+  // @ts-expect-error Params types not inferred?
   const discountStep = params.getDiscountStep();
+  // @ts-expect-error Params types not inferred?
   const lockPeriod = params.getPriceLockPeriod();
+  // @ts-expect-error Params types not inferred?
   const lowestRate = params.getLowestRate();
+  // @ts-expect-error Params types not inferred?
   const startDelay = params.getAuctionStartDelay();
 
   TimeMath.compareRel(freq, startDelay) > 0 ||

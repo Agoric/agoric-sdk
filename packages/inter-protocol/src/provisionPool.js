@@ -1,17 +1,12 @@
 // @jessie-check
 // @ts-check
 
-import {
-  handleParamGovernance,
-  ParamTypes,
-  publicMixinAPI,
-} from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { InvitationShape } from '@agoric/governance/src/typeGuards.js';
 import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
 /** @type {ContractMeta} */
@@ -59,15 +54,16 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   // Governance
-  const { publicMixin, makeDurableGovernorFacet, params } =
+  const { publicMixin, makeGovernorFacet, params, publicMixinGuards } =
     await handleParamGovernance(
       zcf,
+      baggage,
       privateArgs.initialPoserInvitation,
       {
         PerAccountInitialAmount: ParamTypes.AMOUNT,
       },
+      makeRecorderKit,
       privateArgs.storageNode,
-      privateArgs.marshaller,
     );
 
   const makeProvisionPoolKit = prepareProvisionPoolKit(baggage, {
@@ -95,23 +91,24 @@ export const start = async (zcf, privateArgs, baggage) => {
     'Provisioning Pool public',
     M.interface('ProvisionPool', {
       getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
-      getPublicTopics: M.call().returns(TopicsRecordShape),
-      ...publicMixinAPI,
+      ...publicMixinGuards,
     }),
     {
       getMetrics() {
         return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
       },
-      getPublicTopics() {
-        return provisionPoolKit.public.getPublicTopics();
-      },
       ...publicMixin,
+      getPublicTopics() {
+        return harden({
+          ...provisionPoolKit.public.getPublicTopics(),
+          ...publicMixin.getPublicTopics(),
+        });
+      },
     },
   );
 
   return harden({
-    creatorFacet: makeDurableGovernorFacet(baggage, provisionPoolKit.machine)
-      .governorFacet,
+    creatorFacet: makeGovernorFacet(provisionPoolKit.machine),
     publicFacet,
   });
 };

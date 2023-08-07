@@ -1,24 +1,22 @@
 import { Fail } from '@agoric/assert';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import {
-  makeFakeMarshaller,
-  makeFakeStorage,
-} from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
-import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
+import { M, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 /**
  * Recorders support publishing data to vstorage.
  *
- * `Recorder` is similar to `Publisher` (in that they send out data) but has different signatures:
+ * `Recorder` is similar to `Publisher` (in that they send out data) but has
+ *    different signatures:
  * - methods are async because they await remote calls to Marshaller and StorageNode
  * - method names convey the durability
  * - omits fail()
  * - adds getStorageNode() from its durable state
  *
- * Other names such as StoredPublisher or ChainStoragePublisher were considered, but found to be sometimes confused with *durability*, another trait of this class.
+ * Other names such as StoredPublisher or ChainStoragePublisher were considered,
+ * but found to be sometimes confused with *durability*, another trait of this class.
  */
 
 /**
@@ -185,9 +183,10 @@ harden(defineERecorderKit);
 
 /**
  * Convenience wrapper to prepare the DurablePublishKit and Recorder kinds.
- * Note that because prepareRecorder() can only be called once per baggage,
+ * Note that because prepareRecorder() can only be called once per vat instance,
  * this should only be used when there is no need for an EventualRecorderKit.
- * When there is, prepare the kinds separately and pass to the kit definers.
+ * When EventualRecorderKits are needed, prepare the kinds separately and pass
+ * them to the kit definers.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -204,7 +203,7 @@ export const prepareRecorderKit = (baggage, marshaller) => {
 /**
  * Convenience wrapper for DurablePublishKit and Recorder kinds.
  *
- * NB: this defines two durable kinds. Must be called at most once per baggage.
+ * NB: this defines two durable kinds. Must be called at most once per vat instance.
  *
  * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
  * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
@@ -233,18 +232,6 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
     makeRecorder,
     makeRecorderKit,
     makeERecorderKit,
-  };
-};
-
-/**
- * For use in tests
- */
-export const prepareMockRecorderKitMakers = () => {
-  const baggage = makeScalarBigMapStore('mock recorder baggage');
-  const marshaller = makeFakeMarshaller();
-  return {
-    ...prepareRecorderKitMakers(baggage, marshaller),
-    storageNode: makeFakeStorage('mock recorder storage'),
   };
 };
 

@@ -253,7 +253,7 @@
  * @callback ContractStartFn
  * @param {ZCF<CT>} zcf
  * @param {PA} privateArgs
- * @param {MapStore} [baggage]
+ * @param {import('@agoric/vat-data').Baggage} [baggage]
  * @returns {ContractStartFnResult<PF, CF>}
  */
 

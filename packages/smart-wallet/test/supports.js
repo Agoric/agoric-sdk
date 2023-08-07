@@ -152,7 +152,7 @@ export const makeMockTestSpace = async log => {
 };
 
 /**
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
+ * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord<any>}>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {

@@ -9,7 +9,6 @@ import {
   CONTRACT_ELECTORATE,
   handleParamGovernance,
   ParamTypes,
-  publicMixinAPI,
 } from '@agoric/governance';
 import { StorageNodeShape } from '@agoric/internal';
 import { M, prepareExo, provide } from '@agoric/vat-data';
@@ -143,17 +142,21 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const { publicMixin, makeDurableGovernorFacet, params } =
+  const governanceStorageNode = await E(privateArgs.storageNode).makeChildNode(
+    'governance',
+  );
+  const { publicMixin, publicMixinGuards, makeGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
+      baggage,
       privateArgs.initialPoserInvitation,
       {
         GiveMintedFee: ParamTypes.RATIO,
         MintLimit: ParamTypes.AMOUNT,
         WantMintedFee: ParamTypes.RATIO,
       },
-      privateArgs.storageNode,
-      privateArgs.marshaller,
+      makeRecorderKit,
+      governanceStorageNode,
     );
 
   const anchorPool = provideEmptySeat(zcf, baggage, 'anchorPoolSeat');
@@ -361,10 +364,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     M.interface('PSM', {
       getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
       getPoolBalance: M.call().returns(anchorAmountShape),
-      getPublicTopics: M.call().returns(TopicsRecordShape),
       makeWantMintedInvitation: M.call().returns(M.promise()),
       makeGiveMintedInvitation: M.call().returns(M.promise()),
-      ...publicMixinAPI,
+      ...publicMixinGuards,
+      getPublicTopics: M.call().returns(TopicsRecordShape),
     }),
     {
       getMetrics() {
@@ -372,9 +375,6 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       getPoolBalance() {
         return anchorPool.getAmountAllocated('Anchor', anchorBrand);
-      },
-      getPublicTopics() {
-        return topics;
       },
       makeWantMintedInvitation() {
         return zcf.makeInvitation(
@@ -399,6 +399,12 @@ export const start = async (zcf, privateArgs, baggage) => {
         );
       },
       ...publicMixin,
+      getPublicTopics() {
+        return harden({
+          ...topics,
+          ...publicMixin.getPublicTopics(),
+        });
+      },
     },
   );
 
@@ -436,10 +442,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   );
 
-  const { governorFacet } = makeDurableGovernorFacet(
-    baggage,
-    limitedCreatorFacet,
-  );
+  const governorFacet = makeGovernorFacet(limitedCreatorFacet);
   return harden({
     creatorFacet: governorFacet,
     publicFacet,

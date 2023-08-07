@@ -7,11 +7,14 @@ import {
   makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
+import {
+  makeRecorderTopic,
+  subtractRatios,
+  TopicsRecordShape,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { provideDurableMapStore } from '@agoric/vat-data';
-import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -76,7 +79,7 @@ const makeVaultDirectorParams = (
 harden(makeVaultDirectorParams);
 
 /**
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<
+ * @typedef {import('@agoric/governance/src/contractGovernance/paramManager').ParamTypesMapFromRecord<
  *     ReturnType<typeof makeVaultDirectorParams>
  *   >} VaultDirectorParams
  */
@@ -86,11 +89,14 @@ const zeroRatio = liquidationMargin =>
   subtractRatios(liquidationMargin, liquidationMargin);
 
 /**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {VaultManagerParamValues} initial
+ * @param {any} paramMakerKit
  */
 export const makeVaultParamManager = (
-  publisherKit,
+  baggage,
+  recorderKit,
   {
     debtLimit,
     interestRate,
@@ -99,15 +105,22 @@ export const makeVaultParamManager = (
     liquidationPenalty,
     mintFee,
   },
-) =>
-  makeParamManagerSync(publisherKit, {
-    [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, debtLimit],
-    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, interestRate],
-    [LIQUIDATION_PADDING_KEY]: [ParamTypes.RATIO, liquidationPadding],
-    [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, liquidationMargin],
-    [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
-    [MINT_FEE_KEY]: [ParamTypes.RATIO, mintFee],
-  });
+  paramMakerKit,
+) => {
+  return makeParamManagerSync(
+    recorderKit,
+    baggage,
+    {
+      [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, debtLimit],
+      [INTEREST_RATE_KEY]: [ParamTypes.RATIO, interestRate],
+      [LIQUIDATION_PADDING_KEY]: [ParamTypes.RATIO, liquidationPadding],
+      [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, liquidationMargin],
+      [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
+      [MINT_FEE_KEY]: [ParamTypes.RATIO, mintFee],
+    },
+    paramMakerKit,
+  );
+};
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
 export const vaultParamPattern = M.splitRecord(
@@ -166,24 +179,38 @@ export const makeGovernedTerms = ({
   });
 };
 harden(makeGovernedTerms);
-/**
- * Stop-gap which restores initial param values UNTIL
- * https://github.com/Agoric/agoric-sdk/issues/5200
- *
- * NB: changes from initial values will be lost upon restart
- *
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
- */
-export const provideVaultParamManagers = (baggage, marshaller) => {
-  /** @type {MapStore<Brand, VaultParamManager>} */
-  const managers = makeScalarMapStore();
 
-  // the managers aren't durable but their arguments are
+/**
+ * @typedef {object} VaultParamManagerPair
+ * @property {VaultParamManager} powerful notice that only vaultDirector's
+ *   creatorFacet gets access to the unrestricted object.
+ * @property {any} readOnly
+ */
+
+/**
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ */
+export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
+  /** @type {MapStore<Brand, VaultParamManagerPair>} */
+  const managers = makeScalarMapStore();
+  let paramManagerCount = 0;
+
+  // the param managers weren't originally durable, so we stored the initial
+  // values of the parameters. Now that we have durable PMs, we'll be extracting
+  // the initial values from this store, and can drop the store later.
   /**
    * @type {MapStore<
    *   Brand,
-   *   { storageNode: StorageNode; initialParamValues: VaultManagerParamValues }
+   *   {
+   *     storageNode: StorageNode;
+   *     initialParamValues: VaultManagerParamValues;
+   *     makers: any;
+   *     directorAccessors: {
+   *       behavior: Record<string, Function>;
+   *       guards: Record<string, import('@endo/patterns').Pattern>;
+   *     };
+   *   }
    * >}
    */
   const managerArgs = provideDurableMapStore(
@@ -191,32 +218,83 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
     'vault param manager parts',
   );
 
-  const makeManager = (brand, { storageNode, initialParamValues }) => {
+  const makeManager = (
+    brand,
+    { storageNode, initialParamValues, makers, directorAccessors },
+  ) => {
+    paramManagerCount += 1;
+    const gRecorderKit = makeRecorderKit(storageNode);
+    const topic = makeRecorderTopic('vaultManager Governance', gRecorderKit);
     const manager = makeVaultParamManager(
-      makeStoredPublisherKit(storageNode, marshaller, 'governance'),
+      baggage,
+      gRecorderKit,
       initialParamValues,
+      makers,
     );
-    managers.init(brand, manager);
+
+    const readOnly = prepareExo(
+      baggage,
+      `vault-${paramManagerCount} paramManager`,
+      M.interface('vault paramManager', {
+        ...directorAccessors.guards,
+        ...manager.accessors().guards,
+        getPublicTopics: M.call().returns(TopicsRecordShape),
+      }),
+      {
+        ...manager.accessors().behavior,
+        ...directorAccessors.behavior,
+        getPublicTopics: () => harden({ governance: topic }),
+      },
+    );
+
+    managers.init(brand, { powerful: manager, readOnly });
     return manager;
   };
 
-  // restore from baggage
-  [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // To convert to durable paramManagers, we will extract the values in baggage,
+  // and use them to build durable PMs then delete the values so we don't
+  // try to do it again.  This will NOT restore the most recent values; The EC
+  // will have to restore the values they want before enabling trading.
+  // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  for (const [brand, args] of managerArgs.entries()) {
+    makeManager(brand, args);
+    managerArgs.delete(brand);
+  }
 
   return {
     /**
      * @param {Brand} brand
      * @param {StorageNode} storageNode
      * @param {VaultManagerParamValues} initialParamValues
+     * @param {any} makers
+     * @param {{
+     *   behavior: Record<string, Function>;
+     *   guards: Record<string, Pattern>;
+     * }} directorAccessors
      */
-    addParamManager(brand, storageNode, initialParamValues) {
-      const args = harden({ storageNode, initialParamValues });
-      managerArgs.init(brand, args);
+    addParamManager(
+      brand,
+      storageNode,
+      initialParamValues,
+      makers,
+      directorAccessors,
+    ) {
+      const args = harden({
+        storageNode,
+        initialParamValues,
+        makers,
+        directorAccessors,
+      });
       return makeManager(brand, args);
     },
     /** @param {Brand} brand */
     get(brand) {
-      return managers.get(brand);
+      return managers.get(brand).powerful;
+    },
+
+    /** @param {Brand} brand */
+    getParamReader(brand) {
+      return managers.get(brand).readOnly;
     },
   };
 };

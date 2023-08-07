@@ -182,7 +182,6 @@ const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
- *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit;
  *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet;
  * }} powers
  */
@@ -956,7 +955,6 @@ export const prepareVaultManagerKit = (
           } = this;
           trace(state.collateralBrand, 'makeVaultKit');
           const { storageNode } = this.state;
-          assert(marshaller, 'makeVaultKit missing marshaller');
           assert(storageNode, 'makeVaultKit missing storageNode');
           assert(zcf, 'makeVaultKit missing zcf');
 

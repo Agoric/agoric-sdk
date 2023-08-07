@@ -12,6 +12,7 @@ import {
   makeOnewayPriceAuthorityKit,
   makeRecorderTopic,
   provideAll,
+  PublicTopicShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -85,6 +86,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * @param {TimerService} timerPresence
  * @param {import('./roundsManager.js').QuoteKit} quoteKit
  * @param {StorageNode} storageNode
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {() => PublishKit<any>} makeDurablePublishKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
  */
@@ -94,6 +96,7 @@ export const prepareFluxAggregatorKit = async (
   timerPresence,
   quoteKit,
   storageNode,
+  recorderKit,
   makeDurablePublishKit,
   makeRecorder,
 ) => {
@@ -143,13 +146,7 @@ export const prepareFluxAggregatorKit = async (
      */
     answerKit: () => makeDurablePublishKit(),
     /** For publishing priceAuthority values to off-chain storage */
-    priceKit: () =>
-      makeRecorderKit(
-        storageNode,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
-          M.any()
-        ),
-      ),
+    priceKit: () => recorderKit,
     latestRoundKit: () =>
       E.when(E(storageNode).makeChildNode('latestRound'), node =>
         makeRecorderKit(
@@ -219,8 +216,8 @@ export const prepareFluxAggregatorKit = async (
       public: M.interface('fluxAggregator publicFacet', {
         getPriceAuthority: M.call().returns(M.any()),
         getPublicTopics: M.call().returns({
-          quotes: M.any(),
-          latestRound: M.any(),
+          quotes: PublicTopicShape,
+          latestRound: PublicTopicShape,
         }),
       }),
     },

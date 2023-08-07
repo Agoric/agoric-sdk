@@ -7,6 +7,9 @@ import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -173,7 +176,10 @@ export const startWalletFactory = async (
   // Carry forward wallets with an address already in chain storage.
   const oldAddresses = dataReviver.children(`${OLD_WALLET_STORAGE_PATH}.`);
 
+  const baggage = makeScalarBigMapStore('baggage');
+
   const marshaller = await E(board).getPublishingMarshaller();
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
@@ -183,6 +189,7 @@ export const startWalletFactory = async (
       storageNode: poolStorageNode,
       marshaller,
       metricsOverride: reviveOldMetrics(),
+      makeRecorderKit,
     }),
     label: 'provisionPool',
     governedParams: {

@@ -24,8 +24,9 @@ export const PublicTopicShape = M.splitRecord(
 export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
 
 /**
+ * @template {object} T topic value
  * @typedef {{
- *   [topicName: string]: PublicTopic<unknown>,
+ *   [topicName: string]: PublicTopic<T>,
  * }} TopicsRecord
  */
 

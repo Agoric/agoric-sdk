@@ -140,7 +140,7 @@ harden(validateQuestionFromCounter);
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/paramManager.js').InvitationParam}},
  *     label?: string,
  *   }
  * }>} zcf

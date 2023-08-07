@@ -75,7 +75,7 @@ const nominalStartTime = nextSchedule =>
  * @param {Awaited<import('./params.js').AuctionParamManager>} params
  * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
- * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
+ * @param {Subscriber<GovernanceSubscriptionState>} paramUpdateSubscriber
  */
 export const makeScheduler = async (
   auctionDriver,
@@ -83,7 +83,7 @@ export const makeScheduler = async (
   params,
   timerBrand,
   scheduleRecorder,
-  paramUpdateSubscription,
+  paramUpdateSubscriber,
 ) => {
   /**
    * live version is defined when an auction is active.
@@ -317,7 +317,7 @@ export const makeScheduler = async (
   // already scheduled.
   // NB: what is already scheduled (live or next) is unaffected by param changes
   void observeIteration(
-    subscribeEach(paramUpdateSubscription),
+    subscribeEach(paramUpdateSubscriber),
     harden({
       // NB: may be fired with the initial params as well
       async updateState(_newState) {
