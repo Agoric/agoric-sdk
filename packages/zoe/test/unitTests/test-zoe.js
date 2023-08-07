@@ -2,15 +2,14 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { passStyleOf, Far } from '@endo/marshal';
-import { getStringMethodNames } from '@agoric/internal';
+import { passStyleOf } from '@endo/marshal';
 
 import bundleSource from '@endo/bundle-source';
 
-import { setupZCFTest } from './zcf/setupZcfTest.js';
 import { setup } from './setupBasicMints.js';
+import { setupZCFTest } from './zcf/setupZcfTest.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -68,119 +67,6 @@ test(`E(zoe).installBundleID(bundleID)`, async t => {
   // assert.is(hash, 'XXX');
   // NOTE: the bundle ID is now the hash
   t.is(await E(zoe).getBundleIDFromInstallation(installation), 'b1-atomic');
-});
-
-test(`E(zoe).startInstance bad installation`, async t => {
-  const { zoe } = setup();
-  // @ts-expect-error deliberate invalid arguments for testing
-  await t.throwsAsync(() => E(zoe).startInstance(), {
-    message:
-      'In "startInstance" method of (ZoeService): Expected at least 1 arguments: []',
-  });
-});
-
-function isEmptyFacet(t, facet) {
-  t.is(passStyleOf(facet), 'remotable');
-  t.deepEqual(Object.getOwnPropertyNames(facet), []);
-}
-
-function facetHasMethods(t, facet, names) {
-  t.is(passStyleOf(facet), 'remotable');
-  t.deepEqual(Object.getOwnPropertyNames(facet), names);
-}
-
-test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
-  const result = await setupZCFTest();
-  // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result.startInstanceResult).sort(), [
-    'adminFacet',
-    'creatorFacet',
-    'creatorInvitation',
-    'instance',
-    'publicFacet',
-  ]);
-  isEmptyFacet(t, result.creatorFacet);
-  t.deepEqual(result.creatorInvitation, undefined);
-  facetHasMethods(t, result.startInstanceResult.publicFacet, [
-    'makeInvitation',
-  ]);
-  isEmptyFacet(t, result.startInstanceResult.adminFacet);
-});
-
-test(`E(zoe).startInstance promise for installation`, async t => {
-  const { startInstanceResult } = await setupZCFTest();
-
-  const result = await startInstanceResult;
-  // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
-    'adminFacet',
-    'creatorFacet',
-    'creatorInvitation',
-    'instance',
-    'publicFacet',
-  ]);
-  isEmptyFacet(t, result.creatorFacet);
-  t.deepEqual(result.creatorInvitation, undefined);
-  facetHasMethods(t, result.publicFacet, ['makeInvitation']);
-  t.deepEqual(getStringMethodNames(result.adminFacet), [
-    'getVatShutdownPromise',
-    'restartContract',
-    'upgradeContract',
-  ]);
-});
-
-test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
-  const { zoe } = setup();
-  const installation = await E(zoe).installBundleID('b1-contract');
-  const { moolaKit } = setup();
-  await t.throwsAsync(
-    () =>
-      E(zoe).startInstance(
-        installation,
-        { something: 2 },
-        { Moola: moolaKit.issuer },
-      ),
-    {
-      message:
-        'In "startInstance" method of (ZoeService): arg 1?: something: [1]: 2 - Must match one of ["[match:remotable]","[match:kind]"]',
-    },
-  );
-});
-
-test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
-  const { zoe } = setup();
-  const installation = await E(zoe).installBundleID('b1-contract');
-  const brand = Far('brand', {
-    // eslint-disable-next-line no-use-before-define
-    isMyIssuer: i => i === badIssuer,
-    getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
-  });
-  const badIssuer = Far('issuer', {
-    makeEmptyPurse: async () => {
-      throw Error('bad issuer');
-    },
-    getBrand: () => brand,
-  });
-  await t.throwsAsync(
-    () => E(zoe).startInstance(installation, { Money: badIssuer }),
-    {
-      message:
-        'A purse could not be created for brand "[Alleged: brand]" because: "[Error: bad issuer]"',
-    },
-  );
-});
-
-test(`E(zoe).startInstance - unexpected properties`, async t => {
-  const { zoe } = setup();
-
-  const contractPath = `${dirname}/unexpectedPropertiesContract.js`;
-  const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
-
-  await t.throwsAsync(() => E(zoe).startInstance(installation), {
-    message:
-      'contract "start" returned unrecognized properties ["unexpectedProperty"]',
-  });
 });
 
 test(`E(zoe).offer`, async t => {
