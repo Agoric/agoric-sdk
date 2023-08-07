@@ -2,12 +2,9 @@
 # Errors if number of cycle edges detected is too great
 set -ueo pipefail
 
-MAX_EDGES=$1
+MAX_EDGES=${1-0}
 
-# one of these lines is "Cycles detected"
-LINE_COUNT=$(scripts/graph.sh |wc -l)
-
-CYCLIC_EDGE_COUNT=$((LINE_COUNT - 1))
+CYCLIC_EDGE_COUNT=$(scripts/graph.sh | wc -l)
 
 echo CYCLIC_EDGE_COUNT $CYCLIC_EDGE_COUNT
 
