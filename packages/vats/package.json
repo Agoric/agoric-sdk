@@ -15,7 +15,6 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava",
     "test:xs": "exit 0",
-    "bench": "ava --config ./ava.bench.config.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc -p jsconfig.json",

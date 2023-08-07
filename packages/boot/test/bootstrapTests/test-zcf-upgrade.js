@@ -43,7 +43,7 @@ export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
   /** @type {SwingsetTestKit} */
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
-    configSpecifier: '@agoric/boot/decentral-demo-config.json',
+    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
 
   const { controller, runUtils } = swingsetTestKit;
