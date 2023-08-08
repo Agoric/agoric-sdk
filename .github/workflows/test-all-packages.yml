@@ -214,6 +214,9 @@ jobs:
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (network)
+        if: (success() || failure())
+        run: cd packages/network && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (pegasus)
         if: (success() || failure())
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
