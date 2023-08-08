@@ -200,7 +200,7 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 
 	// Read data, auto-upgrading a standalone value to a single-value StreamCell.
 	entry := k.GetEntry(ctx, req.Path)
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		return nil, status.Error(codes.FailedPrecondition, "no data")
 	}
 	value := entry.StringValue()

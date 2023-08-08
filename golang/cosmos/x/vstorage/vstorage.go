@@ -7,8 +7,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 type vstorageHandler struct {
@@ -69,8 +69,8 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 	switch msg.Method {
 	case "set":
 		for _, arg := range msg.Args {
-			var entry types.StorageEntry
-			entry, err = types.UnmarshalStorageEntry(arg)
+			var entry agoric.KVEntry
+			entry, err = agoric.UnmarshalKVEntry(arg)
 			if err != nil {
 				return
 			}
@@ -83,8 +83,8 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		// FIXME: Use just "set" and remove this case.
 	case "legacySet":
 		for _, arg := range msg.Args {
-			var entry types.StorageEntry
-			entry, err = types.UnmarshalStorageEntry(arg)
+			var entry agoric.KVEntry
+			entry, err = agoric.UnmarshalKVEntry(arg)
 			if err != nil {
 				return
 			}
@@ -95,8 +95,8 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 
 	case "setWithoutNotify":
 		for _, arg := range msg.Args {
-			var entry types.StorageEntry
-			entry, err = types.UnmarshalStorageEntry(arg)
+			var entry agoric.KVEntry
+			entry, err = agoric.UnmarshalKVEntry(arg)
 			if err != nil {
 				return
 			}
@@ -106,16 +106,16 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 
 	case "append":
 		for _, arg := range msg.Args {
-			var entry types.StorageEntry
-			entry, err = types.UnmarshalStorageEntry(arg)
+			var entry agoric.KVEntry
+			entry, err = agoric.UnmarshalKVEntry(arg)
 			if err != nil {
 				return
 			}
-			if !entry.HasData() {
-				err = fmt.Errorf("no value for append entry with path: %q", entry.Path())
+			if !entry.HasValue() {
+				err = fmt.Errorf("no value for append entry with path: %q", entry.Key())
 				return
 			}
-			err = keeper.AppendStorageValueAndNotify(cctx.Context, entry.Path(), entry.StringValue())
+			err = keeper.AppendStorageValueAndNotify(cctx.Context, entry.Key(), entry.StringValue())
 			if err != nil {
 				return
 			}
@@ -131,7 +131,7 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		}
 
 		entry := keeper.GetEntry(cctx.Context, path)
-		if !entry.HasData() {
+		if !entry.HasValue() {
 			return "null", nil
 		}
 		bz, err := json.Marshal(entry.StringValue())
@@ -197,7 +197,7 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		entries := make([][]interface{}, len(children.Children))
 		for i, child := range children.Children {
 			entry := keeper.GetEntry(cctx.Context, fmt.Sprintf("%s.%s", path, child))
-			if !entry.HasData() {
+			if !entry.HasValue() {
 				entries[i] = []interface{}{child}
 			} else {
 				entries[i] = []interface{}{child, entry.Value()}

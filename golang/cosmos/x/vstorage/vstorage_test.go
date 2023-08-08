@@ -70,10 +70,10 @@ func TestGetAndHas(t *testing.T) {
 	kit := makeTestKit()
 	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
 
-	keeper.SetStorage(ctx, types.NewStorageEntry("foo", "bar"))
-	keeper.SetStorage(ctx, types.NewStorageEntry("empty", ""))
-	keeper.SetStorage(ctx, types.NewStorageEntry("top.empty-non-terminal.leaf", ""))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("top.empty-non-terminal"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("foo", "bar"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("empty", ""))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("top.empty-non-terminal.leaf", ""))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntryWithNoValue("top.empty-non-terminal"))
 
 	type testCase struct {
 		label       string
@@ -153,7 +153,7 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 			// TODO: Fully validate input before making changes
 			// args:        []interface{}{[]string{"foo", "X"}, []interface{}{42, "new"}},
 			args:        []interface{}{[]interface{}{42, "new"}},
-			errContains: ptr("path"),
+			errContains: ptr("key"),
 		},
 		{label: "non-string value",
 			// TODO: Fully validate input before making changes
@@ -259,15 +259,15 @@ func TestEntries(t *testing.T) {
 	kit := makeTestKit()
 	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
 
-	keeper.SetStorage(ctx, types.NewStorageEntry("key1", "value1"))
-	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.grandchild1", "value1grandchild"))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1.grandchild2"))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key1.child1"))
-	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.empty-non-terminal.leaf", ""))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key2"))
-	keeper.SetStorage(ctx, types.NewStorageEntryWithNoData("key2.child2"))
-	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2", "value2grandchild"))
-	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2a", "value2grandchilda"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key1", "value1"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key1.child1.grandchild1", "value1grandchild"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntryWithNoValue("key1.child1.grandchild2"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntryWithNoValue("key1.child1"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key1.child1.empty-non-terminal.leaf", ""))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntryWithNoValue("key2"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntryWithNoValue("key2.child2"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key2.child2.grandchild2", "value2grandchild"))
+	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key2.child2.grandchild2a", "value2grandchilda"))
 
 	type testCase struct {
 		path string
