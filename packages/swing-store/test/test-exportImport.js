@@ -171,7 +171,6 @@ async function testExportImport(
   runMode,
   exportMode,
   importMode,
-  failureMode,
   expectedArtifactNames,
 ) {
   const exportLog = makeExportLog();
@@ -293,35 +292,20 @@ async function testExportImport(
     ],
   ]);
 
-  expectedArtifactNames = Array.from(expectedArtifactNames);
-  expectedArtifactNames.push(`bundle.${bundleIDA}`);
-  expectedArtifactNames.push(`bundle.${bundleIDB}`);
+  expectedArtifactNames = new Set(expectedArtifactNames);
+  expectedArtifactNames.add(`bundle.${bundleIDA}`);
+  expectedArtifactNames.add(`bundle.${bundleIDB}`);
 
-  const artifactNames = [];
+  const artifactNames = new Set();
   for await (const name of exporter.getArtifactNames()) {
-    artifactNames.push(name);
+    artifactNames.add(name);
   }
   t.deepEqual(artifactNames, expectedArtifactNames);
 
   const includeHistorical = importMode !== 'current';
 
   const beforeDump = debug.dump(keepSnapshots);
-  let ssIn;
-  try {
-    ssIn = await importSwingStore(exporter, null, {
-      includeHistorical,
-    });
-  } catch (e) {
-    if (failureMode === 'transcript') {
-      t.is(e.message, 'artifact "transcript.vatA.0.3" is not available');
-      return;
-    } else if (failureMode === 'snapshot') {
-      t.is(e.message, 'artifact "snapshot.vatA.2" is not available');
-      return;
-    }
-    throw e;
-  }
-  t.is(failureMode, 'none');
+  const ssIn = await importSwingStore(exporter, null, { includeHistorical });
   await ssIn.hostStorage.commit();
   const dumpsShouldMatch =
     runMode !== 'debug' || (exportMode === 'debug' && importMode !== 'current');
@@ -364,95 +348,95 @@ const A = 'archival';
 const D = 'debug';
 
 test('export and import data for state sync - current->current->current', async t => {
-  await testExportImport(t, C, C, C, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, C, C, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->current->archival', async t => {
-  await testExportImport(t, C, C, A, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, C, C, A, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->current->debug', async t => {
-  await testExportImport(t, C, C, D, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, C, C, D, expectedCurrentArtifacts);
 });
 
 test('export and import data for state sync - current->archival->current', async t => {
-  await testExportImport(t, C, A, C, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, C, A, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->archival->archival', async t => {
-  await testExportImport(t, C, A, A, 'transcript', expectedArchivalArtifacts);
+  await testExportImport(t, C, A, A, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->archival->debug', async t => {
-  await testExportImport(t, C, A, D, 'transcript', expectedArchivalArtifacts);
+  await testExportImport(t, C, A, D, expectedCurrentArtifacts);
 });
 
 test('export and import data for state sync - current->debug->current', async t => {
-  await testExportImport(t, C, D, C, 'none', expectedDebugArtifacts);
+  await testExportImport(t, C, D, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->debug->archival', async t => {
-  await testExportImport(t, C, D, A, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(t, C, D, A, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->debug->debug', async t => {
-  await testExportImport(t, C, D, D, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(t, C, D, D, expectedCurrentArtifacts);
 });
 
 // ------------------------------------------------------------
 
 test('export and import data for state sync - archival->current->current', async t => {
-  await testExportImport(t, A, C, C, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, A, C, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - archival->current->archival', async t => {
-  await testExportImport(t, A, C, A, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, A, C, A, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - archival->current->debug', async t => {
-  await testExportImport(t, A, C, D, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, A, C, D, expectedCurrentArtifacts);
 });
 
 test('export and import data for state sync - archival->archival->current', async t => {
-  await testExportImport(t, A, A, C, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, A, A, C, expectedArchivalArtifacts);
 });
 test('export and import data for state sync - archival->archival->archival', async t => {
-  await testExportImport(t, A, A, A, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, A, A, A, expectedArchivalArtifacts);
 });
 test('export and import data for state sync - archival->archival->debug', async t => {
-  await testExportImport(t, A, A, D, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, A, A, D, expectedArchivalArtifacts);
 });
 
 test('export and import data for state sync - archival->debug->current', async t => {
-  await testExportImport(t, A, D, C, 'none', expectedDebugArtifacts);
+  await testExportImport(t, A, D, C, expectedArchivalArtifacts);
 });
 test('export and import data for state sync - archival->debug->archival', async t => {
-  await testExportImport(t, A, D, A, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(t, A, D, A, expectedArchivalArtifacts);
 });
 test('export and import data for state sync - archival->debug->debug', async t => {
-  await testExportImport(t, A, D, D, 'snapshot', expectedDebugArtifacts);
+  await testExportImport(t, A, D, D, expectedArchivalArtifacts);
 });
 
 // ------------------------------------------------------------
 
 test('export and import data for state sync - debug->current->current', async t => {
-  await testExportImport(t, D, C, C, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, D, C, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - debug->current->archival', async t => {
-  await testExportImport(t, D, C, A, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, D, C, A, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - debug->current->debug', async t => {
-  await testExportImport(t, D, C, D, 'none', expectedCurrentArtifacts);
+  await testExportImport(t, D, C, D, expectedCurrentArtifacts);
 });
 
 test('export and import data for state sync - debug->archival->current', async t => {
-  await testExportImport(t, D, A, C, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, D, A, C, expectedArchivalArtifacts);
 });
 test('export and import data for state sync - debug->archival->archival', async t => {
-  await testExportImport(t, D, A, A, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, D, A, A, expectedArchivalArtifacts);
 });
 test('export and import data for state sync - debug->archival->debug', async t => {
-  await testExportImport(t, D, A, D, 'none', expectedArchivalArtifacts);
+  await testExportImport(t, D, A, D, expectedArchivalArtifacts);
 });
 
 test('export and import data for state sync - debug->debug->current', async t => {
-  await testExportImport(t, D, D, C, 'none', expectedDebugArtifacts);
+  await testExportImport(t, D, D, C, expectedDebugArtifacts);
 });
 test('export and import data for state sync - debug->debug->archival', async t => {
-  await testExportImport(t, D, D, A, 'none', expectedDebugArtifacts);
+  await testExportImport(t, D, D, A, expectedDebugArtifacts);
 });
 test('export and import data for state sync - debug->debug->debug', async t => {
-  await testExportImport(t, D, D, D, 'none', expectedDebugArtifacts);
+  await testExportImport(t, D, D, D, expectedDebugArtifacts);
 });
