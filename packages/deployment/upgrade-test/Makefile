@@ -46,11 +46,18 @@ build: $(TARGET)
 build_test: BOOTSTRAP_MODE=test
 build_test: $(TARGET)
 
+DEBUG ?= SwingSet:ls,SwingSet:vat
+RUN = docker run --rm -it \
+	-p 26656:26656 -p 26657:26657 -p 1317:1317 \
+	-v "$${PWD}:/workspace" \
+	-e "DEST=1" -e "DEBUG=$(DEBUG)"
+
 run:
-	docker run --rm -it -e "DEST=1" -e "TMUX_USE_CC=$(tmuxCC)" -p 26656:26656 -p 26657:26657 -p 1317:1317 --entrypoint "/usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh" -v "$${PWD}:/workspace" $(REPOSITORY):$(dockerLabel)
+	$(RUN) -e "TMUX_USE_CC=$(tmuxCC)" \
+		--entrypoint /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh \
+		 $(REPOSITORY):$(dockerLabel)
 
 run_bash:
-	docker run --rm -it -e "DEST=1" -p 26656:26656 -p 26657:26657 -p 1317:1317\
-   --entrypoint "/bin/bash" -v "$${PWD}:/workspace" $(REPOSITORY):$(dockerLabel)
+	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
 
 .PHONY: local_sdk agoric-upgrade-7-2 agoric-upgrade-8 agoric-upgrade-8-1 agoric-upgrade-9 agoric-upgrade-10 agoric-upgrade-11 build build_test run
