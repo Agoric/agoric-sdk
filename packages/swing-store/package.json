@@ -3,7 +3,10 @@
   "version": "0.9.1",
   "description": "Persistent storage for SwingSet",
   "type": "module",
-  "main": "src/swingStore.js",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
