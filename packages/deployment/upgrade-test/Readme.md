@@ -77,6 +77,16 @@ docker ps
 docker attach sweet_edison
 ```
 
+**To pass specific `software-upgrade --upgrade-info`**
+
+```shell
+json='{"some":"json","here":123}'
+make build BUILD_OPTS="--build-arg UPGRADE_INFO_11='$json'"
+```
+
+Search this directory for `UPGRADE_INFO` if you want to see how it is plumbed
+through.
+
 **To test CLI**
 
 You can point your local CLI tools to the chain running in Docker. Our Docker config binds on the same port (26656) as running a local chain. So you can use the agoric-cli commands on the Docker chain the same way. But note that the Cosmos account keys will be different from in your dev keyring.
