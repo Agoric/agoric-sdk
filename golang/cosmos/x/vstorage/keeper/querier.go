@@ -35,7 +35,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 // nolint: unparam
 func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	entry := keeper.GetEntry(ctx, path)
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get vstorage path")
 	}
 
