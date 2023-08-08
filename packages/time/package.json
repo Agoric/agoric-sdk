@@ -31,12 +31,12 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@endo/nat": "^4.1.28",
-    "@endo/patterns": "^0.2.3"
+    "@endo/nat": "^4.1.30",
+    "@endo/patterns": "^0.2.5"
   },
   "devDependencies": {
-    "@endo/far": "^0.2.19",
-    "@endo/init": "^0.5.57",
+    "@endo/far": "^0.2.21",
+    "@endo/init": "^0.5.59",
     "ava": "^5.3.0"
   },
   "files": [
