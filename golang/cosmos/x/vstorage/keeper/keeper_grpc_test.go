@@ -9,6 +9,7 @@ import (
 	grpcCodes "google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
 
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/capdata"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
@@ -271,9 +272,9 @@ func TestCapData(t *testing.T) {
 	for _, desc := range testCases {
 		desc.request.Path = "key"
 		if desc.data == nil {
-			keeper.SetStorage(ctx, types.NewStorageEntryWithNoData(desc.request.Path))
+			keeper.SetStorage(ctx, agoric.NewKVEntryWithNoValue(desc.request.Path))
 		} else {
-			keeper.SetStorage(ctx, types.NewStorageEntry(desc.request.Path, *desc.data))
+			keeper.SetStorage(ctx, agoric.NewKVEntry(desc.request.Path, *desc.data))
 		}
 		resp, err := querier.CapData(sdk.WrapSDKContext(ctx), &desc.request)
 		if desc.errCode == grpcCodes.OK {
