@@ -253,7 +253,6 @@ export const getManifestForPriceFeed = async (
         chainTimerService: t,
         client: t,
         econCharterKit: t,
-        economicCommitteeCreatorFacet: t,
         highPrioritySendersManager: t,
         namesByAddressAdmin: t,
         priceAuthority: t,
