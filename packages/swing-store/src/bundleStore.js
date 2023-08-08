@@ -7,7 +7,6 @@ import { checkBundle } from '@endo/check-bundle/lite.js';
 import { Nat } from '@endo/nat';
 import { Fail, q } from '@agoric/assert';
 import { createSHA256 } from './hasher.js';
-import { buffer } from './util.js';
 
 /**
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
@@ -27,7 +26,9 @@ import { buffer } from './util.js';
  *
  * @typedef {{
  *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>,
- *   importBundle: (artifactName: string, exporter: SwingStoreExporter, bundleID: string) => void,
+ *   importBundleRecord: (key: string, value: string) => void,
+ *   importBundle: (name: string, dataProvider: () => Promise<Buffer>) => Promise<void>,
+ *   assertComplete: (level: 'operational') => void,
  *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: () => AsyncIterableIterator<string>,
  *   getBundleIDs: () => IterableIterator<string>,
@@ -38,6 +39,18 @@ import { buffer } from './util.js';
  * }} BundleStoreDebug
  *
  */
+
+function bundleIDFromName(name) {
+  typeof name === 'string' || Fail`artifact name must be a string`;
+  const [tag, ...pieces] = name.split('.');
+  if (tag !== 'bundle' || pieces.length !== 1) {
+    Fail`expected artifact name of the form 'bundle.{bundleID}', saw ${q(
+      name,
+    )}`;
+  }
+  const bundleID = pieces[0];
+  return bundleID;
+}
 
 /**
  * @param {*} db
@@ -54,6 +67,9 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     )
   `);
 
+  // A populated record contains both bundleID and bundle, while a
+  // pruned record has a bundle of NULL.
+
   function bundleArtifactName(bundleID) {
     return `bundle.${bundleID}`;
   }
@@ -62,20 +78,36 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     return `b${Nat(version)}-${hash}`;
   }
 
-  const sqlAddBundle = db.prepare(`
-    INSERT OR REPLACE INTO bundles
-      (bundleID, bundle)
-    VALUES (?, ?)
+  // the PRIMARY KEY constraint requires the bundleID not already
+  // exist
+  const sqlAddBundleRecord = db.prepare(`
+    INSERT INTO bundles (bundleID, bundle) VALUES (?, NULL)
   `);
 
-  /**
-   * Store a bundle.  Here the bundle itself is presumed valid.
-   *
-   * @param {string} bundleID
-   * @param {Bundle} bundle
-   */
-  function addBundle(bundleID, bundle) {
+  // this sees both populated and pruned (not-yet-populated) records
+  const sqlHasBundleRecord = db.prepare(`
+    SELECT count(*)
+    FROM bundles
+    WHERE bundleID = ?
+  `);
+  sqlHasBundleRecord.pluck();
+
+  const sqlPopulateBundleRecord = db.prepare(`
+    UPDATE bundles SET bundle = $serialized WHERE bundleID = $bundleID
+  `);
+
+  function addBundleRecord(bundleID) {
     ensureTxn();
+    sqlAddBundleRecord.run(bundleID);
+  }
+
+  function populateBundle(bundleID, serialized) {
+    ensureTxn();
+    sqlHasBundleRecord.get(bundleID) || Fail`missing ${bundleID}`;
+    sqlPopulateBundleRecord.run({ bundleID, serialized });
+  }
+
+  function serializeBundle(bundleID, bundle) {
     const { moduleFormat } = bundle;
     let serialized;
     if (bundleID.startsWith('b0-')) {
@@ -98,19 +130,55 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     } else {
       throw Fail`unsupported BundleID ${bundleID}`;
     }
-    sqlAddBundle.run(bundleID, serialized);
+    return serialized;
+  }
+
+  /**
+   * Store a complete bundle in a single operation, used by runtime
+   * (i.e. not an import). We rely upon the caller to provide a
+   * correct bundle (e.g. no unexpected properties), but we still
+   * check the ID against the contents.
+   *
+   * @param {string} bundleID
+   * @param {Bundle} bundle
+   */
+  function addBundle(bundleID, bundle) {
+    const serialized = serializeBundle(bundleID, bundle);
+    addBundleRecord(bundleID);
+    populateBundle(bundleID, serialized);
     noteExport(bundleArtifactName(bundleID), bundleID);
   }
 
-  const sqlHasBundle = db.prepare(`
+  const sqlGetPrunedBundles = db.prepare(`
+    SELECT bundleID
+    FROM bundles
+    WHERE bundle IS NULL
+    ORDER BY bundleID
+  `);
+  sqlGetPrunedBundles.pluck();
+
+  function getPrunedBundles() {
+    return sqlGetPrunedBundles.all();
+  }
+
+  function assertComplete(level) {
+    assert.equal(level, 'operational'); // for now
+    const pruned = getPrunedBundles();
+    if (pruned.length) {
+      throw Fail`missing bundles for: ${pruned.join(',')}`;
+    }
+  }
+
+  const sqlHasPopulatedBundle = db.prepare(`
     SELECT count(*)
     FROM bundles
     WHERE bundleID = ?
+    AND bundle IS NOT NULL
   `);
-  sqlHasBundle.pluck(true);
+  sqlHasPopulatedBundle.pluck(true);
 
   function hasBundle(bundleID) {
-    const count = sqlHasBundle.get(bundleID);
+    const count = sqlHasPopulatedBundle.get(bundleID);
     return count !== 0;
   }
 
@@ -119,15 +187,15 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     FROM bundles
     WHERE bundleID = ?
   `);
-  sqlGetBundle.pluck(true);
 
   /**
    * @param {string} bundleID
    * @returns {Bundle}
    */
   function getBundle(bundleID) {
-    const rawBundle = sqlGetBundle.get(bundleID);
-    rawBundle || Fail`bundle ${q(bundleID)} not found`;
+    const row =
+      sqlGetBundle.get(bundleID) || Fail`bundle ${q(bundleID)} not found`;
+    const rawBundle = row.bundle || Fail`bundle ${q(bundleID)} pruned`;
     if (bundleID.startsWith('b0-')) {
       return harden(JSON.parse(rawBundle));
     } else if (bundleID.startsWith('b1-')) {
@@ -153,6 +221,14 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     }
   }
 
+  // take an export-data record (id/hash but not bundle contents) and
+  // insert something in the DB
+  function importBundleRecord(key, value) {
+    const bundleID = bundleIDFromName(key);
+    assert.equal(bundleID, value);
+    addBundleRecord(bundleID);
+  }
+
   /**
    * Read a bundle and return it as a stream of data suitable for export to
    * another store.
@@ -166,14 +242,10 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @returns {AsyncIterableIterator<Uint8Array>}
    */
   async function* exportBundle(name) {
-    typeof name === 'string' || Fail`artifact name must be a string`;
-    const parts = name.split('.');
-    const [type, bundleID] = parts;
-    // prettier-ignore
-    (parts.length === 2 && type === 'bundle') ||
-      Fail`expected artifact name of the form 'bundle.{bundleID}', saw ${q(name)}`;
-    const rawBundle = sqlGetBundle.get(bundleID);
-    rawBundle || Fail`bundle ${q(name)} not available`;
+    const bundleID = bundleIDFromName(name);
+    const row =
+      sqlGetBundle.get(bundleID) || Fail`bundle ${q(bundleID)} not found`;
+    const rawBundle = row.bundle || Fail`bundle ${q(bundleID)} pruned`;
     yield* Readable.from(Buffer.from(rawBundle));
   }
 
@@ -209,23 +281,17 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   }
 
   /**
-   * @param {string} name  Artifact name of the bundle
-   * @param {SwingStoreExporter} exporter  Whence to get the bits
-   * @param {string} bundleID  Bundle ID of the bundle
+   * Call addBundleRecord() first, then this importBundle() will
+   * populate the record.
+   *
+   * @param {string} name  Artifact name, `bundle.${bundleID}`
+   * @param {() => Promise<Buffer>} dataProvider  Function to get bundle bytes
    * @returns {Promise<void>}
    */
-  async function importBundle(name, exporter, bundleID) {
+  async function importBundle(name, dataProvider) {
     await 0; // no synchronous prefix
-    const parts = name.split('.');
-    const [type, bundleIDkey] = parts;
-    // prettier-ignore
-    parts.length === 2 && type === 'bundle' ||
-      Fail`expected artifact name of the form 'bundle.{bundleID}', saw '${q(name)}'`;
-    bundleIDkey === bundleID ||
-      Fail`bundle artifact name ${name} doesn't match bundleID ${bundleID}`;
-    const artifactChunks = exporter.getArtifact(name);
-    const inStream = Readable.from(artifactChunks);
-    const data = await buffer(inStream);
+    const bundleID = bundleIDFromName(name);
+    const data = await dataProvider();
     if (bundleID.startsWith('b0-')) {
       // we dissect and reassemble the bundle, to exclude unexpected properties
       const { moduleFormat, source, sourceMap } = JSON.parse(data.toString());
@@ -234,7 +300,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
       const serialized = JSON.stringify(bundle);
       bundleID === bundleIdFromHash(0, createSHA256(serialized).finish()) ||
         Fail`bundleID ${q(bundleID)} does not match bundle artifact`;
-      addBundle(bundleID, bundle);
+      populateBundle(bundleID, serialized);
     } else if (bundleID.startsWith('b1-')) {
       /** @type {EndoZipBase64Bundle} */
       const bundle = harden({
@@ -244,7 +310,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
       });
       // Assert that the bundle contents match the ID and hash
       await checkBundle(bundle, computeSha512, bundleID);
-      addBundle(bundleID, bundle);
+      populateBundle(bundleID, serializeBundle(bundleID, bundle));
     } else {
       Fail`unsupported BundleID ${q(bundleID)}`;
     }
@@ -264,7 +330,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const dump = {};
     for (const row of sql.iterate()) {
       const { bundleID, bundle } = row;
-      dump[bundleID] = encodeBase64(bundle);
+      dump[bundleID] = encodeBase64(Buffer.from(bundle, 'utf-8'));
     }
     return dump;
   }
@@ -281,14 +347,18 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   }
 
   return harden({
+    importBundleRecord,
+    importBundle,
+    assertComplete,
+
     addBundle,
     hasBundle,
     getBundle,
     deleteBundle,
+
     getExportRecords,
     getArtifactNames,
     exportBundle,
-    importBundle,
     getBundleIDs,
 
     dumpBundles,
