@@ -4,11 +4,9 @@ import test from 'ava';
 import tmp from 'tmp';
 import { Buffer } from 'buffer';
 import { createSHA256 } from '../src/hasher.js';
-import {
-  importSwingStore,
-  initSwingStore,
-  makeSwingStoreExporter,
-} from '../src/index.js';
+import { initSwingStore } from '../src/swingStore.js';
+import { makeSwingStoreExporter } from '../src/exporter.js';
+import { importSwingStore } from '../src/importer.js';
 import { buffer } from '../src/util.js';
 
 function makeB0ID(bundle) {
@@ -116,7 +114,9 @@ test('b0 import', async t => {
       t.is(name, nameA);
       yield Buffer.from(JSON.stringify(b0A));
     },
-    getArtifactNames: () => assert.fail('import should not query all names'),
+    async *getArtifactNames() {
+      yield* [nameA];
+    },
     close: async () => undefined,
   };
   const { kernelStorage } = await importSwingStore(exporter);
@@ -138,7 +138,9 @@ test('b0 bad import', async t => {
       t.is(name, nameA);
       yield Buffer.from(JSON.stringify(b0Abogus));
     },
-    getArtifactNames: () => assert.fail('import should not query all names'),
+    async *getArtifactNames() {
+      yield* [nameA];
+    },
     close: async () => undefined,
   };
   await t.throwsAsync(async () => importSwingStore(exporter), {
