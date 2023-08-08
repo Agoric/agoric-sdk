@@ -1,3 +1,4 @@
+import path from 'path';
 import { Buffer } from 'buffer';
 
 /**
@@ -5,7 +6,7 @@ import { Buffer } from 'buffer';
  * 'stream/consumers' package, which unfortunately only exists in newer versions
  * of Node.
  *
- * @param {import('./swingStore').AnyIterable<Uint8Array>} inStream
+ * @param {import('./exporter').AnyIterable<Uint8Array>} inStream
  */
 export const buffer = async inStream => {
   const chunks = [];
@@ -14,3 +15,8 @@ export const buffer = async inStream => {
   }
   return Buffer.concat(chunks);
 };
+
+export function dbFileInDirectory(dirPath) {
+  const filePath = path.resolve(dirPath, 'swingstore.sqlite');
+  return filePath;
+}
