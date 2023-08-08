@@ -44,26 +44,29 @@ import { makeTranscriptStore } from './transcriptStore.js';
  *
  * Content of validation data (with supporting entries for indexing):
  * - kv.${key} = ${value}  // ordinary kvStore data entry
- * - snapshot.${vatID}.${snapPos} = ${{ vatID, snapPos, hash });
+ * - snapshot.${vatID}.${snapPos} = ${{ vatID, snapPos, hash }};
  * - snapshot.${vatID}.current = `snapshot.${vatID}.${snapPos}`
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
  * @property {() => AnyIterableIterator<string>} getArtifactNames
  *
- * Get a list of name of artifacts available from the swingStore.  A name returned
- * by this method guarantees that a call to `getArtifact` on the same exporter
- * instance will succeed. Options control the filtering of the artifact names
+ * Get a list of name of artifacts available from the swingStore.  A name
+ * returned by this method guarantees that a call to `getArtifact` on the same
+ * exporter instance will succeed.  The `exportMode` option to
+ * `makeSwingStoreExporter` controls the filtering of the artifact names
  * yielded.
  *
  * Artifact names:
  * - transcript.${vatID}.${startPos}.${endPos}
  * - snapshot.${vatID}.${snapPos}
+ * - bundle.${bundleID}
  *
  * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
  *
- * Retrieve an artifact by name.  May throw if the artifact is not available,
- * which can occur if the artifact is historical and wasn't been preserved.
+ * Retrieve an artifact by name as a sequence of binary chunks.  May throw if
+ * the artifact is not available, which can occur if the artifact is historical
+ * and wasn't preserved.
  *
  * @property {() => Promise<void>} close
  *
@@ -114,10 +117,9 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
    * @yields {KVPair}
    */
   async function* getExportData() {
-    const kvPairs = sqlGetAllKVData.iterate();
-    for (const kv of kvPairs) {
-      if (getKeyType(kv.key) === 'consensus') {
-        yield [`kv.${kv.key}`, kv.value];
+    for (const { key, value } of sqlGetAllKVData.iterate()) {
+      if (getKeyType(key) === 'consensus') {
+        yield [`kv.${key}`, value];
       }
     }
     yield* snapStore.getExportRecords(true);
@@ -144,13 +146,13 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
     const [type] = name.split('.', 1);
 
     if (type === 'snapshot') {
-      return snapStore.exportSnapshot(name, exportHistoricalSnapshots);
+      return snapStore.exportSnapshot(name);
     } else if (type === 'transcript') {
-      return transcriptStore.exportSpan(name, exportHistoricalTranscripts);
+      return transcriptStore.exportSpan(name);
     } else if (type === 'bundle') {
       return bundleStore.exportBundle(name);
     } else {
-      throw Fail`invalid artifact type ${q(type)}`;
+      throw Fail`invalid type in artifact name ${q(name)}`;
     }
   }
 

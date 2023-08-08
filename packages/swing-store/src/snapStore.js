@@ -25,6 +25,11 @@ import { buffer } from './util.js';
  */
 
 /**
+ * @template T
+ *  @typedef { import('./exporter').AnyIterableIterator<T> } AnyIterableIterator<T>
+ */
+
+/**
  * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
@@ -37,10 +42,12 @@ import { buffer } from './util.js';
  * }} SnapStore
  *
  * @typedef {{
- *   exportSnapshot: (name: string, includeHistorical: boolean) => AsyncIterableIterator<Uint8Array>,
- *   importSnapshot: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => void,
+ *   exportSnapshot: (name: string) => AsyncIterableIterator<Uint8Array>,
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
+ *   importSnapshotRecord: (key: string, value: string) => void,
+ *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { includeHistorical: boolean }) => Promise<void>,
+ *   assertComplete: (level: 'operational') => void,
  * }} SnapStoreInternal
  *
  * @typedef {{
@@ -81,10 +88,25 @@ export function makeSnapStore(
       compressedSize INTEGER,
       compressedSnapshot BLOB,
       PRIMARY KEY (vatID, snapPos),
-      UNIQUE (vatID, inUse),
-      CHECK(compressedSnapshot is not null or inUse is null)
+      UNIQUE (vatID, inUse)
     )
   `);
+
+  // NOTE: there are two versions of this schema. The original, which
+  // we'll call "version 1A", has a:
+  //   CHECK(compressedSnapshot is not null or inUse is null)
+  // in the table. Version 1B is missing that constraint. Any DB
+  // created by the original code will use 1A. Any DB created by the
+  // new version will use 1B. The import process needs to temporarily
+  // violate that check, but any DB created by `importSwingStore` is
+  // (by definition) new, so it will use 1B, which doesn't enforce the
+  // check. We expect to implement schema migration
+  // (https://github.com/Agoric/agoric-sdk/issues/8089) soon, which
+  // will upgrade both 1A and 1B to "version 2", which will omit the
+  // check (in addition to any other changes we need at that point)
+
+  // pruned snapshots will have compressedSnapshot of NULL, and might
+  // also have NULL for uncompressedSize and compressedSize
 
   const sqlDeleteAllUnusedSnapshots = db.prepare(`
     DELETE FROM snapshots
@@ -98,6 +120,12 @@ export function makeSnapStore(
   function deleteAllUnusedSnapshots() {
     ensureTxn();
     sqlDeleteAllUnusedSnapshots.run();
+
+    // NOTE: this is more than pruning the snapshot data, it deletes
+    // the metadata/hash as well, making it impossible to safely
+    // repopulate the snapshot data from an untrusted source. We need
+    // to replace this with a method that merely nulls out the
+    // 'compressedSnapshot' field.
   }
 
   function snapshotArtifactName(rec) {
@@ -255,10 +283,9 @@ export function makeSnapStore(
    *   `snapshot.${vatID}.${startPos}`
    *
    * @param {string} name
-   * @param {boolean} includeHistorical
    * @returns {AsyncIterableIterator<Uint8Array>}
    */
-  function exportSnapshot(name, includeHistorical) {
+  function exportSnapshot(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
     const parts = name.split('.');
     const [type, vatID, pos] = parts;
@@ -268,9 +295,8 @@ export function makeSnapStore(
     const snapPos = Number(pos);
     const snapshotInfo = sqlGetSnapshot.get(vatID, snapPos);
     snapshotInfo || Fail`snapshot ${q(name)} not available`;
-    const { inUse, compressedSnapshot } = snapshotInfo;
+    const { compressedSnapshot } = snapshotInfo;
     compressedSnapshot || Fail`artifact ${q(name)} is not available`;
-    inUse || includeHistorical || Fail`artifact ${q(name)} is not available`;
     // weird construct here is because we need to be able to throw before the generator starts
     async function* exporter() {
       const gzReader = Readable.from(compressedSnapshot);
@@ -412,6 +438,13 @@ export function makeSnapStore(
     ORDER BY vatID, snapPos
   `);
 
+  const sqlGetAvailableSnapshots = db.prepare(`
+    SELECT vatID, snapPos, hash, uncompressedSize, compressedSize, inUse
+    FROM snapshots
+    WHERE inUse IS ? AND compressedSnapshot is not NULL
+    ORDER BY vatID, snapPos
+  `);
+
   /**
    * Obtain artifact metadata records for spanshots contained in this store.
    *
@@ -448,40 +481,85 @@ export function makeSnapStore(
   }
 
   async function* getArtifactNames(includeHistorical) {
-    for (const rec of sqlGetSnapshotMetadata.iterate(1)) {
+    for (const rec of sqlGetAvailableSnapshots.iterate(1)) {
       yield snapshotArtifactName(rec);
     }
     if (includeHistorical) {
-      for (const rec of sqlGetSnapshotMetadata.iterate(null)) {
+      for (const rec of sqlGetAvailableSnapshots.iterate(null)) {
         yield snapshotArtifactName(rec);
       }
     }
   }
 
+  const sqlAddSnapshotRecord = db.prepare(`
+    INSERT INTO snapshots (vatID, snapPos, hash, inUse)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  function importSnapshotRecord(key, value) {
+    ensureTxn();
+    const [tag, ...pieces] = key.split('.');
+    assert.equal(tag, 'snapshot');
+    const [_vatID, endPos] = pieces;
+    if (endPos === 'current') {
+      // metadata['snapshot.v1.current'] = 'snapshot.v1.5' , i.e. it
+      // points to the name of the current artifact. We could
+      // conceivably remember this and compare it against the .inUse
+      // property of that record, but it's not worth the effort (we
+      // might encounter the records in either order).
+      return;
+    }
+    const metadata = JSON.parse(value);
+    const { vatID, snapPos, hash, inUse } = metadata;
+    vatID || Fail`snapshot metadata missing vatID: ${metadata}`;
+    snapPos !== undefined ||
+      Fail`snapshot metadata missing snapPos: ${metadata}`;
+    hash || Fail`snapshot metadata missing hash: ${metadata}`;
+    inUse !== undefined || Fail`snapshot metadata missing inUse: ${metadata}`;
+
+    sqlAddSnapshotRecord.run(vatID, snapPos, hash, inUse ? 1 : null);
+  }
+
+  const sqlGetSnapshotHashFor = db.prepare(`
+    SELECT hash, inUse
+    FROM snapshots
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
+  const sqlPopulateSnapshot = db.prepare(`
+    UPDATE snapshots SET
+      uncompressedSize = ?, compressedSize = ?, compressedSnapshot = ?
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
   /**
    * @param {string} name  Artifact name of the snapshot
-   * @param {SwingStoreExporter} exporter  Whence to get the bits
-   * @param {object} info  Metadata describing the artifact
+   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
+   * @param {object} options
+   * @param {boolean} options.includeHistorical
    * @returns {Promise<void>}
    */
-  async function importSnapshot(name, exporter, info) {
+  async function populateSnapshot(name, makeChunkIterator, options) {
+    ensureTxn();
+    const { includeHistorical } = options;
     const parts = name.split('.');
     const [type, vatID, rawEndPos] = parts;
     // prettier-ignore
     parts.length === 3 && type === 'snapshot' ||
       Fail`expected snapshot name of the form 'snapshot.{vatID}.{snapPos}', saw '${q(name)}'`;
-    // prettier-ignore
-    info.vatID === vatID ||
-      Fail`snapshot name says vatID ${q(vatID)}, metadata says ${q(info.vatID)}`;
     const snapPos = Number(rawEndPos);
-    // prettier-ignore
-    info.snapPos === snapPos ||
-      Fail`snapshot name says snapPos ${q(snapPos)}, metadata says ${q(info.snapPos)}`;
+    const metadata =
+      sqlGetSnapshotHashFor.get(vatID, snapPos) ||
+      Fail`no metadata for snapshot ${name}`;
 
-    const artifactChunks = exporter.getArtifact(name);
+    if (!metadata.inUse && !includeHistorical) {
+      return; // ignore old snapshots
+    }
+
+    const artifactChunks = makeChunkIterator();
     const inStream = Readable.from(artifactChunks);
-    let size = 0;
-    inStream.on('data', chunk => (size += chunk.length));
+    let uncompressedSize = 0;
+    inStream.on('data', chunk => (uncompressedSize += chunk.length));
     const hashStream = createHash('sha256');
     const gzip = createGzip();
     inStream.pipe(hashStream);
@@ -489,19 +567,35 @@ export function makeSnapStore(
     const compressedArtifact = await buffer(gzip);
     await finished(inStream);
     const hash = hashStream.digest('hex');
+
+    // validate against the previously-established metadata
     // prettier-ignore
-    info.hash === hash ||
-      Fail`snapshot ${q(name)} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
-    ensureTxn();
-    sqlSaveSnapshot.run(
-      vatID,
-      snapPos,
-      info.inUse ? 1 : null,
-      info.hash,
-      size,
+    metadata.hash === hash ||
+      Fail`snapshot ${q(name)} hash is ${q(hash)}, metadata says ${q(metadata.hash)}`;
+
+    sqlPopulateSnapshot.run(
+      uncompressedSize,
       compressedArtifact.length,
       compressedArtifact,
+      vatID,
+      snapPos,
     );
+  }
+
+  const sqlListPrunedCurrentSnapshots = db.prepare(`
+    SELECT vatID FROM snapshots
+      WHERE inUse = 1 AND compressedSnapshot IS NULL
+      ORDER BY vatID
+  `);
+  sqlListPrunedCurrentSnapshots.pluck();
+
+  function assertComplete(level) {
+    assert.equal(level, 'operational'); // for now
+    // every 'inUse' snapshot must be populated
+    const vatIDs = sqlListPrunedCurrentSnapshots.all();
+    if (vatIDs.length) {
+      throw Fail`current snapshots are pruned for vats ${vatIDs.join(',')}`;
+    }
   }
 
   const sqlListAllSnapshots = db.prepare(`
@@ -563,10 +657,14 @@ export function makeSnapStore(
     deleteVatSnapshots,
     stopUsingLastSnapshot,
     getSnapshotInfo,
+
     getExportRecords,
     getArtifactNames,
     exportSnapshot,
-    importSnapshot,
+
+    importSnapshotRecord,
+    populateSnapshot,
+    assertComplete,
 
     hasHash,
     listAllSnapshots,
