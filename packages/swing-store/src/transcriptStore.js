@@ -28,6 +28,7 @@ import { createSHA256 } from './hasher.js';
  *   importTranscriptSpanRecord: (key: string, value: string) => void,
  *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { includeHistorical: boolean }) => Promise<void>,
  *   assertComplete: (level: 'operational') => void,
+ *   repairTranscriptSpanRecord: (key: string, value: string) => void,
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
  * }} TranscriptStoreInternal
  *
@@ -643,6 +644,41 @@ export function makeTranscriptStore(
     // commit. So we're done.
   }
 
+  function repairTranscriptSpanRecord(key, value) {
+    ensureTxn();
+    const [tag, keyVatID, keyStartPos] = key.split('.');
+    assert.equal(tag, 'transcript');
+    const metadata = JSON.parse(value);
+    const { vatID, startPos, endPos, hash, isCurrent, incarnation } = metadata;
+    assert.equal(keyVatID, vatID);
+    if (keyStartPos !== 'current') {
+      if (Number(keyStartPos) !== startPos) {
+        Fail`transcript key ${key} mismatches metadata ${metadata}`;
+      }
+    }
+
+    const existing = sqlGetSpanMetadataFor.get(vatID, startPos);
+    if (existing) {
+      if (
+        Boolean(existing.isCurrent) !== Boolean(isCurrent) ||
+        existing.hash !== hash ||
+        existing.incarnation !== incarnation ||
+        existing.endPos !== endPos
+      ) {
+        throw Fail`repairTranscriptSpanRecord metadata mismatch: ${existing} vs ${metadata}`;
+      }
+    } else {
+      sqlWriteSpan.run(
+        vatID,
+        startPos,
+        endPos,
+        hash,
+        isCurrent ? 1 : null,
+        incarnation,
+      );
+    }
+  }
+
   function assertComplete(level) {
     assert.equal(level, 'operational'); // for now
     // every 'isCurrent' transcript span must have all items
@@ -676,6 +712,7 @@ export function makeTranscriptStore(
     importTranscriptSpanRecord,
     populateTranscriptSpan,
     assertComplete,
+    repairTranscriptSpanRecord,
 
     dumpTranscripts,
     readFullVatTranscript,

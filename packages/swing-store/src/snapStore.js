@@ -48,6 +48,7 @@ import { buffer } from './util.js';
  *   importSnapshotRecord: (key: string, value: string) => void,
  *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { includeHistorical: boolean }) => Promise<void>,
  *   assertComplete: (level: 'operational') => void,
+ *   repairSnapshotRecord: (key: string, value: string) => void,
  * }} SnapStoreInternal
  *
  * @typedef {{
@@ -526,6 +527,33 @@ export function makeSnapStore(
     WHERE vatID = ? AND snapPos = ?
   `);
 
+  function repairSnapshotRecord(key, value) {
+    ensureTxn();
+    const [tag, keyVatID, keySnapPos] = key.split('.');
+    assert.equal(tag, 'snapshot');
+    if (keySnapPos === 'current') {
+      // "snapshot.${vatID}.current" entries are meta-metadata: they
+      // point to the metadata key of the current snapshot, to avoid
+      // the need for an expensive search
+      return;
+    }
+    const metadata = JSON.parse(value);
+    const { vatID, snapPos, hash, inUse } = metadata;
+    assert.equal(keyVatID, vatID);
+    assert.equal(Number(keySnapPos), snapPos);
+    const existing = sqlGetSnapshotHashFor.get(vatID, snapPos);
+    if (existing) {
+      if (
+        Boolean(existing.inUse) !== Boolean(inUse) ||
+        existing.hash !== hash
+      ) {
+        throw Fail`repairSnapshotRecord metadata mismatch: ${existing} vs ${metadata}`;
+      }
+    } else {
+      sqlAddSnapshotRecord.run(vatID, snapPos, hash, inUse ? 1 : null);
+    }
+  }
+
   const sqlPopulateSnapshot = db.prepare(`
     UPDATE snapshots SET
       uncompressedSize = ?, compressedSize = ?, compressedSnapshot = ?
@@ -665,6 +693,7 @@ export function makeSnapStore(
     importSnapshotRecord,
     populateSnapshot,
     assertComplete,
+    repairSnapshotRecord,
 
     hasHash,
     listAllSnapshots,
