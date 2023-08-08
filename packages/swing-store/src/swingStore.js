@@ -14,6 +14,7 @@ import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
+import { doRepairMetadata } from './repairMetadata.js';
 
 /**
  * @typedef { import('./kvStore').KVStore } KVStore
@@ -48,6 +49,7 @@ import { makeSnapStoreIO } from './snapStoreIO.js';
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
  *   setExportCallback: (cb: (updates: KVPair[]) => void) => void, // Set a callback invoked by swingStore when new serializable data is available for export
+ *   repairMetadata: (exporter: import('./exporter').SwingStoreExporter) => Promise<void>,
  * }} SwingStoreHostStorage
  */
 
@@ -477,6 +479,10 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   /** @type {import('./internal.js').SwingStoreInternal} */
   const internal = harden({ snapStore, transcriptStore, bundleStore });
 
+  async function repairMetadata(exporter) {
+    return doRepairMetadata(internal, exporter);
+  }
+
   /**
    * Return a Buffer with the entire DB state, useful for cloning a
    * small swingstore in unit tests.
@@ -552,6 +558,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     getActivityhash,
   };
   const hostStorage = {
+    repairMetadata,
     kvStore: hostKVStore,
     commit,
     close,

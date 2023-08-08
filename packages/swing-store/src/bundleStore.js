@@ -26,6 +26,7 @@ import { createSHA256 } from './hasher.js';
  *
  * @typedef {{
  *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>,
+ *   repairBundleRecord: (key: string, value: string) => void,
  *   importBundleRecord: (key: string, value: string) => void,
  *   importBundle: (name: string, dataProvider: () => Promise<Buffer>) => Promise<void>,
  *   assertComplete: (level: 'operational') => void,
@@ -229,6 +230,23 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     addBundleRecord(bundleID);
   }
 
+  function repairBundleRecord(key, value) {
+    // Bundle records have no metadata, and all bundles must be
+    // present (there's no notion of "historical bundle"). So there's
+    // no "repair", and if the repair process supplies a bundle record
+    // that isn't already present, we throw an error. The repair
+    // process doesn't get artifacts, so adding a new record here
+    // would fail the subsequent completeness check anyways.
+
+    const bundleID = bundleIDFromName(key);
+    assert.equal(bundleID, value);
+    if (sqlHasBundleRecord.get(bundleID)) {
+      // record is present, there's no metadata to mismatch, so ignore quietly
+      return;
+    }
+    throw Fail`unexpected new bundle record for ${bundleID} during repair`;
+  }
+
   /**
    * Read a bundle and return it as a stream of data suitable for export to
    * another store.
@@ -360,6 +378,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     getArtifactNames,
     exportBundle,
     getBundleIDs,
+    repairBundleRecord,
 
     dumpBundles,
   });
