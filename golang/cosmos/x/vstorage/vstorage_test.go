@@ -153,7 +153,7 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 			// TODO: Fully validate input before making changes
 			// args:        []interface{}{[]string{"foo", "X"}, []interface{}{42, "new"}},
 			args:        []interface{}{[]interface{}{42, "new"}},
-			errContains: ptr("key"),
+			errContains: ptr("json"),
 		},
 		{label: "non-string value",
 			// TODO: Fully validate input before making changes
