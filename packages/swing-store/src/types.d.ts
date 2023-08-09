@@ -11,4 +11,9 @@ export type {
   SnapshotInfo,
 } from './src/snapStore.js';
 export type { TranscriptStore } from './src/transcriptStore.js';
-export type { SwingStoreExporter, ExportMode } from './src/exporter.js';
+export type { ArtifactMode } from './src/internal.js';
+export type { ImportSwingStoreOptions } from './src/importer.js';
+export type {
+  SwingStoreExporter,
+  ExportSwingStoreOptions,
+} from './src/exporter.js';

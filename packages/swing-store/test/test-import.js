@@ -16,6 +16,13 @@ import { importSwingStore, makeSwingStoreExporter } from '../src/index.js';
 
 import { tmpDir, makeB0ID } from './util.js';
 
+const rank = {
+  operational: 1,
+  replay: 2,
+  archival: 3,
+  debug: 4,
+};
+
 const snapshotData = 'snapshot data';
 // this snapHash was computed manually
 const snapHash =
@@ -98,58 +105,66 @@ export function buildData() {
   exportData.set(`bundle.${bundle0ID}`, bundle0ID);
 
   const sbase = { vatID: 'v1', hash: snapHash, inUse: 0 };
-  const tbase = { vatID: 'v1', startPos: 0, isCurrent: 0, incarnation: 0 };
+  const tbase = { vatID: 'v1', startPos: 0, isCurrent: 0, incarnation: 1 };
   const addTS = (key, obj) =>
     exportData.set(key, JSON.stringify({ ...tbase, ...obj }));
   const t0hash =
+    '5bee0f44eca02f23eab03703e84ed2647d5d117fed99e1c30a3b424b7f082ab9';
+  const t2hash =
     '57152efdd7fdf75c03371d2b4f1088d5bf3eae7fe643babce527ff81df38998c';
-  const t3hash =
+  const t5hash =
     '1947001e78e01bd1e773feb22b4ffc530447373b9de9274d5d5fbda3f23dbf2b';
-  const t6hash =
+  const t8hash =
     'e6b42c6a3fb94285a93162f25a9fc0145fd4c5bb144917dc572c50ae2d02ee69';
 
-  addTS(`transcript.v1.0`, { endPos: 3, hash: t0hash });
+  addTS(`transcript.v1.0`, { incarnation: 0, endPos: 2, hash: t0hash });
+  artifacts.set(`transcript.v1.0.2`, 'start-worker\nshutdown-worker\n');
+
+  addTS(`transcript.v1.2`, { startPos: 2, endPos: 5, hash: t2hash });
   artifacts.set(
-    `transcript.v1.0.3`,
+    `transcript.v1.2.5`,
     'start-worker\ndelivery1\nsave-snapshot\n',
   );
-  exportData.set(`snapshot.v1.2`, JSON.stringify({ ...sbase, snapPos: 2 }));
-  artifacts.set(`snapshot.v1.2`, snapshotData);
+  exportData.set(`snapshot.v1.4`, JSON.stringify({ ...sbase, snapPos: 4 }));
+  artifacts.set(`snapshot.v1.4`, snapshotData);
 
-  addTS(`transcript.v1.3`, { startPos: 3, endPos: 6, hash: t3hash });
+  addTS(`transcript.v1.5`, { startPos: 5, endPos: 8, hash: t5hash });
   artifacts.set(
-    'transcript.v1.3.6',
+    'transcript.v1.5.8',
     'load-snapshot\ndelivery2\nsave-snapshot\n',
   );
   exportData.set(
-    `snapshot.v1.5`,
-    JSON.stringify({ ...sbase, snapPos: 5, inUse: 1 }),
+    `snapshot.v1.7`,
+    JSON.stringify({ ...sbase, snapPos: 7, inUse: 1 }),
   );
-  artifacts.set(`snapshot.v1.5`, snapshotData);
+  artifacts.set(`snapshot.v1.7`, snapshotData);
 
-  artifacts.set('transcript.v1.6.8', 'load-snapshot\ndelivery3\n');
-  exportData.set(`snapshot.v1.current`, 'snapshot.v1.5');
+  artifacts.set('transcript.v1.8.10', 'load-snapshot\ndelivery3\n');
+  exportData.set(`snapshot.v1.current`, 'snapshot.v1.7');
   addTS(`transcript.v1.current`, {
-    startPos: 6,
-    endPos: 8,
+    startPos: 8,
+    endPos: 10,
     isCurrent: 1,
-    hash: t6hash,
+    hash: t8hash,
   });
 
-  return { exportData, artifacts, t0hash, t3hash, t6hash };
+  return { exportData, artifacts, t0hash, t2hash, t5hash, t8hash };
 }
 
 const importTest = test.macro(async (t, mode) => {
+  /** @typedef {import('../src/internal.js').ArtifactMode} ArtifactMode */
+  const artifactMode = /** @type {ArtifactMode} */ (mode);
+
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
-  const { exportData, artifacts, t0hash, t3hash, t6hash } = buildData();
+  const { exportData, artifacts, t0hash, t2hash, t5hash, t8hash } = buildData();
 
   const exporter = makeExporter(exportData, artifacts);
 
   // now import
-  const includeHistorical = mode === 'historical';
-  const options = { includeHistorical };
+  const includeHistorical = artifactMode !== 'operational';
+  const options = { includeHistorical, artifactMode };
   const ss = await importSwingStore(exporter, dbDir, options);
   ss.hostStorage.commit();
   const data = convert(ss.debug.dump());
@@ -187,31 +202,43 @@ const importTest = test.macro(async (t, mode) => {
 
   t.deepEqual(data.kvEntries, { key1: 'value1' });
   let ts = [];
-  let tsStart = 6; // start of current span
-  if (mode === 'historical') {
-    tsStart = 0; // historical means we get all spans
-    ts = ts.concat(['start-worker', 'delivery1', 'save-snapshot']); // 0,1,2
-    ts = ts.concat(['load-snapshot', 'delivery2', 'save-snapshot']); // 3,4,5
+  if (rank[artifactMode] >= rank.archival) {
+    // only 'archival' and 'debug' get the old incarnation's span
+    ts = ts.concat(['start-worker', 'shutdown-worker']); // 0,1
   }
-  ts = ts.concat(['load-snapshot', 'delivery3']); // 6,7
+  if (rank[artifactMode] >= rank.replay) {
+    // those, or 'replay', get the current incarnation's old spans
+    ts = ts.concat(['start-worker', 'delivery1', 'save-snapshot']); // 2,3,4
+    ts = ts.concat(['load-snapshot', 'delivery2', 'save-snapshot']); // 5,6,7
+  }
+  ts = ts.concat(['load-snapshot', 'delivery3']); // 8,9
+
+  let tsStart;
+  if (artifactMode === 'archival' || artifactMode === 'debug') {
+    tsStart = 0;
+  } else if (artifactMode === 'replay') {
+    tsStart = 2;
+  } else {
+    tsStart = 8;
+  }
 
   const expectedTranscript = convertTranscript(ts, tsStart);
   t.deepEqual(data.transcripts, { v1: expectedTranscript });
   const uncompressedSnapshot = Buffer.from(snapshotData);
   const expectedSnapshots = [];
-  if (mode === 'historical') {
+  if (artifactMode === 'debug') {
     expectedSnapshots.push({
       uncompressedSnapshot,
       hash: snapHash,
       inUse: 0,
-      snapPos: 2,
+      snapPos: 4,
     });
   }
   expectedSnapshots.push({
     uncompressedSnapshot,
     hash: snapHash,
     inUse: 1,
-    snapPos: 5,
+    snapPos: 7,
   });
   t.deepEqual(await convertSnapshots(data.snapshots), {
     v1: expectedSnapshots,
@@ -225,12 +252,12 @@ const importTest = test.macro(async (t, mode) => {
   ];
   t.deepEqual(
     spanRows.map(sr => sr.startPos),
-    [0, 3, 6],
+    [0, 2, 5, 8],
   );
 
   // and a new export should include all metadata, regardless of import mode
 
-  const reExporter = makeSwingStoreExporter(dbDir, 'current');
+  const reExporter = makeSwingStoreExporter(dbDir);
   const reExportData = new Map();
   for await (const [key, value] of reExporter.getExportData()) {
     reExportData.set(key, value);
@@ -248,18 +275,20 @@ const importTest = test.macro(async (t, mode) => {
   };
 
   check('kv.key1', 'value1');
-  check('snapshot.v1.2', { vatID: 'v1', snapPos: 2, inUse: 0, hash: snapHash });
-  check('snapshot.v1.5', { vatID: 'v1', snapPos: 5, inUse: 1, hash: snapHash });
-  check('snapshot.v1.current', 'snapshot.v1.5');
-  const base = { vatID: 'v1', incarnation: 0, isCurrent: 0 };
-  check('transcript.v1.0', { ...base, startPos: 0, endPos: 3, hash: t0hash });
-  check('transcript.v1.3', { ...base, startPos: 3, endPos: 6, hash: t3hash });
+  check('snapshot.v1.4', { vatID: 'v1', snapPos: 4, inUse: 0, hash: snapHash });
+  check('snapshot.v1.7', { vatID: 'v1', snapPos: 7, inUse: 1, hash: snapHash });
+  check('snapshot.v1.current', 'snapshot.v1.7');
+  const base0 = { vatID: 'v1', incarnation: 0, isCurrent: 0 };
+  const base1 = { vatID: 'v1', incarnation: 1, isCurrent: 0 };
+  check('transcript.v1.0', { ...base0, startPos: 0, endPos: 2, hash: t0hash });
+  check('transcript.v1.2', { ...base1, startPos: 2, endPos: 5, hash: t2hash });
+  check('transcript.v1.5', { ...base1, startPos: 5, endPos: 8, hash: t5hash });
   check('transcript.v1.current', {
-    ...base,
-    startPos: 6,
-    endPos: 8,
+    ...base1,
+    startPos: 8,
+    endPos: 10,
     isCurrent: 1,
-    hash: t6hash,
+    hash: t8hash,
   });
   check(`bundle.${bundle0ID}`, bundle0ID);
 
@@ -270,8 +299,10 @@ const importTest = test.macro(async (t, mode) => {
   }
 });
 
-test('import current', importTest, 'current');
-test('import historical', importTest, 'historical');
+test('import operational', importTest, 'operational');
+test('import replay', importTest, 'replay');
+test('import archival', importTest, 'archival');
+test('import debug', importTest, 'debug');
 
 test('import is missing bundle', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');

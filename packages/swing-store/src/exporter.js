@@ -8,6 +8,8 @@ import { makeBundleStore } from './bundleStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { makeTranscriptStore } from './transcriptStore.js';
+import { assertComplete } from './assertComplete.js';
+import { validateArtifactMode } from './internal.js';
 
 /**
  * @template T
@@ -53,7 +55,7 @@ import { makeTranscriptStore } from './transcriptStore.js';
  *
  * Get a list of name of artifacts available from the swingStore.  A name
  * returned by this method guarantees that a call to `getArtifact` on the same
- * exporter instance will succeed.  The `exportMode` option to
+ * exporter instance will succeed.  The `artifactMode` option to
  * `makeSwingStoreExporter` controls the filtering of the artifact names
  * yielded.
  *
@@ -75,22 +77,20 @@ import { makeTranscriptStore } from './transcriptStore.js';
  */
 
 /**
- * @typedef {'current' | 'archival' | 'debug'} ExportMode
+ * @typedef { object } ExportSwingStoreOptions
+ * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
  */
 
 /**
  * @param {string} dirPath
- * @param { ExportMode } exportMode
+ * @param { ExportSwingStoreOptions } [options]
  * @returns {SwingStoreExporter}
  */
-export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
+export function makeSwingStoreExporter(dirPath, options = {}) {
   typeof dirPath === 'string' || Fail`dirPath must be a string`;
-  exportMode === 'current' ||
-    exportMode === 'archival' ||
-    exportMode === 'debug' ||
-    Fail`invalid exportMode ${q(exportMode)}`;
-  const exportHistoricalSnapshots = exportMode === 'debug';
-  const exportHistoricalTranscripts = exportMode !== 'current';
+  const { artifactMode = 'operational' } = options;
+  validateArtifactMode(artifactMode);
+
   const filePath = dbFileInDirectory(dirPath);
   const db = sqlite3(filePath);
 
@@ -105,6 +105,12 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   const snapStore = makeSnapStore(db, ensureTxn, makeSnapStoreIO());
   const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
+
+  if (artifactMode !== 'debug') {
+    // throw early if this DB will not be able to create all the desired artifacts
+    const internal = { snapStore, bundleStore, transcriptStore };
+    assertComplete(internal, artifactMode);
+  }
 
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
@@ -132,8 +138,8 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
    * @yields {string}
    */
   async function* getArtifactNames() {
-    yield* snapStore.getArtifactNames(exportHistoricalSnapshots);
-    yield* transcriptStore.getArtifactNames(exportHistoricalTranscripts);
+    yield* snapStore.getArtifactNames(artifactMode);
+    yield* transcriptStore.getArtifactNames(artifactMode);
     yield* bundleStore.getArtifactNames();
   }
 
