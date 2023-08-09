@@ -27,13 +27,13 @@ runs:
       shell: bash
     - uses: actions/checkout@v3
       with:
-        clean: 'false'
+        clean: false
         submodules: 'true'
         persist-credentials: false
         path: ${{ inputs.path }}
     # Select a branch on Endo to test against by adding text to the body of the
     # pull request. For example: #endo-branch: some-pr-branch
-    # The default is '*NONE*' to indicate not to check out Endo, just use
+    # The default is '*NOPE*' to indicate not to check out Endo, just use
     # the published NPM packages.
     - name: Get the appropriate Endo branch
       id: endo-branch
@@ -111,8 +111,8 @@ runs:
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-installed
         if test -e ~/endo; then
-          # Remove traces of the redirected `yarn install`.
-          git restore package.json yarn.lock
+          # Stage the redirected `yarn install` consequences.
+          git add package.json yarn.lock
           rm -rf ~/endo
         fi
       shell: bash
@@ -131,9 +131,11 @@ runs:
     - name: git dirty check
       working-directory: ${{ inputs.path }}
       run: |-
-        if [ -n "$(git status --porcelain)" ];
-        then
+        set -x
+        # In case of Endo override, ignore staged changes.
+        if [ -n "$(git status --porcelain | grep -Eve '^A  '; true)" ]; then
           git status
+          echo "Unexpected dirty git status" 1>&2
           exit 1
         fi
       shell: bash
