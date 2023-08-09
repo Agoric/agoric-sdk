@@ -126,7 +126,8 @@ test('crank abort leaves no debris in export log', async t => {
     await ssOut.hostStorage.commit();
   }
 
-  const exporter = makeSwingStoreExporter(dbDir, 'current');
+  const artifactMode = 'operational';
+  const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
 
   const exportData = [];
   for await (const elem of exporter.getExportData()) {
@@ -175,12 +176,13 @@ async function testExportImport(
   exportMode,
   importMode,
   expectedArtifactNames,
+  failureMode = 'none',
 ) {
   const exportLog = makeExportLog();
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
-  const keepTranscripts = runMode !== 'current';
+  const keepTranscripts = runMode !== 'operational';
   const keepSnapshots = runMode === 'debug';
   const ssOut = initSwingStore(dbDir, {
     exportCallback: exportLog.callback,
@@ -223,7 +225,15 @@ async function testExportImport(
     await ssOut.hostStorage.commit();
   }
 
-  const exporter = makeSwingStoreExporter(dbDir, exportMode);
+  const incomplete = 'incomplete archival transcript: 3 vs 12';
+  function doExport() {
+    return makeSwingStoreExporter(dbDir, { artifactMode: exportMode });
+  }
+  if (failureMode === 'export') {
+    await t.throws(doExport, { message: incomplete });
+    return;
+  }
+  const exporter = doExport();
 
   const exportData = [];
   for await (const elem of exporter.getExportData()) {
@@ -307,13 +317,36 @@ async function testExportImport(
   }
   t.deepEqual(artifactNames, expectedArtifactNames);
 
-  const includeHistorical = importMode !== 'current';
-
   const beforeDump = debug.dump(keepSnapshots);
-  const ssIn = await importSwingStore(exporter, null, { includeHistorical });
+  function doImport() {
+    return importSwingStore(exporter, null, { artifactMode: importMode });
+  }
+
+  if (failureMode === 'import') {
+    await t.throwsAsync(doImport, { message: incomplete });
+    return;
+  }
+  t.is(failureMode, 'none');
+  const ssIn = await doImport();
   await ssIn.hostStorage.commit();
-  const dumpsShouldMatch =
-    runMode !== 'debug' || (exportMode === 'debug' && importMode !== 'current');
+  let dumpsShouldMatch = true;
+  if (runMode === 'operational') {
+    dumpsShouldMatch = true; // there's no data to lose
+  } else if (runMode === 'archival') {
+    if (exportMode === 'current') {
+      dumpsShouldMatch = false; // export omits some data
+    }
+    if (importMode === 'current') {
+      dumpsShouldMatch = false; // import ignores some data
+    }
+  } else if (runMode === 'debug') {
+    if (exportMode !== 'debug') {
+      dumpsShouldMatch = false; // export omits some data
+    }
+    if (importMode !== 'debug') {
+      dumpsShouldMatch = false; // import ignores some data
+    }
+  }
   if (dumpsShouldMatch) {
     const afterDump = ssIn.debug.dump(keepSnapshots);
     t.deepEqual(beforeDump, afterDump);
@@ -348,35 +381,43 @@ const expectedDebugArtifacts = [
   'transcript.vatB.5.10',
 ];
 
-const C = 'current';
+const C = 'operational'; // nee 'current'
+// we don't try to test 'replay' here: see test-import.js and test-export.js
 const A = 'archival';
 const D = 'debug';
+
+// importMode='archival' requires a non-pruned DB
+// (runMode!=='current'), with exportMode as 'archival' or 'debug'
+
+// the expected artifacts are a function of the runMode and exportMode, not importMode
 
 test('export and import data for state sync - current->current->current', async t => {
   await testExportImport(t, C, C, C, expectedCurrentArtifacts);
 });
+// so this one fails during import
 test('export and import data for state sync - current->current->archival', async t => {
-  await testExportImport(t, C, C, A, expectedCurrentArtifacts);
+  await testExportImport(t, C, C, A, expectedCurrentArtifacts, 'import');
 });
 test('export and import data for state sync - current->current->debug', async t => {
   await testExportImport(t, C, C, D, expectedCurrentArtifacts);
 });
 
+// these all throw an error during export, because 'archival' requires a non-pruned DB
 test('export and import data for state sync - current->archival->current', async t => {
-  await testExportImport(t, C, A, C, expectedCurrentArtifacts);
+  await testExportImport(t, C, A, C, [], 'export');
 });
 test('export and import data for state sync - current->archival->archival', async t => {
-  await testExportImport(t, C, A, A, expectedCurrentArtifacts);
+  await testExportImport(t, C, A, A, [], 'export');
 });
 test('export and import data for state sync - current->archival->debug', async t => {
-  await testExportImport(t, C, A, D, expectedCurrentArtifacts);
+  await testExportImport(t, C, A, D, [], 'export');
 });
 
 test('export and import data for state sync - current->debug->current', async t => {
   await testExportImport(t, C, D, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - current->debug->archival', async t => {
-  await testExportImport(t, C, D, A, expectedCurrentArtifacts);
+  await testExportImport(t, C, D, A, expectedCurrentArtifacts, 'import');
 });
 test('export and import data for state sync - current->debug->debug', async t => {
   await testExportImport(t, C, D, D, expectedCurrentArtifacts);
@@ -388,7 +429,7 @@ test('export and import data for state sync - archival->current->current', async
   await testExportImport(t, A, C, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - archival->current->archival', async t => {
-  await testExportImport(t, A, C, A, expectedCurrentArtifacts);
+  await testExportImport(t, A, C, A, expectedCurrentArtifacts, 'import');
 });
 test('export and import data for state sync - archival->current->debug', async t => {
   await testExportImport(t, A, C, D, expectedCurrentArtifacts);
@@ -420,7 +461,7 @@ test('export and import data for state sync - debug->current->current', async t 
   await testExportImport(t, D, C, C, expectedCurrentArtifacts);
 });
 test('export and import data for state sync - debug->current->archival', async t => {
-  await testExportImport(t, D, C, A, expectedCurrentArtifacts);
+  await testExportImport(t, D, C, A, expectedCurrentArtifacts, 'import');
 });
 test('export and import data for state sync - debug->current->debug', async t => {
   await testExportImport(t, D, C, D, expectedCurrentArtifacts);
