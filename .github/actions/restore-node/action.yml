@@ -132,8 +132,9 @@ runs:
       working-directory: ${{ inputs.path }}
       run: |-
         set -x
-        # In case of Endo override, ignore staged changes.
-        if [ -n "$(git status --porcelain | grep -Eve '^A  '; true)" ]; then
+        # In case of Endo override, ignore matching index and worktree.
+        # (First column is non-space, second column is space, followed by separator.)
+        if [ -n "$(git status --porcelain | grep -Eve '^[^ ]  '; true)" ]; then
           git status
           echo "Unexpected dirty git status" 1>&2
           exit 1
