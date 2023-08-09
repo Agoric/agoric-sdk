@@ -6,7 +6,8 @@
 import { E } from '@endo/eventual-send';
 import { expectType } from 'tsd';
 
-import type { start as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
+// 'prepare' is deprecated but still supported
+import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 
 {
   const zoe = {} as ZoeService;

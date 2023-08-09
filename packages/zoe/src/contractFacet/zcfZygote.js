@@ -1,27 +1,27 @@
-import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
-import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern, mustMatch } from '@agoric/store';
 import {
   canBeDurable,
   M,
   makeScalarBigMapStore,
-  provideDurableMapStore,
   prepareExo,
   prepareExoClass,
+  provideDurableMapStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
+import { passStyleOf, Remotable } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { objectMap } from '@agoric/internal';
 import { cleanProposal } from '../cleanProposal.js';
+import { handlePKitWarning } from '../handleWarning.js';
+import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
+import { defineDurableHandle } from '../makeHandle.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeMakeExiter } from './exit.js';
-import { defineDurableHandle } from '../makeHandle.js';
-import { provideIssuerStorage } from '../issuerStorage.js';
-import { createSeatManager } from './zcfSeat.js';
-import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
-import { handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
+import { createSeatManager } from './zcfSeat.js';
 
 import '../internal-types.js';
 import './internal-types.js';
@@ -211,15 +211,24 @@ export const makeZCFZygote = async (
   const handleOfferObj = makeHandleOfferObj(taker);
 
   /**
-   * @type {() => Promise< {
-   * buildRootObject: any,
-   * start: undefined,
-   * meta: undefined,
-   * } | {
-   * buildRootObject: undefined,
-   * start: ContractStartFn,
-   * meta?: ContractMeta,
-}>} */
+   * @type {() => Promise<
+   *   | {
+   *       buildRootObject: any;
+   *       start: undefined;
+   *       meta: undefined;
+   *     }
+   *   | {
+   *       prepare: ContractStartFn;
+   *       customTermsShape?: Pick<ContractMeta, 'customTermsShape'>,
+   *       privateArgsShape?: Pick<ContractMeta, 'privateArgsShape'>,
+   *     }
+   *   | {
+   *       buildRootObject: undefined;
+   *       start: ContractStartFn;
+   *       meta?: ContractMeta;
+   *     }
+   * >}
+   */
   const evaluateContract = () => {
     let bundle;
     if (passStyleOf(contractBundleCap) === 'remotable') {
@@ -232,18 +241,44 @@ export const makeZCFZygote = async (
     return evalContractBundle(bundle);
   };
   // evaluate the contract (either the first version, or an upgrade)
-  const { start, buildRootObject, meta = {} } = await evaluateContract();
+  const bundleResult = await evaluateContract();
+
+  //#region backwards compatibility with prepare()
+  const { start, meta = {} } = (() => {
+    if ('prepare' in bundleResult) {
+      if ('start' in bundleResult) {
+        Fail`contract must provide exactly one of "start" and "prepare"`;
+      }
+      // A contract must have one expression of upgradability
+      if (/** @type {any} */ (bundleResult).meta?.upgradability) {
+        Fail`prepare() is deprecated and incompatible with the 'upgradability' indicator`;
+      }
+      return {
+        start: bundleResult.prepare,
+        meta: {
+          upgradability: 'canUpgrade',
+          customTermsShape: bundleResult.customTermsShape,
+          privateArgsShape: bundleResult.privateArgsShape,
+        },
+      };
+    }
+    // normal behavior
+    return bundleResult;
+  })();
+  //#endregion
 
   if (start === undefined) {
-    buildRootObject === undefined ||
-      Fail`Did you provide a vat bundle instead of a contract bundle?`;
+    if ('buildRootObject' in bundleResult) {
+      // diagnose a common mistake
+      throw Fail`Did you provide a vat bundle instead of a contract bundle?`;
+    }
     throw Fail`contract exports missing start`;
   }
 
   start.length <= 3 || Fail`invalid start parameters`;
-  const durabilityRequired = meta.upgradability
-    ? ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability)
-    : false;
+  const durabilityRequired =
+    meta.upgradability &&
+    ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability);
 
   /** @type {ZCF} */
   // Using Remotable rather than Far because there are too many complications
