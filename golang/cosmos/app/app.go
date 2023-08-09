@@ -108,6 +108,7 @@ import (
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
+	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
@@ -118,7 +119,6 @@ import (
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -475,14 +475,18 @@ func NewAgoricApp(
 		},
 	)
 
-	getSwingStoreExportDataShadowCopy := func(height int64) []*vstoragetypes.DataEntry {
+	getSwingStoreExportDataShadowCopyReader := func(height int64) agorictypes.KVEntryReader {
 		ctx := app.NewUncachedContext(false, tmproto.Header{Height: height})
-		return app.SwingSetKeeper.ExportSwingStore(ctx)
+		exportDataEntries := app.SwingSetKeeper.ExportSwingStore(ctx)
+		if len(exportDataEntries) == 0 {
+			return nil
+		}
+		return agorictypes.NewVstorageDataEntriesReader(exportDataEntries)
 	}
 	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
 		bApp,
 		&app.SwingStoreExportsHandler,
-		getSwingStoreExportDataShadowCopy,
+		getSwingStoreExportDataShadowCopyReader,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(

@@ -9,7 +9,6 @@ import (
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	snapshots "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -65,26 +64,26 @@ type snapshotDetails struct {
 type ExtensionSnapshotter struct {
 	isConfigured func() bool
 	// takeAppSnapshot is called by OnExportStarted when creating a snapshot
-	takeAppSnapshot                   func(height int64)
-	swingStoreExportsHandler          *SwingStoreExportsHandler
-	getSwingStoreExportDataShadowCopy func(height int64) []*vstoragetypes.DataEntry
-	logger                            log.Logger
-	activeSnapshot                    *snapshotDetails
+	takeAppSnapshot                         func(height int64)
+	swingStoreExportsHandler                *SwingStoreExportsHandler
+	getSwingStoreExportDataShadowCopyReader func(height int64) agoric.KVEntryReader
+	logger                                  log.Logger
+	activeSnapshot                          *snapshotDetails
 }
 
 // NewExtensionSnapshotter creates a new swingset ExtensionSnapshotter
 func NewExtensionSnapshotter(
 	app *baseapp.BaseApp,
 	swingStoreExportsHandler *SwingStoreExportsHandler,
-	getSwingStoreExportDataShadowCopy func(height int64) []*vstoragetypes.DataEntry,
+	getSwingStoreExportDataShadowCopyReader func(height int64) agoric.KVEntryReader,
 ) *ExtensionSnapshotter {
 	return &ExtensionSnapshotter{
-		isConfigured:                      func() bool { return app.SnapshotManager() != nil },
-		takeAppSnapshot:                   app.Snapshot,
-		logger:                            app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter"),
-		swingStoreExportsHandler:          swingStoreExportsHandler,
-		getSwingStoreExportDataShadowCopy: getSwingStoreExportDataShadowCopy,
-		activeSnapshot:                    nil,
+		isConfigured:                            func() bool { return app.SnapshotManager() != nil },
+		takeAppSnapshot:                         app.Snapshot,
+		logger:                                  app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter"),
+		swingStoreExportsHandler:                swingStoreExportsHandler,
+		getSwingStoreExportDataShadowCopyReader: getSwingStoreExportDataShadowCopyReader,
+		activeSnapshot:                          nil,
 	}
 }
 
@@ -242,14 +241,13 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 		}
 	}
 
-	swingStoreExportDataEntries, err := provider.GetExportData()
+	exportDataReader, err := provider.GetExportDataReader()
 	if err != nil {
 		return err
 	}
-	if len(swingStoreExportDataEntries) == 0 {
+	if exportDataReader == nil {
 		return nil
 	}
-	exportDataReader := agoric.NewVstorageDataEntriesReader(swingStoreExportDataEntries)
 	defer exportDataReader.Close()
 
 	// For debugging, write out any retrieved export data as a single untrusted artifact
@@ -289,9 +287,9 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	// At this point the content of the cosmos DB has been verified against the
 	// AppHash, which means the SwingStore data it contains can be used as the
 	// trusted root against which to validate the artifacts.
-	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
-		exportData := snapshotter.getSwingStoreExportDataShadowCopy(height)
-		return exportData, nil
+	getExportDataReader := func() (agoric.KVEntryReader, error) {
+		exportDataReader := snapshotter.getSwingStoreExportDataShadowCopyReader(height)
+		return exportDataReader, nil
 	}
 
 	readNextArtifact := func() (artifact types.SwingStoreArtifact, err error) {
@@ -305,7 +303,7 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	}
 
 	return snapshotter.swingStoreExportsHandler.RestoreExport(
-		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportData: getExportData, ReadNextArtifact: readNextArtifact},
+		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact},
 		SwingStoreRestoreOptions{IncludeHistorical: false},
 	)
 }

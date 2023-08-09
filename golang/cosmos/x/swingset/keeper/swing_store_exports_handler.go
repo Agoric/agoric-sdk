@@ -12,7 +12,6 @@ import (
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -178,8 +177,8 @@ type SwingStoreExportOptions struct {
 	// packages/swing-store/src/swingStore.js makeSwingStoreExporter
 	ExportMode string `json:"exportMode,omitempty"`
 	// A flag indicating whether "export data" should be part of the swing-store export
-	// If false, the resulting SwingStoreExportProvider's GetExportData will
-	// return an empty list of "export data" entries.
+	// If false, the resulting SwingStoreExportProvider's GetExportDataReader
+	// will return nil
 	IncludeExportData bool `json:"includeExportData,omitempty"`
 }
 
@@ -365,8 +364,9 @@ func checkNotActive() error {
 type SwingStoreExportProvider struct {
 	// BlockHeight is the block height of the SwingStore export.
 	BlockHeight uint64
-	// GetExportData is a function to return the "export data" of the SwingStore export, if any.
-	GetExportData func() ([]*vstoragetypes.DataEntry, error)
+	// GetExportDataReader returns a KVEntryReader for the "export data" of the
+	// SwingStore export, or nil if the "export data" is not part of this export.
+	GetExportDataReader func() (agoric.KVEntryReader, error)
 	// ReadNextArtifact is a function to return the next unread artifact in the SwingStore export.
 	// It errors with io.EOF upon reaching the end of the list of available artifacts.
 	ReadNextArtifact func() (types.SwingStoreArtifact, error)
@@ -616,10 +616,9 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
-	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
-		entries := []*vstoragetypes.DataEntry{}
+	getExportDataReader := func() (agoric.KVEntryReader, error) {
 		if manifest.Data == "" {
-			return entries, nil
+			return nil, nil
 		}
 
 		dataFile, err := os.Open(filepath.Join(exportDir, manifest.Data))
@@ -627,21 +626,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 			return nil, err
 		}
 		exportDataReader := agoric.NewJsonlKVEntryDecoderReader(dataFile)
-		defer exportDataReader.Close()
-
-		for {
-			entry, err := exportDataReader.Read()
-			if err == io.EOF {
-				return entries, nil
-			} else if err != nil {
-				return []*vstoragetypes.DataEntry{}, err
-			}
-			if !entry.HasValue() {
-				return []*vstoragetypes.DataEntry{}, fmt.Errorf("export data entry must have value")
-			}
-			dataEntry := vstoragetypes.DataEntry{Path: entry.Key(), Value: entry.StringValue()}
-			entries = append(entries, &dataEntry)
-		}
+		return exportDataReader, nil
 	}
 
 	nextArtifact := 0
@@ -667,7 +652,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return artifact, err
 	}
 
-	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadNextArtifact: readNextArtifact})
+	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact})
 	if err != nil {
 		return err
 	}
@@ -721,12 +706,14 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		BlockHeight: blockHeight,
 	}
 
-	exportDataEntries, err := provider.GetExportData()
+	exportDataReader, err := provider.GetExportDataReader()
 	if err != nil {
 		return err
 	}
 
-	if len(exportDataEntries) > 0 {
+	if exportDataReader != nil {
+		defer exportDataReader.Close()
+
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
@@ -734,7 +721,6 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		}
 		defer exportDataFile.Close()
 
-		exportDataReader := agoric.NewVstorageDataEntriesReader(exportDataEntries)
 		err = agoric.EncodeKVEntryReaderToJsonl(exportDataReader, exportDataFile)
 		if err != nil {
 			return err
