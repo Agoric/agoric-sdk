@@ -38,9 +38,9 @@ test('repair metadata', async t => {
 
   // assert that all the metadata is there at first
   const ts1 = getTS.all('v1');
-  t.deepEqual(ts1, [0, 3, 6]); // three spans
+  t.deepEqual(ts1, [0, 2, 5, 8]); // four spans
   const ss1 = getSS.all('v1');
-  t.deepEqual(ss1, [2, 5]); // two snapshots
+  t.deepEqual(ss1, [4, 7]); // two snapshots
 
   // now clobber them to simulate #8025 (note: these auto-commit)
   db.prepare('DELETE FROM transcriptSpans WHERE isCurrent IS NULL').run();
@@ -48,9 +48,9 @@ test('repair metadata', async t => {
 
   // confirm that we clobbered them
   const ts2 = getTS.all('v1');
-  t.deepEqual(ts2, [6]); // only the latest
+  t.deepEqual(ts2, [8]); // only the latest
   const ss2 = getSS.all('v1');
-  t.deepEqual(ss2, [5]);
+  t.deepEqual(ss2, [7]);
 
   // now fix it
   await ss.hostStorage.repairMetadata(exporter);
@@ -58,17 +58,17 @@ test('repair metadata', async t => {
 
   // and check that the metadata is back
   const ts3 = getTS.all('v1');
-  t.deepEqual(ts3, [0, 3, 6]); // all three again
+  t.deepEqual(ts3, [0, 2, 5, 8]); // all four again
   const ss3 = getSS.all('v1');
-  t.deepEqual(ss3, [2, 5]);
+  t.deepEqual(ss3, [4, 7]);
 
   // repair should be idempotent
   await ss.hostStorage.repairMetadata(exporter);
 
   const ts4 = getTS.all('v1');
-  t.deepEqual(ts4, [0, 3, 6]); // still there
+  t.deepEqual(ts4, [0, 2, 5, 8]); // still there
   const ss4 = getSS.all('v1');
-  t.deepEqual(ss4, [2, 5]);
+  t.deepEqual(ss4, [4, 7]);
 });
 
 test('repair metadata ignores kvStore entries', async t => {
@@ -101,9 +101,9 @@ test('repair metadata rejects mismatched snapshot entries', async t => {
   await ss.hostStorage.commit();
 
   // perform the repair with mismatched snapshot entry
-  const old = JSON.parse(exportData.get('snapshot.v1.2'));
+  const old = JSON.parse(exportData.get('snapshot.v1.4'));
   const wrong = { ...old, hash: 'wrong' };
-  exportData.set('snapshot.v1.2', JSON.stringify(wrong));
+  exportData.set('snapshot.v1.4', JSON.stringify(wrong));
 
   await t.throwsAsync(async () => ss.hostStorage.repairMetadata(exporter), {
     message: /repairSnapshotRecord metadata mismatch/,
