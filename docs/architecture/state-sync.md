@@ -246,10 +246,10 @@ sequenceDiagram
       SSEH-CS->>SSEH-CS: activeOperation = operationDetails{}
       SSEH-CS->>+D-CS: MkDir(exportDir)
       D-CS-->>-SSEH-CS: 
-      SSEH-CS->>+SSES-CS: provider.GetExportData()
+      SSEH-CS->>+SSES-CS: provider.GetExportDataReader()
       SSES-CS->>+MS-CS: ExportStorageFromPrefix<br/>("swingStore.")
       MS-CS-->>-SSES-CS: vstorage data entries
-      SSES-CS-->>-SSEH-CS: 
+      SSES-CS--)-SSEH-CS: export data reader
       loop each data entry
         SSEH-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
         D-CS-->>-SSEH-CS: 
