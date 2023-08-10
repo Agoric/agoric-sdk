@@ -48,7 +48,7 @@ const { Fail, quote: q } = assert;
 const setDiff = (a, b) => a.filter(x => !b.includes(x));
 
 /**
- * @param {VatPowers & {
+ * @param {import('@agoric/swingset-vat').VatPowers & {
  *   D: DProxy;
  *   logger: (msg) => void;
  * }} vatPowers
