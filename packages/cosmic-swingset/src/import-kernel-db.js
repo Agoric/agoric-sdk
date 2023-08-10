@@ -141,7 +141,11 @@ export const performStateSyncImport = async (
     },
   });
 
-  const swingstore = await importDB(exporter, stateDir, { includeHistorical });
+  const artifactMode = includeHistorical
+    ? 'debug' // for now don't enforce completeness but allow importing all provided artifacts
+    : 'operational';
+
+  const swingstore = await importDB(exporter, stateDir, { artifactMode });
 
   const { hostStorage } = swingstore;
 
