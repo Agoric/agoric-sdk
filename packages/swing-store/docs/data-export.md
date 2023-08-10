@@ -198,9 +198,9 @@ When importing, the `importSwingStore()` function's options bag takes a property
 
 So, to convey current-incarnation historical transcript spans from one swingstore to another, you must set four options along the way:
 
-* the original swingstore must be opened with `{ includeHistorical: true }`, otherwise the old spans will be pruned immediately
+* the original swingstore must be opened with `{ keepTranscripts: true }` (which is the default), otherwise the old spans will be pruned immediately
 * the export must use `makeSwingStoreExporter(dirpath, { artifactMode: 'replay'})`, otherwise the export will omit the old spans
-* the import must use `importSwingStore(exporter, dirPath, { artifactMode: 'replay', includeHistorical: true })`, otherwise the import will ignore the old spans, and/or the newly created SwingStore will prune historical spans as new ones are created
+* the import must use `importSwingStore(exporter, dirPath, { artifactMode: 'replay', keepTranscripts: true })` (i.e. `importSwingStore(exporter, dirPath, { artifactMode: 'replay' })` because keepTranscripts is the default), otherwise the import will ignore the old spans, and/or the newly created SwingStore will prune historical spans as new ones are created
 
 ## Implementation Details
 

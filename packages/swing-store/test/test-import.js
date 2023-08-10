@@ -163,9 +163,7 @@ const importTest = test.macro(async (t, mode) => {
   const exporter = makeExporter(exportData, artifacts);
 
   // now import
-  const includeHistorical = artifactMode !== 'operational';
-  const options = { includeHistorical, artifactMode };
-  const ss = await importSwingStore(exporter, dbDir, options);
+  const ss = await importSwingStore(exporter, dbDir, { artifactMode });
   ss.hostStorage.commit();
   const data = convert(ss.debug.dump());
 
