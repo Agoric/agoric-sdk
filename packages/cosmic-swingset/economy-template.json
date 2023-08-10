@@ -13,7 +13,7 @@
       }
     ]
   },
-  "@agoric/pegasus/scripts/init-core.js",
+  "@agoric/builders/scripts/pegasus/init-core.js",
   {
     "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
     "entrypoint": "defaultProposalBuilder",

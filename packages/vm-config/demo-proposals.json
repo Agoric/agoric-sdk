@@ -1,5 +1,5 @@
 [
   "@agoric/builders/scripts/inter-protocol/init-core.js",
-  "@agoric/pegasus/scripts/init-core.js",
+  "@agoric/builders/scripts/pegasus/init-core.js",
   "@agoric/builders/scripts/vats/init-network.js"
 ]
