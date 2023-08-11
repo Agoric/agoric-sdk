@@ -102,6 +102,7 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -117,6 +118,7 @@ import (
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
+	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -472,10 +474,15 @@ func NewAgoricApp(
 			return sendToController(true, string(bz))
 		},
 	)
+
+	getSwingStoreExportDataShadowCopy := func(height int64) []*vstoragetypes.DataEntry {
+		ctx := app.NewUncachedContext(false, tmproto.Header{Height: height})
+		return app.SwingSetKeeper.ExportSwingStore(ctx)
+	}
 	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
 		bApp,
 		&app.SwingStoreExportsHandler,
-		app.SwingSetKeeper.ExportSwingStore,
+		getSwingStoreExportDataShadowCopy,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
