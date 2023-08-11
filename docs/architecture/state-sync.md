@@ -118,7 +118,7 @@ sequenceDiagram
     D-CS-->>-SSEH-CS: 
     SSEH-CS->>+SSES-CS: OnExportRetrieved()
     loop
-      SSES-CS->>+SSEH-CS: provider.ReadArtifact()
+      SSES-CS->>+SSEH-CS: provider.ReadNextArtifact()
       SSEH-CS->>+D-CS: Read(artifactFile)
       D-CS-->>-SSEH-CS: 
       SSEH-CS-->>-SSES-CS: artifact{name, data}
@@ -246,16 +246,16 @@ sequenceDiagram
       SSEH-CS->>SSEH-CS: activeOperation = operationDetails{}
       SSEH-CS->>+D-CS: MkDir(exportDir)
       D-CS-->>-SSEH-CS: 
-      SSEH-CS->>+SSES-CS: provider.GetExportData()
+      SSEH-CS->>+SSES-CS: provider.GetExportDataReader()
       SSES-CS->>+MS-CS: ExportStorageFromPrefix<br/>("swingStore.")
       MS-CS-->>-SSES-CS: vstorage data entries
-      SSES-CS-->>-SSEH-CS: 
+      SSES-CS--)-SSEH-CS: export data reader
       loop each data entry
         SSEH-CS->>+D-CS: Append(export-data.jsonl, <br/>"JSON(entry tuple)\n")
         D-CS-->>-SSEH-CS: 
       end
       loop extension snapshot items
-        SSEH-CS->>+SSES-CS: provider.readArtifact()
+        SSEH-CS->>+SSES-CS: provider.ReadNextArtifact()
         SSES-CS->>+SM-CS: payloadReader()
         SM-CS->>+SM-M: chunk = <-chunks
         SM-M-->>-SM-CS: 
