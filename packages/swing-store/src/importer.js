@@ -114,9 +114,11 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   }
 
   // We've installed all the artifacts that we could, now do a
-  // completeness check.
+  // completeness check. Enforce at least 'operational' completeness,
+  // even if the given mode was 'debug'.
 
-  assertComplete(internal, artifactMode);
+  const checkMode = artifactMode === 'debug' ? 'operational' : artifactMode;
+  assertComplete(internal, checkMode);
 
   await exporter.close();
   return store;
