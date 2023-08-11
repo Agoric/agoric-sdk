@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"regexp"
 
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -177,8 +177,8 @@ type SwingStoreExportOptions struct {
 	// packages/swing-store/src/swingStore.js makeSwingStoreExporter
 	ExportMode string `json:"exportMode,omitempty"`
 	// A flag indicating whether "export data" should be part of the swing-store export
-	// If false, the resulting SwingStoreExportProvider's GetExportData will
-	// return an empty list of "export data" entries.
+	// If false, the resulting SwingStoreExportProvider's GetExportDataReader
+	// will return nil
 	IncludeExportData bool `json:"includeExportData,omitempty"`
 }
 
@@ -364,11 +364,12 @@ func checkNotActive() error {
 type SwingStoreExportProvider struct {
 	// BlockHeight is the block height of the SwingStore export.
 	BlockHeight uint64
-	// GetExportData is a function to return the "export data" of the SwingStore export, if any.
-	GetExportData func() ([]*vstoragetypes.DataEntry, error)
-	// ReadArtifact is a function to return the next unread artifact in the SwingStore export.
-	// It errors with io.EOF upon reaching the end of the artifact list.
-	ReadArtifact func() (types.SwingStoreArtifact, error)
+	// GetExportDataReader returns a KVEntryReader for the "export data" of the
+	// SwingStore export, or nil if the "export data" is not part of this export.
+	GetExportDataReader func() (agoric.KVEntryReader, error)
+	// ReadNextArtifact is a function to return the next unread artifact in the SwingStore export.
+	// It errors with io.EOF upon reaching the end of the list of available artifacts.
+	ReadNextArtifact func() (types.SwingStoreArtifact, error)
 }
 
 // SwingStoreExportEventHandler is used to handle events that occur while generating
@@ -615,41 +616,22 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
 	}
 
-	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
-		entries := []*vstoragetypes.DataEntry{}
+	getExportDataReader := func() (agoric.KVEntryReader, error) {
 		if manifest.Data == "" {
-			return entries, nil
+			return nil, nil
 		}
 
 		dataFile, err := os.Open(filepath.Join(exportDir, manifest.Data))
 		if err != nil {
 			return nil, err
 		}
-		defer dataFile.Close()
-
-		decoder := json.NewDecoder(dataFile)
-		for {
-			var jsonEntry []string
-			err = decoder.Decode(&jsonEntry)
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return nil, err
-			}
-
-			if len(jsonEntry) != 2 {
-				return nil, fmt.Errorf("invalid export data entry (length %d)", len(jsonEntry))
-			}
-			entry := vstoragetypes.DataEntry{Path: jsonEntry[0], Value: jsonEntry[1]}
-			entries = append(entries, &entry)
-		}
-
-		return entries, nil
+		exportDataReader := agoric.NewJsonlKVEntryDecoderReader(dataFile)
+		return exportDataReader, nil
 	}
 
 	nextArtifact := 0
 
-	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
+	readNextArtifact := func() (artifact types.SwingStoreArtifact, err error) {
 		if nextArtifact == len(manifest.Artifacts) {
 			return artifact, io.EOF
 		} else if nextArtifact > len(manifest.Artifacts) {
@@ -670,7 +652,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return artifact, err
 	}
 
-	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadArtifact: readArtifact})
+	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact})
 	if err != nil {
 		return err
 	}
@@ -724,12 +706,14 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		BlockHeight: blockHeight,
 	}
 
-	exportDataEntries, err := provider.GetExportData()
+	exportDataReader, err := provider.GetExportDataReader()
 	if err != nil {
 		return err
 	}
 
-	if len(exportDataEntries) > 0 {
+	if exportDataReader != nil {
+		defer exportDataReader.Close()
+
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
@@ -737,14 +721,9 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		}
 		defer exportDataFile.Close()
 
-		encoder := json.NewEncoder(exportDataFile)
-		encoder.SetEscapeHTML(false)
-		for _, dataEntry := range exportDataEntries {
-			entry := []string{dataEntry.Path, dataEntry.Value}
-			err := encoder.Encode(entry)
-			if err != nil {
-				return err
-			}
+		err = agoric.EncodeKVEntryReaderToJsonl(exportDataReader, exportDataFile)
+		if err != nil {
+			return err
 		}
 
 		err = exportDataFile.Sync()
@@ -758,7 +737,7 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	}
 
 	for {
-		artifact, err := provider.ReadArtifact()
+		artifact, err := provider.ReadNextArtifact()
 		if err == io.EOF {
 			break
 		} else if err != nil {

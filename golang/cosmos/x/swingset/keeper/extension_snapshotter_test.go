@@ -4,7 +4,6 @@ import (
 	"io"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -12,7 +11,6 @@ func newTestExtensionSnapshotter() *ExtensionSnapshotter {
 	logger := log.NewNopLogger() // log.NewTMLogger(log.NewSyncWriter( /* os.Stdout*/ io.Discard)).With("module", "sdk/app")
 	return &ExtensionSnapshotter{
 		isConfigured:             func() bool { return true },
-		newRestoreContext:        func(height int64) sdk.Context { return sdk.Context{} },
 		logger:                   logger,
 		swingStoreExportsHandler: newTestSwingStoreExportsHandler(),
 	}

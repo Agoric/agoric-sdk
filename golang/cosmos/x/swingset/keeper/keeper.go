@@ -16,6 +16,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/ante"
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
@@ -261,7 +262,7 @@ func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
 func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 	path := getBeansOwingPathForAddress(addr)
 	entry := k.vstorageKeeper.GetEntry(ctx, path)
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		return sdk.ZeroUint()
 	}
 	return sdk.NewUintFromString(entry.StringValue())
@@ -271,7 +272,7 @@ func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 // feeCollector but has not yet paid.
 func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) {
 	path := getBeansOwingPathForAddress(addr)
-	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, beans.String()))
+	k.vstorageKeeper.SetStorage(ctx, agoric.NewKVEntry(path, beans.String()))
 }
 
 // ChargeBeans charges the given address the given number of beans.  It divides
@@ -375,7 +376,7 @@ func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter, addr sdk.AccAd
 func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 	path := StoragePathEgress + "." + addr.String()
 	entry := k.vstorageKeeper.GetEntry(ctx, path)
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		return types.Egress{}
 	}
 
@@ -398,7 +399,7 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 	}
 
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
-	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, vstoragetypes.NewStorageEntry(path, string(bz)))
+	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, string(bz)))
 
 	// Now make sure the corresponding account has been initialised.
 	if acc := k.accountKeeper.GetAccount(ctx, egress.Peer); acc != nil {
@@ -431,7 +432,7 @@ func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
-	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, vstoragetypes.NewStorageEntry(path, mailbox))
+	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
 func (k Keeper) ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry {
