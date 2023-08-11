@@ -374,6 +374,9 @@ export function makeTranscriptStore(
    * replay will never be required or because such replay would be prohibitively
    * expensive regardless of need and therefor other repair strategies employed.
    *
+   * The only code path which could use 'false' would be `swingstore.dump()`,
+   * which takes the same flag.
+   *
    * @yields {readonly [key: string, value: string]}
    * @returns {IterableIterator<readonly [key: string, value: string]>}
    *    An iterator over pairs of [spanMetadataKey, rec], where `rec` is a
@@ -728,24 +731,26 @@ export function makeTranscriptStore(
     }
     for (const rec of sqlGetCurrentSpanMetadata.iterate()) {
       const { vatID, startPos, endPos, incarnation } = rec;
-      // at 'operational' and above, every 'isCurrent' transcript span
-      // must have all items
-      const count = sqlCountSpanItems.get(vatID, startPos, endPos);
-      if (count !== endPos - startPos) {
-        throw Fail`incomplete current transcript span: ${count} items, ${rec}`;
-      }
-      if (artifactMode === 'replay' || artifactMode === 'archival') {
-        // at 'replay' and above, every vat's current incarnation must
-        // be fully populated
+
+      if (artifactMode === 'operational') {
+        // at 'operational', every 'isCurrent' transcript span must
+        // have all items
+        const count = sqlCountSpanItems.get(vatID, startPos, endPos);
+        if (count !== endPos - startPos) {
+          throw Fail`incomplete current transcript span: ${count} items, ${rec}`;
+        }
+      } else if (artifactMode === 'replay') {
+        // at 'replay', every vat's current incarnation must be fully
+        // populated (which implies 'operational')
         const incStart = sqlGetStartOfIncarnation.get(vatID, incarnation);
         const incCount = sqlCountSpanItems.get(vatID, incStart, endPos);
         if (incCount !== endPos - incStart) {
           throw Fail`incomplete current incarnation transcript: ${incCount} items`;
         }
-      }
-      if (artifactMode === 'archival') {
+      } else if (artifactMode === 'archival') {
         // at 'archival', every incarnation must be fully populated,
-        // which means position=0 up through endPos-1
+        // which means position=0 up through endPos-1 (which implies
+        // 'replay')
         const arcCount = sqlCountSpanItems.get(vatID, 0, endPos);
         if (arcCount !== endPos) {
           throw Fail`incomplete archival transcript: ${arcCount} vs ${endPos}`;

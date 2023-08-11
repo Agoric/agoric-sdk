@@ -220,7 +220,7 @@ async function testExportImport(
     await ssOut.hostStorage.commit();
   }
 
-  const incomplete = 'incomplete current incarnation transcript: 3 items';
+  const incomplete = 'incomplete archival transcript: 3 vs 12';
   function doExport() {
     return makeSwingStoreExporter(dbDir, { artifactMode: exportMode });
   }
