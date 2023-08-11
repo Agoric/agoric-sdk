@@ -1,10 +1,17 @@
 package keeper
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	"github.com/cosmos/cosmos-sdk/store"
+	prefixstore "github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	dbm "github.com/tendermint/tm-db"
 )
 
 func mkcoin(denom string) func(amt int64) sdk.Coin {
@@ -179,5 +186,75 @@ func Test_calculateFees(t *testing.T) {
 				t.Errorf("calculateFees() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+var (
+	swingsetStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
+)
+
+func makeTestStore() sdk.KVStore {
+	db := dbm.NewMemDB()
+	ms := store.NewCommitMultiStore(db)
+	ms.MountStoreWithDB(swingsetStoreKey, sdk.StoreTypeIAVL, db)
+	err := ms.LoadLatestVersion()
+	if err != nil {
+		panic(err)
+	}
+	kvStore := ms.GetKVStore(swingsetStoreKey)
+	prefixStore := prefixstore.NewStore(kvStore, []byte("swingStore."))
+	return prefixStore
+}
+
+func TestSwingStore(t *testing.T) {
+	store := makeTestStore()
+
+	// Test that we can store and retrieve a value.
+	store.Set([]byte("someKey"), []byte("someValue"))
+	if got := string(store.Get([]byte("someKey"))); got != "someValue" {
+		t.Errorf("got %q, want %q", got, "someValue")
+	}
+
+	// Test that we can update and retrieve an updated value.
+	store.Set([]byte("someKey"), []byte("someNewValue"))
+	if got := string(store.Get([]byte("someKey"))); got != "someNewValue" {
+		t.Errorf("got %q, want %q", got, "someNewValue")
+	}
+
+	// Test that we can store and retrieve empty values
+	store.Set([]byte("someEmptyKey"), []byte(""))
+	if got := store.Get([]byte("someEmptyKey")); got == nil || string(got) != "" {
+		t.Errorf("got %#v, want empty string", got)
+	}
+
+	// Test that we can store and delete values.
+	store.Set([]byte("someOtherKey"), []byte("someOtherValue"))
+	store.Delete([]byte("someOtherKey"))
+	if store.Has([]byte("someOtherKey")) {
+		t.Errorf("has value, expected not")
+	}
+
+	// Test that we can delete non existing keys (e.g. delete twice)
+	store.Delete([]byte("someMissingKey"))
+
+	// Check the iterated values
+	expectedEntries := [][2]string{
+		{"someEmptyKey", "[]byte{}"},
+		{"someKey", "[]byte{0x73, 0x6f, 0x6d, 0x65, 0x4e, 0x65, 0x77, 0x56, 0x61, 0x6c, 0x75, 0x65}"},
+	}
+
+	iter := store.Iterator(nil, nil)
+	gotEntries := [][2]string{}
+	for ; iter.Valid(); iter.Next() {
+		entry := [2]string{
+			string(iter.Key()),
+			fmt.Sprintf("%#v", iter.Value()),
+		}
+		gotEntries = append(gotEntries, entry)
+	}
+	iter.Close()
+
+	if !reflect.DeepEqual(gotEntries, expectedEntries) {
+		t.Errorf("got export %q, want %q", gotEntries, expectedEntries)
 	}
 }
