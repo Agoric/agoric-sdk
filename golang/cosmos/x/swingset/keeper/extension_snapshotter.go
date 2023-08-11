@@ -12,9 +12,7 @@ import (
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	snapshots "github.com/cosmos/cosmos-sdk/snapshots/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // This module implements a Cosmos ExtensionSnapshotter to capture and restore
@@ -68,9 +66,8 @@ type ExtensionSnapshotter struct {
 	isConfigured func() bool
 	// takeAppSnapshot is called by OnExportStarted when creating a snapshot
 	takeAppSnapshot                   func(height int64)
-	newRestoreContext                 func(height int64) sdk.Context
 	swingStoreExportsHandler          *SwingStoreExportsHandler
-	getSwingStoreExportDataShadowCopy func(ctx sdk.Context) []*vstoragetypes.DataEntry
+	getSwingStoreExportDataShadowCopy func(height int64) []*vstoragetypes.DataEntry
 	logger                            log.Logger
 	activeSnapshot                    *snapshotDetails
 }
@@ -79,14 +76,11 @@ type ExtensionSnapshotter struct {
 func NewExtensionSnapshotter(
 	app *baseapp.BaseApp,
 	swingStoreExportsHandler *SwingStoreExportsHandler,
-	getSwingStoreExportDataShadowCopy func(ctx sdk.Context) []*vstoragetypes.DataEntry,
+	getSwingStoreExportDataShadowCopy func(height int64) []*vstoragetypes.DataEntry,
 ) *ExtensionSnapshotter {
 	return &ExtensionSnapshotter{
-		isConfigured:    func() bool { return app.SnapshotManager() != nil },
-		takeAppSnapshot: app.Snapshot,
-		newRestoreContext: func(height int64) sdk.Context {
-			return app.NewUncachedContext(false, tmproto.Header{Height: height})
-		},
+		isConfigured:                      func() bool { return app.SnapshotManager() != nil },
+		takeAppSnapshot:                   app.Snapshot,
 		logger:                            app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter"),
 		swingStoreExportsHandler:          swingStoreExportsHandler,
 		getSwingStoreExportDataShadowCopy: getSwingStoreExportDataShadowCopy,
@@ -299,8 +293,7 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	// AppHash, which means the SwingStore data it contains can be used as the
 	// trusted root against which to validate the artifacts.
 	getExportData := func() ([]*vstoragetypes.DataEntry, error) {
-		ctx := snapshotter.newRestoreContext(height)
-		exportData := snapshotter.getSwingStoreExportDataShadowCopy(ctx)
+		exportData := snapshotter.getSwingStoreExportDataShadowCopy(height)
 		return exportData, nil
 	}
 
