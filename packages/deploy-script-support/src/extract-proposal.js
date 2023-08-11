@@ -184,6 +184,10 @@ export const extractCoreProposalBundles = async (
       const behaviorSource = pathResolve(initDir, sourceSpec);
       const behaviors = await import(behaviorSource);
       const [exportedGetManifest, ...manifestArgs] = getManifestCall;
+      assert(
+        exportedGetManifest in behaviors,
+        `behavior ${behaviorSource} missing ${exportedGetManifest}`,
+      );
       const { manifest: overrideManifest } = await behaviors[
         exportedGetManifest
       ](harden({ restoreRef: () => null }), ...manifestArgs);
