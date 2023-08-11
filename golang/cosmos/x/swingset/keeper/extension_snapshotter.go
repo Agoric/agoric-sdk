@@ -235,7 +235,7 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	}
 
 	for {
-		artifact, err := provider.ReadArtifact()
+		artifact, err := provider.ReadNextArtifact()
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -304,7 +304,7 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 		return exportData, nil
 	}
 
-	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
+	readNextArtifact := func() (artifact types.SwingStoreArtifact, err error) {
 		payloadBytes, err := payloadReader()
 		if err != nil {
 			return artifact, err
@@ -315,7 +315,7 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 	}
 
 	return snapshotter.swingStoreExportsHandler.RestoreExport(
-		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportData: getExportData, ReadArtifact: readArtifact},
+		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportData: getExportData, ReadNextArtifact: readNextArtifact},
 		SwingStoreRestoreOptions{IncludeHistorical: false},
 	)
 }

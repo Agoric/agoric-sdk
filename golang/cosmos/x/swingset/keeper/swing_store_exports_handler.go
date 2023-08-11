@@ -366,9 +366,9 @@ type SwingStoreExportProvider struct {
 	BlockHeight uint64
 	// GetExportData is a function to return the "export data" of the SwingStore export, if any.
 	GetExportData func() ([]*vstoragetypes.DataEntry, error)
-	// ReadArtifact is a function to return the next unread artifact in the SwingStore export.
-	// It errors with io.EOF upon reaching the end of the artifact list.
-	ReadArtifact func() (types.SwingStoreArtifact, error)
+	// ReadNextArtifact is a function to return the next unread artifact in the SwingStore export.
+	// It errors with io.EOF upon reaching the end of the list of available artifacts.
+	ReadNextArtifact func() (types.SwingStoreArtifact, error)
 }
 
 // SwingStoreExportEventHandler is used to handle events that occur while generating
@@ -649,7 +649,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 
 	nextArtifact := 0
 
-	readArtifact := func() (artifact types.SwingStoreArtifact, err error) {
+	readNextArtifact := func() (artifact types.SwingStoreArtifact, err error) {
 		if nextArtifact == len(manifest.Artifacts) {
 			return artifact, io.EOF
 		} else if nextArtifact > len(manifest.Artifacts) {
@@ -670,7 +670,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return artifact, err
 	}
 
-	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadArtifact: readArtifact})
+	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportData: getExportData, ReadNextArtifact: readNextArtifact})
 	if err != nil {
 		return err
 	}
@@ -758,7 +758,7 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	}
 
 	for {
-		artifact, err := provider.ReadArtifact()
+		artifact, err := provider.ReadNextArtifact()
 		if err == io.EOF {
 			break
 		} else if err != nil {
