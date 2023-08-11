@@ -102,11 +102,13 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
+	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
@@ -472,10 +474,19 @@ func NewAgoricApp(
 			return sendToController(true, string(bz))
 		},
 	)
+
+	getSwingStoreExportDataShadowCopyReader := func(height int64) agorictypes.KVEntryReader {
+		ctx := app.NewUncachedContext(false, tmproto.Header{Height: height})
+		exportDataEntries := app.SwingSetKeeper.ExportSwingStore(ctx)
+		if len(exportDataEntries) == 0 {
+			return nil
+		}
+		return agorictypes.NewVstorageDataEntriesReader(exportDataEntries)
+	}
 	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
 		bApp,
 		&app.SwingStoreExportsHandler,
-		app.SwingSetKeeper.ExportSwingStore,
+		getSwingStoreExportDataShadowCopyReader,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
