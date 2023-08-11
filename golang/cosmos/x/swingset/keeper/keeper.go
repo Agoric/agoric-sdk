@@ -11,6 +11,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -20,7 +21,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 // Top-level paths for chain storage should remain synchronized with
@@ -37,7 +37,10 @@ const (
 	StoragePathSwingStore          = "swingStore"
 )
 
-const stateKey string = "state"
+const (
+	stateKey            = "state"
+	swingStoreKeyPrefix = "swingStore."
+)
 
 // Contextual information about the message source of an action on an inbound queue.
 // This context should be unique per inboundQueueRecord.
@@ -435,8 +438,9 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
-func (k Keeper) ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry {
-	return k.vstorageKeeper.ExportStorageFromPrefix(ctx, StoragePathSwingStore)
+func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {
+	store := ctx.KVStore(k.storeKey)
+	return prefix.NewStore(store, []byte(swingStoreKeyPrefix))
 }
 
 func (k Keeper) PathToEncodedKey(path string) []byte {
