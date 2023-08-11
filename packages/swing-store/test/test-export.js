@@ -7,6 +7,14 @@ import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';
 
 import { tmpDir, getSnapshotStream, makeB0ID } from './util.js';
 
+const rank = {
+  operational: 1,
+  replay: 2,
+  archival: 3,
+  debug: 4,
+  'debug-on-pruned': 4,
+};
+
 const snapshotData = 'snapshot data';
 // this snapHash was computed manually
 const snapHash =
@@ -28,48 +36,57 @@ const exportTest = test.macro(async (t, mode) => {
   const ss1 = initSwingStore(dbDir, options);
   const ks = ss1.kernelStorage;
 
-  // build a DB with three spans (only one inUse) and two snapshots
-  // (same)
+  // build a DB with four spans (one in an old incarnation, two
+  // historical but current incarnation, only one inUse) and two
+  // snapshots (only one inUSe)
 
   ks.kvStore.set('key1', 'value1');
   ks.bundleStore.addBundle(bundle0ID, bundle0);
   ks.transcriptStore.initTranscript('v1');
 
+  // incarnation 0
   ks.transcriptStore.addItem('v1', 'start-worker'); // 0
-  ks.transcriptStore.addItem('v1', 'delivery1'); // 1
-  await ks.snapStore.saveSnapshot('v1', 2, getSnapshotStream(snapshotData));
-  ks.transcriptStore.addItem('v1', 'save-snapshot'); // 2
-  ks.transcriptStore.rolloverSpan('v1'); // range= 0..3
+  ks.transcriptStore.addItem('v1', 'shutdown-worker'); // 1
+  ks.transcriptStore.rolloverIncarnation('v1');
+  const spanHash0 =
+    '5bee0f44eca02f23eab03703e84ed2647d5d117fed99e1c30a3b424b7f082ab9';
+
+  // incarnation 1
+  ks.transcriptStore.addItem('v1', 'start-worker'); // 2
+  ks.transcriptStore.addItem('v1', 'delivery1'); // 3
+  await ks.snapStore.saveSnapshot('v1', 4, getSnapshotStream(snapshotData));
+  ks.transcriptStore.addItem('v1', 'save-snapshot'); // 4
+  ks.transcriptStore.rolloverSpan('v1'); // range= 2..5
   const spanHash1 =
     '57152efdd7fdf75c03371d2b4f1088d5bf3eae7fe643babce527ff81df38998c';
 
-  ks.transcriptStore.addItem('v1', 'load-snapshot'); // 3
-  ks.transcriptStore.addItem('v1', 'delivery2'); // 4
-  await ks.snapStore.saveSnapshot('v1', 5, getSnapshotStream(snapshotData));
-  ks.transcriptStore.addItem('v1', 'save-snapshot'); // 5
-  ks.transcriptStore.rolloverSpan('v1'); // range= 3..6
+  ks.transcriptStore.addItem('v1', 'load-snapshot'); // 5
+  ks.transcriptStore.addItem('v1', 'delivery2'); // 6
+  await ks.snapStore.saveSnapshot('v1', 7, getSnapshotStream(snapshotData));
+  ks.transcriptStore.addItem('v1', 'save-snapshot'); // 7
+  ks.transcriptStore.rolloverSpan('v1'); // range= 5..8
   const spanHash2 =
     '1947001e78e01bd1e773feb22b4ffc530447373b9de9274d5d5fbda3f23dbf2b';
 
-  ks.transcriptStore.addItem('v1', 'load-snapshot'); // 6
-  ks.transcriptStore.addItem('v1', 'delivery3'); // 7
+  ks.transcriptStore.addItem('v1', 'load-snapshot'); // 8
+  ks.transcriptStore.addItem('v1', 'delivery3'); // 9
   const spanHash3 =
     'e6b42c6a3fb94285a93162f25a9fc0145fd4c5bb144917dc572c50ae2d02ee69';
-  // current range= 6..8
+  // current range= 8..10
 
   ss1.hostStorage.commit();
 
   // create an export, and assert that the pieces match what we
-  // expect. exportMode='current' means we get all metadata, no
+  // expect. artifactMode='operational' means we get all metadata, no
   // historical transcript spans, and no historical snapshots
 
   assert.typeof(mode, 'string');
-  /** @typedef {import('../src/exporter.js').ExportMode} ExportMode */
-  let exportMode = /** @type {ExportMode} */ (mode);
+  /** @typedef {import('../src/internal.js').ArtifactMode} ArtifactMode */
+  let artifactMode = /** @type {ArtifactMode} */ (mode);
   if (mode === 'debug-on-pruned') {
-    exportMode = 'debug';
+    artifactMode = 'debug';
   }
-  const exporter = makeSwingStoreExporter(dbDir, exportMode);
+  const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
 
   // exportData
   {
@@ -90,36 +107,46 @@ const exportTest = test.macro(async (t, mode) => {
     };
 
     check('kv.key1', 'value1');
-    check('snapshot.v1.2', {
+    check('snapshot.v1.4', {
       vatID: 'v1',
-      snapPos: 2,
+      snapPos: 4,
       inUse: 0,
       hash: snapHash,
     });
-    check('snapshot.v1.5', {
+    check('snapshot.v1.7', {
       vatID: 'v1',
-      snapPos: 5,
+      snapPos: 7,
       inUse: 1,
       hash: snapHash,
     });
-    check('snapshot.v1.current', 'snapshot.v1.5');
-    const base = { vatID: 'v1', incarnation: 0, isCurrent: 0 };
+    check('snapshot.v1.current', 'snapshot.v1.7');
+    const base = { vatID: 'v1', isCurrent: 0 };
     check('transcript.v1.0', {
       ...base,
+      incarnation: 0,
       startPos: 0,
-      endPos: 3,
+      endPos: 2,
+      hash: spanHash0,
+    });
+    check('transcript.v1.2', {
+      ...base,
+      incarnation: 1,
+      startPos: 2,
+      endPos: 5,
       hash: spanHash1,
     });
-    check('transcript.v1.3', {
+    check('transcript.v1.5', {
       ...base,
-      startPos: 3,
-      endPos: 6,
+      incarnation: 1,
+      startPos: 5,
+      endPos: 8,
       hash: spanHash2,
     });
     check('transcript.v1.current', {
       ...base,
-      startPos: 6,
-      endPos: 8,
+      incarnation: 1,
+      startPos: 8,
+      endPos: 10,
       isCurrent: 1,
       hash: spanHash3,
     });
@@ -153,29 +180,35 @@ const exportTest = test.macro(async (t, mode) => {
       t.deepEqual(data, expected);
     };
 
-    // export mode 'current' means we omit historical snapshots and
+    // export mode 'operational' means we omit historical snapshots and
     // transcript spans
 
-    await check('snapshot.v1.5', 'snapshot data');
-    await check('transcript.v1.6.8', 'load-snapshot\ndelivery3\n');
+    await check('snapshot.v1.7', 'snapshot data');
+    await check('transcript.v1.8.10', 'load-snapshot\ndelivery3\n');
     await check(`bundle.${bundle0ID}`, bundle0);
 
-    if (mode === 'archival' || mode === 'debug' || mode === 'debug-on-pruned') {
-      // adds the old transcript spans
+    t.true(rank[mode] > 0);
+    if (rank[mode] >= rank.replay) {
+      // add the old transcript spans of the current incarnation
       await check(
-        'transcript.v1.0.3',
+        'transcript.v1.2.5',
         'start-worker\ndelivery1\nsave-snapshot\n',
       );
       await check(
-        'transcript.v1.3.6',
+        'transcript.v1.5.8',
         'load-snapshot\ndelivery2\nsave-snapshot\n',
       );
+    }
+
+    if (rank[mode] >= rank.archival) {
+      // add the spans of the old incarnation
+      await check('transcript.v1.0.2', 'start-worker\nshutdown-worker\n');
     }
 
     if (mode === 'debug') {
       // adds the old snapshots, which are only present if
       // initSwingStore() was given {keepSnapshots: true}
-      await check('snapshot.v1.2', 'snapshot data');
+      await check('snapshot.v1.4', 'snapshot data');
       // mode='debug-on-pruned' exercises the keepSnapshots:false case
     }
 
@@ -187,7 +220,8 @@ const exportTest = test.macro(async (t, mode) => {
   }
 });
 
-test('export current', exportTest, 'current');
+test('export operational', exportTest, 'operational');
+test('export replay', exportTest, 'replay');
 test('export archival', exportTest, 'archival');
 test('export debug', exportTest, 'debug');
 test('export debug-on-pruned', exportTest, 'debug-on-pruned');
@@ -222,7 +256,8 @@ test('export omits pruned span artifacts', async t => {
 
   ss1.hostStorage.commit();
 
-  const exporter = makeSwingStoreExporter(dbDir, 'archival');
+  const artifactMode = 'debug';
+  const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
 
   // exportData
   {

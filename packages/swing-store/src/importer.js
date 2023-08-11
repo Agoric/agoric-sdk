@@ -2,11 +2,12 @@ import { Fail, q } from '@agoric/assert';
 
 import { makeSwingStore } from './swingStore.js';
 import { buffer } from './util.js';
+import { validateArtifactMode } from './internal.js';
 import { assertComplete } from './assertComplete.js';
 
 /**
  * @typedef { object } ImportSwingStoreOptions
- * @property { boolean } [includeHistorical]  Should the importer pay attention to historical artifacts?
+ * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should the importer use and require?
  */
 
 /**
@@ -16,15 +17,17 @@ import { assertComplete } from './assertComplete.js';
  *
  * @param {import('./exporter').SwingStoreExporter} exporter
  * @param {string | null} [dirPath]
- * @param {ImportSwingStoreOptions} options
+ * @param {ImportSwingStoreOptions} [options]
  * @returns {Promise<import('./swingStore').SwingStore>}
  */
 export async function importSwingStore(exporter, dirPath = null, options = {}) {
   if (dirPath && typeof dirPath !== 'string') {
     Fail`dirPath must be a string`;
   }
-  const { includeHistorical = false } = options;
-  const store = makeSwingStore(dirPath, true, options);
+  const { artifactMode = 'operational', ...makeSwingStoreOptions } = options;
+  validateArtifactMode(artifactMode);
+
+  const store = makeSwingStore(dirPath, true, makeSwingStoreOptions);
   const { kernelStorage, internal } = store;
 
   // For every exportData entry, we add a DB record. 'kv' entries are
@@ -81,11 +84,10 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
 
   // All the metadata is now installed, and we're prepared for
   // artifacts. We walk `getArtifactNames()` and offer each one to the
-  // submodule, which ignores historical ones (unless
-  // 'includeHistorical' is true), and validates+accepts the
-  // rest. This is an initial import, so we don't need to check if we
-  // already have the data, but the submodule function is free to do
-  // that check if they want.
+  // submodule, which may ignore them according to `artifactMode`, and
+  // validates+accepts the rest. This is an initial import, so we
+  // don't need to check if we already have the data, but the
+  // submodule function is free to do that check if they want.
 
   for await (const name of exporter.getArtifactNames()) {
     const makeChunkIterator = () => exporter.getArtifact(name);
@@ -98,13 +100,13 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
       await internal.bundleStore.importBundle(name, dataProvider);
     } else if (tag === 'snapshot') {
       await internal.snapStore.populateSnapshot(name, makeChunkIterator, {
-        includeHistorical,
+        artifactMode,
       });
     } else if (tag === 'transcript') {
       await internal.transcriptStore.populateTranscriptSpan(
         name,
         makeChunkIterator,
-        { includeHistorical },
+        { artifactMode },
       );
     } else {
       Fail`unknown artifact type ${q(tag)} on import`;
@@ -112,9 +114,11 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   }
 
   // We've installed all the artifacts that we could, now do a
-  // completeness check.
+  // completeness check. Enforce at least 'operational' completeness,
+  // even if the given mode was 'debug'.
 
-  assertComplete(internal, 'operational');
+  const checkMode = artifactMode === 'debug' ? 'operational' : artifactMode;
+  assertComplete(internal, checkMode);
 
   await exporter.close();
   return store;

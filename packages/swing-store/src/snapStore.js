@@ -31,6 +31,7 @@ import { buffer } from './util.js';
 
 /**
  * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
  *
  * @typedef {{
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
@@ -44,10 +45,10 @@ import { buffer } from './util.js';
  * @typedef {{
  *   exportSnapshot: (name: string) => AsyncIterableIterator<Uint8Array>,
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
- *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
+ *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
  *   importSnapshotRecord: (key: string, value: string) => void,
- *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { includeHistorical: boolean }) => Promise<void>,
- *   assertComplete: (level: 'operational') => void,
+ *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
+ *   assertComplete: (artifactMode: ArtifactMode) => void,
  *   repairSnapshotRecord: (key: string, value: string) => void,
  * }} SnapStoreInternal
  *
@@ -481,11 +482,11 @@ export function makeSnapStore(
     }
   }
 
-  async function* getArtifactNames(includeHistorical) {
+  async function* getArtifactNames(artifactMode) {
     for (const rec of sqlGetAvailableSnapshots.iterate(1)) {
       yield snapshotArtifactName(rec);
     }
-    if (includeHistorical) {
+    if (artifactMode === 'debug') {
       for (const rec of sqlGetAvailableSnapshots.iterate(null)) {
         yield snapshotArtifactName(rec);
       }
@@ -564,12 +565,12 @@ export function makeSnapStore(
    * @param {string} name  Artifact name of the snapshot
    * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
    * @param {object} options
-   * @param {boolean} options.includeHistorical
+   * @param {ArtifactMode} options.artifactMode
    * @returns {Promise<void>}
    */
   async function populateSnapshot(name, makeChunkIterator, options) {
     ensureTxn();
-    const { includeHistorical } = options;
+    const { artifactMode } = options;
     const parts = name.split('.');
     const [type, vatID, rawEndPos] = parts;
     // prettier-ignore
@@ -580,7 +581,7 @@ export function makeSnapStore(
       sqlGetSnapshotHashFor.get(vatID, snapPos) ||
       Fail`no metadata for snapshot ${name}`;
 
-    if (!metadata.inUse && !includeHistorical) {
+    if (!metadata.inUse && artifactMode !== 'debug') {
       return; // ignore old snapshots
     }
 
@@ -617,8 +618,10 @@ export function makeSnapStore(
   `);
   sqlListPrunedCurrentSnapshots.pluck();
 
-  function assertComplete(level) {
-    assert.equal(level, 'operational'); // for now
+  function assertComplete(artifactMode) {
+    if (artifactMode === 'debug') {
+      return; // no validation in this mode
+    }
     // every 'inUse' snapshot must be populated
     const vatIDs = sqlListPrunedCurrentSnapshots.all();
     if (vatIDs.length) {
