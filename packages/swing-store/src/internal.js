@@ -16,7 +16,7 @@ import { Fail, q } from '@agoric/assert';
 
 export const artifactModes = ['operational', 'replay', 'archival', 'debug'];
 export function validateArtifactMode(artifactMode) {
-  if (artifactModes.indexOf(artifactMode) === -1) {
+  if (!artifactModes.includes(artifactMode)) {
     Fail`invalid artifactMode ${q(artifactMode)}`;
   }
 }
