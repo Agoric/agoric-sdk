@@ -202,6 +202,7 @@ type GaiaApp struct { // nolint: golint
 	controllerInited bool
 	bootstrapNeeded  bool
 	lienPort         int
+	swingsetPort     int
 	vbankPort        int
 	vibcPort         int
 	vstoragePort     int
@@ -459,6 +460,7 @@ func NewAgoricApp(
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
 	)
+	app.swingsetPort = vm.RegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))
 
 	app.SwingStoreExportsHandler = *swingsetkeeper.NewSwingStoreExportsHandler(
 		app.Logger(),
@@ -477,11 +479,12 @@ func NewAgoricApp(
 
 	getSwingStoreExportDataShadowCopyReader := func(height int64) agorictypes.KVEntryReader {
 		ctx := app.NewUncachedContext(false, tmproto.Header{Height: height})
-		exportDataEntries := app.SwingSetKeeper.ExportSwingStore(ctx)
-		if len(exportDataEntries) == 0 {
+		exportDataIterator := app.SwingSetKeeper.GetSwingStore(ctx).Iterator(nil, nil)
+		if !exportDataIterator.Valid() {
+			exportDataIterator.Close()
 			return nil
 		}
-		return agorictypes.NewVstorageDataEntriesReader(exportDataEntries)
+		return agorictypes.NewKVIteratorReader(exportDataIterator)
 	}
 	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
 		bApp,
@@ -814,6 +817,8 @@ func upgrade11Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
 
+		// TODO: Migrate x/vstorage swingStore to x/swingset SwingStore
+
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
@@ -842,17 +847,18 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 }
 
 type cosmosInitAction struct {
-	Type        string             `json:"type"`
-	ChainID     string             `json:"chainID"`
-	BlockTime   int64              `json:"blockTime,omitempty"`
-	IsBootstrap bool               `json:"isBootstrap"`
-	Params      swingset.Params    `json:"params"`
-	SupplyCoins sdk.Coins          `json:"supplyCoins"`
-	UpgradePlan *upgradetypes.Plan `json:"upgradePlan,omitempty"`
-	LienPort    int                `json:"lienPort"`
-	StoragePort int                `json:"storagePort"`
-	VbankPort   int                `json:"vbankPort"`
-	VibcPort    int                `json:"vibcPort"`
+	Type         string             `json:"type"`
+	ChainID      string             `json:"chainID"`
+	BlockTime    int64              `json:"blockTime,omitempty"`
+	IsBootstrap  bool               `json:"isBootstrap"`
+	Params       swingset.Params    `json:"params"`
+	SupplyCoins  sdk.Coins          `json:"supplyCoins"`
+	UpgradePlan  *upgradetypes.Plan `json:"upgradePlan,omitempty"`
+	LienPort     int                `json:"lienPort"`
+	StoragePort  int                `json:"storagePort"`
+	SwingsetPort int                `json:"swingsetPort"`
+	VbankPort    int                `json:"vbankPort"`
+	VibcPort     int                `json:"vibcPort"`
 }
 
 // Name returns the name of the App
@@ -882,17 +888,18 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		Type:        "AG_COSMOS_INIT",
-		ChainID:     ctx.ChainID(),
-		BlockTime:   blockTime,
-		IsBootstrap: bootstrap,
-		Params:      app.SwingSetKeeper.GetParams(ctx),
-		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
-		UpgradePlan: app.upgradePlan,
-		LienPort:    app.lienPort,
-		StoragePort: app.vstoragePort,
-		VbankPort:   app.vbankPort,
-		VibcPort:    app.vibcPort,
+		Type:         "AG_COSMOS_INIT",
+		ChainID:      ctx.ChainID(),
+		BlockTime:    blockTime,
+		IsBootstrap:  bootstrap,
+		Params:       app.SwingSetKeeper.GetParams(ctx),
+		SupplyCoins:  sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
+		UpgradePlan:  app.upgradePlan,
+		LienPort:     app.lienPort,
+		StoragePort:  app.vstoragePort,
+		SwingsetPort: app.swingsetPort,
+		VbankPort:    app.vbankPort,
+		VibcPort:     app.vibcPort,
 	}
 	// This really abuses `BlockingSend` to get back at `sendToController`
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)

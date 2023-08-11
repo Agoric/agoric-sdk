@@ -298,20 +298,20 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         if (typeof key !== 'string') {
           throw Fail`Unexpected swingStore exported key ${q(key)}`;
         }
-        const path = `${STORAGE_PATH.SWING_STORE}.${key}`;
         if (value == null) {
-          return [path];
+          return [key];
         }
         if (typeof value !== 'string') {
           throw Fail`Unexpected ${typeof value} value for swingStore exported key ${q(
             key,
           )}`;
         }
-        return [path, value];
+        return [key, value];
       });
-      sendToChainStorage(
+      chainSend(
+        portNums.swingset,
         stringify({
-          method: 'setWithoutNotify',
+          method: 'swingStoreUpdateExportData',
           args: entries,
         }),
       );
@@ -648,6 +648,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         // console.error('got AG_COSMOS_INIT', action);
 
         !blockingSend || Fail`Swingset already initialized`;
+
+        if (action.swingsetPort) {
+          portNums.swingset = action.swingsetPort;
+        }
 
         if (action.vibcPort) {
           portNums.dibc = action.vibcPort;
