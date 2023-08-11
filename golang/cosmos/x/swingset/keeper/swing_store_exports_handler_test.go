@@ -31,7 +31,7 @@ func newTestSwingStoreEventHandler() testSwingStoreEventHandler {
 		},
 		onExportRetrieved: func(provider SwingStoreExportProvider) error {
 			for {
-				_, err := provider.ReadArtifact()
+				_, err := provider.ReadNextArtifact()
 				if err == io.EOF {
 					return nil
 				} else if err != nil {
