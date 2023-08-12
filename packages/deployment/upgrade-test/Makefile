@@ -2,6 +2,11 @@ REPOSITORY = agoric/upgrade-test
 # use :dev (latest prerelease image) unless we build local sdk
 DEST_IMAGE ?= $(if $(findstring local_sdk,$(MAKECMDGOALS)),ghcr.io/agoric/agoric-sdk:latest,ghcr.io/agoric/agoric-sdk:dev)
 BOOTSTRAP_MODE?=main
+ifeq ($(BOOTSTRAP_MODE),main)
+	TAG_SUFFIX=
+else
+	TAG_SUFFIX=-$(BOOTSTRAP_MODE)
+endif
 TARGET?=agoric-upgrade-11
 dockerLabel?=$(TARGET)
 ifdef TMUX_CC
@@ -19,25 +24,25 @@ BUILD = docker build --progress=plain $(BUILD_OPTS) \
 	-f Dockerfile upgrade-test-scripts
 
 agoric-upgrade-7-2:
-	$(BUILD) --target agoric-upgrade-7-2 -t $(REPOSITORY):agoric-upgrade-7-2
+	$(BUILD) --target agoric-upgrade-7-2 -t $(REPOSITORY):agoric-upgrade-7-2$(TAG_SUFFIX)
 
 agoric-upgrade-8: agoric-upgrade-7-2
-	$(BUILD) --target agoric-upgrade-8 -t $(REPOSITORY):agoric-upgrade-8
+	$(BUILD) --target agoric-upgrade-8 -t $(REPOSITORY):agoric-upgrade-8$(TAG_SUFFIX)
 
 agoric-upgrade-8-1: agoric-upgrade-8
-	$(BUILD) --target agoric-upgrade-8-1 -t $(REPOSITORY):agoric-upgrade-8-1
+	$(BUILD) --target agoric-upgrade-8-1 -t $(REPOSITORY):agoric-upgrade-8-1$(TAG_SUFFIX)
 
 agoric-upgrade-9: agoric-upgrade-8-1
-	$(BUILD) --target agoric-upgrade-9 -t $(REPOSITORY):agoric-upgrade-9
+	$(BUILD) --target agoric-upgrade-9 -t $(REPOSITORY):agoric-upgrade-9$(TAG_SUFFIX)
 
 agoric-upgrade-10: agoric-upgrade-9
-	$(BUILD) --target agoric-upgrade-10 -t $(REPOSITORY):agoric-upgrade-10
+	$(BUILD) --target agoric-upgrade-10 -t $(REPOSITORY):agoric-upgrade-10$(TAG_SUFFIX)
 
 agoric-upgrade-10-to-11: agoric-upgrade-10
-	$(BUILD) --target agoric-upgrade-10-to-11 -t $(REPOSITORY):agoric-upgrade-10-to-11
+	$(BUILD) --target agoric-upgrade-10-to-11 -t $(REPOSITORY):agoric-upgrade-10-to-11$(TAG_SUFFIX)
 
 agoric-upgrade-11: agoric-upgrade-10-to-11
-	$(BUILD) --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11
+	$(BUILD) --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11$(TAG_SUFFIX)
 
 # build main bootstrap
 build: $(TARGET)
