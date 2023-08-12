@@ -249,6 +249,7 @@ export async function loadSwingsetConfigFile(configPath) {
       Fail`bootstrap vat ${config.bootstrap} not found in ${configPath}`;
     return config;
   } catch (e) {
+    console.error(`failed to load ${configPath}`);
     if (e.code === 'ENOENT') {
       return null;
     } else {
