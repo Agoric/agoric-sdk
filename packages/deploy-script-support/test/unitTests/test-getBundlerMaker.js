@@ -15,10 +15,12 @@ test('getBundlerMaker - already made', async t => {
   const getBundlerMaker = makeGetBundlerMaker({}, { lookup });
 
   const bundler = await getBundlerMaker({ log: t.log });
+  // @ts-expect-error mock lookup result
   t.is(bundler, 'BUNDLER_MAKER_FOUND');
 });
 
 test('getBundlerMaker - not yet made', async t => {
+  /** @type {any} */
   let bundlerMaker;
   const zoe = {
     install: async b => {
