@@ -6,9 +6,9 @@ import url from 'url';
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const sourceToBundle = [
-  [`../src/centralSupply.js`, `../bundles/bundle-centralSupply.js`],
-  [`../src/mintHolder.js`, `../bundles/bundle-mintHolder.js`],
-  [`../src/provisionPool.js`, `../bundles/bundle-provisionPool.js`],
+  ['@agoric/vats/src/centralSupply.js', '../bundles/bundle-centralSupply.js'],
+  ['@agoric/vats/src/mintHolder.js', '../bundles/bundle-mintHolder.js'],
+  ['@agoric/vats/src/provisionPool.js', '../bundles/bundle-provisionPool.js'],
 ];
 
 await createBundles(sourceToBundle, dirname);

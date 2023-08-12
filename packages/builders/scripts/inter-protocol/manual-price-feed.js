@@ -102,12 +102,12 @@ export default async function priceAuthorityFromNotifier(
   const offerIt = E(walletAdmin).getOffersNotifier();
   for await (const offers of makeNotifierFromAsyncIterable(offerIt)) {
     // console.log(offers);
-    offers
+    const completed = offers
       .filter(
         ({ status, invitationQuery: { instance } }) =>
           status === 'complete' && instance === aggregatorInstance,
       )
-      .forEach(async ({ id }) => {
+      .map(async ({ id }) => {
         const orKey = `offerResult ${id}`;
         await E(home.scratch).set(
           orKey,
@@ -118,5 +118,6 @@ export default async function priceAuthorityFromNotifier(
           `E(home.scratch).get(${JSON.stringify(orKey)})`,
         );
       });
+    await Promise.all(completed);
   }
 }

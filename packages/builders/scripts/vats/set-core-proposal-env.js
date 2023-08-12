@@ -15,19 +15,17 @@ const config = JSON.parse(configJson);
 
 const envs = new Map();
 if (Array.isArray(config?.coreProposals)) {
-  config.coreProposals.forEach(
-    ({ env }) =>
-      env &&
-      Object.entries(env).forEach(([key, val]) => {
-        const oldVal = envs.get(key);
-        if (envs.has(key) && oldVal !== val) {
-          throw Error(
-            `Duplicate env key: ${key}, but value is ${val} not ${oldVal}`,
-          );
-        }
-        envs.set(key, val);
-      }),
-  );
+  for (const { env = {} } of config.coreProposals) {
+    for (const [key, val] of Object.entries(env)) {
+      const oldVal = envs.get(key);
+      if (envs.has(key) && oldVal !== val) {
+        throw Error(
+          `Duplicate env key: ${key}, but value is ${val} not ${oldVal}`,
+        );
+      }
+      envs.set(key, val);
+    }
+  }
 }
 
 for (const [key, val] of envs.entries()) {
