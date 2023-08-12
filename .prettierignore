@@ -16,7 +16,7 @@ public
 *.md
 
 # selectively include instead of all .json because
-# - many (such as jsconfig.json) allow trailing commas want to preserve but Prettier will remove per JSON
+# - many (such as tsconfig.json) allow trailing commas want to preserve but Prettier will remove per JSON
 # - some have careful manual formatting such as a matrix and there's no safe way to have an ignore comment in JSON
 !package.json
 

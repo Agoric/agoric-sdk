@@ -20,7 +20,7 @@
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "run-s --continue-on-error lint:*",
     "lint:js": "eslint 'src/**/*.js' 'test/**/*.js' api.js",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc -p tsconfig.json",
     "lint-fix": "eslint --fix 'src/**/*.js' 'test/**/*.js' api.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",

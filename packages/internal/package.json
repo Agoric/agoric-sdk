@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "prepack": "tsc --build jsconfig.build.json",
+    "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:nyc": "exit 0",
@@ -17,7 +17,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@agoric/assert": "^0.6.0",
