@@ -1,4 +1,4 @@
-module {:options "--function-syntax:4"} M {
+module {:options "--function-syntax:4"} Passable {
 
   type SafeInteger = n: int | n < 9_007_199_254_740_991 witness 1
 
@@ -22,7 +22,7 @@ module {:options "--function-syntax:4"} M {
 
   method Main()
   {
-    var aPassable := Passable<int, int, int>.Null;
+    var aPassable := Passable<(), (), string>.Null;
     print "x", aPassable, "\n";
     print "reals? really? ", 2.0 / 3.0, "\n";
     print "how to do promises?\n";

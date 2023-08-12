@@ -1,7 +1,7 @@
 module Outcome {
-  datatype Outcome<T> =
+  datatype Outcome<T> = // is this still failure-compatible with (00)?
     | Success(value: T)
-    | Failure(error: object) // conventionally a string
+    | Failure(error: object?) // conventionally a string
   {
     predicate IsFailure() {
       this.Failure?
