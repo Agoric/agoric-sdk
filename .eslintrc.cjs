@@ -40,9 +40,9 @@ module.exports = {
         EXPERIMENTAL_useProjectService: true,
         sourceType: 'module',
         project: [
-          './packages/*/jsconfig.json',
           './packages/*/tsconfig.json',
-          './packages/wallet/*/jsconfig.json',
+          './packages/*/tsconfig.json',
+          './packages/wallet/*/tsconfig.json',
           './tsconfig.json',
         ],
         tsconfigRootDir: __dirname,

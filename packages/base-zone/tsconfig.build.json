@@ -1,11 +1,11 @@
 {
-    "extends": [
-        "./jsconfig.json",
-        "../../tsconfig-build-options.json"
-    ],
-    "exclude": [
-      "test",
-      "scripts",
-      "**/exports.js",
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "exclude": [
+    "test",
+    "scripts",
+    "**/exports.js",
+  ]
 }
