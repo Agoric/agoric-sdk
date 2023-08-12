@@ -1,4 +1,4 @@
-/// <reference path="../../../time/src/types.d.ts" />
+/// <reference types="@agoric/time/src/types.d.ts" />
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
