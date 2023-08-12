@@ -43,7 +43,7 @@ test.before(async t => {
 //#endregion
 
 test('inter-protocol vaults proposal handles referencedUi option', async t => {
-  const proposalModule = '@agoric/inter-protocol/scripts/init-core.js';
+  const proposalModule = '@agoric/builders/scripts/inter-protocol/init-core.js';
   const referencedUi =
     'bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e';
 
@@ -72,7 +72,7 @@ test('inter-protocol vaults proposal handles referencedUi option', async t => {
 
 test('inter-protocol ATOM proposal handles initialPrice option', async t => {
   const proposalModule =
-    '@agoric/inter-protocol/scripts/add-collateral-core.js';
+    '@agoric/builders/scripts/inter-protocol/add-collateral-core.js';
   const interchainAssetOptions = {
     decimalPlaces: 6,
     denom: 'ibc/toyatom',

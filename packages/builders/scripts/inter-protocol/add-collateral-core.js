@@ -1,9 +1,9 @@
 /* global process */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-import { getManifestForAddAssetToVault } from '../src/proposals/addAssetToVault.js';
-import { getManifestForPsm } from '../src/proposals/startPSM.js';
-import { makeInstallCache } from '../src/proposals/utils.js';
+import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
+import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
+import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const defaultProposalBuilder = async (
@@ -15,7 +15,7 @@ export const defaultProposalBuilder = async (
   } = {},
   { env = process.env } = {},
 ) => {
-  /** @type {import('../src/proposals/addAssetToVault.js').InterchainAssetOptions} */
+  /** @type {import('@agoric/inter-protocol/src/proposals/addAssetToVault.js').InterchainAssetOptions} */
   const {
     issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
     denom = env.INTERCHAIN_DENOM,
@@ -33,7 +33,7 @@ export const defaultProposalBuilder = async (
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   return harden({
-    sourceSpec: '../src/proposals/addAssetToVault.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/addAssetToVault.js',
     getManifestCall: [
       getManifestForAddAssetToVault.name,
       {
@@ -73,7 +73,7 @@ export const psmProposalBuilder = async (
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   return harden({
-    sourceSpec: '../src/proposals/startPSM.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/startPSM.js',
     getManifestCall: [
       getManifestForPsm.name,
       {
@@ -84,7 +84,10 @@ export const psmProposalBuilder = async (
         },
         installKeys: {
           psm: publishRef(
-            install('../src/psm/psm.js', '../bundles/bundle-psm.js'),
+            install(
+              '@agoric/inter-protocol/src/psm/psm.js',
+              '../bundles/bundle-psm.js',
+            ),
           ),
           mintHolder: publishRef(
             install(

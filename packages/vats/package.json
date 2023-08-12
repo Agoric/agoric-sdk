@@ -8,8 +8,6 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
-    "build:restart-vats-proposal": "agoric run scripts/restart-vats.js",
-    "build:zcf-proposal": "agoric run scripts/replace-zoe.js",
     "prepack": "tsc --build jsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
@@ -46,7 +44,6 @@
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/smart-wallet": "^0.5.3",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@endo/bundle-source": "^2.5.2",

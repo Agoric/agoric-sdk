@@ -404,7 +404,7 @@ test.serial('add STARS collateral', async t => {
 
   t.log('building proposal');
   const proposal = await buildProposal({
-    package: 'inter-protocol',
+    package: 'builders',
     packageScriptName: 'build:add-STARS-proposal',
   });
 
@@ -429,7 +429,7 @@ test.serial('add STARS collateral', async t => {
 
   t.context.refreshAgoricNamesRemotes();
 
-  t.log('restart-vats proposal executed');
+  t.log('add-STARS proposal executed');
   t.pass(); // reached here without throws
 });
 
