@@ -1,4 +1,4 @@
-/// <reference path="../../../time/src/types.d.ts" />
+/// <reference types="@agoric/time/src/types.d.ts" />
 
 import { Fail, q } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
