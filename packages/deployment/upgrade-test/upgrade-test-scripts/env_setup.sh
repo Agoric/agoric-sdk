@@ -24,34 +24,36 @@ export VALIDATORADDR=$($binary keys show validator -a --keyring-backend="test")
 export USER1ADDR=$($binary keys show user1 -a --keyring-backend="test")
 
 if [[ "$binary" == "agd" ]]; then
+  configdir=/usr/src/agoric-sdk/packages/vm-config
+  test -d "$configdir" || configdir=/usr/src/agoric-sdk/packages/vats
 # Support testnet addresses
-  sed -i "s/agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang/$GOV2ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h/$GOV3ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i "s/agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce/$GOV1ADDR/g" "$configdir"/*.json
+  sed -i "s/agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang/$GOV2ADDR/g" "$configdir"/*.json
+  sed -i "s/agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h/$GOV3ADDR/g" "$configdir"/*.json
 
 # Support mainnet addresses
-  sed -i "s/agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5/$GOV2ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc/$GOV3ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i '/agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a/d' /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i '/agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq/d' /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i '/agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5/d' /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i "s/agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx/$GOV1ADDR/g" "$configdir"/*.json
+  sed -i "s/agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5/$GOV2ADDR/g" "$configdir"/*.json
+  sed -i "s/agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc/$GOV3ADDR/g" "$configdir"/*.json
+  sed -i '/agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a/d' "$configdir"/*.json
+  sed -i '/agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq/d' "$configdir"/*.json
+  sed -i '/agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5/d' "$configdir"/*.json
 
   # change names to gov1/2/3 since order is significant for invitation sending
-  sed -i "s/Jason Potts/gov1/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/Chloe White/gov2/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/Joe Clark/gov3/g" /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i "s/Jason Potts/gov1/g" "$configdir"/*.json
+  sed -i "s/Chloe White/gov2/g" "$configdir"/*.json
+  sed -i "s/Joe Clark/gov3/g" "$configdir"/*.json
 
 # Oracle Addresses
-  sed -i "s/agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr/$GOV1ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i "s/agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj/$GOV2ADDR/g" /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i '/agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8/d' /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i '/agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78/d' /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i '/agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p/d' /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i "s/agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr/$GOV1ADDR/g" "$configdir"/*.json
+  sed -i "s/agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj/$GOV2ADDR/g" "$configdir"/*.json
+  sed -i '/agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8/d' "$configdir"/*.json
+  sed -i '/agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78/d' "$configdir"/*.json
+  sed -i '/agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p/d' "$configdir"/*.json
 
 # committeeSize
-  sed -i 's/committeeSize": 6/committeeSize": 3/g' /usr/src/agoric-sdk/packages/vats/*.json
-  sed -i 's/minSubmissionCount": 3/minSubmissionCount": 1/g' /usr/src/agoric-sdk/packages/vats/*.json
+  sed -i 's/committeeSize": 6/committeeSize": 3/g' "$configdir"/*.json
+  sed -i 's/minSubmissionCount": 3/minSubmissionCount": 1/g' "$configdir"/*.json
 fi
 
 startAgd() {

@@ -22,7 +22,7 @@ echo 1>&2 "FIXME: skipping zoe-full-upgrade tests"; return 0
 
 yarn --silent bundle-source --cache-json /tmp packages/zoe/src/contractFacet/vatRoot.js Zcf-upgrade
 yarn --silent bundle-source --cache-json /tmp packages/vats/src/vat-zoe.js Zoe-upgrade
-yarn --silent bundle-source --cache-json /tmp packages/vats/test/bootstrapTests/zcfProbe.js prober-contract
+yarn --silent bundle-source --cache-json /tmp packages/boot/test/bootstrapTests/zcfProbe.js prober-contract
 
 echo +++ checking Zoe/Zcf hashes +++
 ZCF_HASH=`jq -r .endoZipBase64Sha512 /tmp/bundle-Zcf-upgrade.json`
