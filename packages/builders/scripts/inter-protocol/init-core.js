@@ -14,6 +14,8 @@ import {
 } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
+// TODO end inter-package filesystem references https://github.com/Agoric/agoric-sdk/issues/8178
+
 /** @type {Record<string, Record<string, [string, string]>>} */
 const installKeyGroups = {
   econCommittee: {
