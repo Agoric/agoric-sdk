@@ -4,6 +4,8 @@
 import anylogger from 'anylogger';
 
 import { E } from '@endo/far';
+import bundleSource from '@endo/bundle-source';
+
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -23,6 +25,7 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
+import { fileURLToPath } from 'url';
 
 import {
   makeDefaultMeterProvider,
@@ -39,6 +42,7 @@ import {
 import { parseParams } from './params.js';
 import { makeQueue } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
+import { parseLocatedJson } from './helpers/json.js';
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -68,7 +72,7 @@ const getHostKey = path => `host.${path}`;
  * @param {Map<*, *>} mailboxStorage
  * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {string | (() => string | Promise<string>)} vatconfig absolute path
+ * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
  * @param {{}} env
  * @param {*} options
@@ -399,10 +403,10 @@ export async function launch({
     bridgeInbound(source, body);
   }
 
-  async function installBundle(bundleSource) {
+  async function installBundle(bundleJson) {
     let bundle;
     try {
-      bundle = JSON.parse(bundleSource);
+      bundle = JSON.parse(bundleJson);
     } catch (e) {
       blockManagerConsole.warn('INSTALL_BUNDLE warn:', e);
       return;
@@ -746,7 +750,14 @@ export async function launch({
               blockTime,
               upgradePlan,
             });
-            // TODO: Process upgrade plan
+            // Process upgrade plan
+            const upgradedAction = {
+              type: ActionType.ENACTED_UPGRADE,
+              upgradePlan,
+              blockHeight,
+              blockTime,
+            };
+            await doBlockingSend(upgradedAction);
             controller.writeSlogObject({
               type: 'cosmic-swingset-upgrade-finish',
               blockHeight,
@@ -755,6 +766,73 @@ export async function launch({
           }
         }
         return true;
+      }
+
+      case ActionType.ENACTED_UPGRADE: {
+        // Install and execute new core proposals.
+        const {
+          upgradePlan: { info: upgradeInfoJson = null } = {},
+          blockHeight,
+          blockTime,
+        } = action;
+        const upgradePlanInfo =
+          upgradeInfoJson &&
+          parseLocatedJson(upgradeInfoJson, 'ENACTED_UPGRADE upgradePlan.info');
+
+        // Handle the planned core proposals as just another action.
+        const { coreProposals = [] } = upgradePlanInfo || {};
+
+        if (!coreProposals.length) {
+          // Nothing to do.
+          return undefined;
+        }
+
+        // Find scripts relative to our location.
+        const myFilename = fileURLToPath(import.meta.url);
+        const { bundles, code: coreEvalCode } =
+          await extractCoreProposalBundles(coreProposals, myFilename, {
+            handleToBundleSpec: async (handle, source, _sequence, _piece) => {
+              const bundle = await bundleSource(source);
+              const { endoZipBase64Sha512: hash } = bundle;
+              const bundleID = `b1-${hash}`;
+              handle.bundleID = bundleID;
+              harden(handle);
+              return harden([`${bundleID}: ${source}`, bundle]);
+            },
+          });
+
+        for (const [meta, bundle] of Object.entries(bundles)) {
+          // eslint-disable-next-line no-await-in-loop
+          await controller
+            .validateAndInstallBundle(bundle)
+            .catch(e => Fail`Cannot validate and install ${meta}: ${e}`);
+        }
+
+        // Now queue the code for evaluation.
+        //
+        // TODO: Once SwingSet sprouts some tools for preemption, we should use
+        // them to help the upgrade process finish promptly.
+        const coreEvalAction = {
+          type: ActionType.CORE_EVAL,
+          blockHeight,
+          blockTime,
+          evals: [
+            {
+              json_permits: 'true',
+              js_code: coreEvalCode,
+            },
+          ],
+        };
+        highPriorityQueue.push({
+          context: {
+            blockHeight,
+            txHash: 'x/upgrade',
+            msgIdx: 0,
+          },
+          action: coreEvalAction,
+        });
+
+        return undefined;
       }
 
       case ActionType.COMMIT_BLOCK: {
