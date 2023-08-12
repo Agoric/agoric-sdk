@@ -76,7 +76,7 @@ ARG DEST_IMAGE
 FROM ghcr.io/agoric/agoric-sdk:35 as agoric-upgrade-10-to-11
 # This default UPGRADE_INFO_11 is to test core proposals like the network vat.
 # TODO: Maybe replace with a Zoe core proposal, or remove when other paths test it.
-ARG BOOTSTRAP_MODE UPGRADE_INFO_11='{"coreProposals":["@agoric/vats/scripts/init-network.js"]}'
+ARG BOOTSTRAP_MODE UPGRADE_INFO_11='{"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}'
 ENV THIS_NAME=agoric-upgrade-10-to-11 UPGRADE_TO=agoric-upgrade-11 UPGRADE_INFO=${UPGRADE_INFO_11} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
