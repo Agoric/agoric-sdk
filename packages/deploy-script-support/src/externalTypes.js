@@ -30,7 +30,7 @@ export {};
  * @param {string} srcSpec
  * @param {string} bundlePath
  * @param {any} [opts]
- * @returns {ManifestBundleRef}
+ * @returns {Promise<ManifestBundleRef>}
  */
 
 /**
