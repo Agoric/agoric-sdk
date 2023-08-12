@@ -1,5 +1,9 @@
 {
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "maxNodeModuleJsDepth": 1,
+  },
   "include": [
     "*.js",
     "scripts/**/*.js",
