@@ -15,7 +15,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
-    "lint:types": "tsc -p tsconfig.json"
+    "lint:types": "tsc"
   },
   "repository": {
     "type": "git",

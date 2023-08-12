@@ -12,7 +12,7 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p tsconfig.json",
+    "lint:types": "tsc",
     "lint:eslint": "eslint .",
     "lint-fix": "yarn lint:eslint --fix"
   },
