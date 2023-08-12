@@ -12,7 +12,7 @@
     "bench": "ava --config ./ava.bench.config.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p tsconfig.json",
+    "lint:types": "tsc",
     "lint:eslint": "eslint ."
   },
   "keywords": [],

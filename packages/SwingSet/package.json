@@ -17,7 +17,7 @@
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xsnap vat manager'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p tsconfig.json",
+    "lint:types": "tsc",
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
