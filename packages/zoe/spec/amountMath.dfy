@@ -7,7 +7,7 @@ module {:options "--function-syntax:4"} M0 {
     import R = Relation
 
     type Amount(!new)
-    function makeEmpty(): Amount
+    function makeEmpty(): Amount // hm. function of brand, which is not (!new)
     function isEqual(x: Amount, y: Amount): bool
     function isGTE(x: Amount, y: Amount): bool
 
