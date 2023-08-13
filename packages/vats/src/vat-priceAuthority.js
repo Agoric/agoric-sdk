@@ -1,5 +1,5 @@
 import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /**
  * Vat holding the canonical PriceAuthorityRegistry for looking up prices on any

@@ -1,7 +1,7 @@
 // @ts-check
 import { provide } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { prepareRecorderFactory, prepareBoardKit } from './lib-board.js';
 
 // There is only one board in this vat.

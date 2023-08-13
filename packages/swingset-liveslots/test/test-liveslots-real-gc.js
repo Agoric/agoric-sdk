@@ -3,7 +3,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import engineGC from './engine-gc.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';

@@ -3,7 +3,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { kser, kunser } from '../kmarshal.js';
 import { setupTestLiveslots } from '../liveslots-helpers.js';
 

@@ -1,7 +1,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { M, provideLazy as provide } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';

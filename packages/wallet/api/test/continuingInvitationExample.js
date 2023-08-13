@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeNotifierFromSubscriber, makePublishKit } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import '@agoric/zoe/exported.js';
 

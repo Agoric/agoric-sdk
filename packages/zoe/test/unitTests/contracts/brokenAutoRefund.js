@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /**
  * This is a a broken contact to test zoe's error handling

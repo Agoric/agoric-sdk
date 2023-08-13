@@ -1,6 +1,5 @@
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { TimeMath } from '@agoric/time';
-import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 

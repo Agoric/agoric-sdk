@@ -3,7 +3,7 @@
 import { Fail } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 

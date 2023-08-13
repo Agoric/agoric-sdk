@@ -5,7 +5,7 @@ import {
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /**
  * Constants for Auction State.

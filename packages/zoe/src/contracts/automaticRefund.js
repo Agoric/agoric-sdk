@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /**
  * This is a very trivial contract to explain and test Zoe.

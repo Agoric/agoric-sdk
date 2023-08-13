@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { E } from '@endo/far';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { objectMap, allValues } from '@agoric/internal';

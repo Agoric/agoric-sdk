@@ -1,7 +1,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeFakeVirtualStuff } from '../tools/fakeVirtualSupport.js';
 
 async function runDurabilityCheckTest(t, relaxDurabilityRules) {

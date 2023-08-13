@@ -3,7 +3,7 @@ import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { TimeMath } from '@agoric/time';
 
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';

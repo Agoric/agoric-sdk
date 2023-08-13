@@ -2,7 +2,7 @@
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /** @param {Pick<IssuerKit, 'brand' | 'issuer'>[]} issuerKits */
 export const makeFakeBankKit = issuerKits => {

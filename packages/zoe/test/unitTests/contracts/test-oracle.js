@@ -5,7 +5,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/far';
 

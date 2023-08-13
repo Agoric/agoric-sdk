@@ -1,7 +1,7 @@
 /* global globalThis VatData */
 
 import { importBundle } from '@endo/import-bundle';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 const endowments = {
   VatData,

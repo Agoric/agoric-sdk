@@ -7,7 +7,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { E } from '@endo/far';
 
 import '../internal-types.js';

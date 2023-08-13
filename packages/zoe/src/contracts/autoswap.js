@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { AmountMath, isNatValue } from '@agoric/ertp';
 
