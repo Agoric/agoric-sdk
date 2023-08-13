@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "maxNodeModuleJsDepth": 2,
+  },
+  "include": [
+    "contractFacet.js",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "src/**/*.ts",
+    "test/**/*.js",
+    "test/**/*.ts",
+    "tools/**/*.js",
+  ],
+}
