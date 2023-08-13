@@ -274,7 +274,9 @@
  *         >
  *       >;
  *       provisionPool: Promise<
- *         Installation<import('@agoric/vats/src/provisionPool.js')['start']>
+ *         Installation<
+ *           import('@agoric/inter-protocol/src/provisionPool.js')['start']
+ *         >
  *       >;
  *       reserve: Promise<
  *         Installation<

@@ -1,15 +1,15 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 import {
   ChoiceMethod,
-  QuorumRule,
   ElectionType,
+  QuorumRule,
   coerceQuestionSpec,
 } from '../../../src/index.js';
+import { remoteNullMarshaller } from '../utils.js';
 
 const { quote: q } = assert;
 
@@ -65,7 +65,7 @@ const committeeBinaryStart = async (
   const { creatorFacet: electorateFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: remoteNullMarshaller,
     });
 
   const choose = { text: 'Choose' };
@@ -128,7 +128,7 @@ const committeeBinaryTwoQuestions = async (
   const { creatorFacet: electorateFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: remoteNullMarshaller,
     });
 
   const invitations = await E(electorateFacet).getVoterInvitations();

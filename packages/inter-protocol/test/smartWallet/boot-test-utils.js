@@ -1,3 +1,8 @@
+/**
+ * @file approximately the same as the one in @agoric/vats. It's copied over to
+ *   decouple the packages and because the test here is a deprecated style. It
+ *   integrates multiple bundles so should move to a bootstrap-style test.
+ */
 // @ts-check
 import {
   makeFakeVatAdmin,
@@ -6,31 +11,10 @@ import {
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { bundles, devices } from '../test/devices.js';
-
-import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
-import { buildRootObject as bankRoot } from '../src/vat-bank.js';
-import { buildRootObject as boardRoot } from '../src/vat-board.js';
-import { buildRootObject as ibcRoot } from '../src/vat-ibc.js';
-import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
-import { buildRootObject as networkRoot } from '../src/vat-network.js';
-import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
-import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
-import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
+import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
+import { bundles, devices } from './devices.js';
 
 const { Fail } = assert;
-
-export const vatRoots = {
-  agoricNames: agoricNamesRoot,
-  bank: bankRoot,
-  board: boardRoot,
-  ibc: ibcRoot,
-  mints: mintsRoot,
-  network: networkRoot,
-  priceAuthority: priceAuthorityRoot,
-  provisioning: provisioningRoot,
-  zoe: zoeRoot,
-};
 
 export const noop = () => {};
 

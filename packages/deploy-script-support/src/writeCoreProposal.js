@@ -7,6 +7,25 @@ import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import { defangAndTrim, mergePermits, stringify } from './code-gen.js';
 import { makeCoreProposalBehavior, permits } from './coreProposalBehavior.js';
 
+/**
+ * @callback WriteCoreProposal
+ * @param {string} filePrefix
+ * @param {import('./externalTypes.js').ProposalBuilder} proposalBuilder
+ * @returns {Promise<void>}
+ */
+
+/**
+ *
+ * @param {*} homeP
+ * @param {*} endowments
+ * @param {{
+ *   getBundlerMaker: () => Promise<import('./getBundlerMaker.js').BundleMaker>,
+ *   getBundleSpec: (...args: *) => Promise<import('./externalTypes.js').ManifestBundleRef>,
+ *   log?: typeof console.log,
+ *   writeFile?: typeof fs.promises.writeFile
+ * }} io
+ * @returns {WriteCoreProposal}
+ */
 export const makeWriteCoreProposal = (
   homeP,
   endowments,
@@ -50,8 +69,18 @@ export const makeWriteCoreProposal = (
     };
   };
 
-  let mutex = Promise.resolve();
+  let mutex =
+    /** @type {Promise<import('./externalTypes.js').ManifestBundleRef | undefined>} */ (
+      Promise.resolve()
+    );
+  /** @type {WriteCoreProposal} */
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
+    /**
+     *
+     * @param {string} entrypoint
+     * @param {string} [bundlePath]
+     * @returns {Promise<NodeModule>}
+     */
     const getBundle = async (entrypoint, bundlePath) => {
       if (!bundlePath) {
         return bundleSource(pathResolve(entrypoint));
@@ -62,7 +91,14 @@ export const makeWriteCoreProposal = (
       return ns.default;
     };
 
-    // Install an entrypoint.
+    /**
+     * Install an entrypoint.
+     *
+     * @param {string} entrypoint
+     * @param {string} [bundlePath]
+     * @param [opts]
+     * @returns {Promise<import('./externalTypes.js').ManifestBundleRef>}
+     */
     const install = async (entrypoint, bundlePath, opts) => {
       const bundle = getBundle(entrypoint, bundlePath);
 
@@ -71,6 +107,7 @@ export const makeWriteCoreProposal = (
         // console.log('installing', { filePrefix, entrypoint, bundlePath });
         return getBundleSpec(bundle, getBundler, opts);
       });
+      // @ts-expect-error xxx mutex type narrowing
       return mutex;
     };
 
