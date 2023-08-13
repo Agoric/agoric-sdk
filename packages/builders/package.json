@@ -44,7 +44,6 @@
   },
   "devDependencies": {
     "@agoric/assert": "^0.6.0",
-    "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/governance": "^0.10.3",
     "@agoric/inter-protocol": "^0.16.1",
