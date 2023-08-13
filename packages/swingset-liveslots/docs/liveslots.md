@@ -48,7 +48,7 @@ The root object *must* be a hardened "ephemeral" object (e.g., created with `Far
 ## Calling Objects
 
 ```js
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 const p = E(target).foo('arg1');
 p.then(obj2 => E(obj2).bar('arg2'))

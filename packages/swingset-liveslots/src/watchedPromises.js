@@ -3,7 +3,7 @@
 
 import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**

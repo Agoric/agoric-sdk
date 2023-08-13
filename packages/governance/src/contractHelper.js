@@ -5,7 +5,7 @@ import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';

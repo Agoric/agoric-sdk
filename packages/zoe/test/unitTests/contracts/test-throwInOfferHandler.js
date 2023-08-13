@@ -4,7 +4,7 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 

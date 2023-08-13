@@ -1,7 +1,7 @@
 import { Fail } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
 import { prepareExoClassKit } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { setupApiGovernance } from './contractGovernance/governApi.js';
 import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 import {

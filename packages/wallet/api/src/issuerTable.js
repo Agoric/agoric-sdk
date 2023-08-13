@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { makeScalarWeakMapStore } from '@agoric/store';
 

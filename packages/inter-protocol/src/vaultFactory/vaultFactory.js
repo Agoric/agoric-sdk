@@ -25,7 +25,7 @@ import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';

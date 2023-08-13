@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { TimeMath } from '@agoric/time';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

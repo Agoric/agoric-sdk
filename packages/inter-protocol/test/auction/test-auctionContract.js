@@ -17,7 +17,7 @@ import {
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import {
   setupReserve,

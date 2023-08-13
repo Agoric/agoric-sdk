@@ -2,7 +2,7 @@
 
 import { passStyleOf } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';

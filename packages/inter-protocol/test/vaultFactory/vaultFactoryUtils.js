@@ -6,7 +6,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import {
   SECONDS_PER_WEEK,
   setupReserve,

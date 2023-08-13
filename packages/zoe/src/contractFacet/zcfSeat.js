@@ -6,7 +6,7 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 

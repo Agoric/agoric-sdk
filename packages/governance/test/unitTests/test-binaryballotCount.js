@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@endo/marshal';

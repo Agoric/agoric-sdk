@@ -6,7 +6,7 @@ import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';

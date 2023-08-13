@@ -1,7 +1,7 @@
 // @jessie-check
 
 import { Fail, assert, details as X } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /**
  * Burn the invitation, assert that only one invitation was burned,

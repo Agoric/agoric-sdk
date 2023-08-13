@@ -1,5 +1,5 @@
 import { Far } from '@endo/captp';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';

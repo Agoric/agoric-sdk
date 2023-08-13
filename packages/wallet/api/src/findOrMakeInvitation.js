@@ -1,5 +1,5 @@
 import { assert, Fail, q } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 

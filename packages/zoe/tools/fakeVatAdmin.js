@@ -1,7 +1,7 @@
 // @jessie-check
 
 import { Fail } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';

@@ -1,6 +1,6 @@
 import './types.js';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import {
   getAmountOut,

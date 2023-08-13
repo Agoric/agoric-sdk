@@ -11,7 +11,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';

@@ -7,7 +7,7 @@ import {
 } from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
 import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /**
  * Recorders support publishing data to vstorage.

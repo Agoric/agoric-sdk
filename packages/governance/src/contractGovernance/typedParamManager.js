@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';

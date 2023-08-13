@@ -8,7 +8,7 @@
  * itself.  The parts that are relied on by other dapps are documented in the
  * types.js file.
  */
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 

@@ -1,7 +1,7 @@
 import './types.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,

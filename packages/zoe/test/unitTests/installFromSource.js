@@ -1,5 +1,5 @@
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /**
  * @param {ZoeService} zoe

@@ -1,5 +1,5 @@
 import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { objectMap, allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';

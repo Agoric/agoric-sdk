@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { Remotable } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 

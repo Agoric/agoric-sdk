@@ -1,5 +1,5 @@
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 

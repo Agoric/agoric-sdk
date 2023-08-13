@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';

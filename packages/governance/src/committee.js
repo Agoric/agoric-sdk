@@ -1,7 +1,7 @@
 import { makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';

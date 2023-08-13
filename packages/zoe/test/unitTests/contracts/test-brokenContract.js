@@ -3,7 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { setup } from '../setupBasicMints.js';

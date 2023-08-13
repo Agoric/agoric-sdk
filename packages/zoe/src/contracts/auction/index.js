@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
 import { Far } from '@endo/marshal';
 import { TimeMath, RelativeTimeShape } from '@agoric/time';

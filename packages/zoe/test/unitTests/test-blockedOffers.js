@@ -3,7 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
 import { setup } from './setupBasicMints.js';

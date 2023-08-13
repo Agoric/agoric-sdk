@@ -1,5 +1,5 @@
 import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';

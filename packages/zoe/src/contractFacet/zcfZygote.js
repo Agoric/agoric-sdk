@@ -8,7 +8,7 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { passStyleOf, Remotable } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 

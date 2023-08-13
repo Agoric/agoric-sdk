@@ -1,8 +1,7 @@
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';

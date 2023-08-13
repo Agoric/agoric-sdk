@@ -1,5 +1,5 @@
 import { mustMatch, keyEQ } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';

@@ -4,7 +4,7 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';

@@ -51,7 +51,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { AuctionPFShape } from '../auction/auctioneer.js';
 import {
   checkDebtLimit,

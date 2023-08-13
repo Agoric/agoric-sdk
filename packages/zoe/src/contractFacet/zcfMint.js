@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import url from 'url';
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 
 // TODO: CLI options to choose contracts
