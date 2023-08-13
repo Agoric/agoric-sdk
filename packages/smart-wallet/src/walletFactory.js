@@ -14,6 +14,8 @@ import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
+/** @typedef {import('./smartWallet.js').SmartWallet} SmartWallet */
+
 const trace = makeTracer('WltFct');
 
 /** @type {ContractMeta} */
@@ -36,7 +38,7 @@ harden(meta);
  * already done.
  *
  * @param {string} address
- * @param {import('./smartWallet.js').SmartWallet} wallet
+ * @param {SmartWallet} wallet
  * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
  */
 export const publishDepositFacet = async (
@@ -124,10 +126,10 @@ export const makeAssetRegistry = assetPublisher => {
  *     IterableEachTopic<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
  * }} AssetPublisher
  *
- * @typedef {boolean} isRevive
+ * @typedef {boolean} IsNew
  * @typedef {{
- *   reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>,
- *   ackWallet: (address: string) => isRevive,
+ *   reviveWallet: (address: string) => Promise<[SmartWallet, IsNew]>,
+ *   ackWallet: (address: string, wallet: SmartWallet) => [SmartWallet, IsNew],
  * }} WalletReviver
  */
 
@@ -149,7 +151,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
 
-  /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
+  /** @type {MapStore<string, SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
@@ -193,7 +195,10 @@ export const start = async (zcf, privateArgs, baggage) => {
         const walletP =
           !walletsByAddress.has(address) && walletReviver
             ? // this will call provideSmartWallet which will update `walletsByAddress` for next time
-              E(walletReviver).reviveWallet(address)
+              E.when(
+                E(walletReviver).reviveWallet(address),
+                ([wallet, _isNew]) => wallet,
+              )
             : walletsByAddress.get(address); // or throw
         const wallet = await walletP;
 
@@ -253,14 +258,14 @@ export const start = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
        * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[wallet: import('./smartWallet').SmartWallet, isNew: boolean]>} wallet
+       * @returns {Promise<[wallet: SmartWallet, isNew: boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
-      provideSmartWallet(address, bank, namesByAddressAdmin) {
+      async provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
-        /** @type {(address: string) => Promise<import('./smartWallet').SmartWallet>} */
+        /** @type {(address: string) => Promise<SmartWallet>} */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);
@@ -275,16 +280,13 @@ export const start = async (zcf, privateArgs, baggage) => {
           return wallet;
         };
 
-        const finisher = walletReviver
-          ? async (_address, _wallet) => {
-              const isRevive = await E(walletReviver).ackWallet(address);
-              isNew = !isRevive;
-            }
-          : undefined;
-
-        return provider
-          .provideAsync(address, maker, finisher)
-          .then(w => [w, isNew]);
+        const wallet = await provider.provideAsync(address, maker);
+        return isNew && walletReviver
+          ? // ackWallet needs the wallet to reflect it back
+            // so we can avoid delayed `isNew => [wallet, isNew]`
+            // transformations in favor of more direct promise propagation
+            E(walletReviver).ackWallet(address, wallet)
+          : [wallet, isNew];
       },
     },
   );

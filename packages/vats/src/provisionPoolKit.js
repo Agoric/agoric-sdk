@@ -124,10 +124,14 @@ export const prepareProvisionPoolKit = (
         initPSM: M.call(BrandShape, InstanceHandleShape).returns(),
       }),
       walletReviver: M.interface('ProvisionPoolKit wallet reviver', {
-        reviveWallet: M.callWhen(M.string()).returns(
+        reviveWallet: M.callWhen(M.string()).returns([
           M.remotable('SmartWallet'),
-        ),
-        ackWallet: M.call(M.string()).returns(M.boolean()),
+          M.boolean(),
+        ]),
+        ackWallet: M.call(M.string(), M.remotable('SmartWallet')).returns([
+          M.remotable('SmartWallet'),
+          M.boolean(),
+        ]),
       }),
       helper: UnguardedHelperI,
       public: M.interface('ProvisionPoolKit public', {
@@ -238,24 +242,28 @@ export const prepareProvisionPoolKit = (
           revivableAddresses.has(address) ||
             Fail`non-revivable address ${address}`;
           const bank = E(bankManager).getBankForAddress(address);
-          const [wallet, _created] = await E(walletFactory).provideSmartWallet(
+          return E(walletFactory).provideSmartWallet(
             address,
             bank,
             namesByAddressAdmin,
           );
-          return wallet;
         },
         /**
+         * @template T
          * @param {string} address
-         * @returns {boolean} isRevive
+         * @param {T} wallet
+         * @returns {[wallet: T, isNew: boolean]}
          */
-        ackWallet(address) {
+        ackWallet(address, wallet) {
           const { revivableAddresses } = this.state;
           if (!revivableAddresses.has(address)) {
-            return false;
+            // The address is unrecognized, so the wallet is new.
+            return [wallet, true];
           }
+          // The wallet is not new.
+          // Clear the address as revived and return that information.
           revivableAddresses.delete(address);
-          return true;
+          return [wallet, false];
         },
       },
       helper: {
