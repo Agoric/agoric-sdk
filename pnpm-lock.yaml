@@ -7,6 +7,11 @@ settings:
 overrides:
   '@endo/bundle-source': https://gitpkg.now.sh/endojs/endo/packages/bundle-source?master
 
+patchedDependencies:
+  depd@2.0.0:
+    hash: pucd7f2d57xq4hfr4jonspdvi4
+    path: patches/depd@2.0.0.patch
+
 importers:
 
   .:
@@ -5095,7 +5100,7 @@ packages:
     engines: {node: '>= 8.0.0'}
     dependencies:
       debug: 4.3.4
-      depd: 2.0.0
+      depd: 2.0.0(patch_hash=pucd7f2d57xq4hfr4jonspdvi4)
       humanize-ms: 1.2.1
     transitivePeerDependencies:
       - supports-color
@@ -6491,9 +6496,10 @@ packages:
     resolution: {integrity: sha512-7emPTl6Dpo6JRXOXjLRxck+FlLRX5847cLKEn00PLAgc3g2hTZZgr+e4c2v6QpSmLeFP3n5yUo7ft6avBK/5jQ==}
     engines: {node: '>= 0.6'}
 
-  /depd@2.0.0:
+  /depd@2.0.0(patch_hash=pucd7f2d57xq4hfr4jonspdvi4):
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
+    patched: true
 
   /deprecation@2.3.1:
     resolution: {integrity: sha512-xmHIy4F3scKVwMsQ4WnVaS8bHOx0DmVwRywosKhaILI0ywMDWPtBSku2HNxRvF7jtwDRsoEwYQSfbxj8b7RlJQ==}
@@ -9446,7 +9452,7 @@ packages:
     dependencies:
       basic-auth: 2.0.1
       debug: 2.6.9
-      depd: 2.0.0
+      depd: 2.0.0(patch_hash=pucd7f2d57xq4hfr4jonspdvi4)
       on-finished: 2.3.0
       on-headers: 1.0.2
     transitivePeerDependencies:

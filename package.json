@@ -83,6 +83,9 @@
   "pnpm": {
     "overrides": {
       "@endo/bundle-source": "https://gitpkg.now.sh/endojs/endo/packages/bundle-source?master"
+    },
+    "patchedDependencies": {
+      "depd@2.0.0": "patches/depd@2.0.0.patch"
     }
   }
 }
