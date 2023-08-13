@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeMockChainStorageRoot } from '@agoric/inter-protocol/test/supports.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {

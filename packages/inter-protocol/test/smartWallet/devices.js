@@ -1,12 +1,22 @@
+import binaryVoteCounter from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import committee from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernor from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
 import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
-import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
+import econCommitteeCharter from '../../bundles/bundle-econCommitteeCharter.js';
+import psm from '../../bundles/bundle-psm.js';
 
-const bundles = {
+export const bundles = {
+  binaryVoteCounter,
   centralSupply,
+  committee,
+  contractGovernor,
   mintHolder,
   provisionPool,
+  psm,
+  econCommitteeCharter,
   walletFactory,
 };
 

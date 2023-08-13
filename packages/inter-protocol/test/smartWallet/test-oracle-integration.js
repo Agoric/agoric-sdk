@@ -53,7 +53,7 @@ const makeTestSpace = async (log, bundleCache) => {
     },
     psmParams,
   );
-  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs());
 
   // TODO mimic the proposals and manifest of price-feed-proposal and price-feed-core
   // calling ensureOracleBrands and createPriceFeed

@@ -10,7 +10,7 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { isNat, Nat } from '@endo/nat';
-import { UnguardedHelperI } from '../typeGuards.js';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
