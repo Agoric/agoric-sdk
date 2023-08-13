@@ -1,6 +1,5 @@
 import { assert, Fail } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 

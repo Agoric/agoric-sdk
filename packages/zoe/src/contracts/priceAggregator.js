@@ -10,8 +10,7 @@ import {
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 import '../../tools/types-ambient.js';

@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { AmountMath, isSetValue } from '@agoric/ertp';

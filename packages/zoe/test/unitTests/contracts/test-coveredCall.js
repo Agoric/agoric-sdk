@@ -3,8 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { keyEQ } from '@agoric/store';

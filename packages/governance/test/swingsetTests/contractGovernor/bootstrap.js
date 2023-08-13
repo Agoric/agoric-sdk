@@ -1,8 +1,7 @@
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 import {
   assertContractElectorate,

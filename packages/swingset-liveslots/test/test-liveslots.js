@@ -2,8 +2,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@agoric/assert';
 import { M } from '@agoric/store';

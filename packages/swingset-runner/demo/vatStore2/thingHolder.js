@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { defineKind, makeScalarBigWeakMapStore } from '@agoric/vat-data';
 
 const p = console.log;

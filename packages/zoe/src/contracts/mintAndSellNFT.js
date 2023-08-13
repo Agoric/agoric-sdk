@@ -1,6 +1,5 @@
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 import { assert } from '@agoric/assert';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';

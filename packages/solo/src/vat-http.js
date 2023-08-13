@@ -1,7 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeCache } from '@agoric/cache';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { makePromiseKit } from '@endo/promise-kit';

@@ -1,7 +1,6 @@
 /// <reference types="@agoric/time/src/types.d.ts" />
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
