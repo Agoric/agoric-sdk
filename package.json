@@ -79,5 +79,10 @@
   },
   "dependencies": {
     "patch-package": "^6.5.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "@endo/bundle-source": "https://gitpkg.now.sh/endojs/endo/packages/bundle-source?master"
+    }
   }
 }
