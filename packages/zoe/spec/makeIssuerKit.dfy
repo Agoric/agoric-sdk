@@ -1,28 +1,12 @@
+include "outcome.dfy"
+
 // {:options "--function-syntax:4"} is cargo-cult
 // from the dafny hello-world
 // https://dafny.org/latest/DafnyRef/DafnyRef#sec-example
 module {:options "--function-syntax:4"} ERTP {
+  import opened Outcome
 
   type Amount = nat
-
-  datatype Outcome<T> =
-    | Success(value: T)
-    | Failure(error: string)
-  {
-    predicate IsFailure() {
-      this.Failure?
-    }
-    function PropagateFailure<U>(): Outcome<U>
-      requires IsFailure()
-    {
-      Failure(this.error) // this is Outcome<U>.Failure(...)
-    }
-    function Extract(): T
-      requires !IsFailure()
-    {
-      this.value
-    }
-  }
 
   /**
     * Mint maker, transformed to an exo class kit.
@@ -40,8 +24,8 @@ module {:options "--function-syntax:4"} ERTP {
       ensures issuer.ledger == ledger
     { issuer := anIssuer; ledger:= aLedger; }
 
-    function getBalance(): Outcome<Amount> reads ledger {
-      ledger.get(this)
+    function getBalance(): Amount reads ledger requires this in ledger.state {
+      ledger.get(this).value
     }
 
     /**
@@ -66,7 +50,7 @@ module {:options "--function-syntax:4"} ERTP {
       modifies ledger
       ensures p.IsFailure() || (p.Extract().issuer == issuer)
     {
-      var newPurse := issuer.makeEmptyPurse();
+      var newPurse := issuer.makeEmptyPurse(); // mintPayment
       assert newPurse.issuer == issuer;
       assert newPurse.ledger == issuer.ledger;
       var a :- newPurse.deposit(amount, this);
@@ -88,7 +72,7 @@ module {:options "--function-syntax:4"} ERTP {
 
     method update(x: object, a: Amount)
       modifies this`state
-      ensures x in state
+      ensures x in state && state[x] == a
     {
       state := state[x := a];
     }
@@ -114,9 +98,8 @@ module {:options "--function-syntax:4"} ERTP {
     method mintPurse(a: Amount) returns (p: Purse)
       modifies ledger
       requires issuer.ledger == ledger
-      ensures p.issuer == issuer
-      ensures p.ledger == ledger
-      ensures p in ledger.state
+      ensures p.issuer == issuer && p.ledger == ledger
+      ensures p in ledger.state && p.getBalance() == a
     {
       p := new Purse(issuer, ledger);
       ledger.update(p, a);
@@ -135,6 +118,7 @@ module {:options "--function-syntax:4"} ERTP {
       ensures p.issuer == this
       ensures p.ledger == ledger
       ensures p in ledger.state
+      ensures p.getBalance() == 0
     {
       p := new Purse(this, ledger);
       ledger.update(p, 0);
@@ -153,8 +137,9 @@ module {:options "--function-syntax:4"} ERTP {
 
   method Main() {
     var mint, issuer := makeIssuerKit();
+    print mint, issuer, "\n";
     var p1 := mint.mintPurse(10);
-    var p2 := p1.withdraw(3);
-    print mint, issuer, p1, p2, "\n";
+    // var p2 := p1.withdraw(3);
+    // print mint, issuer, p1, p2, "\n";
   }
 }
