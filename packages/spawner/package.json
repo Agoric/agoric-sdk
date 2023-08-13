@@ -31,9 +31,8 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@endo/eventual-send": "^0.17.3",
-    "@endo/import-bundle": "^0.3.5",
-    "@endo/marshal": "^0.8.6"
+    "@endo/far": "^0.2.19",
+    "@endo/import-bundle": "^0.3.5"
   },
   "devDependencies": {
     "@agoric/internal": "^0.3.2",

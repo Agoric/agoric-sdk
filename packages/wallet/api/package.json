@@ -16,7 +16,6 @@
   "devDependencies": {
     "@agoric/vats": "^0.15.1",
     "@endo/bundle-source": "^2.5.2",
-    "@endo/far": "^0.2.19",
     "@endo/init": "^0.5.57",
     "ava": "^5.3.0"
   },
@@ -33,6 +32,7 @@
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
     "@endo/eventual-send": "^0.17.3",
+    "@endo/far": "^0.2.19",
     "@endo/marshal": "^0.8.6",
     "@endo/nat": "^4.1.28",
     "@endo/promise-kit": "^0.2.57",

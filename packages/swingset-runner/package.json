@@ -31,6 +31,7 @@
     "@agoric/zoe": "^0.26.2",
     "@endo/bundle-source": "^2.5.2",
     "@endo/eventual-send": "^0.17.3",
+    "@endo/far": "^0.2.19",
     "@endo/init": "^0.5.57",
     "@endo/marshal": "^0.8.6",
     "@endo/nat": "^4.1.28",
