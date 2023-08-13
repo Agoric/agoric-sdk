@@ -1,16 +1,15 @@
 // @jessie-check
 
 import { Fail } from '@agoric/assert';
-import { E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
+import zcfBundle from '../bundles/bundle-contractFacet.js';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';
-import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef { import('@agoric/swingset-vat').EndoZipBase64Bundle} EndoZipBase64Bundle */

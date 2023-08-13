@@ -1,8 +1,7 @@
 import { assert, Fail } from '@agoric/assert';
-import { Far } from '@endo/far';
+import { Far, E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 
-import { E } from '@endo/far';
 import { atomicTransfer } from '../contractSupport/index.js';
 
 /**

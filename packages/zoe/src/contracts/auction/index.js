@@ -1,6 +1,5 @@
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
-import { Far } from '@endo/far';
 import { TimeMath, RelativeTimeShape } from '@agoric/time';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'

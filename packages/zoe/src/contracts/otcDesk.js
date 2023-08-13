@@ -1,6 +1,5 @@
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { assert } from '@agoric/assert';
-import { Far } from '@endo/far';
 import {
   offerTo,
   saveAllIssuers,

@@ -1,6 +1,5 @@
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '../../../src/index.js';
 
 export function buildRootObject(vatPowers, vatParameters) {

@@ -1,12 +1,11 @@
-import { Far } from '@endo/far';
-import { E } from '@endo/far';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { objectMap, allValues } from '@agoric/internal';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
+import { allValues, objectMap } from '@agoric/internal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { makeStoredPublisherKit } from '@agoric/notifier';
+import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { E, Far } from '@endo/far';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
