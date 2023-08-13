@@ -1,0 +1,14 @@
+// This file can contain .js-specific Typescript compiler config.
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "checkJs": false,
+    "maxNodeModuleJsDepth": 1,
+  },
+  "include": [
+    "calc-*.js",
+    "src/**/*.js",
+    "test/**/*.js",
+  ],
+}
