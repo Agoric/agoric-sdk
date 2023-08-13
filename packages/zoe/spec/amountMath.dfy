@@ -12,7 +12,7 @@ module {:options "--function-syntax:4"} M0 {
     function isGTE(x: Amount, y: Amount): bool
 
     ghost predicate obeys() {
-        // isEqual is a (total) equivalence relation
+      // isEqual is a (total) equivalence relation
       R.equivalence(isEqual) &&
 
       // isGTE is a partial order with empty as minimum
