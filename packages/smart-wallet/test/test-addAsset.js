@@ -358,9 +358,9 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const { consume, simpleProvideWallet, sendToBridge } = t.context;
 
   const bundles = {
-    game: await importSpec('./gameAssetContract.js').then(bundleSource),
-    centralSupply: await importSpec('@agoric/vats/src/centralSupply.js').then(
-      bundleSource,
+    game: bundleSource(importSpec('./gameAssetContract.js')),
+    centralSupply: bundleSource(
+      importSpec('@agoric/vats/src/centralSupply.js'),
     ),
   };
 

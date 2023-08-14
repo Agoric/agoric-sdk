@@ -29,7 +29,8 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
-import { BridgeId as BRIDGE_ID, resolvePathname } from '@agoric/internal';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,

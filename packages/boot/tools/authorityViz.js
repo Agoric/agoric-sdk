@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // @ts-check
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import '@endo/init';
 import process from 'process';
 
@@ -207,7 +206,9 @@ const { Fail, quote: q } = assert;
  * @param {typeof import('fs/promises').readFile} io.readFile
  */
 const loadConfig = async (specifier, { resolve, readFile }) => {
-  const fullPath = await resolvePathname(specifier, import.meta.url);
+  const fullPath = await resolve(specifier, import.meta.url).then(
+    u => new URL(u).pathname,
+  );
   typeof fullPath === 'string' || Fail`${q(specifier)}`;
   const txt = await readFile(fullPath, 'utf-8');
   typeof txt === 'string' || Fail`readFile ${q(fullPath)}`;
@@ -271,7 +272,8 @@ const run = async () => {
     stdout: process.stdout,
     fsp,
     meta: {
-      resolve: metaResolve.resolve,
+      resolve: (specifier, parent) =>
+        Promise.resolve(metaResolve.resolve(specifier, parent)),
       url: import.meta.url,
       load: specifier => import(specifier),
     },

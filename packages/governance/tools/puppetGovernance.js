@@ -1,3 +1,4 @@
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';

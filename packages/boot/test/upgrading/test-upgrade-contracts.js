@@ -2,9 +2,10 @@
  * @file cribbed from
  *   packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js
  */
+import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
-import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 /**
  * @type {import('ava').TestFn<

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { assert, Fail } from '@agoric/assert';
-import { makeTracer, resolvePathname } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { ManagerType } from '../typeGuards.js';
@@ -17,6 +17,7 @@ import {
 } from './bundle-handler.js';
 
 import '../types-ambient.js';
+import { resolvePathname } from '../../tools/paths.js';
 
 const trace = makeTracer('IniSwi', false);
 

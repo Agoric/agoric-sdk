@@ -14,6 +14,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
+    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vats": "^0.15.1",
     "@endo/bundle-source": "^2.5.2",
     "@endo/far": "^0.2.19",

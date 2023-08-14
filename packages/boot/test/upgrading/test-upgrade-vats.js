@@ -1,8 +1,9 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { BridgeId, resolvePathname } from '@agoric/internal';
+import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /**

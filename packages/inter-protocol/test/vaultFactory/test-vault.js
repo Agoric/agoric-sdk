@@ -8,7 +8,8 @@ import { E } from '@endo/eventual-send';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
-import { makeTracer, resolvePathname } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault', false);
