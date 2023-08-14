@@ -20,7 +20,7 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-test.only('storage keys', async t => {
+test('storage keys', async t => {
   const { aeth, run } = t.context;
   const d = await makeManagerDriver(t);
 
