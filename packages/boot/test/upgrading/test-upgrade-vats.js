@@ -51,9 +51,7 @@ const makeScenario = async (
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: await importSpec(
-          '@agoric/swingset-vat/tools/bootstrap-relay.js',
-        ),
+        sourceSpec: importSpec('@agoric/swingset-vat/tools/bootstrap-relay.js'),
       },
     },
     bundleCachePath: 'bundles',
@@ -76,7 +74,7 @@ const makeScenario = async (
 test('upgrade vat-board', async t => {
   const bundles = {
     board: {
-      sourceSpec: await importSpec('@agoric/vats/src/vat-board.js'),
+      sourceSpec: importSpec('@agoric/vats/src/vat-board.js'),
     },
   };
 
@@ -107,7 +105,7 @@ test('upgrade vat-board', async t => {
 test.skip('upgrade bootstrap vat', async t => {
   const bundles = {
     chain: {
-      sourceSpec: await importSpec('@agoric/vats/src/core/boot-chain.js'),
+      sourceSpec: importSpec('@agoric/vats/src/core/boot-chain.js'),
     },
   };
   // @ts-expect-error error in skipped test
@@ -134,7 +132,7 @@ test.skip('upgrade bootstrap vat', async t => {
 test('upgrade vat-bridge', async t => {
   const { bfile } = t.context;
   const bundles = {
-    bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
+    bridge: { sourceSpec: importSpec('@agoric/vats/src/vat-bridge.js') },
   };
   const devices = {
     bridge: { sourceSpec: bfile('./device-bridge.js') },
@@ -245,8 +243,8 @@ test('upgrade vat-bridge', async t => {
 test('upgrade vat-bank', async t => {
   const { bfile } = t.context;
   const bundles = {
-    bank: { sourceSpec: await importSpec('@agoric/vats/src/vat-bank.js') },
-    bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
+    bank: { sourceSpec: importSpec('@agoric/vats/src/vat-bank.js') },
+    bridge: { sourceSpec: importSpec('@agoric/vats/src/vat-bridge.js') },
     mint: { sourceSpec: bfile('./vat-mint.js') },
   };
   const devices = {
@@ -435,7 +433,7 @@ test('upgrade vat-bank', async t => {
 test('upgrade vat-priceAuthority', async t => {
   const bundles = {
     priceAuthority: {
-      sourceSpec: await importSpec('@agoric/vats/src/vat-priceAuthority.js'),
+      sourceSpec: importSpec('@agoric/vats/src/vat-priceAuthority.js'),
     },
   };
 
