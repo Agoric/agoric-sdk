@@ -16,7 +16,7 @@ import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 

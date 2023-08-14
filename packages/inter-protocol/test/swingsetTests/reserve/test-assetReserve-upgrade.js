@@ -3,7 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { assert } from '@agoric/assert';
 
 import { buildVatController } from '@agoric/swingset-vat';
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { arV1BundleName } from './bootstrap-assetReserve-upgrade.js';
 
 // so paths can be expresssed relative to this file and made absolute

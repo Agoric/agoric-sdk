@@ -1,7 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import * as ambientFs from 'fs';
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 
 const configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json';
 const noop = harden(() => {});

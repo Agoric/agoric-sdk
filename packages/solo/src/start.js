@@ -6,7 +6,7 @@ import path from 'path';
 import temp from 'temp';
 import { fork } from 'child_process';
 import { promisify } from 'util';
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 // import { createHash } from 'crypto';
 
 import createRequire from 'esm';

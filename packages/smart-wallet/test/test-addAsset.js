@@ -1,6 +1,6 @@
 // @ts-check
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';

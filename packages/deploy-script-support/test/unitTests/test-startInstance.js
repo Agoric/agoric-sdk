@@ -6,7 +6,7 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/far';
 
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { makeStartInstance } from '../../src/startInstance.js';
 
 /** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */

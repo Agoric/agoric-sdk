@@ -8,7 +8,7 @@ import { E } from '@endo/far';
 
 import '../../exported.js';
 
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('offer', async t => {

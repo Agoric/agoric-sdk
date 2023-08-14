@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import '@endo/init';
 import process from 'process';
 

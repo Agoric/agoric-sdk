@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import '../../exported.js';
 
-import { resolvePathname } from '@agoric/internal';
+import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
