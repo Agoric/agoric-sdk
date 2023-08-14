@@ -3,10 +3,9 @@ import fs from 'fs';
 import path from 'path';
 
 import { assert, Fail } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, resolvePathname } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
-import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { ManagerType } from '../typeGuards.js';
 import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
@@ -173,9 +172,10 @@ export function loadBasedir(basedir, options = {}) {
  *    determined.
  */
 async function resolveSpecFromConfig(referrer, specPath) {
+  // XXX could be synchronous
   await null;
   try {
-    return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
+    return resolvePathname(specPath, referrer);
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;

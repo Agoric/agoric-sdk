@@ -1,11 +1,9 @@
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
 const makeBundle = async sourceRoot => {
-  const url = importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
+  const path = resolvePathname(sourceRoot, import.meta.url);
   const contractBundle = await bundleSource(path);
   return contractBundle;
 };

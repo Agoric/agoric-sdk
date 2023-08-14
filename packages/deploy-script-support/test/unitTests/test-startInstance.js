@@ -1,12 +1,12 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import { makeIssuerKit } from '@agoric/ertp';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { E } from '@endo/far';
 
+import { resolvePathname } from '@agoric/internal';
 import { makeStartInstance } from '../../src/startInstance.js';
 
 /** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
@@ -20,14 +20,10 @@ test('startInstance', async t => {
 
   const zoe = makeZoeForTest();
 
-  const bundleUrl = new URL(
-    importMetaResolve(
-      '@agoric/zoe/src/contracts/automaticRefund.js',
-      import.meta.url,
-    ),
+  const bundlePath = resolvePathname(
+    '@agoric/zoe/src/contracts/automaticRefund.js',
+    import.meta.url,
   );
-  t.is(bundleUrl.protocol, 'file:');
-  const bundlePath = bundleUrl.pathname;
   const bundle = await bundleSource(bundlePath);
   const installation = E(zoe).install(bundle);
 

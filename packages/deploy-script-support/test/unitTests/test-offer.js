@@ -4,11 +4,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { E } from '@endo/far';
 
 import '../../exported.js';
 
+import { resolvePathname } from '@agoric/internal';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('offer', async t => {
@@ -38,11 +38,10 @@ test('offer', async t => {
   };
   const zoe = makeZoeForTest();
 
-  const bundleUrl = importMetaResolve(
+  const bundlePath = resolvePathname(
     '@agoric/zoe/src/contracts/automaticRefund.js',
     import.meta.url,
   );
-  const bundlePath = new URL(bundleUrl).pathname;
   const bundle = await bundleSource(bundlePath);
   const installation = E(zoe).install(bundle);
 

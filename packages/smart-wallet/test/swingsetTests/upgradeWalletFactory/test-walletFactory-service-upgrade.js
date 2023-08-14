@@ -1,8 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-
+import { resolvePathname } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
@@ -12,8 +11,7 @@ import {
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-const importSpec = spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const importSpec = spec => resolvePathname(spec, import.meta.url);
 
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -25,18 +23,14 @@ test('walletFactory service upgrade', async t => {
         // TODO refactor to use bootstrap-relay.js
         sourceSpec: bfile('bootstrap-walletFactory-service-upgrade.js'),
       },
-      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
+      zoe: { sourceSpec: importSpec('@agoric/vats/src/vat-zoe.js') },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importSpec(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-        ),
+        sourceSpec: importSpec('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       automaticRefund: {
-        sourceSpec: await importSpec(
-          '@agoric/zoe/src/contracts/automaticRefund.js',
-        ),
+        sourceSpec: importSpec('@agoric/zoe/src/contracts/automaticRefund.js'),
       },
       [wfV1BundleName]: {
         sourceSpec: bfile('../../../src/walletFactory.js'),

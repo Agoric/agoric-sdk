@@ -2,14 +2,18 @@
 /* global process */
 
 import { promises as fsAmbientPromises } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename } from 'path';
 import { inspect } from 'util';
 import childProcessAmbient from 'child_process';
 
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
+import {
+  BridgeId,
+  makeTracer,
+  resolvePathname,
+  VBankAccount,
+} from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
@@ -188,8 +192,7 @@ export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
 ) => {
-  const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
-    .pathname;
+  const fullPath = resolvePathname(specifier, import.meta.url);
   const config = /** @type {SwingSetConfig & { coreProposals?: any[] }} */ (
     await loadSwingsetConfigFile(fullPath)
   );

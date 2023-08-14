@@ -1491,11 +1491,10 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const url = importMetaResolve(
+  const path = resolvePathname(
     './continuingInvitationExample.js',
     import.meta.url,
   );
-  const path = new URL(url).pathname;
   const bundle = await bundleSource(path);
   const installation = await E(t.context.zoe).install(bundle);
   const { creatorInvitation, instance } = await E(t.context.zoe).startInstance(

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import url from 'url';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { E } from '@endo/eventual-send';
+import { resolvePathname } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 
 // TODO: CLI options to choose contracts
@@ -16,7 +16,7 @@ const contractRefs = [
   '../../vats/bundles/bundle-mintHolder.js',
 ];
 const contractRoots = contractRefs.map(ref =>
-  url.fileURLToPath(new URL(ref, import.meta.url)),
+  resolvePathname(ref, import.meta.url),
 );
 
 /** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */

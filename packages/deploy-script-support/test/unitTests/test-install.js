@@ -4,10 +4,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import '../../exported.js';
 
+import { resolvePathname } from '@agoric/internal';
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
@@ -27,11 +27,10 @@ test('install', async t => {
   const board = makeFakeBoard();
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
-  const resolvedUrl = importMetaResolve(
+  const resolvedPath = resolvePathname(
     '@agoric/zoe/src/contracts/automaticRefund.js',
     import.meta.url,
   );
-  const resolvedPath = new URL(resolvedUrl).pathname;
 
   const { installation, id } = await install(resolvedPath, 'automaticRefund');
   t.deepEqual(installation, addedInstallation);

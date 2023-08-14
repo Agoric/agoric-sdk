@@ -1,8 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { BridgeId } from '@agoric/internal';
+import { BridgeId, resolvePathname } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
@@ -15,8 +14,7 @@ const test = anyTest;
 
 const { Fail } = assert;
 
-const importSpec = spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const importSpec = spec => resolvePathname(spec, import.meta.url);
 
 const makeTestContext = async metaUrl => {
   const bfile = name => new URL(name, metaUrl).pathname;

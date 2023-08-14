@@ -1,22 +1,21 @@
 // @ts-check
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { E, Far } from '@endo/far';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { resolvePathname } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
+import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
+import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makePromiseKit } from '@endo/promise-kit';
+import { makeImportContext } from '../src/marshal-contexts.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
-import { makeImportContext } from '../src/marshal-contexts.js';
 
 const { Fail } = assert;
 
-const importSpec = spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const importSpec = spec => resolvePathname(spec, import.meta.url);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;

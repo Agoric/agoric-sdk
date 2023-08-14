@@ -1,3 +1,4 @@
+import url from 'node:url';
 import { resolve } from 'import-meta-resolve';
 
 /**
@@ -7,5 +8,5 @@ import { resolve } from 'import-meta-resolve';
  */
 export const resolvePathname = (specifier, parent) => {
   const href = resolve(specifier, parent);
-  return new URL(href).pathname;
+  return url.fileURLToPath(href);
 };
