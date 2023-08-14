@@ -16,7 +16,7 @@ import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { resolvePathname } from '@agoric/internal';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
@@ -140,23 +140,20 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractUrl = await importMetaResolve(
+  const automaticRefundContractRoot = resolvePathname(
     '@agoric/zoe/src/contracts/automaticRefund.js',
     import.meta.url,
   );
-  const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
-    .pathname;
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
   const automaticRefundInstallation = await E(zoe).install(
     automaticRefundBundle,
   );
 
   // Create Autoswap instance
-  const autoswapContractUrl = await importMetaResolve(
+  const autoswapContractRoot = resolvePathname(
     '@agoric/zoe/src/contracts/autoswap.js',
     import.meta.url,
   );
-  const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallation = await E(zoe).install(autoswapBundle);
 
@@ -1494,7 +1491,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const url = await importMetaResolve(
+  const url = importMetaResolve(
     './continuingInvitationExample.js',
     import.meta.url,
   );

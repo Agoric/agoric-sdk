@@ -16,7 +16,7 @@ const test = anyTest;
 const { Fail } = assert;
 
 const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 const makeTestContext = async metaUrl => {
   const bfile = name => new URL(name, metaUrl).pathname;

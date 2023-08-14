@@ -16,7 +16,7 @@ import { makeImportContext } from '../src/marshal-contexts.js';
 const { Fail } = assert;
 
 const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;

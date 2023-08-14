@@ -360,7 +360,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       bootMsg,
     };
     const getVatConfig = async () => {
-      const vatHref = await importMetaResolve(
+      const vatHref = importMetaResolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
         import.meta.url,

@@ -13,9 +13,8 @@ const test = anyTest;
 const makeTestContext = t => {
   /** @param {string} specifier */
   const loadConfig = async specifier => {
-    const fullPath = await importMetaResolve(specifier, import.meta.url).then(
-      u => new URL(u).pathname,
-    );
+    const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
+      .pathname;
     t.is(typeof fullPath, 'string');
     const txt = await ambientFs.promises.readFile(fullPath, 'utf-8');
     t.is(typeof txt, 'string');

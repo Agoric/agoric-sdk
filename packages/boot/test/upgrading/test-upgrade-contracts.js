@@ -22,7 +22,7 @@ const test = anyTest;
 const makeTestContext = async () => {
   const bfile = name => new URL(name, import.meta.url).pathname;
   const importSpec = spec =>
-    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+    new URL(importMetaResolve(spec, import.meta.url)).pathname;
   return { bfile, importSpec };
 };
 

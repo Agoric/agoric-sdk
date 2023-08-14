@@ -9,7 +9,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, resolvePathname } from '@agoric/internal';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVaultInterest', false);
@@ -41,8 +41,7 @@ const { zoe, feeMintAccessP: feeMintAccess } = await setUpZoeForTest({
  * @param {string} sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
-  const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);
-  const contractPath = new URL(contractUrl).pathname;
+  const contractPath = resolvePathname(sourceRoot, import.meta.url);
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(

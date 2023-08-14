@@ -35,7 +35,7 @@
     "@endo/far": "^0.2.19",
     "@endo/promise-kit": "^0.2.57",
     "@endo/stream": "^0.3.26",
-    "import-meta-resolve": "^2.2.1"
+    "import-meta-resolve": "^3.0.0"
   },
   "devDependencies": {
     "@agoric/assert": "^0.6.0",

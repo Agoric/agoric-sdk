@@ -13,7 +13,7 @@ import {
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */

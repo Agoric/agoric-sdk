@@ -48,7 +48,7 @@
     "@endo/marshal": "^0.8.6",
     "@endo/nat": "^4.1.28",
     "@endo/promise-kit": "^0.2.57",
-    "import-meta-resolve": "^2.2.1"
+    "import-meta-resolve": "^3.0.0"
   },
   "devDependencies": {
     "@endo/bundle-source": "^2.5.2",

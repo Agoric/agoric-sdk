@@ -1,8 +1,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
+import { resolvePathname } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { psmV1BundleName } from './bootstrap-psm-upgrade.js';
 
@@ -21,36 +21,36 @@ test('PSM service upgrade', async t => {
         sourceSpec: bfile('bootstrap-psm-upgrade.js'),
       },
       zoe: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/vats/src/vat-zoe.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/zoe/src/contractFacet/vatRoot.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       committee: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/governance/src/committee.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       puppetContractGovernor: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/governance/tools/puppetContractGovernor.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       [psmV1BundleName]: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/inter-protocol/src/psm/psm.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
     },
   };

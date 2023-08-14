@@ -188,9 +188,8 @@ export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
 ) => {
-  const fullPath = await importMetaResolve(specifier, import.meta.url).then(
-    u => new URL(u).pathname,
-  );
+  const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
+    .pathname;
   const config = /** @type {SwingSetConfig & { coreProposals?: any[] }} */ (
     await loadSwingsetConfigFile(fullPath)
   );

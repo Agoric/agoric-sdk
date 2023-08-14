@@ -4,6 +4,7 @@ import { assert } from '@agoric/assert';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { buildVatController } from '@agoric/swingset-vat';
+import { resolvePathname } from '@agoric/internal';
 import { arV1BundleName } from './bootstrap-assetReserve-upgrade.js';
 
 // so paths can be expresssed relative to this file and made absolute
@@ -21,36 +22,36 @@ test('assetReserve service upgrade', async t => {
         sourceSpec: bfile('bootstrap-assetReserve-upgrade.js'),
       },
       zoe: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/vats/src/vat-zoe.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/zoe/src/contractFacet/vatRoot.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       committee: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/governance/src/committee.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       puppetContractGovernor: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/governance/tools/puppetContractGovernor.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       [arV1BundleName]: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/inter-protocol/src/reserve/assetReserve.js',
           import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
     },
   };
