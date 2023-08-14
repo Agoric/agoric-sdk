@@ -169,12 +169,10 @@ export function loadBasedir(basedir, options = {}) {
  * @param {string} referrer  URL of file or directory containing the config file
  * @param {string} specPath  Path found in a `sourceSpec` or `bundleSpec` property
  *
- * @returns {Promise<string>} the absolute path corresponding to `specPath` if it can be
+ * @returns {string} the absolute path corresponding to `specPath` if it can be
  *    determined.
  */
-async function resolveSpecFromConfig(referrer, specPath) {
-  // XXX could be synchronous
-  await null;
+function resolveSpecFromConfig(referrer, specPath) {
   try {
     return resolvePathname(specPath, referrer);
   } catch (e) {
@@ -196,31 +194,27 @@ async function resolveSpecFromConfig(referrer, specPath) {
  * @param {boolean} expectParameters `true` if the entries should have parameters (for
  *    example, `true` for `vats` but `false` for bundles).
  */
-async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
-  const normalizeSpec = async (entry, key) => {
-    return resolveSpecFromConfig(referrer, entry[key]).then(spec => {
-      fs.existsSync(spec) ||
-        Fail`spec for ${entry[key]} does not exist: ${spec}`;
-      entry[key] = spec;
-    });
+function normalizeConfigDescriptor(desc, referrer, expectParameters) {
+  const normalizeSpec = (entry, key) => {
+    const spec = resolveSpecFromConfig(referrer, entry[key]);
+    fs.existsSync(spec) || Fail`spec for ${entry[key]} does not exist: ${spec}`;
+    entry[key] = spec;
   };
 
-  const jobs = [];
   if (desc) {
     for (const name of Object.keys(desc)) {
       const entry = desc[name];
       if ('sourceSpec' in entry) {
-        jobs.push(normalizeSpec(entry, 'sourceSpec'));
+        normalizeSpec(entry, 'sourceSpec');
       }
       if ('bundleSpec' in entry) {
-        jobs.push(normalizeSpec(entry, 'bundleSpec'));
+        normalizeSpec(entry, 'bundleSpec');
       }
       if (expectParameters && !entry.parameters) {
         entry.parameters = {};
       }
     }
   }
-  return Promise.all(jobs);
 }
 
 /**
@@ -235,6 +229,7 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
  *    invalid.
  */
 export async function loadSwingsetConfigFile(configPath) {
+  // XXX could be synchronous
   await null;
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -242,8 +237,8 @@ export async function loadSwingsetConfigFile(configPath) {
       configPath,
       `file:///${process.cwd()}/`,
     ).toString();
-    await normalizeConfigDescriptor(config.vats, referrer, true);
-    await normalizeConfigDescriptor(config.bundles, referrer, false);
+    normalizeConfigDescriptor(config.vats, referrer, true);
+    normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
     config.bootstrap || Fail`no designated bootstrap vat in ${configPath}`;
     (config.vats && config.vats[config.bootstrap]) ||
