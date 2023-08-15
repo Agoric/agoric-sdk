@@ -7,13 +7,13 @@ import { promises as fsPromises } from 'fs';
 import path from 'path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 const importConfig = configName =>
-  resolvePathname(`@agoric/vm-config/${configName}`, import.meta.url);
+  pkgAbsPath(`@agoric/vm-config/${configName}`);
 
 const test =
   /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (

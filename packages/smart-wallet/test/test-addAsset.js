@@ -2,7 +2,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
@@ -16,7 +16,7 @@ import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 
 const { Fail } = assert;
 
-const importSpec = spec => resolvePathname(spec, import.meta.url);
+const importSpec = spec => pkgAbsPath(spec);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;

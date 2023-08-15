@@ -16,13 +16,15 @@ import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
+const bfile = name => new URL(name, import.meta.url).pathname;
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
@@ -140,9 +142,8 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractRoot = resolvePathname(
+  const automaticRefundContractRoot = pkgAbsPath(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
   const automaticRefundInstallation = await E(zoe).install(
@@ -150,9 +151,8 @@ test.before(async t => {
   );
 
   // Create Autoswap instance
-  const autoswapContractRoot = resolvePathname(
+  const autoswapContractRoot = pkgAbsPath(
     '@agoric/zoe/src/contracts/autoswap.js',
-    import.meta.url,
   );
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallation = await E(zoe).install(autoswapBundle);
@@ -1491,10 +1491,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const path = resolvePathname(
-    './continuingInvitationExample.js',
-    import.meta.url,
-  );
+  const path = bfile('./continuingInvitationExample.js');
   const bundle = await bundleSource(path);
   const installation = await E(t.context.zoe).install(bundle);
   const { creatorInvitation, instance } = await E(t.context.zoe).startInstance(

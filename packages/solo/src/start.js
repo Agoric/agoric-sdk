@@ -6,7 +6,7 @@ import path from 'path';
 import temp from 'temp';
 import { fork } from 'child_process';
 import { promisify } from 'util';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 // import { createHash } from 'crypto';
 
 import createRequire from 'esm';
@@ -363,10 +363,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
   // This part only runs if there were wallet deploys to do.
   const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
 
-  const agoricCli = resolvePathname(
-    'agoric/src/entrypoint.js',
-    import.meta.url,
-  );
+  const agoricCli = pkgAbsPath('agoric/src/entrypoint.js', import.meta.url);
 
   // Use the same verbosity as our caller did for us.
   let verbosity;
@@ -476,7 +473,7 @@ const start = async (basedir, argv) => {
   await unlink('html/wallet').catch(_ => {});
 
   // Find the wallet.
-  const pjs = resolvePathname(`${wallet}/package.json`, import.meta.url);
+  const pjs = pkgAbsPath(`${wallet}/package.json`);
   const { 'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {} } =
     JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 

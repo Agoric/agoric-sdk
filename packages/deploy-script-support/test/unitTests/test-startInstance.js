@@ -6,7 +6,7 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/far';
 
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeStartInstance } from '../../src/startInstance.js';
 
 /** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
@@ -20,10 +20,7 @@ test('startInstance', async t => {
 
   const zoe = makeZoeForTest();
 
-  const bundlePath = resolvePathname(
-    '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
-  );
+  const bundlePath = pkgAbsPath('@agoric/zoe/src/contracts/automaticRefund.js');
   const bundle = await bundleSource(bundlePath);
   const installation = E(zoe).install(bundle);
 

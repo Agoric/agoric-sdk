@@ -1,7 +1,7 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import bundleSource from '@endo/bundle-source';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 
 import fs from 'fs';
 
@@ -9,7 +9,7 @@ const CONTRACT_FILES = ['simpleExchange.js'];
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const contractPath = resolvePathname(
+    const contractPath = pkgAbsPath(
       `@agoric/zoe/src/contracts/${contract}`,
       import.meta.url,
     );

@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
@@ -12,7 +12,7 @@ import { setUpGovernedContract } from '../../tools/puppetGovernance.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 
 const makeBundle = async sourceRoot => {
-  const path = resolvePathname(sourceRoot, import.meta.url);
+  const path = pkgAbsPath(sourceRoot);
   const contractBundle = await bundleSource(path);
   return contractBundle;
 };

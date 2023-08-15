@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { E } from '@endo/eventual-send';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 
 // TODO: CLI options to choose contracts
@@ -16,7 +16,7 @@ const contractRefs = [
   '../../vats/bundles/bundle-mintHolder.js',
 ];
 const contractRoots = contractRefs.map(ref =>
-  resolvePathname(ref, import.meta.url),
+  pkgAbsPath((ref, import.meta.url)),
 );
 
 /** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */

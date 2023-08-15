@@ -9,7 +9,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault', false);
@@ -42,7 +42,7 @@ trace('makeZoe');
  * @param {string} sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
-  const contractPath = resolvePathname(sourceRoot, import.meta.url);
+  const contractPath = pkgAbsPath(sourceRoot);
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(

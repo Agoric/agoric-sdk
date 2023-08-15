@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
 
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 import { faV1BundleName } from './bootstrap-fluxAggregator-service-upgrade.js';
 
@@ -21,35 +21,24 @@ test('fluxAggregator service upgrade', async t => {
         sourceSpec: bfile('bootstrap-fluxAggregator-service-upgrade.js'),
       },
       zoe: {
-        sourceSpec: resolvePathname(
-          '@agoric/vats/src/vat-zoe.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/vats/src/vat-zoe.js'),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: resolvePathname(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       committee: {
-        sourceSpec: resolvePathname(
-          '@agoric/governance/src/committee.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/governance/src/committee.js'),
       },
       puppetContractGovernor: {
-        sourceSpec: resolvePathname(
+        sourceSpec: pkgAbsPath(
           '@agoric/governance/tools/puppetContractGovernor.js',
-          import.meta.url,
         ),
       },
       [faV1BundleName]: {
-        sourceSpec: resolvePathname(
+        sourceSpec: pkgAbsPath(
           '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-          import.meta.url,
         ),
       },
     },

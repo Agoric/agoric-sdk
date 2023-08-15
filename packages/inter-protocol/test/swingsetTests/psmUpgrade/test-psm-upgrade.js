@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
 
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 import { psmV1BundleName } from './bootstrap-psm-upgrade.js';
 
@@ -21,36 +21,23 @@ test('PSM service upgrade', async t => {
         sourceSpec: bfile('bootstrap-psm-upgrade.js'),
       },
       zoe: {
-        sourceSpec: resolvePathname(
-          '@agoric/vats/src/vat-zoe.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/vats/src/vat-zoe.js'),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: resolvePathname(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       committee: {
-        sourceSpec: resolvePathname(
-          '@agoric/governance/src/committee.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/governance/src/committee.js'),
       },
       puppetContractGovernor: {
-        sourceSpec: resolvePathname(
+        sourceSpec: pkgAbsPath(
           '@agoric/governance/tools/puppetContractGovernor.js',
-          import.meta.url,
         ),
       },
       [psmV1BundleName]: {
-        sourceSpec: resolvePathname(
-          '@agoric/inter-protocol/src/psm/psm.js',
-          import.meta.url,
-        ),
+        sourceSpec: pkgAbsPath('@agoric/inter-protocol/src/psm/psm.js'),
       },
     },
   };

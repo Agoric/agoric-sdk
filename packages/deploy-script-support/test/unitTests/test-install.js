@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import '../../exported.js';
 
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
@@ -27,9 +27,8 @@ test('install', async t => {
   const board = makeFakeBoard();
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
-  const resolvedPath = resolvePathname(
+  const resolvedPath = pkgAbsPath(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
 
   const { installation, id } = await install(resolvedPath, 'automaticRefund');

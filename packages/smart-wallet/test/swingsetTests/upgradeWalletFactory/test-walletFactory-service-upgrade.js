@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
@@ -11,7 +11,7 @@ import {
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-const importSpec = spec => resolvePathname(spec, import.meta.url);
+const importSpec = spec => pkgAbsPath(spec);
 
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */

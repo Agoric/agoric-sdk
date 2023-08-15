@@ -1,7 +1,7 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import bundleSource from '@endo/bundle-source';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 
 import fs from 'fs';
 
@@ -30,9 +30,8 @@ const generateBundlesP = Promise.all(
     } else {
       ({ bundleName, contractPath } = settings);
     }
-    const sourcePath = resolvePathname(
+    const sourcePath = pkgAbsPath(
       `@agoric/zoe/src/contracts/${contractPath}.js`,
-      import.meta.url,
     );
     const bundle = await bundleSource(sourcePath);
     const obj = { bundle, bundleName };

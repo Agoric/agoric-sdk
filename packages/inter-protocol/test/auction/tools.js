@@ -5,7 +5,7 @@ import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-util
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
+import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -24,9 +24,8 @@ import { Far } from '@endo/marshal';
 
 /** @param {ZoeService} zoe */
 export const setUpInstallations = async zoe => {
-  const autoRefundPath = resolvePathname(
+  const autoRefundPath = pkgAbsPath(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative

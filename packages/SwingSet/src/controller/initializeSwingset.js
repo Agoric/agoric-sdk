@@ -17,7 +17,7 @@ import {
 } from './bundle-handler.js';
 
 import '../types-ambient.js';
-import { resolvePathname } from '../../tools/paths.js';
+import { pkgAbsPath } from '../../tools/paths.js';
 
 const trace = makeTracer('IniSwi', false);
 
@@ -174,7 +174,7 @@ export function loadBasedir(basedir, options = {}) {
  */
 function resolveSpecFromConfig(referrer, specPath) {
   try {
-    return resolvePathname(specPath, referrer);
+    return pkgAbsPath(specPath);
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;
