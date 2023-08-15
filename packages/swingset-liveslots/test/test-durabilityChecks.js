@@ -269,5 +269,5 @@ async function runDurabilityCheckTest(t, relaxDurabilityRules) {
   }
 }
 
-test('durability checks (strict)', t => runDurabilityCheckTest(t, false));
-test('durability checks (relaxed)', t => runDurabilityCheckTest(t, true));
+test('durability checks (strict)', runDurabilityCheckTest, false);
+test('durability checks (relaxed)', runDurabilityCheckTest, true);

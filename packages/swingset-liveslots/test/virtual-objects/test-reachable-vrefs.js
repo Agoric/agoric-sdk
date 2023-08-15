@@ -8,7 +8,7 @@ import { initEmpty } from '@agoric/store';
 import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-test('VOM tracks reachable vrefs', async t => {
+test('VOM tracks reachable vrefs', t => {
   const { vom, vrm, cm } = makeFakeVirtualStuff();
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;

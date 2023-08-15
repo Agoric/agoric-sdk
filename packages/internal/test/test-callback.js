@@ -188,7 +188,7 @@ test('far function callbacks', async t => {
   t.is(await p2r, '19go');
 });
 
-test('bad callbacks', async t => {
+test('bad callbacks', t => {
   t.throws(
     // @ts-expect-error deliberate: number is not assignable to function
     () => cb.makeFunctionCallback(42),

@@ -71,7 +71,7 @@ test('normalization', async t => {
   await manager.add('this,has,commas,', 'addr');
 
   await writesSettled();
-  t.deepEqual(
+  t.is(
     storage.data.get(`${HIGH_PRIORITY_SENDERS}.addr`),
     'something_with_spaces,something_with_spaces_and___,this_has_commas_',
   );

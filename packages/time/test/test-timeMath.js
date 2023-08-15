@@ -56,7 +56,7 @@ test('timeMath one label', t => {
 });
 
 test('timeMath no labels', t => {
-  t.deepEqual(TimeMath.addAbsRel(100n, 3n), 103n);
+  t.is(TimeMath.addAbsRel(100n, 3n), 103n);
 });
 
 // TODO: < should fail

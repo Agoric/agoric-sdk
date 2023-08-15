@@ -26,7 +26,7 @@ test('evaluate and issueCommand', async t => {
     `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,
   );
   await vat.close();
-  t.deepEqual(['Hello, World!'], opts.messages);
+  t.deepEqual(opts.messages, ['Hello, World!']);
 });
 
 test('evaluate until idle', async t => {
@@ -38,7 +38,7 @@ test('evaluate until idle', async t => {
     })();
   `);
   await vat.close();
-  t.deepEqual(['Hello, World!'], opts.messages);
+  t.deepEqual(opts.messages, ['Hello, World!']);
 });
 
 test('evaluate infinite loop', async t => {
@@ -49,7 +49,7 @@ test('evaluate infinite loop', async t => {
     code: ExitCode.E_TOO_MUCH_COMPUTATION,
     instanceOf: ErrorCode,
   });
-  t.deepEqual([], opts.messages);
+  t.deepEqual(opts.messages, []);
 });
 
 // TODO: Re-enable when this doesn't take 3.6 seconds.
@@ -69,7 +69,7 @@ test('evaluate promise loop', async t => {
       instanceOf: ErrorCode,
     },
   );
-  t.deepEqual([], opts.messages);
+  t.deepEqual(opts.messages, []);
 });
 
 test('evaluate and report', async t => {
@@ -84,7 +84,7 @@ test('evaluate and report', async t => {
   })()`);
   await vat.close();
   const { reply } = result;
-  t.deepEqual('hi', decode(reply));
+  t.is(decode(reply), 'hi');
 });
 
 test('evaluate error', async t => {
@@ -123,7 +123,7 @@ test('idle includes setImmediate too', async t => {
     send("turn 1");
   `);
   await vat.close();
-  t.deepEqual(['turn 1', 'turn 2', 'end of crank'], opts.messages);
+  t.deepEqual(opts.messages, ['turn 1', 'turn 2', 'end of crank']);
 });
 
 test('print - start compartment only', async t => {
@@ -172,7 +172,7 @@ test('run script until idle', async t => {
   const vat = await xsnap(opts);
   await vat.execute(ld.resolve('fixture-xsnap-script.js'));
   await vat.close();
-  t.deepEqual(['Hello, World!'], opts.messages);
+  t.deepEqual(opts.messages, ['Hello, World!']);
 });
 
 test('issueCommand is synchronous inside, async outside', async t => {
@@ -191,7 +191,7 @@ test('issueCommand is synchronous inside, async outside', async t => {
     issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
   `);
   await vat.close();
-  t.deepEqual([0, 2], messages);
+  t.deepEqual(messages, [0, 2]);
 });
 
 test('deliver a message', async t => {
@@ -211,7 +211,7 @@ test('deliver a message', async t => {
   await vat.issueStringCommand('1');
   await vat.issueStringCommand('2');
   await vat.close();
-  t.deepEqual([1, 2, 3], messages);
+  t.deepEqual(messages, [1, 2, 3]);
 });
 
 test('receive a response', async t => {
@@ -227,9 +227,9 @@ test('receive a response', async t => {
       return new TextEncoder().encode(String(number + 1)).buffer;
     };
   `);
-  t.is('1', (await vat.issueStringCommand('0')).reply);
-  t.is('2', (await vat.issueStringCommand('1')).reply);
-  t.is('3', (await vat.issueStringCommand('2')).reply);
+  t.is((await vat.issueStringCommand('0')).reply, '1');
+  t.is((await vat.issueStringCommand('1')).reply, '2');
+  t.is((await vat.issueStringCommand('2')).reply, '3');
   await vat.close();
 });
 
@@ -345,6 +345,7 @@ hashes.
 
     const hexHash = hash.digest('hex');
     t.log(`${description} produces golden hash ${hexHash}`);
+    // eslint-disable-next-line ava/assertion-arguments -- xxx, use macros
     t.snapshot(hexHash, description);
     t.deepEqual(messages, [], `${description} messages`);
   }
@@ -378,7 +379,7 @@ test('execute immediately after makeSnapshotStream', async t => {
   `);
   await vat1.close();
 
-  t.deepEqual(['before'], messages);
+  t.deepEqual(messages, ['before']);
 });
 
 function delay(ms) {

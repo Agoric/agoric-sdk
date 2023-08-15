@@ -25,7 +25,7 @@ test('repl: basic eval, eventual promise resolution', async t => {
   const { doEval, sentMessages, getHighestHistory } = make();
 
   let m = sentMessages.shift();
-  t.deepEqual(m.type, 'updateHistory');
+  t.is(m.type, 'updateHistory');
   t.is(sentMessages.length, 0);
 
   t.deepEqual(getHighestHistory(), { highestHistory: -1 });
@@ -62,13 +62,13 @@ test('repl: basic eval, eventual promise resolution', async t => {
   t.deepEqual(sentMessages, []);
 });
 
-test('repl: bigInts', async t => {
+test('repl: bigInts', t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
   t.deepEqual(doEval(0, '3n'), {});
   m = sentMessages.shift();
-  t.deepEqual(m.type, 'updateHistory');
+  t.is(m.type, 'updateHistory');
   t.is(sentMessages.length, 1);
 
   t.is(m.histnum, 0);
@@ -80,7 +80,7 @@ test('repl: bigInts', async t => {
   t.deepEqual(sentMessages, []);
 });
 
-test('repl: Symbols', async t => {
+test('repl: Symbols', t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
@@ -96,7 +96,7 @@ test('repl: Symbols', async t => {
   for (const [expr, display] of exprDisplays) {
     t.deepEqual(doEval(histnum, expr), {});
     m = sentMessages.shift();
-    t.deepEqual(m.type, 'updateHistory');
+    t.is(m.type, 'updateHistory');
     t.is(sentMessages.length, 1);
 
     t.is(m.histnum, histnum);
@@ -110,7 +110,7 @@ test('repl: Symbols', async t => {
   }
 });
 
-test('repl: unjsonables', async t => {
+test('repl: unjsonables', t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
@@ -119,7 +119,7 @@ test('repl: unjsonables', async t => {
   for (const valStr of ['NaN', 'Infinity', '-Infinity', 'undefined']) {
     t.deepEqual(doEval(histnum, valStr), {});
     m = sentMessages.shift();
-    t.deepEqual(m.type, 'updateHistory');
+    t.is(m.type, 'updateHistory');
     t.is(sentMessages.length, 1);
 
     t.is(m.histnum, histnum);
@@ -133,11 +133,11 @@ test('repl: unjsonables', async t => {
   }
 });
 
-test('repl: sloppyGlobals, home, endowments', async t => {
+test('repl: sloppyGlobals, home, endowments', t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
-  t.deepEqual(m.type, 'updateHistory');
+  t.is(m.type, 'updateHistory');
   t.is(sentMessages.length, 0);
 
   t.deepEqual(
@@ -170,7 +170,7 @@ test('repl: eventual send', async t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
-  t.deepEqual(m.type, 'updateHistory');
+  t.is(m.type, 'updateHistory');
   t.is(sentMessages.length, 0);
 
   t.deepEqual(doEval(0, 'target = harden({ foo(x) { return x+1; } })'), {});

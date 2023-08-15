@@ -55,7 +55,7 @@ provokeGC(globalThis.gc).then(data => issueCommand(new TextEncoder().encode(JSON
 `;
   await vat.evaluate(code);
   await vat.close();
-  t.truthy(opts.messages.length === 1, `xsnap didn't send response`);
+  t.true(opts.messages.length === 1, `xsnap didn't send response`);
   const { wrState, finalizerState } = JSON.parse(opts.messages[0]);
   // console.log([wrState, finalizerState]);
   t.is(wrState, 'weakref is dead');

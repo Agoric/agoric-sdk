@@ -27,12 +27,3 @@ test('import listIsEmpty (true)', t => {
   const op = 'listIsEmpty';
   t.truthy(importer[op]([]));
 });
-
-// TODO: This test throws because `lookupImport` does not exist. This
-// test needs to be fixed.
-test.skip('import not found', t => {
-  const importer = makeGoodImportManager();
-  t.throws(() => importer.lookupImport('emptyPixel'), {
-    message: /There is no entry for "c"./,
-  });
-});

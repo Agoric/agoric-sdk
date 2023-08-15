@@ -50,12 +50,17 @@ module.exports = {
       }
     : undefined,
   plugins: ['@typescript-eslint', 'prettier'],
-  extends: ['@agoric'],
+  extends: ['@agoric', 'plugin:ava/recommended'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
     '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
+
+    // We allow disabled tests in master
+    'ava/no-skip-test': 'off',
+    // Contrary to recommendation https://github.com/avajs/ava/blob/main/docs/recipes/typescript.md#typing-tcontext
+    'ava/use-test': 'off',
 
     // The rule is “safe await separator" which implements the architectural
     // goal of “clearly separate an async function's synchronous prelude from
