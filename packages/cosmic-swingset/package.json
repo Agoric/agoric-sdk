@@ -23,6 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
+    "@agoric/builders": "^0.1.0",
     "@agoric/cosmos": "^0.34.1",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/internal": "^0.3.2",
@@ -49,9 +50,6 @@
   "devDependencies": {
     "ava": "^5.3.0",
     "c8": "^7.13.0"
-  },
-  "peerDependencies": {
-    "@agoric/builders": "^0.1.0"
   },
   "publishConfig": {
     "access": "public"
