@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* avaXS - ava style test runner for XS
 
 Usage:

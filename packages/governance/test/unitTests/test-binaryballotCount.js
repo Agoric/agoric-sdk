@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';

@@ -1,4 +1,5 @@
 /* global process setTimeout */
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@endo/captp';

@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /** @file Bootstrap test integration vaults with smart-wallet */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
