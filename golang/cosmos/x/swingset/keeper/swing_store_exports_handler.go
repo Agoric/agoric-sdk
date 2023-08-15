@@ -72,7 +72,7 @@ import (
 // - OnExportRetrieved reads the export using the provider.
 //
 // Restoring a swing-store export does not have similar non-blocking requirements.
-// The component simply invokes swingStoreExportHandler.RestoreExport with a
+// The component simply invokes swingStoreExportsHandler.RestoreExport with a
 // SwingStoreExportProvider representing the swing-store export to
 // be restored, and RestoreExport will consume it and block until the JS side
 // has completed the restore before returning.
@@ -157,44 +157,81 @@ type swingStoreRestoreExportAction struct {
 	Args        [1]swingStoreImportOptions `json:"args"`
 }
 
-// SwingStoreExportModeCurrent represents the minimal set of artifacts needed
-// to operate a node.
-const SwingStoreExportModeCurrent = "current"
+const (
+	// SwingStoreArtifactModeNone means that no artifacts are part of the
+	// export / import.
+	SwingStoreArtifactModeNone = "none"
 
-// SwingStoreExportModeArchival represents the set of all artifacts needed to
-// not lose any historical state.
-const SwingStoreExportModeArchival = "archival"
+	// SwingStoreArtifactModeOperational represents the minimal set of artifacts
+	// needed to operate a node.
+	SwingStoreArtifactModeOperational = "operational"
 
-// SwingStoreExportModeDebug represents the maximal set of artifacts available
-// in the JS swing-store, including any kept around for debugging purposed only
-// (like previous XS heap snapshots)
-const SwingStoreExportModeDebug = "debug"
+	// SwingStoreArtifactModeReplay represents the set of artifacts needed to
+	// replay the current incarnation of every vat.
+	SwingStoreArtifactModeReplay = "replay"
+
+	// SwingStoreArtifactModeArchival represents the set of all artifacts
+	// providing all available historical state.
+	SwingStoreArtifactModeArchival = "archival"
+
+	// SwingStoreArtifactModeDebug represents the maximal set of artifacts
+	// available in the JS swing-store, including any kept around for debugging
+	// purposes only (like previous XS heap snapshots)
+	SwingStoreArtifactModeDebug = "debug"
+)
+
+const (
+	// SwingStoreExportDataModeSkip indicates "export data" should be excluded from
+	// an export. ArtifactMode cannot be "none" in this case.
+	SwingStoreExportDataModeSkip = "skip"
+
+	// SwingStoreExportDataModeRepairMetadata indicates the "export data" should be
+	// used to repair the metadata of an existing swing-store for an import
+	// operation. ArtifactMode must be "none" in this case.
+	SwingStoreExportDataModeRepairMetadata = "repair-metadata"
+
+	// SwingStoreExportDataModeAll indicates "export data" should be part of the
+	// export or import. For import, ArtifactMode cannot be "none".
+	SwingStoreExportDataModeAll = "all"
+)
 
 // SwingStoreExportOptions are configurable options provided to the JS swing-store export
 type SwingStoreExportOptions struct {
-	// The export mode can be "current", "archival" or "debug" (SwingStoreExportMode* const)
-	// See packages/cosmic-swingset/src/export-kernel-db.js initiateSwingStoreExport and
-	// packages/swing-store/src/swingStore.js makeSwingStoreExporter
-	ExportMode string `json:"exportMode,omitempty"`
-	// A flag indicating whether "export data" should be part of the swing-store export
-	// If false, the resulting SwingStoreExportProvider's GetExportDataReader
-	// will return nil
-	IncludeExportData bool `json:"includeExportData,omitempty"`
+	// ArtifactMode controls the set of artifacts that should be included in the
+	// swing-store export. Any SwingStoreArtifactMode* const value can be used
+	// (None, Operational, Replay, Archival, Debug).
+	// See packages/cosmic-swingset/src/export-kernel-db.js initiateSwingStoreExport
+	ArtifactMode string `json:"artifactMode,omitempty"`
+	// ExportDataMode selects whether to include "export data" in the swing-store
+	// export or not. Use the value SwingStoreExportDataModeSkip or
+	// SwingStoreExportDataModeAll. If "skip", the reader returned by
+	// SwingStoreExportProvider's GetExportDataReader will be nil.
+	ExportDataMode string `json:"exportDataMode,omitempty"`
 }
 
 // SwingStoreRestoreOptions are configurable options provided to the JS swing-store import
 type SwingStoreRestoreOptions struct {
-	// A flag indicating whether the swing-store import should attempt to load
-	// all historical artifacts available from the export provider
-	IncludeHistorical bool `json:"includeHistorical,omitempty"`
+	// ArtifactMode controls the set of artifacts that should be restored in
+	// swing-store. Any SwingStoreArtifactMode* const value can be used
+	// (None, Operational, Replay, Archival, Debug).
+	// See packages/cosmic-swingset/src/import-kernel-db.js performStateSyncImport
+	ArtifactMode string `json:"artifactMode,omitempty"`
+	// ExportDataMode selects the purpose of the restore, to recreate a
+	// swing-store (SwingStoreExportDataModeAll), or just to import missing
+	// metadata (SwingStoreExportDataModeRepairMetadata).
+	// If RepairMetadata, ArtifactMode should be SwingStoreArtifactModeNone.
+	// If All, ArtifactMode must be at least SwingStoreArtifactModeOperational.
+	ExportDataMode string `json:"exportDataMode,omitempty"`
 }
 
 type swingStoreImportOptions struct {
 	// ExportDir is the directory created by RestoreExport that JS swing-store
 	// should import from.
 	ExportDir string `json:"exportDir"`
-	// IncludeHistorical is a copy of SwingStoreRestoreOptions.IncludeHistorical
-	IncludeHistorical bool `json:"includeHistorical,omitempty"`
+	// ArtifactMode is a copy of SwingStoreRestoreOptions.ArtifactMode
+	ArtifactMode string `json:"artifactMode,omitempty"`
+	// ExportDataMode is a copy of SwingStoreRestoreOptions.ExportDataMode
+	ExportDataMode string `json:"exportDataMode,omitempty"`
 }
 
 var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
@@ -781,8 +818,9 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		BlockHeight: blockHeight,
 		Request:     restoreRequest,
 		Args: [1]swingStoreImportOptions{{
-			ExportDir:         exportDir,
-			IncludeHistorical: restoreOptions.IncludeHistorical,
+			ExportDir:      exportDir,
+			ArtifactMode:   restoreOptions.ArtifactMode,
+			ExportDataMode: restoreOptions.ExportDataMode,
 		}},
 	}
 

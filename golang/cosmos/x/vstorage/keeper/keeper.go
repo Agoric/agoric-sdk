@@ -181,6 +181,54 @@ func (k Keeper) ImportStorage(ctx sdk.Context, entries []*types.DataEntry) {
 	}
 }
 
+func getEncodedKeysWithPrefixFromIterator(iterator sdk.Iterator, prefix string) [][]byte {
+	keys := make([][]byte, 0)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		path := types.EncodedKeyToPath(key)
+		if strings.HasPrefix(path, prefix) {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
+
+// RemoveEntriesWithPrefix removes all storage entries starting with the
+// supplied pathPrefix, which may not be empty.
+// It has the same effect as listing children of the prefix and removing each
+// descendant recursively.
+func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
+	store := ctx.KVStore(k.storeKey)
+
+	if len(pathPrefix) == 0 {
+		panic("cannot remove all content")
+	}
+	if err := types.ValidatePath(pathPrefix); err != nil {
+		panic(err)
+	}
+	descendantPrefix := pathPrefix + types.PathSeparator
+
+	// since vstorage encodes keys with a prefix indicating the number of path
+	// elements, we cannot use a simple prefix iterator.
+	// Instead we iterate over the whole vstorage content and check
+	// whether each entry matches the descendantPrefix. This choice assumes most
+	// entries will be deleted. An alternative implementation would be to
+	// recursively list all children under the descendantPrefix, and delete them.
+
+	iterator := sdk.KVStorePrefixIterator(store, nil)
+
+	keys := getEncodedKeysWithPrefixFromIterator(iterator, descendantPrefix)
+
+	for _, key := range keys {
+		store.Delete(key)
+	}
+
+	// Update the prefix entry itself with SetStorage, which will effectively
+	// delete it and all necessary ancestors.
+	k.SetStorage(ctx, agoric.NewKVEntryWithNoValue(pathPrefix))
+}
+
 func (k Keeper) EmitChange(ctx sdk.Context, change *ProposedChange) {
 	if change.NewValue == change.ValueFromLastBlock {
 		// No change.
