@@ -1,3 +1,5 @@
+import { Fail, q } from '@agoric/assert';
+
 /**
  * @typedef { import('./snapStore').SnapStoreInternal } SnapStoreInternal
  * @typedef { import('./transcriptStore').TranscriptStoreInternal } TranscriptStoreInternal
@@ -8,7 +10,13 @@
  *    snapStore: SnapStoreInternal,
  *    bundleStore: BundleStoreInternal,
  * }} SwingStoreInternal
+ *
+ * @typedef {'operational' | 'replay' | 'archival' | 'debug'} ArtifactMode
  */
 
-// Ensure this is a module.
-export {};
+export const artifactModes = ['operational', 'replay', 'archival', 'debug'];
+export function validateArtifactMode(artifactMode) {
+  if (!artifactModes.includes(artifactMode)) {
+    Fail`invalid artifactMode ${q(artifactMode)}`;
+  }
+}

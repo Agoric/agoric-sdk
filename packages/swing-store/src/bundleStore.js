@@ -16,6 +16,7 @@ import { createSHA256 } from './hasher.js';
  */
 /**
  * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
  *
  * @typedef {{
  *   addBundle: (bundleID: string, bundle: Bundle) => void;
@@ -29,7 +30,7 @@ import { createSHA256 } from './hasher.js';
  *   repairBundleRecord: (key: string, value: string) => void,
  *   importBundleRecord: (key: string, value: string) => void,
  *   importBundle: (name: string, dataProvider: () => Promise<Buffer>) => Promise<void>,
- *   assertComplete: (level: 'operational') => void,
+ *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: () => AsyncIterableIterator<string>,
  *   getBundleIDs: () => IterableIterator<string>,
@@ -162,8 +163,8 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     return sqlGetPrunedBundles.all();
   }
 
-  function assertComplete(level) {
-    assert.equal(level, 'operational'); // for now
+  function assertComplete(checkMode) {
+    assert(checkMode !== 'debug', checkMode);
     const pruned = getPrunedBundles();
     if (pruned.length) {
       throw Fail`missing bundles for: ${pruned.join(',')}`;
