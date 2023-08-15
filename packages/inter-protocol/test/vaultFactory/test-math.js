@@ -1,4 +1,3 @@
-/* eslint-disable no-lone-blocks */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';

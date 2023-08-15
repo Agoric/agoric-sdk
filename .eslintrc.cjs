@@ -113,6 +113,9 @@ module.exports = {
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
+        // sometimes used for organizing logic
+        'no-lone-blocks': 'off',
+
         // NOTE: This rule is enabled for the repository in general.  We turn it
         // off for test code for now.
         '@jessie.js/safe-await-separator': 'off',
