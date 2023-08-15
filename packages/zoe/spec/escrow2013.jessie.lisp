@@ -110,3 +110,67 @@
                      (call (use "failOnly") ((get (use "b") "cancellationP"))))
                     )))))
           (return (use "decisionP"))))))))))))
+
+;;;;;;;;;;;;
+;; (use "id") -> id
+;; (importBind ((as "E" "E"))) -> (E)
+;; (const ((bind (def "id") RHS))) -> (defconst id = RHS)
+;; (lambda ((def "p1") (def "p2")) -> (lambda (p1 p2)
+;; (call x ...) -> (x ...)
+;;  oops: should be:
+;;    (call x (a b c)) (x a b c)
+;; (array (x y)) -> [x y]
+;; (arrow ((matchArray ((def "r1") (def "r2")))) ...) -> (arrow ([r1 r2]) ...)
+;; (arrow ((def "a1") (def "a2")) ...) -> (arrow (a1 a2) ...)
+;; (arrow ...) -> (lambda ) ???
+;; (block (stmts...)) -> stmts...
+;; (call (get O "p") args...) -> (callm O .p args...)
+;; (get O "p") -> (:get O .p)
+;; (data LIT) -> LIT
+;; (pre:! X) -> (not X)
+
+(module
+ ((import (E) "@endo/far")
+  (defconst Q = Promise)
+  (defconst Qjoin =
+    (harden
+     (lambda (p1 p2)
+       (callm (callm Q .all [p1 p2]) .then
+              (=> ([r1 r2])
+                  (if (not (callm Object .is r1 r2))
+                      (throw (Error "join failed")))
+                  (return r1))))))
+  (defconst transfer =
+    (harden
+     (lambda (decisionP srcPurseP dstPurseP amount)
+       (defconst makeEscrowPurseP =
+         (Qjoin (:get (callm E .get srcPurseP) .makePurse)
+                (:get (callm E .get dstPurseP) .makePurse)))
+     ;; v- runtime bound function prolly doesn't work with apply$
+       (defconst escrowPurseP = ((E makeEscrowPurseP) ))
+       (callm (Q (decisionP)) .then
+              (=> (_) (callm (E dstPurseP) .deposit amount escrowPurseP))
+              (=> (_) (callm (E srcPurseP) .deposit amount escrowPurseP)))
+       (return (callm (E escrowPurseP) .deposit amount srcPurseP)))))
+  (defconst failOnly =
+    (harden
+     (lambda (cancellationP)
+       (callm (Q cancellationP) .then
+              (=> (cancellation) (throw cancellation))))))
+  (defconst escrowExchange =
+    (harden
+     (lambda (a b)
+       (let (decide))
+       (defconst decisionP =
+         (callm Q .promise
+                (=> (resolve) (= decide resolve))))
+       (decide ;; <- runtime bound function prolly doesn't work with apply$
+        ((callm Q .race
+                [(callm Q .all
+                        [(transfer decisionP (:get a .moneySrcP)
+                                   (:get b .moneyDstP) (:get b .moneyNeeded))
+                         (transfer decisionP (:get b .stockSrcP)
+                                   (:get a .stockDstP) (:get a .stockNeeded))])
+                 (failOnly (:get a .cancellationP))
+                 (failOnly (:get b .cancellationP)) ])))
+       (return decisionP))))))
