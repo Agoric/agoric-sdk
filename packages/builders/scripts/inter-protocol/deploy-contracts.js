@@ -15,9 +15,7 @@ const contractRefs = [
   '../bundles/bundle-auctioneer.js',
   '../../vats/bundles/bundle-mintHolder.js',
 ];
-const contractRoots = contractRefs.map(ref =>
-  pkgAbsPath((ref, import.meta.url)),
-);
+const contractRoots = contractRefs.map(pkgAbsPath);
 
 /** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
 const provideWhen = async (store, key, make) => {
