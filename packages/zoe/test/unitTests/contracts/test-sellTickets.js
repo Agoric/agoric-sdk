@@ -6,7 +6,7 @@ import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';

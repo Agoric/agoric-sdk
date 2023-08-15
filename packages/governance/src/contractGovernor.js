@@ -1,5 +1,5 @@
 import { mustMatch } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { makeTracer } from '@agoric/internal';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';

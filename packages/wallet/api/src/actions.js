@@ -1,8 +1,7 @@
 // @ts-check
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+import { Far, E } from '@endo/far';
 
 export const makePaymentActions = ({
   getBrandRecord,

@@ -1,6 +1,6 @@
 import { allValues, objectMap } from '@agoric/internal';
 import { provide } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /**
  * SCALE: Only for low cardinality provisioning. Every value from init() will

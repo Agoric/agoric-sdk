@@ -1,7 +1,6 @@
 // @ts-nocheck
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 

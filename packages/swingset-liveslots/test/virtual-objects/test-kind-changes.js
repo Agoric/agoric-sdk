@@ -1,7 +1,7 @@
 // @ts-nocheck
 import test from 'ava';
 import '@endo/init/debug.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 import { makeLiveSlots } from '../../src/liveslots.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';

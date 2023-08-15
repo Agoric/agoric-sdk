@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { prepareErtpService } from '@agoric/ertp/test/swingsetTests/ertpService/vat-ertp-service.js';
 

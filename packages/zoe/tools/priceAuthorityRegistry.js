@@ -6,8 +6,7 @@ import {
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { provideLazy } from '@agoric/store';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { PriceAuthorityI } from '../src/contractSupport/priceAuthority.js';
 
 const { Fail } = assert;

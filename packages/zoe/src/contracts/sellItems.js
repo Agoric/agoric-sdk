@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';
 import {

@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/order
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { M } from '@agoric/store';
 import { kslot, kser } from './kmarshal.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';

@@ -1,6 +1,5 @@
-import { E } from '@endo/eventual-send';
+import { E, Far } from '@endo/far';
 import { assert } from '@agoric/assert';
-import { Far } from '@endo/marshal';
 import {
   offerTo,
   saveAllIssuers,

@@ -7,7 +7,7 @@ import {
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import {
   ChoiceMethod,
   coerceQuestionSpec,

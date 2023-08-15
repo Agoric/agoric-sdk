@@ -8,7 +8,7 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { M } from '@agoric/store';
 
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { assert } from '@agoric/assert';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';

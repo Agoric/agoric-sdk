@@ -1,7 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 import { claim, combine } from '../../src/legacy-payment-helpers.js';
 

@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { provideEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
 import {

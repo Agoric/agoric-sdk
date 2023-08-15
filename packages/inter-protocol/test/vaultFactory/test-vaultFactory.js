@@ -21,7 +21,7 @@ import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';

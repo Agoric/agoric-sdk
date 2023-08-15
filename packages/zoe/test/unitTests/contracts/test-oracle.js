@@ -4,10 +4,9 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { details as X, assert } from '@agoric/assert';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { E, Far } from '@endo/far';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';

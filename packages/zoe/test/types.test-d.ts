@@ -3,7 +3,7 @@
  * because "there is no JavaScript syntax for passing a a type argument"
  * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { expectType } from 'tsd';
 
 // 'prepare' is deprecated but still supported

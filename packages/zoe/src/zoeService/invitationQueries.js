@@ -1,7 +1,7 @@
 // @jessie-check
 
 import { assert, details as X } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 export const makeInvitationQueryFns = invitationIssuer => {
   /** @type {GetInvitationDetails} */

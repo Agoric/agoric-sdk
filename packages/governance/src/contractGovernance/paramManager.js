@@ -3,7 +3,7 @@ import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@endo/nat';
 import { keyEQ, makeScalarMapStore } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { assertAllDefined } from '@agoric/internal';
 import { ParamTypes } from '../constants.js';
 

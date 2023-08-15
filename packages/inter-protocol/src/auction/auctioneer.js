@@ -26,8 +26,7 @@ import {
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeOfferSpecShape, prepareAuctionBook } from './auctionBook.js';

@@ -7,8 +7,7 @@ import { makeNameHubKit } from '@agoric/vats';
 import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 
 const trace = makeTracer('BootWFUpg', false);

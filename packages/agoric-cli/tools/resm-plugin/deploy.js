@@ -1,5 +1,5 @@
 /* globals setTimeout */
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 const PONG_TIMEOUT = 10_000;
 

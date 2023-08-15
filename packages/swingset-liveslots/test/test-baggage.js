@@ -1,7 +1,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { vstr } from './util.js';
 import { kunser } from './kmarshal.js';

@@ -32,6 +32,7 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@endo/exo": "^0.2.3",
+    "@endo/far": "^0.2.19",
     "@endo/marshal": "^0.8.6",
     "@endo/pass-style": "^0.1.4",
     "@endo/patterns": "^0.2.3"

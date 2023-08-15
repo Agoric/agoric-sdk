@@ -4,8 +4,7 @@ import {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { TimeMath } from '@agoric/time';
 
 import { natSafeMath } from '../src/contractSupport/index.js';

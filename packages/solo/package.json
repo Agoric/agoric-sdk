@@ -38,6 +38,7 @@
     "@agoric/wallet": "^0.18.3",
     "@endo/captp": "^3.1.2",
     "@endo/eventual-send": "^0.17.3",
+    "@endo/far": "^0.2.19",
     "@endo/import-bundle": "^0.3.5",
     "@endo/init": "^0.5.57",
     "@endo/marshal": "^0.8.6",

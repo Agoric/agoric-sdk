@@ -2,7 +2,7 @@
 import '@endo/init/debug.js';
 
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { setTimeout } from 'timers';
 
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';

@@ -3,7 +3,7 @@ import {
   makeNotifierFromSubscriber,
   subscribeEach,
 } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { diff } from 'deep-object-diff';
 
 import { makeTracer } from '@agoric/internal';

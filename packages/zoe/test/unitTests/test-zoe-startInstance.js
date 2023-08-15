@@ -3,7 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AssetKind } from '@agoric/ertp';
 import { getStringMethodNames } from '@agoric/internal';
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { Far, passStyleOf } from '@endo/marshal';
 import path from 'path';
 import { setup } from './setupBasicMints.js';

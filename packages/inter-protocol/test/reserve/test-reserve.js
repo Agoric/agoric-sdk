@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';

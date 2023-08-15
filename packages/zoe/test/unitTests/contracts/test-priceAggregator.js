@@ -4,21 +4,20 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/far';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { TimeMath } from '@agoric/time';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { TimeMath } from '@agoric/time';
 
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 import '../../../src/contracts/exported.js';
 import {

@@ -5,7 +5,7 @@ import path from 'path';
 
 import '../../../../exported.js';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 

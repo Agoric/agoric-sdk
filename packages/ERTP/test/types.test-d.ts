@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { expectType } from 'tsd';
 
 import { AmountMath, AssetKind } from '../src/index.js';

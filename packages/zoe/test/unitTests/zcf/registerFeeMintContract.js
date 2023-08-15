@@ -1,6 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 /**
  * Tests zcf.registerFeeMint

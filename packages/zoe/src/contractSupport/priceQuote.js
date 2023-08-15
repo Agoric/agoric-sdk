@@ -2,7 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@endo/nat';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 const { Fail } = assert;
 

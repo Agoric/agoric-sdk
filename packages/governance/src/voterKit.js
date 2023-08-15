@@ -1,6 +1,6 @@
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { PositionShape, QuestionHandleShape } from './typeGuards.js';
 
 const VoterI = M.interface('voter', {

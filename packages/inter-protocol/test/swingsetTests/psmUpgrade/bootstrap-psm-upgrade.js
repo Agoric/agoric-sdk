@@ -10,8 +10,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { scale6, withAmountUtils } from '../../supports.js';
 

@@ -10,7 +10,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { NonNullish } from '@agoric/assert';

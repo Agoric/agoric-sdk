@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 

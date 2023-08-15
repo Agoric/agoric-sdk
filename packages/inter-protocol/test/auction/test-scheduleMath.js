@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { TimeMath } from '@agoric/time';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import '@agoric/zoe/exported.js';
 
 import { NonNullish } from '@agoric/assert';

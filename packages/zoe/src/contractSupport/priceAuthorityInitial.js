@@ -1,8 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 import { makeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';

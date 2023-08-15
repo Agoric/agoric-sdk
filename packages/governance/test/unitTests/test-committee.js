@@ -7,8 +7,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import path from 'path';
 
 import {

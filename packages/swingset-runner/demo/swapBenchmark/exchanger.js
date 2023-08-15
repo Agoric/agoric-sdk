@@ -1,7 +1,6 @@
 // @ts-check
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { showPurseBalance, setupPurses } from './helpers.js';

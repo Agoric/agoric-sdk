@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 // Eventually will be importable from '@agoric/zoe-contract-support'

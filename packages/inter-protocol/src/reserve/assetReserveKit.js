@@ -8,7 +8,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { quote: q } = assert;

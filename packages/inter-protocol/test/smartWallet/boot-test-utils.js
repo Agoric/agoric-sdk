@@ -9,7 +9,7 @@ import {
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
 import { bundles, devices } from './devices.js';

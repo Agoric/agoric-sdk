@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
 

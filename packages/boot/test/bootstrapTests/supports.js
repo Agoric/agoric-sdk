@@ -15,7 +15,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeQueue } from '@endo/stream';
 import { TimeMath } from '@agoric/time';
 import {

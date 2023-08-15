@@ -2,7 +2,7 @@
 
 import '@agoric/zoe/exported.js';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /**
  * @param {ZCF} zcf

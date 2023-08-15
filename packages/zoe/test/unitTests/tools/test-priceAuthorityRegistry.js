@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { providePriceAuthorityRegistry } from '../../../tools/priceAuthorityRegistry.js';
 import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 

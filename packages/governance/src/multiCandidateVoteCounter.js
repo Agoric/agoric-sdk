@@ -1,5 +1,5 @@
 import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   buildQuestion,

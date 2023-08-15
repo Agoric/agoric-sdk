@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { SECOND_PRICE } from '@agoric/zoe/src/contracts/auction/index.js';

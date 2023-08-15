@@ -22,7 +22,7 @@ import {
 } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@endo/nat';

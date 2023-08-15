@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, vatParameters) {
   const ourThing = Far('thing-like', {

@@ -7,8 +7,7 @@ import {
   calculateMedian,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { isNat, Nat } from '@endo/nat';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 

@@ -1,7 +1,6 @@
 import '../src/types-ambient.js';
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 
 // eslint-disable-next-line no-unused-vars
 import { Fail } from '@agoric/assert';

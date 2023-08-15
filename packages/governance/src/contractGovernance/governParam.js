@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 import { mustMatch, keyEQ } from '@agoric/store';
 

@@ -1,5 +1,5 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
