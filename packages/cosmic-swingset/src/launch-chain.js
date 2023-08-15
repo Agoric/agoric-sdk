@@ -1,5 +1,10 @@
 // @ts-check
 /* global process */
+
+// XXX the JSON configs specify that launching the chain requires @agoric/builders,
+// so let the JS tooling know about it by importing it here.
+import '@agoric/builders';
+
 import anylogger from 'anylogger';
 
 import { E } from '@endo/far';
