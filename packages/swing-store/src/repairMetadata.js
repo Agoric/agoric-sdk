@@ -60,6 +60,8 @@ export async function doRepairMetadata(internal, exporter) {
   }
 
   // and do a completeness check
-  assertComplete(internal, 'operational');
+  /** @type { import('./internal.js').ArtifactMode } */
+  const artifactMode = 'operational';
+  assertComplete(internal, artifactMode);
   await exporter.close();
 }
