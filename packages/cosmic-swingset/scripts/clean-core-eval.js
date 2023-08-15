@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';

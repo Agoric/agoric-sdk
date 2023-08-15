@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { AssetKind } from '@agoric/ertp';
 import { assertPattern, mustMatch } from '@agoric/store';
 import {

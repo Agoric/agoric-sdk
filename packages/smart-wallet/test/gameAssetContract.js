@@ -1,4 +1,5 @@
 /** @file illustrates using non-vbank assets */
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 // deep import to avoid dependency on all of ERTP, vat-data
 import { AmountShape } from '@agoric/ertp';

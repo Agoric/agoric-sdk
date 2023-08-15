@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the wallet internals without dependency on the ag-solo on

@@ -1,5 +1,6 @@
 // @ts-check
 // @jessie-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';

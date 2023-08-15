@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { Far } from '@endo/marshal';
 import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';

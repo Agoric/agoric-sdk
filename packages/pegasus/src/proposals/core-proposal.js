@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E, Far } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
