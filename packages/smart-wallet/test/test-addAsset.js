@@ -1,10 +1,11 @@
 // @ts-check
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { resolvePathname } from '@agoric/swingset-vat/tools/paths.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
@@ -358,8 +359,8 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const { consume, simpleProvideWallet, sendToBridge } = t.context;
 
   const bundles = {
-    game: bundleSource(importSpec('./gameAssetContract.js')),
-    centralSupply: bundleSource(
+    game: await bundleSource(importSpec('./gameAssetContract.js')),
+    centralSupply: await bundleSource(
       importSpec('@agoric/vats/src/centralSupply.js'),
     ),
   };
