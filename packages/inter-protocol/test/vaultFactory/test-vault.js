@@ -9,9 +9,9 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 
-const vaultRoot = './vault-contract-wrapper.js';
+const bfile = name => new URL(name, import.meta.url).pathname;
+const contractPath = bfile('./vault-contract-wrapper.js');
 const trace = makeTracer('TestVault', false);
 
 /**
@@ -37,12 +37,8 @@ const { zoe, feeMintAccessP: feeMintAccess } = await setUpZoeForTest({
 });
 trace('makeZoe');
 
-/**
- * @param {ERef<ZoeService>} zoeP
- * @param {string} sourceRoot
- */
-async function launch(zoeP, sourceRoot) {
-  const contractPath = pkgAbsPath(sourceRoot);
+/** @param {ERef<ZoeService>} zoeP */
+async function launch(zoeP) {
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(
@@ -75,7 +71,7 @@ async function launch(zoeP, sourceRoot) {
   };
 }
 
-const helperContract = launch(zoe, vaultRoot);
+const helperContract = launch(zoe);
 
 test('first', async t => {
   const { creatorSeat, creatorFacet } = await helperContract;
