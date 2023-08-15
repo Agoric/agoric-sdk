@@ -11,7 +11,7 @@ import pathPower from 'path';
 import { fileURLToPath } from 'url';
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { makeAggregateError } from '@agoric/internal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { openSwingStore, makeSwingStoreExporter } from '@agoric/swing-store';
@@ -19,28 +19,34 @@ import { openSwingStore, makeSwingStoreExporter } from '@agoric/swing-store';
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
 
-/** @typedef {'current' | 'archival' | 'debug'} SwingStoreExportMode */
-
 // ExportManifestFilename is the manifest filename which must be synchronized
 // with the golang SwingStoreExportsHandler in golang/cosmos/x/swingset/keeper/swing_store_exports_handler.go
 export const ExportManifestFileName = 'export-manifest.json';
 
-// eslint-disable-next-line jsdoc/require-returns-check
+/** @typedef {'current' | 'archival' | 'debug'} SwingStoreExportMode */
+
 /**
- * @param {string | undefined} mode
- * @returns {asserts mode is SwingStoreExportMode | undefined}
+ * @param {SwingStoreExportMode | undefined} exportMode
+ * @returns {import("@agoric/swing-store").ArtifactMode}
  */
-const checkExportMode = mode => {
-  switch (mode) {
+const getArtifactModeFromExportMode = exportMode => {
+  switch (exportMode) {
     case 'current':
-    case 'archival':
-    case 'debug':
     case undefined:
-      break;
+      return 'operational';
+    case 'archival':
+      return 'archival';
+    case 'debug':
+      return 'debug';
     default:
-      throw Fail`Invalid value ${mode} for "export-mode"`;
+      throw Fail`Invalid value ${q(exportMode)} for "export-mode"`;
   }
 };
+
+/**
+ * @type {(exportMode: string | undefined) => asserts exportMode is SwingStoreExportMode}
+ */
+const checkExportMode = getArtifactModeFromExportMode;
 
 /**
  * A state-sync manifest is a representation of the information contained in a
@@ -116,10 +122,7 @@ export const initiateSwingStoreExport = (
     log = console.log,
   },
 ) => {
-  const effectiveExportMode = exportMode ?? 'current';
-  if (effectiveExportMode !== 'current' && !includeExportData) {
-    throw Fail`Must include export data if export mode not "current"`;
-  }
+  const artifactMode = getArtifactModeFromExportMode(exportMode);
 
   /** @type {number | undefined} */
   let savedBlockHeight;
@@ -140,7 +143,7 @@ export const initiateSwingStoreExport = (
     const manifestFile = await open(manifestPath, 'wx');
     cleanup.push(async () => manifestFile.close());
 
-    const swingStoreExporter = makeExporter(stateDir, exportMode);
+    const swingStoreExporter = makeExporter(stateDir, { artifactMode });
     cleanup.push(async () => swingStoreExporter.close());
 
     const { hostStorage } = openDB(stateDir);
