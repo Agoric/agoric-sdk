@@ -9,7 +9,6 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';
@@ -19,8 +18,10 @@ const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
 const contractGovernorRoot = '../../src/contractGovernor.js';
 const committeeRoot = '../../src/committee.js';
 
+const bfile = name => new URL(name, import.meta.url).pathname;
+
 const makeBundle = async sourceRoot => {
-  const path = pkgAbsPath(sourceRoot);
+  const path = bfile(sourceRoot);
   const contractBundle = await bundleSource(path);
   return contractBundle;
 };

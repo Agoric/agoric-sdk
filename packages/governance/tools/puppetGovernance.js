@@ -3,17 +3,15 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
-const makeBundle = async sourceRoot => {
-  const path = pkgAbsPath(sourceRoot);
-  const contractBundle = await bundleSource(path);
-  return contractBundle;
-};
+const bfile = name => new URL(name, import.meta.url).pathname;
 
-// makeBundle is a slow step, so we do it once for all the tests.
-const contractGovernorBundleP = makeBundle('./puppetContractGovernor.js');
+// bundling is a slow step, so we do it once for all the tests.
+const contractGovernorBundleP = bundleSource(
+  bfile('./puppetContractGovernor.js'),
+);
 // could be called fakeCommittee. It's used as a source of invitations only
-const autoRefundBundleP = makeBundle(
-  '@agoric/zoe/src/contracts/automaticRefund.js',
+const autoRefundBundleP = bundleSource(
+  pkgAbsPath('@agoric/zoe/src/contracts/automaticRefund.js'),
 );
 
 /**  */
