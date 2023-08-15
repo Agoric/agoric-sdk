@@ -16,7 +16,7 @@ import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 
 const { Fail } = assert;
 
-const importSpec = spec => pkgAbsPath(spec);
+const bfile = name => new URL(name, import.meta.url).pathname;
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;
@@ -359,9 +359,9 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const { consume, simpleProvideWallet, sendToBridge } = t.context;
 
   const bundles = {
-    game: await bundleSource(importSpec('./gameAssetContract.js')),
+    game: await bundleSource(bfile('./gameAssetContract.js')),
     centralSupply: await bundleSource(
-      importSpec('@agoric/vats/src/centralSupply.js'),
+      pkgAbsPath('@agoric/vats/src/centralSupply.js'),
     ),
   };
 
