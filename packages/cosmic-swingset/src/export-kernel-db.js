@@ -23,30 +23,64 @@ import { makeProcessValue } from './helpers/process-value.js';
 // with the golang SwingStoreExportsHandler in golang/cosmos/x/swingset/keeper/swing_store_exports_handler.go
 export const ExportManifestFileName = 'export-manifest.json';
 
-/** @typedef {'current' | 'archival' | 'debug'} SwingStoreExportMode */
+/**
+ * @typedef {'none'  // No artifacts included
+ *  | import("@agoric/swing-store").ArtifactMode
+ * } SwingStoreArtifactMode
+ */
 
 /**
- * @param {SwingStoreExportMode | undefined} exportMode
+ * @typedef {'skip'      // Do not include any "export data" (artifacts only)
+ *   | 'repair-metadata' // Add missing artifact metadata (import only)
+ *   | 'all'             // Include all export data, create new swing-store on import
+ * } SwingStoreExportDataMode
+ */
+
+/**
+ * @param {SwingStoreArtifactMode | undefined} artifactMode
  * @returns {import("@agoric/swing-store").ArtifactMode}
  */
-const getArtifactModeFromExportMode = exportMode => {
-  switch (exportMode) {
-    case 'current':
-    case undefined:
+export const getEffectiveArtifactMode = artifactMode => {
+  switch (artifactMode) {
+    case 'none':
+    case 'operational':
       return 'operational';
+    case undefined:
+    case 'replay':
+      return 'replay';
     case 'archival':
-      return 'archival';
     case 'debug':
-      return 'debug';
+      return artifactMode;
     default:
-      throw Fail`Invalid value ${q(exportMode)} for "export-mode"`;
+      throw Fail`Invalid value ${q(artifactMode)} for "artifact-mode"`;
   }
 };
 
+/** @type {(artifactMode: string | undefined) => asserts artifactMode is SwingStoreArtifactMode | undefined} */
+export const checkArtifactMode = getEffectiveArtifactMode;
+
 /**
- * @type {(exportMode: string | undefined) => asserts exportMode is SwingStoreExportMode}
+ * @param {string | undefined} mode
+ * @param {boolean} [isImport]
+ * @returns {asserts mode is SwingStoreExportDataMode | undefined}
  */
-const checkExportMode = getArtifactModeFromExportMode;
+export const checkExportDataMode = (mode, isImport = false) => {
+  switch (mode) {
+    case 'skip':
+    case undefined:
+      break;
+    case 'all':
+      break;
+    case 'repair-metadata': {
+      if (isImport) {
+        break;
+      }
+      // Fall through
+    }
+    default:
+      throw Fail`Invalid value ${q(mode)} for "export-data-mode"`;
+  }
+};
 
 /**
  * A state-sync manifest is a representation of the information contained in a
@@ -60,7 +94,7 @@ const checkExportMode = getArtifactModeFromExportMode;
  *
  * @typedef {object} StateSyncManifest
  * @property {number} blockHeight the block height corresponding to this export
- * @property {SwingStoreExportMode} [mode]
+ * @property {SwingStoreArtifactMode} [artifactMode]
  * @property {string} [data] file name containing the swingStore "export data"
  * @property {Array<[artifactName: string, fileName: string]>} artifacts
  *   List of swingStore export artifacts which can be validated by the export data
@@ -79,8 +113,8 @@ const checkExportMode = getArtifactModeFromExportMode;
  * @property {string} stateDir the directory containing the SwingStore to export
  * @property {string} exportDir the directory in which to place the exported artifacts and manifest
  * @property {number} [blockHeight] block height to check for
- * @property {SwingStoreExportMode} [exportMode] whether to include historical or debug artifacts in the export
- * @property {boolean} [includeExportData] whether to include an artifact for the export data in the export
+ * @property {SwingStoreArtifactMode} [artifactMode] the level of artifacts to include in the export
+ * @property {SwingStoreExportDataMode} [exportDataMode] include a synthetic artifact for the export data in the export
  */
 
 /**
@@ -96,10 +130,12 @@ export const validateExporterOptions = options => {
   options.blockHeight == null ||
     typeof options.blockHeight === 'number' ||
     Fail`optional blockHeight option not a number`;
-  checkExportMode(options.exportMode);
-  options.includeExportData == null ||
-    typeof options.includeExportData === 'boolean' ||
-    Fail`optional includeExportData option not a boolean`;
+  checkArtifactMode(options.artifactMode);
+  checkExportDataMode(options.exportDataMode);
+
+  options.includeExportData === undefined ||
+    Fail`deprecated includeExportData option found`;
+  options.exportMode === undefined || Fail`deprecated exportMode option found`;
 };
 
 /**
@@ -113,7 +149,7 @@ export const validateExporterOptions = options => {
  * @returns {StateSyncExporter}
  */
 export const initiateSwingStoreExport = (
-  { stateDir, exportDir, blockHeight, exportMode, includeExportData },
+  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode },
   {
     fs: { open, writeFile },
     pathResolve,
@@ -122,8 +158,7 @@ export const initiateSwingStoreExport = (
     log = console.log,
   },
 ) => {
-  const artifactMode = getArtifactModeFromExportMode(exportMode);
-
+  const effectiveArtifactMode = getEffectiveArtifactMode(artifactMode);
   /** @type {number | undefined} */
   let savedBlockHeight;
 
@@ -143,7 +178,9 @@ export const initiateSwingStoreExport = (
     const manifestFile = await open(manifestPath, 'wx');
     cleanup.push(async () => manifestFile.close());
 
-    const swingStoreExporter = makeExporter(stateDir, { artifactMode });
+    const swingStoreExporter = makeExporter(stateDir, {
+      artifactMode: effectiveArtifactMode,
+    });
     cleanup.push(async () => swingStoreExporter.close());
 
     const { hostStorage } = openDB(stateDir);
@@ -153,7 +190,9 @@ export const initiateSwingStoreExport = (
 
     if (blockHeight) {
       blockHeight === savedBlockHeight ||
-        Fail`DB at unexpected block height ${savedBlockHeight} (expected ${blockHeight})`;
+        Fail`DB at unexpected block height ${q(savedBlockHeight)} (expected ${q(
+          blockHeight,
+        )})`;
     }
 
     abortIfStopped();
@@ -163,11 +202,11 @@ export const initiateSwingStoreExport = (
     /** @type {StateSyncManifest} */
     const manifest = {
       blockHeight: savedBlockHeight,
-      mode: exportMode,
+      artifactMode: artifactMode || effectiveArtifactMode,
       artifacts: [],
     };
 
-    if (includeExportData) {
+    if (exportDataMode === 'all') {
       log?.(`Writing Export Data`);
       const fileName = `export-data.jsonl`;
       const exportDataFile = await open(pathResolve(exportDir, fileName), 'wx');
@@ -181,14 +220,16 @@ export const initiateSwingStoreExport = (
     }
     abortIfStopped();
 
-    for await (const artifactName of swingStoreExporter.getArtifactNames()) {
-      abortIfStopped();
-      log?.(`Writing artifact: ${artifactName}`);
-      const artifactData = swingStoreExporter.getArtifact(artifactName);
-      // Use artifactName as the file name as we trust swingStore to generate
-      // artifact names that are valid file names.
-      await writeFile(pathResolve(exportDir, artifactName), artifactData);
-      manifest.artifacts.push([artifactName, artifactName]);
+    if (artifactMode !== 'none') {
+      for await (const artifactName of swingStoreExporter.getArtifactNames()) {
+        abortIfStopped();
+        log?.(`Writing artifact: ${artifactName}`);
+        const artifactData = swingStoreExporter.getArtifact(artifactName);
+        // Use artifactName as the file name as we trust swingStore to generate
+        // artifact names that are valid file names.
+        await writeFile(pathResolve(exportDir, artifactName), artifactData);
+        manifest.artifacts.push([artifactName, artifactName]);
+      }
     }
 
     await manifestFile.write(JSON.stringify(manifest, null, 2));
@@ -272,11 +313,22 @@ export const main = async (
     /** @type {string} */ (processValue.getFlag('export-dir', '.')),
   );
 
-  const includeExportData = processValue.getBoolean({
-    flagName: 'include-export-data',
-  });
-  const exportMode = processValue.getFlag('export-mode');
-  checkExportMode(exportMode);
+  const artifactMode = /** @type {SwingStoreArtifactMode | undefined} */ (
+    processValue.getFlag('artifact-mode')
+  );
+  checkArtifactMode(artifactMode);
+
+  const exportDataMode = processValue.getFlag('export-data-mode');
+  checkExportDataMode(exportDataMode);
+
+  if (
+    processValue.getBoolean({ flagName: 'include-export-data' }) !== undefined
+  ) {
+    throw Fail`deprecated "include-export-data" options, use "export-data-mode" instead`;
+  }
+  if (processValue.getFlag('export-mode') !== undefined) {
+    throw Fail`deprecated "export-mode" options, use "artifact-mode" instead`;
+  }
 
   const checkBlockHeight = processValue.getInteger({
     flagName: 'check-block-height',
@@ -293,8 +345,8 @@ export const main = async (
       stateDir,
       exportDir,
       blockHeight: checkBlockHeight,
-      exportMode,
-      includeExportData,
+      artifactMode,
+      exportDataMode,
     },
     {
       fs,
@@ -335,7 +387,7 @@ export const main = async (
  * @returns {StateSyncExporter}
  */
 export const spawnSwingStoreExport = (
-  { stateDir, exportDir, blockHeight, exportMode, includeExportData },
+  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode },
   { fork, verbose },
 ) => {
   const args = ['--state-dir', stateDir, '--export-dir', exportDir];
@@ -344,12 +396,12 @@ export const spawnSwingStoreExport = (
     args.push('--check-block-height', String(blockHeight));
   }
 
-  if (exportMode) {
-    args.push('--export-mode', exportMode);
+  if (artifactMode) {
+    args.push('--artifact-mode', artifactMode);
   }
 
-  if (includeExportData) {
-    args.push('--include-export-data');
+  if (exportDataMode) {
+    args.push('--export-data-mode', exportDataMode);
   }
 
   if (verbose) {
@@ -401,7 +453,7 @@ export const spawnSwingStoreExport = (
       }
       default: {
         // @ts-expect-error exhaustive check
-        Fail`Unexpected ${msg.type} message`;
+        Fail`Unexpected ${q(msg.type)} message`;
       }
     }
   };
