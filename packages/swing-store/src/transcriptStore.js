@@ -11,6 +11,8 @@ import { createSHA256 } from './hasher.js';
  */
 
 /**
+ * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
+ *
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
  *   rolloverSpan: (vatID: string) => number,
@@ -24,10 +26,10 @@ import { createSHA256 } from './hasher.js';
  * @typedef {{
  *   exportSpan: (name: string) => AsyncIterableIterator<Uint8Array>
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
- *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
+ *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
  *   importTranscriptSpanRecord: (key: string, value: string) => void,
- *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { includeHistorical: boolean }) => Promise<void>,
- *   assertComplete: (level: 'operational') => void,
+ *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
+ *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairTranscriptSpanRecord: (key: string, value: string) => void,
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
  * }} TranscriptStoreInternal
@@ -331,12 +333,24 @@ export function makeTranscriptStore(
     ORDER BY vatID, startPos
   `);
 
+  const sqlGetIncarnationSpanMetadata = db.prepare(`
+    SELECT vatID, startPos, endPos, hash, isCurrent, incarnation
+    FROM transcriptSpans
+    WHERE vatID=? AND incarnation=?
+    ORDER BY vatID, startPos
+  `);
+
   const sqlGetCurrentSpanMetadata = db.prepare(`
     SELECT vatID, startPos, endPos, hash, isCurrent, incarnation
     FROM transcriptSpans
     WHERE isCurrent = 1
     ORDER BY vatID, startPos
   `);
+
+  function dbRecToExportRec(dbRec) {
+    const { vatID, startPos, endPos, hash, isCurrent, incarnation } = dbRec;
+    return spanRec(vatID, startPos, endPos, hash, isCurrent, incarnation);
+  }
 
   /**
    * Obtain artifact metadata records for spans contained in this store.
@@ -360,63 +374,77 @@ export function makeTranscriptStore(
    * replay will never be required or because such replay would be prohibitively
    * expensive regardless of need and therefor other repair strategies employed.
    *
+   * The only code path which could use 'false' would be `swingstore.dump()`,
+   * which takes the same flag.
+   *
    * @yields {readonly [key: string, value: string]}
    * @returns {IterableIterator<readonly [key: string, value: string]>}
    *    An iterator over pairs of [spanMetadataKey, rec], where `rec` is a
    *    JSON-encoded metadata record for the span named by `spanMetadataKey`.
    */
   function* getExportRecords(includeHistorical = true) {
-    const sql = includeHistorical
-      ? sqlGetAllSpanMetadata
-      : sqlGetCurrentSpanMetadata;
-    for (const rec of sql.iterate()) {
-      const { vatID, startPos, endPos, hash, isCurrent, incarnation } = rec;
-      const exportRec = spanRec(
-        vatID,
-        startPos,
-        endPos,
-        hash,
-        isCurrent,
-        incarnation,
-      );
-      yield [spanMetadataKey(rec), JSON.stringify(exportRec)];
+    if (includeHistorical) {
+      for (const rec of sqlGetAllSpanMetadata.iterate()) {
+        yield [spanMetadataKey(rec), JSON.stringify(dbRecToExportRec(rec))];
+      }
+    } else {
+      for (const rec of sqlGetCurrentSpanMetadata.iterate()) {
+        yield [spanMetadataKey(rec), JSON.stringify(dbRecToExportRec(rec))];
+      }
     }
   }
 
-  // 'position' is not recycled across incarnations, so strictly
-  // speaking this query doesn't need to filter on 'incarnation = ?',
-  // but this will catch problems like items with incorrect or missing
-  // incarnation values
-
-  const sqlCountPopulatedSpanItems = db.prepare(`
+  const sqlCountSpanItems = db.prepare(`
     SELECT COUNT(*) FROM transcriptItems
-      WHERE vatID = ? AND incarnation = ? AND position >= ? AND position < ?
+      WHERE vatID = ? AND position >= ? AND position < ?
   `);
-  sqlCountPopulatedSpanItems.pluck();
+  sqlCountSpanItems.pluck();
 
   /**
    * Obtain artifact names for spans contained in this store.
    *
-   * @param {boolean} includeHistorical If true, include all spans that are
-   * present in the store regardless of their currency; if false, only include
-   * the current span for each vat.
-   *
+   * @param {ArtifactMode} artifactMode Control which artifacts should be exported.
+   *   At 'operational', only include current spans. At 'replay',
+   *   include all spans of the current incarnation for each vat. At
+   *   'archival' and 'debug', include all spans.
    * @yields {string}
    * @returns {AsyncIterableIterator<string>}  An iterator over the names of all the artifacts requested
    */
-  async function* getArtifactNames(includeHistorical) {
-    const sql = includeHistorical
-      ? sqlGetAllSpanMetadata
-      : sqlGetCurrentSpanMetadata;
-    for (const rec of sql.iterate()) {
-      const { vatID, incarnation, startPos, endPos } = rec;
-      if (
-        !sqlCountPopulatedSpanItems.get(vatID, incarnation, startPos, endPos)
-      ) {
-        continue;
+  async function* getArtifactNames(artifactMode) {
+    // for all non-'debug' modes, the exporter asserts that all
+    // requested items are present (i.e. the artifacts will be
+    // complete), so we don't need to check that ourselves
+    if (artifactMode === 'operational') {
+      for (const rec of sqlGetCurrentSpanMetadata.iterate()) {
+        yield spanArtifactName(rec);
       }
-
-      yield spanArtifactName(rec);
+    } else if (artifactMode === 'replay') {
+      for (const curRec of sqlGetCurrentSpanMetadata.iterate()) {
+        const { vatID, incarnation } = curRec;
+        for (const rec of sqlGetIncarnationSpanMetadata.iterate(
+          vatID,
+          incarnation,
+        )) {
+          yield spanArtifactName(rec);
+        }
+      }
+    } else if (artifactMode === 'archival') {
+      // everything
+      for (const rec of sqlGetAllSpanMetadata.iterate()) {
+        yield spanArtifactName(rec);
+      }
+    } else if (artifactMode === 'debug') {
+      // everything that is a complete span
+      for (const rec of sqlGetAllSpanMetadata.iterate()) {
+        const { vatID, startPos, endPos } = rec;
+        const count = sqlCountSpanItems.get(vatID, startPos, endPos);
+        if (count !== endPos - startPos) {
+          // skip incomplete spans, because the exporter did not
+          // already do a completeness check in 'debug' mode
+          continue;
+        }
+        yield spanArtifactName(rec);
+      }
     }
   }
 
@@ -590,19 +618,27 @@ export function makeTranscriptStore(
       WHERE vatID = ? AND startPos = ?
   `);
 
+  const sqlGetStartOfIncarnation = db.prepare(`
+    SELECT startPos
+      FROM transcriptSpans
+      WHERE vatID=? AND incarnation=?
+      ORDER BY startPos ASC LIMIT 1
+  `);
+  sqlGetStartOfIncarnation.pluck();
+
   /**
    * Import a transcript span from another store.
    *
    * @param {string} name  Artifact Name of the transcript span
    * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of transcript byte chunks
    * @param {object} options
-   * @param {boolean} options.includeHistorical
+   * @param {ArtifactMode} options.artifactMode
    *
    * @returns {Promise<void>}
    */
   async function populateTranscriptSpan(name, makeChunkIterator, options) {
     ensureTxn();
-    const { includeHistorical } = options;
+    const { artifactMode } = options;
     const parts = name.split('.');
     const [type, vatID, rawStartPos, rawEndPos] = parts;
     // prettier-ignore
@@ -614,10 +650,22 @@ export function makeTranscriptStore(
     const metadata =
       sqlGetSpanMetadataFor.get(vatID, startPos) ||
       Fail`no metadata for transcript span ${name}`;
-    if (!metadata.isCurrent && !includeHistorical) {
-      return; // ignore old spans
-    }
     assert.equal(metadata.endPos, endPos);
+
+    if (artifactMode === 'operational') {
+      if (!metadata.isCurrent) {
+        return; // ignore old spans
+      }
+    }
+    if (artifactMode === 'replay') {
+      // ignore spans that aren't for the current incarnation
+      const { incarnation } = sqlGetCurrentSpanBounds.get(vatID);
+      const incStart = sqlGetStartOfIncarnation.get(vatID, incarnation);
+      if (startPos < incStart) {
+        return;
+      }
+    }
+    // 'archival' and 'debug' modes accept all spans
 
     const artifactChunks = await makeChunkIterator();
     const inStream = Readable.from(artifactChunks);
@@ -679,19 +727,36 @@ export function makeTranscriptStore(
     }
   }
 
-  function assertComplete(level) {
-    assert.equal(level, 'operational'); // for now
-    // every 'isCurrent' transcript span must have all items
+  function assertComplete(checkMode) {
+    assert(checkMode !== 'debug', checkMode);
     for (const rec of sqlGetCurrentSpanMetadata.iterate()) {
       const { vatID, startPos, endPos, incarnation } = rec;
-      const count = sqlCountPopulatedSpanItems.get(
-        vatID,
-        incarnation,
-        startPos,
-        endPos,
-      );
-      if (count !== endPos - startPos) {
-        throw Fail`incomplete current transcript span: ${count} items, ${rec}`;
+
+      if (checkMode === 'operational') {
+        // at 'operational', every 'isCurrent' transcript span must
+        // have all items
+        const count = sqlCountSpanItems.get(vatID, startPos, endPos);
+        if (count !== endPos - startPos) {
+          throw Fail`incomplete current transcript span: ${count} items, ${rec}`;
+        }
+      } else if (checkMode === 'replay') {
+        // at 'replay', every vat's current incarnation must be fully
+        // populated (which implies 'operational')
+        const incStart = sqlGetStartOfIncarnation.get(vatID, incarnation);
+        const incCount = sqlCountSpanItems.get(vatID, incStart, endPos);
+        if (incCount !== endPos - incStart) {
+          throw Fail`incomplete current incarnation transcript: ${incCount} items`;
+        }
+      } else if (checkMode === 'archival') {
+        // at 'archival', every incarnation must be fully populated,
+        // which means position=0 up through endPos-1 (which implies
+        // 'replay')
+        const arcCount = sqlCountSpanItems.get(vatID, 0, endPos);
+        if (arcCount !== endPos) {
+          throw Fail`incomplete archival transcript: ${arcCount} vs ${endPos}`;
+        }
+      } else {
+        throw Fail`unknown checkMode ${checkMode}`;
       }
     }
   }
