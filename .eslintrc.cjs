@@ -1,8 +1,5 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-env node */
-const process = require('process');
-
-const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
 const deprecatedForLoanContract = [
   ['currency', 'brand, asset or another descriptor'],
@@ -34,26 +31,24 @@ const deprecatedTerminology = Object.fromEntries(
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
-  parserOptions: lintTypes
-    ? {
-        // this is not yet compatible with eslint lsp so it's conditioned on AGORIC_ESLINT_TYPES
-        EXPERIMENTAL_useProjectService: true,
-        sourceType: 'module',
-        project: [
-          './packages/*/tsconfig.json',
-          './packages/*/tsconfig.json',
-          './packages/wallet/*/tsconfig.json',
-          './tsconfig.json',
-        ],
-        tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs'],
-      }
-    : undefined,
+  parserOptions: {
+    // this is not yet compatible with eslint lsp so it's conditioned on AGORIC_ESLINT_TYPES
+    EXPERIMENTAL_useProjectService: true,
+    sourceType: 'module',
+    project: [
+      './packages/*/tsconfig.json',
+      './packages/*/tsconfig.json',
+      './packages/wallet/*/tsconfig.json',
+      './tsconfig.json',
+    ],
+    tsconfigRootDir: __dirname,
+    extraFileExtensions: ['.cjs'],
+  },
   plugins: ['@typescript-eslint', 'prettier'],
   extends: ['@agoric'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
-    '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
+    '@typescript-eslint/no-floating-promises': 'warn',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
 
