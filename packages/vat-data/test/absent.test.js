@@ -1,4 +1,3 @@
-import '@endo/init/debug.js';
 import test from 'ava';
 
 /* global globalThis */

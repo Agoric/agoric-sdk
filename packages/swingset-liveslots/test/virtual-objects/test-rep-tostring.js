@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 // this sets process.env.DEBUG = 'label-instances'
 import './set-debug-label-instances.js';
 

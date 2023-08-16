@@ -1,7 +1,6 @@
 // @ts-nocheck
 /* global WeakRef */
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { Far } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';

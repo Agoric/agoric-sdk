@@ -1,6 +1,5 @@
 // @ts-check
 
-import '@endo/init/debug.js';
 import { Buffer } from 'node:buffer';
 
 import test from 'ava';

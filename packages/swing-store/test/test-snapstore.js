@@ -1,6 +1,5 @@
 // @ts-check
 
-import '@endo/init/debug.js';
 import { Buffer } from 'node:buffer';
 import zlib from 'zlib';
 import sqlite3 from 'better-sqlite3';

@@ -1,5 +1,4 @@
 /* global performance */
-import '@endo/init/debug.js';
 
 import test from 'ava';
 

@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { Far } from '@endo/marshal';
 import { setupTestLiveslots } from './liveslots-helpers.js';

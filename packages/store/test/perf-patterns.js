@@ -1,5 +1,3 @@
-import '@endo/init/debug.js';
-
 import { Far, makeTagged } from '@endo/marshal';
 import {
   makeCopyBag,

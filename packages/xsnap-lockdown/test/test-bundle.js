@@ -1,4 +1,3 @@
-import '@endo/init/debug.js';
 import test from 'ava';
 import fs from 'fs';
 import crypto from 'crypto';
