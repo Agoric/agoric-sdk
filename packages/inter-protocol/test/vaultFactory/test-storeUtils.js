@@ -1,4 +1,3 @@
-// Consider ses-ava once https://github.com/endojs/endo/issues/1235 is resolved
 import test from 'ava';
 
 import { AmountMath } from '@agoric/ertp';
