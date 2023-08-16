@@ -7,32 +7,15 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
+ * @type {import('ava').TestFn<{}>}
  */
 const test = anyTest;
 
-/**
- * WARNING: uses ambient authority of import.meta.url
- *
- * We aim to use ambient authority only in test.before(); splitting out
- * makeTestContext() lets us type t.context.
- */
-const makeTestContext = async () => {
-  const bfile = name => new URL(name, import.meta.url).pathname;
-  const importSpec = spec =>
-    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
-  return { bfile, importSpec };
-};
-
-test.before(async t => {
-  t.context = await makeTestContext();
-});
+const bfile = name => new URL(name, import.meta.url).pathname;
+const importSpec = spec =>
+  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
 test('upgrade mintHolder', async t => {
-  const { bfile, importSpec } = t.context;
-
   /** @type {SwingSetConfig} */
   const config = harden({
     bootstrap: 'bootstrap',

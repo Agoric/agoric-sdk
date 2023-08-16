@@ -40,14 +40,15 @@ export const makeLiquidationTestContext = async t => {
 
   // has to be late enough for agoricNames data to have been published
   /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */
-  const agoricNamesRemotes = {};
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
+    swingsetTestKit.storage,
+  );
   const refreshAgoricNamesRemotes = () => {
     Object.assign(
       agoricNamesRemotes,
       makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage),
     );
   };
-  refreshAgoricNamesRemotes();
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
