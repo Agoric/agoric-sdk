@@ -1,5 +1,4 @@
 // @ts-check
-import '@endo/init';
 import test from 'ava';
 
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';

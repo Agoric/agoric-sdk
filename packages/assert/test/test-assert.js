@@ -1,5 +1,3 @@
-import '@endo/init';
-// eslint-disable-next-line import/no-unresolved -- lint error not worth solving; test passes
 import test from 'ava';
 
 import { NonNullish, Fail } from '../src/assert.js';
