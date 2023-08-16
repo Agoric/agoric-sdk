@@ -11,7 +11,7 @@ const { quote: q, Fail } = assert;
  * @param {(k: K, v: V) => void} assertKVOkToSet
  * @param {(k: K) => void} [assertKeyOkToDelete]
  * @param {string} [keyName]
- * @returns {WeakMapStore<K,V>}
+ * @returns {WeakMapStore<K, V>}
  */
 export const makeWeakMapStoreMethods = (
   jsmap,
@@ -75,22 +75,22 @@ export const makeWeakMapStoreMethods = (
 };
 
 /**
- * This is a *scalar* mapStore in that the keys can only be atomic values:
- * primitives or remotables.
- * Other mapStores will accept, for example, copyArrays and
- * copyRecords as keys and look them up based on equality of their contents.
+ * This is a _scalar_ mapStore in that the keys can only be atomic values:
+ * primitives or remotables. Other mapStores will accept, for example,
+ * copyArrays and copyRecords as keys and look them up based on equality of
+ * their contents.
  *
  * TODO For now, this scalarWeakMap accepts only remotables, reflecting the
- * constraints of the underlying JavaScript WeakMap it uses internally. But
- * it should accept the primitives as well, storing them in a separate internal
+ * constraints of the underlying JavaScript WeakMap it uses internally. But it
+ * should accept the primitives as well, storing them in a separate internal
  * map. What makes it "weak" is that it provides no API for enumerating what's
- * there. Though note that this would only enables collection of the
- * remotables, since the other primitives may always reappear.
+ * there. Though note that this would only enables collection of the remotables,
+ * since the other primitives may always reappear.
  *
  * @template K,V
  * @param {string} [tag] - tag for debugging
  * @param {StoreOptions} [options]
- * @returns {WeakMapStore<K,V>}
+ * @returns {WeakMapStore<K, V>}
  */
 export const makeScalarWeakMapStore = (
   tag = 'key',
