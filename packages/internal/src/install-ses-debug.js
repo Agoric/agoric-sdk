@@ -3,4 +3,4 @@
 // The setting below are *unsafe* and should not be used in contact with
 // genuinely malicious code.
 
-export * from '@endo/init/debug.js';
+import '@endo/init/debug.js';

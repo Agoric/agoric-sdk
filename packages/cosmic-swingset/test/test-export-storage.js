@@ -1,5 +1,4 @@
 // @ts-check
-import '@endo/init';
 import test from 'ava';
 import { exportStorage } from '../src/export-storage.js';
 

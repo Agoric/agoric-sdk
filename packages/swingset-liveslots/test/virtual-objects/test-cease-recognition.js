@@ -1,7 +1,6 @@
 // @ts-nocheck
 /* global FinalizationRegistry WeakRef */
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { buildSyscall } from '../liveslots-helpers.js';
 import { makeVirtualReferenceManager } from '../../src/virtualReferences.js';

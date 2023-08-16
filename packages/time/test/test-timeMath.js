@@ -1,6 +1,3 @@
-import '@endo/init';
-
-// eslint-disable-next-line import/order
 import test from 'ava';
 import { Far } from '@endo/far';
 import { TimeMath } from '../src/timeMath.js';

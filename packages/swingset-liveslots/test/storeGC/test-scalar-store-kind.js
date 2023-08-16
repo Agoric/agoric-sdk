@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { buildRootObject, mapRef } from '../gc-helpers.js';

@@ -1,5 +1,4 @@
 /* global setTimeout */
-import '@endo/init/debug.js';
 import test from 'ava';
 
 // Use ambient authority only in test.before()

@@ -1,5 +1,4 @@
 // @ts-nocheck
-import '@endo/init/debug.js';
 import test from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';

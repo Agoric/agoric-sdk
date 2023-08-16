@@ -1,6 +1,5 @@
 // @ts-nocheck
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { Remotable } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';

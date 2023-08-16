@@ -1,9 +1,7 @@
 // @ts-check
 
-import '@endo/init/pre-bundle-source.js';
-
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
+
 import { buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 

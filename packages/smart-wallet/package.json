@@ -58,6 +58,9 @@
     "files": [
       "test/**/test-*.js"
     ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
     "timeout": "2m"
   },
   "publishConfig": {
