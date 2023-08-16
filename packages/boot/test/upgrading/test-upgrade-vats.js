@@ -7,32 +7,20 @@ import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
+ * @type {import('ava').TestFn<{}>}
  */
 const test = anyTest;
 
 const { Fail } = assert;
 
+const bfile = name => new URL(name, import.meta.url).pathname;
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
-
-const makeTestContext = async metaUrl => {
-  const bfile = name => new URL(name, metaUrl).pathname;
-
-  return { bfile };
-};
 
 const makeCallOutbound = t => (srcID, obj) => {
   t.log(`callOutbound(${srcID}, ${obj})`);
   return obj;
 };
-
-/** NOTE: limit ambient authority such as import.meta.url to test.before() */
-test.before(async t => {
-  t.context = await makeTestContext(import.meta.url);
-});
 
 /**
  * @param {any} t
@@ -133,7 +121,6 @@ test.failing('upgrade bootstrap vat', async t => {
 });
 
 test('upgrade vat-bridge', async t => {
-  const { bfile } = t.context;
   const bundles = {
     bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
   };
@@ -244,7 +231,6 @@ test('upgrade vat-bridge', async t => {
 });
 
 test('upgrade vat-bank', async t => {
-  const { bfile } = t.context;
   const bundles = {
     bank: { sourceSpec: await importSpec('@agoric/vats/src/vat-bank.js') },
     bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
