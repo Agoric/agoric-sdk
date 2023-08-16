@@ -266,7 +266,7 @@ test('exit bid', async t => {
     giveCollateral: 9.0,
   });
 
-  wd.sendOfferMaker(Offers.auction.Bid, {
+  await wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
     maxBuy: '1.23ATOM',
     give: '0.1IST',
