@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "ava": "^5.3.1"
+  },
+  "dependencies": {
+    "execa": "^7.2.0"
+  },
+  "scripts": {
+    "upgrade-tests": "ava --serial agoric-upgrade*/**/pre.test.js agoric-upgrade*/**/actions.test.js agoric-upgrade*/**/post.test.js"
+  },
+  "ava": {
+    "files": [
+      "*/**/pre.test.js",
+      "*/**/actions.test.js",
+      "*/**/post.test.js"
+    ],
+    "timeout": "30m"
+  }
+}

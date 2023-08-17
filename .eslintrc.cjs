@@ -119,5 +119,13 @@ module.exports = {
         project: false,
       },
     },
+    {
+      files: ['packages/**/upgrade-test-scripts/**/*.*js'],
+      rules: {
+        // NOTE: This rule is enabled for the repository in general.  We turn it
+        // off for test code for now.
+        '@jessie.js/safe-await-separator': 'off',
+      },
+    },
   ],
 };
