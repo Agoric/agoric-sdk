@@ -638,19 +638,42 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 
 	defer os.RemoveAll(exportDir)
 
-	rawManifest, err := os.ReadFile(filepath.Join(exportDir, ExportManifestFilename))
+	provider, err := OpenSwingStoreExportDirectory(exportDir)
 	if err != nil {
 		return err
+	}
+
+	if blockHeight != 0 && provider.BlockHeight != blockHeight {
+		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", provider.BlockHeight, blockHeight)
+	}
+
+	err = onExportRetrieved(provider)
+	if err != nil {
+		return err
+	}
+
+	operationDetails.logger.Info("retrieved swing-store export", "exportDir", exportDir)
+
+	return nil
+}
+
+// OpenSwingStoreExportDirectory creates an export provider from a swing-store
+// export saved on disk in the provided directory. It expects the export manifest
+// to be present in that directory. The provider's function will read the
+// export's data and artifacts from disk on demand. Each artifact is using a
+// dedicated file, and the export data is read from a jsonl-like file, if any.
+// The export manifest filename and overall export format is common with the JS
+// swing-store import/export logic.
+func OpenSwingStoreExportDirectory(exportDir string) (SwingStoreExportProvider, error) {
+	rawManifest, err := os.ReadFile(filepath.Join(exportDir, ExportManifestFilename))
+	if err != nil {
+		return SwingStoreExportProvider{}, err
 	}
 
 	var manifest exportManifest
 	err = json.Unmarshal(rawManifest, &manifest)
 	if err != nil {
-		return err
-	}
-
-	if blockHeight != 0 && manifest.BlockHeight != blockHeight {
-		return fmt.Errorf("export manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, blockHeight)
+		return SwingStoreExportProvider{}, err
 	}
 
 	getExportDataReader := func() (agoric.KVEntryReader, error) {
@@ -689,18 +712,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 		return artifact, err
 	}
 
-	err = onExportRetrieved(SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact})
-	if err != nil {
-		return err
-	}
-
-	// if nextArtifact != len(manifest.Artifacts) {
-	// 	return errors.New("not all export artifacts were retrieved")
-	// }
-
-	operationDetails.logger.Info("retrieved swing-store export", "exportDir", exportDir)
-
-	return nil
+	return SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact}, nil
 }
 
 // RestoreExport restores the JS swing-store using previously exported data and artifacts.
@@ -739,8 +751,41 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	}
 	defer os.RemoveAll(exportDir)
 
-	manifest := exportManifest{
+	err = WriteSwingStoreExportToDirectory(provider, exportDir)
+	if err != nil {
+		return err
+	}
+
+	action := &swingStoreRestoreExportAction{
+		Type:        swingStoreExportActionType,
 		BlockHeight: blockHeight,
+		Request:     restoreRequest,
+		Args: [1]swingStoreImportOptions{{
+			ExportDir:      exportDir,
+			ArtifactMode:   restoreOptions.ArtifactMode,
+			ExportDataMode: restoreOptions.ExportDataMode,
+		}},
+	}
+
+	_, err = exportsHandler.blockingSend(action, true)
+	if err != nil {
+		return err
+	}
+
+	exportsHandler.logger.Info("restored swing-store export", "exportDir", exportDir, "height", blockHeight)
+
+	return nil
+}
+
+// WriteSwingStoreExportToDirectory consumes a provider and saves a swing-store
+// export to disk in the provided directory. It creates files for each artifact
+// deriving a filename from the artifact name, and stores any "export data" in
+// a jsonl-like file, before saving the export manifest linking these together.
+// The export manifest filename and overall export format is common with the JS
+// swing-store import/export logic.
+func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportDir string) error {
+	manifest := exportManifest{
+		BlockHeight: provider.BlockHeight,
 	}
 
 	exportDataReader, err := provider.GetExportDataReader()
@@ -808,28 +853,5 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	if err != nil {
 		return err
 	}
-	err = writeExportFile(ExportManifestFilename, manifestBytes)
-	if err != nil {
-		return err
-	}
-
-	action := &swingStoreRestoreExportAction{
-		Type:        swingStoreExportActionType,
-		BlockHeight: blockHeight,
-		Request:     restoreRequest,
-		Args: [1]swingStoreImportOptions{{
-			ExportDir:      exportDir,
-			ArtifactMode:   restoreOptions.ArtifactMode,
-			ExportDataMode: restoreOptions.ExportDataMode,
-		}},
-	}
-
-	_, err = exportsHandler.blockingSend(action, true)
-	if err != nil {
-		return err
-	}
-
-	exportsHandler.logger.Info("restored swing-store export", "exportDir", exportDir, "height", blockHeight)
-
-	return nil
+	return writeExportFile(ExportManifestFilename, manifestBytes)
 }
