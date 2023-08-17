@@ -15,13 +15,13 @@ submitDeliverInbound user1
 
 # provision a new user wallet
 
-agd keys add user2 --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user2.out"
-cat "$HOME/.agoric/user2.out" | tail -n1 | tee "$HOME/.agoric/user2.key"
-export USER2ADDR=$($binary keys show user2 -a --keyring-backend="test" 2> /dev/null)
-provisionSmartWallet $USER2ADDR "20000000ubld,100000000${ATOM_DENOM}"
+agd keys add user3 --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user3.out"
+cat "$HOME/.agoric/user3.out" | tail -n1 | tee "$HOME/.agoric/user3.key"
+export USER3ADDR=$($binary keys show user3 -a --keyring-backend="test" 2> /dev/null)
+provisionSmartWallet $USER3ADDR "20000000ubld,100000000${ATOM_DENOM}"
 waitForBlock
 
-test_not_val "$(agd q vstorage data published.wallet.$USER2ADDR -o json | jq -r .value)" "" "ensure user2 provisioned"
+test_not_val "$(agd q vstorage data published.wallet.$USER3ADDR -o json | jq -r .value)" "" "ensure user3 provisioned"
 
 echo "ACTIONS Tickling the wallets so they are revived"
 # Until they are revived, the invitations can't be deposited. So the first action can't be to accept an invitation (because it won't be there).
@@ -154,25 +154,25 @@ OFFER=$(mktemp -t agops.XXX)
 agops vaults close --vaultId vault1 --giveMinted 6.06 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
 agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
-# make sure the same works for user2
+# make sure the same works for user3
 OFFER=$(mktemp -t agops.XXX)
 agops vaults open --wantMinted 7.00 --giveCollateral 11.0 >|"$OFFER"
-agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-backend=test
+agops perf satisfaction --from "$USER3ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
 # put some IST in
 OFFER=$(mktemp -t agops.XXX)
-agops vaults adjust --vaultId vault2 --giveMinted 1.5 --from $USER2ADDR --keyring-backend=test >|"$OFFER"
-agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-backend=test
+agops vaults adjust --vaultId vault2 --giveMinted 1.5 --from $USER3ADDR --keyring-backend=test >|"$OFFER"
+agops perf satisfaction --from "$USER3ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
 # add some collateral
 OFFER=$(mktemp -t agops.XXX)
-agops vaults adjust --vaultId vault2 --giveCollateral 2.0 --from $USER2ADDR --keyring-backend="test" >|"$OFFER"
-agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-backend=test
+agops vaults adjust --vaultId vault2 --giveCollateral 2.0 --from $USER3ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$USER3ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
 # close out
 OFFER=$(mktemp -t agops.XXX)
-agops vaults close --vaultId vault2 --giveMinted 5.75 --from $USER2ADDR --keyring-backend="test" >|"$OFFER"
-agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-backend=test
+agops vaults close --vaultId vault2 --giveMinted 5.75 --from $USER3ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$USER3ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
 # replicate state-sync of node
 # this will cause the swing-store to prune some data

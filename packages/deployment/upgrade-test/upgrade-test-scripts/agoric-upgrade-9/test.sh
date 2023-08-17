@@ -1,7 +1,7 @@
 #!/bin/bash
 . ./upgrade-test-scripts/env_setup.sh
 # provision pool has right balance 
-test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount') "19000000"
+test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount') "18750000"
 
 # ensure PSM IST has only ToyUSD
 expnum=4

@@ -14,14 +14,17 @@ test_not_val "$(agd q vstorage data published.wallet.$GOV1ADDR -o json | jq -r .
 test_not_val "$(agd q vstorage data published.wallet.$GOV2ADDR -o json | jq -r .value)" "" "ensure gov2 provisioned"
 test_not_val "$(agd q vstorage data published.wallet.$GOV3ADDR -o json | jq -r .value)" "" "ensure gov3 provisioned"
 
-# test user2 not provisioned
-test_val "$(agd q vstorage data published.wallet.$USER2ADDR -o json | jq -r .value)" "" "ensure user2 not provisioned"
+# test user2 provisioned
+test_not_val "$(agd q vstorage data published.wallet.$USER2ADDR -o json | jq -r .value)" "" "ensure user2 provisioned"
+
+# test user3 not provisioned
+test_val "$(agd q vstorage data published.wallet.$USER3ADDR -o json | jq -r .value)" "" "ensure user3 not provisioned"
 
 # test that we have no vaults
 test_val "$(agd q vstorage data published.vaultFactory.manager0.vaults.vault0 -o json | jq -r .value)" "" "ensure no vaults exist"
 
 # provision pool has right balance
-test_val "$(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ')" "19000000"
+test_val "$(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ')" "18750000"
 
 # we should have more denoms in governance
 psmISTChildren="$(agd q vstorage children published.psm.IST -o jsonlines)"
