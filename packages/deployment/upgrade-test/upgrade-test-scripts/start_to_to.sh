@@ -17,9 +17,18 @@ fi
 startAgd
 
 if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
-  runActions "pre_test"
-  runActions "actions"
-  runActions "test"
+  if [[ "${USE_JS}" == "1" ]]; then
+    pushd upgrade-test-scripts
+    yarn
+    yarn upgrade-tests || exit 1
+    popd
+    runActions "legacy"
+  else
+    runActions "pre_test"
+    runActions "actions"
+    runActions "test"
+  fi
+  
   touch "$HOME/.agoric/runActions-${THIS_NAME}"
 fi
 

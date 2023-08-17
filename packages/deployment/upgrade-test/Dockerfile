@@ -60,10 +60,10 @@ ARG DEST_IMAGE
 #this is agoric-upgrade-10 / vaults
 FROM ghcr.io/agoric/agoric-sdk:35 as agoric-upgrade-10
 ARG BOOTSTRAP_MODE
-ENV THIS_NAME=agoric-upgrade-10 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
+ENV THIS_NAME=agoric-upgrade-10 USE_JS=1 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.mjs ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-9 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
