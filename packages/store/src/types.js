@@ -1,118 +1,44 @@
 /// <reference types="ses"/>
 
-/** @typedef {import('@endo/marshal').Passable} Passable */
-/** @typedef {import('@endo/marshal').PassStyle} PassStyle */
-/** @typedef {import('@endo/marshal').CopyTagged} CopyTagged */
-/** @template T @typedef {import('@endo/marshal').CopyRecord<T>} CopyRecord */
-/** @template T @typedef {import('@endo/marshal').CopyArray<T>} CopyArray */
-/** @typedef {import('@endo/marshal').Checker} Checker */
-/** @typedef {import('@endo/marshal/src/rankOrder').RankCompare} RankCompare */
-/** @typedef {import('@endo/marshal/src/rankOrder').RankComparison} RankComparison */
-
-// /////////////////////////////////////////////////////////////////////////////
-// Placeholder redundant types, to be imported from `@endo/patterns` instead.
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/** @typedef {Passable} Key */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/** @typedef {Passable} Pattern */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
+/**
+ * Note TODO https://github.com/endojs/endo/issues/1488
+ *
+ * @typedef {import('@endo/pass-style').Passable} Passable
+ */
+/** @typedef {import('@endo/pass-style').CopyTagged} CopyTagged */
+/** @typedef {import('@endo/patterns').Pattern} Pattern */
+/** @typedef {import('@endo/patterns').Key} Key */
 /**
  * @template {Key} [K=Key]
- * @typedef {CopyTagged & {
- *   [Symbol.toStringTag]: 'copySet';
- *   payload: K[];
- * }} CopySet
+ * @typedef {import('@endo/patterns').CopySet<K>} CopySet
  */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/**
- * @template {Key} [K=Key]
- * @typedef {CopyTagged & {
- *   [Symbol.toStringTag]: 'copyBag';
- *   payload: [K, bigint][];
- * }} CopyBag
- */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
 /**
  * @template {Key} [K=Key]
  * @template {Passable} [V=Passable]
- * @typedef {CopyTagged & {
- *   [Symbol.toStringTag]: 'copyMap';
- *   payload: { keys: K[]; values: V[] };
- * }} CopyMap
+ * @typedef {import('@endo/patterns').CopyMap<K, V>} CopyMap
  */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/**
- * @typedef {object} GuardMakers
- * @property {<M extends Record<any, any>>(
- *   interfaceName: string,
- *   methodGuards: M,
- *   options?: { sloppy?: boolean },
- * ) => InterfaceGuard} interface
- * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call Guard a
- *   synchronous call
- * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} callWhen Guard an
- *   async call
- * @property {(argGuard: ArgGuard) => ArgGuard} await Guard an await
- */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/** @typedef {(...args: any[]) => any} Method */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/**
- * @typedef {{
- *   klass: 'Interface';
- *   interfaceName: string;
- *   methodGuards: Record<string | symbol, MethodGuard>;
- *   sloppy?: boolean;
- * }} InterfaceGuard
- */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/** @typedef {any} MethodGuardMaker */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/**
- * @typedef {{
- *   klass: 'methodGuard';
- *   callKind: 'sync' | 'async';
- *   returnGuard: unknown;
- * }} MethodGuard
- */
-
-// TODO placeholder. Figure out how to import from `@endo/patterns` instead
-/** @typedef {any} ArgGuard */
-
-// /////////////////////////////////////////////////////////////////////////////
 
 /**
  * @typedef {object} StoreOptions Of the dimensions on which KeyedStores can
  *   differ, we only represent a few of them as standard options. A given store
  *   maker should document which options it supports, as well as its positions
  *   on dimensions for which it does not support options.
- * @property {boolean} [longLived=true] Which way to optimize a weak store. True
+ * @property {boolean} [longLived] Which way to optimize a weak store. True
  *   means that we expect this weak store to outlive most of its keys, in which
  *   case we internally may use a JavaScript `WeakMap`. Otherwise we internally
  *   may use a JavaScript `Map`. Defaults to true, so please mark short lived
  *   stores explicitly.
- * @property {boolean} [durable=false] The contents of this store survive
- *   termination of its containing process, allowing for restart or upgrade but
- *   at the cost of forbidding storage of references to ephemeral data. Defaults
- *   to false.
- * @property {boolean} [fakeDurable=false] This store pretends to be a durable
- *   store but does not enforce that the things stored in it actually be
- *   themselves durable (whereas an actual durable store would forbid storage of
- *   such items). This is in service of allowing incremental transition to use
- *   of durable stores, to enable normal operation and testing when some stuff
+ * @property {boolean} [durable] The contents of this store survive termination
+ *   of its containing process, allowing for restart or upgrade but at the cost
+ *   of forbidding storage of references to ephemeral data. Defaults to false.
+ * @property {boolean} [fakeDurable] This store pretends to be a durable store
+ *   but does not enforce that the things stored in it actually be themselves
+ *   durable (whereas an actual durable store would forbid storage of such
+ *   items). This is in service of allowing incremental transition to use of
+ *   durable stores, to enable normal operation and testing when some stuff
  *   intended to eventually be durable has not yet been made durable. A store
  *   marked as fakeDurable will appear to operate normally but any attempt to
- *   upgrade its containing vat will fail with an error.
+ *   upgrade its containing vat will fail with an error. Defaults to false.
  * @property {Pattern} [keyShape]
  * @property {Pattern} [valueShape]
  */

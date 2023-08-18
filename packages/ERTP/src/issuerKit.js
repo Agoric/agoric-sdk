@@ -123,8 +123,8 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  *   `displayInfo` gives information to the UI on how to display the amount.
  * @param {Baggage} issuerBaggage
  * @param {string} name
- * @param {K} [assetKind=AssetKind.NAT]
- * @param {AdditionalDisplayInfo} [displayInfo={}]
+ * @param {K} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -164,8 +164,8 @@ harden(makeDurableIssuerKit);
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
  * @param {string} name
- * @param {K} [assetKind='nat']
- * @param {AdditionalDisplayInfo} [displayInfo={}]
+ * @param {K} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was

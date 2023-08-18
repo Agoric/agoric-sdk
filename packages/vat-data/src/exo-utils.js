@@ -4,6 +4,11 @@ import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
+/** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
+/**
+ * @template {Record<string | symbol, MethodGuard>} [T=Record<string | symbol, MethodGuard>]
+ * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
+ */
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 /** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
@@ -11,6 +16,7 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 /** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>} KindFacet */
 /** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>} KindFacets */
 /** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
+/** @typedef {import('@agoric/swingset-liveslots').InterfaceGuardKit} InterfaceGuardKit */
 
 /**
  * Make a version of the argument function that takes a kind context but
@@ -81,12 +87,11 @@ export const makeExoUtils = VatData => {
     );
   harden(prepareKindMulti);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
    * @template T behavior
    * @param {string} tag
-   * @param {any} interfaceGuard
+   * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
    * @param {T & ThisType<{
    *   self: T,
@@ -106,12 +111,11 @@ export const makeExoUtils = VatData => {
     });
   harden(defineVirtualExoClass);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
    * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
    * @param {string} tag
-   * @param {any} interfaceGuardKit
+   * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
    * @param {T & ThisType<{
    *   facets: T,
@@ -133,16 +137,15 @@ export const makeExoUtils = VatData => {
     defineKindMulti(tag, init, facets, {
       ...options,
       thisfulMethods: true,
-      interfaceGuard: interfaceGuardKit,
+      interfaceGuardKit,
     });
   harden(defineVirtualExoClassKit);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
    * @template {Record<string | symbol, CallableFunction>} T methods
    * @param {DurableKindHandle} kindHandle
-   * @param {any} interfaceGuard
+   * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
    * @param {T & ThisType<{
    *   self: T,
@@ -168,12 +171,11 @@ export const makeExoUtils = VatData => {
     });
   harden(defineDurableExoClass);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
    * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
    * @param {DurableKindHandle} kindHandle
-   * @param {any} interfaceGuardKit
+   * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
    * @param {T & ThisType<{
    *   facets: T,
@@ -195,17 +197,16 @@ export const makeExoUtils = VatData => {
     defineDurableKindMulti(kindHandle, init, facets, {
       ...options,
       thisfulMethods: true,
-      interfaceGuard: interfaceGuardKit,
+      interfaceGuardKit,
     });
   harden(defineDurableExoClassKit);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
    * @template {Record<string | symbol, CallableFunction>} T methods
    * @param {Baggage} baggage
    * @param {string} kindName
-   * @param {any} interfaceGuard
+   * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
    * @param {T & ThisType<{
    *   self: T,
@@ -234,13 +235,12 @@ export const makeExoUtils = VatData => {
     );
   harden(prepareExoClass);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {(...args: any) => any} I init state function
    * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
    * @param {Baggage} baggage
    * @param {string} kindName
-   * @param {any} interfaceGuardKit
+   * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
    * @param {T & ThisType<{
    *   facets: T,
@@ -269,12 +269,11 @@ export const makeExoUtils = VatData => {
     );
   harden(prepareExoClassKit);
 
-  // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
   /**
    * @template {Record<string | symbol, CallableFunction>} M methods
    * @param {Baggage} baggage
    * @param {string} kindName
-   * @param {any} interfaceGuard
+   * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {M} methods
    * @param {DefineKindOptions<{ self: M }>} [options]
    * @returns {M & RemotableBrand<{}, M>}

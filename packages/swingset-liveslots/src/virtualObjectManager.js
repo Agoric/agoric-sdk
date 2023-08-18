@@ -719,6 +719,7 @@ export const makeVirtualObjectManager = (
       stateShape = undefined,
       thisfulMethods = false,
       interfaceGuard = undefined,
+      interfaceGuardKit = undefined,
     } = options;
 
     const statePrototype = {}; // Not frozen yet
@@ -739,11 +740,19 @@ export const makeVirtualObjectManager = (
     switch (assessFacetiousness(behavior)) {
       case 'one': {
         assert(!multifaceted);
+        interfaceGuardKit === undefined ||
+          Fail`Use an interfaceGuard, not interfaceGuardKit, to protect class ${q(
+            tag,
+          )}`;
         proposedFacetNames = undefined;
         break;
       }
       case 'many': {
         assert(multifaceted);
+        interfaceGuard === undefined ||
+          Fail`Use an interfaceGuardKit, not an interfaceGuard, to protect class kit ${q(
+            tag,
+          )}`;
         proposedFacetNames = ownKeys(behavior).sort();
         break;
       }
@@ -954,7 +963,7 @@ export const makeVirtualObjectManager = (
         makeContextProviderKit(contextCache, getSlotForVal, facetNames),
         behavior,
         thisfulMethods,
-        interfaceGuard,
+        interfaceGuardKit,
       );
     } else {
       proto = defendPrototype(

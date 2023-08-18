@@ -5,15 +5,18 @@
  * Behavior is a description when defining a kind of what facets it will have.
  * For the non-multi defineKind, there is just one facet so it doesn't have a key.
  */
+import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type {
-  InterfaceGuard,
   MapStore,
-  Pattern,
   SetStore,
   StoreOptions,
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+
+// TODO should be moved into @endo/patterns and eventually imported here
+// instead of this local definition.
+export type InterfaceGuardKit = Record<string, InterfaceGuard>;
 
 export type { MapStore, Pattern };
 
@@ -97,15 +100,36 @@ export type DefineKindOptions<C> = {
 
   /**
    * Intended for internal use only.
+   * Only applicable if this is a class kind. A class kit kind should use
+   * `interfaceGuardKit` instead.
+   *
    * If an `interfaceGuard` is provided, then the raw methods passed alongside
    * it are wrapped by a function that first checks that this method's guard
    * pattern is satisfied before calling the raw method.
    *
-   * In `defineDurableKind` and its siblings, this defaults to off.
-   * `prepareExoClass` use this internally to protect their raw class methods
+   * In `defineDurableKind` and its siblings, this defaults to `undefined`.
+   * Exo classes use this internally to protect their raw class methods
    * using the provided interface.
+   * In absence, an exo is protected anyway, while a bare kind is
+   * not (detected by `!thisfulMethods`),
    */
-  interfaceGuard?: InterfaceGuard<unknown>;
+  interfaceGuard?: InterfaceGuard;
+
+  /**
+   * Intended for internal use only.
+   * Only applicable if this is a class kit kind. A class kind should use
+   * `interfaceGuard` instead.
+   *
+   * If an `interfaceGuardKit` is provided, then each member of the
+   * interfaceGuardKit is used to guard the corresponding facet of the
+   * class kit.
+   *
+   * In `defineDurableKindMulti` and its siblings, this defaults to `undefined`.
+   * Exo class kits use this internally to protect their facets.
+   * In absence, an exo is protected anyway, while a bare kind is
+   * not (detected by `!thisfulMethods`),
+   */
+  interfaceGuardKit?: InterfaceGuardKit;
 };
 
 export type VatData = {
