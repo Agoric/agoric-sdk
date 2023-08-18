@@ -134,6 +134,14 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 	}
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
+	hasVMController := sender != nil
+	for _, command := range rootCmd.Commands() {
+		if command.Name() == "export" {
+			extendCosmosExportCommand(command, hasVMController)
+			break
+		}
+	}
+
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
@@ -233,7 +241,9 @@ func (ac appCreator) newApp(
 		panic(err)
 	}
 
-	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+
+	snapshotDir := filepath.Join(homePath, "data", "snapshots")
 	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
 	if err != nil {
 		panic(err)
@@ -246,7 +256,7 @@ func (ac appCreator) newApp(
 	return gaia.NewAgoricApp(
 		ac.sender,
 		logger, db, traceStore, true, skipUpgradeHeights,
-		cast.ToString(appOpts.Get(flags.FlagHome)),
+		homePath,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
 		appOpts,
@@ -262,6 +272,56 @@ func (ac appCreator) newApp(
 		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
 		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
 	)
+}
+
+const (
+	// FlagExportDir is the command-line flag for the "export" command specifying
+	// where the output of the export should be placed.
+	FlagExportDir = "export-dir"
+	// ExportedGenesisFileName is the file name used to save the genesis in the export-dir
+	ExportedGenesisFileName = "genesis.json"
+)
+
+// extendCosmosExportCommand monkey-patches the "export" command added by
+// cosmos-sdk to add a required "export-dir" command-line flag, and create the
+// genesis export in the specified directory.
+func extendCosmosExportCommand(cmd *cobra.Command, hasVMController bool) {
+	cmd.Flags().String(FlagExportDir, "", "The directory where to create the genesis export")
+	err := cmd.MarkFlagRequired(FlagExportDir)
+	if err != nil {
+		panic(err)
+	}
+
+	originalRunE := cmd.RunE
+
+	extendedRunE := func(cmd *cobra.Command, args []string) error {
+		exportDir, _ := cmd.Flags().GetString(FlagExportDir)
+		err := os.MkdirAll(exportDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		genesisPath := filepath.Join(exportDir, ExportedGenesisFileName)
+
+		// This will fail is a genesis.json already exists in the export-dir
+		genesisFile, err := os.OpenFile(genesisPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		defer genesisFile.Close()
+
+		cmd.SetOut(genesisFile)
+
+		return originalRunE(cmd, args)
+	}
+
+	// Only modify the command handler when we have a VM controller to handle
+	// the full export logic. Otherwise, appExport will just exec the VM program
+	// (OnExportHook), which will result in re-entering this flow with the VM
+	// controller set.
+	if hasVMController {
+		cmd.RunE = extendedRunE
+	}
 }
 
 func (ac appCreator) appExport(

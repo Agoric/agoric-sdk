@@ -86,14 +86,16 @@ pushPriceOnce () {
 }
 
 export_genesis() {
-  HEIGHT_ARG=
+  GENESIS_EXPORT_DIR="$1"
+  shift
+  GENESIS_HEIGHT_ARG=
 
   if [ -n "$1" ]; then
-    HEIGHT_ARG="--height $1"
+    GENESIS_HEIGHT_ARG="--height $1"
     shift
   fi
 
-  agd export $HEIGHT_ARG "$@"
+  agd export --export-dir "$GENESIS_EXPORT_DIR" $GENESIS_HEIGHT_ARG "$@"
 }
 
 make_swing_store_snapshot() {( set -euo pipefail
@@ -108,7 +110,8 @@ make_swing_store_snapshot() {( set -euo pipefail
   EXPORT_MANIFEST="$(cat $EXPORT_MANIFEST_FILE)"
 
   mv "$EXPORT_DATA_FILE" "$EXPORT_DATA_UNTRUSTED_FILE"
-  export_genesis $EXPORT_HEIGHT | jq -cr '.app_state.swingset.swing_store_export_data[] | [.key,.value]' > "$EXPORT_DATA_FILE"
+  export_genesis "$EXPORT_DIR/genesis-export" $EXPORT_HEIGHT 
+  cat $EXPORT_DIR/genesis-export/genesis.json | jq -cr '.app_state.swingset.swing_store_export_data[] | [.key,.value]' > "$EXPORT_DATA_FILE"
 
   jq -n "$EXPORT_MANIFEST | .untrustedData=\"$(basename -- "$EXPORT_DATA_UNTRUSTED_FILE")\"" > "$EXPORT_MANIFEST_FILE"
 

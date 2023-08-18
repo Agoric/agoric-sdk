@@ -18,7 +18,6 @@ mv -n $HOME/.agoric/data/agoric/swing-store-historical-artifacts/* $EXPORT_DIR |
 mv $EXPORT_DIR/export-manifest.json $EXPORT_DIR/export-manifest-original.json
 cat $EXPORT_DIR/export-manifest-original.json | jq -r ".artifacts = .artifacts + [${HISTORICAL_ARTIFACTS%%,}] | del(.artifactMode)" > $EXPORT_DIR/export-manifest.json
 restore_swing_store_snapshot $EXPORT_DIR || fail "Couldn't restore swing-store snapshot"
-rmdir $HOME/.agoric/data/agoric/swing-store-historical-artifacts
 rm -rf $EXPORT_DIR
 startAgd
 
