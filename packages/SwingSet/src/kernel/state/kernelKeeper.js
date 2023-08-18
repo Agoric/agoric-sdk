@@ -1063,6 +1063,21 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.delete(`${meterID}.threshold`);
   }
 
+  function resetAllMeters(remaining) {
+    remaining = Nat(BigInt(remaining));
+    const keyRE = /^m\d+\.remaining$/;
+    for (const key of enumeratePrefixedKeys(kvStore, 'm')) {
+      // meter data is stored in m$NN keys, however there are other keys
+      // that start with 'm' too
+      if (keyRE.test(key)) {
+        // UnlimitedMeters remain unchanged
+        if (getRequired(key) !== 'unlimited') {
+          kvStore.set(key, `${remaining}`);
+        }
+      }
+    }
+  }
+
   function hasVatWithName(name) {
     return kvStore.has(`vat.name.${name}`);
   }
@@ -1604,6 +1619,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     checkMeter,
     deductMeter,
     deleteMeter,
+    resetAllMeters,
 
     hasVatWithName,
     getVatIDForName,

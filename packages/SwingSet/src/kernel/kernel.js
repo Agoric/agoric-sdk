@@ -1871,6 +1871,10 @@ export default function buildKernel(
     }
   }
 
+  function resetAllMeters(remaining) {
+    kernelKeeper.resetAllMeters(remaining);
+  }
+
   function kpRegisterInterest(kpid) {
     kernelKeeper.incrementRefCount(kpid, 'external');
   }
@@ -1934,6 +1938,7 @@ export default function buildKernel(
     run,
     shutdown,
     changeKernelOptions,
+    resetAllMeters,
 
     // the rest are for testing and debugging
 
