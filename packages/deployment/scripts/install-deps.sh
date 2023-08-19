@@ -21,7 +21,7 @@ TERRAFORM_RELEASE=terraform_${TERRAFORM_VERSION}_${TERRAFORM_OS}_${TERRAFORM_ARC
 TERRAFORM_URL=https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${TERRAFORM_RELEASE}.zip
 
 # Extract, then delete temporary file.
-(
+[ -f /usr/local/bin/terraform ] && (/usr/local/bin/terraform -version; true) | head -1 | grep -q "v$TERRAFORM_VERSION" || (
   trap 'echo "Removing $terraform_zip"; rm -f "$terraform_zip"' EXIT
   terraform_zip=$(mktemp -t terraformXXXXXX)
   curl "$TERRAFORM_URL" > "$terraform_zip"
@@ -53,15 +53,19 @@ esac
 
 # Install Ansible.
 if test -d /etc/apt; then
-  echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu $VERSION_CODENAME main" >> /etc/apt/sources.list
-  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
-  apt-get update --allow-releaseinfo-change -y
-  apt-get install -y ansible rsync curl sudo gnupg2 jq libbsd-dev
-  apt-get clean -y
+  dpkg-query -W ansible rsync curl sudo gnupg2 jq libbsd-dev >/dev/null || {
+    echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu $VERSION_CODENAME main" > /etc/apt/sources.list.d/ansible.list
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+    apt-get update --allow-releaseinfo-change -y
+    apt-get install -y ansible rsync curl sudo gnupg2 jq libbsd-dev
+    apt-get clean -y
+  }
 elif test "$uname_s" == darwin; then
-  brew update
-  brew install ansible rsync curl gnupg2 jq
-  brew cleanup
+  brew list ansible rsync curl gnupg2 jq >/dev/null || {
+    brew update
+    brew install ansible rsync curl gnupg2 jq
+    brew cleanup
+  }
 else
   echo "Don't know how to install Ansible, so I'm skipping..."
   exit 1
