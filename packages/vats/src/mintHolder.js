@@ -10,6 +10,8 @@ import {
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
+ * NOTE: "keyword" connotes initial caps constraint, which doesn't apply here.
+ *
  * @template {AssetKind} K
  * @typedef {{
  *   keyword: string;
