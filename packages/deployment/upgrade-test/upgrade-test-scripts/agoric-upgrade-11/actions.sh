@@ -21,3 +21,29 @@ restore_swing_store_snapshot $EXPORT_DIR || fail "Couldn't restore swing-store s
 rmdir $HOME/.agoric/data/agoric/swing-store-historical-artifacts
 rm -rf $EXPORT_DIR
 startAgd
+
+test_not_val "$(agops vaults list --from $GOV1ADDR)" "" "gov1 has no vaults"
+
+# open up a vault
+OFFER=$(mktemp -t agops.XXX)
+agops vaults open --wantMinted 7.00 --giveCollateral 11.0 >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
+# put some IST in
+OFFER=$(mktemp -t agops.XXX)
+agops vaults adjust --vaultId vault3 --giveMinted 1.5 --from $GOV1ADDR --keyring-backend=test >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
+# add some collateral
+OFFER=$(mktemp -t agops.XXX)
+agops vaults adjust --vaultId vault3 --giveCollateral 2.0 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
+# close out
+OFFER=$(mktemp -t agops.XXX)
+agops vaults close --vaultId vault3 --giveMinted 5.75 --from $GOV1ADDR --keyring-backend="test" >|"$OFFER"
+agops perf satisfaction --from "$GOV1ADDR" --executeOffer "$OFFER" --keyring-backend=test
+
+test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault3 -o jsonlines | jq -r '.vaultState') "closed" "vault3 is closed"
+test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault3 -o jsonlines | jq -r '.locked.value') "0" "vault3 contains no collateral"
+test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault3 -o jsonlines | jq -r '.debtSnapshot.debt.value') "0" "vault3 has no debt"
