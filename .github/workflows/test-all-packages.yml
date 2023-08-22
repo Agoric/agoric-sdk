@@ -46,7 +46,7 @@ jobs:
   # We split the package tests into two jobs because type linting
   # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -63,7 +63,7 @@ jobs:
         run: ./scripts/lint-with-types.sh primary
 
   lint-rest:
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: build
     runs-on: ubuntu-latest
     steps:
