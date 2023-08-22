@@ -72,6 +72,7 @@ FLAGS may be:
   --stats          - print a performance stats report at the end of a run
   --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
+  --sbench         - run a whole-swingset benchmark
   --indirect       - launch swingset from a vat instead of launching directly
   --config FILE    - read swingset config from FILE instead of inferring it
 
@@ -96,6 +97,65 @@ function fail(message, printUsage) {
     usage();
   }
   process.exit(1);
+}
+
+/**
+ * In swingsetBenchmark mode, the configured swingset is loaded indirectly,
+ * interposing a benchmark controller vat we provide here as the swingset's
+ * bootstrap vat.  In addition, the benchmark author is expected to provide a
+ * benchmark driver vat in a file named `vat-benchmark.js` adjacent to the
+ * swingset's config file.  This benchmark driver vat is expected to expose the
+ * methods `setup` and `runBenchmarkRound`.  The controller vat's `bootstrap`
+ * method invokes the swingset's "real" `bootstrap` method and then tells the
+ * benchmark driver vat to perform setup for the benchmark.  The controller vat
+ * then orchestrate the execution of the directed number of bootstrap rounds.
+ *
+ * In order to perform the controller interposition, this function generates a
+ * new swingset configuration by making selective modifications and changes to
+ * the original swingset configuration.
+ *
+ * @param {*} baseConfig  The original configuration being adapted for benchmark use
+ * @param {string} basedir  The base directory path for the original swingset vat definitions
+ * @param {string[]} bootstrapArgv  Bootstrap args from the swingset-runner command line
+ */
+function generateSwingsetBenchmarkConfig(baseConfig, basedir, bootstrapArgv) {
+  if (baseConfig.vats.benchmarkBootstrap) {
+    fail(
+      `you can't have a vat named benchmarkBootstrap in a benchmark swingset`,
+    );
+  }
+  if (baseConfig.vats.benchmarkDriver) {
+    fail(`you can't have a vat named benchmarkDriver in a benchmark swingset`);
+  }
+  // eslint-disable-next-line prefer-const
+  let { benchmarkDriver, ...baseConfigOptions } = baseConfig;
+  if (!benchmarkDriver) {
+    benchmarkDriver = {
+      sourceSpec: path.join(basedir, 'vat-benchmark.js'),
+    };
+  }
+  const config = {
+    ...baseConfigOptions,
+    bootstrap: 'benchmarkBootstrap',
+    vats: {
+      benchmarkBootstrap: {
+        sourceSpec: new URL('vat-benchmarkBootstrap.js', import.meta.url)
+          .pathname,
+        parameters: {
+          config: {
+            bootstrap: baseConfig.bootstrap,
+          },
+        },
+      },
+      benchmarkDriver,
+      ...baseConfig.vats,
+    },
+  };
+  if (!config.vats[baseConfig.bootstrap].parameters) {
+    config.vats[baseConfig.bootstrap].parameters = {};
+  }
+  config.vats[baseConfig.bootstrap].parameters.argv = bootstrapArgv;
+  return config;
 }
 
 function generateIndirectConfig(baseConfig) {
@@ -182,6 +242,7 @@ export async function main() {
   let useXS = false;
   let useBundleCache = false;
   let activityHash = false;
+  let swingsetBenchmarkMode = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -287,6 +348,9 @@ export async function main() {
       case '--useBundleCache':
         useBundleCache = true;
         break;
+      case '--sbench':
+        swingsetBenchmarkMode = true;
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -360,6 +424,11 @@ export async function main() {
     } else {
       config.defaultManagerType = 'local';
     }
+  }
+  config.pinBootstrapRoot = true;
+
+  if (swingsetBenchmarkMode) {
+    config = generateSwingsetBenchmarkConfig(config, basedir, bootstrapArgv);
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
@@ -459,7 +528,7 @@ export async function main() {
   if (benchmarkRounds > 0) {
     // Pin the vat root that will run benchmark rounds so it'll still be there
     // when it comes time to run them.
-    controller.pinVatRoot(launchIndirectly ? 'launcher' : 'bootstrap');
+    controller.pinVatRoot(config.bootstrap);
   }
 
   let blockNumber = 0;
@@ -606,7 +675,7 @@ export async function main() {
     await null;
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
-        launchIndirectly ? 'launcher' : 'bootstrap',
+        config.bootstrap,
         'runBenchmarkRound',
         [],
         'ignore',
@@ -668,7 +737,7 @@ export async function main() {
         log(`activityHash: ${controller.getActivityhash()}`);
       }
       if (verbose) {
-        log(`===> end of crank ${crankNumber}`);
+        log(`===> end of crank ${crankNumber - 1}`);
       }
     }
     const commitStartTime = readClock();
