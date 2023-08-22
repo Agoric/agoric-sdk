@@ -56,7 +56,7 @@ jobs:
   # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
   # We split the package tests into two jobs because type linting
   # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
-  lint-primary:
+  lint:
     timeout-minutes: 10
     needs: build
     runs-on: ubuntu-latest
@@ -66,25 +66,7 @@ jobs:
         with:
           node-version: '18.x'
 
-      # first job also does repo-level linting
-      - name: lint repo format
-        run: yarn lint:format
-      # eslint
-      - name: yarn lint primary
-        run: ./scripts/lint-with-types.sh primary
-
-  lint-rest:
-    timeout-minutes: 10
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: '18.x'
-
-      - name: yarn lint rest
-        run: ./scripts/lint-with-types.sh rest
+      - run: yarn lint
 
   ##################
   # Fast-running tests run as a group:
