@@ -40,24 +40,42 @@ export const ForkableAsyncIterableIteratorShape = M.interface(
   'ForkableAsyncIterableIterator',
   {
     fork: M.call().returns(M.any()),
-    [Symbol.asyncIterator]: M.call().returns(M.any()), // oops: recursive type
+    // See https://github.com/Agoric/agoric-sdk/issues/8231
+    // [Symbol.asyncIterator]: M.call().returns(M.any()), // oops: recursive type
     next: M.callWhen().returns(M.any()),
+  },
+  {
+    sloppy: true,
   },
 );
 
-export const IterableEachTopicI = M.interface('IterableEachTopic', {
-  subscribeAfter: SubscriberI.methodGuards.subscribeAfter,
-  [Symbol.asyncIterator]: M.call().returns(
-    M.remotable('ForkableAsyncIterableIterator'),
-  ),
-});
+export const IterableEachTopicI = M.interface(
+  'IterableEachTopic',
+  {
+    subscribeAfter: SubscriberI.methodGuards.subscribeAfter,
+    // See https://github.com/Agoric/agoric-sdk/issues/8231
+    // [Symbol.asyncIterator]: M.call().returns(
+    //   M.remotable('ForkableAsyncIterableIterator'),
+    // ),
+  },
+  {
+    sloppy: true,
+  },
+);
 
-export const IterableLatestTopicI = M.interface('IterableLatestTopic', {
-  getUpdateSince: SubscriberI.methodGuards.getUpdateSince,
-  [Symbol.asyncIterator]: M.call().returns(
-    M.remotable('ForkableAsyncIterableIterator'),
-  ),
-});
+export const IterableLatestTopicI = M.interface(
+  'IterableLatestTopic',
+  {
+    getUpdateSince: SubscriberI.methodGuards.getUpdateSince,
+    // See https://github.com/Agoric/agoric-sdk/issues/8231
+    // [Symbol.asyncIterator]: M.call().returns(
+    //   M.remotable('ForkableAsyncIterableIterator'),
+    // ),
+  },
+  {
+    sloppy: true,
+  },
+);
 
 /**
  * @template {object} Arg
