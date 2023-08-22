@@ -30,12 +30,10 @@ export const inviteCommitteeMembers = async (
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
-        await reserveThenDeposit(
-          `econ committee member ${addr}`,
-          namesByAddressAdmin,
-          addr,
-          [invitationP],
-        );
+        const debugName = `econ committee member ${addr}`;
+        await reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+          invitationP,
+        ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
         if (highPrioritySendersManager) {
           await E(highPrioritySendersManager).add(
             EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
@@ -46,7 +44,9 @@ export const inviteCommitteeMembers = async (
     );
   };
 
-  await distributeInvitations(zip(values(voterAddresses), invitations));
+  // This doesn't resolve until the committee members create their smart wallets.
+  // Don't block bootstrap on it.
+  void distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
 harden(inviteCommitteeMembers);
@@ -135,15 +135,15 @@ export const inviteToEconCharter = async (
 ) => {
   const { creatorFacet } = E.get(econCharterKit);
 
-  await Promise.all(
-    values(voterAddresses).map(async addr =>
-      reserveThenDeposit(
-        `econ charter member ${addr}`,
-        namesByAddressAdmin,
-        addr,
-        [E(creatorFacet).makeCharterMemberInvitation()],
-      ),
-    ),
+  // This doesn't resolve until the committee members create their smart wallets.
+  // Don't block bootstrap on it.
+  void Promise.all(
+    values(voterAddresses).map(async addr => {
+      const debugName = `econ charter member ${addr}`;
+      reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+        E(creatorFacet).makeCharterMemberInvitation(),
+      ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+    }),
   );
 };
 
