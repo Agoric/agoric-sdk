@@ -32,7 +32,7 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    // this is not yet compatible with eslint lsp so it's conditioned on AGORIC_ESLINT_TYPES
+    // Works for us!
     EXPERIMENTAL_useProjectService: true,
     sourceType: 'module',
     project: [
