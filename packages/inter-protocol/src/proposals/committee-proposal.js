@@ -176,8 +176,6 @@ export const getManifestForInviteCommittee = async (
       [addGovernorsToEconCharter.name]: {
         consume: {
           auctioneerKit: t,
-          reserveGovernorCreatorFacet: t,
-          vaultFactoryGovernorCreator: t,
           econCharterKit: t,
           zoe: t,
           agoricNames: t,
