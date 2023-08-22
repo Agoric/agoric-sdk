@@ -19,10 +19,11 @@ export const defaultProposalBuilder = async (
   const {
     issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
     denom = env.INTERCHAIN_DENOM,
-    oracleBrand = 'ATOM',
-    decimalPlaces = 6,
     keyword = 'ATOM',
-    proposedName = oracleBrand,
+    issuerName = keyword,
+    oracleBrand = issuerName,
+    decimalPlaces = 6,
+    proposedName = issuerName,
     initialPrice = undefined,
   } = interchainAssetOptions;
 
@@ -45,6 +46,7 @@ export const defaultProposalBuilder = async (
           decimalPlaces,
           initialPrice,
           keyword,
+          issuerName,
           proposedName,
           oracleBrand,
         },
