@@ -1,11 +1,6 @@
 #!/bin/sh
 
-# we don't collect type info by default because the EXPERIMENTAL_useProjectService that provides viable perf
-# is not yet compatible with running eslint in IDE
-export AGORIC_ESLINT_TYPES='keypresent'
-
-# CI and some VMs OOM without this
-export NODE_OPTIONS='--max-old-space-size=8192'
+# TODO consolidate back into one job https://github.com/Agoric/agoric-sdk/pull/8061
 
 # argument used by CI to split this across two jobs
 SCOPE=$1
@@ -21,7 +16,7 @@ rest)
     yarn lerna run --ignore=$PRIMARY_PACKAGES --no-bail lint
     ;;
 *)
-    # all scopes
-    yarn lint
+    echo "The regular lint command now lints with types. Just use that."
+    exit 0
     ;;
 esac
