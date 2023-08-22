@@ -43,11 +43,12 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --init           - discard any existing saved state at startup
+  --resume         - resume executing using existing saved state
   --initonly       - initialize the swingset but exit without running it
   --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --usexs          - run vats using the the XS engine
+  --usebundlecache - cache bundles created by swingset loader
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
@@ -152,7 +153,7 @@ function generateIndirectConfig(baseConfig) {
 export async function main() {
   const argv = process.argv.slice(2);
 
-  let forceReset = false;
+  let forceReset = true;
   let dbMode = '--sqlite';
   let blockSize = 200;
   let batchSize = 200;
@@ -179,6 +180,7 @@ export async function main() {
   let dbDir = null;
   let initOnly = false;
   let useXS = false;
+  let useBundleCache = false;
   let activityHash = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
@@ -190,6 +192,7 @@ export async function main() {
       case '--init':
         forceReset = true;
         break;
+      case '--resume':
       case '--noinit':
         forceReset = false;
         break;
@@ -280,6 +283,10 @@ export async function main() {
       case '--useXS':
         useXS = true;
         break;
+      case '--usebundlecache':
+      case '--useBundleCache':
+        useBundleCache = true;
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -326,6 +333,13 @@ export async function main() {
   } else {
     config = loadBasedir(basedir);
   }
+  if (config.bundleCachePath) {
+    const base = new URL(configPath, `file://${process.cwd()}/`);
+    config.bundleCachePath = new URL(config.bundleCachePath, base).pathname;
+  } else if (useBundleCache) {
+    config.bundleCachePath = path.join(basedir, 'bundles');
+  }
+
   const deviceEndowments = {};
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
