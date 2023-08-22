@@ -6,6 +6,7 @@ import util from 'util';
 
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
+  buildTimer,
   loadSwingsetConfigFile,
   loadBasedir,
   initializeSwingset,
@@ -19,6 +20,7 @@ import { makeSlogSender } from '@agoric/telemetry';
 
 import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
+import { initEmulatedChain } from './chain.js';
 import {
   organizeBenchmarkStats,
   printBenchmarkStats,
@@ -73,6 +75,7 @@ FLAGS may be:
   --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
   --sbench         - run a whole-swingset benchmark
+  --chain          - emulate the behavior of the cosmos-based chain
   --indirect       - launch swingset from a vat instead of launching directly
   --config FILE    - read swingset config from FILE instead of inferring it
 
@@ -242,6 +245,7 @@ export async function main() {
   let useXS = false;
   let useBundleCache = false;
   let activityHash = false;
+  let emulateChain = false;
   let swingsetBenchmarkMode = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
@@ -348,6 +352,9 @@ export async function main() {
       case '--useBundleCache':
         useBundleCache = true;
         break;
+      case '--chain':
+        emulateChain = true;
+        break;
       case '--sbench':
         swingsetBenchmarkMode = true;
         break;
@@ -404,19 +411,32 @@ export async function main() {
     config.bundleCachePath = path.join(basedir, 'bundles');
   }
 
-  const deviceEndowments = {};
+  const timer = buildTimer();
+  config.devices = {
+    timer: {
+      sourceSpec: timer.srcPath,
+    },
+  };
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
+  };
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
-    config.devices = {
-      loopbox: {
-        sourceSpec: loopboxSrcPath,
-        parameters: {
-          senders: config.loopboxSenders,
-        },
+    config.devices.loopbox = {
+      sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: config.loopboxSenders,
       },
     };
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
+  }
+  if (emulateChain) {
+    const bridge = await initEmulatedChain(config, configPath);
+    config.devices.bridge = {
+      sourceSpec: bridge.srcPath,
+    };
+    deviceEndowments.bridge = { ...bridge.endowments };
   }
   if (!config.defaultManagerType) {
     if (useXS) {
