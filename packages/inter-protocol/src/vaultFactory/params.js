@@ -15,6 +15,8 @@ import {
 import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
+import { makeTracer } from '@agoric/internal/src/index.js';
+
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -37,6 +39,8 @@ export const vaultDirectorParamTypes = {
   [REFERENCED_UI_KEY]: ParamTypes.STRING,
 };
 harden(vaultDirectorParamTypes);
+
+const trace = makeTracer('VaultFactory Params');
 
 /**
  * @param {Amount<'set'>} electorateInvitationAmount
@@ -258,6 +262,7 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
   // try to do it again.  This will NOT restore the most recent values; The EC
   // will have to restore the values they want before enabling trading.
   // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  trace('extracting paramManagers from baggage', managerArgs.keys());
   for (const [brand, args] of managerArgs.entries()) {
     makeManager(brand, args);
     managerArgs.delete(brand);

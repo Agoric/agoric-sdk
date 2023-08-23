@@ -234,14 +234,3 @@ export const makeBrandedAmountPattern = amount => {
   return { brand: amount.brand, value: M.nat() };
 };
 harden(makeBrandedAmountPattern);
-
-/** @param {Ratio} ratio */
-export const makeBrandedRatioPattern = ratio => {
-  const numeratorAmountShape = makeBrandedAmountPattern(ratio.numerator);
-  const denominatorAmountShape = makeBrandedAmountPattern(ratio.denominator);
-  return harden({
-    numerator: numeratorAmountShape,
-    denominator: denominatorAmountShape,
-  });
-};
-harden(makeBrandedRatioPattern);

@@ -305,6 +305,8 @@ test.serial('restart vaultFactory', async t => {
   const { privateArgs } = vaultFactoryKit;
   console.log('reused privateArgs', privateArgs, vaultFactoryKit);
 
+  // XXX insufficient.  The kernel doesn't like this storageNode. Have to make a realer one.
+
   const storageRoot = makeMockChainStorageRoot();
   const newStorageNode = await E(storageRoot).makeChildNode('governance');
 

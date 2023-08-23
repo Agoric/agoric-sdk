@@ -5,7 +5,6 @@ import {
   InstanceHandleShape,
   KeywordShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { makeBrandedRatioPattern } from '@agoric/ertp/src/typeGuards.js';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { keyEQ, M, mustMatch } from '@agoric/store';
 import { E } from '@endo/eventual-send';
@@ -14,6 +13,7 @@ import { prepareExoClass, makeScalarBigMapStore } from '@agoric/vat-data';
 import { RelativeTimeShape, TimestampShape } from '@agoric/time';
 import { ToFarFunction } from '@endo/captp';
 import { PublicTopicShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeBrandedRatioPattern } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
