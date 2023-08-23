@@ -7,11 +7,14 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { E } from '@endo/far';
 import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+
 import { makeSwingsetTestKit } from './supports.js';
 import { makeWalletFactoryDriver } from './drivers.js';
 
@@ -302,6 +305,13 @@ test.serial('restart vaultFactory', async t => {
   const { privateArgs } = vaultFactoryKit;
   console.log('reused privateArgs', privateArgs, vaultFactoryKit);
 
+  const storageRoot = makeMockChainStorageRoot();
+  const newStorageNode = await E(storageRoot).makeChildNode('governance');
+
+  const newPrivateArgs = harden({
+    ...privateArgs,
+    storageNode: newStorageNode,
+  });
   const vfAdminFacet = await EV(
     vaultFactoryKit.governorCreatorFacet,
   ).getAdminFacet();
@@ -313,7 +323,7 @@ test.serial('restart vaultFactory', async t => {
   };
   t.like(readCollateralMetrics(0), keyMetrics);
   t.log('awaiting VaultFactory restartContract');
-  const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
+  const upgradeResult = await EV(vfAdminFacet).restartContract(newPrivateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
   t.like(readCollateralMetrics(0), keyMetrics); // unchanged
 });

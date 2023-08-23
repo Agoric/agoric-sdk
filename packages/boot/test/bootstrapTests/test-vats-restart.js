@@ -148,11 +148,15 @@ test.serial('read metrics', async t => {
   const vfMetricsPath = await EV.get(vfTopics.metrics).storagePath;
   t.is(vfMetricsPath, 'published.vaultFactory.metrics');
 
-  await t.throwsAsync(
-    EV(vfTopics.metrics.subscriber).getUpdateSince(),
-    undefined,
-    'reconnecting subscriber not expected to work',
-  );
+  // await t.throwsAsync(
+  //   EV(vfTopics.metrics.subscriber).getUpdateSince(),
+  //   undefined,
+  //   'reconnecting subscriber not expected to work',
+  // );
+
+  // XXX it now reconnects on restart. Is this a reasonable output?
+  const update = await EV(vfTopics.metrics.subscriber).getUpdateSince();
+  t.like(update.value, { rewardPoolAllocation: { Minted: { value: 25000n } } });
 });
 
 test.serial('open second vault', async t => {

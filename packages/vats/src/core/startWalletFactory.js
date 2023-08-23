@@ -7,8 +7,6 @@ import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '@agoric/internal/src/tokens.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
 
 import {
   makeHistoryReviver,
