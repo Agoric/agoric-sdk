@@ -525,6 +525,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     }
   };
 
+  const govNode = await E(privateArgs.storageNode).makeChildNode('governance');
   const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
@@ -532,7 +533,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       privateArgs.initialPoserInvitation,
       auctioneerParamTypes,
       makeRecorderKit,
-      privateArgs.storageNode,
+      govNode,
     );
 
   const tradeEveryBook = () => {

@@ -374,10 +374,14 @@ const prepareVaultDirector = (
           const managerStorageNode = await E(managersNode).makeChildNode(
             managerId,
           );
+          const govStorageNode = await E(managerStorageNode).makeChildNode(
+            'governance',
+          );
 
           vaultParamManagers.addParamManager(
             collateralBrand,
             managerStorageNode,
+            govStorageNode,
             initialParamValues,
             paramMakerKit,
             directorParamManager.accessors(),

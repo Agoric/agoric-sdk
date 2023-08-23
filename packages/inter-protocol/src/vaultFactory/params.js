@@ -204,6 +204,7 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
    *   Brand,
    *   {
    *     storageNode: StorageNode;
+   *     govStorageNode: StorageNode;
    *     initialParamValues: VaultManagerParamValues;
    *     makers: any;
    *     directorAccessors: {
@@ -220,10 +221,11 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
 
   const makeManager = (
     brand,
-    { storageNode, initialParamValues, makers, directorAccessors },
+    { govStorageNode, initialParamValues, makers, directorAccessors },
   ) => {
     paramManagerCount += 1;
-    const gRecorderKit = makeRecorderKit(storageNode);
+
+    const gRecorderKit = makeRecorderKit(govStorageNode);
     const topic = makeRecorderTopic('vaultManager Governance', gRecorderKit);
     const manager = makeVaultParamManager(
       baggage,
@@ -265,6 +267,7 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
     /**
      * @param {Brand} brand
      * @param {StorageNode} storageNode
+     * @param {StorageNode} govStorageNode
      * @param {VaultManagerParamValues} initialParamValues
      * @param {any} makers
      * @param {{
@@ -275,12 +278,14 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
     addParamManager(
       brand,
       storageNode,
+      govStorageNode,
       initialParamValues,
       makers,
       directorAccessors,
     ) {
       const args = harden({
         storageNode,
+        govStorageNode,
         initialParamValues,
         makers,
         directorAccessors,

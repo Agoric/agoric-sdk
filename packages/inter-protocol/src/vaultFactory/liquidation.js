@@ -219,7 +219,7 @@ export const watchForGovernanceChange = (
     // make one observer that will usually ignore the update.
     observeIteration(
       subscribeEach(
-        E.get(E(auctioneerPublicFacet).getPublicTopic()).subscriber,
+        E.get(E(auctioneerPublicFacet).getPublicTopics()).subscriber,
       ),
       harden({
         async updateState(_newState) {

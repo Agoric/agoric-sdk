@@ -577,6 +577,7 @@ test('provisionPool publishes metricsOverride promptly', async t => {
     },
   );
 
+  await eventLoopIteration();
   const metrics = E(facets.publicFacet).getMetrics();
 
   const {
