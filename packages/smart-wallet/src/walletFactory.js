@@ -16,18 +16,18 @@ import { shape } from './typeGuards.js';
 
 const trace = makeTracer('WltFct');
 
+export const customTermsShape = harden({
+  agoricNames: M.eref(M.remotable('agoricNames')),
+  board: M.eref(M.remotable('board')),
+  assetPublisher: M.eref(M.remotable('Bank')),
+});
+
 export const privateArgsShape = harden(
   M.splitRecord(
     { storageNode: M.eref(M.remotable('StorageNode')) },
     { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
   ),
 );
-
-export const customTermsShape = harden({
-  agoricNames: M.eref(M.remotable('agoricNames')),
-  board: M.eref(M.remotable('board')),
-  assetPublisher: M.eref(M.remotable('Bank')),
-});
 
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
@@ -292,10 +292,20 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   if (walletBridgeManager) {
     // NB: may not be in service when creatorFacet is used, or ever
     // It can't be awaited because that fails vat restart
-    void E(walletBridgeManager).initHandler(handleWalletAction);
+    const upgrading = baggage.has('walletsByAddress');
+    if (upgrading) {
+      void E(walletBridgeManager).setHandler(handleWalletAction);
+    } else {
+      void E(walletBridgeManager).initHandler(handleWalletAction);
+    }
   }
 
   return {
     creatorFacet,
   };
 };
+harden(prepare);
+
+// So we can consistently import `start` from contracts.
+// Can't be a value export because Zoe enforces that contracts export one or the other.
+/** @typedef {typeof prepare} start */
