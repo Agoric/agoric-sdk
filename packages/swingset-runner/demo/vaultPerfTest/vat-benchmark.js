@@ -1,7 +1,15 @@
-// in-swingset implementation of the vault performance benchmark from packages/vats/test/bootstrapTests/bench-vaults-performance.js
+// In-swingset implementation of the vault performance benchmark from
+// packages/boot/test/bootstrapTests/bench-vaults-performance.js
 //
-// run with:
-// bin/runner --verbose --chain --sbench --benchmark ${ROUNDS} --config demo/vaultPerfTest/vaultPerfTest-config.json run
+// Run with:
+//
+//   runner --usebundlecache --chain --sbench demo/vaultPerfTest/vat-benchmark.js --benchmark ${ROUNDS} --config ../vm-config/decentral-itest-vaults-config.json run
+//
+// NOTE: The above incantation assumes running from the root directory of the
+// swingset-runner package.  If running from elsewhere, adjust the paths to
+// vat-benchmark.js driver and the JSON config file (and possibly the runner
+// itself, if it's not on your $PATH) accordingly.
+
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';

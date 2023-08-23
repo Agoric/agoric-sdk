@@ -45,7 +45,7 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --resume         - resume executing using existing saved state
+  --resume         - resume execution using existing saved state
   --initonly       - initialize the swingset but exit without running it
   --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
@@ -74,8 +74,8 @@ FLAGS may be:
   --stats          - print a performance stats report at the end of a run
   --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
-  --sbench         - run a whole-swingset benchmark
-  --chain          - emulate the behavior of the cosmos-based chain
+  --sbench FILE    - run a whole-swingset benchmark with the driver vat in FILE
+  --chain          - emulate the behavior of the Cosmos-based chain
   --indirect       - launch swingset from a vat instead of launching directly
   --config FILE    - read swingset config from FILE instead of inferring it
 
@@ -87,10 +87,15 @@ CMD is one of:
   shell  - starts a simple CLI allowing the swingset to be run or stepped or
            interrogated interactively.
 
-BASEDIR is the base directory for locating the swingset's vat definitions.
-  If BASEDIR is omitted or '--' it defaults to the current working directory.
+BASEDIR is the base directory for locating the swingset's vat definitions and
+  for storing the swingset's state.  If BASEDIR is omitted or '--' it defaults
+  to, in order of preference:
+    - the directory of the benchmark driver, if there is one
+    - the directory of the config file, if there is one
+    - the current working directory
 
-Any remaining args are passed to the swingset's bootstrap vat.
+Any remaining command line args are passed to the swingset's bootstrap vat in
+the 'argv' vat parameter.
 `);
 }
 
@@ -103,25 +108,31 @@ function fail(message, printUsage) {
 }
 
 /**
- * In swingsetBenchmark mode, the configured swingset is loaded indirectly,
+ * In swingset benchmark mode, the configured swingset is loaded indirectly,
  * interposing a benchmark controller vat we provide here as the swingset's
  * bootstrap vat.  In addition, the benchmark author is expected to provide a
- * benchmark driver vat in a file named `vat-benchmark.js` adjacent to the
- * swingset's config file.  This benchmark driver vat is expected to expose the
- * methods `setup` and `runBenchmarkRound`.  The controller vat's `bootstrap`
- * method invokes the swingset's "real" `bootstrap` method and then tells the
- * benchmark driver vat to perform setup for the benchmark.  The controller vat
- * then orchestrate the execution of the directed number of bootstrap rounds.
+ * benchmark driver vat from a file specified on the command line.  This
+ * benchmark driver vat is expected to expose the methods `setup` and
+ * `runBenchmarkRound`.  The controller vat's `bootstrap` method invokes the
+ * swingset's "real" `bootstrap` method and then tells the benchmark driver vat
+ * to perform setup for the benchmark.  The controller vat then orchestrates the
+ * execution of the directed number of bootstrap rounds.
  *
- * In order to perform the controller interposition, this function generates a
- * new swingset configuration by making selective modifications and changes to
- * the original swingset configuration.
+ * In order to perform the controller interposition and benchmark orchestration,
+ * this function generates a new swingset configuration with selective
+ * modifications and changes to the original swingset configuration.
  *
  * @param {*} baseConfig  The original configuration being adapted for benchmark use
- * @param {string} basedir  The base directory path for the original swingset vat definitions
+ * @param {string} swingsetBenchmarkDriverPath  Path to the benchmark driver vat source
  * @param {string[]} bootstrapArgv  Bootstrap args from the swingset-runner command line
+ *
+ * @returns {*} a new configuration that is a copy of `baseConfig` with modifications applied.
  */
-function generateSwingsetBenchmarkConfig(baseConfig, basedir, bootstrapArgv) {
+function generateSwingsetBenchmarkConfig(
+  baseConfig,
+  swingsetBenchmarkDriverPath,
+  bootstrapArgv,
+) {
   if (baseConfig.vats.benchmarkBootstrap) {
     fail(
       `you can't have a vat named benchmarkBootstrap in a benchmark swingset`,
@@ -134,12 +145,13 @@ function generateSwingsetBenchmarkConfig(baseConfig, basedir, bootstrapArgv) {
   let { benchmarkDriver, ...baseConfigOptions } = baseConfig;
   if (!benchmarkDriver) {
     benchmarkDriver = {
-      sourceSpec: path.join(basedir, 'vat-benchmark.js'),
+      sourceSpec: swingsetBenchmarkDriverPath,
     };
   }
   const config = {
     ...baseConfigOptions,
     bootstrap: 'benchmarkBootstrap',
+    defaultManagerType: 'local',
     vats: {
       benchmarkBootstrap: {
         sourceSpec: new URL('vat-benchmarkBootstrap.js', import.meta.url)
@@ -246,7 +258,7 @@ export async function main() {
   let useBundleCache = false;
   let activityHash = false;
   let emulateChain = false;
-  let swingsetBenchmarkMode = false;
+  let swingsetBenchmarkDriverPath = null;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -356,7 +368,7 @@ export async function main() {
         emulateChain = true;
         break;
       case '--sbench':
-        swingsetBenchmarkMode = true;
+        swingsetBenchmarkDriverPath = argv.shift();
         break;
       case '-v':
       case '--verbose':
@@ -390,7 +402,7 @@ export async function main() {
 
   // Prettier demands that the conditional not be parenthesized.  Prettier is wrong.
   // prettier-ignore
-  let basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
+  let basedir = (argv[0] === '--' || argv[0] === undefined) ? undefined : argv.shift();
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   let config;
@@ -400,8 +412,17 @@ export async function main() {
     if (config === null) {
       fail(`config file ${configPath} not found`);
     }
-    basedir = path.dirname(configPath);
+    if (!basedir) {
+      basedir = swingsetBenchmarkDriverPath
+        ? path.dirname(swingsetBenchmarkDriverPath)
+        : path.dirname(configPath);
+    }
   } else {
+    if (!basedir) {
+      basedir = swingsetBenchmarkDriverPath
+        ? path.dirname(swingsetBenchmarkDriverPath)
+        : '.';
+    }
     config = loadBasedir(basedir);
   }
   if (config.bundleCachePath) {
@@ -447,8 +468,12 @@ export async function main() {
   }
   config.pinBootstrapRoot = true;
 
-  if (swingsetBenchmarkMode) {
-    config = generateSwingsetBenchmarkConfig(config, basedir, bootstrapArgv);
+  if (swingsetBenchmarkDriverPath) {
+    config = generateSwingsetBenchmarkConfig(
+      config,
+      swingsetBenchmarkDriverPath,
+      bootstrapArgv,
+    );
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
