@@ -38,15 +38,12 @@ ldflags += -compressdwarf=false
 gcflags += -N -l
 endif
 
-ldflags_helper = $(ldflags) \
-		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-helper
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
-BUILD_FLAGS_HELPER :=  -buildmode=exe -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags_helper)'
 
 all: compile-chain
 
-compile-chain: compile-agd compile-helper compile-daemon
-compile-go: compile-agd compile-helper compile-libdaemon
+compile-chain: compile-agd compile-daemon
+compile-go: compile-agd compile-libdaemon
 compile-node: node-compile-gyp
 
 compile-daemon: compile-libdaemon node-compile-gyp
@@ -60,10 +57,10 @@ node-compile-gyp:
 	fi
 
 compile-agd: go-mod-cache
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/agd ./cmd/agd
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/agd ./cmd/agd
 
 install-agd: go-mod-cache
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/agd
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe ./cmd/agd
 
 # Only run from the package.json build:gyp script.
 compile-gyp:
@@ -71,18 +68,14 @@ compile-gyp:
 	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
 	rm -f binding.gyp
 
-compile-helper: go-mod-cache
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/ag-cosmos-helper ./cmd/helper
-
 compile-libdaemon: go-mod-cache
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
-	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id $$PWD/build/libagcosmosdaemon.so build/libagcosmosdaemon.so
 
-go-mod-cache: ../../go.sum
+go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
 	@go mod download
 
-../../go.sum: ../../go.mod
+go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	GO111MODULE=on go mod verify
 
@@ -140,7 +133,11 @@ BUF_VERSION ?= 0.56.0
 
 PROTOC_VERSION ?= 3.11.2
 ifeq ($(UNAME_S),Linux)
-  PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-linux-x86_64.zip
+  ifeq ($(UNAME_M),aarch64)
+    PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-linux-aarch_64.zip
+  else
+    PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-linux-x86_64.zip
+  endif
 endif
 ifeq ($(UNAME_S),Darwin)
   PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-osx-x86_64.zip

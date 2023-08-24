@@ -55,7 +55,7 @@ export default function initBasedir(
     `${JSON.stringify(connections)}\n`,
   );
   const dstHtmldir = path.join(basedir, 'html');
-  fs.mkdirSync(dstHtmldir);
+  fs.mkdirSync(dstHtmldir, { recursive: true });
 
   // Save the configuration options.
   fs.writeFileSync(path.join(basedir, 'options.json'), JSON.stringify(options));

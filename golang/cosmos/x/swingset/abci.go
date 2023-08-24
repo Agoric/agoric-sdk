@@ -9,13 +9,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
 type beginBlockAction struct {
 	Type        string       `json:"type"`
-	StoragePort int          `json:"storagePort"`
 	BlockHeight int64        `json:"blockHeight"`
 	BlockTime   int64        `json:"blockTime"`
 	ChainID     string       `json:"chainID"`
@@ -39,7 +37,6 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: vm.GetPort("vstorage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),
@@ -115,7 +112,7 @@ func AfterCommitBlock(keeper Keeper) error {
 	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
-		panic(fmt.Errorf("AFTER_COMMIT_BLOCK failed: %w. Swingset is in an irrecoverable inconsistent state", err))
+		panic(fmt.Errorf("AFTER_COMMIT_BLOCK failed: %s. Swingset is in an irrecoverable inconsistent state", err))
 	}
 	return err
 }

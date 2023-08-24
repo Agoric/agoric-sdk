@@ -20,12 +20,40 @@ This will build all previous upgrades and upgrade each one.
 make build
 ```
 
+By default pre-releases use the lastest image tagged `dev` in our [container repository](https://github.com/agoric/agoric-sdk/pkgs/container/agoric-sdk). To use
+a specific build:
+
+```shell
+DEST_IMAGE=docker pull ghcr.io/agoric/agoric-sdk:20230515033839-e56ae7
+```
+To use a build based on local changes:
+```shell
+# build ghcr.io/agoric/agoric-sdk:latest
+make local_sdk build
+# or DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest make build
+```
+
 **To run the latest upgrade interactively**
 
 ```shell
 make run
 ```
 
+This will start a container with tmux, with the first window `0` being chain logs `agd start` and the second and current window `1` being a bash shell. You can navigate using `bind-key+B N` (assuming `bind-key` is CTRL/CMD) and N is the window. For more shortcuts see [tmux shortcuts & cheatsheet](https://gist.github.com/MohamedAlaa/2961058#list-all-shortcuts).
+
+The container and chain will halt once you detach from the session.
+
+### Using tmux control mode
+
+If you use [iTerm you can use tmux with native integration](https://iterm2.com/documentation-tmux-integration.html), called control mode, which will make your tmux session appear as a physical window. Pass `TMUX_CC=1`:
+
+```shell
+TMUX_CC=1 make run
+```
+
+**Note:** If your terminal does not support control mode, do not use this. It will show raw control codes, garbling your terminal.
+
+### Troubleshooting
 If you get an error about port 26656 already in use, you have a local chain running on your OS.
 
 If you run into other problems, you might have a local `agoric-sdk:latest` that
@@ -48,6 +76,16 @@ docker ps
 # reattach using the auto-generated goofy name
 docker attach sweet_edison
 ```
+
+**To pass specific `software-upgrade --upgrade-info`**
+
+```shell
+json='{"some":"json","here":123}'
+make build BUILD_OPTS="--build-arg UPGRADE_INFO_11='$json'"
+```
+
+Search this directory for `UPGRADE_INFO` if you want to see how it is plumbed
+through.
 
 **To test CLI**
 

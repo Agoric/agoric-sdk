@@ -1,9 +1,9 @@
 ###########################
 # The golang build container
-FROM golang:1.20 as cosmos-go
+FROM golang:1.20-bullseye as cosmos-go
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
-COPY go.mod go.sum ../../
+COPY golang/cosmos/go.mod golang/cosmos/go.sum ./
 RUN go mod download
 
 COPY golang/cosmos ./
@@ -16,7 +16,7 @@ RUN make GIT_COMMIT="$GIT_COMMIT" GIT_REVISION="$GIT_REVISION" MOD_READONLY= com
 # OTEL fetch
 # from https://github.com/open-telemetry/opentelemetry-collector-releases/releases
 
-FROM node:lts AS otel
+FROM node:18-bullseye AS otel
 
 ARG OTEL_VERSION=0.48.0
 ARG OTEL_HASH_arm64=846852f4c34f6e494abe202402fdf1d17e2ec3c7a7f96985b6011126ae553249
@@ -32,7 +32,7 @@ RUN set -eux; \
 
 ###############################
 # The js build container
-FROM node:lts AS build-js
+FROM node:18-bullseye AS build-js
 
 # When changing/adding entries here, make sure to search the whole project for
 # `@@AGORIC_DOCKER_SUBMODULES@@`
@@ -62,13 +62,13 @@ RUN \
   yarn build
 
 # Remove dev dependencies.
-RUN rm -rf packages/xsnap/moddable
+RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/build/tmp
 # FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
 # RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
 ###############################
 # The install container.
-FROM node:lts AS install
+FROM node:18-bullseye AS install
 
 # Install some conveniences.
 RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less && apt-get clean -y
@@ -77,7 +77,6 @@ WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 COPY --from=otel /otelcol-contrib /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/bin/agd /usr/local/bin/
-RUN ln -s /usr/src/agoric-sdk/bin/agd /usr/local/bin/ag-cosmos-helper
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/agoric-cli/bin/agoric /usr/local/bin/
@@ -87,11 +86,11 @@ ARG GIT_REVISION=unknown
 RUN echo "$GIT_REVISION" > /usr/src/agoric-sdk/packages/solo/public/git-revision.txt
 
 # Compatibility links for older containers.
-RUN ln -s /data /agoric
-RUN ln -s /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
-RUN ln -s /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
+RUN ln -sf /data /agoric
+RUN ln -sf /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
+RUN ln -sf /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
 
-RUN /usr/src/agoric-sdk/packages/deployment/scripts/smoketest-binaries.sh
+RUN /usr/src/agoric-sdk/scripts/smoketest-binaries.sh
 
 # By default, run the daemon with specified arguments.
 WORKDIR /root

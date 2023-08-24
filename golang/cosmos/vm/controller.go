@@ -8,7 +8,6 @@ import (
 
 type ControllerContext struct {
 	Context               sdk.Context
-	StoragePort           int
 	IBCChannelHandlerPort int
 }
 
@@ -74,7 +73,7 @@ func UnregisterPortHandler(portNum int) error {
 func ReceiveFromController(portNum int, msg string) (string, error) {
 	handler := portToHandler[portNum]
 	if handler == nil {
-		return "", fmt.Errorf("Unregistered port %d", portNum)
+		return "", fmt.Errorf("unregistered port %d", portNum)
 	}
 	return handler.Receive(&controllerContext, msg)
 }

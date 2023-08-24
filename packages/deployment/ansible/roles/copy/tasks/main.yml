@@ -7,15 +7,14 @@
     use_ssh_args: true
   when: HELPER_BINARY is defined
 
-- name: Synchronize Agoric SDK
+- name: 'Synchronize Agoric SDK {{ AGORIC_SDK }}'
   synchronize:
     src: '{{ AGORIC_SDK }}/'
     dest: '/usr/src/agoric-sdk/'
-    # dirs: yes
     delete: yes
-    rsync_opts:
-      - "--partial-dir=/usr/src/agoric-sdk/.rsync-partial/{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
-      - '--exclude=.rsync-partial'
+    #rsync_opts:
+    #  - "--partial-dir=/usr/src/agoric-sdk/.rsync-partial/{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
+    #  - '--exclude=.rsync-partial'
     # checksum: yes
     mode: push
     use_ssh_args: true

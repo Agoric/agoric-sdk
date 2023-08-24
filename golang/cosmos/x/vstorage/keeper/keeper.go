@@ -35,7 +35,7 @@ type ProposedChange struct {
 }
 
 type ChangeManager interface {
-	Track(ctx sdk.Context, k Keeper, entry types.StorageEntry, isLegacy bool)
+	Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool)
 	EmitEvents(ctx sdk.Context, k Keeper)
 	Rollback(ctx sdk.Context)
 }
@@ -65,8 +65,8 @@ type Keeper struct {
 	storeKey      sdk.StoreKey
 }
 
-func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry types.StorageEntry, isLegacy bool) {
-	path := entry.Path()
+func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool) {
+	path := entry.Key()
 	// TODO: differentiate between deletion and setting empty string?
 	// Using empty string for deletion for backwards compatibility
 	value := entry.StringValue()
@@ -177,32 +177,56 @@ func (k Keeper) ImportStorage(ctx sdk.Context, entries []*types.DataEntry) {
 	for _, entry := range entries {
 		// This set does the bookkeeping for us in case the entries aren't a
 		// complete tree.
-		k.SetStorage(ctx, types.NewStorageEntry(entry.Path, entry.Value))
+		k.SetStorage(ctx, agoric.NewKVEntry(entry.Path, entry.Value))
 	}
 }
 
-func (k Keeper) MigrateNoDataPlaceholders(ctx sdk.Context) {
+func getEncodedKeysWithPrefixFromIterator(iterator sdk.Iterator, prefix string) [][]byte {
+	keys := make([][]byte, 0)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		path := types.EncodedKeyToPath(key)
+		if strings.HasPrefix(path, prefix) {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
+
+// RemoveEntriesWithPrefix removes all storage entries starting with the
+// supplied pathPrefix, which may not be empty.
+// It has the same effect as listing children of the prefix and removing each
+// descendant recursively.
+func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 	store := ctx.KVStore(k.storeKey)
+
+	if len(pathPrefix) == 0 {
+		panic("cannot remove all content")
+	}
+	if err := types.ValidatePath(pathPrefix); err != nil {
+		panic(err)
+	}
+	descendantPrefix := pathPrefix + types.PathSeparator
+
+	// since vstorage encodes keys with a prefix indicating the number of path
+	// elements, we cannot use a simple prefix iterator.
+	// Instead we iterate over the whole vstorage content and check
+	// whether each entry matches the descendantPrefix. This choice assumes most
+	// entries will be deleted. An alternative implementation would be to
+	// recursively list all children under the descendantPrefix, and delete them.
 
 	iterator := sdk.KVStorePrefixIterator(store, nil)
 
-	// Copy empty keys first since cosmos stores do not support writing keys
-	// while an iterator is open over the domain
-	emptyKeys := [][]byte{}
-	for ; iterator.Valid(); iterator.Next() {
-		rawValue := iterator.Value()
-		if bytes.Equal(rawValue, types.EncodedDataPrefix) {
-			key := iterator.Key()
-			clonedKey := make([]byte, len(key))
-			copy(clonedKey, key)
-			emptyKeys = append(emptyKeys, clonedKey)
-		}
-	}
-	iterator.Close()
+	keys := getEncodedKeysWithPrefixFromIterator(iterator, descendantPrefix)
 
-	for _, key := range emptyKeys {
-		store.Set(key, types.EncodedNoDataValue)
+	for _, key := range keys {
+		store.Delete(key)
 	}
+
+	// Update the prefix entry itself with SetStorage, which will effectively
+	// delete it and all necessary ancestors.
+	k.SetStorage(ctx, agoric.NewKVEntryWithNoValue(pathPrefix))
 }
 
 func (k Keeper) EmitChange(ctx sdk.Context, change *ProposedChange) {
@@ -229,22 +253,22 @@ func (k Keeper) EmitChange(ctx sdk.Context, change *ProposedChange) {
 }
 
 // GetEntry gets generic storage.  The default value is an empty string.
-func (k Keeper) GetEntry(ctx sdk.Context, path string) types.StorageEntry {
+func (k Keeper) GetEntry(ctx sdk.Context, path string) agoric.KVEntry {
 	//fmt.Printf("GetEntry(%s)\n", path);
 	store := ctx.KVStore(k.storeKey)
 	encodedKey := types.PathToEncodedKey(path)
 	rawValue := store.Get(encodedKey)
 	if len(rawValue) == 0 {
-		return types.NewStorageEntryWithNoData(path)
+		return agoric.NewKVEntryWithNoValue(path)
 	}
 	if bytes.Equal(rawValue, types.EncodedNoDataValue) {
-		return types.NewStorageEntryWithNoData(path)
+		return agoric.NewKVEntryWithNoValue(path)
 	}
 	value, hasPrefix := cutPrefix(rawValue, types.EncodedDataPrefix)
 	if !hasPrefix {
 		panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
 	}
-	return types.NewStorageEntry(path, string(value))
+	return agoric.NewKVEntry(path, string(value))
 }
 
 func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
@@ -273,7 +297,7 @@ func (k Keeper) GetChildren(ctx sdk.Context, path string) *types.Children {
 // (just an empty string) and exist only to provide linkage to subnodes with
 // data.
 func (k Keeper) HasStorage(ctx sdk.Context, path string) bool {
-	return k.GetEntry(ctx, path).HasData()
+	return k.GetEntry(ctx, path).HasValue()
 }
 
 // HasEntry tells if a given path has either subnodes or data.
@@ -302,12 +326,12 @@ func (k Keeper) FlushChangeEvents(ctx sdk.Context) {
 	k.changeManager.Rollback(ctx)
 }
 
-func (k Keeper) SetStorageAndNotify(ctx sdk.Context, entry types.StorageEntry) {
+func (k Keeper) SetStorageAndNotify(ctx sdk.Context, entry agoric.KVEntry) {
 	k.changeManager.Track(ctx, k, entry, false)
 	k.SetStorage(ctx, entry)
 }
 
-func (k Keeper) LegacySetStorageAndNotify(ctx sdk.Context, entry types.StorageEntry) {
+func (k Keeper) LegacySetStorageAndNotify(ctx sdk.Context, entry agoric.KVEntry) {
 	k.changeManager.Track(ctx, k, entry, true)
 	k.SetStorage(ctx, entry)
 }
@@ -332,7 +356,7 @@ func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string)
 	if err != nil {
 		return err
 	}
-	k.SetStorageAndNotify(ctx, types.NewStorageEntry(path, string(bz)))
+	k.SetStorageAndNotify(ctx, agoric.NewKVEntry(path, string(bz)))
 	return nil
 }
 
@@ -344,12 +368,12 @@ func componentsToPath(components []string) string {
 //
 // Maintains the invariant: path entries exist if and only if self or some
 // descendant has non-empty storage
-func (k Keeper) SetStorage(ctx sdk.Context, entry types.StorageEntry) {
+func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	store := ctx.KVStore(k.storeKey)
-	path := entry.Path()
+	path := entry.Key()
 	encodedKey := types.PathToEncodedKey(path)
 
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
 			store.Delete(encodedKey)
@@ -364,7 +388,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry types.StorageEntry) {
 
 	// Update our other parent children.
 	pathComponents := strings.Split(path, types.PathSeparator)
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		// delete placeholder ancestors if they're no longer needed
 		for i := len(pathComponents) - 1; i >= 0; i-- {
 			ancestor := componentsToPath(pathComponents[0:i])
@@ -405,7 +429,7 @@ func (k Keeper) GetNoDataValue() []byte {
 
 func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdk.Int, error) {
 	indexEntry := k.GetEntry(ctx, path)
-	if !indexEntry.HasData() {
+	if !indexEntry.HasValue() {
 		return sdk.NewInt(0), nil
 	}
 
@@ -444,10 +468,10 @@ func (k Keeper) PushQueueItem(ctx sdk.Context, queuePath string, value string) e
 
 	// Set the vstorage corresponding to the queue entry for the current tail.
 	path := queuePath + "." + tail.String()
-	k.SetStorage(ctx, types.NewStorageEntry(path, value))
+	k.SetStorage(ctx, agoric.NewKVEntry(path, value))
 
 	// Update the tail to point to the next available entry.
 	path = queuePath + ".tail"
-	k.SetStorage(ctx, types.NewStorageEntry(path, nextTail.String()))
+	k.SetStorage(ctx, agoric.NewKVEntry(path, nextTail.String()))
 	return nil
 }

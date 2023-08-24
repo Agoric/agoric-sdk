@@ -13,4 +13,14 @@ message GenesisState {
     Params params = 2 [(gogoproto.nullable) = false];
 
     State state = 3 [(gogoproto.nullable) = false];
+
+    repeated SwingStoreExportDataEntry swing_store_export_data = 4 [
+        (gogoproto.jsontag)    = "swingStoreExportData"
+    ];
+}
+
+// A SwingStore "export data" entry.
+message SwingStoreExportDataEntry {
+    string key = 1;
+    string value = 2;
 }

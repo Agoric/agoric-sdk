@@ -10,6 +10,9 @@ set -x
 # agoric wallet show --from $GOV1ADDR
 waitForBlock 20
 
+# user1 has no mailbox provisioned; later we test that this was discarded
+submitDeliverInbound user1
+
 # provision a new user wallet
 
 agd keys add user2 --keyring-backend=test  2>&1 | tee "$HOME/.agoric/user2.out"
@@ -171,6 +174,28 @@ OFFER=$(mktemp -t agops.XXX)
 agops vaults close --vaultId vault2 --giveMinted 5.75 --from $USER2ADDR --keyring-backend="test" >|"$OFFER"
 agops perf satisfaction --from "$USER2ADDR" --executeOffer "$OFFER" --keyring-backend=test
 
-# # TODO test bidding
-# # TODO liquidations
-# # agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test
+# replicate state-sync of node
+# this will cause the swing-store to prune some data
+# we will save the pruned artifact for later
+killAgd
+EXPORT_DIR=$(mktemp -t -d swing-store-export-upgrade-10-XXX)
+make_swing_store_snapshot $EXPORT_DIR || fail "Couldn't make swing-store snapshot"
+test_val "$(compare_swing_store_export_data $EXPORT_DIR)" "match" "swing-store export data"
+EXPORT_DIR_ALL_ARTIFACTS=$(mktemp -t -d swing-store-export-upgrade-10-all-artifacts-XXX)
+make_swing_store_snapshot $EXPORT_DIR_ALL_ARTIFACTS --export-mode archival || fail "Couldn't make swing-store snapshot for historical artifacts"
+restore_swing_store_snapshot $EXPORT_DIR || fail "Couldn't restore swing-store snapshot"
+(
+    cd $EXPORT_DIR_ALL_ARTIFACTS
+    mkdir $HOME/.agoric/data/agoric/swing-store-historical-artifacts
+    for i in *; do
+        [ -f $EXPORT_DIR/$i ] && continue
+        mv $i $HOME/.agoric/data/agoric/swing-store-historical-artifacts/
+    done
+)
+rm -rf $EXPORT_DIR
+rm -rf $EXPORT_DIR_ALL_ARTIFACTS
+startAgd
+
+# # TODO fully test bidding
+# # TODO test liquidations
+agops inter bid by-price --price 1 --give 1.0IST  --from $GOV1ADDR --keyring-backend test

@@ -25,13 +25,17 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: 'true'
+          path: ./agoric-sdk
       - run: sudo packages/deployment/scripts/install-deps.sh
-      - uses: ./.github/actions/restore-golang
+        working-directory: ./agoric-sdk
+      - uses: ./agoric-sdk/.github/actions/restore-golang
         with:
           go-version: '1.20'
-      - uses: ./.github/actions/restore-node
+          path: ./agoric-sdk
+      - uses: ./agoric-sdk/.github/actions/restore-node
         with:
           node-version: 18.x
+          path: ./agoric-sdk
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
           xsnap-random-init: '1'
@@ -61,54 +65,55 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: Agoric/testnet-load-generator
-          path: testnet-load-generator
+          path: ./testnet-load-generator
           ref: ${{steps.get-loadgen-branch.outputs.result}}
 
-      - name: Put repos under /usr/src where scripts expect them
-        run: |
-          set -e
-          sudo mv "$GITHUB_WORKSPACE/testnet-load-generator" /usr/src/testnet-load-generator
-          sudo cp -a "$GITHUB_WORKSPACE" /usr/src/agoric-sdk
-          ln -s /usr/src/agoric-sdk/packages/deployment/bin/ag-setup-cosmos /usr/local/bin/ag-setup-cosmos
-        working-directory: /
-
       - name: Build cosmic-swingset dependencies
+        working-directory: ./agoric-sdk
         run: |
           set -e
           cd packages/cosmic-swingset
           make install
-        working-directory: /usr/src/agoric-sdk
-      - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
+      - name: Make networks directory
+        run: |
+          set -e
+          mkdir networks
+      - name: Run integration test
+        working-directory: ./networks
+        run: |
+          set -xe
+          DOCKER_VOLUMES="$PWD/../agoric-sdk:/usr/src/agoric-sdk" \
+          LOADGEN=1 \
+          ../agoric-sdk/packages/deployment/scripts/integration-test.sh
         timeout-minutes: 90
-        working-directory: /usr/src/agoric-sdk
         env:
           NETWORK_NAME: chaintest
       - name: capture results
         if: always()
+        working-directory: ./networks
         run: |
           NOW=$(date -u +%Y%m%dT%H%M%S)
           echo "NOW=$NOW" >> "$GITHUB_ENV"
 
           # Stop the chain from running.
-          packages/deployment/scripts/setup.sh play stop || true
+          ../agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
 
           # Get the results.
-          packages/deployment/scripts/capture-integration-results.sh "${{ job.status == 'failure' }}"
+          ../agoric-sdk/packages/deployment/scripts/capture-integration-results.sh "${{ job.status == 'failure' }}"
 
           # Tear down the nodes.
-          echo yes | packages/deployment/scripts/setup.sh destroy || true
-        working-directory: /usr/src/agoric-sdk
+          echo yes | ../agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
         env:
           NETWORK_NAME: chaintest
       - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
-          path: /usr/src/agoric-sdk/chaintest/results
+          path: ./networks/chaintest/results
 
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
+        uses: ./agoric-sdk/.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}

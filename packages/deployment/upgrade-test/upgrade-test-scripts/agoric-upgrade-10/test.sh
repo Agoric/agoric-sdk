@@ -2,6 +2,11 @@
 
 . ./upgrade-test-scripts/env_setup.sh
 
+# DeliverInbound from un-provisioned account is discarded
+# Note: sending to a provisioned account resulted in an .outbox of
+# [[1,"1:1:resolve:fulfill:rp+44:ro-20;#\"$0.Alleged: notifier\""]]
+test_val $(agd query swingset mailbox $USER1ADDR -o json | jq '.value |fromjson |.outbox') '[]' "DeliverInbound (getConfiguration) is discarded"
+
 # provision pool has right balance 
 test_val $(agd query bank balances agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 -o json | jq -r '.balances | first | .amount ') "18750000"
 
@@ -30,3 +35,11 @@ test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.vaultState') "closed" "vault2 is closed"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.locked.value') "0" "vault2 contains no collateral"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.debtSnapshot.debt.value') "0" "vault2 has no debt"
+
+# verify state-sync would be broken
+killAgd
+EXPORT_DIR=$(mktemp -t -d swing-store-export-upgrade-10-XXX)
+make_swing_store_snapshot $EXPORT_DIR || fail "Couldn't make swing-store snapshot"
+test_val "$(compare_swing_store_export_data $EXPORT_DIR)" "mismatch" "swing-store broken state-sync"
+rm -rf $EXPORT_DIR
+startAgd
