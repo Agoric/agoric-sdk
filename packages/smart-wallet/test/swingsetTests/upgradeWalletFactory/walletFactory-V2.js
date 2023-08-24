@@ -17,16 +17,10 @@ import {
   publishDepositFacet,
 } from '../../../src/walletFactory.js';
 
-/** @type {ContractMeta} */
-export const meta = {
-  upgradability: 'canUpgrade',
-};
-harden(meta);
-
 /**
- * @type {typeof import('../../../src/walletFactory.js').start}
+ * @type {typeof import('../../../src/walletFactory.js').prepare}
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   // copy paste from original contract, with type imports fixed and sayHelloUpgrade method added to creatorFacet)
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 

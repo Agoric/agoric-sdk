@@ -2,11 +2,10 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 // deep import to avoid dependency on all of ERTP, vat-data
-import { AmountShape } from '@agoric/ertp';
+import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { AmountMath, AssetKind } from '@agoric/ertp/src/amountMath.js';
 import { makeTracer } from '@agoric/internal';
 import { M, getCopyBagEntries } from '@agoric/store';
-import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 
 const { Fail, quote: q } = assert;
@@ -48,13 +47,12 @@ export const start = async zcf => {
 
     totalPlaces(want.Places) <= 3n || Fail`only 3 places allowed when joining`;
 
-    atomicRearrange(
-      zcf,
-      harden([
-        [playerSeat, gameSeat, give],
-        [mint.mintGains(want), playerSeat, want],
-      ]),
-    );
+    // We use the deprecated stage/reallocate API
+    // so that we can test this with the version of zoe on mainnet1B.
+    playerSeat.decrementBy(gameSeat.incrementBy(give));
+    const tmp = mint.mintGains(want);
+    playerSeat.incrementBy(tmp.decrementBy(want));
+    zcf.reallocate(playerSeat, tmp, gameSeat);
     playerSeat.exit(true);
     return 'welcome to the game';
   };

@@ -8,8 +8,10 @@ waitForBlock 5
 # CWD is agoric-sdk
 upgrade11=./upgrade-test-scripts/agoric-upgrade-11
 
+test_val "$(agd query vstorage children published.boardAux -o json | jq .children)" "[]" "no boardAux children yet"
+
 # zoe vat is at incarnation 0
-test_val "$(yarn --silent node $upgrade11/vat-status.mjs zoe)" "0" "zoe vat incarnation"
+test_val "$(yarn --silent node $upgrade11/tools/vat-status.mjs zoe)" "0" "zoe vat incarnation"
 
 # validate agoric-upgrade-10 metrics after update
 
@@ -30,4 +32,3 @@ test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.vaultState') "closed" "vault2 is closed"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.locked.value') "0" "vault2 contains no collateral"
 test_val $(agoric follow -l -F :published.vaultFactory.managers.manager0.vaults.vault2 -o jsonlines | jq -r '.debtSnapshot.debt.value') "0" "vault2 has no debt"
-
