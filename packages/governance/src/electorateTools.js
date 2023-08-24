@@ -10,21 +10,16 @@ import { deeplyFulfilled, Far } from '@endo/marshal';
  */
 
 /**
- * @callback StartCounter
+ * Start up a new Counter for a question
+ *
  * @param {ZCF} zcf
  * @param {QuestionSpec} questionSpec
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter
  * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
- * @param {Publisher<unknown>} questionPublisher
+ * @param {Publisher<unknown>} questionsPublisher
  * @param {Publisher<OutcomeRecord>} outcomePublisher
- * @returns {AddQuestionReturn}
- */
-
-/**
- * Start up a new Counter for a question
- *
- * @type {StartCounter}
+ * @returns {Promise<AddQuestionReturn>}
  */
 const startCounter = async (
   zcf,

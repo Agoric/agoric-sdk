@@ -615,7 +615,7 @@
  * @param {Installation} voteCounterInstallation
  * @param {import('@agoric/time/src/types').Timestamp} deadline
  * @param {ParamChangesSpec<P>} paramSpec
- * @returns {ContractGovernanceVoteResult}
+ * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
 /**
@@ -632,7 +632,7 @@
  * @param {Installation} voteCounterInstallation
  * @param {import('@agoric/time/src/types').Timestamp} deadline
  * @param {string[]} strings
- * @returns {ContractGovernanceVoteResult}
+ * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
 /**

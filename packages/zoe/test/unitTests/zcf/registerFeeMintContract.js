@@ -5,7 +5,10 @@ import { Far } from '@endo/marshal';
 /**
  * Tests zcf.registerFeeMint
  *
- * @type {ContractStartFn<undefined, {getMintedAmount: unknown, getMintedPayout: unknown}>}
+ * @param {ZCF} zcf
+ * @param {{
+ *   feeMintAccess: FeeMintAccess;
+ * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   // make the `zcf` and `instance` available to the tests
@@ -33,7 +36,6 @@ const start = async (zcf, privateArgs) => {
     },
   });
 
-  // @ts-expect-error creatorFacet not Far(), should it be?
   return harden({ creatorFacet });
 };
 
