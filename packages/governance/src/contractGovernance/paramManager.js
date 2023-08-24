@@ -213,7 +213,7 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
         const [preparedAmount] = await Promise.all([
           E(E(zoe).getInvitationIssuer()).getAmountOf(invite),
         ]);
-        assertInvitation(invite);
+        await assertInvitation(invite);
 
         state.amount = preparedAmount;
         return [invite, preparedAmount];
@@ -447,7 +447,7 @@ harden(assertElectorateMatches);
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').EventualRecorderKit<any>} recorderKit
  * @param {ParamGovernanceExoMakers} makers
  * @param {ERef<ZoeService>} [zoe]
  */
@@ -660,7 +660,7 @@ harden(makeParamManagerBuilder);
  *
  * @see makeParamManagerSync
  * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').EventualRecorderKit<any>} recorderKit
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {T} spec
  * @param {ZCF} zcf
@@ -702,7 +702,7 @@ harden(makeParamManager);
  *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').EventualRecorderKit<any>} recorderKit
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {T} spec
  * @param {ParamGovernanceExoMakers} makers
@@ -724,7 +724,7 @@ harden(makeParamManagerSync);
 /**
  * @template {Record<string, Invitation> & {Electorate: Invitation}} I Private invitation values
  * @template {ParamTypesMap} M Map of types of custom governed terms
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').EventualRecorderKit<any>} recorderKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {I} invitations invitation objects, which must come from privateArgs
@@ -766,7 +766,7 @@ harden(makeParamManagerFromTermsAndMakers);
 /**
  * @template {Record<string, Invitation> & {Electorate: Invitation}} I Private invitation values
  * @template {ParamTypesMap} M Map of types of custom governed terms
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').EventualRecorderKit<any>} recorderKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {I} invitations invitation objects, which must come from privateArgs

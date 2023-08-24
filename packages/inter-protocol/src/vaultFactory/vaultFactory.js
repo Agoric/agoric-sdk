@@ -106,18 +106,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
   );
 
-  trace('making non-durable publishers');
-  /** @type {any} */
-  let governanceRecorderKit;
-  // XXX non-durable, will sever upon vat restart
-  try {
-    const governanceNode = await E(storageNode).makeChildNode('governance');
-
-    governanceRecorderKit = makeRecorderKit(governanceNode);
-  } catch (e) {
-    debugger;
-    console.log('XUXIU', e);
-  }
+  trace('making durable publishers');
+  const governanceNode = E(storageNode).makeChildNode('governance');
+  const governanceRecorderKit = makeERecorderKit(governanceNode);
 
   /**
    * A powerful object; it can modify parameters. including the invitation.
