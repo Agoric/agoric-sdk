@@ -427,6 +427,8 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
 };
 harden(buildParamGovernanceExoMakers);
 
+/** @typedef {ReturnType<buildParamGovernanceExoMakers>} ParamGovernanceExoMakers */
+
 /**
  * @param {ParamManager<*>} paramManager
  * @param {{[CONTRACT_ELECTORATE]: ParamValueTyped<'invitation'>}} governedParams
@@ -446,7 +448,7 @@ harden(assertElectorateMatches);
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
- * @param {any} makers
+ * @param {ParamGovernanceExoMakers} makers
  * @param {ERef<ZoeService>} [zoe]
  */
 export const makeParamManagerBuilder = (baggage, recorderKit, makers, zoe) => {
@@ -662,7 +664,7 @@ harden(makeParamManagerBuilder);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {T} spec
  * @param {ZCF} zcf
- * @param {any} makers
+ * @param {ParamGovernanceExoMakers} makers
  * @returns {Promise<ParamManager<{[K in keyof T]: T[K][0]}>>}
  */
 export const makeParamManager = (recorderKit, baggage, spec, zcf, makers) => {
@@ -703,7 +705,7 @@ harden(makeParamManager);
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {T} spec
- * @param {any} makers
+ * @param {ParamGovernanceExoMakers} makers
  * @returns {ParamManager<{[K in keyof T]: T[K][0]}>}
  */
 export const makeParamManagerSync = (recorderKit, baggage, spec, makers) => {
@@ -727,7 +729,7 @@ harden(makeParamManagerSync);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
- * @param {any} makers
+ * @param {ParamGovernanceExoMakers} makers
  * @returns {Promise<ParamManager<M & {[K in keyof I]: 'invitation'}>>}
  */
 export const makeParamManagerFromTermsAndMakers = (

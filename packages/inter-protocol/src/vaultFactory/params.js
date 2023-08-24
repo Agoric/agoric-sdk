@@ -92,11 +92,13 @@ harden(makeVaultDirectorParams);
 const zeroRatio = liquidationMargin =>
   subtractRatios(liquidationMargin, liquidationMargin);
 
+/** @typedef {import('@agoric/governance/src/contractGovernance/paramManager.js').ParamGovernanceExoMakers} ParamGovernanceExoMakers */
+
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {VaultManagerParamValues} initial
- * @param {any} paramMakerKit
+ * @param {ParamGovernanceExoMakers} paramMakerKit
  */
 export const makeVaultParamManager = (
   baggage,
@@ -210,7 +212,7 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
    *     storageNode: StorageNode;
    *     govStorageNode: StorageNode;
    *     initialParamValues: VaultManagerParamValues;
-   *     makers: any;
+   *     makers: ParamGovernanceExoMakers;
    *     directorAccessors: {
    *       behavior: Record<string, Function>;
    *       guards: Record<string, import('@endo/patterns').Pattern>;
@@ -274,7 +276,7 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
      * @param {StorageNode} storageNode
      * @param {StorageNode} govStorageNode
      * @param {VaultManagerParamValues} initialParamValues
-     * @param {any} makers
+     * @param {ParamGovernanceExoMakers} makers
      * @param {{
      *   behavior: Record<string, Function>;
      *   guards: Record<string, Pattern>;

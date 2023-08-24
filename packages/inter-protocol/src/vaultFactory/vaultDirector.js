@@ -86,7 +86,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
- * @param {any} paramMakerKit
+ * @param {import('@agoric/governance/src/contractGovernance/paramManager.js').ParamGovernanceExoMakers} paramMakerKit
  */
 const prepareVaultDirector = (
   baggage,
