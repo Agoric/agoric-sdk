@@ -151,7 +151,7 @@ const overrideManifest = ${stringify(overrideManifest, true)};
 
     const trimmed = defangAndTrim(code);
 
-    const proposalPermitJsonFile = `${filePrefix}-permit.json`;
+    const proposalPermitJsonFile = `${filePrefix}.permit.json`;
     log(`creating ${proposalPermitJsonFile}`);
     await writeFile(
       proposalPermitJsonFile,

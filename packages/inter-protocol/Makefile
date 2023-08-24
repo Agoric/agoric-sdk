@@ -32,12 +32,12 @@ CHAIN_OPTS = --chain-id=$(CHAIN_ID)
 # CHAIN_OPTS = --chain-id=$(CHAIN_ID)
 
 # pairs of permit, code
-# EVALS = gov-econ-committee-permit.json gov-econ-committee.js \
-#   gov-amm-vaults-etc-permit.json gov-amm-vaults-etc.js \
-#   ./scripts/gov-startPSM-permit.json ./scripts/gov-startPSM.js
+# EVALS = gov-econ-committee.permit.json gov-econ-committee.js \
+#   gov-amm-vaults-etc.permit.json gov-amm-vaults-etc.js \
+#   ./scripts/gov-startPSM.permit.json ./scripts/gov-startPSM.js
 
 # TODO parameterize
-EVALS = test/psm/wildcard-permit.json test/psm/gov-replace-committee.js
+EVALS = test/psm/wildcard.permit.json test/psm/gov-replace-committee.js
 DESCRIPTION = test/psm/gov-replace-committee.md
 TITLE = $$(head -1 $(DESCRIPTION))
 

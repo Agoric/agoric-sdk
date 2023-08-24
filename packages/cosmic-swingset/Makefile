@@ -17,7 +17,7 @@ VOTING_PERIOD = 45s
 ECONOMY_TEMPLATE = economy-template.json
 ECONOMY_PROPOSALS = t1/economy-proposals.json
 
-EVAL_PERMIT = test/gov-permit.json
+EVAL_PERMIT = test/gov.permit.json
 EVAL_CODE = test/gov-code.js
 EVAL_DEPOSIT = 1000000ubld
 VOTE_PROPOSAL = 1
@@ -62,13 +62,13 @@ INTER_PROTO=../inter-protocol
 
 start-committee: $(INTER_PROTO)/gov-econ-committee.js
 	make EVAL_CODE=$(INTER_PROTO)/gov-econ-committee.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-econ-committee-permit.json \
+		EVAL_PERMIT=$(INTER_PROTO)/gov-econ-committee.permit.json \
 		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
 
 
 start-amm-etc: $(INTER_PROTO)/gov-amm-vaults-etc.js
 	make EVAL_CODE=$(INTER_PROTO)/gov-amm-vaults-etc.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-amm-vaults-etc-permit.json \
+		EVAL_PERMIT=$(INTER_PROTO)/gov-amm-vaults-etc.permit.json \
 		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
 
 gov-q:

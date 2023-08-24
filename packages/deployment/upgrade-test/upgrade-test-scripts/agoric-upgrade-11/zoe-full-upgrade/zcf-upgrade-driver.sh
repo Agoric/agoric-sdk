@@ -13,7 +13,7 @@ here='upgrade-test-scripts/agoric-upgrade-11/zoe-full-upgrade'
 
 agd --chain-id=agoriclocal \
   tx gov submit-proposal swingset-core-eval \
-  ${here}/zcf-upgrade-permit.json ${here}/zcf-upgrade-script.js \
+  ${here}/zcf-upgrade.permit.json ${here}/zcf-upgrade-script.js \
   --title="Zoe Upgrade" --description="zoe upgrade test" \
   --deposit=10000000ubld \
   --gas=auto --gas-adjustment=1.2 \

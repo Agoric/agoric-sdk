@@ -25,7 +25,7 @@ const config = {
   MINT_LIMIT: 0n,
 };
 
-/** @param {unknown} permittedPowers see gov-add-psm-permit.json */
+/** @param {unknown} permittedPowers see gov-add-psm.permit.json */
 const main = async permittedPowers => {
   console.log('starting PSM:', DAI);
   const {
