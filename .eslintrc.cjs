@@ -122,6 +122,17 @@ module.exports = {
       },
     },
     {
+      // These tests use EV() instead of E(), which are easy to confuse.
+      // Help by erroring when E() packages are imported.
+      files: ['packages/boot/test/**/test-*'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          { paths: ['@endo/eventual-send', '@endo/far'] },
+        ],
+      },
+    },
+    {
       // Allow "loan" contracts to mention the word "loan".
       files: ['packages/zoe/src/contracts/loan/*.js'],
       rules: {
