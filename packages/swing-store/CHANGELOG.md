@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.2-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.1...@agoric/swing-store@0.9.2-u11.0) (2023-08-24)
+
+
+### Features
+
+* **swingstore:** add repairMetadata() ([5b2d19d](https://github.com/Agoric/agoric-sdk/commit/5b2d19d1153a23c118afb14ca4ed80e175640f62)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025) [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+
+
+### Bug Fixes
+
+* **swing-store:** add 'replay' artifactMode, make export more strict ([d46c8e2](https://github.com/Agoric/agoric-sdk/commit/d46c8e2d270999ccba552e0072cb5e0926922f28)), closes [#8105](https://github.com/Agoric/agoric-sdk/issues/8105)
+* rewrite importSwingStore to preserve metadata properly ([03e323a](https://github.com/Agoric/agoric-sdk/commit/03e323a55ffeb98dcc84a57050a5d3fc881899b8)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+
+
+
 ### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.0...@agoric/swing-store@0.9.1) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swing-store

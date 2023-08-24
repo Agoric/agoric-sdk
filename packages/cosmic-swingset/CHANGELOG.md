@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.41.3...@agoric/cosmic-swingset@0.42.0-u11.0) (2023-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** add required export-dir export cmd option
+* remove deprecated `ag-cosmos-helper`
+
+### Features
+
+* **agd:** try harder to find cosmic-swingset ([a1d1666](https://github.com/Agoric/agoric-sdk/commit/a1d1666997c2f5b9c7bf14748f6d9603c0b3c5f9))
+* **cosmic-swingset:** add JS upgrade plan handler stub ([7803d3d](https://github.com/Agoric/agoric-sdk/commit/7803d3de8e0cba681dfd27dacfc3577eed0bf2f8))
+* **cosmic-swingset:** add repair-metadata snapshot restore option ([ebbb982](https://github.com/Agoric/agoric-sdk/commit/ebbb9829f1f845c0932ae92b23d0d43be9a0e196))
+* **cosmic-swingset:** replace import/export options ([393b91b](https://github.com/Agoric/agoric-sdk/commit/393b91baaa25c61364955102e8cfcdcaec90870d))
+* **cosmic-swingset:** use x/swingset for swing-store export data ([3336b62](https://github.com/Agoric/agoric-sdk/commit/3336b62fbb10bd2293a832f8c30e590530d14213))
+* **cosmos:** add required export-dir export cmd option ([8d2571c](https://github.com/Agoric/agoric-sdk/commit/8d2571c51c2fe08d630dd2897d7e5e1b45ab45c9))
+* **cosmos:** wire new swingset port handler ([3361b25](https://github.com/Agoric/agoric-sdk/commit/3361b25ddaa00116476d3de1107e800499ab5c21))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** backwards param compat in import/export ([dd8cdf0](https://github.com/Agoric/agoric-sdk/commit/dd8cdf047df05d3c6bca5d1e55e119a33bc0cbf7))
+* **cosmic-swingset:** log level for swing-store export ([c530fdc](https://github.com/Agoric/agoric-sdk/commit/c530fdc72f33d24befb3bff5fe4c94adb0722554))
+* **x/swingset:** switch export/import to replay artifact level ([c037ea3](https://github.com/Agoric/agoric-sdk/commit/c037ea3931877fe4d56df5b82cc7c3eb77a84a53))
+
+
+### Build System
+
+* remove deprecated `ag-cosmos-helper` ([ee43112](https://github.com/Agoric/agoric-sdk/commit/ee431121e3f93406896f8a9e7d949fbf1427c44e))
+
+
+
 ### [0.41.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.41.2...@agoric/cosmic-swingset@0.41.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

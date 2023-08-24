@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.2...@agoric/telemetry@0.6.3-u11.0) (2023-08-24)
+
+
+### Features
+
+* **cosmic-swingset:** add JS upgrade plan handler stub ([7803d3d](https://github.com/Agoric/agoric-sdk/commit/7803d3de8e0cba681dfd27dacfc3577eed0bf2f8))
+
+
+
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.1...@agoric/telemetry@0.6.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/telemetry

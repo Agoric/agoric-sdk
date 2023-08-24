@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ssh-node@3.0.0...@agoric/ssh-node@4.0.0-u11.0) (2023-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** add required export-dir export cmd option
+* remove deprecated `ag-cosmos-helper`
+
+### Features
+
+* **cosmos:** add required export-dir export cmd option ([8d2571c](https://github.com/Agoric/agoric-sdk/commit/8d2571c51c2fe08d630dd2897d7e5e1b45ab45c9))
+* **deployment:** `docker/integration-test.sh` for nested execution ([452bdb8](https://github.com/Agoric/agoric-sdk/commit/452bdb8201841aeb3183d25be7bc760b330daf77))
+* **deployment:** add genesis export test ([4223dee](https://github.com/Agoric/agoric-sdk/commit/4223dee4a4173ebc3a32a7615a2cbfe3522fe3e7))
+* **deployment:** add state-sync to upgrade 11 test ([1d6f3f1](https://github.com/Agoric/agoric-sdk/commit/1d6f3f1325482ec41b7dd574c3060619b94415fa))
+* **deployment:** find testnet-load-generator in parent of agoric-sdk ([0c1b727](https://github.com/Agoric/agoric-sdk/commit/0c1b727cc5b1cf25fab8d59274baf420fdc61352))
+* **deployment:** only include this package in `setup` docker image ([3a8e4c0](https://github.com/Agoric/agoric-sdk/commit/3a8e4c0d576d9b6ff959d1897f99db55e85963ea))
+* **deployment:** replicate broken state sync in upgrade test ([34a43ee](https://github.com/Agoric/agoric-sdk/commit/34a43ee94a4360a36ac107ada4d5406e98f3795f))
+* **upgrade-test:** plumb and use `UPGRADE_INFO` ([0a2ba8a](https://github.com/Agoric/agoric-sdk/commit/0a2ba8aa66800478738131ac2ff237e6ab22045e))
+* **x/swingset:** export swing store in genesis ([e5f9425](https://github.com/Agoric/agoric-sdk/commit/e5f9425e74c7235323cd6b1b88540b73b57a69a6))
+* allow passing tmux flags ([7740bab](https://github.com/Agoric/agoric-sdk/commit/7740bab612ba9ae66d745497db4a90971416412d))
+
+
+### Bug Fixes
+
+* **ci:** require loadgen in deployment integration test ([88889a6](https://github.com/Agoric/agoric-sdk/commit/88889a6ab980b6aec9e807a80be17c42b3cbc368))
+* **deployment:** map Debian `bookworm` to Ubuntu `jammy` ([355f205](https://github.com/Agoric/agoric-sdk/commit/355f205b4ff7cff5063e72b35ed79e206821514b))
+* **deployment:** propagate `ag-setup-cosmos` path to faucet script ([ee0daf3](https://github.com/Agoric/agoric-sdk/commit/ee0daf3235ab5c7634995b0dd0812b2a291880ba))
+* **upgrade-test:** abort if proposal is rejected ([8cdffc6](https://github.com/Agoric/agoric-sdk/commit/8cdffc6a383a51f9318012a33aaafe34eb42e1af))
+* **upgrade-test:** use `agoric-upgrade-10` tag 35 ([47a6b70](https://github.com/Agoric/agoric-sdk/commit/47a6b70c82997e91cdba88f50f5bd61e17477bbf))
+* **upgrade-test:** use correct mainnet-1b image ([981fa01](https://github.com/Agoric/agoric-sdk/commit/981fa019a22bdbd8c512f2ed6b80941e5b8d11b6))
+* **upgrade-test:** use default `$DEBUG` for docker run ([a4fe290](https://github.com/Agoric/agoric-sdk/commit/a4fe29080169cc1bc4295e713c08a37343cd8b49))
+* test upgrade to one-past-vaults ([eeb4f4a](https://github.com/Agoric/agoric-sdk/commit/eeb4f4a50932963e3e41d31d9b21ca4be5fb3b4d))
+* use dev instead of latest ([70f6b90](https://github.com/Agoric/agoric-sdk/commit/70f6b9007f63793da762cc72e6c3b003fa1a3fe5))
+
+
+### Build System
+
+* remove deprecated `ag-cosmos-helper` ([ee43112](https://github.com/Agoric/agoric-sdk/commit/ee431121e3f93406896f8a9e7d949fbf1427c44e))
+
+
+
 ## 3.0.0 (2023-05-19)
 
 
