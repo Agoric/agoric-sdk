@@ -101,15 +101,23 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
 
-  trace('making non-durable publishers');
-  // XXX non-durable, will sever upon vat restart
-  const governanceNode = await E(storageNode).makeChildNode('governance');
-
   const paramMakerKit = buildParamGovernanceExoMakers(
     zcf.getZoeService(),
     baggage,
   );
-  const governanceRecorderKit = makeRecorderKit(governanceNode);
+
+  trace('making non-durable publishers');
+  /** @type {any} */
+  let governanceRecorderKit;
+  // XXX non-durable, will sever upon vat restart
+  try {
+    const governanceNode = await E(storageNode).makeChildNode('governance');
+
+    governanceRecorderKit = makeRecorderKit(governanceNode);
+  } catch (e) {
+    debugger;
+    console.log('XUXIU', e);
+  }
 
   /**
    * A powerful object; it can modify parameters. including the invitation.

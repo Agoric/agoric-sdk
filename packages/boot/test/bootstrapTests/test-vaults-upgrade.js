@@ -303,13 +303,6 @@ test.serial('restart vaultFactory', async t => {
   const { privateArgs } = vaultFactoryKit;
   console.log('reused privateArgs', privateArgs, vaultFactoryKit);
 
-  const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
-  const newStorageNode = await EV(chainStorage).makeChildNode('governance');
-
-  const newPrivateArgs = harden({
-    ...privateArgs,
-    storageNode: newStorageNode,
-  });
   const vfAdminFacet = await EV(
     vaultFactoryKit.governorCreatorFacet,
   ).getAdminFacet();
@@ -321,7 +314,7 @@ test.serial('restart vaultFactory', async t => {
   };
   t.like(readCollateralMetrics(0), keyMetrics);
   t.log('awaiting VaultFactory restartContract');
-  const upgradeResult = await EV(vfAdminFacet).restartContract(newPrivateArgs);
+  const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
   t.like(readCollateralMetrics(0), keyMetrics); // unchanged
 });
