@@ -91,7 +91,10 @@ const getQuestion = (questionHandleP, questionStore) =>
  * @param {AddQuestion} addQuestion
  */
 const getPoserInvitation = (zcf, addQuestion) => {
-  const questionPoserHandler = () => Far(`questionPoser`, { addQuestion });
+  const questionPoserHandler = seat => {
+    seat.exit();
+    return Far(`questionPoser`, { addQuestion });
+  };
   return zcf.makeInvitation(questionPoserHandler, `questionPoser`);
 };
 

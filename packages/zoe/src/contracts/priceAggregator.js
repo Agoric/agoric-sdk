@@ -458,6 +458,7 @@ const start = async (zcf, privateArgs) => {
         seat,
         { notifier: oracleNotifier, scaleValueOut = 1 } = {},
       ) => {
+        seat.exit();
         const admin = await creatorFacet.initOracle(oracleKey);
         const invitationMakers = Far('invitation makers', {
           /** @param {ParsableNumber} price */
@@ -469,7 +470,6 @@ const start = async (zcf, privateArgs) => {
             }, 'PushPrice');
           },
         });
-        seat.exit();
 
         if (oracleNotifier) {
           pushFromOracle(oracleNotifier, scaleValueOut, r =>

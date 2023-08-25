@@ -255,6 +255,7 @@ export const prepareFluxAggregatorKit = async (
            * @param {ZCFSeat} seat
            */
           const offerHandler = async seat => {
+            seat.exit();
             const { oracle } = await facets.creator.initOracle(oracleId);
             const invitationMakers = Far('invitation makers', {
               /** @param {import('./roundsManager.js').PriceRound} result */
@@ -269,7 +270,6 @@ export const prepareFluxAggregatorKit = async (
                 );
               },
             });
-            seat.exit();
 
             return harden({
               invitationMakers,
