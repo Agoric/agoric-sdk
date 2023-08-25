@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { Far } from '@endo/marshal';
 import { Fail } from '@agoric/assert';
@@ -232,12 +231,12 @@ test('past-incarnation watched promises', async t => {
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: rejected'),
   ]);
-  t.deepEqual(
+  t.is(
     lastPImport - firstPImport + 1,
     4,
     'imported 4 promises (1 per dispatch)',
   );
-  t.deepEqual(lastPExport - firstPExport + 1, 1, 'exported 1 promise: first');
+  t.is(lastPExport - firstPExport + 1, 1, 'exported 1 promise: first');
 
   await dispatchMessage('watchLocalPromise', 'orphaned');
   t.deepEqual(getDispatchLogs(), [
@@ -259,12 +258,12 @@ test('past-incarnation watched promises', async t => {
     fulfillmentMessage(`p-${nextPImport()}`, 'watched local promise: rejected'),
     rejectionMessage(`p+${lastPExport}`, S),
   ]);
-  t.deepEqual(
+  t.is(
     lastPImport - firstPImport + 1,
     7,
     'imported 7 promises (1 per dispatch)',
   );
-  t.deepEqual(
+  t.is(
     lastPExport - firstPExport + 1,
     4,
     'exported 4 promises: first, orphaned, fulfilled, rejected',

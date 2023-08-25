@@ -164,7 +164,7 @@ test('publish bundle with fake HTTP server ok', async t => {
       t.deepEqual(bundle, request);
       res.end('{"ok": true}');
     })().catch(error => {
-      t.fail(error);
+      t.fail(`${error.message}`);
     });
   });
   t.teardown(

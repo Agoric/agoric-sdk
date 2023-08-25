@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import {

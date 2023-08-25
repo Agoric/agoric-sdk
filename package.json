@@ -19,10 +19,11 @@
     "ava": "^5.3.0",
     "c8": "^7.13.0",
     "conventional-changelog-conventionalcommits": "^4.6.0",
-    "eslint": "^8.44.0",
+    "eslint": "^8.47.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-jessie": "^0.0.6",
     "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-ava": "^14.0.0",
     "eslint-plugin-github": "^4.8.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jsdoc": "^46.4.3",
@@ -43,6 +44,7 @@
         "files": [
           "packages/ERTP/**/*.{js,ts}",
           "packages/inter-protocol/**/*.{js,ts}",
+          "packages/store/**/*.{js,ts}",
           "packages/vats/**/*.{js,ts}"
         ],
         "options": {

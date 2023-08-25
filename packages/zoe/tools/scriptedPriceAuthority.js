@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

@@ -1,20 +1,16 @@
+/* eslint-disable @jessie.js/safe-await-separator */
 /* global process */
 import assert from 'assert';
 import { execFile } from 'child_process';
 
 const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
+const CENT = ISTunit / 100n;
 
-const [_node, _script, previousOffer, voteDur, debtLimit] = process.argv;
-assert(previousOffer, 'previousOffer is required');
-assert(voteDur, 'voteDur is required');
-assert(debtLimit, 'debtLimit is required');
-const voteDurSec = BigInt(voteDur);
-const debtLimitValue = BigInt(debtLimit) * ISTunit;
+const [_node, _script, ...choices] = process.argv;
 
 const toSec = ms => BigInt(Math.round(ms / 1000));
 
-const id = `propose-${Date.now()}`;
-const deadline = toSec(Date.now()) + voteDurSec;
+const id = `join-${Date.now()}`;
 
 // look up boardIDs for brands, instances in agoricNames
 
@@ -43,21 +39,28 @@ const fromSmallCapsEntries = txt => {
   return Object.fromEntries(theEntries);
 };
 
-const instance = fromSmallCapsEntries(
+const wkInstance = fromSmallCapsEntries(
   await $('agoric follow -lF :published.agoricNames.instance -o text'),
 );
-assert(instance.VaultFactory);
+assert(wkInstance.VaultFactory);
 
-const brand = fromSmallCapsEntries(
+const wkBrand = fromSmallCapsEntries(
   await $('agoric follow -lF :published.agoricNames.brand -o text'),
 );
-assert(brand.IST);
-assert(brand.ATOM);
+assert(wkBrand.IST);
+assert(wkBrand.Place);
 
 const slots = []; // XXX global mutable state
 
+// XXX should use @endo/marshal
 const smallCaps = {
   Nat: n => `+${n}`,
+  replacer: (k, v) =>
+    typeof v === 'bigint'
+      ? `+${v}`
+      : typeof v === 'symbol'
+      ? `%${v.description}`
+      : v,
   // XXX mutates obj
   ref: obj => {
     if (obj.ix) return obj.ix;
@@ -68,37 +71,46 @@ const smallCaps = {
   },
 };
 
+const AmountMath = {
+  make: (brand, value) => ({
+    brand: smallCaps.ref(brand),
+    value: typeof value === 'bigint' ? smallCaps.Nat(value) : value,
+  }),
+};
+
+const makeTagged = (tag, payload) => ({
+  '#tag': tag,
+  payload,
+});
+
+const makeCopyBag = entries => makeTagged('copyBag', entries);
+const want = {
+  Places: AmountMath.make(
+    wkBrand.Place,
+    makeCopyBag(choices.map(name => [name, 1n])),
+  ),
+};
+
+const give = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
 const body = {
   method: 'executeOffer',
   offer: {
     id,
     invitationSpec: {
-      invitationMakerName: 'VoteOnParamChange',
-      previousOffer,
-      source: 'continuing',
+      source: 'contract',
+      instance: smallCaps.ref(wkInstance.game1),
+      publicInvitationMaker: 'makeJoinInvitation',
     },
-    offerArgs: {
-      deadline: smallCaps.Nat(deadline),
-      instance: smallCaps.ref(instance.VaultFactory),
-      params: {
-        DebtLimit: {
-          brand: smallCaps.ref(brand.IST),
-          value: smallCaps.Nat(debtLimitValue),
-        },
-      },
-      path: {
-        paramPath: {
-          key: {
-            collateralBrand: smallCaps.ref(brand.ATOM),
-          },
-        },
-      },
-    },
-    proposal: {},
+    proposal: { give, want },
   },
 };
 
-const capData = { body: `#${JSON.stringify(body)}`, slots };
+console.error(JSON.stringify(body.offer, smallCaps.replacer, 1));
+
+const capData = {
+  body: `#${JSON.stringify(body, smallCaps.replacer)}`,
+  slots,
+};
 const action = JSON.stringify(capData);
 
 console.log(action);

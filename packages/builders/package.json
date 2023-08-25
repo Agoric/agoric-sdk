@@ -1,7 +1,6 @@
 {
   "name": "@agoric/builders",
   "version": "0.1.0",
-  "private": true,
   "description": "Build scripts for proposals to an Agoric chain",
   "type": "module",
   "main": "./index.js",
@@ -28,16 +27,17 @@
     "@agoric/internal": "^0.3.2",
     "@agoric/network": "^0.1.0",
     "@agoric/notifier": "^0.6.2",
+    "@agoric/smart-wallet": "^0.5.3",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
-    "@endo/marshal": "^0.8.6",
     "@endo/bundle-source": "^2.5.2",
     "@endo/captp": "^3.1.2",
     "@endo/eventual-send": "^0.17.3",
-    "@endo/init": "^0.5.57",
     "@endo/far": "^0.2.19",
+    "@endo/init": "^0.5.57",
+    "@endo/marshal": "^0.8.6",
     "@endo/promise-kit": "^0.2.57",
     "@endo/stream": "^0.3.26"
   },
@@ -71,6 +71,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "20m",
     "workerThreads": false

@@ -4,6 +4,8 @@ import (
 	// "os"
 	"fmt"
 
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -28,33 +30,58 @@ func DefaultGenesisState() *types.GenesisState {
 
 // InitGenesis initializes the (Cosmos-side) SwingSet state from the GenesisState.
 // Returns whether the app should send a bootstrap action to the controller.
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) bool {
-	keeper.SetParams(ctx, data.GetParams())
-	keeper.SetState(ctx, data.GetState())
+func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, swingStoreExportDir string, data *types.GenesisState) bool {
+	k.SetParams(ctx, data.GetParams())
+	k.SetState(ctx, data.GetState())
 
 	swingStoreExportData := data.GetSwingStoreExportData()
-	if len(swingStoreExportData) > 0 {
-		// See https://github.com/Agoric/agoric-sdk/issues/6527
-		panic("genesis with swing-store state not implemented")
+	if len(swingStoreExportData) == 0 {
+		return true
 	}
 
-	// TODO: bootstrap only if not restoring swing-store from genesis state
-	return true
+	artifactProvider, err := keeper.OpenSwingStoreExportDirectory(swingStoreExportDir)
+	if err != nil {
+		panic(err)
+	}
+
+	swingStore := k.GetSwingStore(ctx)
+
+	for _, entry := range swingStoreExportData {
+		swingStore.Set([]byte(entry.Key), []byte(entry.Value))
+	}
+
+	snapshotHeight := uint64(ctx.BlockHeight())
+
+	getExportDataReader := func() (agoric.KVEntryReader, error) {
+		exportDataIterator := swingStore.Iterator(nil, nil)
+		return agoric.NewKVIteratorReader(exportDataIterator), nil
+	}
+
+	err = swingStoreExportsHandler.RestoreExport(
+		keeper.SwingStoreExportProvider{
+			BlockHeight:         snapshotHeight,
+			GetExportDataReader: getExportDataReader,
+			ReadNextArtifact:    artifactProvider.ReadNextArtifact,
+		},
+		keeper.SwingStoreRestoreOptions{
+			ArtifactMode:   keeper.SwingStoreArtifactModeReplay,
+			ExportDataMode: keeper.SwingStoreExportDataModeAll,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return false
 }
 
-func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
+func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, swingStoreExportDir string) *types.GenesisState {
 	gs := &types.GenesisState{
 		Params:               k.GetParams(ctx),
 		State:                k.GetState(ctx),
 		SwingStoreExportData: []*types.SwingStoreExportDataEntry{},
 	}
 
-	// Only export the swing-store shadow copy for now
-	// TODO:
-	// - perform state-sync export with check blockHeight (figure out how to
-	//   handle export of historical height),
-	// - include swing-store artifacts in genesis state
-	// See https://github.com/Agoric/agoric-sdk/issues/6527
 	exportDataIterator := k.GetSwingStore(ctx).Iterator(nil, nil)
 	defer exportDataIterator.Close()
 	for ; exportDataIterator.Valid(); exportDataIterator.Next() {
@@ -64,5 +91,51 @@ func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
 		}
 		gs.SwingStoreExportData = append(gs.SwingStoreExportData, &entry)
 	}
+
+	snapshotHeight := uint64(ctx.BlockHeight())
+
+	err := swingStoreExportsHandler.InitiateExport(
+		// The export will fail if the export of a historical height was requested
+		snapshotHeight,
+		swingStoreGenesisEventHandler{exportDir: swingStoreExportDir, snapshotHeight: snapshotHeight},
+		// The export will fail if the swing-store does not contain all replay artifacts
+		keeper.SwingStoreExportOptions{
+			ArtifactMode:   keeper.SwingStoreArtifactModeReplay,
+			ExportDataMode: keeper.SwingStoreExportDataModeSkip,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = keeper.WaitUntilSwingStoreExportDone()
+	if err != nil {
+		panic(err)
+	}
+
 	return gs
+}
+
+type swingStoreGenesisEventHandler struct {
+	exportDir      string
+	snapshotHeight uint64
+}
+
+func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64, retrieveSwingStoreExport func() error) error {
+	return retrieveSwingStoreExport()
+}
+
+func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
+	if eventHandler.snapshotHeight != provider.BlockHeight {
+		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
+	}
+
+	artifactsProvider := keeper.SwingStoreExportProvider{
+		GetExportDataReader: func() (agoric.KVEntryReader, error) {
+			return nil, nil
+		},
+		ReadNextArtifact: provider.ReadNextArtifact,
+	}
+
+	return keeper.WriteSwingStoreExportToDirectory(artifactsProvider, eventHandler.exportDir)
 }

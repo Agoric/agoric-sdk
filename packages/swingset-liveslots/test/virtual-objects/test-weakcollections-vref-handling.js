@@ -1,9 +1,8 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
-test('weakMap vref handling', async t => {
+test('weakMap vref handling', t => {
   const log = [];
   const {
     VirtualObjectAwareWeakMap,

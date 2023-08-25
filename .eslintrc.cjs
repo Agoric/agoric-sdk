@@ -1,8 +1,5 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-env node */
-const process = require('process');
-
-const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
 const deprecatedForLoanContract = [
   ['currency', 'brand, asset or another descriptor'],
@@ -34,28 +31,31 @@ const deprecatedTerminology = Object.fromEntries(
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
-  parserOptions: lintTypes
-    ? {
-        // this is not yet compatible with eslint lsp so it's conditioned on AGORIC_ESLINT_TYPES
-        EXPERIMENTAL_useProjectService: true,
-        sourceType: 'module',
-        project: [
-          './packages/*/tsconfig.json',
-          './packages/*/tsconfig.json',
-          './packages/wallet/*/tsconfig.json',
-          './tsconfig.json',
-        ],
-        tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs'],
-      }
-    : undefined,
+  parserOptions: {
+    // Works for us!
+    EXPERIMENTAL_useProjectService: true,
+    sourceType: 'module',
+    project: [
+      './packages/*/tsconfig.json',
+      './packages/*/tsconfig.json',
+      './packages/wallet/*/tsconfig.json',
+      './tsconfig.json',
+    ],
+    tsconfigRootDir: __dirname,
+    extraFileExtensions: ['.cjs'],
+  },
   plugins: ['@typescript-eslint', 'prettier'],
-  extends: ['@agoric'],
+  extends: ['@agoric', 'plugin:ava/recommended'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
-    '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
+    '@typescript-eslint/no-floating-promises': 'error',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
+
+    // We allow disabled tests in master
+    'ava/no-skip-test': 'off',
+    // Contrary to recommendation https://github.com/avajs/ava/blob/main/docs/recipes/typescript.md#typing-tcontext
+    'ava/use-test': 'off',
 
     // The rule is “safe await separator" which implements the architectural
     // goal of “clearly separate an async function's synchronous prelude from
@@ -113,9 +113,23 @@ module.exports = {
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
+        // sometimes used for organizing logic
+        'no-lone-blocks': 'off',
+
         // NOTE: This rule is enabled for the repository in general.  We turn it
         // off for test code for now.
         '@jessie.js/safe-await-separator': 'off',
+      },
+    },
+    {
+      // These tests use EV() instead of E(), which are easy to confuse.
+      // Help by erroring when E() packages are imported.
+      files: ['packages/boot/test/**/test-*'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          { paths: ['@endo/eventual-send', '@endo/far'] },
+        ],
       },
     },
     {
@@ -140,6 +154,14 @@ module.exports = {
       files: ['*.html'],
       parserOptions: {
         project: false,
+      },
+    },
+    {
+      files: ['packages/**/upgrade-test-scripts/**/*.*js'],
+      rules: {
+        // NOTE: This rule is enabled for the repository in general.  We turn it
+        // off for test code for now.
+        '@jessie.js/safe-await-separator': 'off',
       },
     },
   ],

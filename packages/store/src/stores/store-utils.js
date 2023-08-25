@@ -3,24 +3,24 @@ import { M, matches } from '@endo/patterns';
 
 const { Fail, quote: q } = assert;
 
+// TODO: Undate `@endo/patterns` to export the original, and delete the
+// reimplementation here.
 /**
- * Should behave identically to the one in `@endo/patterns`, but
- * reimplemented for now because `@endo/patterns` forgot to export this one.
- * This one is simple enough that I prefer a reimplementation to a deep import.
- * TODO: Undate `@endo/patterns` to export the original, and delete the
- * reimplementation here.
+ * Should behave identically to the one in `@endo/patterns`, but reimplemented
+ * for now because `@endo/patterns` forgot to export this one. This one is
+ * simple enough that I prefer a reimplementation to a deep import.
  *
  * @param {Passable} s
  * @returns {s is CopySet}
  */
 export const isCopySet = s => matches(s, M.set());
 
+// TODO: Undate `@endo/patterns` to export the original, and delete the
+// reimplementation here.
 /**
- * Should behave identically to the one in `@endo/patterns`, but
- * reimplemented for now because `@endo/patterns` forgot to export this one.
- * This one is simple enough that I prefer a reimplementation to a deep import.
- * TODO: Undate `@endo/patterns` to export the original, and delete the
- * reimplementation here.
+ * Should behave identically to the one in `@endo/patterns`, but reimplemented
+ * for now because `@endo/patterns` forgot to export this one. This one is
+ * simple enough that I prefer a reimplementation to a deep import.
  *
  * @param {Passable} m
  * @returns {m is CopyMap}
@@ -43,7 +43,7 @@ export const isCopyMap = m => matches(m, M.map());
  * @param {(k: K, v?: V) => void} assertOkToAdd
  * @param {(k: K) => void} [assertOkToDelete]
  * @param {string} [keyName]
- * @returns {CurrentKeysKit<K,V>}
+ * @returns {CurrentKeysKit<K, V>}
  */
 export const makeCurrentKeysKit = (
   getRawKeys,
@@ -107,13 +107,12 @@ export const makeCurrentKeysKit = (
 harden(makeCurrentKeysKit);
 
 /**
- * Call `provideLazy` to get or make the value associated with the key.
- * If there already is one, return that. Otherwise,
- * call `makeValue(key)`, remember it as the value for
- * that key, and return it.
+ * Call `provideLazy` to get or make the value associated with the key. If there
+ * already is one, return that. Otherwise, call `makeValue(key)`, remember it as
+ * the value for that key, and return it.
  *
  * @template K,V
- * @param {WeakMapStore<K,V>} mapStore
+ * @param {WeakMapStore<K, V>} mapStore
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}
@@ -127,12 +126,11 @@ export const provideLazy = (mapStore, key, makeValue) => {
 harden(provideLazy);
 
 /**
- * Helper for use cases in which the maker function is async.
- * For two provideLazy calls with the same key, one may be making when the
- * other call starts and it would make again.
- * (Then there'd be a collision when the second tries to store
- * the key.) This prevents that race condition by immediately storing a Promise
- * for the maker in an ephemeral store.
+ * Helper for use cases in which the maker function is async. For two
+ * provideLazy calls with the same key, one may be making when the other call
+ * starts and it would make again. (Then there'd be a collision when the second
+ * tries to store the key.) This prevents that race condition by immediately
+ * storing a Promise for the maker in an ephemeral store.
  *
  * When the `store` argument is durable storage, note that it's possible for
  * termination to happen after the make completes and before it reaches durable
@@ -147,17 +145,16 @@ export const makeAtomicProvider = store => {
   const pending = new Map();
 
   /**
-   * Call `provideAsync` to get or make the value associated with the key,
-   * when the maker is asynchronous.
-   * If there already is one, return that. Otherwise,
-   * call `makeValue(key)`, remember it as the value for
-   * that key, and return it.
+   * Call `provideAsync` to get or make the value associated with the key, when
+   * the maker is asynchronous. If there already is one, return that. Otherwise,
+   * call `makeValue(key)`, remember it as the value for that key, and return
+   * it.
    *
    * @param {K} key
-   * @param {(key: K) => Promise<V>} makeValue make the value for the store
-   * if it hasn't been made yet or the last make failed
+   * @param {(key: K) => Promise<V>} makeValue make the value for the store if
+   *   it hasn't been made yet or the last make failed
    * @param {(key: K, value: V) => Promise<void>} [finishValue] runs exactly
-   * once after a new value is added to the store
+   *   once after a new value is added to the store
    * @returns {Promise<V>}
    */
   const provideAsync = (key, makeValue, finishValue) => {

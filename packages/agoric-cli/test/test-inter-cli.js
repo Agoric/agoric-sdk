@@ -349,11 +349,11 @@ test('diagnostic for agd ENOENT', async t => {
   });
 
   await t.throwsAsync(cmd.parseAsync(argv), { instanceOf: CommanderError });
-  t.deepEqual(
+  t.is(
     diag.join('').trim(),
     "error: option '--from <address>' argument 'gov1' is invalid. ENOENT: is agd in your $PATH?",
   );
-  t.deepEqual(out.join('').trim(), '');
+  t.is(out.join('').trim(), '');
 });
 
 test.todo('agd ENOENT clue outside normalizeAddress');

@@ -1,6 +1,6 @@
 // @ts-nocheck
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import test from 'ava';
-import '@endo/init/debug.js';
 import tmp from 'tmp';
 import {
   initSwingStore,

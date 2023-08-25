@@ -1,7 +1,5 @@
 // @ts-check
 
-import '@endo/init/debug.js';
-
 import tmp from 'tmp';
 import test from 'ava';
 

@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /** @file Bootstrap test integration vaults with smart-wallet */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -265,7 +266,7 @@ test('exit bid', async t => {
     giveCollateral: 9.0,
   });
 
-  wd.sendOfferMaker(Offers.auction.Bid, {
+  await wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
     maxBuy: '1.23ATOM',
     give: '0.1IST',

@@ -1,5 +1,4 @@
 // @ts-check
-import '@endo/init';
 import test from 'ava';
 import { exportStorage } from '../src/export-storage.js';
 
@@ -58,7 +57,7 @@ const makeBatchChainStorage = published => {
   return { batchChainStorage, deleted };
 };
 
-test('exportStorage example', async t => {
+test('exportStorage example', t => {
   const exportStorageSubtrees = ['published.c.o'];
   const expected = [
     ['published.c.o', 'top'],
@@ -82,7 +81,7 @@ test('exportStorage example', async t => {
   t.deepEqual(actual, expected);
 });
 
-test('exportStorage clears crufty ToyUSD PSM', async t => {
+test('exportStorage clears crufty ToyUSD PSM', t => {
   const config = {
     clearStorageSubtrees: ['published'],
     exportStorageSubtrees: [

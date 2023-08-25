@@ -1,5 +1,4 @@
 /* eslint-disable no-use-before-define */
-import '@endo/init/debug.js';
 
 import test from 'ava';
 

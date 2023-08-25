@@ -1,14 +1,12 @@
 // @ts-check
 
-import '@endo/init/debug.js';
-
 import path from 'path';
 import test from 'ava';
 import sqlite3 from 'better-sqlite3';
 
 import { importSwingStore } from '../src/index.js';
 
-import { makeExporter, buildData } from './test-import.js';
+import { makeExporter, buildData } from './exports.js';
 import { tmpDir } from './util.js';
 
 test('repair metadata', async t => {

@@ -1,4 +1,5 @@
 // @ts-nocheck
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import '../../../../exported.js';
 

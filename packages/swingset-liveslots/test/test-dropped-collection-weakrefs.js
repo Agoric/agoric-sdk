@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 import { Far } from '@endo/marshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { kser } from './kmarshal.js';

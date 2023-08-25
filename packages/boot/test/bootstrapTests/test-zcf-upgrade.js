@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
@@ -156,7 +157,7 @@ test('run restart-vats proposal', async t => {
   await buildAndExecuteProposal(zcfPackageSpec);
 
   t.log('upgrade zoe&zcf proposal executed');
-  zoeDriver.upgradeProbe(zcfProbeBundle);
+  await zoeDriver.upgradeProbe(zcfProbeBundle);
   const nextDucats = beforeResult.leftoverPayments.Ducats;
   const nextAmount = await EV(issuer).getAmountOf(nextDucats);
 

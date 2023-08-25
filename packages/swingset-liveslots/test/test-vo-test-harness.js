@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 import { runVOTest } from '../tools/vo-test-harness.js';
 
 async function voTestTest(t, mode) {

@@ -8,9 +8,7 @@ import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
+ * @type {import('ava').TestFn<{}>}
  */
 const test = anyTest;
 

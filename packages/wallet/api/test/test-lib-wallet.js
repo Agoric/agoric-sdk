@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';

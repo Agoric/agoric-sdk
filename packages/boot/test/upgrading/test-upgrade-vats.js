@@ -7,7 +7,7 @@ import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /**
- * @type {import('ava').TestFn<>}
+ * @type {import('ava').TestFn<{}>}
  */
 const test = anyTest;
 
@@ -91,7 +91,7 @@ test('upgrade vat-board', async t => {
   t.is(actualThing, thing, 'must get original value back');
 });
 
-test.skip('upgrade bootstrap vat', async t => {
+test.failing('upgrade bootstrap vat', async t => {
   const bundles = {
     chain: {
       sourceSpec: resolvePath('@agoric/vats/src/core/boot-chain.js'),
