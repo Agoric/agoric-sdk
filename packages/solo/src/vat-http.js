@@ -108,7 +108,7 @@ export function buildRootObject(vatPowers) {
       commandDevice = d;
 
       const replHandler = getReplHandler(replObjects, send);
-      registerURLHandler(replHandler, '/private/repl');
+      void registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
       const captpHandler = Far('captpHandler', {
@@ -127,7 +127,7 @@ export function buildRootObject(vatPowers) {
           return harden(exported);
         },
       });
-      registerURLHandler(captpHandler, '/private/captp');
+      void registerURLHandler(captpHandler, '/private/captp');
     },
 
     registerURLHandler,

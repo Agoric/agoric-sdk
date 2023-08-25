@@ -109,7 +109,7 @@ export async function makeFixture(PORT, noisy = false) {
         // We only reject if the child exits before CapTP is established.
         reject(Error(`CapTP fixture exited with ${code}`));
       });
-      tryConnect(resolve, reject);
+      void tryConnect(resolve, reject);
     });
   }
 
