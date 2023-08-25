@@ -62,7 +62,6 @@
     "import-meta-resolve": "^2.2.1"
   },
   "files": [
-    "bundles/",
     "scripts/",
     "src/",
     "exported.js",
