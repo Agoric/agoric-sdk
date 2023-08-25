@@ -6,9 +6,11 @@ on:
       - opened
       - reopened
       - synchronize
+      - converted_to_draft
       - ready_for_review
       - labeled
       - auto_merge_enabled
+      - auto_merge_disabled
   merge_group:
 
 jobs:
