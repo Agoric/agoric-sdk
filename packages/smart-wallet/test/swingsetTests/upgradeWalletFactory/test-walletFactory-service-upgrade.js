@@ -8,8 +8,6 @@ import {
   wfV2BundleName,
 } from './bootstrap-walletFactory-service-upgrade.js';
 
-// so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePath = makeResolvePath(import.meta.url);
 
 test('walletFactory service upgrade', async t => {
@@ -20,7 +18,7 @@ test('walletFactory service upgrade', async t => {
     vats: {
       bootstrap: {
         // TODO refactor to use bootstrap-relay.js
-        sourceSpec: bfile('bootstrap-walletFactory-service-upgrade.js'),
+        sourceSpec: resolvePath('./bootstrap-walletFactory-service-upgrade.js'),
       },
       zoe: { sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js') },
     },
@@ -32,9 +30,9 @@ test('walletFactory service upgrade', async t => {
         sourceSpec: resolvePath('@agoric/zoe/src/contracts/automaticRefund.js'),
       },
       [wfV1BundleName]: {
-        sourceSpec: bfile('../../../src/walletFactory.js'),
+        sourceSpec: resolvePath('../../../src/walletFactory.js'),
       },
-      [wfV2BundleName]: { sourceSpec: bfile('walletFactory-V2.js') },
+      [wfV2BundleName]: { sourceSpec: resolvePath('./walletFactory-V2.js') },
     },
   };
 

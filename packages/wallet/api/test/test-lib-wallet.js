@@ -24,7 +24,6 @@ import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
-const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePath = makeResolvePath(import.meta.url);
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
@@ -1492,7 +1491,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const path = bfile('./continuingInvitationExample.js');
+  const path = resolvePath('./continuingInvitationExample.js');
   const bundle = await bundleSource(path);
   const installation = await E(t.context.zoe).install(bundle);
   const { creatorInvitation, instance } = await E(t.context.zoe).startInstance(

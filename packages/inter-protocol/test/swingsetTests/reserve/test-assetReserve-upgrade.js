@@ -6,8 +6,6 @@ import { buildVatController } from '@agoric/swingset-vat';
 import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { arV1BundleName } from './bootstrap-assetReserve-upgrade.js';
 
-// so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePath = makeResolvePath(import.meta.url);
 
 test('assetReserve service upgrade', async t => {
@@ -19,7 +17,7 @@ test('assetReserve service upgrade', async t => {
     vats: {
       bootstrap: {
         // TODO refactor to use bootstrap-relay.js
-        sourceSpec: bfile('bootstrap-assetReserve-upgrade.js'),
+        sourceSpec: resolvePath('./bootstrap-assetReserve-upgrade.js'),
       },
       zoe: {
         sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js'),

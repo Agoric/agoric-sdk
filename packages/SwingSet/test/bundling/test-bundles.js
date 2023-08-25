@@ -9,10 +9,9 @@ import { assert } from '@agoric/assert';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { kunser, krefOf } from '../../src/lib/kmarshal.js';
+import { makeResolvePath } from '../../tools/paths.js';
 
-function bfile(name) {
-  return new URL(name, import.meta.url).pathname;
-}
+const resolvePath = makeResolvePath(import.meta.url);
 
 // bundle IDs are hex SHA512, so this must be 128 characters long (plus the
 // 'b1-' version prefix)
@@ -33,31 +32,35 @@ const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
 test('bundles', async t => {
   // we provide the bootstrap vat as a pre-made bundle, to exercise
   // config.vats.NAME.bundle
-  const bootstrapBundle = await bundleSource(bfile('bootstrap-bundles.js'));
+  const bootstrapBundle = await bundleSource(
+    resolvePath('./bootstrap-bundles.js'),
+  );
 
   // This bundle is not a vat, it exports 'runTheCheck()', and is imported by
   // userspace. It exercises config.bundles.NAME.sourceSpec
-  const importableNonVatBundleFilename = bfile('nonvat-importable.js');
+  const importableNonVatBundleFilename = resolvePath('./nonvat-importable.js');
 
   // This one (with 'hi()') provides a named vat bundle, for a static vat,
   // exercising config.vats.NAME.bundleName . We also build dynamic vats to
   // test D(devices.bundle).getNamedBundleCap and E(vatAdmin).createVatByName
-  const namedBundleFilename = bfile('vat-named.js');
+  const namedBundleFilename = resolvePath('./vat-named.js');
 
   // We save this vat bundle (with 'disk()') to disk, to exercise
   // config.bundles.NAME.bundleSpec
-  const diskBundle = await bundleSource(bfile('vat-disk.js'));
+  const diskBundle = await bundleSource(resolvePath('./vat-disk.js'));
   const diskBundleID = `b1-${diskBundle.endoZipBase64Sha512}`;
-  const diskBundleFilename = bfile('bundle-disk.bundle');
+  const diskBundleFilename = resolvePath('./bundle-disk.bundle');
   fs.writeFileSync(diskBundleFilename, JSON.stringify(diskBundle));
   t.teardown(() => fs.unlinkSync(diskBundleFilename));
 
   // We install this vat bundle at runtime, it provides 'runtime()'
-  const installableVatBundle = await bundleSource(bfile('vat-install.js'));
+  const installableVatBundle = await bundleSource(
+    resolvePath('./vat-install.js'),
+  );
 
   // We install this non-vat bundle at runtime, it exports 'runTheCheck()'
   const installableNonVatBundle = await bundleSource(
-    bfile('nonvat-install.js'),
+    resolvePath('./nonvat-install.js'),
   );
 
   const config = {

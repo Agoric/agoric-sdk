@@ -6,8 +6,6 @@ import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 import { psmV1BundleName } from './bootstrap-psm-upgrade.js';
 
-// so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePath = makeResolvePath(import.meta.url);
 
 test('PSM service upgrade', async t => {
@@ -19,7 +17,7 @@ test('PSM service upgrade', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('bootstrap-psm-upgrade.js'),
+        sourceSpec: resolvePath('./bootstrap-psm-upgrade.js'),
       },
       zoe: {
         sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js'),

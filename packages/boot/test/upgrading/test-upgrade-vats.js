@@ -3,35 +3,22 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
-import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
+ * @type {import('ava').TestFn<>}
  */
 const test = anyTest;
 
 const { Fail } = assert;
 
-const importSpec = spec => resolvePath(spec, import.meta.url);
-
-const makeTestContext = async metaUrl => {
-  const bfile = name => new URL(name, metaUrl).pathname;
-
-  return { bfile };
-};
+const resolvePath = makeResolvePath(import.meta.url);
 
 const makeCallOutbound = t => (srcID, obj) => {
   t.log(`callOutbound(${srcID}, ${obj})`);
   return obj;
 };
-
-/** NOTE: limit ambient authority such as import.meta.url to test.before() */
-test.before(async t => {
-  t.context = await makeTestContext(import.meta.url);
-});
 
 /**
  * @param {any} t
@@ -51,7 +38,9 @@ const makeScenario = async (
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: importSpec('@agoric/swingset-vat/tools/bootstrap-relay.js'),
+        sourceSpec: resolvePath(
+          '@agoric/swingset-vat/tools/bootstrap-relay.js',
+        ),
       },
     },
     bundleCachePath: 'bundles',
@@ -74,7 +63,7 @@ const makeScenario = async (
 test('upgrade vat-board', async t => {
   const bundles = {
     board: {
-      sourceSpec: importSpec('@agoric/vats/src/vat-board.js'),
+      sourceSpec: resolvePath('@agoric/vats/src/vat-board.js'),
     },
   };
 
@@ -105,7 +94,7 @@ test('upgrade vat-board', async t => {
 test.skip('upgrade bootstrap vat', async t => {
   const bundles = {
     chain: {
-      sourceSpec: importSpec('@agoric/vats/src/core/boot-chain.js'),
+      sourceSpec: resolvePath('@agoric/vats/src/core/boot-chain.js'),
     },
   };
   // @ts-expect-error error in skipped test
@@ -130,12 +119,11 @@ test.skip('upgrade bootstrap vat', async t => {
 });
 
 test('upgrade vat-bridge', async t => {
-  const { bfile } = t.context;
   const bundles = {
-    bridge: { sourceSpec: importSpec('@agoric/vats/src/vat-bridge.js') },
+    bridge: { sourceSpec: resolvePath('@agoric/vats/src/vat-bridge.js') },
   };
   const devices = {
-    bridge: { sourceSpec: bfile('./device-bridge.js') },
+    bridge: { sourceSpec: resolvePath('./device-bridge.js') },
   };
 
   const expectedStorageValues = ['abc', 'def'];
@@ -241,14 +229,13 @@ test('upgrade vat-bridge', async t => {
 });
 
 test('upgrade vat-bank', async t => {
-  const { bfile } = t.context;
   const bundles = {
-    bank: { sourceSpec: importSpec('@agoric/vats/src/vat-bank.js') },
-    bridge: { sourceSpec: importSpec('@agoric/vats/src/vat-bridge.js') },
-    mint: { sourceSpec: bfile('./vat-mint.js') },
+    bank: { sourceSpec: resolvePath('@agoric/vats/src/vat-bank.js') },
+    bridge: { sourceSpec: resolvePath('@agoric/vats/src/vat-bridge.js') },
+    mint: { sourceSpec: resolvePath('./vat-mint.js') },
   };
   const devices = {
-    bridge: { sourceSpec: bfile('./device-bridge.js') },
+    bridge: { sourceSpec: resolvePath('./device-bridge.js') },
   };
 
   const { EV } = await makeScenario(
@@ -433,7 +420,7 @@ test('upgrade vat-bank', async t => {
 test('upgrade vat-priceAuthority', async t => {
   const bundles = {
     priceAuthority: {
-      sourceSpec: importSpec('@agoric/vats/src/vat-priceAuthority.js'),
+      sourceSpec: resolvePath('@agoric/vats/src/vat-priceAuthority.js'),
     },
   };
 

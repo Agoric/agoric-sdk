@@ -4,7 +4,7 @@
  */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**
@@ -14,39 +14,23 @@ import { buildVatController } from '@agoric/swingset-vat';
  */
 const test = anyTest;
 
-/**
- * WARNING: uses ambient authority of import.meta.url
- *
- * We aim to use ambient authority only in test.before(); splitting out
- * makeTestContext() lets us type t.context.
- */
-const makeTestContext = async () => {
-  const bfile = name => new URL(name, import.meta.url).pathname;
-  const importSpec = spec => resolvePath(spec, import.meta.url);
-  return { bfile, importSpec };
-};
-
-test.before(async t => {
-  t.context = await makeTestContext();
-});
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('upgrade mintHolder', async t => {
-  const { bfile, importSpec } = t.context;
-
   /** @type {SwingSetConfig} */
   const config = harden({
     bootstrap: 'bootstrap',
     vats: {
       // TODO refactor to use bootstrap-relay.js
-      bootstrap: { sourceSpec: bfile('./bootstrap.js') },
-      zoe: { sourceSpec: importSpec('@agoric/vats/src/vat-zoe.js') },
+      bootstrap: { sourceSpec: resolvePath('./bootstrap.js') },
+      zoe: { sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js') },
     },
     bundles: {
       zcf: {
-        sourceSpec: importSpec('@agoric/zoe/contractFacet.js'),
+        sourceSpec: resolvePath('@agoric/zoe/contractFacet.js'),
       },
       mintHolder: {
-        sourceSpec: importSpec('@agoric/vats/src/mintHolder.js'),
+        sourceSpec: resolvePath('@agoric/vats/src/mintHolder.js'),
       },
     },
   });

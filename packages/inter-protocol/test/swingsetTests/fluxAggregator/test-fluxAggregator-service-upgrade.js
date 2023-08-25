@@ -7,7 +7,6 @@ import { buildVatController } from '@agoric/swingset-vat';
 import { faV1BundleName } from './bootstrap-fluxAggregator-service-upgrade.js';
 
 // so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePath = makeResolvePath(import.meta.url);
 
 test('fluxAggregator service upgrade', async t => {
@@ -19,7 +18,9 @@ test('fluxAggregator service upgrade', async t => {
     vats: {
       bootstrap: {
         // TODO refactor to use bootstrap-relay.js
-        sourceSpec: bfile('bootstrap-fluxAggregator-service-upgrade.js'),
+        sourceSpec: resolvePath(
+          './bootstrap-fluxAggregator-service-upgrade.js',
+        ),
       },
       zoe: {
         sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js'),

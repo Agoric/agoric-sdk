@@ -3,12 +3,11 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
-const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePath = makeResolvePath(import.meta.url);
 
 // bundling is a slow step, so we do it once for all the tests.
 const contractGovernorBundleP = bundleSource(
-  bfile('./puppetContractGovernor.js'),
+  resolvePath('./puppetContractGovernor.js'),
 );
 // could be called fakeCommittee. It's used as a source of invitations only
 const autoRefundBundleP = bundleSource(
