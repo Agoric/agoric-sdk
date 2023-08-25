@@ -16,7 +16,7 @@ import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
@@ -25,6 +25,7 @@ import '../src/types.js';
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
@@ -142,7 +143,7 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractRoot = pkgAbsPath(
+  const automaticRefundContractRoot = resolvePath(
     '@agoric/zoe/src/contracts/automaticRefund.js',
   );
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
@@ -151,7 +152,7 @@ test.before(async t => {
   );
 
   // Create Autoswap instance
-  const autoswapContractRoot = pkgAbsPath(
+  const autoswapContractRoot = resolvePath(
     '@agoric/zoe/src/contracts/autoswap.js',
   );
   const autoswapBundle = await bundleSource(autoswapContractRoot);

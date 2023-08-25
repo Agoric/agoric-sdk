@@ -2,7 +2,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
@@ -17,6 +17,7 @@ import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 const { Fail } = assert;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;
@@ -361,7 +362,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const bundles = {
     game: await bundleSource(bfile('./gameAssetContract.js')),
     centralSupply: await bundleSource(
-      pkgAbsPath('@agoric/vats/src/centralSupply.js'),
+      resolvePath('@agoric/vats/src/centralSupply.js'),
     ),
   };
 

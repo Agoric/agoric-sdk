@@ -8,8 +8,10 @@ import { E } from '@endo/far';
 
 import '../../exported.js';
 
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
+
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('offer', async t => {
   const MOOLA_PURSE_PETNAME = 'moola purse';
@@ -38,7 +40,9 @@ test('offer', async t => {
   };
   const zoe = makeZoeForTest();
 
-  const bundlePath = pkgAbsPath('@agoric/zoe/src/contracts/automaticRefund.js');
+  const bundlePath = resolvePath(
+    '@agoric/zoe/src/contracts/automaticRefund.js',
+  );
   const bundle = await bundleSource(bundlePath);
   const installation = E(zoe).install(bundle);
 

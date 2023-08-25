@@ -1,9 +1,10 @@
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 // bundling is a slow step, so we do it once for all the tests.
 const contractGovernorBundleP = bundleSource(
@@ -11,7 +12,7 @@ const contractGovernorBundleP = bundleSource(
 );
 // could be called fakeCommittee. It's used as a source of invitations only
 const autoRefundBundleP = bundleSource(
-  pkgAbsPath('@agoric/zoe/src/contracts/automaticRefund.js'),
+  resolvePath('@agoric/zoe/src/contracts/automaticRefund.js'),
 );
 
 /**  */

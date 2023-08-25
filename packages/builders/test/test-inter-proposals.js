@@ -1,7 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import * as ambientFs from 'fs';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 
 const configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json';
 const noop = harden(() => {});
@@ -13,7 +13,7 @@ const test = anyTest;
 const makeTestContext = t => {
   /** @param {string} specifier */
   const loadConfig = async specifier => {
-    const fullPath = pkgAbsPath(specifier);
+    const fullPath = resolvePath(specifier, import.meta.url);
     t.is(typeof fullPath, 'string');
     const txt = await ambientFs.promises.readFile(fullPath, 'utf-8');
     t.is(typeof txt, 'string');

@@ -14,7 +14,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { TimeMath } from '@agoric/time';
@@ -188,7 +188,7 @@ export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
 ) => {
-  const fullPath = pkgAbsPath(specifier);
+  const fullPath = resolvePath(specifier, import.meta.url);
   const config = /** @type {SwingSetConfig & { coreProposals?: any[] }} */ (
     await loadSwingsetConfigFile(fullPath)
   );

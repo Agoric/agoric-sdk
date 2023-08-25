@@ -3,7 +3,7 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
 /**
@@ -15,7 +15,7 @@ const test = anyTest;
 
 const { Fail } = assert;
 
-const importSpec = spec => pkgAbsPath(spec);
+const importSpec = spec => resolvePath(spec, import.meta.url);
 
 const makeTestContext = async metaUrl => {
   const bfile = name => new URL(name, metaUrl).pathname;

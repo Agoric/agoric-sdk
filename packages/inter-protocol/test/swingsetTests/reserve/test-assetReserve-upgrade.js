@@ -3,11 +3,12 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { assert } from '@agoric/assert';
 
 import { buildVatController } from '@agoric/swingset-vat';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { arV1BundleName } from './bootstrap-assetReserve-upgrade.js';
 
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('assetReserve service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -21,23 +22,23 @@ test('assetReserve service upgrade', async t => {
         sourceSpec: bfile('bootstrap-assetReserve-upgrade.js'),
       },
       zoe: {
-        sourceSpec: pkgAbsPath('@agoric/vats/src/vat-zoe.js'),
+        sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js'),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: pkgAbsPath('@agoric/zoe/src/contractFacet/vatRoot.js'),
+        sourceSpec: resolvePath('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       committee: {
-        sourceSpec: pkgAbsPath('@agoric/governance/src/committee.js'),
+        sourceSpec: resolvePath('@agoric/governance/src/committee.js'),
       },
       puppetContractGovernor: {
-        sourceSpec: pkgAbsPath(
+        sourceSpec: resolvePath(
           '@agoric/governance/tools/puppetContractGovernor.js',
         ),
       },
       [arV1BundleName]: {
-        sourceSpec: pkgAbsPath(
+        sourceSpec: resolvePath(
           '@agoric/inter-protocol/src/reserve/assetReserve.js',
         ),
       },

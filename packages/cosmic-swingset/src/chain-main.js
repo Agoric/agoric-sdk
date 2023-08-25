@@ -30,7 +30,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -47,6 +47,8 @@ import {
   performStateSyncImport,
   validateImporterOptions,
 } from './import-kernel-db.js';
+
+const resolvePath = makeResolvePath(import.meta.url);
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -360,7 +362,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       bootMsg,
     };
     const getVatConfig = () =>
-      pkgAbsPath(
+      resolvePath(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
       );

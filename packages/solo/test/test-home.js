@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import bundleSourceAmbient from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 
@@ -30,7 +30,7 @@ export const Stable = harden(
 //#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
   const loadBundle = async specifier => {
-    const contractRoot = pkgAbsPath(specifier);
+    const contractRoot = resolvePath(specifier, import.meta.url);
     t.log({ contractRoot });
     const bundle = await bundleSourceAmbient(contractRoot);
     return bundle;

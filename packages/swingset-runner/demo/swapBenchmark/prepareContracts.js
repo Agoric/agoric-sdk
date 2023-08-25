@@ -1,7 +1,7 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import bundleSource from '@endo/bundle-source';
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 
 import fs from 'fs';
 
@@ -9,7 +9,7 @@ const CONTRACT_FILES = ['atomicSwap.js'];
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const contractPath = pkgAbsPath(`@agoric/zoe/src/contracts/${contract}`);
+    const contractPath = resolvePath(`@agoric/zoe/src/contracts/${contract}`);
     const bundle = await bundleSource(contractPath);
     const obj = { bundle, contract };
     fs.writeFileSync(

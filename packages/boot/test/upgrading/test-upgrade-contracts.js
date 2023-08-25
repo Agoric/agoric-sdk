@@ -4,7 +4,7 @@
  */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { pkgAbsPath } from '@agoric/swingset-vat/tools/paths.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**
@@ -22,7 +22,7 @@ const test = anyTest;
  */
 const makeTestContext = async () => {
   const bfile = name => new URL(name, import.meta.url).pathname;
-  const importSpec = spec => pkgAbsPath(spec);
+  const importSpec = spec => resolvePath(spec, import.meta.url);
   return { bfile, importSpec };
 };
 
