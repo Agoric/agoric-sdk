@@ -97,4 +97,4 @@ async function main() {
   return vat.close();
 }
 
-main();
+await main().catch(err => console.log(err));
