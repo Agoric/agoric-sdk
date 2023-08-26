@@ -161,7 +161,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       console.warn('Now execute the prepared offer');
     });
 
-  const findOracleCap = async (from, readLatestHead) => {
+  const findOracleCap = async (from, readLatestHead, instance) => {
     const current = await getCurrent(from, { readLatestHead });
 
     const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
@@ -169,8 +169,8 @@ export const makeOracleCommand = (logger, io = {}) => {
 
     for (const [offerId, { value }] of entries) {
       /** @type {{ description: string, instance: unknown }[]} */
-      const [{ description }] = value;
-      if (description === 'oracle invitation') {
+      const [{ description, instance: candidate }] = value;
+      if (instance === candidate && description === 'oracle invitation') {
         return offerId;
       }
     }
@@ -180,10 +180,18 @@ export const makeOracleCommand = (logger, io = {}) => {
     .command('find-continuing-id')
     .description('print id of specified oracle continuing invitation')
     .requiredOption('--from <address>', 'from address', String)
+    .requiredOption(
+      '--pair [brandIn.brandOut]',
+      'token pair (brandIn.brandOut)',
+      s => s.split('.'),
+      ['ATOM', 'USD'],
+    )
     .action(async opts => {
-      const { readLatestHead } = await makeRpcUtils({ fetch });
+      const { lookupPriceAggregatorInstance, readLatestHead } =
+        await rpcTools();
+      const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      const offerId = await findOracleCap(opts.from, readLatestHead);
+      const offerId = await findOracleCap(opts.from, readLatestHead, instance);
       if (!offerId) {
         console.error('No continuing ids found');
       }
@@ -249,7 +257,8 @@ export const makeOracleCommand = (logger, io = {}) => {
          * }}
          */ { pair, keys, price },
       ) => {
-        const { readLatestHead, networkConfig } = await rpcTools();
+        const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
+          await rpcTools();
         const wutil = await makeWalletUtils(
           { fetch, execFileSync, delay },
           networkConfig,
@@ -307,11 +316,13 @@ export const makeOracleCommand = (logger, io = {}) => {
           console.warn(err);
         });
 
+        const instance = lookupPriceAggregatorInstance(pair);
         console.error('pushPrice from each:', keyOrder);
         for await (const from of keyOrder) {
           const oracleAdminAcceptOfferId = await findOracleCap(
             from,
             readLatestHead,
+            instance,
           );
           if (!oracleAdminAcceptOfferId) {
             throw Error(`no oracle invitation found: ${from}`);
