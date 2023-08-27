@@ -21,7 +21,7 @@ jobs:
         github.event.pull_request.draft == false &&
         (
           contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
-          contains(github.event.pull_request.labels.*.name, 'automerge:merge') ||
+          contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
           contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
           github.event.pull_request.auto_merge != null
         ) && 
