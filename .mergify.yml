@@ -42,7 +42,7 @@ pull_request_rules:
   - name: merge to master
     conditions:
       - base=master
-      - label=automerge:merge
+      - label=automerge:no-update
       - or:
           - check-success=wait-integration-pre-checks
           - label=bypass:integration
