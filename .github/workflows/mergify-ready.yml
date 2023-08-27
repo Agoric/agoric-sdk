@@ -1,4 +1,4 @@
-name: Integration tests triggered
+name: Pre-merge checks
 
 on:
   pull_request:
@@ -6,9 +6,11 @@ on:
       - opened
       - reopened
       - synchronize
+      - converted_to_draft
       - ready_for_review
       - labeled
       - auto_merge_enabled
+      - auto_merge_disabled
   merge_group:
 
 jobs:
@@ -26,3 +28,66 @@ jobs:
             needs ${{ toJSON(needs.pre_check.outputs) }}
           EOF
           sleep 5
+
+  merge-strategy:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == true ||
+      github.event.pull_request.base.ref != 'master' || (
+        contains(github.event.pull_request.labels.*.name, 'automerge:squash') ||
+        contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+        contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
+        contains(github.event.pull_request.labels.*.name, 'bypass:automerge') ||
+        github.event.pull_request.auto_merge != null
+      )
+    strategy:
+      # abuse the matrix feature to create a check which stays pending until
+      # a merge strategy is chosen
+      matrix:
+        merge: [chosen]
+    steps:
+      - shell: bash
+        run: echo "Merge strategy chosen"
+
+  linear-history:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.base.ref == 'master' && (
+        contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+        contains(github.event.pull_request.labels.*.name, 'bypass:automerge')
+      ) &&
+      !contains(github.event.pull_request.labels.*.name, 'bypass:linear-history')
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - shell: bash
+        run: |
+          merge_commits=$(git rev-list --merges "origin/$GITHUB_BASE_REF".."origin/$GITHUB_HEAD_REF")
+
+          if [ -n "$merge_commits" ]; then
+            echo "Error: merge commits found in $GITHUB_BASE_REF..$GITHUB_HEAD_REF"
+
+            for merge_commit in $merge_commits; do
+              echo "$merge_commit"
+            done
+
+            exit 1
+          fi
+
+          fixup_commits=
+          for commit in $(git rev-list $GITHUB_BASE_REF..$GITHUB_HEAD_REF); do
+            case $(git show --pretty=format:%s -s $commit) in fixup\!*|squash\!*)
+              fixup_commits="$fixup_commits\n$commit"
+              ;;
+            esac
+          done
+
+          if [ -n "$fixup_commits" ]; then
+            echo "Error: fixup/squash commits found in $GITHUB_BASE_REF..$GITHUB_HEAD_REF"
+            echo -e "$fixup_commits"
+            exit 1
+          fi
