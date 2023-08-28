@@ -5,7 +5,7 @@ export const bindAllMethodsTo = (obj, that = obj) =>
     Object.entries(obj).map(([name, fn]) => [name, fn.bind(that)]),
   );
 
-export const greetGuard = M.interface('Greeter', {
+export const GreeterI = M.interface('Greeter', {
   greet: M.call().optional(M.string()).returns(M.string()),
 });
 export const greetFacet = {
@@ -14,7 +14,7 @@ export const greetFacet = {
   },
 };
 
-export const adminGuard = M.interface('GreeterAdmin', {
+export const GreeterAdminI = M.interface('GreeterAdmin', {
   setNick: M.call(M.string()).returns(),
 });
 export const adminFacet = {
@@ -23,21 +23,21 @@ export const adminFacet = {
   },
 };
 
-export const combinedGuard = M.interface('GreeterWithAdmin', {
-  ...greetGuard.methodGuards,
-  ...adminGuard.methodGuards,
+export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
+  ...GreeterI.methodGuards,
+  ...GreeterAdminI.methodGuards,
 });
 
 export const prepareGreeterSingleton = (zone, label, nick) => {
   const myThis = Object.freeze({ state: { nick } });
-  return zone.exo(label, combinedGuard, {
+  return zone.exo(label, GreeterWithAdminI, {
     ...bindAllMethodsTo(greetFacet, myThis),
     ...bindAllMethodsTo(adminFacet, myThis),
   });
 };
 
 export const prepareGreeter = zone =>
-  zone.exoClass('Greeter', combinedGuard, nick => ({ nick }), {
+  zone.exoClass('Greeter', GreeterWithAdminI, nick => ({ nick }), {
     ...greetFacet,
     ...adminFacet,
   });
@@ -45,7 +45,7 @@ export const prepareGreeter = zone =>
 export const prepareGreeterKit = zone =>
   zone.exoClassKit(
     'GreeterKit',
-    { greeter: greetGuard, admin: adminGuard },
+    { greeter: GreeterI, admin: GreeterAdminI },
     nick => ({ nick }),
     {
       greeter: greetFacet,

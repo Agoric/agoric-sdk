@@ -29,7 +29,7 @@ const testFirstVatDataIncarnation = (t, baggage) => {
   const subBaggage = vatData.provideDurableMapStore(baggage, 'sub');
 
   const myThis = Object.freeze({ state: { nick: 'Singly' } });
-  const singly = vatData.prepareExo(subBaggage, 'a', g.combinedGuard, {
+  const singly = vatData.prepareExo(subBaggage, 'a', g.GreeterWithAdminI, {
     ...g.bindAllMethodsTo(g.greetFacet, myThis),
     ...g.bindAllMethodsTo(g.adminFacet, myThis),
   });
@@ -38,7 +38,7 @@ const testFirstVatDataIncarnation = (t, baggage) => {
   const makeGreeter = vatData.prepareExoClass(
     subBaggage,
     'Greeter',
-    g.combinedGuard,
+    g.GreeterWithAdminI,
     nick => ({ nick }),
     {
       ...g.greetFacet,
@@ -51,7 +51,7 @@ const testFirstVatDataIncarnation = (t, baggage) => {
   const makeGreeterKit = vatData.prepareExoClassKit(
     subBaggage,
     'GreeterKit',
-    { greeter: g.greetGuard, admin: g.adminGuard },
+    { greeter: g.GreeterI, admin: g.GreeterAdminI },
     nick => ({ nick }),
     {
       greeter: g.greetFacet,
