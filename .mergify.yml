@@ -44,6 +44,9 @@ pull_request_rules:
       - base=master
       - label=automerge:no-update
       - or:
+          - "#commits-behind=0"
+          - label=bypass:linear-history
+      - or:
           - check-success=wait-integration-pre-checks
           - label=bypass:integration
       - or:
