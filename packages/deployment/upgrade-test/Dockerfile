@@ -1,6 +1,5 @@
 # Defaults
-# ??? why isn't this called SDK_IMAGE?
-ARG DEST_IMAGE=ghcr.io/agoric/agoric-sdk:dev
+ARG SDK_IMAGE=ghcr.io/agoric/agoric-sdk:dev
 ARG BOOTSTRAP_MODE=main
 
 ## FIRST LAYER
@@ -107,9 +106,9 @@ RUN . ./upgrade-test-scripts/start_to_to.sh
 
 # DEVELOPMENT LAYER
 # allow specifying a different SDK image
-ARG DEST_IMAGE
+ARG SDK_IMAGE
 #this is agoric-upgrade-11 / vstorage updates
-FROM ${DEST_IMAGE} as agoric-upgrade-11
+FROM ${SDK_IMAGE} as agoric-upgrade-11
 ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 COPY --from=agoric-upgrade-10-to-11 /root/.agoric /root/.agoric

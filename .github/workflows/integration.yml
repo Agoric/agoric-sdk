@@ -293,7 +293,7 @@ jobs:
           cd packages/deployment/upgrade-test && \
             docker build \
               --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} \
-              --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
+              --build-arg SDK_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
               -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
         run: docker run --env "DEST=0" docker-upgrade-test:latest
