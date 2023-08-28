@@ -266,7 +266,7 @@ function run() {
     commands[commands.length - 1] = inp.value;
     commands[commands.length] = '';
     inp.value = '';
-    call({ type: 'doEval', number, body: command });
+    void call({ type: 'doEval', number, body: command });
   }
 
   function inputKeyup(ev) {

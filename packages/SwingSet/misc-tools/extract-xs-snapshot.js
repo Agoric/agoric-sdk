@@ -55,7 +55,7 @@ if (!vatIDToExtract) {
   const { snapPos, hash } = info;
   const snapshot = snapStore.loadSnapshot(vatIDToExtract);
   const fn = `${vatIDToExtract}-${snapPos}-${hash}.xss`;
-  E.when(fs.promises.writeFile(fn, snapshot), () =>
+  void E.when(fs.promises.writeFile(fn, snapshot), () =>
     console.log(`wrote snapshot to ${fn}`),
   );
 }

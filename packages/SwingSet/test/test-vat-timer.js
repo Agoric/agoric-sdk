@@ -269,8 +269,8 @@ test('brand', async t => {
   const whenNobrand = 123n;
   const delayNobrand = 123n;
   ts.setWakeup(whenNobrand, handler);
-  ts.wakeAt(whenNobrand);
-  ts.delay(delayNobrand);
+  void ts.wakeAt(whenNobrand);
+  void ts.delay(delayNobrand);
   ts.makeRepeater(delayNobrand, delayNobrand);
   ts.repeatAfter(delayNobrand, delayNobrand, handler);
   ts.makeNotifier(delayNobrand, delayNobrand);

@@ -1602,7 +1602,7 @@ function build(
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
-      p.finally(() => (complete = true));
+      void p.finally(() => (complete = true));
 
       // Instead, we wait for userspace to become idle by draining the
       // promise queue. We clean up and then examine/return 'p' so any
