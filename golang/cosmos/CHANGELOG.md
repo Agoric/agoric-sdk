@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.34.1...@agoric/cosmos@0.35.0-u11.0) (2023-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** add required export-dir export cmd option
+* remove deprecated `ag-cosmos-helper`
+
+### Features
+
+* **agd:** try harder to find cosmic-swingset ([a1d1666](https://github.com/Agoric/agoric-sdk/commit/a1d1666997c2f5b9c7bf14748f6d9603c0b3c5f9))
+* **cosmic-swingset:** add repair-metadata snapshot restore option ([ebbb982](https://github.com/Agoric/agoric-sdk/commit/ebbb9829f1f845c0932ae92b23d0d43be9a0e196))
+* **cosmic-swingset:** replace import/export options ([393b91b](https://github.com/Agoric/agoric-sdk/commit/393b91baaa25c61364955102e8cfcdcaec90870d))
+* **cosmic-swingset:** use x/swingset for swing-store export data ([3336b62](https://github.com/Agoric/agoric-sdk/commit/3336b62fbb10bd2293a832f8c30e590530d14213))
+* **cosmos:** add required export-dir export cmd option ([8d2571c](https://github.com/Agoric/agoric-sdk/commit/8d2571c51c2fe08d630dd2897d7e5e1b45ab45c9))
+* **cosmos:** fix and migrate swing-store ([6ba1957](https://github.com/Agoric/agoric-sdk/commit/6ba19571688518dcfdc4553a0c822695a61908b1))
+* **cosmos:** KVEntry implements json Marshaler and Unmarshaller ([6d2fe11](https://github.com/Agoric/agoric-sdk/commit/6d2fe11d144c5bbdc1611b59c84b6842e8084cb9))
+* **cosmos:** spawn JS on export command ([fe4eb56](https://github.com/Agoric/agoric-sdk/commit/fe4eb56facf83569aa343f098e97c6229556afa9))
+* **cosmos:** wire new swingset port handler ([3361b25](https://github.com/Agoric/agoric-sdk/commit/3361b25ddaa00116476d3de1107e800499ab5c21))
+* **x/swingset:** add store data to genesis ([df72903](https://github.com/Agoric/agoric-sdk/commit/df729030643a097262ad1393503d380e243107eb))
+* **x/swingset:** add WaitUntilSwingStoreExportDone ([f8acd22](https://github.com/Agoric/agoric-sdk/commit/f8acd22381ff3da4682bcb0cdcf71665095506a4))
+* **x/swingset:** allow taking snapshot latest height ([0c0e742](https://github.com/Agoric/agoric-sdk/commit/0c0e74227d34d49ac7ce76ce8e92715816d5ea6a))
+* **x/swingset:** export swing store in genesis ([e5f9425](https://github.com/Agoric/agoric-sdk/commit/e5f9425e74c7235323cd6b1b88540b73b57a69a6))
+* **x/swingset:** import swing store from genesis state ([2446cf4](https://github.com/Agoric/agoric-sdk/commit/2446cf43bb13aad7de0805cd7e33c966d2e31016))
+* Cosmos upgrade handler calls swingset ([66f7bcc](https://github.com/Agoric/agoric-sdk/commit/66f7bccce7ce30cf5b9e1e5321710567c05723cb))
+
+
+### Bug Fixes
+
+* **cosmos:** don't init controller before upgrade ([e567c21](https://github.com/Agoric/agoric-sdk/commit/e567c21a224d239c467f740bb937f84b18db9dd7))
+* **cosmos:** module order independent init and bootstrap ([3ce4012](https://github.com/Agoric/agoric-sdk/commit/3ce4012ea99b39b2d6bfd422b1d7ea7a7e904568))
+* **cosmos:** prevent Golang error wrapping stack frame divergence ([1d8acf6](https://github.com/Agoric/agoric-sdk/commit/1d8acf6270cadfbcdafb1081360155260d031ac1))
+* **cosmos:** Support building on Linux aarch64 ([475708e](https://github.com/Agoric/agoric-sdk/commit/475708e63bb95d75184072547ca92586a978c5a0))
+* **x/swingset:** enforce snapshot restore before init ([c946d58](https://github.com/Agoric/agoric-sdk/commit/c946d5866ef956c198d7ea14936eb9904aa272ae))
+* **x/swingset:** guard snapshot restore for concurrency ([5320a30](https://github.com/Agoric/agoric-sdk/commit/5320a30a873455764104e13d89131e30a93a238c))
+* **x/swingset:** switch export/import to replay artifact level ([c037ea3](https://github.com/Agoric/agoric-sdk/commit/c037ea3931877fe4d56df5b82cc7c3eb77a84a53))
+* **x/vstorage:** value can be empty in genesis data ([9a51df5](https://github.com/Agoric/agoric-sdk/commit/9a51df515b87638b869564ab08445a0ce0d55707))
+
+
+### Build System
+
+* remove deprecated `ag-cosmos-helper` ([ee43112](https://github.com/Agoric/agoric-sdk/commit/ee431121e3f93406896f8a9e7d949fbf1427c44e))
+
+
+
 ### [0.34.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.34.0...@agoric/cosmos@0.34.1) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/cosmos

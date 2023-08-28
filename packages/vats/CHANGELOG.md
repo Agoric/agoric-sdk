@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.15.2-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.1...@agoric/vats@0.15.2-u11.0) (2023-08-24)
+
+
+### Features
+
+* **cosmos:** wire new swingset port handler ([3361b25](https://github.com/Agoric/agoric-sdk/commit/3361b25ddaa00116476d3de1107e800499ab5c21))
+
+
+
 ### [0.15.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.0...@agoric/vats@0.15.1) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/vats
