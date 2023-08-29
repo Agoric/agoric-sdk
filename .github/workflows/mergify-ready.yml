@@ -9,6 +9,7 @@ on:
       - converted_to_draft
       - ready_for_review
       - labeled
+      - unlabeled
       - auto_merge_enabled
       - auto_merge_disabled
   merge_group:
