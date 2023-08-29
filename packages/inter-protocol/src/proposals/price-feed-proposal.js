@@ -218,16 +218,16 @@ export const createPriceFeed = async (
    */
   const addOracle = async addr => {
     const invitation = await E(faKit.creatorFacet).makeOracleInvitation(addr);
-    await reserveThenDeposit(
-      `${AGORIC_INSTANCE_NAME} member ${addr}`,
-      namesByAddressAdmin,
-      addr,
-      [invitation],
-    );
+    const debugName = `${AGORIC_INSTANCE_NAME} member ${addr}`;
+    await reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+      invitation,
+    ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
   };
 
   trace('distributing invitations', oracleAddresses);
-  await Promise.all(oracleAddresses.map(addOracle));
+  // This doesn't resolve until oracle operators create their smart wallets.
+  // Don't block bootstrap on it.
+  void Promise.all(oracleAddresses.map(addOracle));
   trace('createPriceFeed complete');
 };
 
@@ -252,7 +252,6 @@ export const getManifestForPriceFeed = async (
         chainStorage: t,
         chainTimerService: t,
         client: t,
-        contractGovernor: t,
         econCharterKit: t,
         economicCommitteeCreatorFacet: t,
         highPrioritySendersManager: t,

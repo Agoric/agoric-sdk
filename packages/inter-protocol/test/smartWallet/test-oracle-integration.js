@@ -263,6 +263,7 @@ test.serial('admin price', async t => {
     [operatorAddress],
   );
   const wallet = oracleWallets[operatorAddress];
+  await eventLoopIteration();
   const adminOfferId = await acceptInvitation(wallet, governedPriceAggregator);
 
   // Push a new price result /////////////////////////
@@ -300,6 +301,7 @@ test.serial('errors', async t => {
   const { oracleWallets, governedPriceAggregator: priceAggregator } =
     await setupFeedWithWallets(t, [operatorAddress]);
   const wallet = oracleWallets[operatorAddress];
+  await eventLoopIteration();
   const adminOfferId = await acceptInvitation(wallet, priceAggregator);
 
   // TODO move to smart-wallet package when it has sufficient test supports

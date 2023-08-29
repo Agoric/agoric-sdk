@@ -237,10 +237,7 @@ export async function loadSwingsetConfigFile(configPath) {
   await null;
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    const referrer = new URL(
-      configPath,
-      `file:///${process.cwd()}/`,
-    ).toString();
+    const referrer = new URL(configPath, `file://${process.cwd()}/`).toString();
     await normalizeConfigDescriptor(config.vats, referrer, true);
     await normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices

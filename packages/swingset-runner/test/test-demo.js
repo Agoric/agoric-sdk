@@ -30,7 +30,7 @@ async function innerTest(t, extraFlags, dbdir) {
       dbdir = `${appDir}/${dbdir}`;
       extraFlags += ` --dbdir ${dbdir}`;
     }
-    const proc = spawn(`node bin/runner --init ${extraFlags} run ${appDir}`, {
+    const proc = spawn(`node bin/runner ${extraFlags} run ${appDir}`, {
       cwd: path.resolve(dirname, '..'),
       shell: true,
       stdio: ['ignore', 'pipe', 'inherit'],
