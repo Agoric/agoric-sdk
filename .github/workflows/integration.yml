@@ -43,10 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cli: [link-cli, local-npm]
-    # Mark a failure of `local-npm` as a successful result
-    # TODO: remove when `local-npm` job is fixed
-    continue-on-error: ${{ matrix.cli == 'local-npm' }}
+        cli: [link-cli/yarn, registry/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v3
@@ -95,60 +92,16 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn build
 
-      - name: Link Agoric CLI from SDK
-        if: ${{ matrix.cli == 'link-cli' }}
-        run: |
-          yarn link-cli "$HOME/bin/agoric"
-          echo "AGORIC_CMD=[\"$HOME/bin/agoric\"]" >> $GITHUB_ENV
-
       - name: Start local NPM registry
-        if: ${{ matrix.cli == 'local-npm' }}
+        if: ${{ startsWith(matrix.cli, 'registry') }}
         run: |
-          tmp_registry_log=`mktemp`
-          dist_tag=agblah
-
-          nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
-          # Wait for `verdaccio` to boot
-          grep -q 'http address' <(tail -f $tmp_registry_log)
-
-          # Set registry to local registry
-          npm set registry http://localhost:4873
-          yarn config set registry http://localhost:4873
-
-          # Login so we can publish packages
-          npx npm-cli-login@^1.0.0 -u user -p password -e user@example.com \
-            -r http://localhost:4873 --quotes
-
-          npm whoami
-
-          # Publish the packages to our local service.
-          # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-          yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
-            --dist-tag=$dist_tag --preid=dev-$(git rev-parse --short=7 HEAD) \
-            --no-push --no-verify-access --yes
-
-          # Git dirty check.
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "Git status is dirty, aborting."
-            git status
-            exit 1
-          fi
-
-          # Install the Agoric CLI on this machine's $PATH.
-          yarn global add agoric@$dist_tag </dev/null
-
-          # Use the locally-installed dist-tag.
-          echo "AGORIC_INSTALL_OPTIONS=[\"$dist_tag\"]" >> $GITHUB_ENV
-          echo 'AGORIC_START_OPTIONS=["--rebuild"]' >> $GITHUB_ENV
-          echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
+          scripts/registry.sh bg-publish ${{ matrix.cli }}
 
       - name: run agoric-cli integration-test
-        working-directory: ./packages/agoric-cli
-        run: yarn integration-test
-        env:
-          AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
-          # Try to avoid hitting a pessimal Actions output rate-limitation.
-          SOLO_MAX_DEBUG_LENGTH: '1024'
+        run: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
+        # TODO(mfig): remove this `continue` line when the next Endo release
+        # (after 2023-08-23) is incorporated in Agoric SDK.
+        continue-on-error: ${{ startsWith(matrix.cli, 'registry/np') }}
 
       - name: notify on failure
         if: >
