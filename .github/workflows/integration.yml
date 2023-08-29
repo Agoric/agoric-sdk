@@ -253,3 +253,22 @@ jobs:
         timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
+
+  integration-test-result:
+    needs:
+      - pre_check
+      - getting-started
+      - deployment-test
+      - test-docker-build
+    if: needs.pre_check.outputs.should_run == 'true' && (success() || failure() || cancelled())
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        shell: bash
+        run: |
+          cat <<EOF
+            needs ${{ toJSON(needs) }}
+          EOF
+          [ "${{ needs.getting-started.result }}" = "success" ] || exit 1
+          [ "${{ needs.deployment-test.result }}" = "success" ] || exit 1
+          [ "${{ needs.test-docker-build.result }}" = "success" ] || exit 1
