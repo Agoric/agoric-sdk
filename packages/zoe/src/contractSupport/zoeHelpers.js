@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { mustMatch, keyEQ } from '@agoric/store';
+import { mustMatch, keyEQ, M } from '@endo/patterns';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
@@ -201,7 +201,7 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
     reallocateAfterDeposit,
     'temporary seat for deposit',
     undefined,
-    harden({
+    M.splitRecord({
       give: AmountKeywordRecordShape,
       want: {},
       exit: { onDemand: null },

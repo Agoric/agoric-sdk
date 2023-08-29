@@ -42,6 +42,7 @@
     "@endo/far": "^1.0.1",
     "@endo/init": "^1.0.1",
     "@endo/nat": "^5.0.1",
+    "@endo/patterns": "^1.0.1",
     "@endo/promise-kit": "^1.0.1"
   },
   "devDependencies": {

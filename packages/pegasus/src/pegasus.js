@@ -1,7 +1,8 @@
 // @ts-check
 
 import { assert, details as X, Fail } from '@agoric/assert';
-import { makeLegacyWeakMap, makeLegacyMap, M } from '@agoric/store';
+import { M } from '@endo/patterns';
+import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';

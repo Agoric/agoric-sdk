@@ -1,9 +1,8 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
-import { mustMatch } from '@endo/patterns';
+import { mustMatch, M } from '@endo/patterns';
 import { Far } from '@endo/marshal';
 import { TimeMath, RelativeTimeShape } from '@agoric/time';
-import { M } from '@agoric/store';
 import { AmountShape } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
