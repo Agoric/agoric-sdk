@@ -156,7 +156,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     return harden({ invitationMakers });
   };
 
-  const charterCreatorI = M.interface('Charter creatorFacet', {
+  const CharterCreatorI = M.interface('Charter creatorFacet', {
     addInstance: M.call(InstanceHandleShape, M.any())
       .optional(M.string())
       .returns(),
@@ -166,7 +166,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const creatorFacet = prepareExo(
     baggage,
     'Charter creatorFacet',
-    charterCreatorI,
+    CharterCreatorI,
     {
       /**
        * @param {Instance} governedInstance
