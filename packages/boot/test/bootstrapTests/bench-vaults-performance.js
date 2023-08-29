@@ -70,7 +70,7 @@ const collateralBrandKey = 'ATOM';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t);
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -129,6 +129,15 @@ async function stressVaults(t, dumpHeap) {
 
   const { walletFactoryDriver } = t.context;
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1open');
+  await walletFactoryDriver.provideSmartWallet(
+    'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+  );
+  await walletFactoryDriver.provideSmartWallet(
+    'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+  );
+  await walletFactoryDriver.provideSmartWallet(
+    'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
+  );
 
   /**
    * @param {number} i

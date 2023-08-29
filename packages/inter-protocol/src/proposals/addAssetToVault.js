@@ -293,9 +293,7 @@ export const getManifestForAddAssetToVault = (
           consume: {
             bankManager: true,
             agoricNamesAdmin: true,
-            bankMints: true,
             reserveKit: true,
-            vBankKits: true,
             startUpgradable: true,
           },
           produce: { bankMints: true, vBankKits: true },
@@ -310,7 +308,6 @@ export const getManifestForAddAssetToVault = (
           startUpgradable: true,
           priceAuthorityAdmin: true,
           priceAuthority: true,
-          scaledPriceAuthorityKits: true,
         },
         produce: {
           scaledPriceAuthorityKits: true,
