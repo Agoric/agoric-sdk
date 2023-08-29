@@ -20,6 +20,7 @@ jobs:
 
   wait-integration-pre-checks:
     needs: pre_check
+    if: needs.pre_check.outputs.merge_requested == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: wait
@@ -28,7 +29,7 @@ jobs:
           cat <<EOF
             needs ${{ toJSON(needs.pre_check.outputs) }}
           EOF
-          sleep 5
+          sleep 15
 
   merge-strategy:
     runs-on: ubuntu-latest
