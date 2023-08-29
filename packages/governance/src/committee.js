@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   getOpenQuestions,
   getPoserInvitation,
@@ -79,10 +80,15 @@ export const start = (zcf, privateArgs, baggage) => {
     // This will produce unique descriptions because
     // makeCommitteeVoterInvitation() is only called within the following loop,
     // which is only called once per Electorate.
-    return zcf.makeInvitation(seat => {
-      seat.exit();
-      return makeVoterKit(index);
-    }, `Voter${index}`);
+    return zcf.makeInvitation(
+      seat => {
+        seat.exit();
+        return makeVoterKit(index);
+      },
+      `Voter${index}`,
+      undefined,
+      EmptyProposalShape,
+    );
   };
 
   const { committeeName, committeeSize } = zcf.getTerms();

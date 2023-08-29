@@ -90,6 +90,12 @@ export const FullProposalShape = harden({
 /** @see {Proposal} type */
 export const ProposalShape = M.splitRecord({}, FullProposalShape, {});
 
+export const EmptyProposalShape = M.splitRecord({
+  give: {},
+  want: {},
+  exit: { onDemand: null },
+});
+
 export const isOnDemandExitRule = exit => {
   const [exitKey] = Object.keys(exit);
   return exitKey === 'onDemand';

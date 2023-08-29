@@ -1,6 +1,7 @@
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo } from '@agoric/store';
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 
 import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
@@ -40,6 +41,8 @@ const start = zcf => {
       return zcf.makeInvitation(
         () => {},
         `noActionElectorate doesn't allow posing questions`,
+        undefined,
+        EmptyProposalShape,
       );
     },
     addQuestion(_instance, _question) {
