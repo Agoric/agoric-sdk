@@ -1,7 +1,7 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 
 import fs from 'fs';
 
@@ -30,11 +30,9 @@ const generateBundlesP = Promise.all(
     } else {
       ({ bundleName, contractPath } = settings);
     }
-    const sourceUrl = await importMetaResolve(
+    const sourcePath = resolvePath(
       `@agoric/zoe/src/contracts/${contractPath}.js`,
-      import.meta.url,
     );
-    const sourcePath = new URL(sourceUrl).pathname;
     const bundle = await bundleSource(sourcePath);
     const obj = { bundle, bundleName };
     fs.writeFileSync(

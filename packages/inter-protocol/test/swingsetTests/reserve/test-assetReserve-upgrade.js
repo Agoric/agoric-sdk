@@ -1,13 +1,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { buildVatController } from '@agoric/swingset-vat';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { arV1BundleName } from './bootstrap-assetReserve-upgrade.js';
 
-// so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('assetReserve service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -18,39 +17,28 @@ test('assetReserve service upgrade', async t => {
     vats: {
       bootstrap: {
         // TODO refactor to use bootstrap-relay.js
-        sourceSpec: bfile('bootstrap-assetReserve-upgrade.js'),
+        sourceSpec: resolvePath('./bootstrap-assetReserve-upgrade.js'),
       },
       zoe: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/vats/src/vat-zoe.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js'),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       committee: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/governance/src/committee.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/governance/src/committee.js'),
       },
       puppetContractGovernor: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePath(
           '@agoric/governance/tools/puppetContractGovernor.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       [arV1BundleName]: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePath(
           '@agoric/inter-protocol/src/reserve/assetReserve.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
     },
   };

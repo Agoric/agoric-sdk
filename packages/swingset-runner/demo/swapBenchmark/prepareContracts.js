@@ -1,7 +1,7 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 
 import fs from 'fs';
 
@@ -9,11 +9,7 @@ const CONTRACT_FILES = ['atomicSwap.js'];
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const contractUrl = await importMetaResolve(
-      `@agoric/zoe/src/contracts/${contract}`,
-      import.meta.url,
-    );
-    const contractPath = new URL(contractUrl).pathname;
+    const contractPath = resolvePath(`@agoric/zoe/src/contracts/${contract}`);
     const bundle = await bundleSource(contractPath);
     const obj = { bundle, contract };
     fs.writeFileSync(

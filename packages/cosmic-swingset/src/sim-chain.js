@@ -10,10 +10,10 @@ import anylogger from 'anylogger';
 
 import { makeSlogSender } from '@agoric/telemetry';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { Fail } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
@@ -74,15 +74,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     },
   };
 
-  const getVatConfig = async () => {
-    const url = await importMetaResolve(
+  const getVatConfig = () =>
+    resolvePath(
       process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
         argv.bootMsg.params.bootstrap_vat_config,
-      import.meta.url,
     );
-    const vatconfig = new URL(url).pathname;
-    return vatconfig;
-  };
+
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
     Fail`Replay not implemented`;

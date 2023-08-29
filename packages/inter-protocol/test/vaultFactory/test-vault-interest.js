@@ -4,14 +4,14 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
 
-const vaultRoot = './vault-contract-wrapper.js';
+const bfile = name => new URL(name, import.meta.url).pathname;
+const contractPath = bfile('./vault-contract-wrapper.js');
 const trace = makeTracer('TestVaultInterest', false);
 
 /**
@@ -36,13 +36,8 @@ const { zoe, feeMintAccessP: feeMintAccess } = await setUpZoeForTest({
   useNearRemote: true,
 });
 
-/**
- * @param {ERef<ZoeService>} zoeP
- * @param {string} sourceRoot
- */
-async function launch(zoeP, sourceRoot) {
-  const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);
-  const contractPath = new URL(contractUrl).pathname;
+/** @param {ERef<ZoeService>} zoeP */
+async function launch(zoeP) {
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(
@@ -76,7 +71,7 @@ async function launch(zoeP, sourceRoot) {
 }
 
 test('charges', async t => {
-  const { creatorSeat, creatorFacet } = await launch(zoe, vaultRoot);
+  const { creatorSeat, creatorFacet } = await launch(zoe);
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
   // Minted (charging 3 Minted fee), which uses an automatic market maker that

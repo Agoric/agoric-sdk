@@ -17,13 +17,15 @@ import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
+const resolvePath = makeResolvePath(import.meta.url);
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
@@ -141,23 +143,18 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractUrl = await importMetaResolve(
+  const automaticRefundContractRoot = resolvePath(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
-  const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
-    .pathname;
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
   const automaticRefundInstallation = await E(zoe).install(
     automaticRefundBundle,
   );
 
   // Create Autoswap instance
-  const autoswapContractUrl = await importMetaResolve(
+  const autoswapContractRoot = resolvePath(
     '@agoric/zoe/src/contracts/autoswap.js',
-    import.meta.url,
   );
-  const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallation = await E(zoe).install(autoswapBundle);
 
@@ -1495,11 +1492,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const url = await importMetaResolve(
-    './continuingInvitationExample.js',
-    import.meta.url,
-  );
-  const path = new URL(url).pathname;
+  const path = resolvePath('./continuingInvitationExample.js');
   const bundle = await bundleSource(path);
   const installation = await E(t.context.zoe).install(bundle);
   const { creatorInvitation, instance } = await E(t.context.zoe).startInstance(

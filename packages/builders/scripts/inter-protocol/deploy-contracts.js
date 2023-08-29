@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import url from 'url';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { E } from '@endo/eventual-send';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 
 // TODO: CLI options to choose contracts
@@ -15,9 +15,7 @@ const contractRefs = [
   '../bundles/bundle-auctioneer.js',
   '../../vats/bundles/bundle-mintHolder.js',
 ];
-const contractRoots = contractRefs.map(ref =>
-  url.fileURLToPath(new URL(ref, import.meta.url)),
-);
+const contractRoots = contractRefs.map(resolvePath);
 
 /** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
 const provideWhen = async (store, key, make) => {

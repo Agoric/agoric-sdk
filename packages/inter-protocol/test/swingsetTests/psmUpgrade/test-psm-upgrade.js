@@ -1,13 +1,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 import { psmV1BundleName } from './bootstrap-psm-upgrade.js';
 
-// so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('PSM service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -18,39 +17,26 @@ test('PSM service upgrade', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('bootstrap-psm-upgrade.js'),
+        sourceSpec: resolvePath('./bootstrap-psm-upgrade.js'),
       },
       zoe: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/vats/src/vat-zoe.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js'),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       committee: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/governance/src/committee.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/governance/src/committee.js'),
       },
       puppetContractGovernor: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePath(
           '@agoric/governance/tools/puppetContractGovernor.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       [psmV1BundleName]: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/inter-protocol/src/psm/psm.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePath('@agoric/inter-protocol/src/psm/psm.js'),
       },
     },
   };

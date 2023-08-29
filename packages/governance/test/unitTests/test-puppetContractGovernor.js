@@ -2,19 +2,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { setUpGovernedContract } from '../../tools/puppetGovernance.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 
+const bfile = name => new URL(name, import.meta.url).pathname;
+
 const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
+  const path = bfile(sourceRoot);
   const contractBundle = await bundleSource(path);
   return contractBundle;
 };

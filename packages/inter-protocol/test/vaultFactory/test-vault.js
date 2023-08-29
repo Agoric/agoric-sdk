@@ -4,14 +4,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
 
-const vaultRoot = './vault-contract-wrapper.js';
+const bfile = name => new URL(name, import.meta.url).pathname;
+const contractPath = bfile('./vault-contract-wrapper.js');
 const trace = makeTracer('TestVault', false);
 
 /**
@@ -37,13 +37,8 @@ const { zoe, feeMintAccessP: feeMintAccess } = await setUpZoeForTest({
 });
 trace('makeZoe');
 
-/**
- * @param {ERef<ZoeService>} zoeP
- * @param {string} sourceRoot
- */
-async function launch(zoeP, sourceRoot) {
-  const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);
-  const contractPath = new URL(contractUrl).pathname;
+/** @param {ERef<ZoeService>} zoeP */
+async function launch(zoeP) {
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(
@@ -76,7 +71,7 @@ async function launch(zoeP, sourceRoot) {
   };
 }
 
-const helperContract = launch(zoe, vaultRoot);
+const helperContract = launch(zoe);
 
 test('first', async t => {
   const { creatorSeat, creatorFacet } = await helperContract;

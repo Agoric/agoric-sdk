@@ -1,19 +1,14 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
   wfV2BundleName,
 } from './bootstrap-walletFactory-service-upgrade.js';
 
-// so paths can be expresssed relative to this file and made absolute
-const bfile = name => new URL(name, import.meta.url).pathname;
-
-const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -23,25 +18,21 @@ test('walletFactory service upgrade', async t => {
     vats: {
       bootstrap: {
         // TODO refactor to use bootstrap-relay.js
-        sourceSpec: bfile('bootstrap-walletFactory-service-upgrade.js'),
+        sourceSpec: resolvePath('./bootstrap-walletFactory-service-upgrade.js'),
       },
-      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
+      zoe: { sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js') },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importSpec(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-        ),
+        sourceSpec: resolvePath('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       automaticRefund: {
-        sourceSpec: await importSpec(
-          '@agoric/zoe/src/contracts/automaticRefund.js',
-        ),
+        sourceSpec: resolvePath('@agoric/zoe/src/contracts/automaticRefund.js'),
       },
       [wfV1BundleName]: {
-        sourceSpec: bfile('../../../src/walletFactory.js'),
+        sourceSpec: resolvePath('../../../src/walletFactory.js'),
       },
-      [wfV2BundleName]: { sourceSpec: bfile('walletFactory-V2.js') },
+      [wfV2BundleName]: { sourceSpec: resolvePath('./walletFactory-V2.js') },
     },
   };
 

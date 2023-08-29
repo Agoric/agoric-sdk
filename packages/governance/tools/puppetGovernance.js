@@ -1,20 +1,17 @@
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
-const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  return contractBundle;
-};
+const resolvePath = makeResolvePath(import.meta.url);
 
-// makeBundle is a slow step, so we do it once for all the tests.
-const contractGovernorBundleP = makeBundle('./puppetContractGovernor.js');
+// bundling is a slow step, so we do it once for all the tests.
+const contractGovernorBundleP = bundleSource(
+  resolvePath('./puppetContractGovernor.js'),
+);
 // could be called fakeCommittee. It's used as a source of invitations only
-const autoRefundBundleP = makeBundle(
-  '@agoric/zoe/src/contracts/automaticRefund.js',
+const autoRefundBundleP = bundleSource(
+  resolvePath('@agoric/zoe/src/contracts/automaticRefund.js'),
 );
 
 /**  */

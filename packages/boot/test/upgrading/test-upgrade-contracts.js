@@ -2,8 +2,9 @@
  * @file cribbed from
  *   packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js
  */
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**
@@ -11,9 +12,7 @@ import { buildVatController } from '@agoric/swingset-vat';
  */
 const test = anyTest;
 
-const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('upgrade mintHolder', async t => {
   /** @type {SwingSetConfig} */
@@ -21,15 +20,15 @@ test('upgrade mintHolder', async t => {
     bootstrap: 'bootstrap',
     vats: {
       // TODO refactor to use bootstrap-relay.js
-      bootstrap: { sourceSpec: bfile('./bootstrap.js') },
-      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
+      bootstrap: { sourceSpec: resolvePath('./bootstrap.js') },
+      zoe: { sourceSpec: resolvePath('@agoric/vats/src/vat-zoe.js') },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importSpec('@agoric/zoe/contractFacet.js'),
+        sourceSpec: resolvePath('@agoric/zoe/contractFacet.js'),
       },
       mintHolder: {
-        sourceSpec: await importSpec('@agoric/vats/src/mintHolder.js'),
+        sourceSpec: resolvePath('@agoric/vats/src/mintHolder.js'),
       },
     },
   });

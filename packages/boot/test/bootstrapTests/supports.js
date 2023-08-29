@@ -2,7 +2,6 @@
 /* global process */
 
 import { promises as fsAmbientPromises } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename } from 'path';
 import { inspect } from 'util';
 import childProcessAmbient from 'child_process';
@@ -15,6 +14,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { resolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 import { TimeMath } from '@agoric/time';
@@ -188,9 +188,7 @@ export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
 ) => {
-  const fullPath = await importMetaResolve(specifier, import.meta.url).then(
-    u => new URL(u).pathname,
-  );
+  const fullPath = resolvePath(specifier, import.meta.url);
   const config = /** @type {SwingSetConfig & { coreProposals?: any[] }} */ (
     await loadSwingsetConfigFile(fullPath)
   );

@@ -4,8 +4,9 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import { buildVatController } from '@agoric/swingset-vat';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 
-const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePath = makeResolvePath(import.meta.url);
 
 test('ertp service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -16,10 +17,12 @@ test('ertp service upgrade', async t => {
     // defaultReapInterval: 1,
     vats: {
       // TODO refactor to use bootstrap-relay.js
-      bootstrap: { sourceSpec: bfile('bootstrap-ertp-service-upgrade.js') },
+      bootstrap: {
+        sourceSpec: resolvePath('./bootstrap-ertp-service-upgrade.js'),
+      },
     },
     bundles: {
-      ertpService: { sourceSpec: bfile('vat-ertp-service.js') },
+      ertpService: { sourceSpec: resolvePath('./vat-ertp-service.js') },
     },
   };
 

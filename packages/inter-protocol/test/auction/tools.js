@@ -1,14 +1,15 @@
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { objectMap, allValues } from '@agoric/internal';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
+import { allValues, objectMap } from '@agoric/internal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { makeStoredPublisherKit } from '@agoric/notifier';
+import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+const resolvePath = makeResolvePath(import.meta.url);
 
 /**
  * @typedef {{
@@ -25,9 +26,9 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /** @param {ZoeService} zoe */
 export const setUpInstallations = async zoe => {
-  const autoRefund = '@agoric/zoe/src/contracts/automaticRefund.js';
-  const autoRefundUrl = await importMetaResolve(autoRefund, import.meta.url);
-  const autoRefundPath = new URL(autoRefundUrl).pathname;
+  const autoRefundPath = resolvePath(
+    '@agoric/zoe/src/contracts/automaticRefund.js',
+  );
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
   const bundles = await allValues({

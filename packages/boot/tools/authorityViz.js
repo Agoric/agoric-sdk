@@ -272,7 +272,8 @@ const run = async () => {
     stdout: process.stdout,
     fsp,
     meta: {
-      resolve: metaResolve.resolve,
+      resolve: (specifier, parent) =>
+        Promise.resolve(metaResolve.resolve(specifier, parent)),
       url: import.meta.url,
       load: specifier => import(specifier),
     },

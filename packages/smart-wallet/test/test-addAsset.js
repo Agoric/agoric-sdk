@@ -1,23 +1,23 @@
 // @ts-check
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { E, Far } from '@endo/far';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
+import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import bundleSource from '@endo/bundle-source';
+import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makePromiseKit } from '@endo/promise-kit';
+import { makeImportContext } from '../src/marshal-contexts.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
-import { makeImportContext } from '../src/marshal-contexts.js';
 
 const { Fail } = assert;
 
-const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+const resolvePath = makeResolvePath(import.meta.url);
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;
@@ -360,9 +360,9 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const { consume, simpleProvideWallet, sendToBridge } = t.context;
 
   const bundles = {
-    game: await importSpec('./gameAssetContract.js').then(bundleSource),
-    centralSupply: await importSpec('@agoric/vats/src/centralSupply.js').then(
-      bundleSource,
+    game: await bundleSource(resolvePath('./gameAssetContract.js')),
+    centralSupply: await bundleSource(
+      resolvePath('@agoric/vats/src/centralSupply.js'),
     ),
   };
 

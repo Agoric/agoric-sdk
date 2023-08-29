@@ -6,7 +6,6 @@ import process from 'node:process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { performance } from 'perf_hooks';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import tmpfs from 'tmp';
 import { fork } from 'node:child_process';
 
@@ -31,6 +30,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeResolvePath } from '@agoric/swingset-vat/tools/paths.js';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -47,6 +47,8 @@ import {
   performStateSyncImport,
   validateImporterOptions,
 } from './import-kernel-db.js';
+
+const resolvePath = makeResolvePath(import.meta.url);
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -359,15 +361,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const argv = {
       bootMsg,
     };
-    const getVatConfig = async () => {
-      const vatHref = await importMetaResolve(
+    const getVatConfig = () =>
+      resolvePath(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
-        import.meta.url,
       );
-      const vatconfig = new URL(vatHref).pathname;
-      return vatconfig;
-    };
 
     // Delay makeShutdown to override the golang interrupts
     const { registerShutdown } = makeShutdown();
