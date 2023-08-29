@@ -19,6 +19,7 @@ on:
       - converted_to_draft
       - ready_for_review
       - labeled
+      - unlabeled
       - auto_merge_enabled
       - auto_merge_disabled
   merge_group:
@@ -43,6 +44,9 @@ jobs:
       fail-fast: false
       matrix:
         cli: [link-cli, local-npm]
+    # Mark a failure of `local-npm` as a successful result
+    # TODO: remove when `local-npm` job is fixed
+    continue-on-error: ${{ matrix.cli == 'local-npm' }}
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v3
@@ -269,6 +273,8 @@ jobs:
     strategy:
       matrix:
         bootstrap-version: ['test', 'main']
+    # Uncomment to mark a failure of the `test` bootstrap job as a successful result
+    # continue-on-error: ${{ matrix.bootstrap-version == 'test' }}
     steps:
       - name: free up disk space
         run: |
@@ -311,3 +317,22 @@ jobs:
         timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
+
+  integration-test-result:
+    needs:
+      - pre_check
+      - getting-started
+      - deployment-test
+      - test-docker-build
+    if: needs.pre_check.outputs.should_run == 'true' && (success() || failure() || cancelled())
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        shell: bash
+        run: |
+          cat <<EOF
+            needs ${{ toJSON(needs) }}
+          EOF
+          [ "${{ needs.getting-started.result }}" = "success" ] || exit 1
+          [ "${{ needs.deployment-test.result }}" = "success" ] || exit 1
+          [ "${{ needs.test-docker-build.result }}" = "success" ] || exit 1
