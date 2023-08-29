@@ -143,15 +143,15 @@ The contract defines the kinds that are held in durable storage. Thus the functi
 
 # Crank
 
-For the first incarnation, `prepare` is allowed to return a promise that takes more than one crank to settle
+For the first incarnation, `start` is allowed to return a promise that takes more than one crank to settle
 (e.g., because it depends upon the results of remote calls).
-But in later incarnations, `prepare` must settle in one crank.
+But in later incarnations, `start` must settle in one crank.
 Therefore such necessary values should be stashed in the baggage by earlier incarnations.
 The `provideAll` function in contract support is designed to support this.
 
 The reason is that all vats must be able to finish their upgrade without
 contacting other vats. There might be messages queued inbound to the vat being
-upgraded, and the kernel safely deliver those messages until the upgrade is
+upgraded, and the kernel can't safely deliver those messages until the upgrade is
 complete. The kernel can't tell which external messages are needed for upgrade,
 vs which are new work that need to be delayed until upgrade is finished, so the
 rule is that buildRootObject() must be standalone.

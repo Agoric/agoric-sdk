@@ -38,7 +38,7 @@ export const makeBuilder = (zcf, zoe) => {
     zcf.getZoeService(),
     baggage,
   );
-  return makeParamManagerBuilder(baggage, recorderKit, paramMakerKit, zoe);
+  return makeParamManagerBuilder(baggage, recorderKit, paramMakerKit, zcf);
 };
 
 test('two parameters', async t => {

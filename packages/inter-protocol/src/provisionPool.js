@@ -55,7 +55,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // Governance
   const { publicMixin, makeGovernorFacet, params, publicMixinGuards } =
-    await handleParamGovernance(
+    handleParamGovernance(
       zcf,
       baggage,
       privateArgs.initialPoserInvitation,

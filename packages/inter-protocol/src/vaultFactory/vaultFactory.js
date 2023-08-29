@@ -25,7 +25,6 @@ import {
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { M } from '@agoric/store';
-import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
@@ -33,6 +32,8 @@ import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
+
+const { Fail } = assert;
 
 const trace = makeTracer('VF', true);
 
@@ -76,7 +77,7 @@ harden(meta);
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const start = (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);
   const {
     initialPoserInvitation,
@@ -85,61 +86,62 @@ export const start = async (zcf, privateArgs, baggage) => {
     storageNode,
   } = privateArgs;
 
-  trace('awaiting debtMint');
-  const { debtMint } = await provideAll(baggage, {
-    debtMint: () => zcf.registerFeeMint('Minted', privateArgs.feeMintAccess),
-  });
-
-  zcf.setTestJig(() => ({
-    mintedIssuerRecord: debtMint.getIssuerRecord(),
-  }));
-
   const { timerService, auctioneerPublicFacet } = zcf.getTerms();
 
-  const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
-    baggage,
-    marshaller,
-  );
+  // defines kinds. No top-level awaits before this finishes
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
   trace('making non-durable publishers');
-  // XXX non-durable, will sever upon vat restart
-  const governanceNode = await E(storageNode).makeChildNode('governance');
+
+  // storageNode is remote. We need to make a vaultDirector and a paramManager
+  // that write to storageNode's descendents. They need to store durable
+  // recorders that don't hold promises, but during upgrade we can't await here.
 
   const paramMakerKit = buildParamGovernanceExoMakers(
     zcf.getZoeService(),
     baggage,
   );
-  const governanceRecorderKit = makeRecorderKit(governanceNode);
+  const governanceRecorderKit = makeRecorderKit(
+    storageNode,
+    undefined,
+    'governance',
+  );
 
   /**
    * A powerful object; it can modify parameters. including the invitation.
    * Notice that the only uncontrolled access to it is in the vaultDirector's
    * creator facet.
+   *
+   * defines kinds. No top-level awaits before this finishes
    */
-  const vaultDirectorParamManager = await makeParamManagerFromTermsAndMakers(
-    governanceRecorderKit,
-    zcf,
-    baggage,
-    {
-      [CONTRACT_ELECTORATE]: initialPoserInvitation,
-      [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
-    },
-    vaultDirectorParamTypes,
-    paramMakerKit,
-  );
+  const { pm: vaultDirectorParamManager, completion } =
+    makeParamManagerFromTermsAndMakers(
+      governanceRecorderKit,
+      zcf,
+      baggage,
+      {
+        [CONTRACT_ELECTORATE]: initialPoserInvitation,
+        [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
+      },
+      vaultDirectorParamTypes,
+      paramMakerKit,
+    );
 
+  const params = vaultDirectorParamManager.getParamDescriptions();
+  debugger;
+
+  // defines kinds. No top-level awaits before this finishes
   const director = provideDirector(
     baggage,
     zcf,
     vaultDirectorParamManager,
-    debtMint,
+    privateArgs.feeMintAccess,
     timerService,
     auctioneerPublicFacet,
     storageNode,
     // XXX remove Recorder makers; remove once we excise deprecated kits for governance
     marshaller,
     makeRecorderKit,
-    makeERecorderKit,
     paramMakerKit,
   );
 
@@ -150,7 +152,13 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   // validate async to wait for params to be finished
-  void validateElectorate(zcf, vaultDirectorParamManager);
+  validateElectorate(zcf, vaultDirectorParamManager);
+
+  // E.when(
+  //   completion,
+  //   () => validateElectorate(zcf, vaultDirectorParamManager),
+  //   e => Fail`unable to validate Vault electorate, ${e}`,
+  // );
 
   return harden({
     creatorFacet: director.creator,

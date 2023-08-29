@@ -21,7 +21,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @template T
- * @typedef {{ getStorageNode(): StorageNode, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
+ * @typedef {{ getStorageNode(): ERef<StorageNode>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
  */
 
 /**
@@ -34,8 +34,22 @@ import { E } from '@endo/eventual-send';
  * @typedef {Pick<PublishKit<T>, 'subscriber'> & { recorderP: ERef<Recorder<T>> }} EventualRecorderKit
  */
 
+const serializeToStorageIfOpen = async (state, value, marshaller, node) => {
+  const { closed, valueShape } = state;
+  !closed || Fail`cannot write to closed recorder`;
+  mustMatch(value, valueShape);
+  const encoded = await E(marshaller).toCapData(value);
+  const serialized = JSON.stringify(encoded);
+  await E(node).setValue(serialized);
+};
+
 /**
- * Wrap a Publisher to record all the values to chain storage.
+ * Wrap a Publisher to record all the values to chain storage at a child of the
+ * given storage node.
+ *
+ * We need to be able to create durable recorders synchronously for child
+ * storageNodes. Since creating the child node is async, we'll record the
+ * address and make the child node lazily, so the maker can return immediately.
  *
  * @param {import('@agoric/zoe').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -45,7 +59,7 @@ export const prepareRecorder = (baggage, marshaller) => {
     baggage,
     'Recorder',
     M.interface('Recorder', {
-      getStorageNode: M.call().returns(StorageNodeShape),
+      getStorageNode: M.call().returns(M.eref(StorageNodeShape)),
       getStoragePath: M.call().returns(M.promise(/* string */)),
       write: M.call(M.any()).returns(M.promise()),
       writeFinal: M.call(M.any()).returns(M.promise()),
@@ -53,25 +67,42 @@ export const prepareRecorder = (baggage, marshaller) => {
     /**
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
-     * @param {StorageNode} storageNode
+     * @param {ERef<StorageNode>} storageNode
      * @param {TypedMatcher<T>} [valueShape]
+     * @param {string} [childName]
      */
     (
       publisher,
       storageNode,
       valueShape = /** @type {TypedMatcher<any>} */ (M.any()),
+      childName,
     ) => {
+      const childNode = childName ? undefined : storageNode;
+
       return {
         closed: false,
         publisher,
-        storageNode,
+        parentStorageNode: storageNode,
+        storageNode: /** @type {ERef<StorageNode>}*/ (childNode),
+        childName,
         storagePath: /** @type {string | undefined} */ (undefined),
         valueShape,
       };
     },
     {
       getStorageNode() {
-        return this.state.storageNode;
+        const {
+          state: { storageNode, childName, parentStorageNode },
+        } = this;
+        if (!childName) {
+          return parentStorageNode;
+        }
+
+        if (storageNode) {
+          return storageNode;
+        }
+
+        return E(parentStorageNode).makeChildNode(childName);
       },
       /**
        * Memoizes the remote call to the storage node
@@ -79,14 +110,15 @@ export const prepareRecorder = (baggage, marshaller) => {
        * @returns {Promise<string>}
        */
       async getStoragePath() {
-        const { storagePath: heldPath } = this.state;
+        const { state, self } = this;
+        const { storagePath: heldPath } = state;
         // end synchronous prelude
         await null;
         if (heldPath !== undefined) {
           return heldPath;
         }
-        const path = await E(this.state.storageNode).getPath();
-        this.state.storagePath = path;
+        const path = await E(self.getStorageNode()).getPath();
+        state.storagePath = path;
         return path;
       },
       /**
@@ -96,15 +128,13 @@ export const prepareRecorder = (baggage, marshaller) => {
        * @returns {Promise<void>}
        */
       async write(value) {
-        const { closed, publisher, storageNode, valueShape } = this.state;
-        !closed || Fail`cannot write to closed recorder`;
-        mustMatch(value, valueShape);
-        const encoded = await E(marshaller).toCapData(value);
-        const serialized = JSON.stringify(encoded);
-        await E(storageNode).setValue(serialized);
+        const { state, self } = this;
+        const path = await self.getStoragePath();
+        console.log(`RCRD writing`, path, value);
 
-        // below here differs from writeFinal()
-        return publisher.publish(value);
+        const storageNode = self.getStorageNode();
+        await serializeToStorageIfOpen(state, value, marshaller, storageNode);
+        return state.publisher.publish(value);
       },
       /**
        * Like `write` but prevents future writes and terminates the publisher.
@@ -113,16 +143,20 @@ export const prepareRecorder = (baggage, marshaller) => {
        * @returns {Promise<void>}
        */
       async writeFinal(value) {
-        const { closed, publisher, storageNode, valueShape } = this.state;
-        !closed || Fail`cannot write to closed recorder`;
-        mustMatch(value, valueShape);
-        const encoded = await E(marshaller).toCapData(value);
-        const serialized = JSON.stringify(encoded);
-        await E(storageNode).setValue(serialized);
-
-        // below here differs from writeFinal()
+        const { self, state } = this;
+        const storageNode = self.getStorageNode();
+        await serializeToStorageIfOpen(state, value, marshaller, storageNode);
         this.state.closed = true;
-        return publisher.finish(value);
+        return state.publisher.finish(value);
+      },
+    },
+    {
+      finish: ({ state }) => {
+        if (state.childName) {
+          E.when(state.storageNode, childNode => {
+            state.storageNode = childNode;
+          });
+        }
       },
     },
   );
@@ -142,13 +176,19 @@ harden(prepareRecorder);
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {StorageNode} storageNode
+   * @param {ERef<StorageNode>} storageNode
    * @param {TypedMatcher<T>} [valueShape]
+   * @param {string} [childName]
    * @returns {RecorderKit<T>}
    */
-  const makeRecorderKit = (storageNode, valueShape) => {
+  const makeRecorderKit = (storageNode, valueShape, childName = undefined) => {
     const { subscriber, publisher } = makeDurablePublishKit();
-    const recorder = makeRecorder(publisher, storageNode, valueShape);
+    const recorder = makeRecorder(
+      publisher,
+      storageNode,
+      valueShape,
+      childName,
+    );
     return harden({ subscriber, recorder });
   };
   return makeRecorderKit;
@@ -227,12 +267,12 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
     makeDurablePublishKit,
   });
 
-  return {
+  return harden({
     makeDurablePublishKit,
     makeRecorder,
     makeRecorderKit,
     makeERecorderKit,
-  };
+  });
 };
 
 /**

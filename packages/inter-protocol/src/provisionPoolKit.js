@@ -266,7 +266,7 @@ export const prepareProvisionPoolKit = (
             totalMintedConverted,
             totalMintedProvided,
           } = this.state;
-          void metricsRecorderKit.recorder.write(
+          void E(metricsRecorderKit.recorder).write(
             harden({
               walletsProvisioned,
               totalMintedProvided,

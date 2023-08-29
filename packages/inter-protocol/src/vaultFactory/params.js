@@ -4,8 +4,8 @@ import './types.js';
 
 import {
   CONTRACT_ELECTORATE,
-  makeParamManagerSync,
   ParamTypes,
+  makeParamManager,
 } from '@agoric/governance';
 import {
   makeRecorderTopic,
@@ -113,7 +113,7 @@ export const makeVaultParamManager = (
   },
   paramMakerKit,
 ) => {
-  return makeParamManagerSync(
+  return makeParamManager(
     recorderKit,
     baggage,
     {

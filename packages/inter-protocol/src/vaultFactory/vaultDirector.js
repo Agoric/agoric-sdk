@@ -16,12 +16,15 @@ import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
   atomicRearrange,
   makeRecorderTopic,
+  provideAll,
   provideEmptySeat,
   TopicsRecordShape,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { initEmpty } from '@agoric/store';
+
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import {
   setWakeupsForNextAuction,
@@ -79,30 +82,31 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
- * @param {ZCFMint<'nat'>} debtMint
+ * @param {FeeMintAccess} feeMintAccess
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  * @param {import('@agoric/governance/src/contractGovernance/paramManager.js').ParamGovernanceExoMakers} paramMakerKit
  */
 const prepareVaultDirector = (
   baggage,
   zcf,
   directorParamManager,
-  debtMint,
+  feeMintAccess,
   timer,
   auctioneer,
   storageNode,
   marshaller,
   makeRecorderKit,
-  makeERecorderKit,
   paramMakerKit,
 ) => {
   /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
   let shortfallReporter;
+
+  // we can't await this in the first turn, so we'll do it in helper.start().
+  let debtMint;
 
   /** For holding newly minted tokens until transferred */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
@@ -130,13 +134,12 @@ const prepareVaultDirector = (
     makeRecorderKit,
   );
 
-  const metricsNode = E(storageNode).makeChildNode('metrics');
-
-  const metricsKit = makeERecorderKit(
-    metricsNode,
+  const metricsKit = makeRecorderKit(
+    storageNode,
     /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
       M.any()
     ),
+    'metrics',
   );
 
   const managersNode = E(storageNode).makeChildNode('managers');
@@ -148,7 +151,7 @@ const prepareVaultDirector = (
       rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
     });
   };
-  const writeMetrics = () => E(metricsKit.recorderP).write(sampleMetrics());
+  const writeMetrics = () => E(metricsKit.recorder).write(sampleMetrics());
 
   const updateShortfallReporter = async () => {
     const oldInvitation = baggage.has(shortfallInvitationKey)
@@ -225,6 +228,7 @@ const prepareVaultDirector = (
     },
   });
 
+  // defines kinds. No top-level awaits before this finishes
   const makeVaultManagerKit = prepareVaultManagerKit(baggage, {
     makeRecorderKit,
     marshaller,
@@ -259,11 +263,6 @@ const prepareVaultDirector = (
     return Far(name, {
       wake: timestamp => func(timestamp),
     });
-  };
-
-  /** @returns {State} */
-  const initState = () => {
-    return {};
   };
 
   /**
@@ -307,7 +306,7 @@ const prepareVaultDirector = (
         getters: M.call().returns(M.any()),
       }),
     },
-    initState,
+    initEmpty,
     {
       creator: {
         getParamMgrRetriever: () =>
@@ -467,6 +466,8 @@ const prepareVaultDirector = (
         },
         /** @param {{ collateralBrand: Brand }} selector */
         getParamDescriptions({ collateralBrand }) {
+          debugger; // collateraBrand defined?
+
           return vaultParamManagers.get(collateralBrand).getParamDescriptions();
         },
       },
@@ -502,6 +503,25 @@ const prepareVaultDirector = (
           // independent of the other one which can be canceled
           const rescheduleWaker = machine.makeReschedulerWaker();
           void watchForGovernanceChange(auctioneer, timer, rescheduleWaker);
+
+          debugger;
+          trace('awaiting debtMint');
+          // const debtMint = await provideLazy(baggage, 'debtMint', () =>
+          //   zcf.registerFeeMint('Minted', feeMintAccess),
+          // );
+
+          const { debtMint } = await provideAll(baggage, {
+            debtMint: () => zcf.registerFeeMint('Minted', feeMintAccess),
+          });
+
+          debugger;
+
+          const dm = await debtMint;
+          debugger;
+
+          // zcf.setTestJig(() => ({
+          //   mintedIssuerRecord: debtMint.getIssuerRecord(),
+          // }));
         },
       },
     },
@@ -518,6 +538,7 @@ harden(prepareVaultDirector);
  * ) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
  */
 export const provideDirector = (...args) => {
+  // defines kinds. No top-level awaits before this finishes
   const makeVaultDirector = prepareVaultDirector(...args);
 
   const [baggage] = args;

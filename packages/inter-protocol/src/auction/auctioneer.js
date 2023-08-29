@@ -431,17 +431,14 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const makeAuctionBook = prepareAuctionBook(baggage, zcf, makeRecorderKit);
 
-  const makeERecorderKit = defineERecorderKit({
-    makeRecorder,
-    makeDurablePublishKit,
-  });
-  const scheduleKit = makeERecorderKit(
-    E(privateArgs.storageNode).makeChildNode('schedule'),
+  const scheduleKit = makeRecorderKit(
+    privateArgs.storageNode,
     /**
      * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
      *     import('./scheduler.js').ScheduleNotification
      *   >}
      */ (M.any()),
+    'schedule',
   );
 
   /**
@@ -677,7 +674,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const scheduler = await E.when(scheduleKit.recorderP, scheduleRecorder =>
+  const scheduler = await E.when(scheduleKit.recorder, scheduleRecorder =>
     makeScheduler(
       driver,
       timer,

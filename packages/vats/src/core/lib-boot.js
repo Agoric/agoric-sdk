@@ -212,6 +212,9 @@ export const makeBootstrap = (
     messageVatObject: async ({ presence, methodName, args = [] }) => {
       const object = decodePassable(presence);
       const decodedArgs = args.map(decodePassable);
+
+      console.log(`LIBBoot  `, methodName, decodedArgs);
+
       const result = await E(object)[methodName](...decodedArgs);
       return encodePassable(result);
     },

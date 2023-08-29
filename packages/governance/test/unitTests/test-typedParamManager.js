@@ -1,5 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
@@ -11,13 +11,10 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   buildParamGovernanceExoMakers,
+  makeParamManager,
   makeParamManagerFromTermsAndMakers,
   ParamTypes,
 } from '../../src/index.js';
-import {
-  makeParamManager,
-  makeParamManagerSync,
-} from '../../src/contractGovernance/paramManager.js';
 
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;
@@ -43,34 +40,32 @@ async function makeKits() {
 const { recorderKit, paramMakerKit } = await makeKits();
 
 test('types: bad invitation', async t => {
-  t.throws(() =>
-    makeParamManagerSync(
-      recorderKit,
-      baggage,
-      {
-        // @ts-expect-error invalid value for the declared type
-        BrokenBrand: [ParamTypes.BRAND, 'not a brand'],
+  t.throws(
+    () =>
+      makeParamManager(
+        recorderKit,
+        baggage,
+        {
+          // @ts-expect-error invalid value for the declared type
+          BrokenBrand: [ParamTypes.BRAND, 'not a brand'],
 
-        BrokenInvitation: [
           // @ts-expect-error not supported in makeParamManagerSync
-          'invitation',
-          undefined,
-        ],
-      },
-      paramMakerKit,
-    ),
+          BrokenInvitation: ['invitation', undefined],
+        },
+        paramMakerKit,
+      ).pm,
   );
 });
 
 test('types: working', async t => {
-  const mgr = makeParamManagerSync(
+  const mgr = makeParamManager(
     recorderKit,
     baggage,
     {
       Working: [ParamTypes.NAT, 0n],
     },
     paramMakerKit,
-  );
+  ).pm;
   const { behavior: getters } = await mgr.accessors();
 
   getters.getWorking().valueOf();
@@ -88,7 +83,7 @@ test('makeParamManagerFromTerms', async t => {
   });
   const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
 
-  const paramManager = await makeParamManagerFromTermsAndMakers(
+  const { pm: paramManager } = await makeParamManagerFromTermsAndMakers(
     recorderKit,
     // @ts-expect-error missing governance terms
     zcf,
@@ -105,7 +100,7 @@ test('makeParamManagerFromTerms', async t => {
 
 test('two parameters', async t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
@@ -113,7 +108,7 @@ test('two parameters', async t => {
       Amt: [ParamTypes.AMOUNT, drachmas],
     },
     paramMakerKit,
-  );
+  ).pm;
 
   const { behavior: getters } = await paramManager.accessors();
 
@@ -137,14 +132,14 @@ test('two parameters', async t => {
 test('Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
       Shimmer: [ParamTypes.AMOUNT, AmountMath.make(floorBrand, 2n)],
     },
     paramMakerKit,
-  );
+  ).pm;
 
   const { behavior: params } = await paramManager.accessors();
   t.deepEqual(params.getShimmer(), AmountMath.make(floorBrand, 2n));
@@ -201,9 +196,9 @@ test('params one installation', async t => {
     {
       PName: ['installation', installationHandle],
     },
-    zcf,
     paramMakerKit,
-  );
+    zcf,
+  ).pm;
 
   const { behavior: getters } = await paramManager.accessors();
   t.deepEqual(getters.getPName(), installationHandle);
@@ -240,14 +235,14 @@ test('params one instance', async t => {
   // isInstallation() (#3344), we'll need to make a mockZoe.
   const instanceHandle = makeHandle(instanceKey);
 
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
       PName: ['instance', instanceHandle],
     },
     paramMakerKit,
-  );
+  ).pm;
   const { behavior: getters } = await paramManager.accessors();
 
   t.deepEqual(getters.getPName(), instanceHandle);
@@ -292,23 +287,22 @@ test('Invitation', async t => {
   );
 
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
-  const paramManager = await makeParamManager(
+  const { pm: paramManager, completion } = await makeParamManager(
     recorderKit,
     baggage,
     {
       Collateral: [ParamTypes.BRAND, drachmaBrand],
       Amt: [ParamTypes.AMOUNT, drachmaAmount],
-      Invite: ['invitation', invitation],
+      Invite: [ParamTypes.INVITATION, invitation],
     },
-    zcf,
     paramMakerKit,
+    zcf,
   );
+  await completion;
   const { behavior: getters } = await paramManager.accessors();
 
   t.is(getters.getCollateral(), drachmaBrand);
   t.is(getters.getAmt(), drachmaAmount);
-  // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  await eventLoopIteration();
   const invitationActualAmount = getters.getInvite().value;
   t.deepEqual(invitationActualAmount, invitationAmount.value);
   t.is(invitationActualAmount[0].description, 'simple');
@@ -335,7 +329,7 @@ test('Invitation', async t => {
 });
 
 test('two Nats', async t => {
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
@@ -343,7 +337,7 @@ test('two Nats', async t => {
       SpeedLimit: [ParamTypes.NAT, 299_792_458n],
     },
     paramMakerKit,
-  );
+  ).pm;
 
   const { behavior: getters } = await paramManager.accessors();
   t.is(getters.getAcres(), 50n);
@@ -367,7 +361,7 @@ test('Ratio', async t => {
   const unitlessBrand = makeIssuerKit('unitless').brand;
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
@@ -375,7 +369,7 @@ test('Ratio', async t => {
       GoldenRatio: ['ratio', ratio],
     },
     paramMakerKit,
-  );
+  ).pm;
   const { behavior: getters } = await paramManager.accessors();
   t.is(getters.getGoldenRatio(), ratio);
 
@@ -406,7 +400,7 @@ test('Ratio', async t => {
 });
 
 test('Strings', async t => {
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
@@ -414,7 +408,7 @@ test('Strings', async t => {
       OurWeapons: ['string', 'fear'],
     },
     paramMakerKit,
-  );
+  ).pm;
   const { behavior: getters } = await paramManager.accessors();
   t.is(getters.getOurWeapons(), 'fear');
 
@@ -430,7 +424,7 @@ test('Strings', async t => {
 });
 
 test('Unknown', async t => {
-  const paramManager = makeParamManagerSync(
+  const paramManager = makeParamManager(
     recorderKit,
     baggage,
     {
@@ -438,7 +432,7 @@ test('Unknown', async t => {
       Surprise: ['unknown', 'party'],
     },
     paramMakerKit,
-  );
+  ).pm;
   const { behavior: getters } = await paramManager.accessors();
   t.is(getters.getSurprise(), 'party');
 

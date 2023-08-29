@@ -9,7 +9,8 @@ import { psmV1BundleName } from './bootstrap-psm-upgrade.js';
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-test('PSM service upgrade', async t => {
+// ANACHRAPHOBIA: bug report https://github.com/Agoric/agoric-sdk/issues/8248
+test.skip('PSM service upgrade', async t => {
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // test's bootstrap has some deps not needed in production

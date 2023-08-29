@@ -9,11 +9,11 @@ import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { keyEQ, M, mustMatch } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { assertAllDefined } from '@agoric/internal';
-import { prepareExoClass, makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { RelativeTimeShape, TimestampShape } from '@agoric/time';
 import { ToFarFunction } from '@endo/captp';
-import { PublicTopicShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeBrandedRatioPattern } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { AmountMath } from '@agoric/ertp';
 
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
@@ -213,7 +213,7 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
         const [preparedAmount] = await Promise.all([
           E(E(zoe).getInvitationIssuer()).getAmountOf(invite),
         ]);
-        assertInvitation(invite);
+        await assertInvitation(invite);
 
         state.amount = preparedAmount;
         return [invite, preparedAmount];
@@ -249,7 +249,6 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
         const { state } = this;
 
         // names are keywords so they will necessarily be TitleCase
-        // return { [`get${state.name}`]: () => state.current };
         const name = `get${state.name}`;
         const fn = () => state.amount;
         return [name, fn];
@@ -283,9 +282,7 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
       behavior: M.recordOf(M.string(), M.any()),
       guards: M.recordOf(M.string(), M.pattern()),
     }),
-    getPublicTopics: M.call()
-      .optional(BrandShape)
-      .returns({ governance: PublicTopicShape }),
+    getPublicTopics: M.call().optional(BrandShape).returns(M.promise()),
     updateParams: M.call(M.any()).returns(M.promise()),
     getParamDescriptions: M.call().returns(
       M.recordOf(M.string(), { type: M.string(), value: M.any() }),
@@ -294,7 +291,8 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
       M.recordOf(M.string(), { type: M.string(), value: M.any() }),
     ),
     getVisibleValue: M.call().returns(M.any()),
-    publish: M.call().returns(),
+    // TODO(cth) do we have the type of the published thing?
+    publish: M.call().returns(M.any()),
   });
 
   const makeParamManagerExo = prepareExoClass(
@@ -321,7 +319,7 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
             paramHolder.makeDescription(),
           ]),
         );
-        state.recorder.write({ current });
+        return E(state.recorder).write({ current });
       },
       getParamDescriptions() {
         const { state } = this;
@@ -354,13 +352,15 @@ export const buildParamGovernanceExoMakers = (zoe, baggage) => {
       },
       getPublicTopics() {
         // deconstructed from makeRecorderTopic()
-        return harden({
-          governance: {
-            description: 'parameters',
-            subscriber: this.state.subscriber,
-            storagePath: this.state.recorder.getStoragePath(),
-          },
-        });
+        return E.when(E(this.state.recorder).getStoragePath(), storagePath =>
+          harden({
+            governance: {
+              description: 'parameters',
+              subscriber: this.state.subscriber,
+              storagePath,
+            },
+          }),
+        );
       },
       accessors() {
         const { state } = this;
@@ -434,7 +434,7 @@ harden(buildParamGovernanceExoMakers);
  * @param {{[CONTRACT_ELECTORATE]: ParamValueTyped<'invitation'>}} governedParams
  */
 export const assertElectorateMatches = async (paramManager, governedParams) => {
-  const { behavior } = await paramManager.accessors();
+  const { behavior } = paramManager.accessors();
   const managerElectorate = behavior.getElectorate();
   const {
     Electorate: { value: paramElectorate },
@@ -449,18 +449,15 @@ harden(assertElectorateMatches);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {ParamGovernanceExoMakers} makers
- * @param {ERef<ZoeService>} [zoe]
+ * @param {ZCF} zcf
  */
-export const makeParamManagerBuilder = (baggage, recorderKit, makers, zoe) => {
+export const makeParamManagerBuilder = (baggage, recorderKit, makers, zcf) => {
   /** @type {MapStore<Keyword, any>} */
   const namesToHolders = makeScalarBigMapStore('Parameter Holders', {
     durable: true,
   });
   assertAllDefined(recorderKit);
-
-  // We want all the addType() functions to be sync, so we have to delay
-  // construction of the paramManager until we get the invitation amounts.
-  const unfinishedParams = [];
+  const zoe = zcf.getZoeService();
 
   /**
    * Support for parameters that are copy objects
@@ -563,52 +560,54 @@ export const makeParamManagerBuilder = (baggage, recorderKit, makers, zoe) => {
    *
    * @param {string} name
    * @param {Invitation} invitation
-   * @param {ERef<Amount>} amountP
+   * @param {Amount} amount
    */
-  const buildInvitationParam = (name, invitation, amountP) => {
+  const buildInvitationParam = (name, invitation, amount) => {
     if (!zoe) {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
 
-    void E.when(amountP, amount => {
-      const holder = makers.makeInvitationParamHolder(name, invitation, amount);
-      namesToHolders.init(name, holder);
-      return name;
-    });
+    console.log(`PM Inv`, name);
+    const holder = makers.makeInvitationParamHolder(name, invitation, amount);
+    console.log(`PM Inv finish`, name);
+    namesToHolders.init(name, holder);
+    return name;
   };
 
-  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addInvitation = (name, value, builder) => {
+  /** @type {(name: string, value: [Invitation, Amount], builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addInvitation = (name, [invitation, amount], builder) => {
     assertKeywordName(name);
-    value !== null || Fail`param ${q(name)} must be defined`;
+    amount !== null || Fail`param ${q(name)} must be defined`;
 
     if (!zoe) {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
-    const amountP = E(E(zoe).getInvitationIssuer()).getAmountOf(value);
-    unfinishedParams.push(amountP);
 
-    buildInvitationParam(name, value, amountP);
+    void E.when(
+      E(E(zoe).getInvitationIssuer()).getAmountOf(invitation),
+      actualAmount => {
+        AmountMath.isEqual(actualAmount, amount) ||
+          zcf.shutdownWithFailure(
+            Error(`mismatch between ${name} invitation and amount.`),
+          );
+      },
+    );
+
+    buildInvitationParam(name, invitation, amount);
 
     return builder;
   };
 
   // Called after all params have been added with their initial values
-  const build = async () => {
-    await Promise.all(unfinishedParams);
-
+  const build = () => {
     // CRUCIAL: Contracts should only export the paramManager to a
     // contractGovernor, which should not expose updateParams().
-    return makers.makeParamManagerExo(namesToHolders, recorderKit);
-  };
-
-  const buildSync = () => {
-    unfinishedParams.length === 0 ||
-      Fail`Cannot call buildSync when some parameters are async`;
-
-    // CRUCIAL: Contracts should only export the paramManager to a
-    // contractGovernor, which should not expose updateParams().
-    return makers.makeParamManagerExo(namesToHolders, recorderKit);
+    return {
+      pm: makers.makeParamManagerExo(namesToHolders, recorderKit),
+      // If some params were invitations, completion will signal when they've
+      // all resolved.
+      completion: undefined,
+    };
   };
 
   /** @type {ParamManagerBuilder} */
@@ -626,7 +625,6 @@ export const makeParamManagerBuilder = (baggage, recorderKit, makers, zoe) => {
     addRelativeTime: (n, v) => addRelativeTime(n, v, builder),
     addTimestamp: (n, v) => addTimestamp(n, v, builder),
     build,
-    buildSync,
   });
   return builder;
 };
@@ -646,9 +644,9 @@ harden(makeParamManagerBuilder);
  * @property {(name: string, value: import('@agoric/time').Timestamp) => ParamManagerBuilder} addTimestamp
  * @property {(name: string, value: import('@agoric/time').RelativeTime) => ParamManagerBuilder} addRelativeTime
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
- * @property {() => Promise<AnyParamManager>} build
- * @property {() => AnyParamManager} buildSync
+ * @property {() => { pm: AnyParamManager, completion: Promise }} build
  */
+// * @property {() => AnyParamManager} buildSync
 
 /**
  * Most clients should use the contractHelper's handleParamGovernance(). That
@@ -663,63 +661,24 @@ harden(makeParamManagerBuilder);
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {T} spec
+ * @param {ParamGovernanceExoMakers} makers
  * @param {ZCF} zcf
- * @param {ParamGovernanceExoMakers} makers
- * @returns {Promise<ParamManager<{[K in keyof T]: T[K][0]}>>}
  */
-export const makeParamManager = (recorderKit, baggage, spec, zcf, makers) => {
-  const builder = makeParamManagerBuilder(
-    baggage,
-    recorderKit,
-    makers,
-    zcf.getZoeService(),
-  );
-
-  const promises = [];
-  for (const [name, [type, value]] of Object.entries(spec)) {
-    const add = builder[builderMethodName(type)];
-    if (isAsync[type]) {
-      promises.push(add(name, value));
-    } else {
-      add(name, value);
-    }
-  }
-
-  // XXX kick off promises but don't block. This is a concession to contract
-  // reincarnation which cannot block on a remote call.
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  void E.when(Promise.all(promises), undefined, reason =>
-    zcf.shutdownWithFailure(reason),
-  );
-
-  return builder.build();
-};
-harden(makeParamManager);
-
-/**
- * Used only when the contract has multiple param managers.
- * Exactly one must manage the electorate, which requires the async version.
- *
- * @see makeParamManager
- * @template {Record<Keyword, SyncSpecTuple>} T
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {T} spec
- * @param {ParamGovernanceExoMakers} makers
- * @returns {ParamManager<{[K in keyof T]: T[K][0]}>}
- */
-export const makeParamManagerSync = (recorderKit, baggage, spec, makers) => {
-  const builder = makeParamManagerBuilder(baggage, recorderKit, makers);
+// * @returns {ParamManager<{[K in keyof T]: T[K][0]}>}
+export const makeParamManager = (recorderKit, baggage, spec, makers, zcf) => {
+  // defines kinds. No top-level awaits before this finishes
+  const builder = makeParamManagerBuilder(baggage, recorderKit, makers, zcf);
 
   for (const [name, [type, value]] of Object.entries(spec)) {
     const add = builder[builderMethodName(type)];
-    add || Fail`No builder method for param type ${q(type)}`;
     add(name, value);
   }
 
-  return builder.buildSync();
+  const pm = builder.build();
+  console.log(`PM made`, pm);
+  return pm;
 };
-harden(makeParamManagerSync);
+harden(makeParamManager);
 
 /**
  * @template {Record<string, Invitation> & {Electorate: Invitation}} I Private invitation values
@@ -730,7 +689,7 @@ harden(makeParamManagerSync);
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
  * @param {ParamGovernanceExoMakers} makers
- * @returns {Promise<ParamManager<M & {[K in keyof I]: 'invitation'}>>}
+ * @returns { {pm: ParamManager<M & {[K in keyof I]: 'invitation'}>, completion: Promise}}
  */
 export const makeParamManagerFromTermsAndMakers = (
   recorderKit,
@@ -751,15 +710,20 @@ export const makeParamManagerFromTermsAndMakers = (
       ]),
     ],
   );
+
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
   for (const [name, invitation] of Object.entries(invitations)) {
-    makerSpecEntries.push([name, [ParamTypes.INVITATION, invitation]]);
+    makerSpecEntries.push([
+      name,
+      [ParamTypes.INVITATION, [invitation, governedParams[name].value]],
+    ]);
   }
   const makerSpec = Object.fromEntries(makerSpecEntries);
   makerSpec[CONTRACT_ELECTORATE] ||
     Fail`missing Electorate invitation param value`;
 
-  return makeParamManager(recorderKit, baggage, makerSpec, zcf, makers);
+  // defines kinds. No top-level awaits before this finishes
+  return makeParamManager(recorderKit, baggage, makerSpec, makers, zcf);
 };
 harden(makeParamManagerFromTermsAndMakers);
 
@@ -771,7 +735,7 @@ harden(makeParamManagerFromTermsAndMakers);
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
- * @returns {Promise<ParamManager<M & {[K in keyof I]: 'invitation'}>>}
+ * @returns { {pm: ParamManager<M & {[K in keyof I]: 'invitation'}>, completion: Promise}}
  */
 export const makeParamManagerFromTerms = (
   recorderKit,
@@ -784,6 +748,7 @@ export const makeParamManagerFromTerms = (
     zcf.getZoeService(),
     baggage,
   );
+  // defines kinds. No top-level awaits before this finishes
   return makeParamManagerFromTermsAndMakers(
     recorderKit,
     zcf,

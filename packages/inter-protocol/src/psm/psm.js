@@ -177,13 +177,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { metricsKit } = await provideAll(baggage, {
     metricsKit: () =>
-      E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
-        makeRecorderKit(
-          node,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
-            M.any()
-          ),
+      makeRecorderKit(
+        privateArgs.storageNode,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+          M.any()
         ),
+        'metrics',
       ),
   });
   const topics = harden({

@@ -3,7 +3,6 @@ import { objectMap } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
-import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import {
   assertElectorateMatches,
@@ -23,6 +22,8 @@ export const validateElectorate = (zcf, paramManager) => {
   const { governedParams } = zcf.getTerms();
   return E.when(paramManager.getParamDescriptions(), async finishedParams => {
     try {
+      if (!keyEQ(governedParams, finishedParams)) debugger;
+
       keyEQ(governedParams, finishedParams) ||
         Fail`The 'governedParams' term must be an object like ${q(
           governedParams,
@@ -41,11 +42,10 @@ harden(validateElectorate);
  * @template {import('./contractGovernance/paramManager.js').ParamTypesMap} T
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {ERef<import('./contractGovernance/paramManager').ParamManager<T>>} paramManagerP
+ * @param {import('./contractGovernance/paramManager').ParamManager<T>} paramManager
  */
-const facetHelpers = async (baggage, zcf, paramManagerP) => {
-  const paramManager = await paramManagerP;
-  await validateElectorate(zcf, paramManager);
+const facetHelpers = (baggage, zcf, paramManager) => {
+  // await validateElectorate(zcf, paramManager);
 
   const commonPublicMethods = {
     getParamDescriptions: () => paramManager.getParamDescriptions(),
@@ -53,7 +53,8 @@ const facetHelpers = async (baggage, zcf, paramManagerP) => {
     getGovernedParams: () => paramManager.getParamDescriptions(),
   };
 
-  const { behavior, guards } = await paramManager.accessors();
+  const { behavior, guards } = paramManager.accessors();
+
   /**
    * Add required methods to publicFacet, for a durable contract
    *
@@ -122,10 +123,10 @@ const facetHelpers = async (baggage, zcf, paramManagerP) => {
       ...behavior,
     },
     publicMixinGuards: {
-      getElectorate: M.call().returns(M.any()),
+      // getElectorate: M.call().returns(M.any()),
       getParamDescriptions: M.call().returns(M.any()),
       getGovernedParams: M.call().returns(M.any()),
-      getPublicTopics: M.call().returns(TopicsRecordShape),
+      getPublicTopics: M.call().returns(M.promise()),
       ...guards,
     },
     augmentPublicFacet,
@@ -170,7 +171,7 @@ export const handleParamGovernance = (
   makeRecorderKit,
   storageNode,
 ) => {
-  const paramManagerKit = makeParamManagerFromTerms(
+  const { pm: paramManager } = makeParamManagerFromTerms(
     makeRecorderKit(storageNode),
     zcf,
     baggage,
@@ -178,6 +179,6 @@ export const handleParamGovernance = (
     paramTypesMap,
   );
 
-  return facetHelpers(baggage, zcf, paramManagerKit);
+  return facetHelpers(baggage, zcf, paramManager);
 };
 harden(handleParamGovernance);

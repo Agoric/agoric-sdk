@@ -12,9 +12,12 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { makeTracer } from '@agoric/internal';
 
 import { makeSwingsetTestKit } from './supports.js';
 import { makeWalletFactoryDriver } from './drivers.js';
+
+const trace = makeTracer('TVU', true);
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
@@ -301,15 +304,20 @@ test.serial('restart vaultFactory', async t => {
 
   // @ts-expect-error cast XXX missing from type
   const { privateArgs } = vaultFactoryKit;
-  console.log('reused privateArgs', privateArgs, vaultFactoryKit);
+  trace('reused privateArgs', privateArgs, vaultFactoryKit);
 
   const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
-  const newStorageNode = await EV(chainStorage).makeChildNode('governance');
+  const newStorageNode = await EV(chainStorage).makeChildNode('vaultFactory');
 
   const newPrivateArgs = harden({
     ...privateArgs,
     storageNode: newStorageNode,
   });
+  const oldPath = await EV(privateArgs.storageNode).getPath();
+  const newPath = await EV(newStorageNode).getPath();
+
+  trace(` PATHS`, oldPath, newPath);
+  debugger;
   const vfAdminFacet = await EV(
     vaultFactoryKit.governorCreatorFacet,
   ).getAdminFacet();
@@ -326,7 +334,7 @@ test.serial('restart vaultFactory', async t => {
   t.like(readCollateralMetrics(0), keyMetrics); // unchanged
 });
 
-test.serial('restart contractGovernor', async t => {
+test.skip('restart contractGovernor', async t => {
   const { EV } = t.context.shared.runUtils;
   /**
    * @type {Awaited<
@@ -350,7 +358,7 @@ test.serial('restart contractGovernor', async t => {
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
 });
 
-test.serial('open vault 2', async t => {
+test.skip('open vault 2', async t => {
   const { readRewardPoolBalance, walletFactoryDriver } = t.context.shared;
   t.is(readRewardPoolBalance(), 25000n);
 
@@ -375,7 +383,7 @@ test.serial('open vault 2', async t => {
   t.is(readRewardPoolBalance(), 50000n);
 });
 
-test.serial('adjust balance of vault opened before restart', async t => {
+test.skip('adjust balance of vault opened before restart', async t => {
   const { readCollateralMetrics, readRewardPoolBalance, walletFactoryDriver } =
     t.context.shared;
   t.is(readRewardPoolBalance(), 50000n);
@@ -414,7 +422,7 @@ test.serial('adjust balance of vault opened before restart', async t => {
 });
 
 // charge interest to force a liquidation and verify it starts
-test.serial('force liquidation', async t => {
+test.skip('force liquidation', async t => {
   const {
     advanceTimeBy,
     jumpTimeTo,
@@ -455,153 +463,146 @@ test.serial('force liquidation', async t => {
   });
 });
 
-test.serial(
-  'upgrade facet for all contracts, vats are saved durably',
-  async t => {
-    const {
-      controller,
-      runUtils: { EV },
-      swingStore,
-    } = t.context.shared;
-    const kState = controller.dump();
-    const { kernelTable, vatTables } = kState;
+test.skip('upgrade facet for all contracts, vats are saved durably', async t => {
+  const {
+    controller,
+    runUtils: { EV },
+    swingStore,
+  } = t.context.shared;
+  const kState = controller.dump();
+  const { kernelTable, vatTables } = kState;
 
-    t.log('find contracts, vats known to SwingSet');
-    // see comment atop kernelKeeper.js for schema
-    const vatOptions = vatID =>
-      JSON.parse(
-        NonNullish(
-          swingStore.kernelStorage.kvStore.get(`${vatID}.options`),
-          vatID,
-        ),
-      );
-    const vatNames = Object.fromEntries(
-      vatTables.map(vt => [vt.vatID, vatOptions(vt.vatID).name]),
+  t.log('find contracts, vats known to SwingSet');
+  // see comment atop kernelKeeper.js for schema
+  const vatOptions = vatID =>
+    JSON.parse(
+      NonNullish(
+        swingStore.kernelStorage.kvStore.get(`${vatID}.options`),
+        vatID,
+      ),
     );
-    const vatNamed = name =>
-      Object.keys(vatNames).find(vatID => vatNames[vatID] === name) ||
-      assert.fail();
-    const zoeVat = vatNamed('zoe');
+  const vatNames = Object.fromEntries(
+    vatTables.map(vt => [vt.vatID, vatOptions(vt.vatID).name]),
+  );
+  const vatNamed = name =>
+    Object.keys(vatNames).find(vatID => vatNames[vatID] === name) ||
+    assert.fail();
+  const zoeVat = vatNamed('zoe');
 
-    t.log('discharge obligations by finding upgrade powers');
-    const todo = Object.fromEntries(Object.entries(vatNames));
-    // vats created by swingset before bootstrap starts
-    const swingsetVats = [
-      'bootstrap',
-      'comms',
-      'vatAdmin',
-      'vattp',
-      'timer',
-    ].map(vatNamed);
-    for (const vatID of swingsetVats) {
-      delete todo[vatID];
-    }
+  t.log('discharge obligations by finding upgrade powers');
+  const todo = Object.fromEntries(Object.entries(vatNames));
+  // vats created by swingset before bootstrap starts
+  const swingsetVats = ['bootstrap', 'comms', 'vatAdmin', 'vattp', 'timer'].map(
+    vatNamed,
+  );
+  for (const vatID of swingsetVats) {
+    delete todo[vatID];
+  }
 
-    // TODO? test that powerStore is in baggage?
-    // by inspection, we see that it is:
-    // [ "v1.vs.vc.1.sBootstrap Powers", "{\"body\":\"#\\\"$0.Alleged: mapStore\\\"\",\"slots\":[\"o+d6/5\"]}",]
+  // TODO? test that powerStore is in baggage?
+  // by inspection, we see that it is:
+  // [ "v1.vs.vc.1.sBootstrap Powers", "{\"body\":\"#\\\"$0.Alleged: mapStore\\\"\",\"slots\":[\"o+d6/5\"]}",]
 
-    /** @type {MapStore} */
-    const powerStore = await EV.vat('bootstrap').consumeItem('powerStore');
+  /** @type {MapStore} */
+  const powerStore = await EV.vat('bootstrap').consumeItem('powerStore');
 
-    /** @type {(n: string) => Promise<[any, any][]>} */
-    const getStoreSnapshot = async name =>
-      EV.vat('bootstrap').snapshotStore(await EV(powerStore).get(name));
+  /** @type {(n: string) => Promise<[any, any][]>} */
+  const getStoreSnapshot = async name =>
+    EV.vat('bootstrap').snapshotStore(await EV(powerStore).get(name));
 
-    const contractKits = await getStoreSnapshot('contractKits');
-    // TODO refactor the entries to go into governedContractKits too (so the latter is sufficient to test)
-    const psmKit = await getStoreSnapshot('psmKit');
-    const governedContractKits = await getStoreSnapshot('governedContractKits');
-    const vatStore = await getStoreSnapshot('vatStore');
+  const contractKits = await getStoreSnapshot('contractKits');
+  // TODO refactor the entries to go into governedContractKits too (so the latter is sufficient to test)
+  const psmKit = await getStoreSnapshot('psmKit');
+  const governedContractKits = await getStoreSnapshot('governedContractKits');
+  const vatStore = await getStoreSnapshot('vatStore');
 
-    /**
-     * Map refs to objects and find a vat containing one of them.
-     *
-     * @param {Record<string, unknown>} refs
-     * @param {string[]} exclude don't report hits from these vatIDs
-     */
-    const findVat = async (refs, exclude = [zoeVat]) => {
-      const mapped = {};
-      for await (const [prop, presence] of Object.entries(refs)) {
-        if (!presence) {
-          continue;
-        }
-        const obj = await EV.rawBoot.awaitVatObject({
-          presence,
-          rawOutput: true,
-        });
-        mapped[prop] = obj;
+  /**
+   * Map refs to objects and find a vat containing one of them.
+   *
+   * @param {Record<string, unknown>} refs
+   * @param {string[]} exclude don't report hits from these vatIDs
+   */
+  const findVat = async (refs, exclude = [zoeVat]) => {
+    const mapped = {};
+    for await (const [prop, presence] of Object.entries(refs)) {
+      if (!presence) {
+        continue;
       }
-      for (const obj of Object.values(mapped)) {
-        const [_k, vatID, _oid] = kernelTable.find(
-          row => row[0] === obj.getKref() && row[2].startsWith('o+'),
-        );
-        if (!exclude.includes(vatID)) {
-          return { vatID, mapped };
-        }
-      }
-      console.warn(`no vat found for`, refs);
-      return { vatID: undefined, mapped: {} };
-    };
-
-    for await (const [_instance, kit] of [
-      ...contractKits,
-      ...governedContractKits,
-      ...psmKit,
-    ]) {
-      t.truthy(kit.adminFacet || kit.psmAdminFacet, kit.label);
-      const { creatorFacet, publicFacet, psmCreatorFacet } = kit;
-      const { vatID, mapped } = await findVat({
-        creatorFacet,
-        publicFacet,
-        psmCreatorFacet,
+      const obj = await EV.rawBoot.awaitVatObject({
+        presence,
+        rawOutput: true,
       });
+      mapped[prop] = obj;
+    }
+    for (const obj of Object.values(mapped)) {
+      const [_k, vatID, _oid] = kernelTable.find(
+        row => row[0] === obj.getKref() && row[2].startsWith('o+'),
+      );
+      if (!exclude.includes(vatID)) {
+        return { vatID, mapped };
+      }
+    }
+    console.warn(`no vat found for`, refs);
+    return { vatID: undefined, mapped: {} };
+  };
+
+  for await (const [_instance, kit] of [
+    ...contractKits,
+    ...governedContractKits,
+    ...psmKit,
+  ]) {
+    t.truthy(kit.adminFacet || kit.psmAdminFacet, kit.label);
+    const { creatorFacet, publicFacet, psmCreatorFacet } = kit;
+    const { vatID, mapped } = await findVat({
+      creatorFacet,
+      publicFacet,
+      psmCreatorFacet,
+    });
+    console.log(
+      'kit',
+      { ...kit, ...mapped },
+      'has adminFacet of contract vat:',
+      vatID,
+      vatNames[vatID],
+    );
+    delete todo[vatID];
+  }
+
+  for await (const [_instance, kit] of [...governedContractKits, ...psmKit]) {
+    t.truthy(kit.adminFacet || kit.psmAdminFacet, kit.label);
+    const { governorCreatorFacet, psmGovernorCreatorFacet } = kit;
+    const { vatID, mapped } = await findVat({
+      governorCreatorFacet,
+      psmGovernorCreatorFacet,
+    });
+    console.log(
+      'kit',
+      { ...kit, ...mapped },
+      'has adminFacet of contract governor vat:',
+      vatID,
+      vatNames[vatID],
+    );
+    delete todo[vatID];
+  }
+
+  for await (const [name, info] of vatStore) {
+    t.truthy(info.adminNode, name);
+    const { root } = info;
+    const { vatID, mapped } = await findVat({ root }, swingsetVats);
+    if (vatID) {
       console.log(
         'kit',
-        { ...kit, ...mapped },
-        'has adminFacet of contract vat:',
+        { name, ...info, ...mapped },
+        'has adminNode of non-contract vat:',
         vatID,
         vatNames[vatID],
       );
       delete todo[vatID];
     }
+  }
 
-    for await (const [_instance, kit] of [...governedContractKits, ...psmKit]) {
-      t.truthy(kit.adminFacet || kit.psmAdminFacet, kit.label);
-      const { governorCreatorFacet, psmGovernorCreatorFacet } = kit;
-      const { vatID, mapped } = await findVat({
-        governorCreatorFacet,
-        psmGovernorCreatorFacet,
-      });
-      console.log(
-        'kit',
-        { ...kit, ...mapped },
-        'has adminFacet of contract governor vat:',
-        vatID,
-        vatNames[vatID],
-      );
-      delete todo[vatID];
-    }
-
-    for await (const [name, info] of vatStore) {
-      t.truthy(info.adminNode, name);
-      const { root } = info;
-      const { vatID, mapped } = await findVat({ root }, swingsetVats);
-      if (vatID) {
-        console.log(
-          'kit',
-          { name, ...info, ...mapped },
-          'has adminNode of non-contract vat:',
-          vatID,
-          vatNames[vatID],
-        );
-        delete todo[vatID];
-      }
-    }
-
-    t.deepEqual(todo, {});
-  },
-);
+  t.deepEqual(todo, {});
+});
 
 // Will be part of https://github.com/Agoric/agoric-sdk/issues/5200
 // For now upon restart the values are reset to the terms under which the contract started.

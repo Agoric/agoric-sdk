@@ -147,17 +147,17 @@ export const prepareFluxAggregatorKit = async (
     answerKit: () => makeDurablePublishKit(),
     /** For publishing priceAuthority values to off-chain storage */
     priceKit: () => recorderKit,
-    latestRoundKit: () =>
-      E.when(E(storageNode).makeChildNode('latestRound'), node =>
-        makeRecorderKit(
-          node,
-          /**
-           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
-           *     import('./roundsManager.js').LatestRound
-           *   >}
-           */ (M.any()),
-        ),
-      ),
+    latestRoundKit: () => {
+      return makeRecorderKit(
+        storageNode,
+        /**
+         * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
+         *     import('./roundsManager.js').LatestRound
+         *   >}
+         */ (M.any()),
+        'latestRound',
+      );
+    },
   });
 
   const { roundsManagerKit } = await provideAll(baggage, {

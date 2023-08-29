@@ -38,7 +38,6 @@ export {
   assertElectorateMatches,
   makeParamManagerBuilder,
   makeParamManager,
-  makeParamManagerSync,
 } from './contractGovernance/paramManager.js';
 
 export {

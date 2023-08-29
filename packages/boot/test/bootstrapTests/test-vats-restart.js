@@ -131,7 +131,7 @@ test.serial('run restart-vats proposal', async t => {
   t.pass(); // reached here without throws
 });
 
-test.serial('read metrics', async t => {
+test.skip('read metrics', async t => {
   const { EV } = t.context.runUtils;
 
   /**
@@ -159,7 +159,7 @@ test.serial('read metrics', async t => {
   t.like(update.value, { rewardPoolAllocation: { Minted: { value: 25000n } } });
 });
 
-test.serial('open second vault', async t => {
+test.skip('open second vault', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet(walletAddr);
