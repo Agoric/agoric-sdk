@@ -6,6 +6,25 @@ on:
       should_run:
         description: "'true' if the test should run"
         value: "${{ jobs.check_and_cancel.outcome != 'skipped' && jobs.check_and_cancel.outputs.should_skip != 'true' }}"
+      merge_requested:
+        description: "'true' if pull_request was requested for merge"
+        value: >-
+          ${{
+            github.event_name != 'pull_request' || (
+              (
+                github.event.pull_request.base.ref == 'master' ||
+                github.event.pull_request.base.ref == 'release-pismo' ||
+                github.event.pull_request.base.ref == 'beta'
+              ) &&
+              github.event.pull_request.draft == false &&
+              (
+                contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
+                contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+                contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
+                github.event.pull_request.auto_merge != null
+              )
+            )
+          }}
 
 jobs:
   check_and_cancel:
