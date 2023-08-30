@@ -1,6 +1,8 @@
 import { Far } from '@endo/marshal';
 import { M, matches } from '@endo/patterns';
 
+/** @typedef {import('@endo/marshal').RankCompare} RankCompare */
+
 const { Fail, quote: q } = assert;
 
 // TODO: Undate `@endo/patterns` to export the original, and delete the

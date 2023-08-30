@@ -4,13 +4,14 @@ import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
 const { Fail, quote: q } = assert;
 /**
+ * @typedef {import('@endo/marshal').RankComparison} RankComparison
+ *
  * @typedef {import('./types').TimerBrand} TimerBrand
  * @typedef {import('./types').Timestamp} Timestamp
  * @typedef {import('./types').RelativeTime} RelativeTime
  * @typedef {import('./types').RelativeTimeValue} RelativeTimeValue
  * @typedef {import('./types').TimestampValue} TimestampValue
  * @typedef {import('./types').TimeMathType} TimeMathType
- *
  */
 
 /**

@@ -3,6 +3,11 @@
 /// <reference types="ses"/>
 
 /**
+ * @template {Key} [K=Key]
+ * @typedef {import('@endo/patterns').CopyBag<K>} CopyBag
+ */
+
+/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Amount Amounts are descriptions of digital assets,
  *   answering the questions "how much" and "of what kind". Amounts are values

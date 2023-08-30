@@ -2,6 +2,7 @@
 
 /// <reference types="ses"/>
 
+/** @template T @typedef {import('@endo/pass-style').CopyRecord<T>} CopyRecord */
 /** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
 
 // XXX can be tighter than 'any'
