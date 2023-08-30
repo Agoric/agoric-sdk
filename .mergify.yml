@@ -5,9 +5,8 @@ queue_rules:
       - base=master
       # Require integration tests before merging only
       - or:
+          - label=bypass:integration
           - check-success=integration-test-result
-          - check-neutral=integration-test-result
-          - check-skipped=integration-test-result
 
 pull_request_rules:
   - name: merge to master
