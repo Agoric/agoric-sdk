@@ -718,6 +718,11 @@ export const makeVirtualObjectManager = (
       finish = undefined,
       stateShape = undefined,
       thisfulMethods = false,
+    } = options;
+    let {
+      // These are "let" rather than "const" only to accommodate code
+      // below that tolerates an old version of the vat-data package.
+      // See there for more explanation.
       interfaceGuard = undefined,
       interfaceGuardKit = undefined,
     } = options;
@@ -749,6 +754,25 @@ export const makeVirtualObjectManager = (
       }
       case 'many': {
         assert(multifaceted);
+
+        if (interfaceGuard && interfaceGuardKit === undefined) {
+          // This if clause is for the purpose of tolerating versions
+          // of the vata-data package that precede
+          // https://github.com/Agoric/agoric-sdk/pull/8220 .
+          // Before that PR, the options name `interfaceGuard` would
+          // actually carry the InterfaceGuardKit.
+          //
+          // Tolerating the old vat-data with the new types.
+          // at-expect-error here causes inconsistent reports, so
+          // doing the at-ts-ignore-error ritual instead.
+          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+          // @ts-ignore
+          interfaceGuardKit = interfaceGuard;
+          interfaceGuard = undefined;
+          // The rest of the code from here makes no further compromise
+          // for that old version of the vat-data package.
+        }
+
         interfaceGuard === undefined ||
           Fail`Use an interfaceGuardKit, not an interfaceGuard, to protect class kit ${q(
             tag,
