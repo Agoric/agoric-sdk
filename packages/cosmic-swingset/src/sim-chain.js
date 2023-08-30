@@ -216,6 +216,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       type: 'AG_COSMOS_INIT',
       blockTime: scaleBlockTime(Date.now()),
       isBootstrap: true,
+      params: DEFAULT_SIM_SWINGSET_PARAMS,
     });
     blockHeight = initialHeight;
   };
