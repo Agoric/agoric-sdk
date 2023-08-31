@@ -1,6 +1,6 @@
 REPOSITORY = agoric/upgrade-test
 # use :dev (latest prerelease image) unless we build local sdk
-DEST_IMAGE ?= $(if $(findstring local_sdk,$(MAKECMDGOALS)),ghcr.io/agoric/agoric-sdk:latest,ghcr.io/agoric/agoric-sdk:dev)
+SDK_IMAGE ?= $(if $(findstring local_sdk,$(MAKECMDGOALS)),ghcr.io/agoric/agoric-sdk:latest,ghcr.io/agoric/agoric-sdk:dev)
 BOOTSTRAP_MODE?=main
 ifeq ($(BOOTSTRAP_MODE),main)
 	TAG_SUFFIX=
@@ -20,7 +20,7 @@ local_sdk:
 	(cd ../ && make docker-build-sdk)
 
 BUILD = docker build --progress=plain $(BUILD_OPTS) \
-	--build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) \
+	--build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg SDK_IMAGE=$(SDK_IMAGE) \
 	-f Dockerfile upgrade-test-scripts
 
 agoric-upgrade-7-2:
