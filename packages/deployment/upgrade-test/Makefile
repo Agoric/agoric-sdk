@@ -7,7 +7,7 @@ ifeq ($(BOOTSTRAP_MODE),main)
 else
 	TAG_SUFFIX=-$(BOOTSTRAP_MODE)
 endif
-TARGET?=agoric-upgrade-11
+TARGET?=agoric-upgrade-12
 dockerLabel?=$(TARGET)
 ifdef TMUX_CC
 	tmuxCC=1
@@ -38,11 +38,17 @@ agoric-upgrade-9: agoric-upgrade-8-1
 agoric-upgrade-10: agoric-upgrade-9
 	$(BUILD) --target agoric-upgrade-10 -t $(REPOSITORY):agoric-upgrade-10$(TAG_SUFFIX)
 
-agoric-upgrade-10-to-11: agoric-upgrade-10
-	$(BUILD) --target agoric-upgrade-10-to-11 -t $(REPOSITORY):agoric-upgrade-10-to-11$(TAG_SUFFIX)
+propose-agoric-upgrade-11: agoric-upgrade-10
+	$(BUILD) --target propose-agoric-upgrade-11 -t $(REPOSITORY):propose-agoric-upgrade-11$(TAG_SUFFIX)
 
-agoric-upgrade-11: agoric-upgrade-10-to-11
+agoric-upgrade-11: propose-agoric-upgrade-11
 	$(BUILD) --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11$(TAG_SUFFIX)
+
+propose-agoric-upgrade-12: agoric-upgrade-11
+	$(BUILD) --target propose-agoric-upgrade-12 -t $(REPOSITORY):propose-agoric-upgrade-12$(TAG_SUFFIX)
+
+agoric-upgrade-12: propose-agoric-upgrade-12
+	$(BUILD) --target agoric-upgrade-12 -t $(REPOSITORY):agoric-upgrade-12$(TAG_SUFFIX)
 
 # build main bootstrap
 build: $(TARGET)
@@ -65,4 +71,4 @@ run:
 run_bash:
 	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
 
-.PHONY: local_sdk agoric-upgrade-7-2 agoric-upgrade-8 agoric-upgrade-8-1 agoric-upgrade-9 agoric-upgrade-10 agoric-upgrade-11 build build_test run
+.PHONY: local_sdk agoric-upgrade-7-2 agoric-upgrade-8 agoric-upgrade-8-1 agoric-upgrade-9 agoric-upgrade-10 agoric-upgrade-11 agoric-upgrade-12 build build_test run
