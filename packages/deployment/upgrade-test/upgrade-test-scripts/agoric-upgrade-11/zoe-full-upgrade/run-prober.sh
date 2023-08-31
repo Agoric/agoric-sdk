@@ -8,7 +8,7 @@ here='upgrade-test-scripts/agoric-upgrade-11/zoe-full-upgrade'
 
 agd --chain-id=agoriclocal \
   tx gov submit-proposal swingset-core-eval \
-  ${here}/zcf-upgrade-permit.json ${here}/run-prober-script.js \
+  ${here}/zcf-upgrade.permit.json ${here}/run-prober-script.js \
   --title="Run Prober" --description="run prober" \
   --deposit=10000000ubld \
   --gas=auto --gas-adjustment=1.2 \

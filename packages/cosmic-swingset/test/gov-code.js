@@ -1,6 +1,6 @@
 /* global E */
 /**
- * This file, along with the companion `gov-permit.json`, are used to test "big
+ * This file, along with the companion `gov.permit.json`, are used to test "big
  * hammer" chain governance.  They don't have a functional purpose outside of
  * that testing.
  */
