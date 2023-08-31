@@ -424,6 +424,7 @@ export const makeSwingsetTestKit = async (
   const { controller, timer } = await buildSwingset(
     new Map(),
     bridgeOutbound,
+    () => {}, // handleBridgeInboundResult
     kernelStorage,
     configPath,
     [],

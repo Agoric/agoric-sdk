@@ -4,6 +4,8 @@ import { M } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { E } from '@endo/far';
 import './core/types.js';
+import { BridgeId } from '@agoric/internal';
+import { watchPromise } from '@agoric/vat-data';
 
 /** @typedef {{ rref: unknown; result: PromiseSettledResult<any> }} BridgeResultOneNotify */
 
@@ -29,10 +31,15 @@ export const BridgeManagerI = M.interface('BridgeManager', {
 const BridgeManagerIKit = harden({
   manager: BridgeManagerI,
   privateInbounder: M.interface('PrivateBridgeInbounder', {
-    inbound: M.call(M.string(), M.any()).returns(),
+    inbound: M.call(M.string(), M.any()).optional(M.any()).returns(),
   }),
   privateOutbounder: M.interface('PrivateBridgeOutbounder', {
     outbound: M.call(M.string(), M.any()).returns(M.promise()),
+    outboundOnly: M.call(M.string(), M.any()).returns(),
+  }),
+  privateInboundResultHandler: M.interface('InboundResultHandler', {
+    onFulfilled: M.call(M.any(), M.any()).returns(),
+    onRejected: M.call(M.any(), M.any()).returns(),
   }),
 });
 
@@ -58,6 +65,8 @@ const prepareScopedManager = zone => {
         const { toBridge, bridgeId } = this.state;
         return E(toBridge).outbound(bridgeId, obj);
       },
+      // Cannot be async, the result promise from E().fromBridge must be returned
+      // as-is to privateInbounder.inbound
       fromBridge(obj) {
         // If no handler was set, this will fail
         const { bridgeId, inboundHandler } = this.state;
@@ -149,17 +158,65 @@ export const prepareBridgeManager = (zone, D) => {
           }
           return retobj;
         },
+        outboundOnly(dstID, obj) {
+          const retobj = D(this.state.bridgeDevice).callOutbound(dstID, obj);
+          if (retobj && retobj.error) {
+            // Report any error as an asynchronous rejection
+            void Promise.reject(Error(retobj.error));
+          }
+        },
       },
       /**
        * This facet is registered with the bridge device to handle inbound
        * messages, and is not exposed anywhere else.
        */
       privateInbounder: {
-        inbound(srcID, obj) {
+        inbound(srcID, obj, rref) {
           // Notify the specific handler, if there was one.
-          void this.state.scopedManagers.get(srcID).fromBridge(obj);
-
+          const resultP = this.state.scopedManagers.get(srcID).fromBridge(obj);
+          if (rref !== undefined) {
+            watchPromise(
+              resultP,
+              this.facets.privateInboundResultHandler,
+              rref,
+            );
+          }
           // No return value.
+        },
+      },
+      /**
+       * This facet is registered as a promise watcher for the `fromBridge`
+       * handler result for every inbound message that expects to receive a
+       * result sent back. It is not exposed anywhere else.
+       */
+      privateInboundResultHandler: {
+        onFulfilled(value, rref) {
+          /** @type {BridgeResultOneNotify} */
+          const notify = harden({
+            rref,
+            result: {
+              status: 'fulfilled',
+              value,
+            },
+          });
+          this.facets.privateOutbounder.outboundOnly(
+            BridgeId.BRIDGE_RESULT,
+            notify,
+          );
+        },
+        onRejected(reason, rref) {
+          /** @type {BridgeResultOneNotify} */
+          const notify = harden({
+            rref,
+            result: {
+              status: 'rejected',
+              reason,
+            },
+          });
+          this.facets.privateOutbounder.outboundOnly(
+            BridgeId.BRIDGE_RESULT,
+            notify,
+          );
         },
       },
     },

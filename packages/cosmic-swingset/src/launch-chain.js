@@ -72,9 +72,40 @@ const blockManagerConsole = anylogger('block-manager');
  */
 const getHostKey = path => `host.${path}`;
 
+/** @typedef {(rref: unknown, result: PromiseSettledResult<any>) => void} HandleBridgeInboundResult */
+
+/**
+ * @param {(dstID: string, obj: any) => any} bridgeOutbound
+ * @param {HandleBridgeInboundResult} handleInboundResult
+ */
+const buildAsyncBridge = (bridgeOutbound, handleInboundResult) => {
+  /**
+   *
+   * @param {string} dstID
+   * @param {unknown} msg
+   */
+  const asyncBridgeOutbound = (dstID, msg) => {
+    if (dstID === BRIDGE_ID.BRIDGE_RESULT) {
+      assert.typeof(msg, 'object');
+      const { rref, result } =
+        /** @type {import('@agoric/vats/src/bridge.js').BridgeResultOneNotify} */ (
+          msg
+        );
+      handleInboundResult(rref, result);
+      return;
+    }
+
+    return bridgeOutbound(dstID, msg);
+  };
+
+  const bridgeDevice = buildBridge(asyncBridgeOutbound);
+  return bridgeDevice;
+};
+
 /**
  * @param {Map<*, *>} mailboxStorage
  * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
+ * @param {HandleBridgeInboundResult} handleBridgeInboundResult
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
@@ -84,6 +115,7 @@ const getHostKey = path => `host.${path}`;
 export async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
+  handleBridgeInboundResult,
   kernelStorage,
   vatconfig,
   bootstrapArgs,
@@ -93,7 +125,9 @@ export async function buildSwingset(
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   const mbs = buildMailboxStateMap(mailboxStorage);
 
-  const bridgeDevice = bridgeOutbound && buildBridge(bridgeOutbound);
+  const bridgeDevice =
+    bridgeOutbound &&
+    buildAsyncBridge(bridgeOutbound, handleBridgeInboundResult);
   const mailboxDevice = buildMailbox(mbs);
   const timerDevice = buildTimer();
 
@@ -331,10 +365,15 @@ export async function launch({
     metricMeter,
   });
 
+  const handleBridgeInboundResult = (_rref, _result) => {
+    // TODO
+  };
+
   console.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
     bridgeOutbound,
+    handleBridgeInboundResult,
     kernelStorage,
     vatconfig,
     argv,
