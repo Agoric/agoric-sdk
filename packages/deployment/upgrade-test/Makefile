@@ -61,12 +61,15 @@ DEBUG ?= SwingSet:ls,SwingSet:vat
 RUN = docker run --rm -it \
 	-p 26656:26656 -p 26657:26657 -p 1317:1317 \
 	-v "$${PWD}:/workspace" \
-	-e "DEST=1" -e "DEBUG=$(DEBUG)"
+	-e "DEBUG=$(DEBUG)"
 
 run:
-	$(RUN) -e "TMUX_USE_CC=$(tmuxCC)" \
+	$(RUN) -e "DEST=1" -e "TMUX_USE_CC=$(tmuxCC)" \
 		--entrypoint /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh \
 		 $(REPOSITORY):$(dockerLabel)
+
+run_test:
+	$(RUN) -e "DEST=0" $(REPOSITORY):$(dockerLabel)
 
 run_bash:
 	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
