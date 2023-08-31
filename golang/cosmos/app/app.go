@@ -790,13 +790,18 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	const (
+		upgradeName     = "agoric-upgrade-12"
+		upgradeNameTest = "agorictest-upgrade-12"
+	)
+	
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade11Handler(app, upgradeName),
+		upgrade12Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade11Handler(app, upgradeNameTest),
+		upgrade12Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -819,107 +824,12 @@ func NewAgoricApp(
 	return app
 }
 
-type swingStoreMigrationEventHandler struct {
-	swingStore sdk.KVStore
-}
-
-func (eventHandler swingStoreMigrationEventHandler) OnExportStarted(height uint64, retrieveSwingStoreExport func() error) error {
-	return retrieveSwingStoreExport()
-}
-
-func (eventHandler swingStoreMigrationEventHandler) OnExportRetrieved(provider swingsetkeeper.SwingStoreExportProvider) (err error) {
-	exportDataReader, err := provider.GetExportDataReader()
-	if err != nil {
-		return err
-	}
-	defer exportDataReader.Close()
-
-	var hasExportData bool
-
-	for {
-		entry, err := exportDataReader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-		hasExportData = true
-		if !entry.HasValue() {
-			return fmt.Errorf("no value for export data key %s", entry.Key())
-		}
-		eventHandler.swingStore.Set([]byte(entry.Key()), []byte(entry.StringValue()))
-	}
-	if !hasExportData {
-		return fmt.Errorf("export data had no entries")
-	}
-	return nil
-}
-
-// upgrade11Handler performs standard upgrade actions plus custom actions for upgrade-11.
-func upgrade11Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade12Handler performs standard upgrade actions plus custom actions for upgrade-12.
+func upgrade12Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
-
-		// Perform swing-store migrations. We do this in the app upgrade handler
-		// since it involves multiple modules (x/vstorage and x/swingset) which
-		// don't strictly have a version change on their own.
-
-		// We are at the begining of the upgrade block, so all stores are commited
-		// as of the end of the previous block
-		savedBlockHeight := uint64(ctx.BlockHeight() - 1)
-
-		// First, repair swing-store metadata in case this node was previously
-		// initialized from a state-sync snapshot. This is done with a check on the
-		// block height to catch early any hangover related mismatch.
-		// Only entries related to missing historical metadata are imported, but we
-		// don't know what these look like here, so we provide it all.
-		getSwingStoreExportDataFromVstorage := func() (reader agorictypes.KVEntryReader, err error) {
-			return agorictypes.NewVstorageDataEntriesReader(
-				app.VstorageKeeper.ExportStorageFromPrefix(ctx, swingsetkeeper.StoragePathSwingStore),
-			), nil
-		}
-
-		// We're not restoring any artifact to swing-store, nor have any to provide
-		readNoArtifact := func() (artifact swingsettypes.SwingStoreArtifact, err error) {
-			return artifact, io.EOF
-		}
-
-		err := app.SwingStoreExportsHandler.RestoreExport(
-			swingsetkeeper.SwingStoreExportProvider{
-				BlockHeight:         savedBlockHeight,
-				GetExportDataReader: getSwingStoreExportDataFromVstorage,
-				ReadNextArtifact:    readNoArtifact,
-			},
-			swingsetkeeper.SwingStoreRestoreOptions{
-				ArtifactMode:   swingsetkeeper.SwingStoreArtifactModeNone,
-				ExportDataMode: swingsetkeeper.SwingStoreExportDataModeRepairMetadata,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// Then migrate the swing-store shadow copy:
-		// 1. Remove the swing-store "export data" shadow-copy entries from vstorage.
-		// 2. Export swing-store "export-data" (as of the previous block) through a
-		//    handler that writes every entry into the swingset module's new Store.
-		app.VstorageKeeper.RemoveEntriesWithPrefix(ctx, swingsetkeeper.StoragePathSwingStore)
-		err = app.SwingStoreExportsHandler.InitiateExport(
-			savedBlockHeight,
-			swingStoreMigrationEventHandler{swingStore: app.SwingSetKeeper.GetSwingStore(ctx)},
-			swingsetkeeper.SwingStoreExportOptions{
-				ArtifactMode:   swingsetkeeper.SwingStoreArtifactModeNone,
-				ExportDataMode: swingsetkeeper.SwingStoreExportDataModeAll,
-			},
-		)
-		if err == nil {
-			err = swingsetkeeper.WaitUntilSwingStoreExportDone()
-		}
-		if err != nil {
-			return nil, err
-		}
 
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
