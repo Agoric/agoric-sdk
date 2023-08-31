@@ -9,7 +9,7 @@ set -euo pipefail
 # zcf-upgrade-script.js. Instructions for updating the bundles are available
 # in ../actions.sh
 
-here='upgrade-test-scripts/agoric-upgrade-11/zoe-full-upgrade'
+here='upgrade-test-scripts/agoric-upgrade-12/zoe-full-upgrade'
 
 agd --chain-id=agoriclocal \
   tx gov submit-proposal swingset-core-eval \
