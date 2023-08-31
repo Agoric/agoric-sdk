@@ -40,7 +40,7 @@ import {
   BeansPerXsnapComputron,
 } from './sim-params.js';
 import { parseParams } from './params.js';
-import { makeQueue } from './helpers/make-queue.js';
+import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
@@ -312,6 +312,14 @@ export async function launch({
   const actionQueue = makeQueue(actionQueueStorage);
   /** @type {InboundQueue} */
   const highPriorityQueue = makeQueue(highPriorityQueueStorage);
+  /**
+   * In memory queue holding actions that must be consumed entirely
+   * during the block. If it's not drained, we open the gates to
+   * hangover hell.
+   *
+   * @type {InboundQueue}
+   */
+  const runThisBlock = makeQueue(makeQueueStorageMock().storage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -582,6 +590,13 @@ export async function launch({
     let keepGoing = await runSwingset();
     if (!keepGoing) return;
 
+    // Then, if we have anything in the special runThisBlock queue, process
+    // it and do no further work.
+    if (runThisBlock.size()) {
+      await processActions(runThisBlock, runSwingset);
+      return;
+    }
+
     // Then, process as much as we can from the priorityQueue.
     keepGoing = await processActions(highPriorityQueue, runSwingset);
     if (!keepGoing) return;
@@ -611,11 +626,15 @@ export async function launch({
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
     inboundQueueMetrics.updateLength(
-      actionQueue.size() + highPriorityQueue.size(),
+      actionQueue.size() + highPriorityQueue.size() + runThisBlock.size(),
     );
 
+    // If we have work to complete this block, it needs to run to completion.
+    // It will also run to completion any work that swingset still had pending.
+    const neverStop = runThisBlock.size() > 0;
+
     // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit);
+    const runPolicy = computronCounter(params.beansPerUnit, neverStop);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
 
     await runKernel(runSwingset, blockHeight, blockTime);
@@ -747,38 +766,36 @@ export async function launch({
         }
         if (upgradePlan) {
           const blockHeight = upgradePlan.height;
-          if (blockNeedsExecution(blockHeight)) {
-            controller.writeSlogObject({
-              type: 'cosmic-swingset-upgrade-start',
-              blockHeight,
-              blockTime,
-              upgradePlan,
-            });
-            // Process upgrade plan
-            const upgradedAction = {
-              type: ActionType.ENACTED_UPGRADE,
-              upgradePlan,
-              blockHeight,
-              blockTime,
-            };
-            await doBlockingSend(upgradedAction);
-            controller.writeSlogObject({
-              type: 'cosmic-swingset-upgrade-finish',
-              blockHeight,
-              blockTime,
-            });
-          }
+
+          // Process upgrade plan
+          const upgradedAction = {
+            type: ActionType.ENACTED_UPGRADE,
+            upgradePlan,
+            blockHeight,
+            blockTime,
+          };
+          await doBlockingSend(upgradedAction);
         }
         return true;
       }
 
       case ActionType.ENACTED_UPGRADE: {
         // Install and execute new core proposals.
-        const {
-          upgradePlan: { info: upgradeInfoJson = null } = {},
+        const { upgradePlan, blockHeight, blockTime } = action;
+
+        if (!blockNeedsExecution(blockHeight)) {
+          return undefined;
+        }
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-upgrade-start',
           blockHeight,
           blockTime,
-        } = action;
+          upgradePlan,
+        });
+
+        const { info: upgradeInfoJson = null } = upgradePlan || {};
+
         const upgradePlanInfo =
           upgradeInfoJson &&
           parseLocatedJson(upgradeInfoJson, 'ENACTED_UPGRADE upgradePlan.info');
@@ -813,9 +830,6 @@ export async function launch({
         }
 
         // Now queue the code for evaluation.
-        //
-        // TODO: Once SwingSet sprouts some tools for preemption, we should use
-        // them to help the upgrade process finish promptly.
         const coreEvalAction = {
           type: ActionType.CORE_EVAL,
           blockHeight,
@@ -827,13 +841,19 @@ export async function launch({
             },
           ],
         };
-        highPriorityQueue.push({
+        runThisBlock.push({
           context: {
             blockHeight,
             txHash: 'x/upgrade',
             msgIdx: 0,
           },
           action: coreEvalAction,
+        });
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-upgrade-finish',
+          blockHeight,
+          blockTime,
         });
 
         return undefined;
@@ -848,6 +868,9 @@ export async function launch({
             `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
           );
         }
+
+        runThisBlock.size() === 0 ||
+          Fail`We didn't process all "run this block" actions`;
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-start',
