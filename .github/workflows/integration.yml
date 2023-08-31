@@ -261,7 +261,7 @@ jobs:
       - getting-started
       - deployment-test
       - test-docker-build
-    if: needs.pre_check.outputs.should_run == 'true' && (success() || failure() || cancelled())
+    if: (needs.pre_check.outputs.should_run == 'true' && (success() || failure() || cancelled())) || needs.pre_check.outputs.previous_success == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
@@ -270,6 +270,7 @@ jobs:
           cat <<EOF
             needs ${{ toJSON(needs) }}
           EOF
+          [ "${{ needs.pre_check.outputs.previous_success }}" = "true" ] && exit 0
           [ "${{ needs.getting-started.result }}" = "success" ] || exit 1
           [ "${{ needs.deployment-test.result }}" = "success" ] || exit 1
           [ "${{ needs.test-docker-build.result }}" = "success" ] || exit 1
