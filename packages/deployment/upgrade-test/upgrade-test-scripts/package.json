@@ -7,6 +7,7 @@
     "execa": "^7.2.0"
   },
   "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops",
     "upgrade-tests": "ava --serial agoric-upgrade*/**/pre.test.js agoric-upgrade*/**/actions.test.js agoric-upgrade*/**/post.test.js"
   },
   "ava": {

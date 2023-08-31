@@ -5,11 +5,6 @@
 echo Wait for upgrade to settle
 waitForBlock 5
 
-# CWD is agoric-sdk
-upgrade11=./upgrade-test-scripts/agoric-upgrade-11
-
-test_val "$(agd query vstorage children published.boardAux -o json | jq .children)" "[]" "no boardAux children yet"
-
 # validate agoric-upgrade-10 metrics after update
 
 test_val $(agd q vstorage children published.vaultFactory.managers.manager0.vaults -o json | jq -r '.children | length') 3 "we have three vaults"
