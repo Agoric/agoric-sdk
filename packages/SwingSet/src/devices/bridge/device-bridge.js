@@ -15,9 +15,10 @@ function sanitize(data) {
  * @typedef {object} BridgeRoot
  * An object representing a bridge device from which messages can be received
  * via a handler and to which messages can be sent.
- * For multiplexing, each inbound or outbound message is associated with a string identifying its channel.
- * @property {(channelId: string, obj: any) => any} callOutbound
- * @property {(handler: { inbound: (channelId: string, obj: any) => void }) => void} registerInboundHandler
+ * All parameters are passed through and the implementation of the bridge can
+ * arrange for multiplexing, e.g. by passing a channelId in one of the parameters.
+ * @property {(...args: any[]) => any} callOutbound
+ * @property {(handler: { inbound: (...args: any[]) => void }) => void} registerInboundHandler
  * @property {() => void} unregisterInboundHandler
  */
 

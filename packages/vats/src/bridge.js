@@ -5,6 +5,8 @@ import '@agoric/store/exported.js';
 import { E } from '@endo/far';
 import './core/types.js';
 
+/** @typedef {{ rref: unknown; result: PromiseSettledResult<any> }} BridgeResultOneNotify */
+
 const { Fail, details: X } = assert;
 
 export const BridgeHandlerI = M.interface('BridgeHandler', {

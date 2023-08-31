@@ -12,7 +12,7 @@
  */
 
 /**
- * Event source ids used by the bridge device.
+ * Event channel ids used by the bridge device.
  */
 export const BridgeId = {
   BANK: 'bank',
@@ -22,6 +22,7 @@ export const BridgeId = {
   PROVISION: 'provision',
   PROVISION_SMART_WALLET: 'provisionWallet',
   WALLET: 'wallet',
+  BRIDGE_RESULT: 'bridgeResult', // Synthetic channel used to send asynchronous results
 };
 harden(BridgeId);
 
