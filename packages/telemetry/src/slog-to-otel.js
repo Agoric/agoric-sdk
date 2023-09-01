@@ -971,6 +971,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.pop('bridge-inbound');
         break;
       }
+      case 'cosmic-swingset-bridge-inbound-result': {
+        spans.push(['bridge-inbound-result']);
+        spans.pop('bridge-inbound-result');
+        break;
+      }
       case 'cosmic-swingset-end-block-start': {
         // Add `end-block` as an event onto the encompassing `block` span
         spans.top()?.addEvent('end-block-action', cleanAttrs(slogAttrs), now);

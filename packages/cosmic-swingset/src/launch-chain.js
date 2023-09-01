@@ -365,8 +365,10 @@ export async function launch({
     metricMeter,
   });
 
-  const handleBridgeInboundResult = (_rref, _result) => {
-    // TODO
+  const inboundQueueResults = [];
+  const handleBridgeInboundResult = (actionContext, result) => {
+    // avoid interleaving with the controller.run()
+    inboundQueueResults.push({ actionContext, result });
   };
 
   console.debug(`buildSwingset`);
@@ -437,6 +439,12 @@ export async function launch({
         usedBeans: finishBeans - startBeans,
         remainingBeans: runPolicy.remainingBeans(),
       });
+      for (const { actionContext, result } of inboundQueueResults.splice(0))
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-bridge-inbound-result',
+          actionContext,
+          result,
+        });
       runNum += 1;
       return runPolicy.shouldRun();
     }
@@ -468,11 +476,11 @@ export async function launch({
     await commit();
   }
 
-  async function deliverInbound(sender, messages, ack, inboundNum) {
+  async function deliverInbound(sender, messages, ack, actionContext) {
     Array.isArray(messages) || Fail`inbound given non-Array: ${messages}`;
     controller.writeSlogObject({
       type: 'cosmic-swingset-deliver-inbound',
-      inboundNum,
+      actionContext,
       sender,
       count: messages.length,
     });
@@ -482,17 +490,19 @@ export async function launch({
     console.debug(`mboxDeliver:   ADDED messages`);
   }
 
-  async function doBridgeInbound(source, body, inboundNum) {
+  async function doBridgeInbound(source, body, actionContext) {
     controller.writeSlogObject({
       type: 'cosmic-swingset-bridge-inbound',
-      inboundNum,
+      actionContext,
       source,
     });
     if (!bridgeInbound) throw Fail`bridgeInbound undefined`;
     // console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
-    // delivery+dispatch to some handler vat
-    bridgeInbound(source, body);
+    // delivery+dispatch to some handler vat. The result of the delivery
+    // will be provided along the actionContext (passed by serialized value)
+    // to handleBridgeInboundResult
+    bridgeInbound(source, body, actionContext);
   }
 
   async function installBundle(bundleJson) {
@@ -543,7 +553,7 @@ export async function launch({
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
 
-  async function performAction(action, inboundNum) {
+  async function performAction(action, actionContext) {
     // blockManagerConsole.error('Performing action', action);
     let p;
     switch (action.type) {
@@ -552,23 +562,23 @@ export async function launch({
           action.peer,
           action.messages,
           action.ack,
-          inboundNum,
+          actionContext,
         );
         break;
       }
 
       case ActionType.VBANK_BALANCE_UPDATE: {
-        p = doBridgeInbound(BRIDGE_ID.BANK, action, inboundNum);
+        p = doBridgeInbound(BRIDGE_ID.BANK, action, actionContext);
         break;
       }
 
       case ActionType.IBC_EVENT: {
-        p = doBridgeInbound(BRIDGE_ID.DIBC, action, inboundNum);
+        p = doBridgeInbound(BRIDGE_ID.DIBC, action, actionContext);
         break;
       }
 
       case ActionType.PLEASE_PROVISION: {
-        p = doBridgeInbound(BRIDGE_ID.PROVISION, action, inboundNum);
+        p = doBridgeInbound(BRIDGE_ID.PROVISION, action, actionContext);
         break;
       }
 
@@ -578,17 +588,17 @@ export async function launch({
       }
 
       case ActionType.CORE_EVAL: {
-        p = doBridgeInbound(BRIDGE_ID.CORE, action, inboundNum);
+        p = doBridgeInbound(BRIDGE_ID.CORE, action, actionContext);
         break;
       }
 
       case ActionType.WALLET_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action, inboundNum);
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action, actionContext);
         break;
       }
 
       case ActionType.WALLET_SPEND_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action, inboundNum);
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action, actionContext);
         break;
       }
 
@@ -610,10 +620,12 @@ export async function launch({
   async function processActions(inboundQueue, runSwingset) {
     let keepGoing = true;
     await null;
-    for (const { action, context } of inboundQueue.consumeAll()) {
-      const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
+    for (const {
+      action,
+      context: actionContext,
+    } of inboundQueue.consumeAll()) {
       inboundQueueMetrics.decStat();
-      await performAction(action, inboundNum);
+      await performAction(action, actionContext);
       keepGoing = await runSwingset();
       if (!keepGoing) {
         // any leftover actions will remain on the inbound queue for possible
