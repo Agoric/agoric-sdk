@@ -123,8 +123,8 @@ RUN . ./upgrade-test-scripts/start_to_to.sh
 # UPGRADE
 ARG DEST_IMAGE
 FROM ghcr.io/agoric/agoric-sdk:36 as propose-agoric-upgrade-12
-# TODO: Replace with actual Zoe core proposal for upgrade 12 (MCS, Kread, Zoe, restart-contracts, etc)
-ARG BOOTSTRAP_MODE UPGRADE_INFO_12='{"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}'
+# TODO: more core proposals for upgrade 12 (Kread, Zoe, restart-contracts, etc)
+ARG BOOTSTRAP_MODE UPGRADE_INFO_12='{"coreProposals":["@agoric/builders/scripts/smart-wallet/build-walletFactory-upgrade.js"]}'
 ENV THIS_NAME=propose-agoric-upgrade-12 UPGRADE_TO=agoric-upgrade-12 UPGRADE_INFO=${UPGRADE_INFO_12} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 COPY --from=agoric-upgrade-11 /root/.agoric /root/.agoric
 # start-chain boilerplate
