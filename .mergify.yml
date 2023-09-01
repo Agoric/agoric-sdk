@@ -18,6 +18,8 @@ pull_request_rules:
           - label=bypass:linear-history
       - or:
           - check-success=wait-integration-pre-checks
+          - check-neutral=wait-integration-pre-checks
+          - check-skipped=wait-integration-pre-checks
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -36,6 +38,8 @@ pull_request_rules:
       - label=automerge:rebase
       - or:
           - check-success=wait-integration-pre-checks
+          - check-neutral=wait-integration-pre-checks
+          - check-skipped=wait-integration-pre-checks
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -55,6 +59,8 @@ pull_request_rules:
       - label=automerge:squash
       - or:
           - check-success=wait-integration-pre-checks
+          - check-neutral=wait-integration-pre-checks
+          - check-skipped=wait-integration-pre-checks
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
