@@ -6,6 +6,11 @@ import path from 'path';
 import { openJSONStore } from './json-store.js';
 
 // Adapted from https://stackoverflow.com/a/43866992/14073862
+/**
+ * @param {object} opts
+ * @param {BufferEncoding} [opts.stringBase]
+ * @param {number} [opts.byteLength]
+ */
 export function generateAccessToken({
   stringBase = 'base64url',
   byteLength = 48,
@@ -45,15 +50,20 @@ export async function getAccessToken(
   // Ensure we're protected with a unique accessToken for this basedir.
   await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
-  // Ensure an access token exists.
-  const { storage, commit, close } = openJSONStore(sharedStateDir);
-  const accessTokenKey = `accessToken/${port}`;
-  if (!storage.has(accessTokenKey)) {
-    storage.set(accessTokenKey, await generateAccessToken());
-    await commit();
+  const { storage, commit, close } = await openJSONStore(sharedStateDir);
+  let accessToken;
+  try {
+    // Ensure an access token exists.
+    const accessTokenKey = `accessToken/${port}`;
+    if (!storage.has(accessTokenKey)) {
+      storage.set(accessTokenKey, await generateAccessToken());
+      await commit();
+    }
+    accessToken = storage.get(accessTokenKey);
+  } finally {
+    await close();
   }
-  const accessToken = storage.get(accessTokenKey);
-  await close();
+
   if (typeof accessToken !== 'string') {
     throw Error(`Could not find access token for ${port}`);
   }
