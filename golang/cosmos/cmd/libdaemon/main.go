@@ -68,6 +68,9 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 
 	gaia.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-chain-cosmos")
 	daemoncmd.AppName = "ag-chain-cosmos"
+	if err := os.Setenv(daemoncmd.EmbeddedVmEnvVar, "libdaemon"); err != nil {
+		panic(err)
+	}
 
 	var sendToNode daemoncmd.Sender
 
