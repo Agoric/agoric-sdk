@@ -40,7 +40,7 @@ import {
   BeansPerXsnapComputron,
 } from './sim-params.js';
 import { parseParams } from './params.js';
-import { makeQueue } from './helpers/make-queue.js';
+import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
@@ -198,7 +198,8 @@ export async function buildSwingset(
 /**
  * @typedef {import('@agoric/swingset-vat').RunPolicy & {
  *   shouldRun(): boolean;
- *   remainingBeans(): bigint;
+ *   remainingBeans(): bigint | undefined;
+ *   totalBeans(): bigint;
  * }} ChainRunPolicy
  */
 
@@ -211,19 +212,24 @@ export async function buildSwingset(
 
 /**
  * @param {BeansPerUnit} beansPerUnit
+ * @param {boolean} [ignoreBlockLimit]
  * @returns {ChainRunPolicy}
  */
-function computronCounter({
-  [BeansPerBlockComputeLimit]: blockComputeLimit,
-  [BeansPerVatCreation]: vatCreation,
-  [BeansPerXsnapComputron]: xsnapComputron,
-}) {
+function computronCounter(
+  {
+    [BeansPerBlockComputeLimit]: blockComputeLimit,
+    [BeansPerVatCreation]: vatCreation,
+    [BeansPerXsnapComputron]: xsnapComputron,
+  },
+  ignoreBlockLimit = false,
+) {
   assert.typeof(blockComputeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
   let totalBeans = 0n;
-  const shouldRun = () => totalBeans < blockComputeLimit;
-  const remainingBeans = () => blockComputeLimit - totalBeans;
+  const shouldRun = () => ignoreBlockLimit || totalBeans < blockComputeLimit;
+  const remainingBeans = () =>
+    ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans;
 
   const policy = harden({
     vatCreated() {
@@ -247,21 +253,15 @@ function computronCounter({
       return shouldRun();
     },
     emptyCrank() {
-      return true;
+      return shouldRun();
     },
     shouldRun,
     remainingBeans,
+    totalBeans() {
+      return totalBeans;
+    },
   });
   return policy;
-}
-
-function neverStop() {
-  return harden({
-    vatCreated: () => true,
-    crankComplete: () => true,
-    crankFailed: () => true,
-    emptyCrank: () => true,
-  });
 }
 
 export async function launch({
@@ -312,6 +312,14 @@ export async function launch({
   const actionQueue = makeQueue(actionQueueStorage);
   /** @type {InboundQueue} */
   const highPriorityQueue = makeQueue(highPriorityQueueStorage);
+  /**
+   * In memory queue holding actions that must be consumed entirely
+   * during the block. If it's not drained, we open the gates to
+   * hangover hell.
+   *
+   * @type {InboundQueue}
+   */
+  const runThisBlock = makeQueue(makeQueueStorageMock().storage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -353,14 +361,55 @@ export async function launch({
     inboundQueueMetrics,
   });
 
-  async function bootstrapBlock(_blockHeight, blockTime) {
+  /**
+   * @param {number} blockHeight
+   * @param {ChainRunPolicy} runPolicy
+   */
+  function makeRunSwingset(blockHeight, runPolicy) {
+    let runNum = 0;
+    async function runSwingset() {
+      const startBeans = runPolicy.totalBeans();
+      controller.writeSlogObject({
+        type: 'cosmic-swingset-run-start',
+        blockHeight,
+        runNum,
+        startBeans,
+        remainingBeans: runPolicy.remainingBeans(),
+      });
+      // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
+      // that needs to be revisited, it used to be called once per
+      // block, now it's once per processed inbound queue item
+      await crankScheduler(runPolicy);
+      const finishBeans = runPolicy.totalBeans();
+      controller.writeSlogObject({
+        type: 'kernel-stats',
+        stats: controller.getStats(),
+      });
+      controller.writeSlogObject({
+        type: 'cosmic-swingset-run-finish',
+        blockHeight,
+        runNum,
+        startBeans,
+        finishBeans,
+        usedBeans: finishBeans - startBeans,
+        remainingBeans: runPolicy.remainingBeans(),
+      });
+      runNum += 1;
+      return runPolicy.shouldRun();
+    }
+    return runSwingset;
+  }
+
+  async function bootstrapBlock(blockHeight, blockTime, params) {
     // We need to let bootstrap know of the chain time. The time of the first
     // block may be the genesis time, or the block time of the upgrade block.
     timer.poll(blockTime);
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
-    const policy = neverStop();
-    await crankScheduler(policy);
+    const runPolicy = computronCounter(params.beansPerUnit, true);
+    const runSwingset = makeRunSwingset(blockHeight, runPolicy);
+
+    await runSwingset();
   }
 
   async function saveChainState() {
@@ -510,67 +559,46 @@ export async function launch({
     return p;
   }
 
-  async function runKernel(runPolicy, blockHeight, blockTime) {
-    let runNum = 0;
-    async function runSwingset() {
-      const initialBeans = runPolicy.remainingBeans();
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-run-start',
-        blockHeight,
-        runNum,
-        initialBeans,
-      });
-      // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
-      // that needs to be revisited, it used to be called once per
-      // block, now it's once per processed inbound queue item
-      await crankScheduler(runPolicy);
-      const remainingBeans = runPolicy.remainingBeans();
-      controller.writeSlogObject({
-        type: 'kernel-stats',
-        stats: controller.getStats(),
-      });
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-run-finish',
-        blockHeight,
-        runNum,
-        remainingBeans,
-        usedBeans: initialBeans - remainingBeans,
-      });
-      runNum += 1;
-      return runPolicy.shouldRun();
-    }
-
-    /**
-     * Process as much as we can from an inbound queue, which contains
-     * first the old actions not previously processed, followed by actions
-     * newly added, running the kernel to completion after each.
-     *
-     * @param {InboundQueue} inboundQueue
-     */
-    async function processActions(inboundQueue) {
-      let keepGoing = true;
-      for (const { action, context } of inboundQueue.consumeAll()) {
-        const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-        inboundQueueMetrics.decStat();
-        // eslint-disable-next-line no-await-in-loop
-        await performAction(action, inboundNum);
-        // eslint-disable-next-line no-await-in-loop
-        keepGoing = await runSwingset();
-        if (!keepGoing) {
-          // any leftover actions will remain on the inbound queue for possible
-          // processing in the next block
-          break;
-        }
+  /**
+   * Process as much as we can from an inbound queue, which contains
+   * first the old actions not previously processed, followed by actions
+   * newly added, running the kernel to completion after each.
+   *
+   * @param {InboundQueue} inboundQueue
+   * @param {ReturnType<typeof makeRunSwingset>} runSwingset
+   */
+  async function processActions(inboundQueue, runSwingset) {
+    let keepGoing = true;
+    for (const { action, context } of inboundQueue.consumeAll()) {
+      const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
+      inboundQueueMetrics.decStat();
+      // eslint-disable-next-line no-await-in-loop
+      await performAction(action, inboundNum);
+      // eslint-disable-next-line no-await-in-loop
+      keepGoing = await runSwingset();
+      if (!keepGoing) {
+        // any leftover actions will remain on the inbound queue for possible
+        // processing in the next block
+        break;
       }
-      return keepGoing;
     }
+    return keepGoing;
+  }
 
+  async function runKernel(runSwingset, blockHeight, blockTime) {
     // First, complete leftover work, if any
     let keepGoing = await runSwingset();
     if (!keepGoing) return;
 
+    // Then, if we have anything in the special runThisBlock queue, process
+    // it and do no further work.
+    if (runThisBlock.size()) {
+      await processActions(runThisBlock, runSwingset);
+      return;
+    }
+
     // Then, process as much as we can from the priorityQueue.
-    keepGoing = await processActions(highPriorityQueue);
+    keepGoing = await processActions(highPriorityQueue, runSwingset);
     if (!keepGoing) return;
 
     // Then, update the timer device with the new external time, which might
@@ -587,7 +615,7 @@ export async function launch({
     if (!keepGoing) return;
 
     // Finally, process as much as we can from the actionQueue.
-    await processActions(actionQueue);
+    await processActions(actionQueue, runSwingset);
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -598,13 +626,18 @@ export async function launch({
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
     inboundQueueMetrics.updateLength(
-      actionQueue.size() + highPriorityQueue.size(),
+      actionQueue.size() + highPriorityQueue.size() + runThisBlock.size(),
     );
 
-    // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit);
+    // If we have work to complete this block, it needs to run to completion.
+    // It will also run to completion any work that swingset still had pending.
+    const neverStop = runThisBlock.size() > 0;
 
-    await runKernel(runPolicy, blockHeight, blockTime);
+    // make a runPolicy that will be shared across all cycles
+    const runPolicy = computronCounter(params.beansPerUnit, neverStop);
+    const runSwingset = makeRunSwingset(blockHeight, runPolicy);
+
+    await runKernel(runSwingset, blockHeight, blockTime);
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
@@ -708,34 +741,24 @@ export async function launch({
     // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
-        const { isBootstrap, upgradePlan, blockTime } = action;
+        const { isBootstrap, upgradePlan, blockTime, params } = action;
         // This only runs for the very first block on the chain.
         if (isBootstrap) {
           verboseBlocks && blockManagerConsole.info('block bootstrap');
           (savedHeight === 0 && savedBeginHeight === 0) ||
             Fail`Cannot run a bootstrap block at height ${savedHeight}`;
+          const bootstrapBlockParams = parseParams(params);
           const blockHeight = 0;
-          const runNum = 0;
           controller.writeSlogObject({
             type: 'cosmic-swingset-bootstrap-block-start',
             blockTime,
-          });
-          controller.writeSlogObject({
-            type: 'cosmic-swingset-run-start',
-            blockHeight,
-            runNum,
           });
           // Start a block transaction, but without changing state
           // for the upcoming begin block check
           saveBeginHeight(savedBeginHeight);
           await processAction(action.type, async () =>
-            bootstrapBlock(blockHeight, blockTime),
+            bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
           );
-          controller.writeSlogObject({
-            type: 'cosmic-swingset-run-finish',
-            blockHeight,
-            runNum,
-          });
           controller.writeSlogObject({
             type: 'cosmic-swingset-bootstrap-block-finish',
             blockTime,
@@ -743,38 +766,36 @@ export async function launch({
         }
         if (upgradePlan) {
           const blockHeight = upgradePlan.height;
-          if (blockNeedsExecution(blockHeight)) {
-            controller.writeSlogObject({
-              type: 'cosmic-swingset-upgrade-start',
-              blockHeight,
-              blockTime,
-              upgradePlan,
-            });
-            // Process upgrade plan
-            const upgradedAction = {
-              type: ActionType.ENACTED_UPGRADE,
-              upgradePlan,
-              blockHeight,
-              blockTime,
-            };
-            await doBlockingSend(upgradedAction);
-            controller.writeSlogObject({
-              type: 'cosmic-swingset-upgrade-finish',
-              blockHeight,
-              blockTime,
-            });
-          }
+
+          // Process upgrade plan
+          const upgradedAction = {
+            type: ActionType.ENACTED_UPGRADE,
+            upgradePlan,
+            blockHeight,
+            blockTime,
+          };
+          await doBlockingSend(upgradedAction);
         }
         return true;
       }
 
       case ActionType.ENACTED_UPGRADE: {
         // Install and execute new core proposals.
-        const {
-          upgradePlan: { info: upgradeInfoJson = null } = {},
+        const { upgradePlan, blockHeight, blockTime } = action;
+
+        if (!blockNeedsExecution(blockHeight)) {
+          return undefined;
+        }
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-upgrade-start',
           blockHeight,
           blockTime,
-        } = action;
+          upgradePlan,
+        });
+
+        const { info: upgradeInfoJson = null } = upgradePlan || {};
+
         const upgradePlanInfo =
           upgradeInfoJson &&
           parseLocatedJson(upgradeInfoJson, 'ENACTED_UPGRADE upgradePlan.info');
@@ -809,9 +830,6 @@ export async function launch({
         }
 
         // Now queue the code for evaluation.
-        //
-        // TODO: Once SwingSet sprouts some tools for preemption, we should use
-        // them to help the upgrade process finish promptly.
         const coreEvalAction = {
           type: ActionType.CORE_EVAL,
           blockHeight,
@@ -823,13 +841,19 @@ export async function launch({
             },
           ],
         };
-        highPriorityQueue.push({
+        runThisBlock.push({
           context: {
             blockHeight,
             txHash: 'x/upgrade',
             msgIdx: 0,
           },
           action: coreEvalAction,
+        });
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-upgrade-finish',
+          blockHeight,
+          blockTime,
         });
 
         return undefined;
@@ -844,6 +868,9 @@ export async function launch({
             `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
           );
         }
+
+        runThisBlock.size() === 0 ||
+          Fail`We didn't process all "run this block" actions`;
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-start',
