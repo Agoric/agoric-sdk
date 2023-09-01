@@ -28,9 +28,13 @@ export function generateAccessToken({
 
 /**
  * @param {string|number} port
+ * @param {string} [sharedStateDir]
  * @returns {Promise<string>}
  */
-export async function getAccessToken(port) {
+export async function getAccessToken(
+  port,
+  sharedStateDir = path.join(os.homedir(), '.agoric'),
+) {
   if (typeof port === 'string') {
     const match = port.match(/^(.*:)?(\d+)$/);
     if (match) {
@@ -39,7 +43,6 @@ export async function getAccessToken(port) {
   }
 
   // Ensure we're protected with a unique accessToken for this basedir.
-  const sharedStateDir = path.join(os.homedir(), '.agoric');
   await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
   // Ensure an access token exists.
