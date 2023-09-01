@@ -36,7 +36,3 @@ testPurseValuePayload() {
 # Smart wallet handles game Place assets?
 testDisplayInfo Place '{"assetKind":"copyBag"}'
 testPurseValuePayload $GOV1ADDR Place '[["Shire","1"],["Mordor","1"]]'
-
-# zoe vat is at incarnation 1
-echo "FIXME: bypassed zoe-full-upgrade validation"; return 0
-test_val "$(yarn --silent node $upgrade12/tools/vat-status.mjs zoe)" "1" "zoe vat incarnation"
