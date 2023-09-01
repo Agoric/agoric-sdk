@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install bundles for walletFactory upgrade
+# Install bundles for game1 test contract
 
 set -e
 
@@ -9,15 +9,13 @@ UP12=${UP12:-$SDK/upgrade-test-scripts/agoric-upgrade-12}
 
 cd $UP12/wallet-all-ertp
 
-echo +++ run walletFactory, game upgrade proposal builders +++
-(agoric run $SDK/packages/builders/scripts/smart-wallet/build-walletFactory-upgrade.js; \
-agoric run $SDK/packages/builders/scripts/smart-wallet/build-game1-start.js
- )>/tmp/,run.log
+echo +++ run game upgrade proposal builder +++
+agoric run $SDK/packages/builders/scripts/smart-wallet/build-game1-start.js >/tmp/,run.log
 bundles=$($UP12/tools/parseProposals.mjs </tmp/,run.log | jq -r '.bundles[]' | sort -u )
 
 echo +++ proposal evals for later +++
 /bin/pwd
-ls ./upgrade-walletFactory* ./start-game1*
+ls ./start-game1*
 
 echo +++++ install bundles +++++
 

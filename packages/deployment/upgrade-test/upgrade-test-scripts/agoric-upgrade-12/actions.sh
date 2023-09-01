@@ -15,10 +15,7 @@ cd $AGUP
 ## build proposal and install bundles
 waitForBlock 2
 ./tools/mint-ist.sh
-./wallet-all-ertp/wf-install-bundles.sh
-
-## upgrade wallet factory
-./wallet-all-ertp/wf-propose.sh
+./wallet-all-ertp/game1-install-bundles.sh
 
 ## start game1
 ./wallet-all-ertp/wf-game-propose.sh
