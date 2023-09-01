@@ -135,13 +135,6 @@
  */
 
 /**
- * @callback Liquidate
- * @param {ZCF} zcf
- * @param {LoanConfigWithBorrower} config
- * @returns {void}
- */
-
-/**
  * @callback MakeDebtCalculator
  * @param {DebtCalculatorConfig} debtCalculatorConfig
  */

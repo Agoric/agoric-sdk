@@ -17,13 +17,12 @@ const makeTerms = (number, invitationAmount) => {
 };
 
 /**
- * @type ContractStartFn<
- * GovernedPublicFacet<{}>,
- * GovernedCreatorFacet<any>,
+ *
+ * @param {ZCF<
  * GovernanceTerms<{
  *   MalleableNumber: 'nat',
- * }>,
- * {initialPoserInvitation: Invitation}>
+ * }>>} zcf
+ * @param {{initialPoserInvitation: Invitation}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   const { augmentPublicFacet, makeGovernorFacet, params } =
