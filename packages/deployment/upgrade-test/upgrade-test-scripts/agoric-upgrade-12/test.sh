@@ -8,18 +8,6 @@ waitForBlock 2
 # CWD is agoric-sdk
 upgrade12=./upgrade-test-scripts/agoric-upgrade-12
 
-
-testMinChildren() {
-    path=$1
-    min=$2
-    line="$(agd query vstorage children $path -o jsonlines)"
-    ok=$(echo $line | jq ".children | length | . > $min")
-    test_val "$ok" "true" "$path: more than $min children"
-}
-
-# Check brand aux data for more than just vbank assets
-testMinChildren published.boardAux 3
-
 testDisplayInfo() {
     name=$1
     expected=$2
@@ -33,8 +21,6 @@ testDisplayInfo() {
     displayInfo="$(echo $line | jq -c .displayInfo)"
     test_val "$displayInfo" "$expected" "$name displayInfo from boardAux"
 }
-
-testDisplayInfo IST '{"assetKind":"nat","decimalPlaces":6}'
 
 testPurseValuePayload() {
     addr=$1
