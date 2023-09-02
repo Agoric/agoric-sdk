@@ -28,7 +28,6 @@
     "@agoric/network": "^0.1.0",
     "@agoric/notifier": "^0.6.2",
     "@agoric/smart-wallet": "^0.5.3",
-    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
