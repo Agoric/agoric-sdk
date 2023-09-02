@@ -69,8 +69,6 @@ function isMatch(specimen, pattern) {
  *
  * It also calls back if a test calls `bundleSource`.
  *
- * @typedef {{ moduleFormat: string, source: string }} Bundle
- *
  * And finally it reports back a summary of assertion results.
  *
  * @typedef {{
@@ -84,7 +82,7 @@ function isMatch(specimen, pattern) {
  * @param {{ verbose?: boolean, titleMatch?: string }} options
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
- *   bundleSource: (...args: [string, ...unknown[]]) => Promise<Bundle>,
+ *   bundleSource: import('@endo/bundle-source').BundleSource,
  *   resolve: ResolveFn,
  *   dirname: typeof import('path').dirname,
  *   basename: typeof import('path').basename,
@@ -120,7 +118,7 @@ async function runTestScript(
     /**
      * See also send() in avaHandler.cjs
      *
-     * @type { TapMessage | { testNames: string[] } | { bundleSource: [string, ...unknown[]] } | Summary }
+     * @type { TapMessage | { testNames: string[] } | { bundleSource: Parameters<import('@endo/bundle-source').BundleSource> } | Summary }
      */
     const msg = JSON.parse(decoder.decode(message));
     // console.log(input, msg, qty, byStatus);
@@ -303,7 +301,7 @@ async function avaConfig(args, options, { glob, readFile }) {
 /**
  * @param {string[]} args - CLI args (excluding node interpreter, script name)
  * @param {{
- *   bundleSource: typeof import('@endo/bundle-source').default,
+ *   bundleSource: import('@endo/bundle-source').BundleSource,
  *   spawn: typeof import('child_process')['spawn'],
  *   osType: typeof import('os')['type'],
  *   readFile: typeof import('fs')['promises']['readFile'],
