@@ -30,7 +30,7 @@ async function embundle(filename) {
   const bundleFile = new URL(filename, import.meta.url).pathname;
   const bundle = await bundleSource(bundleFile);
   const bundleID = `b1-${bundle.endoZipBase64Sha512}`;
-  return [bundleID, bundle];
+  return /** @type {const} */ ([bundleID, bundle]);
 }
 
 function* iterate(kvStore, start, end) {
