@@ -6,7 +6,7 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
 /** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
 /**
- * @template {Record<string | symbol, MethodGuard>} [T=Record<string | symbol, MethodGuard>]
+ * @template {Record<PropertyKey, MethodGuard>} [T=Record<PropertyKey, MethodGuard>]
  * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
  */
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
@@ -113,7 +113,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @template {(...args: any) => any} I init state function
-   * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
+   * @template {Record<string, Record<PropertyKey, CallableFunction>>} T facets
    * @param {string} tag
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
@@ -143,7 +143,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @template {(...args: any) => any} I init state function
-   * @template {Record<string | symbol, CallableFunction>} T methods
+   * @template {Record<PropertyKey, CallableFunction>} T methods
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
@@ -173,7 +173,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @template {(...args: any) => any} I init state function
-   * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
+   * @template {Record<string, Record<PropertyKey, CallableFunction>>} T facets
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
@@ -203,7 +203,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @template {(...args: any) => any} I init state function
-   * @template {Record<string | symbol, CallableFunction>} T methods
+   * @template {Record<PropertyKey, CallableFunction>} T methods
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {InterfaceGuard | undefined} interfaceGuard
@@ -237,7 +237,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @template {(...args: any) => any} I init state function
-   * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
+   * @template {Record<string, Record<PropertyKey, CallableFunction>>} T facets
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
@@ -270,7 +270,7 @@ export const makeExoUtils = VatData => {
   harden(prepareExoClassKit);
 
   /**
-   * @template {Record<string | symbol, CallableFunction>} M methods
+   * @template {Record<PropertyKey, CallableFunction>} M methods
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {InterfaceGuard | undefined} interfaceGuard
@@ -299,7 +299,7 @@ export const makeExoUtils = VatData => {
   harden(prepareExo);
 
   /**
-   * @template {Record<string | symbol, CallableFunction>} M methods
+   * @template {Record<PropertyKey, CallableFunction>} M methods
    * @deprecated Use prepareExo instead.
    * @param {Baggage} baggage
    * @param {string} kindName
