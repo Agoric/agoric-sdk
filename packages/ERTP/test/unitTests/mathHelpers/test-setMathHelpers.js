@@ -37,7 +37,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   );
   t.throws(
     () => m.make(mockBrand, harden([a, a])),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in make should throw`,
   );
   t.assert(
@@ -59,7 +59,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   if (a2 !== undefined) {
     t.throws(
       () => m.make(mockBrand, harden([a, a2])),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
@@ -84,7 +84,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   );
   t.throws(
     () => m.coerce(mockBrand, m.make(mockBrand, harden([a, a]))),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in coerce should throw`,
   );
   t.assert(
@@ -106,7 +106,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   if (a2 !== undefined) {
     t.throws(
       () => m.coerce(mockBrand, harden({ brand: mockBrand, value: [a, a2] })),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
@@ -146,7 +146,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   t.falsy(m.isEmpty(m.make(mockBrand, harden([a]))), `m.isEmpty([a]) is false`);
   t.throws(
     () => m.isEmpty(harden({ brand: mockBrand, value: harden([a, a]) })),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in value in isEmpty throw because of coercion`,
   );
   t.assert(m.isEmpty(m.make(mockBrand, harden([]))), `m.isEmpty([]) is true`);
@@ -158,7 +158,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   if (a2 !== undefined) {
     t.throws(
       () => m.isEmpty(harden({ brand: mockBrand, value: harden([a, a2]) })),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
@@ -170,7 +170,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [b] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -179,7 +179,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [b, b] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(
@@ -210,7 +210,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [b] }),
         ),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
@@ -222,7 +222,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [a] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in left of isEqual should throw`,
   );
   t.throws(
@@ -231,7 +231,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [a, a] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in right of isEqual should throw`,
   );
   t.assert(
@@ -262,7 +262,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [a] }),
         ),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
@@ -274,7 +274,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [b] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in left of add should throw`,
   );
   t.throws(
@@ -283,7 +283,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [b, b] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in right of add should throw`,
   );
   t.throws(
@@ -322,7 +322,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [b] }),
         ),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
@@ -334,7 +334,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [b] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in left of subtract should throw`,
   );
   t.throws(
@@ -343,7 +343,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [b, b] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicate(| key)s/ },
     `duplicates in right of subtract should throw`,
   );
   t.deepEqual(
@@ -391,7 +391,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
             value: [b],
           }),
         ),
-      { message: /value has duplicates/ },
+      { message: /value has duplicate(| key)s/ },
       `data identity throws`,
     );
   }
