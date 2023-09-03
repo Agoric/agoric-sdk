@@ -27,7 +27,7 @@ test('set with strings make', t => {
   );
   t.throws(
     () => m.make(mockBrand, harden(['a', 'a'])),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in make throw`,
   );
 });
@@ -53,7 +53,7 @@ test('set with strings coerce', t => {
   );
   t.throws(
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: ['a', 'a'] })),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates should throw`,
   );
 });
@@ -83,7 +83,7 @@ test('set with strings makeEmpty', t => {
   );
   t.throws(
     () => m.isEmpty(harden({ brand: mockBrand, value: ['a', 'a'] })),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in isEmpty throw`,
   );
 });
@@ -137,7 +137,7 @@ test('set with strings isEqual', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['a'] }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in left of isEqual should throw`,
   );
   t.throws(
@@ -146,7 +146,7 @@ test('set with strings isEqual', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['a', 'a'] }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in right of isEqual should throw`,
   );
   t.assert(
@@ -179,7 +179,7 @@ test('set with strings add', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in left of add should throw`,
   );
   t.throws(
@@ -188,7 +188,7 @@ test('set with strings add', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-    { message: /value has duplicates: "b"/ },
+    { message: /value has duplicate(| key)s: "b"/ },
     `duplicates in right of add should throw`,
   );
   t.throws(
@@ -219,7 +219,7 @@ test('set with strings subtract', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in left of subtract should throw`,
   );
   t.throws(
@@ -228,7 +228,7 @@ test('set with strings subtract', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-    { message: /value has duplicates: "b"/ },
+    { message: /value has duplicate(| key)s: "b"/ },
     `duplicates in right of subtract should throw`,
   );
   t.deepEqual(

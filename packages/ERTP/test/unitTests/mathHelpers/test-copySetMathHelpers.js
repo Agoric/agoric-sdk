@@ -28,7 +28,7 @@ test('copySet with strings make', t => {
   );
   t.throws(
     () => m.make(mockBrand, makeCopySet(['a', 'a'])),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in make throw`,
   );
 });
@@ -65,7 +65,7 @@ test('copySet with strings coerce', t => {
         mockBrand,
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates should throw`,
   );
 });
@@ -113,7 +113,7 @@ test('copySet with strings makeEmpty', t => {
   t.throws(
     () =>
       m.isEmpty(harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) })),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in isEmpty throw`,
   );
 });
@@ -167,7 +167,7 @@ test('copySet with strings isEqual', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in left of isEqual should throw`,
   );
   t.throws(
@@ -176,7 +176,7 @@ test('copySet with strings isEqual', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in right of isEqual should throw`,
   );
   t.assert(
@@ -209,7 +209,7 @@ test('copySet with strings add', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in left of add should throw`,
   );
   t.throws(
@@ -218,7 +218,7 @@ test('copySet with strings add', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
-    { message: /value has duplicates: "b"/ },
+    { message: /value has duplicate(| key)s: "b"/ },
     `duplicates in right of add should throw`,
   );
   t.throws(
@@ -249,7 +249,7 @@ test('copySet with strings subtract', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
-    { message: /value has duplicates: "a"/ },
+    { message: /value has duplicate(| key)s: "a"/ },
     `duplicates in left of subtract should throw`,
   );
   t.throws(
@@ -258,7 +258,7 @@ test('copySet with strings subtract', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
-    { message: /value has duplicates: "b"/ },
+    { message: /value has duplicate(| key)s: "b"/ },
     `duplicates in right of subtract should throw`,
   );
   t.deepEqual(
