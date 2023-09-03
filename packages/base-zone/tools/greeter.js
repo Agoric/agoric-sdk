@@ -1,8 +1,17 @@
 import { M } from '@endo/patterns';
 
+/**
+ * @template {{}} T
+ * @param {T} obj
+ * @param {unknown} that
+ * @returns {T}
+ */
 export const bindAllMethodsTo = (obj, that = obj) =>
-  Object.fromEntries(
-    Object.entries(obj).map(([name, fn]) => [name, fn.bind(that)]),
+  /** @type {T} */
+  (
+    Object.fromEntries(
+      Object.entries(obj).map(([name, fn]) => [name, fn.bind(that)]),
+    )
   );
 
 export const GreeterI = M.interface('Greeter', {
@@ -28,6 +37,11 @@ export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
   ...GreeterAdminI.methodGuards,
 });
 
+/**
+ * @param {import('../src/types.js').Zone} zone
+ * @param {string} label
+ * @param {string} nick
+ */
 export const prepareGreeterSingleton = (zone, label, nick) => {
   const myThis = Object.freeze({ state: { nick } });
   return zone.exo(label, GreeterWithAdminI, {
@@ -36,12 +50,18 @@ export const prepareGreeterSingleton = (zone, label, nick) => {
   });
 };
 
+/**
+ * @param {import('../src/types.js').Zone} zone
+ */
 export const prepareGreeter = zone =>
   zone.exoClass('Greeter', GreeterWithAdminI, nick => ({ nick }), {
     ...greetFacet,
     ...adminFacet,
   });
 
+/**
+ * @param {import('../src/types.js').Zone} zone
+ */
 export const prepareGreeterKit = zone =>
   zone.exoClassKit(
     'GreeterKit',
