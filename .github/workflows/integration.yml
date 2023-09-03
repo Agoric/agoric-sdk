@@ -54,17 +54,9 @@ jobs:
         shell: bash
 
       # Prerequisites
-
-      - uses: actions/setup-node@v3
+      - uses: ./.github/actions/restore-node
         with:
-          node-version: '16.x'
-      - name: cache node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          node-version: 16.x
 
       # Select a branch on dapp to test against by adding text to the body of the
       # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
@@ -87,21 +79,17 @@ jobs:
             console.log(branch);
             return branch;
 
-      # 'yarn install' must be done at the top level, to build all the
-      # cross-package symlinks
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
-
       - name: Start local NPM registry
         if: ${{ startsWith(matrix.cli, 'registry') }}
         run: |
+          set -e
+          git config user.name "Agoric CI"
+          git config user.email "noreply@agoric.com"
+          git diff --stat HEAD --exit-code || git commit -m 'chore: prepare for publishing'
           scripts/registry.sh bg-publish ${{ matrix.cli }}
 
       - name: run agoric-cli integration-test
         run: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
-        # TODO(mfig): remove this `continue` line when the next Endo release
-        # (after 2023-08-23) is incorporated in Agoric SDK.
-        continue-on-error: ${{ startsWith(matrix.cli, 'registry/np') }}
 
       - name: notify on failure
         if: >
