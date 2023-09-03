@@ -94,7 +94,7 @@ runs:
     - uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'yarn'
+        cache: yarn
         cache-dependency-path: ${{ inputs.path }}/yarn.lock
     - uses: kenchan0130/actions-system-info@master
       id: system-info
