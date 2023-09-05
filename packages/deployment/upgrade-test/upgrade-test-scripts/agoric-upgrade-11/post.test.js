@@ -1,12 +1,46 @@
 // @ts-check
 import test from 'ava';
+import processAmbient from 'process';
+import dbOpenAmbient from 'better-sqlite3';
 
 // XXX agd closes over ambient authority: execa, process.env
 import { agd as agdAmbient } from '../cliHelper.mjs';
 import { extractStreamCellValue, makeBoardMarshaller } from '../boardClient.js';
+import { makeSwingstore, swingstorePath } from '../tools/swingStore-lite.mjs';
 
 test.before(async t => {
-  t.context = { agd: agdAmbient };
+  t.context = {
+    agd: agdAmbient,
+    env: { HOME: processAmbient.env.HOME },
+    dbOpen: dbOpenAmbient,
+  };
+});
+
+/** @type {<T>(val: T | undefined) => T} */
+const NonNullish = val => {
+  if (!val) throw Error('required');
+  return val;
+};
+
+test('walletFactory has been upgraded once', async t => {
+  const {
+    dbOpen,
+    env: { HOME },
+  } = t.context;
+  const vatName = 'zoe';
+
+  const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
+  const kStore = makeSwingstore(dbOpen(fullPath, { readonly: true }));
+
+  const vatID = kStore.findVat(vatName);
+  const vatInfo = kStore.lookupVat(vatID);
+
+  const source = vatInfo.source();
+  const { incarnation } = vatInfo.currentSpan();
+
+  t.log({ vatName, vatID, incarnation, ...source });
+
+  t.is(incarnation, 1);
 });
 
 const makeBoardClient = agd => {
