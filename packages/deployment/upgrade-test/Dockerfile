@@ -111,7 +111,8 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 # start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.mjs ./*.js ./upgrade-test-scripts/
+COPY ./tools/ ./upgrade-test-scripts/tools/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=propose-agoric-upgrade-11 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
