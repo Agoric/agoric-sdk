@@ -9,26 +9,6 @@ SDK=${SDK:-/usr/src/agoric-sdk}
 # Enable debugging
 set -x
 
-AGUP=$SDK/upgrade-test-scripts/agoric-upgrade-12
-cd $AGUP
-
-## build proposal and install bundles
-waitForBlock 2
-./tools/mint-ist.sh
-./wallet-all-ertp/wf-install-bundles.sh
-
-## upgrade wallet factory
-./wallet-all-ertp/wf-propose.sh
-
-## start game1
-./wallet-all-ertp/wf-game-propose.sh
-
-# Pay 0.25IST join the game and get some places
-node ./wallet-all-ertp/gen-game-offer.mjs Shire Mordor >/tmp/,join.json
-agops perf satisfaction --from $GOV1ADDR --executeOffer /tmp/,join.json --keyring-backend=test
-
-cd $SDK
-
 ######################################################################
 # FIXME: remove this line when these tests don't hardcode bundle hashes.
 echo 1>&2 "FIXME: skipping zoe-full-upgrade tests"; return 0
