@@ -147,5 +147,6 @@ COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 RUN apt install -y tmux
 SHELL ["/bin/bash", "-c"]
 RUN chmod +x ./upgrade-test-scripts/*.sh
+RUN . ./upgrade-test-scripts/start_to_to.sh
 # enter image in interactive shell
 ENTRYPOINT /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh
