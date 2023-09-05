@@ -7,9 +7,9 @@ set -ueo pipefail
 # This is useful for consistent bulk updates over all packages.
 
 DIR=$(dirname -- "${BASH_SOURCE[0]}")
-VERSIONSHASH=$(git hash-object -w --stdin)
+cd -- "${1-"$DIR/.."}"
 
-cd -- "$DIR/.."
+VERSIONSHASH=$(git hash-object -w --stdin)
 
 yarn workspaces --json info |
 jq -r '.data | fromjson | .[].location | "\(.)/package.json"' |

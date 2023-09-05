@@ -44,21 +44,38 @@ runRegistry() {
 }
 
 publish() {
-  export DISTTAG=agblah
-  case $1 in
-  manual*)
-    flags=--no-git-tag-version
-    ;;
-  *)
-    flags=--canary
-    ;;
-  esac
+  export DISTTAG=ci-test
 
-  # Publish the packages to our local service.
-  # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-  yarn lerna publish --concurrency 1 --conventional-prerelease $flags --exact \
-    --dist-tag="$DISTTAG" --preid=dev"-$(git rev-parse --short=7 HEAD)" \
-    --no-push --no-verify-access --yes
+  git config --global user.name "Agoric CI"
+  git config --global user.email "noreply@agoric.com"
+
+  versions='{}'
+  for d in ${REGISTRY_PUBLISH_WORKSPACES-} "$thisdir/.."; do
+    test -d "$d" || continue
+
+    pushd "$d"
+    prior=$(git branch --show-current)
+    test -n "$prior" || prior=$(git rev-parse HEAD)
+    git checkout -B lerna-publish
+
+    echo "$versions" | "$thisdir/set-versions.sh" "$d"
+
+    yarn install
+    yarn build
+    git commit --allow-empty -am "chore: prepare for publishing"
+
+    # Publish the packages to our local service.
+    # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
+    yarn lerna publish --concurrency 1 prerelease --exact \
+      --dist-tag="$DISTTAG" --preid=dev"-$(git rev-parse --short=7 HEAD)" \
+      --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
+
+    versions=$("$thisdir/get-versions.sh" . | jq "$versions + .")
+
+    git commit -am "chore: update versions"
+    git checkout "$prior"
+    popd
+  done
 
   # Use the locally-installed dist-tag.
   persistVar REGISTRY_HOME "$HOME"
