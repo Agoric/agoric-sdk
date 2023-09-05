@@ -9,6 +9,10 @@ inputs:
     description: 'The relative path to the agoric-sdk directory'
     required: false
     default: '.'
+  keep-endo:
+    description: 'Keep Endo repository after installing from it'
+    required: false
+    default: 'false'
   xsnap-random-init:
     description: Build xsnap binary with random memory init
     required: false
@@ -100,7 +104,7 @@ runs:
         # Replace the Endo packages with the ones built from the checked-out branch.
         if test -e ~/endo; then
           scripts/replace-packages.sh ~/endo
-          rm -rf ~/endo
+          ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-installed
