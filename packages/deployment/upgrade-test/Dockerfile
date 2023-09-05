@@ -111,13 +111,29 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 # start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.mjs ./*.js ./upgrade-test-scripts/
-COPY ./tools/ ./upgrade-test-scripts/tools/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=propose-agoric-upgrade-11 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
+
+# 11+walletFactory
+ARG DEST_IMAGE
+FROM ${DEST_IMAGE} as agoric-upgrade-11wf
+ARG BOOTSTRAP_MODE
+ENV THIS_NAME=agoric-upgrade-11wf BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
+COPY --from=propose-agoric-upgrade-11 /root/.agoric /root/.agoric
+# start-chain boilerplate
+WORKDIR /usr/src/agoric-sdk/
+COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.mjs ./upgrade-test-scripts/
+COPY ./tools/ ./upgrade-test-scripts/tools/
+COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
+RUN apt install -y tmux
+SHELL ["/bin/bash", "-c"]
+RUN chmod +x ./upgrade-test-scripts/*.sh
+# enter image in interactive shell
+ENTRYPOINT /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh
 
 # UPGRADE
 ARG DEST_IMAGE

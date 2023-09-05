@@ -7,7 +7,7 @@ ifeq ($(BOOTSTRAP_MODE),main)
 else
 	TAG_SUFFIX=-$(BOOTSTRAP_MODE)
 endif
-TARGET?=agoric-upgrade-12
+TARGET?=agoric-upgrade-11wf
 dockerLabel?=$(TARGET)
 ifdef TMUX_CC
 	tmuxCC=1
@@ -44,7 +44,13 @@ propose-agoric-upgrade-11: agoric-upgrade-10
 agoric-upgrade-11: propose-agoric-upgrade-11
 	$(BUILD) --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11$(TAG_SUFFIX)
 
-propose-agoric-upgrade-12: agoric-upgrade-11
+propose-agoric-upgrade-11wf: agoric-upgrade-11
+	$(BUILD) --target propose-agoric-upgrade-11wf -t $(REPOSITORY):propose-agoric-upgrade-11wf$(TAG_SUFFIX)
+
+agoric-upgrade-11wf: propose-agoric-upgrade-11wf
+	$(BUILD) --target agoric-upgrade-11wf -t $(REPOSITORY):agoric-upgrade-11wf$(TAG_SUFFIX)
+
+propose-agoric-upgrade-12: agoric-upgrade-11wf
 	$(BUILD) --target propose-agoric-upgrade-12 -t $(REPOSITORY):propose-agoric-upgrade-12$(TAG_SUFFIX)
 
 agoric-upgrade-12: propose-agoric-upgrade-12
