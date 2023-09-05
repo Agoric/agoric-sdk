@@ -20,3 +20,6 @@ mv $TMP_GENESIS_DIR/priv_validator_state.json $HOME/.agoric/data
 mv $TMP_GENESIS_DIR/* $HOME/.agoric/config/
 startAgd
 rm -rf $EXPORT_DIR
+
+yarn
+yarn ava posts.test.js || exit 1
