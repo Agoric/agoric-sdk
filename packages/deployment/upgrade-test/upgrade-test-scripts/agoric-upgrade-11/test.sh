@@ -21,5 +21,7 @@ mv $TMP_GENESIS_DIR/* $HOME/.agoric/config/
 startAgd
 rm -rf $EXPORT_DIR
 
-yarn
-yarn ava posts.test.js || exit 1
+# verify walletFactory upgrade using ava/.js tests
+cd upgrade-test-scripts
+yarn install
+yarn ava agoric-upgrade-11/post.test.js || exit 1
