@@ -9,6 +9,10 @@ inputs:
     description: 'The relative path to the agoric-sdk directory'
     required: false
     default: '.'
+  keep-endo:
+    description: 'Keep Endo repository after installing from it'
+    required: false
+    default: 'false'
   xsnap-random-init:
     description: Build xsnap binary with random memory init
     required: false
@@ -125,7 +129,7 @@ runs:
         if test -e ~/endo; then
           # Stage the redirected `yarn install` consequences.
           git add package.json yarn.lock
-          rm -rf ~/endo
+          ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
