@@ -129,7 +129,7 @@ runs:
         if test -e ~/endo; then
           # Stage the redirected `yarn install` consequences.
           git add package.json yarn.lock
-          rm -rf ~/endo
+          ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
