@@ -3,13 +3,13 @@
 # Propose and carry out starting game contract
 
 SDK=${SDK:-/usr/src/agoric-sdk}
-UP12=${UP12:-$SDK/upgrade-test-scripts/agoric-upgrade-12}
-WFUP=${WFUP:-$UP12/wallet-all-ertp}
+AGUP=${AGUP:-$SDK/upgrade-test-scripts/agoric-upgrade-11wf}
+WFUP=${WFUP:-$AGUP/wallet-all-ertp}
 
 cd $WFUP
 
 . $SDK/upgrade-test-scripts/env_setup.sh
-. $UP12/env_setup.sh
+. $AGUP/env_setup.sh
 
 TITLE="Start Game1 Contract"
 

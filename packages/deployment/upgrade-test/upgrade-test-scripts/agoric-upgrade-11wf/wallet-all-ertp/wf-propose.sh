@@ -5,14 +5,14 @@
 set -e
 
 SDK=${SDK:-/usr/src/agoric-sdk}
-UP12=${UP12:-$SDK/upgrade-test-scripts/agoric-upgrade-12}
-WFUP=${WFUP:-$UP12/wallet-all-ertp}
+AGUP=${AGUP:-$SDK/upgrade-test-scripts/agoric-upgrade-11wf}
+WFUP=${WFUP:-$AGUP/wallet-all-ertp}
 
 cd $WFUP
 
 # import voteLatestProposalAndWait
-. $UP12/env_setup.sh
-. $UP12/../env_setup.sh
+. $AGUP/env_setup.sh
+. $AGUP/../env_setup.sh
 
 TITLE="Add NFT/non-vbank support in WalletFactory"
 DESC="Upgrade WalletFactory to support arbitrary ERTP assets such as NFTs"

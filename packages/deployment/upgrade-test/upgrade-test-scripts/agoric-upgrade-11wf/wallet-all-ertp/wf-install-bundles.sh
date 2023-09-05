@@ -5,15 +5,15 @@
 set -e
 
 SDK=${SDK:-/usr/src/agoric-sdk}
-UP12=${UP12:-$SDK/upgrade-test-scripts/agoric-upgrade-12}
+AGUP=${AGUP:-$SDK/upgrade-test-scripts/agoric-upgrade-11wf}
 
-cd $UP12/wallet-all-ertp
+cd $AGUP/wallet-all-ertp
 
 echo +++ run walletFactory, game upgrade proposal builders +++
 (agoric run $SDK/packages/builders/scripts/smart-wallet/build-walletFactory-upgrade.js; \
 agoric run $SDK/packages/builders/scripts/smart-wallet/build-game1-start.js
  )>/tmp/,run.log
-bundles=$($UP12/tools/parseProposals.mjs </tmp/,run.log | jq -r '.bundles[]' | sort -u )
+bundles=$($AGUP/../tools/parseProposals.mjs </tmp/,run.log | jq -r '.bundles[]' | sort -u )
 
 echo +++ proposal evals for later +++
 /bin/pwd
