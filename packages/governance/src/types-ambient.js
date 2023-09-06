@@ -431,7 +431,7 @@
  * @property {() => Record<string, any>} getGovernedParams deprecated; use getParamDescriptions instead.
  * @property {() => Record<string, any>} getParamDescriptions provide a record describing
  *   the values of all governed parameters.
- * @property {() => Record<string, any>} getPublicTopics
+ * @property {() => ERef<import('@agoric/zoe/src/contractSupport/topics.js').TopicsRecord<any>>} getPublicTopics
  * @property {() => Record<string, any>} publish
  * @property {() => Record<string, any>} getterFunctions
  * @property {() => Record<string, any>} getters
@@ -564,7 +564,7 @@
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {(key?: any) => import('@agoric/zoe/src/contractSupport/topics.js').TopicsRecord<any>} getPublicTopics
+ * @property {(key?: any) => ERef<import('@agoric/zoe/src/contractSupport/topics.js').TopicsRecord<any>>} getPublicTopics
  * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - deprecated. use getParamDescriptions
  * @property {(key?: any) => ERef<ParamStateRecord>} getParamDescriptions - get descriptions of
  *   all the governed parameters
