@@ -42,10 +42,3 @@ for f in /tmp/bundle-[a-v]*-upgrade.json; do
     --chain-id=agoriclocal -bblock --yes
 done
 
-
-
-# upgrade the vaultFactory's governing contract, then upgrade the vaultFactory
-# itself.
-echo +++++ upgrade VaultFactory +++++
-$upgrade11/zoe-full-upgrade/zcf-upgrade-driver.sh
-
