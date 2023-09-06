@@ -1425,8 +1425,7 @@ test.serial('time jumps forward', async t => {
 });
 
 // serial because dynamicConfig is shared across tests
-// This test reproduced bug #8296. Now its expectations don't match the behavior
-test.serial.skip('add collateral type during auction', async t => {
+test.serial('add collateral type during auction', async t => {
   const { collateral, bid } = t.context;
   const driver = await makeAuctionDriver(t);
   const asset = withAmountUtils(makeIssuerKit('Asset'));
@@ -1473,28 +1472,104 @@ test.serial.skip('add collateral type during auction', async t => {
   await driver.setupCollateralAuction(asset, asset.make(500n));
 
   await driver.advanceTo(180n, 'wait');
-  await driver.advanceTo(185n, 'wait');
-  t.true(await E(seat).hasExited());
-
-  await assertPayouts(t, seat, bid, collateral, 0n, 200n);
-  t.false(await E(liqSeat).hasExited());
-  await E(liqSeat).tryExit();
-
-  await assertPayouts(t, liqSeat, bid, collateral, 0n, 0n);
-
-  await driver.advanceTo(210n, 'wait');
-  await driver.advanceTo(220n, 'wait');
-  await driver.advanceTo(250n, 'wait');
-
-  // before the fix for #8296 in scheduler, this didn't repair the problem.
-  driver.setGovernedParam('DiscountStep', 2000n);
-
-  await driver.advanceTo(300n, 'wait');
-
   await scheduleTracker.assertChange({
-    nextDescendingStepTime: { absValue: 330n },
-    nextStartTime: { absValue: 330n },
+    nextDescendingStepTime: { absValue: 185n },
   });
 
-  await driver.advanceTo(330n, 'wait');
+  await driver.advanceTo(185n, 'wait');
+
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 190n },
+  });
+
+  t.true(await E(seat).hasExited());
+  await assertPayouts(t, seat, bid, collateral, 0n, 200n);
+
+  await driver.advanceTo(210n, 'wait');
+
+  t.true(await E(liqSeat).hasExited());
+  await assertPayouts(t, liqSeat, bid, collateral, 231n, 800n);
+
+  await scheduleTracker.assertChange({
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: 210n },
+  });
 });
+
+// serial because dynamicConfig is shared across tests
+// This test reproduces bug #8296. Now its expectations don't match the behavior
+test.serial.skip(
+  'late priceAuthority breaks auction; cannot recover via governance',
+  async t => {
+    const { collateral, bid } = t.context;
+    const driver = await makeAuctionDriver(t);
+    const asset = withAmountUtils(makeIssuerKit('Asset'));
+    const timerBrand = await E(driver.getTimerService()).getTimerBrand();
+
+    const liqSeat = await driver.setupCollateralAuction(
+      collateral,
+      collateral.make(1000n),
+    );
+    await driver.updatePriceAuthority(
+      makeRatioFromAmounts(bid.make(11n), collateral.make(10n)),
+    );
+
+    const result = await E(liqSeat).getOfferResult();
+    t.is(result, 'deposited');
+
+    await driver.advanceTo(167n);
+    const seat = await driver.bidForCollateralSeat(
+      // 1.1 * 1.05 * 200
+      bid.make(231n),
+      collateral.make(200n),
+    );
+    t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
+    t.false(await E(seat).hasExited());
+
+    const scheduleTracker = await driver.getScheduleTracker();
+    await scheduleTracker.assertInitial({
+      activeStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
+      nextDescendingStepTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
+      nextStartTime: TimeMath.coerceTimestampRecord(210n, timerBrand),
+    });
+
+    await driver.advanceTo(170n, 'wait');
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 175n },
+    });
+
+    await driver.advanceTo(175n, 'wait');
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 180n },
+    });
+
+    // before the fix for #8296 in AuctionBook, this broke the ongoing auction.
+    await driver.setupCollateralAuction(asset, asset.make(500n));
+
+    await driver.advanceTo(180n, 'wait');
+    await driver.advanceTo(185n, 'wait');
+    t.true(await E(seat).hasExited());
+
+    await assertPayouts(t, seat, bid, collateral, 0n, 200n);
+    t.false(await E(liqSeat).hasExited());
+    await E(liqSeat).tryExit();
+
+    await assertPayouts(t, liqSeat, bid, collateral, 0n, 0n);
+
+    await driver.advanceTo(210n, 'wait');
+    await driver.advanceTo(220n, 'wait');
+    await driver.advanceTo(250n, 'wait');
+
+    // before the fix for #8296 in scheduler, this didn't repair the problem.
+    driver.setGovernedParam('DiscountStep', 2000n);
+
+    await driver.advanceTo(300n, 'wait');
+
+    await scheduleTracker.assertChange({
+      nextDescendingStepTime: { absValue: 330n },
+      nextStartTime: { absValue: 330n },
+    });
+
+    await driver.advanceTo(330n, 'wait');
+  },
+);
