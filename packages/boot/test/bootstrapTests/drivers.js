@@ -9,6 +9,10 @@ import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed
 import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 
 /**
+ * @typedef {Awaited<ReturnType<Awaited<ReturnType<typeof makeWalletFactoryDriver>>['provideSmartWallet']>>} SmartWalletDriver
+ */
+
+/**
  * @param {ReturnType<typeof import('./supports.js').makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
  * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
