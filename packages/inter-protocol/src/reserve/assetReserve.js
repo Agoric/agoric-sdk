@@ -65,14 +65,15 @@ export const start = async (zcf, privateArgs, baggage) => {
       E(privateArgs.storageNode).makeChildNode('governance'),
   });
 
-  const { makeGovernorFacet, publicMixin } = await handleParamGovernance(
-    zcf,
-    baggage,
-    privateArgs.initialPoserInvitation,
-    {},
-    makeRecorderKit,
-    governanceNode,
-  );
+  const { makeGovernorFacet, publicMixin, publicMixinGuards } =
+    await handleParamGovernance(
+      zcf,
+      baggage,
+      privateArgs.initialPoserInvitation,
+      {},
+      makeRecorderKit,
+      governanceNode,
+    );
 
   const makeAssetReserveKit = prepareAssetReserveKit(baggage, {
     feeMint,
@@ -80,6 +81,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     storageNode,
     zcf,
     publicMixin,
+    publicMixinGuards,
   });
 
   const { assetReserveKit } = await provideAll(baggage, {

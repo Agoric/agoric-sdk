@@ -29,11 +29,19 @@ const trace = makeTracer('ReserveKit', true);
  *   storageNode: StorageNode;
  *   zcf: ZCF;
  *   publicMixin: any;
+ *   publicMixinGuards: any;
  * }} powers
  */
 export const prepareAssetReserveKit = (
   baggage,
-  { feeMint, makeRecorderKit, storageNode, zcf, publicMixin },
+  {
+    feeMint,
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    publicMixin,
+    publicMixinGuards,
+  },
 ) => {
   trace('prepareAssetReserveKit', [...baggage.keys()]);
   const feeKit = feeMint.getIssuerRecord();
@@ -55,6 +63,7 @@ export const prepareAssetReserveKit = (
       public: M.interface('AssetReserve public', {
         makeAddCollateralInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(M.promise()),
+        ...publicMixinGuards,
       }),
       shortfallReportingFacet: M.interface('AssetReserve shortfall reporter', {
         increaseLiquidationShortfall: M.call(AmountShape).returns(),
