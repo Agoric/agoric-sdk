@@ -144,9 +144,8 @@ COPY --from=propose-agoric-upgrade-12 /root/.agoric /root/.agoric
 WORKDIR /usr/src/agoric-sdk/
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.mjs ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-RUN apt install -y tmux
-SHELL ["/bin/bash", "-c"]
 RUN chmod +x ./upgrade-test-scripts/*.sh
+SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 # enter image in interactive shell
 ENTRYPOINT /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh
