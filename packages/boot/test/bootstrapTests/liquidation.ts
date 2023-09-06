@@ -29,7 +29,7 @@ export const likePayouts = ({ Bid, Collateral }) => ({
 
 export const makeLiquidationTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
   });
 

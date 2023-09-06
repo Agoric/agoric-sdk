@@ -173,9 +173,15 @@ export const makeRunUtils = (
 };
 export type RunUtils = ReturnType<typeof makeRunUtils>;
 
+/**
+ * @param {string} bundleDir
+ * @param {string} specifier
+ * @param {ManagerType} [defaultManagerType]
+ */
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
+  defaultManagerType = 'local',
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -184,8 +190,14 @@ export const getNodeTestVaultsConfig = async (
     await loadSwingsetConfigFile(fullPath),
   );
 
-  // speed up (e.g. 80s vs 133s with xs-worker in production config)
-  config.defaultManagerType = 'local';
+  // Manager types:
+  //   'local':
+  //     - much faster (~3x speedup)
+  //     - much easier to use debugger
+  //     - exhibits inconsistent GC behavior from run to run
+  //   'xs-worker'
+  //     - timing results more accurately reflect production
+  config.defaultManagerType = defaultManagerType as ManagerType;
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
@@ -298,32 +310,44 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
 harden(makeProposalExtractor);
 
 /**
- * Start a SwingSet kernel to be shared across all tests. By default Ava tests
- * run in parallel, so be careful to avoid ordering dependencies between them.
- * For example, test accounts balances using separate wallets or test vault
- * factory metrics using separate collateral managers. (Or use test.serial)
+ * Start a SwingSet kernel to be used by tests and benchmarks.
  *
- * The shutdown() function _must_ be called after the test is complete, or else
- * V8 will see the xsnap workers still running, and will never exit (leading to
- * a timeout error). Use t.after.always(shutdown), because the normal t.after()
- * hooks are not run if a test fails.
+ * In the case of Ava tests, this kernel is expected to be shared across all
+ * tests in a given test module. By default Ava tests run in parallel, so be
+ * careful to avoid ordering dependencies between them.  For example, test
+ * accounts balances using separate wallets or test vault factory metrics using
+ * separate collateral managers. (Or use test.serial)
  *
- * @param t
+ * The shutdown() function _must_ be called after the test or benchmarks are
+ * complete, else V8 will see the xsnap workers still running, and will never
+ * exit (leading to a timeout error). Ava tests should use
+ * t.after.always(shutdown), because the normal t.after() hooks are not run if a
+ * test fails.
+ *
+ * @param log
  * @param bundleDir directory to write bundles and config to
  * @param [options]
  * @param [options.configSpecifier] bootstrap config specifier
  * @param [options.storage]
+ * @param [options.verbose]
+ * @param [options.defaultManagerType]
  */
 export const makeSwingsetTestKit = async (
-  t: ExecutionContext,
-  bundleDir: string = 'bundles',
+  log: (..._: any[]) => void,
+  bundleDir = 'bundles',
   {
-    configSpecifier,
+    configSpecifier = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
-  }: { configSpecifier?: string; storage?: FakeStorageKit } = {},
+    verbose = false,
+    defaultManagerType = 'local' as ManagerType,
+  } = {},
 ) => {
-  console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
+  console.time('makeBaseSwingsetTestKit');
+  const configPath = await getNodeTestVaultsConfig(
+    bundleDir,
+    configSpecifier,
+    defaultManagerType,
+  );
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
@@ -413,18 +437,18 @@ export const makeSwingsetTestKit = async (
     configPath,
     [],
     {},
-    { debugName: 'TESTBOOT' },
+    { debugName: 'TESTBOOT', verbose },
   );
-  console.timeLog('makeSwingsetTestKit', 'buildSwingset');
+  console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller, t.log);
+  const runUtils = makeRunUtils(controller, log);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
     fs: fsAmbientPromises,
   });
 
-  console.timeEnd('makeSwingsetTestKit');
+  console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
   const jumpTimeTo = (targetTime: Timestamp) => {
@@ -463,11 +487,14 @@ export const makeSwingsetTestKit = async (
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
+  const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
+
   return {
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
     controller,
+    getCrankNumber,
     jumpTimeTo,
     readLatest,
     runUtils,

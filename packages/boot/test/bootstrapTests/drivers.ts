@@ -137,6 +137,10 @@ export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
 >;
 
+export type SmartWalletDriver = Awaited<
+  ReturnType<WalletFactoryDriver['provideSmartWallet']>
+>;
+
 export const makePriceFeedDriver = async (
   collateralBrandKey: string,
   agoricNamesRemotes: AgoricNamesRemotes,
