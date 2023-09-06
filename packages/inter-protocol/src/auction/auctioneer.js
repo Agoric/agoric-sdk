@@ -679,6 +679,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeScheduler(
       driver,
       timer,
+      // @ts-expect-error types are correct. How to convince TS?
       params,
       timerBrand,
       scheduleRecorder,
