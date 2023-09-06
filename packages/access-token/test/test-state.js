@@ -1,27 +1,11 @@
-import tmp from 'tmp';
-
 import test from 'ava';
+import { tmpDir } from './tmp.js';
 import {
   initJSONStore,
   openJSONStore,
   getAllState,
   isJSONStore,
 } from '../src/json-store.js';
-
-/**
- * @param {string} [prefix]
- * @returns {Promise<[string, () => void]>}
- */
-const tmpDir = prefix =>
-  new Promise((resolve, reject) => {
-    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve([name, removeCallback]);
-      }
-    });
-  });
 
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));
@@ -58,14 +42,14 @@ test('storageInFile', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isJSONStore(dbDir), false);
-  const { storage, commit, close } = initJSONStore(dbDir);
+  const { storage, commit, close } = await initJSONStore(dbDir);
   testStorage(t, storage);
   await commit();
   const before = getAllState(storage);
   await close();
   t.is(isJSONStore(dbDir), true);
 
-  const { storage: after } = openJSONStore(dbDir);
+  const { storage: after } = await openJSONStore(dbDir);
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.is(isJSONStore(dbDir), true);
 });
