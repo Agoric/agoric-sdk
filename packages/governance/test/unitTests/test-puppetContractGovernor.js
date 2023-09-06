@@ -54,7 +54,7 @@ test('multiple params bad change', async t => {
     () => E(governorFacets.creatorFacet).changeParams(paramChangesSpec),
     {
       message:
-        /In "getAmountOf" method of \(Zoe Invitation issuer\): arg 0: "\[13n]" - Must be a remotable Payment, not bigint/,
+        /In "getInvitationDetails" method of \(ZoeService\): arg 0: "\[13n]" - Must match/,
     },
   );
 });
