@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
+import lockfile from 'proper-lockfile';
 import Readlines from 'n-readlines';
 
 // TODO: Update this when we make a breaking change.
@@ -10,6 +11,8 @@ import Readlines from 'n-readlines';
 // For compatibility, because it's tricky to diagnose that the file location has
 // changed when you're just trying to use the wallet from the browser.
 const DATA_FILE = 'swingset-kernel-state.jsonlines';
+
+const DEFAULT_LOCK_RETRIES = 10;
 
 /**
  * @typedef {ReturnType<typeof makeStorageInMemory>['storage']} JSONStore
@@ -156,20 +159,37 @@ function makeStorageInMemory() {
  * @param {string} [dirPath]  Path to a directory in which database files may be kept, or
  *   null.
  * @param {boolean} [forceReset]  If true, initialize the database to an empty state
+ * @param {null | import('proper-lockfile').LockOptions['retries']} [lockRetries] If null, do not lock the database.
  *
- * @returns {{
+ * @returns {Promise<{
  *   storage: JSONStore, // a storage API object to load and store data
  *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
- * }}
+ * }>}
  */
-function makeJSONStore(dirPath, forceReset = false) {
+async function makeJSONStore(
+  dirPath,
+  forceReset = false,
+  lockRetries = DEFAULT_LOCK_RETRIES,
+) {
+  await null;
   const { storage, state } = makeStorageInMemory();
 
+  let releaseLock = async () => {};
   let storeFile;
   if (dirPath) {
     fs.mkdirSync(dirPath, { recursive: true });
     storeFile = path.resolve(dirPath, DATA_FILE);
+
+    if (lockRetries !== null) {
+      // We need to lock the database to prevent multiple divergent instances.
+      releaseLock = await lockfile.lock(dirPath, {
+        // @ts-expect-error TS(2345) lockFilePath really does exist on LockOptions
+        lockFilePath: `${storeFile}.lock`,
+        retries: lockRetries,
+      });
+    }
+
     if (forceReset) {
       safeUnlink(storeFile);
     } else {
@@ -186,8 +206,7 @@ function makeJSONStore(dirPath, forceReset = false) {
       if (lines) {
         let line = lines.next();
         while (line) {
-          // @ts-expect-error JSON.parse can take a Buffer
-          const [key, value] = JSON.parse(line);
+          const [key, value] = JSON.parse(line.toString());
           storage.set(key, value);
           line = lines.next();
         }
@@ -195,18 +214,25 @@ function makeJSONStore(dirPath, forceReset = false) {
     }
   }
 
+  const assertNotClosed = () => {
+    if (!dirPath || storeFile) {
+      return;
+    }
+    throw Error('JSON store is already closed');
+  };
+
   /**
    * Commit unsaved changes.
    */
   async function commit() {
+    assertNotClosed();
     if (dirPath) {
       const tempFile = `${storeFile}-${process.pid}.tmp`;
       const fd = fs.openSync(tempFile, 'w');
 
       for (const [key, value] of state.entries()) {
         const line = JSON.stringify([key, value]);
-        fs.writeSync(fd, line);
-        fs.writeSync(fd, '\n');
+        fs.writeSync(fd, `${line}\n`);
       }
       fs.closeSync(fd);
       fs.renameSync(tempFile, storeFile);
@@ -218,7 +244,9 @@ function makeJSONStore(dirPath, forceReset = false) {
    * (if you want to save them, call commit() first).
    */
   async function close() {
-    // Nothing to do here.
+    assertNotClosed();
+    storeFile = undefined;
+    await releaseLock();
   }
 
   return { storage, commit, close };
