@@ -115,7 +115,7 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   const vsMap = new Map(entries);
   const fromCapData = (...args) =>
     Reflect.apply(board.fromCapData, board, args);
-  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData);
+  const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData, -1);
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
     return harden([

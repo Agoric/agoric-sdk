@@ -1,3 +1,5 @@
+/* backported code conforms to newer coding standards */
+/* eslint-disable no-await-in-loop */
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E, Far } from '@endo/far';
