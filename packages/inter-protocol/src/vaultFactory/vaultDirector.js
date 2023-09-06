@@ -75,6 +75,11 @@ const trace = makeTracer('VD', true);
  *   >} VaultDirectorParamManager
  */
 
+/**
+ * @template {object} T topic value
+ * @typedef {import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<T>} PublicTopic
+ */
+
 const shortfallInvitationKey = 'shortfallInvitation';
 
 /**
@@ -445,8 +450,10 @@ const prepareVaultDirector = (
         getDebtIssuer() {
           return debtMint.getIssuerRecord().issuer;
         },
+        /** @returns {ERef<{ metrics: PublicTopic<MetricsNotification> }>} */
         getPublicTopics(collateralBrand) {
           if (collateralBrand) {
+            // @ts-expect-error doesn't ERef include "might not be a promise"?
             return vaultParamManagers.get(collateralBrand).getPublicTopics();
           }
           return E.when(directorParamManager.getPublicTopics(), publicTopics =>

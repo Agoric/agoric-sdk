@@ -377,15 +377,12 @@ export const prepareVaultManagerKit = (
 
           trace('helper.start() starting observe periodNotifier');
           void observeNotifier(periodNotifier, {
-            updateState: updateTime => {
-              trace('charge interest', updateTime);
-
-              return facets.helper
+            updateState: updateTime =>
+              facets.helper
                 .chargeAllVaults(updateTime)
                 .catch(e =>
                   console.error('🚨 vaultManager failed to charge interest', e),
-                );
-            },
+                ),
             fail: reason => {
               zcf.shutdownWithFailure(
                 assert.error(X`Unable to continue without a timer: ${reason}`),

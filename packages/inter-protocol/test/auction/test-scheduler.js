@@ -49,12 +49,9 @@ const setupScheduleTest = async (
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const storageNode = makeMockChainStorageRoot();
 
-  let recorderKit;
-  if (child) {
-    recorderKit = makeRecorderKit(storageNode.makeChildNode(child));
-  } else {
-    recorderKit = makeRecorderKit(storageNode);
-  }
+  const recorderKit = child
+    ? makeRecorderKit(storageNode.makeChildNode(child))
+    : makeRecorderKit(storageNode);
 
   const scheduleTracker = await subscriptionTracker(
     t,

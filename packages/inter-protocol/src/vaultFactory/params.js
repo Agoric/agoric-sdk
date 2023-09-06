@@ -241,7 +241,6 @@ export const provideVaultParamManagers = (baggage, makeRecorderKit) => {
   // and use them to build durable PMs then delete the values so we don't
   // try to do it again.  This will NOT restore the most recent values; The EC
   // will have to restore the values they want before enabling trading.
-  // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
   trace('extracting paramManagers from baggage', managerArgs.keys());
   for (const [brand, args] of managerArgs.entries()) {
     makeManager(brand, args);
