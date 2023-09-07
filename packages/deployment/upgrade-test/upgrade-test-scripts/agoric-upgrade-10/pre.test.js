@@ -2,8 +2,7 @@ import test from 'ava';
 
 import { promises as fs } from 'fs';
 
-import { waitForBlock, getUser } from './upgradeHelpers.mjs';
-import { agd, agoric, agops } from '../cliHelper.mjs';
+import { agd, agoric, agops } from '../cliHelper.js';
 
 import {
   GOV1ADDR,
@@ -11,9 +10,9 @@ import {
   GOV3ADDR,
   BOOTSTRAP_MODE,
   PSM_PAIR,
-} from '../constants.mjs';
-
-import { openVault } from './actions.mjs';
+} from '../constants.js';
+import { openVault } from '../econHelpers.js';
+import { getUser, waitForBlock } from '../commonUpgradeHelpers.js';
 
 test.before(async () => {
   console.log('Wait for upgrade to settle');
