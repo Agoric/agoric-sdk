@@ -323,7 +323,17 @@ export const makeScheduler = async (
       async updateState(_newState) {
         trace('received param update', _newState);
         await null;
+
+        let fixableSchedule;
         if (!nextSchedule) {
+          fixableSchedule = true;
+        } else {
+          now = await E(timer).getCurrentTimestamp();
+          fixableSchedule =
+            TimeMath.compareAbs(nextSchedule.startTime, now) < 0;
+        }
+
+        if (fixableSchedule) {
           trace('repairing nextSchedule and restarting');
           ({ nextSchedule } = await initializeNextSchedule());
           startSchedulingFromScratch();

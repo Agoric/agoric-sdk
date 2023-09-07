@@ -555,9 +555,12 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           trace(this.state.collateralBrand, 'settleAtNewRate', reduction);
           const { capturedPriceForRound, priceBook, scaledBidBook } = state;
-          capturedPriceForRound !== null ||
-            Fail`price must be captured before auction starts`;
-          assert(capturedPriceForRound);
+          if (!capturedPriceForRound) {
+            console.error(
+              `⚠️No price for ${this.state.collateralBrand}, skipping auction.`,
+            );
+            return;
+          }
 
           state.curAuctionPrice = multiplyRatios(
             reduction,
