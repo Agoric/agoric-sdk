@@ -19,9 +19,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/builders": "^0.1.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
-    "@agoric/builders": "^0.1.0",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/vm-config": "^0.1.0",
@@ -48,7 +48,8 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^7.13.0",
+    "tsx": "^3.12.8"
   },
   "files": [
     "CHANGELOG.md",
@@ -63,8 +64,16 @@
     "node": ">=14.15.0"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.js",
+      "test/**/test-*.ts"
+    ],
+    "nodeArguments": [
+      "--loader=tsx"
     ],
     "require": [
       "@endo/init/debug.js"

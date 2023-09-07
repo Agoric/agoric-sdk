@@ -10,6 +10,7 @@
     "scripts/**/*.js",
     "src/**/*.js",
     "test/**/*.js",
+    "test/**/*.ts",
     "tools/**/*.js",
   ],
 }
