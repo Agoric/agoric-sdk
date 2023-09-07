@@ -3,10 +3,8 @@
 
 // import { E } from "@endo/far";
 
-const ZCF_BUNDLE_ID =
-  'b1-3781ce16d40590a41588a472795d2487dbdd9c5f055ac9a82ff52a872cf24f1eb35c6f45d248bcbe13c12d2c1356aecaf5e81b73155ab109499f285ef83fdfd9';
-const ZOE_BUNDLE_ID =
-  'b1-51ffc8e388df8dff7d16b670f5c2c5a2de51f23b7a9a411e90eb222c4a673b3845db2bd925bbf5f9e2bff5fb40e65aa2d366f45c186dd81d0f1517d456b8de58';
+const ZCF_BUNDLE_ID = '##ZCF_BUNDLE_ID##';
+const ZOE_BUNDLE_ID = '##ZOE_BUNDLE_ID##';
 
 console.info('zoe upgrade: evaluating script');
 

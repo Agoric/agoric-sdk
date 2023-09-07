@@ -1,10 +1,10 @@
 // @ts-check
-import processAmbient from 'process';
 import dbOpenAmbient from 'better-sqlite3';
+import { HOME } from '../../constants.js';
 
 /**
  * @file look up vat incarnation from kernel DB
- * @see {main}
+ * @see {getIncarnation}
  */
 
 const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
@@ -73,15 +73,11 @@ const NonNullish = val => {
 };
 
 /**
- * @param {string[]} argv
- * @param {{ dbOpen: typeof import('better-sqlite3'), HOME?: string }} io
+ * @param {string} vatName
  */
-const main = async (argv, { dbOpen, HOME }) => {
-  const [_node, _script, vatName] = argv;
-  if (!vatName) throw Error('vatName required');
-
+export const getIncarnation = async vatName => {
   const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
-  const kStore = makeSwingstore(dbOpen(fullPath, { readonly: true }));
+  const kStore = makeSwingstore(dbOpenAmbient(fullPath, { readonly: true }));
 
   const vatID = kStore.findVat(vatName);
   const vatInfo = kStore.lookupVat(vatID);
@@ -92,20 +88,5 @@ const main = async (argv, { dbOpen, HOME }) => {
   // misc info to stderr
   console.error(JSON.stringify({ vatName, vatID, incarnation, ...source }));
 
-  // incarnation to stdout
-  console.log(incarnation);
+  return incarnation;
 };
-
-processAmbient.exitCode = 1;
-main(processAmbient.argv, {
-  dbOpen: dbOpenAmbient,
-  HOME: processAmbient.env.HOME,
-}).then(
-  () => {
-    processAmbient.exitCode = 0;
-  },
-  err => {
-    console.error('Failed with', err);
-    processAmbient.exit(processAmbient.exitCode || 1);
-  },
-);

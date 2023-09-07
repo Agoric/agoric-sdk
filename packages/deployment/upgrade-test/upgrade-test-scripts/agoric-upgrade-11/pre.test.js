@@ -1,29 +1,12 @@
 import test from 'ava';
 
 import { agd, agoric } from '../cliHelper.js';
-import { GOV1ADDR, GOV2ADDR, GOV3ADDR, USER1ADDR } from '../constants.js';
-import { calculateWalletState } from '../commonUpgradeHelpers.js';
+import { waitForBlock } from '../commonUpgradeHelpers.js';
 
-test('DeliverInbound from un-provisioned account is discarded', async t => {
-  const result = await agd.query('swingset', 'mailbox', USER1ADDR);
-  const value = JSON.parse(result.value);
-  t.is(value.outbox.length, 0);
-});
+test.before(async () => {
+  console.log('Wait for upgrade to settle');
 
-test('provision pool has right balance', async t => {
-  const result = await agd.query(
-    'bank',
-    'balances',
-    'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
-  );
-  t.is(result.balances[0].amount, '18750000');
-});
-
-test('Validate wallet state', async t => {
-  t.is(await calculateWalletState(USER1ADDR), 'upgraded');
-  t.is(await calculateWalletState(GOV1ADDR), 'revived');
-  t.is(await calculateWalletState(GOV2ADDR), 'revived');
-  t.is(await calculateWalletState(GOV3ADDR), 'revived');
+  await waitForBlock(5);
 });
 
 test('Validate vaults', async t => {

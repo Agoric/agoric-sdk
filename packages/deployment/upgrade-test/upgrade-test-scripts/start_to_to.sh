@@ -19,7 +19,6 @@ startAgd
 if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
   if [[ "${USE_JS}" == "1" ]]; then
     pushd upgrade-test-scripts
-    yarn
     yarn upgrade-tests || exit 1
     popd
     runActions "legacy"
