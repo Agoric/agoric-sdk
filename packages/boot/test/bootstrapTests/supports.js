@@ -183,6 +183,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   return harden({ runThunk, EV });
 };
+/** @typedef {ReturnType<typeof makeRunUtils>} RunUtils */
 
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
@@ -495,3 +496,4 @@ export const makeSwingsetTestKit = async (
     timer,
   };
 };
+/** @typedef {Awaited<ReturnType<import('./supports.js').makeSwingsetTestKit>>} SwingsetTestKit */

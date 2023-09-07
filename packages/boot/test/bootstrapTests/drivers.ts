@@ -1,50 +1,55 @@
-// @ts-check
+/* eslint-disable jsdoc/require-param */
 import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  FakeStorageKit,
+  slotToRemotable,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
 
-import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
+import {
+  AgoricNamesRemotes,
+  boardSlottingMarshaller,
+} from '@agoric/vats/tools/board-utils.js';
+import type {
+  CurrentWalletRecord,
+  SmartWallet,
+  UpdateRecord,
+} from '@agoric/smart-wallet/src/smartWallet.js';
+import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type { TimerService } from '@agoric/time/src/types.js';
+import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
+import type { RunUtils, SwingsetTestKit } from './supports.js';
 
-/**
- * @param {ReturnType<typeof import('./supports.js').makeRunUtils>} runUtils
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
- */
 export const makeWalletFactoryDriver = async (
-  runUtils,
-  storage,
-  agoricNamesRemotes,
+  runUtils: RunUtils,
+  storage: FakeStorageKit,
+  agoricNamesRemotes: AgoricNamesRemotes,
 ) => {
   const { EV } = runUtils;
 
-  /** @type {import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult} */
-  const walletFactoryStartResult = await EV.vat('bootstrap').consumeItem(
-    'walletFactoryStartResult',
-  );
-  /** @type {ERef<BankManager>} */
-  const bankManager = await EV.vat('bootstrap').consumeItem('bankManager');
+  const walletFactoryStartResult: WalletFactoryStartResult = await EV.vat(
+    'bootstrap',
+  ).consumeItem('walletFactoryStartResult');
+  const bankManager: ERef<BankManager> =
+    await EV.vat('bootstrap').consumeItem('bankManager');
   const namesByAddressAdmin = await EV.vat('bootstrap').consumeItem(
     'namesByAddressAdmin',
   );
 
   const marshaller = boardSlottingMarshaller(slotToRemotable);
 
-  /**
-   * @param {string} walletAddress
-   * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
-   * @param {boolean} isNew
-   */
-  const makeWalletDriver = (walletAddress, walletPresence, isNew) => ({
+  const makeWalletDriver = (
+    walletAddress: string,
+    walletPresence: SmartWallet,
+    isNew: boolean,
+  ) => ({
     isNew,
 
-    /**
-     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
-     * @returns {Promise<void>}
-     */
-    executeOffer(offer) {
+    executeOffer(offer: OfferSpec): Promise<void> {
       const offerCapData = marshaller.toCapData(
         harden({
           method: 'executeOffer',
@@ -53,11 +58,7 @@ export const makeWalletFactoryDriver = async (
       );
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
-    /**
-     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
-     * @returns {Promise<void>}
-     */
-    sendOffer(offer) {
+    sendOffer(offer: OfferSpec): Promise<void> {
       const offerCapData = marshaller.toCapData(
         harden({
           method: 'executeOffer',
@@ -67,8 +68,7 @@ export const makeWalletFactoryDriver = async (
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
-    /** @param {string} offerId */
-    tryExitOffer(offerId) {
+    tryExitOffer(offerId: string) {
       const capData = marshaller.toCapData(
         harden({
           method: 'tryExitOffer',
@@ -77,33 +77,24 @@ export const makeWalletFactoryDriver = async (
       );
       return EV(walletPresence).handleBridgeAction(capData, true);
     },
-    /**
-     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M
-     *   offer maker function
-     * @param {M} makeOffer
-     * @param {Parameters<M>[1]} firstArg
-     * @param {Parameters<M>[2]} [secondArg]
-     * @returns {Promise<void>}
-     */
-    executeOfferMaker(makeOffer, firstArg, secondArg) {
+    executeOfferMaker<M extends OfferMaker>(
+      makeOffer: M,
+      firstArg: Parameters<M>[1],
+      secondArg?: Parameters<M>[2],
+    ): Promise<void> {
       const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.executeOffer(offer);
     },
-    /**
-     * @template {import('@agoric/smart-wallet/src/types.js').OfferMaker} M
-     *   offer maker function
-     * @param {M} makeOffer
-     * @param {Parameters<M>[1]} firstArg
-     * @param {Parameters<M>[2]} [secondArg]
-     * @returns {Promise<void>}
-     */
-    sendOfferMaker(makeOffer, firstArg, secondArg) {
+    sendOfferMaker<M extends OfferMaker>(
+      makeOffer: M,
+      firstArg: Parameters<M>[1],
+      secondArg?: Parameters<M>[2],
+    ): Promise<void> {
       const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.sendOffer(offer);
     },
 
-    /** @returns {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
-    getCurrentWalletRecord() {
+    getCurrentWalletRecord(): CurrentWalletRecord {
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
@@ -114,8 +105,7 @@ export const makeWalletFactoryDriver = async (
       );
     },
 
-    /** @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord} */
-    getLatestUpdateRecord() {
+    getLatestUpdateRecord(): UpdateRecord {
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
@@ -130,11 +120,10 @@ export const makeWalletFactoryDriver = async (
   return {
     /**
      * Skip the provisionPool for tests
-     *
-     * @param {string} walletAddress
-     * @returns {Promise<ReturnType<typeof makeWalletDriver>>}
      */
-    async provideSmartWallet(walletAddress) {
+    async provideSmartWallet(
+      walletAddress: string,
+    ): Promise<ReturnType<typeof makeWalletDriver>> {
       const bank = await EV(bankManager).getBankForAddress(walletAddress);
       return EV(walletFactoryStartResult.creatorFacet)
         .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
@@ -144,18 +133,15 @@ export const makeWalletFactoryDriver = async (
     },
   };
 };
+export type WalletFactoryDriver = Awaited<
+  ReturnType<typeof makeWalletFactoryDriver>
+>;
 
-/**
- * @param {string} collateralBrandKey
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
- * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
- * @param {string[]} oracleAddresses
- */
 export const makePriceFeedDriver = async (
-  collateralBrandKey,
-  agoricNamesRemotes,
-  walletFactoryDriver,
-  oracleAddresses,
+  collateralBrandKey: string,
+  agoricNamesRemotes: AgoricNamesRemotes,
+  walletFactoryDriver: WalletFactoryDriver,
+  oracleAddresses: string[],
 ) => {
   const priceFeedName = instanceNameFor(collateralBrandKey, 'USD');
 
@@ -185,8 +171,7 @@ export const makePriceFeedDriver = async (
   // zero is the initial lastReportedRoundId so causes an error: cannot report on previous rounds
   let roundId = 1n;
   return {
-    /** @param {number} price */
-    async setPrice(price) {
+    async setPrice(price: number) {
       await Promise.all(
         oracleWallets.map(w =>
           w.executeOfferMaker(
@@ -208,26 +193,17 @@ export const makePriceFeedDriver = async (
   };
 };
 
-/** @typedef {Awaited<ReturnType<import('./supports.js').makeSwingsetTestKit>>} SwingsetTestKit */
-
-/**
- * @param {SwingsetTestKit} testKit
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
- * @param {Awaited<ReturnType<typeof makeWalletFactoryDriver>>} walletFactoryDriver
- * @param {string[]} committeeAddresses
- */
 export const makeGovernanceDriver = async (
-  testKit,
-  agoricNamesRemotes,
-  walletFactoryDriver,
-  committeeAddresses,
+  testKit: SwingsetTestKit,
+  agoricNamesRemotes: AgoricNamesRemotes,
+  walletFactoryDriver: WalletFactoryDriver,
+  committeeAddresses: string[],
 ) => {
   const { EV } = testKit.runUtils;
   const charterMembershipId = 'charterMembership';
   const committeeMembershipId = 'committeeMembership';
 
-  /** @type {ERef<import('@agoric/time/src/types.js').TimerService>} */
-  const chainTimerService =
+  const chainTimerService: ERef<TimerService> =
     await EV.vat('bootstrap').consumeItem('chainTimerService');
 
   let invitationsAccepted = false;
@@ -327,12 +303,7 @@ export const makeGovernanceDriver = async (
   };
 
   return {
-    /**
-     * @param {Instance} instance
-     * @param {object} params
-     * @param {object} [path]
-     */
-    async changeParams(instance, params, path) {
+    async changeParams(instance: Instance, params: Object, path?: object) {
       instance || Fail`missing instance`;
       await ensureInvitationsAccepted();
       await proposeParams(instance, params, path);
@@ -342,8 +313,7 @@ export const makeGovernanceDriver = async (
   };
 };
 
-/** @param {SwingsetTestKit} testKit */
-export const makeZoeDriver = async testKit => {
+export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
   const { EV } = testKit.runUtils;
   const zoe = await EV.vat('bootstrap').consumeItem('zoe');
   const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');

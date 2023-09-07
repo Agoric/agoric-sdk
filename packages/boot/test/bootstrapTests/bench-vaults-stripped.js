@@ -9,7 +9,7 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit } from './supports.js';
-import { makeWalletFactoryDriver } from './drivers.js';
+import { makeWalletFactoryDriver } from './drivers.ts';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

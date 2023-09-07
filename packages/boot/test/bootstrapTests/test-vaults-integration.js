@@ -13,7 +13,7 @@ import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
-import { makeWalletFactoryDriver } from './drivers.js';
+import { makeWalletFactoryDriver } from './drivers.ts';
 import { makeSwingsetTestKit } from './supports.js';
 
 /**

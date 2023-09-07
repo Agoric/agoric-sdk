@@ -10,7 +10,7 @@ import processAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeZoeDriver } from './drivers.js';
+import { makeZoeDriver } from './drivers.ts';
 import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
 
 const filename = new URL(import.meta.url).pathname;
