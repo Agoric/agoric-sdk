@@ -205,10 +205,6 @@ voteLatestProposalAndWait() {
   done
 }
 
-newOfferId() {
-  date +"%s%3M"
-}
-
 printKeys() {
   echo "========== GOVERNANCE KEYS =========="
   echo "gov1: $GOV1ADDR"
