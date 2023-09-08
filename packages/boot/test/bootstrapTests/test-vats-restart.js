@@ -9,7 +9,7 @@ import { promises as fsAmbientPromises } from 'fs';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeWalletFactoryDriver } from './drivers.ts';
-import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
+import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
 
 const { Fail } = assert;
 

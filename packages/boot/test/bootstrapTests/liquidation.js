@@ -9,7 +9,7 @@ import {
   makePriceFeedDriver,
   makeWalletFactoryDriver,
 } from './drivers.ts';
-import { makeSwingsetTestKit } from './supports.js';
+import { makeSwingsetTestKit } from './supports.ts';
 
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 

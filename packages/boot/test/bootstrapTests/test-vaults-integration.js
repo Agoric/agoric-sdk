@@ -14,7 +14,7 @@ import {
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
 import { makeWalletFactoryDriver } from './drivers.ts';
-import { makeSwingsetTestKit } from './supports.js';
+import { makeSwingsetTestKit } from './supports.ts';
 
 /**
  * @type {import('ava').TestFn<

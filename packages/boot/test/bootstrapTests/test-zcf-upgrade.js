@@ -11,7 +11,7 @@ import { promises as fsAmbientPromises } from 'fs';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeZoeDriver } from './drivers.ts';
-import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
+import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

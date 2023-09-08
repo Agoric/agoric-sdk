@@ -4,7 +4,7 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
-import { makeRunUtils } from '../bootstrapTests/supports.js';
+import { makeRunUtils } from '../bootstrapTests/supports.ts';
 
 /**
  * @type {import('ava').TestFn<{}>}
