@@ -37,7 +37,7 @@ bench.addBenchmark('vault open', {
       await Promise.all(range.map(i => openVault(i, n, round)));
     };
 
-    const roundSize = context.params.size ? Number(context.params.size) : 1;
+    const roundSize = context.options.size ? Number(context.options.size) : 1;
     await openN(roundSize);
   },
 });
