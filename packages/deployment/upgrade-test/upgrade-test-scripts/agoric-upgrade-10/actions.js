@@ -2,25 +2,25 @@ import { promises as fs } from 'fs';
 import assert from 'assert';
 
 import {
-  waitForBlock,
-  provisionSmartWallet,
-  getUser,
-  executeOffer,
-} from './upgradeHelpers.mjs';
-import {
   agd,
   agoric,
   agops,
   agopsLocation,
   executeCommand,
-} from '../cliHelper.mjs';
+} from '../cliHelper.js';
 import {
   HOME,
   ATOM_DENOM,
   GOV1ADDR,
   GOV2ADDR,
   GOV3ADDR,
-} from '../constants.mjs';
+} from '../constants.js';
+import {
+  waitForBlock,
+  executeOffer,
+  getUser,
+  provisionSmartWallet,
+} from '../commonUpgradeHelpers.js';
 
 const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
@@ -263,58 +263,6 @@ export const raiseDebtCeiling = async address => {
 
   console.log('ACTIONS wait for the vote to pass');
   await new Promise(r => setTimeout(r, 65000));
-};
-
-export const openVault = (address, mint, collateral) => {
-  return executeOffer(
-    address,
-    agops.vaults('open', '--wantMinted', mint, '--giveCollateral', collateral),
-  );
-};
-
-export const adjustVault = (address, vaultId, vaultParams) => {
-  let params = [
-    'adjust',
-    '--vaultId',
-    vaultId,
-    '--from',
-    address,
-    ' --keyring-backend=test',
-  ];
-
-  if ('wantCollateral' in vaultParams) {
-    params = [...params, '--wantCollateral', vaultParams.wantCollateral];
-  }
-
-  if ('wantMinted' in vaultParams) {
-    params = [...params, '--wantMinted', vaultParams.wantMinted];
-  }
-
-  if ('giveCollateral' in vaultParams) {
-    params = [...params, '--giveCollateral', vaultParams.giveCollateral];
-  }
-
-  if ('giveMinted' in vaultParams) {
-    params = [...params, '--giveMinted', vaultParams.giveMinted];
-  }
-
-  return executeOffer(address, agops.vaults(...params));
-};
-
-export const closeVault = (address, vaultId, mint) => {
-  return executeOffer(
-    address,
-    agops.vaults(
-      'close',
-      '--vaultId',
-      vaultId,
-      '--giveMinted',
-      mint,
-      '--from',
-      address,
-      '--keyring-backend=test',
-    ),
-  );
 };
 
 export const pushPrice = (oracles, price = 10.0) => {

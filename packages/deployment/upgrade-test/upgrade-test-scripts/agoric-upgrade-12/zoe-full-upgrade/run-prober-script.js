@@ -4,8 +4,7 @@
 // to turn on ts-check:
 // Xmport { E } from '@endo/far';
 
-const PROBER_BUNDLE_ID =
-  'b1-f4386f80814847369ad2b2135599d28f3658b0edff55cb6acc45a9a5a25b8bdb301b65a3c8fee17d569bcf724008786c55c6ff025c50959ffd1a20088926df8c';
+const PROBER_BUNDLE_ID = '##PROBER_BUNDLE_ID##';
 
 console.info('running zcf prober');
 

@@ -1,6 +1,6 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 import { $, execaCommand } from 'execa';
-import { BINARY } from './constants.mjs';
+import { BINARY } from './constants.js';
 
 export const executeCommand = async (command, params, options = {}) => {
   const { stdout } = await execaCommand(
@@ -70,6 +70,10 @@ export const agoric = {
     const newParams = ['wallet', ...params];
     return executeCommand('agoric', newParams);
   },
+  run: async (...params) => {
+    const newParams = ['run', ...params];
+    return executeCommand('agoric', newParams);
+  },
 };
 
 export const { stdout: agopsLocation } = await $({
@@ -107,4 +111,21 @@ export const agops = {
     const newParams = ['auctioneer', ...params];
     return executeCommand(agopsLocation, newParams);
   },
+};
+
+export const { stdout: bundleSourceLocation } = await $({
+  shell: true,
+  cwd: '/usr/src/agoric-sdk',
+})`yarn bin bundle-source`;
+
+/**
+ * @param {string} filePath
+ * @param {string} bundleName
+ * @returns {Promise<string>} Returns the filepath of the bundle
+ */
+export const bundleSource = async (filePath, bundleName) => {
+  const output =
+    await $`${bundleSourceLocation} --cache-json /tmp ${filePath} ${bundleName}`;
+  console.log(output.stderr);
+  return `/tmp/bundle-${bundleName}.json`;
 };
