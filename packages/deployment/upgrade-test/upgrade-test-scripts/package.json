@@ -9,7 +9,7 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops",
     "pre-test": "ava agoric-upgrade*/**/pre.test.js",
-    "actions": "ava agoric-upgrade*/**/actions.test.js",
+    "actions": "node agoric-upgrade*/**/actions.js",
     "test": "ava agoric-upgrade*/**/post.test.js"
   },
   "ava": {
