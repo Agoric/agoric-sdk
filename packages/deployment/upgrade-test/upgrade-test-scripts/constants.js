@@ -12,3 +12,5 @@ export const ATOM_DENOM = process.env.ATOM_DENOM;
 
 export const CHAINID = process.env.CHAINID;
 export const HOME = process.env.HOME;
+
+export const SDK_ROOT = '/usr/src/agoric-sdk';

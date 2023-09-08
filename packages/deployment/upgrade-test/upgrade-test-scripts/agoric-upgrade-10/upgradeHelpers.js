@@ -8,16 +8,10 @@ import {
   VALIDATORADDR,
   USER1ADDR,
   CHAINID,
-  HOME,
-} from '../constants.mjs';
+} from '../constants.js';
 
-import { agd, agops } from '../cliHelper.mjs';
-
-export * from '../coreUpgradeHelpers.mjs';
-
-export const getUser = async user => {
-  return agd.keys('show', user, '-a', '--keyring-backend=test');
-};
+import { agd } from '../cliHelper.js';
+import { getUser } from '../commonUpgradeHelpers.js';
 
 export const printKeys = async () => {
   console.log('========== GOVERNANCE KEYS ==========');
