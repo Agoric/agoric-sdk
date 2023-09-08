@@ -49,6 +49,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
+      - name: Recreate integration-test-result if needed
+        id: get-pending-integration-result
+        uses: ./.github/actions/get-latest-check
+        with:
+          create-if-needed: true
       - name: Reconfigure git to use HTTP authentication
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
         shell: bash
@@ -112,6 +117,11 @@ jobs:
         with:
           submodules: 'true'
           path: ./agoric-sdk
+      - name: Recreate integration-test-result if needed
+        id: get-pending-integration-result
+        uses: ./agoric-sdk/.github/actions/get-latest-check
+        with:
+          create-if-needed: true
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-golang
@@ -226,6 +236,11 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v3
+      - name: Recreate integration-test-result if needed
+        id: get-pending-integration-result
+        uses: ./.github/actions/get-latest-check
+        with:
+          create-if-needed: true
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
         # TODO: Build this only once, not for every bootstrap-version.
@@ -255,22 +270,68 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
-  integration-test-result:
+  set-integration-result-in-progress:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: get-pending-integration-result
+        uses: ./.github/actions/get-latest-check
+        with:
+          create-if-needed: true
+      - name: Update integration-test-result check to in-progress
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const runId = "${{ steps.get-pending-integration-result.outputs.run_id }}";
+            const res = await github.rest.checks.update({
+              ...context.repo,
+              check_run_id: runId,
+              status: "in_progress",
+            })
+            core.debug(`Check update response: ${JSON.stringify(res, null, 2)}`)
+            console.log(`Updated check ${runId} to in-progress`)
+
+  finalize-integration-result:
     needs:
       - pre_check
       - getting-started
       - deployment-test
       - test-docker-build
-    if: (needs.pre_check.outputs.should_run == 'true' && (success() || failure() || cancelled())) || needs.pre_check.outputs.previous_success == 'true'
+    if: >-
+      always() &&
+      needs.pre_check.result == 'success' &&
+      needs.getting-started.result != 'cancelled' &&
+      needs.deployment-test.result != 'cancelled' &&
+      needs.test-docker-build.result != 'cancelled' &&
+      (
+        needs.pre_check.outputs.should_run == 'true' ||
+        needs.pre_check.outputs.previous_success == 'true'
+      )
     runs-on: ubuntu-latest
     steps:
-      - name: Check job results
-        shell: bash
-        run: |
-          cat <<EOF
-            needs ${{ toJSON(needs) }}
-          EOF
-          [ "${{ needs.pre_check.outputs.previous_success }}" = "true" ] && exit 0
-          [ "${{ needs.getting-started.result }}" = "success" ] || exit 1
-          [ "${{ needs.deployment-test.result }}" = "success" ] || exit 1
-          [ "${{ needs.test-docker-build.result }}" = "success" ] || exit 1
+      - uses: actions/checkout@v3
+      - id: get-pending-integration-result
+        uses: ./.github/actions/get-latest-check
+        with:
+          create-if-needed: true
+      - name: Publish integration-test-result
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const runId = "${{ steps.get-pending-integration-result.outputs.run_id }}";
+            const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
+            const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
+            const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
+            const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
+            const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?
+              'success' : 'failure';
+            const res = await github.rest.checks.update({
+              ...context.repo,
+              check_run_id: runId,
+              conclusion,
+            })
+            core.debug(`Check update response: ${JSON.stringify(res, null, 2)}`)
+            console.log(`Updated check ${runId} to ${conclusion}`)
