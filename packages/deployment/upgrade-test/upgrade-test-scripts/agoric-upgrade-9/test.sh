@@ -14,6 +14,21 @@ test_val $(agd q vstorage children published.psm.IST -o json | jq -r '.children 
 # Gov params
 test_not_val "$(timeout 3 agoric follow -l :published.psm.${PSM_PAIR}.governance -o jsonlines | jq -r '.current.MintLimit.value.value')" "0" "PSM MintLimit non-zero"
 
+
+test_wallet_state() {
+  addr=$1
+  want=$2
+  desc=$3
+  body="$(timeout 3 agoric follow -l ":published.wallet.$addr" -o text | jq -r '.body')"
+  case $body in
+  *'"@qclass":'*) state=old ;;
+  '#{}') state=upgraded ;;
+  '#'*) state=revived ;;
+  *) state=$body ;;
+  esac
+  test_val "$state" "$want" "$desc"
+}
+
 test_wallet_state "$USER1ADDR" old "user1 wallet is old"
 test_wallet_state "$GOV1ADDR" old "gov1 wallet is old"
 test_wallet_state "$GOV2ADDR" old "gov2 wallet is old"
