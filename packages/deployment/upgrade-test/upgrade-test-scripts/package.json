@@ -8,7 +8,9 @@
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops",
-    "upgrade-tests": "ava --serial agoric-upgrade*/**/pre.test.js agoric-upgrade*/**/actions.test.js agoric-upgrade*/**/post.test.js"
+    "pre-test": "ava agoric-upgrade*/**/pre.test.js",
+    "actions": "ava agoric-upgrade*/**/actions.test.js",
+    "test": "ava agoric-upgrade*/**/post.test.js"
   },
   "ava": {
     "files": [

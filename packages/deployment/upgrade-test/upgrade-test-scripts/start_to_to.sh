@@ -38,7 +38,9 @@ runActions() {
 if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
   if [[ "${USE_JS}" == "1" ]]; then
     pushd upgrade-test-scripts
-    yarn upgrade-tests || exit 1
+    yarn pre-test || exit 1
+    yarn actions || exit 1
+    yarn test || exit 1
     popd
     runActions "legacy"
   else
