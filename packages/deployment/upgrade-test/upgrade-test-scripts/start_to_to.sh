@@ -16,6 +16,25 @@ fi
 
 startAgd
 
+runActions() {
+  action=${1:-"test"}
+  if [[ -v THIS_NAME ]]; then
+    if test -d "./upgrade-test-scripts/$THIS_NAME"; then
+      fn="${action}.sh"
+      if test -f "./upgrade-test-scripts/$THIS_NAME/$fn"; then
+        echo "RUNACTION: $THIS_NAME $fn start"
+        . "./upgrade-test-scripts/$THIS_NAME/$fn"
+        echo "RUNACTION: $THIS_NAME $fn finished"
+      fi
+    else
+      echo "./upgrade-test-scripts/$THIS_NAME directory is missing"
+      exit 1
+    fi
+  else
+    echo "THIS_NAME is not defined for this release, can't run action $action"
+  fi
+}
+
 if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
   if [[ "${USE_JS}" == "1" ]]; then
     pushd upgrade-test-scripts
