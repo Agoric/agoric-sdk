@@ -49,6 +49,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
+      - name: Recreate integration-test-result if needed
+        id: get-pending-integration-result
+        uses: ./.github/actions/get-latest-check
+        with:
+          create-if-needed: true
       - name: Reconfigure git to use HTTP authentication
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
         shell: bash
@@ -124,6 +129,11 @@ jobs:
         with:
           submodules: 'true'
           path: ./agoric-sdk
+      - name: Recreate integration-test-result if needed
+        id: get-pending-integration-result
+        uses: ./agoric-sdk/.github/actions/get-latest-check
+        with:
+          create-if-needed: true
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-golang
@@ -243,6 +253,11 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v3
+      - name: Recreate integration-test-result if needed
+        id: get-pending-integration-result
+        uses: ./.github/actions/get-latest-check
+        with:
+          create-if-needed: true
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
         # TODO: Build this only once, not for every bootstrap-version.
