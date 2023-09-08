@@ -8,16 +8,16 @@ import type { TestFn } from 'ava';
 
 const { keys } = Object;
 
-type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
-
-const test: TestFn<DefaultTestContext> = anyTest;
-
 const makeDefaultTestContext = async t => {
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/demo-config', {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
   return swingsetTestKit;
 };
+
+type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
+
+const test: TestFn<DefaultTestContext> = anyTest;
 
 test.before(async t => (t.context = await makeDefaultTestContext(t)));
 test.after.always(t => t.context.shutdown?.());
