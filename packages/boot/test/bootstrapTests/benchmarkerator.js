@@ -7,7 +7,7 @@ import '@endo/init';
 import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeStandaloneSwingsetTestKit } from './supports.js';
+import { makeSwingsetTestKit } from './supports.js';
 import { makeWalletFactoryDriver } from './drivers.js';
 
 // When I was a child my family took a lot of roadtrips around California to go
@@ -112,6 +112,7 @@ let defaultRounds = 1;
 let verbose = false;
 let help = false;
 let dump = false;
+/** @type ManagerType */
 let defaultManagerType = 'xs-worker';
 const options = {};
 const benchmarkPatts = [];
@@ -414,7 +415,7 @@ export const makeBenchmarkerator = async () => {
   const benchmarks = new Map();
 
   const setupStartTime = readClock();
-  const swingsetTestKit = await makeStandaloneSwingsetTestKit(undefined, {
+  const swingsetTestKit = await makeSwingsetTestKit(console.log, undefined, {
     defaultManagerType,
     verbose,
   });

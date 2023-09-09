@@ -14,9 +14,11 @@ const { keys } = Object;
 const test = anyTest;
 
 const makeDefaultTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/demo-config', {
-    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
-  });
+  const swingsetTestKit = await makeSwingsetTestKit(
+    t.log,
+    'bundles/demo-config',
+    { configSpecifier: '@agoric/vm-config/decentral-demo-config.json' },
+  );
   return swingsetTestKit;
 };
 

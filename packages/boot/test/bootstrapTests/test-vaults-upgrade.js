@@ -30,7 +30,7 @@ const makeDefaultTestContext = async (
   { incarnation = 1, logTiming = true, storage = undefined } = {},
 ) => {
   logTiming && console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
     storage,
   });
 

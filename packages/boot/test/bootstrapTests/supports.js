@@ -325,7 +325,19 @@ export const makeProposalExtractor = ({ childProcess, fs }) => {
 harden(makeProposalExtractor);
 
 /**
- * Common body for makeSwingsetTestKit and makeStandaloneSwingsetTestKit.
+ * Start a SwingSet kernel to be used by tests and benchmarks.
+ *
+ * In the case of Ava tests, this kernel is expected to be shared across all
+ * tests in a given test module. By default Ava tests run in parallel, so be
+ * careful to avoid ordering dependencies between them.  For example, test
+ * accounts balances using separate wallets or test vault factory metrics using
+ * separate collateral managers. (Or use test.serial)
+ *
+ * The shutdown() function _must_ be called after the test or benchmarks are
+ * complete, else V8 will see the xsnap workers still running, and will never
+ * exit (leading to a timeout error). Ava tests should use
+ * t.after.always(shutdown), because the normal t.after() hooks are not run if a
+ * test fails.
  *
  * @param {(..._: any[]) => any} log
  * @param {string} bundleDir directory to write bundles and config to
@@ -335,7 +347,7 @@ harden(makeProposalExtractor);
  * @param {boolean} [options.verbose]
  * @param {ManagerType} [options.defaultManagerType]
  */
-const makeBaseSwingsetTestKit = async (
+export const makeSwingsetTestKit = async (
   log,
   bundleDir = 'bundles',
   {
@@ -513,35 +525,3 @@ const makeBaseSwingsetTestKit = async (
     timer,
   };
 };
-
-/**
- * Start a SwingSet kernel to be used by Ava tests.  This kernel is expected to
- * be shared across all tests in a given test module. By default Ava tests run
- * in parallel, so be careful to avoid ordering dependencies between them.  For
- * example, test accounts balances using separate wallets or test vault factory
- * metrics using separate collateral managers. (Or use test.serial)
- *
- * The shutdown() function _must_ be called after the test is complete, or else
- * V8 will see the xsnap workers still running, and will never exit (leading to
- * a timeout error). Use t.after.always(shutdown), because the normal t.after()
- * hooks are not run if a test fails.
- *
- * @param {import('ava').ExecutionContext} t
- * @param {string} [bundleDir] directory to write bundles and config to
- * @param {object} [options]
- */
-export const makeSwingsetTestKit = async (t, bundleDir, options) =>
-  makeBaseSwingsetTestKit(t.log, bundleDir, options);
-
-/**
- * Start a SwingSet kernel to be used by a standalone executable.
- *
- * The shutdown() function _must_ be called after execution is complete, or else
- * V8 will see the xsnap workers still running, and will never exit (leading to
- * a timeout error).
- *
- * @param {string} [bundleDir] directory to write bundles and config to
- * @param {object} [options]
- */
-export const makeStandaloneSwingsetTestKit = async (bundleDir, options) =>
-  makeBaseSwingsetTestKit(console.log, bundleDir, options);

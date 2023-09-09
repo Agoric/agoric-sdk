@@ -43,7 +43,7 @@ const ZCF_PROBE_SRC = './zcfProbe.js';
 export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
   /** @type {SwingsetTestKit} */
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/zoe', {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
 
