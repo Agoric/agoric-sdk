@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -38,11 +39,11 @@ import (
 )
 
 // Sender is a function that sends a request to the controller.
-type Sender func(needReply bool, str string) (string, error)
+type Sender func(ctx context.Context, needReply bool, str string) (string, error)
 
 var AppName = "agd"
-var OnStartHook func(logger log.Logger)
-var OnExportHook func(logger log.Logger)
+var OnStartHook func(log.Logger, servertypes.AppOptions) error
+var OnExportHook func(log.Logger, servertypes.AppOptions) error
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -60,7 +61,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   AppName,
-		Short: "Stargate Agoric App",
+		Short: "Agoric Cosmos App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -135,10 +136,9 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 	}
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
-	hasVMController := sender != nil
 	for _, command := range rootCmd.Commands() {
 		if command.Name() == "export" {
-			extendCosmosExportCommand(command, hasVMController)
+			extendCosmosExportCommand(command)
 			break
 		}
 	}
@@ -154,8 +154,31 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
+const (
+	// FlagSplitVm is the command-line flag for subcommands that can use a
+	// split-process Agoric VM.  The default is to use an embedded VM.
+	FlagSplitVm = "split-vm"
+	EmbeddedVmEnvVar = "AGD_EMBEDDED_VM"
+)
+
+// hasVMController returns true if we have a VM (are running in split-vm mode,
+// or with an embedded VM).
+func hasVMController(serverCtx *server.Context) bool {
+	return serverCtx.Viper.GetString(FlagSplitVm) != "" ||
+		os.Getenv(EmbeddedVmEnvVar) != ""
+}
+
+func addAgoricVMFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(
+		FlagSplitVm,
+		"",
+		"Specify the external Agoric VM program",
+	)
+}
+
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	addAgoricVMFlags(startCmd)
 }
 
 func queryCommand() *cobra.Command {
@@ -223,7 +246,9 @@ func (ac appCreator) newApp(
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	if OnStartHook != nil {
-		OnStartHook(logger)
+		if err := OnStartHook(logger, appOpts); err != nil {
+			panic(err)
+		}
 	}
 
 	var cache sdk.MultiStorePersistentCache
@@ -297,8 +322,9 @@ const (
 
 // extendCosmosExportCommand monkey-patches the "export" command added by
 // cosmos-sdk to add a required "export-dir" command-line flag, and create the
-// genesis export in the specified directory.
-func extendCosmosExportCommand(cmd *cobra.Command, hasVMController bool) {
+// genesis export in the specified directory if the VM is running.
+func extendCosmosExportCommand(cmd *cobra.Command) {
+	addAgoricVMFlags(cmd)
 	cmd.Flags().String(FlagExportDir, "", "The directory where to create the genesis export")
 	err := cmd.MarkFlagRequired(FlagExportDir)
 	if err != nil {
@@ -329,25 +355,28 @@ func extendCosmosExportCommand(cmd *cobra.Command, hasVMController bool) {
 		// current genesis.
 		serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 
-		// This will fail is a genesis.json already exists in the export-dir
-		genesisFile, err := os.OpenFile(genesisPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, os.ModePerm)
-		if err != nil {
-			return err
+		if hasVMController(serverCtx) {
+			// Capture the export in the genesisPath.
+			// This will fail if a genesis.json already exists in the export-dir
+			genesisFile, err := os.OpenFile(
+				genesisPath,
+				os.O_CREATE|os.O_EXCL|os.O_WRONLY,
+				os.ModePerm,
+			)
+			if err != nil {
+				return err
+			}
+			defer genesisFile.Close()
+			cmd.SetOut(genesisFile)
 		}
-		defer genesisFile.Close()
 
-		cmd.SetOut(genesisFile)
-
+		// If we don't have a VM, appExport will just use the OnExportHook to exec
+		// the VM program, which will result in reentering this function with the VM
+		// controller set, and activate the above condition.
 		return originalRunE(cmd, args)
 	}
 
-	// Only modify the command handler when we have a VM controller to handle
-	// the full export logic. Otherwise, appExport will just exec the VM program
-	// (OnExportHook), which will result in re-entering this flow with the VM
-	// controller set.
-	if hasVMController {
-		cmd.RunE = extendedRunE
-	}
+	cmd.RunE = extendedRunE
 }
 
 func (ac appCreator) appExport(
@@ -360,7 +389,9 @@ func (ac appCreator) appExport(
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
 	if OnExportHook != nil {
-		OnExportHook(logger)
+		if err := OnExportHook(logger, appOpts); err != nil {
+			return servertypes.ExportedApp{}, err
+		}
 	}
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)

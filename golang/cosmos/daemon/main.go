@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,7 +18,7 @@ import (
 )
 
 // DefaultController is a stub controller.
-var DefaultController = func(needReply bool, str string) (string, error) {
+var DefaultController = func(ctx context.Context, needReply bool, str string) (string, error) {
 	return "", fmt.Errorf("Controller not configured; did you mean to use `ag-chain-cosmos` instead?")
 }
 
@@ -34,6 +35,7 @@ func RunWithController(sendToController cmd.Sender) {
 	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
+		_, _ = sendToController(context.Background(), false, "shutdown")
 		os.Exit(98)
 	}()
 

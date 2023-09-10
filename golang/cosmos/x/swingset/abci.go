@@ -2,6 +2,7 @@ package swingset
 
 import (
 	// "os"
+	"context"
 	"fmt"
 	"time"
 
@@ -88,7 +89,7 @@ func CommitBlock(keeper Keeper) error {
 		BlockHeight: endBlockHeight,
 		BlockTime:   endBlockTime,
 	}
-	_, err := keeper.BlockingSend(sdk.Context{}, action)
+	_, err := keeper.BlockingSend(sdk.Context{}.WithContext(context.Background()), action)
 
 	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
@@ -107,7 +108,7 @@ func AfterCommitBlock(keeper Keeper) error {
 		BlockHeight: endBlockHeight,
 		BlockTime:   endBlockTime,
 	}
-	_, err := keeper.BlockingSend(sdk.Context{}, action)
+	_, err := keeper.BlockingSend(sdk.Context{}.WithContext(context.Background()), action)
 
 	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
