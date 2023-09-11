@@ -142,6 +142,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
+  const upgrading = baggage.has('walletsByAddress');
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
@@ -292,7 +293,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   if (walletBridgeManager) {
     // NB: may not be in service when creatorFacet is used, or ever
     // It can't be awaited because that fails vat restart
-    const upgrading = baggage.has('walletsByAddress');
     if (upgrading) {
       void E(walletBridgeManager).setHandler(handleWalletAction);
     } else {
