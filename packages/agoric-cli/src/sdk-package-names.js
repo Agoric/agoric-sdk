@@ -17,6 +17,7 @@ export default [
   "@agoric/deployment",
   "@agoric/ertp",
   "@agoric/eslint-config",
+  "@agoric/ghost-chain",
   "@agoric/governance",
   "@agoric/import-manager",
   "@agoric/inter-protocol",
