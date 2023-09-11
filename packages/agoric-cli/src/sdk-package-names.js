@@ -19,6 +19,7 @@ export default [
   "@agoric/ertp",
   "@agoric/eslint-config",
   "@agoric/fast-usdc",
+  "@agoric/ghost-chain",
   "@agoric/governance",
   "@agoric/import-manager",
   "@agoric/inter-protocol",
