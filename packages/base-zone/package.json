@@ -27,13 +27,13 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/store": "^0.9.2",
-    "@endo/exo": "^0.2.3",
-    "@endo/far": "^0.2.19",
-    "@endo/pass-style": "^0.1.4",
-    "@endo/patterns": "^0.2.3"
+    "@endo/exo": "^0.2.5",
+    "@endo/far": "^0.2.21",
+    "@endo/pass-style": "^0.1.6",
+    "@endo/patterns": "^0.2.5"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.57",
+    "@endo/init": "^0.5.59",
     "ava": "^5.3.0"
   },
   "publishConfig": {

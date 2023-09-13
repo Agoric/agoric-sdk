@@ -22,17 +22,17 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/base-zone": "^0.1.0",
-    "@endo/far": "^0.2.19",
-    "@endo/init": "^0.5.57",
-    "@endo/marshal": "^0.8.6",
-    "@endo/patterns": "^0.2.3",
-    "@endo/promise-kit": "^0.2.57",
-    "@endo/stream": "^0.3.26",
+    "@endo/far": "^0.2.21",
+    "@endo/init": "^0.5.59",
+    "@endo/marshal": "^0.8.8",
+    "@endo/patterns": "^0.2.5",
+    "@endo/promise-kit": "^0.2.59",
+    "@endo/stream": "^0.3.28",
     "anylogger": "^0.21.0",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.57",
+    "@endo/init": "^0.5.59",
     "ava": "^5.3.0",
     "tsd": "^0.28.1"
   },

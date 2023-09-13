@@ -224,7 +224,7 @@ export const prepareNameHubKit = zone => {
           }
           const child = makeNameHubKit();
           await Promise.all(reserved.map(k => child.nameAdmin.reserve(k)));
-          nameAdmin.update(key, child.nameHub, child.nameAdmin);
+          void nameAdmin.update(key, child.nameHub, child.nameAdmin);
           return child;
         },
         async reserve(key) {
@@ -266,7 +266,7 @@ export const prepareNameHubKit = zone => {
               return /** @type {any} */ (keyToValue.get(key));
             }
           }
-          nameAdmin.update(key, newValue, adminValue);
+          void nameAdmin.update(key, newValue, adminValue);
           return newValue;
         },
         set(key, newValue, adminValue) {
@@ -274,7 +274,7 @@ export const prepareNameHubKit = zone => {
           keyToValue.has(key) || Fail`key ${key} is not already initialized`;
 
           const { nameAdmin } = this.facets;
-          nameAdmin.update(key, newValue, adminValue);
+          void nameAdmin.update(key, newValue, adminValue);
         },
         onUpdate(fn) {
           const { state } = this;
