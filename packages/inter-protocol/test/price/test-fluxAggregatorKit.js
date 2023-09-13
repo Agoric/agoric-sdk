@@ -51,17 +51,17 @@ const makeContext = async () => {
     const baggage = makeScalarBigMapStore('test baggage');
     const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
 
-    const { makeDurablePublishKit, makeRecorder } = prepareRecorderKitMakers(
-      baggage,
-      marshaller,
-    );
+    const { makeDurablePublishKit, makeRecorderKit, makeRecorder } =
+      prepareRecorderKitMakers(baggage, marshaller);
 
+    const childNode = await E(storageNode).makeChildNode('LINK-USD_price_feed');
     const makeFluxAggregator = await prepareFluxAggregatorKit(
       baggage,
       zcfTestKit.zcf,
       manualTimer,
       { ...quoteIssuerKit, displayInfo: { assetKind: 'set' } },
-      await E(storageNode).makeChildNode('LINK-USD_price_feed'),
+      childNode,
+      makeRecorderKit(childNode),
       makeDurablePublishKit,
       makeRecorder,
     );
@@ -695,6 +695,10 @@ test('notifications', async t => {
   // no new price yet publishable
 });
 
+// This test spuriously throws an exception because the setup creates a single
+// price authority which only reports on “aeth” but the second vault manager
+// expects quotes for “chit”. It doesn't seem worth adding a second collateral
+// type to the price authority, since the test's focus is storage keys.
 test('storage keys', async t => {
   const { public: publicFacet } = await t.context.makeTestFluxAggregator(
     defaultConfig,

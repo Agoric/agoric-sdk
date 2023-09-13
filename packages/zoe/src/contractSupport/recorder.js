@@ -1,29 +1,27 @@
 import { Fail } from '@agoric/assert';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import {
-  makeFakeMarshaller,
-  makeFakeStorage,
-} from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
-import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
+import { M, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 /**
  * Recorders support publishing data to vstorage.
  *
- * `Recorder` is similar to `Publisher` (in that they send out data) but has different signatures:
+ * `Recorder` is similar to `Publisher` (in that they send out data) but has
+ *    different signatures:
  * - methods are async because they await remote calls to Marshaller and StorageNode
  * - method names convey the durability
  * - omits fail()
  * - adds getStorageNode() from its durable state
  *
- * Other names such as StoredPublisher or ChainStoragePublisher were considered, but found to be sometimes confused with *durability*, another trait of this class.
+ * Other names such as StoredPublisher or ChainStoragePublisher were considered,
+ * but found to be sometimes confused with *durability*, another trait of this class.
  */
 
 /**
  * @template T
- * @typedef {{ getStorageNode(): StorageNode, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
+ * @typedef {{ getStorageNode(): ERef<StorageNode>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
  */
 
 /**
@@ -36,8 +34,22 @@ import { E } from '@endo/eventual-send';
  * @typedef {Pick<PublishKit<T>, 'subscriber'> & { recorderP: ERef<Recorder<T>> }} EventualRecorderKit
  */
 
+const serializeToStorageIfOpen = async (state, value, marshaller, node) => {
+  const { closed, valueShape } = state;
+  !closed || Fail`cannot write to closed recorder`;
+  mustMatch(value, valueShape);
+  const encoded = await E(marshaller).toCapData(value);
+  const serialized = JSON.stringify(encoded);
+  await E(node).setValue(serialized);
+};
+
 /**
- * Wrap a Publisher to record all the values to chain storage.
+ * Wrap a Publisher to record all the values to chain storage at a child of the
+ * given storage node.
+ *
+ * We need to be able to create durable recorders synchronously for child
+ * storageNodes. Since creating the child node is async, we'll record the
+ * address and make the child node lazily, so the maker can return immediately.
  *
  * @param {import('@agoric/zoe').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -47,7 +59,7 @@ export const prepareRecorder = (baggage, marshaller) => {
     baggage,
     'Recorder',
     M.interface('Recorder', {
-      getStorageNode: M.call().returns(StorageNodeShape),
+      getStorageNode: M.call().returns(M.eref(StorageNodeShape)),
       getStoragePath: M.call().returns(M.promise(/* string */)),
       write: M.call(M.any()).returns(M.promise()),
       writeFinal: M.call(M.any()).returns(M.promise()),
@@ -55,25 +67,42 @@ export const prepareRecorder = (baggage, marshaller) => {
     /**
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
-     * @param {StorageNode} storageNode
+     * @param {ERef<StorageNode>} storageNode
      * @param {TypedMatcher<T>} [valueShape]
+     * @param {string} [childName]
      */
     (
       publisher,
       storageNode,
       valueShape = /** @type {TypedMatcher<any>} */ (M.any()),
+      childName,
     ) => {
+      const childNode = childName ? undefined : storageNode;
+
       return {
         closed: false,
         publisher,
-        storageNode,
+        parentStorageNode: storageNode,
+        storageNode: /** @type {ERef<StorageNode>}*/ (childNode),
+        childName,
         storagePath: /** @type {string | undefined} */ (undefined),
         valueShape,
       };
     },
     {
       getStorageNode() {
-        return this.state.storageNode;
+        const {
+          state: { storageNode, childName, parentStorageNode },
+        } = this;
+        if (!childName) {
+          return parentStorageNode;
+        }
+
+        if (storageNode) {
+          return storageNode;
+        }
+
+        return E(parentStorageNode).makeChildNode(childName);
       },
       /**
        * Memoizes the remote call to the storage node
@@ -81,14 +110,15 @@ export const prepareRecorder = (baggage, marshaller) => {
        * @returns {Promise<string>}
        */
       async getStoragePath() {
-        const { storagePath: heldPath } = this.state;
+        const { state, self } = this;
+        const { storagePath: heldPath } = state;
         // end synchronous prelude
         await null;
         if (heldPath !== undefined) {
           return heldPath;
         }
-        const path = await E(this.state.storageNode).getPath();
-        this.state.storagePath = path;
+        const path = await E(self.getStorageNode()).getPath();
+        state.storagePath = path;
         return path;
       },
       /**
@@ -98,15 +128,11 @@ export const prepareRecorder = (baggage, marshaller) => {
        * @returns {Promise<void>}
        */
       async write(value) {
-        const { closed, publisher, storageNode, valueShape } = this.state;
-        !closed || Fail`cannot write to closed recorder`;
-        mustMatch(value, valueShape);
-        const encoded = await E(marshaller).toCapData(value);
-        const serialized = JSON.stringify(encoded);
-        await E(storageNode).setValue(serialized);
+        const { state, self } = this;
 
-        // below here differs from writeFinal()
-        return publisher.publish(value);
+        const storageNode = self.getStorageNode();
+        await serializeToStorageIfOpen(state, value, marshaller, storageNode);
+        return state.publisher.publish(value);
       },
       /**
        * Like `write` but prevents future writes and terminates the publisher.
@@ -115,16 +141,28 @@ export const prepareRecorder = (baggage, marshaller) => {
        * @returns {Promise<void>}
        */
       async writeFinal(value) {
-        const { closed, publisher, storageNode, valueShape } = this.state;
-        !closed || Fail`cannot write to closed recorder`;
-        mustMatch(value, valueShape);
-        const encoded = await E(marshaller).toCapData(value);
-        const serialized = JSON.stringify(encoded);
-        await E(storageNode).setValue(serialized);
-
-        // below here differs from writeFinal()
+        const { self, state } = this;
+        const storageNode = self.getStorageNode();
+        await serializeToStorageIfOpen(state, value, marshaller, storageNode);
         this.state.closed = true;
-        return publisher.finish(value);
+        return state.publisher.finish(value);
+      },
+    },
+    {
+      finish: ({ state }) => {
+        if (state.childName) {
+          // XXX Doesn't the catch clause satisfy our requirement?
+          void E.when(
+            E(state.parentStorageNode).makeChildNode(state.childName),
+            childNode => {
+              state.storageNode = childNode;
+            },
+            e =>
+              Fail`Unable ${e} to create child node for ${
+                state.childName
+              } on ${E(state.parentStorageNode).getPath()}`,
+          );
+        }
       },
     },
   );
@@ -144,13 +182,19 @@ harden(prepareRecorder);
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {StorageNode} storageNode
+   * @param {ERef<StorageNode>} storageNode
    * @param {TypedMatcher<T>} [valueShape]
+   * @param {string} [childName]
    * @returns {RecorderKit<T>}
    */
-  const makeRecorderKit = (storageNode, valueShape) => {
+  const makeRecorderKit = (storageNode, valueShape, childName = undefined) => {
     const { subscriber, publisher } = makeDurablePublishKit();
-    const recorder = makeRecorder(publisher, storageNode, valueShape);
+    const recorder = makeRecorder(
+      publisher,
+      storageNode,
+      valueShape,
+      childName,
+    );
     return harden({ subscriber, recorder });
   };
   return makeRecorderKit;
@@ -158,36 +202,11 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
 /** @typedef {ReturnType<typeof defineRecorderKit>} MakeRecorderKit */
 
 /**
- * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
- *
- * @see {defineRecorderKit}
- *
- * @param {{makeRecorder: MakeRecorder, makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>}} makers
- */
-export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
-  /**
-   * @template T
-   * @param {ERef<StorageNode>} storageNodeP
-   * @param {TypedMatcher<T>} [valueShape]
-   * @returns {EventualRecorderKit<T>}
-   */
-  const makeERecorderKit = (storageNodeP, valueShape) => {
-    const { publisher, subscriber } = makeDurablePublishKit();
-    const recorderP = E.when(storageNodeP, storageNode =>
-      makeRecorder(publisher, storageNode, valueShape),
-    );
-    return { subscriber, recorderP };
-  };
-  return makeERecorderKit;
-};
-harden(defineERecorderKit);
-/** @typedef {ReturnType<typeof defineERecorderKit>} MakeERecorderKit */
-
-/**
  * Convenience wrapper to prepare the DurablePublishKit and Recorder kinds.
- * Note that because prepareRecorder() can only be called once per baggage,
+ * Note that because prepareRecorder() can only be called once per vat instance,
  * this should only be used when there is no need for an EventualRecorderKit.
- * When there is, prepare the kinds separately and pass to the kit definers.
+ * When EventualRecorderKits are needed, prepare the kinds separately and pass
+ * them to the kit definers.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -204,10 +223,9 @@ export const prepareRecorderKit = (baggage, marshaller) => {
 /**
  * Convenience wrapper for DurablePublishKit and Recorder kinds.
  *
- * NB: this defines two durable kinds. Must be called at most once per baggage.
+ * NB: this defines two durable kinds. Must be called at most once per vat instance.
  *
  * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
- * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -223,29 +241,12 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
     makeRecorder,
     makeDurablePublishKit,
   });
-  const makeERecorderKit = defineERecorderKit({
-    makeRecorder,
-    makeDurablePublishKit,
-  });
 
-  return {
+  return harden({
     makeDurablePublishKit,
     makeRecorder,
     makeRecorderKit,
-    makeERecorderKit,
-  };
-};
-
-/**
- * For use in tests
- */
-export const prepareMockRecorderKitMakers = () => {
-  const baggage = makeScalarBigMapStore('mock recorder baggage');
-  const marshaller = makeFakeMarshaller();
-  return {
-    ...prepareRecorderKitMakers(baggage, marshaller),
-    storageNode: makeFakeStorage('mock recorder storage'),
-  };
+  });
 };
 
 /**

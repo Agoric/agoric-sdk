@@ -3,10 +3,7 @@ import { AmountMath, AmountShape, IssuerShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
-import {
-  makeRecorderTopic,
-  TopicsRecordShape,
-} from '@agoric/zoe/src/contractSupport/topics.js';
+import { makeRecorderTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
@@ -31,11 +28,20 @@ const trace = makeTracer('ReserveKit', true);
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   storageNode: StorageNode;
  *   zcf: ZCF;
+ *   publicMixin: any;
+ *   publicMixinGuards: any;
  * }} powers
  */
-export const prepareAssetReserveKit = async (
+export const prepareAssetReserveKit = (
   baggage,
-  { feeMint, makeRecorderKit, storageNode, zcf },
+  {
+    feeMint,
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    publicMixin,
+    publicMixinGuards,
+  },
 ) => {
   trace('prepareAssetReserveKit', [...baggage.keys()]);
   const feeKit = feeMint.getIssuerRecord();
@@ -56,7 +62,8 @@ export const prepareAssetReserveKit = async (
       }),
       public: M.interface('AssetReserve public', {
         makeAddCollateralInvitation: M.call().returns(M.promise()),
-        getPublicTopics: M.call().returns(TopicsRecordShape),
+        getPublicTopics: M.call().returns(M.promise()),
+        ...publicMixinGuards,
       }),
       shortfallReportingFacet: M.interface('AssetReserve shortfall reporter', {
         increaseLiquidationShortfall: M.call(AmountShape).returns(),
@@ -201,10 +208,6 @@ export const prepareAssetReserveKit = async (
           );
         },
       },
-      /**
-       * XXX missing governance public methods
-       * https://github.com/Agoric/agoric-sdk/issues/5200
-       */
       public: {
         /** Anyone can deposit any assets to the reserve */
         makeAddCollateralInvitation() {
@@ -233,13 +236,18 @@ export const prepareAssetReserveKit = async (
           };
           return zcf.makeInvitation(handler, 'Add Collateral');
         },
+
+        ...publicMixin,
         getPublicTopics() {
-          return {
-            metrics: makeRecorderTopic(
-              'Asset Reserve metrics',
-              this.state.metricsKit,
-            ),
-          };
+          return E.when(publicMixin.getPublicTopics(), publicTopics =>
+            harden({
+              metrics: makeRecorderTopic(
+                'Asset Reserve metrics',
+                this.state.metricsKit,
+              ),
+              ...publicTopics,
+            }),
+          );
         },
       },
       shortfallReportingFacet: {

@@ -142,9 +142,10 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
     assertFullyLiquidated,
   });
 };
-export const reserveInitialState = emptyRun => ({
+
+export const reserveState = runAmount => ({
   allocations: {},
-  shortfallBalance: emptyRun,
-  totalFeeBurned: emptyRun,
-  totalFeeMinted: emptyRun,
+  shortfallBalance: runAmount,
+  totalFeeBurned: runAmount,
+  totalFeeMinted: runAmount,
 });

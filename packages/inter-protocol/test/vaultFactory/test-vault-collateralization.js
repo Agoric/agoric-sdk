@@ -32,7 +32,7 @@ test('excessive loan', async t => {
   );
 });
 
-test('add debt to vault under LiquidationMarging + LiquidationPadding', async t => {
+test('add debt to vault under LiquidationMargin + LiquidationPadding', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
@@ -51,8 +51,9 @@ test('add debt to vault under LiquidationMarging + LiquidationPadding', async t 
     key: { collateralBrand: aeth.brand },
   });
   // ...so we can't take the same loan out
+  const seat = vd.giveCollateral(100n, aeth, MARGIN_HOP);
   await t.throwsAsync(
-    vd.giveCollateral(100n, aeth, MARGIN_HOP),
+    E(seat).getOfferResult(),
     { message: /Proposed debt.*exceeds max/ },
     'adjustment still under water',
   );
@@ -77,8 +78,9 @@ test('add debt to vault under LiquidationMargin', async t => {
   });
 
   // taking with the give fails
+  const seat = vd.giveCollateral(100n, aeth, 10n);
   await t.throwsAsync(
-    vd.giveCollateral(100n, aeth, 10n),
+    E(seat).getOfferResult(),
     { message: /Proposed debt.*exceeds max/ },
     'adjustment still under water',
   );

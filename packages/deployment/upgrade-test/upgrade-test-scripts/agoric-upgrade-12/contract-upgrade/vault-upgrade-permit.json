@@ -1,0 +1,7 @@
+{
+  "consume": {
+    "vatAdminSvc": true,
+    "vaultFactoryKit": true,
+    "chainStorage": true
+  }
+}

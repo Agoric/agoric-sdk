@@ -38,7 +38,6 @@ import {
   mintRunPayment,
   scale6,
   setUpZoeForTest,
-  subscriptionKey,
   withAmountUtils,
 } from '../supports.js';
 import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
@@ -184,7 +183,7 @@ test.before(async t => {
  * >} t
  * @param {{}} [customTerms]
  */
-async function makePsmDriver(t, customTerms) {
+const makePsmDriver = async (t, customTerms) => {
   const {
     zoe,
     feeMintAccess,
@@ -307,7 +306,7 @@ async function makePsmDriver(t, customTerms) {
     },
     swapMintedForAnchorSeat,
   };
-}
+};
 
 test('simple trades', async t => {
   const { terms, minted, anchor } = t.context;
@@ -537,12 +536,11 @@ test('anchor is 2x minted', async t => {
 
 test('governance', async t => {
   const driver = await makePsmDriver(t);
-  t.is(
-    await subscriptionKey(E(driver.publicFacet).getSubscription()),
-    'mockChainStorageRoot.psm.IST.AUSD.governance',
-  );
+  const topics = await E(driver.publicFacet).getPublicTopics();
+  const governancePath = `mockChainStorageRoot.psm.IST.AUSD.governance`;
+  t.is(await topics.governance.storagePath, governancePath);
 
-  t.like(driver.getStorageChildBody('governance'), {
+  t.like(driver.mockChainStorage.getBody(governancePath), {
     current: {
       Electorate: { type: 'invitation' },
       GiveMintedFee: { type: 'ratio' },

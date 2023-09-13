@@ -2,12 +2,13 @@ import {
   CONTRACT_ELECTORATE,
   makeParamManager,
   ParamTypes,
+  buildParamGovernanceExoMakers,
 } from '@agoric/governance';
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { M } from '@agoric/store';
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').AsyncSpecTuple} AsyncSpecTuple */
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').SyncSpecTuple} SyncSpecTuple */
+/** @typedef {import('@agoric/governance/src/contractGovernance/paramManager.js').AsyncSpecTuple} AsyncSpecTuple */
+/** @typedef {import('@agoric/governance/src/contractGovernance/paramManager.js').SyncSpecTuple} SyncSpecTuple */
 
 // TODO duplicated with zoe/src/TypeGuards.js
 export const InvitationShape = M.remotable('Invitation');
@@ -114,13 +115,25 @@ export const makeAuctioneerParams = ({
 harden(makeAuctioneerParams);
 
 /**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<any>} recorderKit
  * @param {ZCF} zcf
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {AuctionParams} initial
  */
-export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
+export const makeAuctioneerParamManager = (
+  recorderKit,
+  zcf,
+  baggage,
+  initial,
+) => {
+  const paramMakerKit = buildParamGovernanceExoMakers(
+    zcf.getZoeService(),
+    baggage,
+  );
+
   return makeParamManager(
-    publisherKit,
+    recorderKit,
+    baggage,
     {
       [CONTRACT_ELECTORATE]: [
         ParamTypes.INVITATION,
@@ -140,6 +153,7 @@ export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
         initial[PRICE_LOCK_PERIOD],
       ],
     },
+    paramMakerKit,
     zcf,
   );
 };

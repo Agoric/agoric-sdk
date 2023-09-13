@@ -1,6 +1,6 @@
 import './types.js';
-import { q, Fail } from '@agoric/assert';
-import { AmountMath } from '@agoric/ertp';
+import { Fail, q } from '@agoric/assert';
+import { AmountMath, makeBrandedAmountPattern } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@endo/nat';
 
@@ -399,3 +399,14 @@ export const ratioToNumber = ratio => {
   const d = Number(ratio.denominator.value);
   return n / d;
 };
+
+/** @param {Ratio} ratio */
+export const makeBrandedRatioPattern = ratio => {
+  const numeratorAmountShape = makeBrandedAmountPattern(ratio.numerator);
+  const denominatorAmountShape = makeBrandedAmountPattern(ratio.denominator);
+  return harden({
+    numerator: numeratorAmountShape,
+    denominator: denominatorAmountShape,
+  });
+};
+harden(makeBrandedRatioPattern);

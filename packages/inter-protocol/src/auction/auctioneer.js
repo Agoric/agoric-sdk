@@ -13,7 +13,6 @@ import {
   atomicRearrange,
   ceilDivideBy,
   ceilMultiplyBy,
-  defineERecorderKit,
   defineRecorderKit,
   floorDivideBy,
   floorMultiplyBy,
@@ -431,17 +430,14 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const makeAuctionBook = prepareAuctionBook(baggage, zcf, makeRecorderKit);
 
-  const makeERecorderKit = defineERecorderKit({
-    makeRecorder,
-    makeDurablePublishKit,
-  });
-  const scheduleKit = makeERecorderKit(
-    E(privateArgs.storageNode).makeChildNode('schedule'),
+  const scheduleKit = makeRecorderKit(
+    privateArgs.storageNode,
     /**
      * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
      *     import('./scheduler.js').ScheduleNotification
      *   >}
      */ (M.any()),
+    'schedule',
   );
 
   /**
@@ -525,13 +521,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     }
   };
 
-  const { augmentPublicFacet, makeFarGovernorFacet, params } =
+  const govNode = await E(privateArgs.storageNode).makeChildNode('governance');
+  const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
+      baggage,
       privateArgs.initialPoserInvitation,
       auctioneerParamTypes,
-      privateArgs.storageNode,
-      privateArgs.marshaller,
+      makeRecorderKit,
+      govNode,
     );
 
   const tradeEveryBook = () => {
@@ -675,19 +673,18 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const scheduler = await E.when(scheduleKit.recorderP, scheduleRecorder =>
+  const scheduler = await E.when(scheduleKit.recorder, scheduleRecorder =>
     makeScheduler(
       driver,
       timer,
-      // @ts-expect-error types are correct. How to convince TS?
       params,
       timerBrand,
       scheduleRecorder,
-      publicFacet.getSubscription(),
+      E.get(E.get(publicFacet.getPublicTopics()).governance).subscriber,
     ),
   );
 
-  const creatorFacet = makeFarGovernorFacet(
+  const creatorFacet = makeGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
        * @param {Issuer} issuer

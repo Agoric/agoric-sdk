@@ -36,10 +36,7 @@ const setupBasics = async () => {
 
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
-  const { makeERecorderKit, makeRecorderKit } = prepareRecorderKitMakers(
-    baggage,
-    marshaller,
-  );
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   return {
     moolaKit,
     moola,
@@ -48,7 +45,6 @@ const setupBasics = async () => {
     zoe,
     zcf,
     baggage,
-    makeERecorderKit,
     makeRecorderKit,
   };
 };

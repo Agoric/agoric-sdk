@@ -53,9 +53,8 @@ export const prepareContractGovernorKit = (baggage, powers) => {
         /** @type {() => Promise<Instance>} */
         async getElectorateInstance() {
           const { publicFacet } = this.state;
-          const invitationAmount = await E(publicFacet).getInvitationAmount(
-            CONTRACT_ELECTORATE,
-          );
+          // @ts-expect-error All governed contracts have an Electorate
+          const invitationAmount = await E(publicFacet).getElectorate();
           return invitationAmount.value[0].instance;
         },
         /** @type {() => Promise<PoserFacet>} */
@@ -131,7 +130,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
          */
         replaceElectorate(poserInvitation) {
           const { creatorFacet } = this.state;
-          /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
+          /** @type {Promise<import('./contractGovernance/paramManager.js').ParamManager<{'Electorate': 'invitation'}>>} */
           // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
           // @ts-ignore cast
           const paramMgr = E(E(creatorFacet).getParamMgrRetriever()).get({

@@ -101,6 +101,7 @@ const validTransitions = {
  *   vault: Vault,
  * ) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
+ * @property {() => import('./vaultManager.js').DirectorParamGetters} getDirectorParams
  */
 
 /**
@@ -626,7 +627,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           } = seat.getProposal();
 
           const minInitialDebt = state.manager
-            .getGovernedParams()
+            .getDirectorParams()
             .getMinInitialDebt();
           AmountMath.isGTE(wantMinted, minInitialDebt) ||
             Fail`Vault creation requires a minInitialDebt of ${q(

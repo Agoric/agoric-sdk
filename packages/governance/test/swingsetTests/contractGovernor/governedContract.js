@@ -1,3 +1,5 @@
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import { ParamTypes } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
@@ -17,18 +19,32 @@ const makeTerms = (number, invitationAmount) => {
 };
 
 /**
- *
- * @param {ZCF<
- * GovernanceTerms<{
- *   MalleableNumber: 'nat',
- * }>>} zcf
- * @param {{initialPoserInvitation: Invitation}} privateArgs
+ * @param {ZCF<GovernanceTerms<{ MalleableNumber: "nat"; }>>} zcf
+ * @param {{
+ *   governed: Record<string, unknown>,
+ *   marshaller: Marshaller,
+ *   initialPoserInvitation: Invitation,
+ *   storageNode: StorageNode,
+ * }} privateArgs
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-const start = async (zcf, privateArgs) => {
+const start = async (zcf, privateArgs, baggage) => {
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    privateArgs.marshaller,
+  );
+
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
-      [MALLEABLE_NUMBER]: ParamTypes.NAT,
-    });
+    await handleParamGovernance(
+      zcf,
+      baggage,
+      privateArgs.initialPoserInvitation,
+      {
+        [MALLEABLE_NUMBER]: ParamTypes.NAT,
+      },
+      makeRecorderKit,
+      privateArgs.storageNode,
+    );
 
   let governanceAPICalled = 0;
   const governanceApi = () => (governanceAPICalled += 1);

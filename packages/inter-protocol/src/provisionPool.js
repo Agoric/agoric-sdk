@@ -1,11 +1,7 @@
 // @jessie-check
 // @ts-check
 
-import {
-  handleParamGovernance,
-  ParamTypes,
-  publicMixinAPI,
-} from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { InvitationShape } from '@agoric/governance/src/typeGuards.js';
 import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
@@ -59,15 +55,16 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   // Governance
-  const { publicMixin, makeDurableGovernorFacet, params } =
-    await handleParamGovernance(
+  const { publicMixin, makeGovernorFacet, params, publicMixinGuards } =
+    handleParamGovernance(
       zcf,
+      baggage,
       privateArgs.initialPoserInvitation,
       {
         PerAccountInitialAmount: ParamTypes.AMOUNT,
       },
+      makeRecorderKit,
       privateArgs.storageNode,
-      privateArgs.marshaller,
     );
 
   const makeProvisionPoolKit = prepareProvisionPoolKit(baggage, {
@@ -95,23 +92,25 @@ export const start = async (zcf, privateArgs, baggage) => {
     'Provisioning Pool public',
     M.interface('ProvisionPool', {
       getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+      ...publicMixinGuards,
       getPublicTopics: M.call().returns(TopicsRecordShape),
-      ...publicMixinAPI,
     }),
     {
       getMetrics() {
         return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
       },
-      getPublicTopics() {
-        return provisionPoolKit.public.getPublicTopics();
-      },
       ...publicMixin,
+      getPublicTopics() {
+        return harden({
+          ...provisionPoolKit.public.getPublicTopics(),
+          ...publicMixin.getPublicTopics(),
+        });
+      },
     },
   );
 
   return harden({
-    creatorFacet: makeDurableGovernorFacet(baggage, provisionPoolKit.machine)
-      .governorFacet,
+    creatorFacet: makeGovernorFacet(provisionPoolKit.machine),
     publicFacet,
   });
 };

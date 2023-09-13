@@ -63,10 +63,10 @@
 /**
  * Terms a contract must provide in order to be governed.
  *
- * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T Governed parameters of contract
+ * @template {import('./contractGovernance/paramManager.js').ParamTypesMap} T Governed parameters of contract
  * @typedef {{
  *   electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<import('./contractGovernor.js')['start']>,
- *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & {
+ *   governedParams: import('./contractGovernance/paramManager.js').ParamRecordsFromTypes<T & {
  *     Electorate: 'invitation'
  *   }>
  * }} GovernanceTerms<T>
@@ -421,23 +421,20 @@
 
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
- * @property {() => ERef<ParamStateRecord>} getParams
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount<'set'>} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => import('@agoric/time/src/types').TimestampRecord} getTimestamp
- * @property {(name: string) => import('@agoric/time/src/types').RelativeTimeRecord} getRelativeTime
- * @property {(name: string) => any} getUnknown
+ * @property {() => any} accessors return an array of arrays giving the
+ *    names, functions, and guards for generated getters. They can be used to
+ *    add methods to Exo objects.
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
- * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
+ * @property {() => Record<string, any>} getGovernedParams deprecated; use getParamDescriptions instead.
+ * @property {() => Record<string, any>} getParamDescriptions provide a record describing
+ *   the values of all governed parameters.
+ * @property {() => ERef<import('@agoric/zoe/src/contractSupport/topics.js').TopicsRecord<any>>} getPublicTopics
+ * @property {() => Record<string, any>} publish
+ * @property {() => Record<string, any>} getterFunctions
+ * @property {() => Record<string, any>} getters
  */
 
 /**
@@ -567,10 +564,10 @@
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {(key?: any) => StoredSubscription<GovernanceSubscriptionState>} getSubscription
- * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
+ * @property {(key?: any) => ERef<import('@agoric/zoe/src/contractSupport/topics.js').TopicsRecord<any>>} getPublicTopics
+ * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - deprecated. use getParamDescriptions
+ * @property {(key?: any) => ERef<ParamStateRecord>} getParamDescriptions - get descriptions of
  *   all the governed parameters
- * @property {(name: string) => Amount} getInvitationAmount
  */
 
 /**

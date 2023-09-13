@@ -11,6 +11,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { withAmountUtils } from '../../supports.js';
 
 const trace = makeTracer('BootFAUpg');
@@ -21,6 +22,7 @@ const moola = withAmountUtils(makeIssuerKit('moola'));
 
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('assetReserveUpgradeTest');
+
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
   const timer = buildManualTimer();
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
@@ -142,6 +144,7 @@ export const buildRootObject = async () => {
       installations.committee = await E(zoeService).installBundleID(
         await E(vatAdmin).getBundleIDByName('committee'),
       );
+
       const ccStartResult = await E(zoeService).startInstance(
         installations.committee,
         harden({}),

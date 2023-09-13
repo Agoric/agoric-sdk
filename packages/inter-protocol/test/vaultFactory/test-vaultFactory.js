@@ -5,12 +5,13 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
+import { subscribeEach } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
   makeRatio,
+  makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   assertAmountsEqual,
@@ -29,7 +30,7 @@ import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import {
   metricsTracker,
-  reserveInitialState,
+  reserveState,
   subscriptionTracker,
   vaultManagerMetricsTracker,
 } from '../metrics.js';
@@ -1245,10 +1246,12 @@ test('collect fees from vault', async t => {
     reserveKit: { reservePublicFacet },
   } = services;
 
-  const metricsTopic = await E.get(E(reservePublicFacet).getPublicTopics())
-    .metrics;
-  const m = await subscriptionTracker(t, metricsTopic);
-  await m.assertInitial(reserveInitialState(run.makeEmpty()));
+  const topics = await E.get(E(reservePublicFacet).getPublicTopics()).metrics;
+  const m = await subscriptionTracker(
+    t,
+    subscribeEach(await topics.subscriber),
+  );
+  await m.assertInitial(reserveState(run.makeEmpty()));
 
   // initial loans /////////////////////////////////////
 
@@ -1648,6 +1651,7 @@ test('director notifiers', async t => {
 
   const { vfPublic, vaultFactory } = services.vaultFactory;
 
+  // @ts-expect-error and yet the signatures are compatible.
   const m = await metricsTracker(t, vfPublic);
 
   await m.assertInitial({
@@ -1963,7 +1967,7 @@ test('manager notifiers, with snapshot', async t => {
 });
 
 test('governance publisher', async t => {
-  const { aeth } = t.context;
+  const { aeth, run } = t.context;
   t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
@@ -1979,53 +1983,49 @@ test('governance publisher', async t => {
     500n,
   );
   const { vfPublic } = services.vaultFactory;
-  const directorGovNotifier = makeNotifierFromAsyncIterable(
-    E(vfPublic).getElectorateSubscription(),
-  );
-  let {
-    value: { current },
-  } = await directorGovNotifier.getUpdateSince();
-  // can't deepEqual because of non-literal objects so check keys and then partial shapes
-  t.deepEqual(Object.keys(current), [
-    'ChargingPeriod',
-    'Electorate',
-    'MinInitialDebt',
-    'RecordingPeriod',
-    'ReferencedUI',
-    'ShortfallInvitation',
-  ]);
-  t.like(current, {
-    ChargingPeriod: { type: 'nat', value: 2n },
-    Electorate: { type: 'invitation' },
-    ReferencedUI: { type: 'string', value: 'abracadabra' },
-    MinInitialDebt: { type: 'amount' },
-    RecordingPeriod: { type: 'nat', value: 10n },
-    ShortfallInvitation: { type: 'invitation' },
+  // @ts-expect-error governance is there
+  const { subscriber } = await E.get(E(vfPublic).getPublicTopics()).governance;
+  const gTrack = await subscriptionTracker(t, subscribeEach(subscriber));
+  await gTrack.assertLike({
+    current: {
+      ChargingPeriod: { type: 'nat', value: 2n },
+      Electorate: { type: 'invitation' },
+      ReferencedUI: { type: 'string', value: 'abracadabra' },
+      MinInitialDebt: { type: 'amount' },
+      RecordingPeriod: { type: 'nat', value: 10n },
+      ShortfallInvitation: { type: 'invitation' },
+    },
   });
 
-  const managerGovNotifier = makeNotifierFromAsyncIterable(
-    E(vfPublic).getSubscription({
-      collateralBrand: aeth.brand,
-    }),
+  // @ts-expect-error governance is there
+  const topic = await E.get(E(vfPublic).getPublicTopics(aeth.brand)).governance;
+  const aethTracker = await subscriptionTracker(
+    t,
+    subscribeEach(topic.subscriber),
   );
-  ({
-    value: { current },
-  } = await managerGovNotifier.getUpdateSince());
-  // can't deepEqual because of non-literal objects so check keys and then partial shapes
-  t.deepEqual(Object.keys(current), [
-    'DebtLimit',
-    'InterestRate',
-    'LiquidationMargin',
-    'LiquidationPadding',
-    'LiquidationPenalty',
-    'MintFee',
-  ]);
-  t.like(current, {
-    DebtLimit: { type: 'amount' },
-    InterestRate: { type: 'ratio' },
-    LiquidationMargin: { type: 'ratio' },
-    LiquidationPadding: { type: 'ratio' },
-    LiquidationPenalty: { type: 'ratio' },
-    MintFee: { type: 'ratio' },
+  await aethTracker.assertInitial({
+    current: {
+      DebtLimit: { type: 'amount', value: run.make(1_000_000n) },
+      InterestRate: {
+        type: 'ratio',
+        value: makeRatioFromAmounts(run.make(100n), run.make(10000n)),
+      },
+      LiquidationMargin: {
+        type: 'ratio',
+        value: makeRatioFromAmounts(run.make(105n), run.make(100n)),
+      },
+      LiquidationPadding: {
+        type: 'ratio',
+        value: makeRatioFromAmounts(run.make(0n), run.make(10000n)),
+      },
+      LiquidationPenalty: {
+        type: 'ratio',
+        value: makeRatioFromAmounts(run.make(10n), run.make(100n)),
+      },
+      MintFee: {
+        type: 'ratio',
+        value: makeRatioFromAmounts(run.make(500n), run.make(10_000n)),
+      },
+    },
   });
 });

@@ -1,7 +1,10 @@
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
+import { remoteNullMarshaller } from '../test/swingsetTests/utils.js';
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
@@ -16,8 +19,6 @@ const contractGovernorBundleP = makeBundle('./puppetContractGovernor.js');
 const autoRefundBundleP = makeBundle(
   '@agoric/zoe/src/contracts/automaticRefund.js',
 );
-
-/**  */
 
 /**
  * @template {GovernableStartFn} T governed contract startfn
@@ -56,7 +57,7 @@ export const setUpGovernedContract = async (
   /**
    * Contract governor wants a committee invitation. Give it a random invitation.
    */
-  async function getFakeInvitation() {
+  const getFakeInvitation = async () => {
     const autoRefundFacets = await E(zoe).startInstance(autoRefund);
     const invitationP = E(autoRefundFacets.publicFacet).makeInvitation();
     const [fakeInvitationPayment, fakeInvitationAmount] = await Promise.all([
@@ -64,7 +65,7 @@ export const setUpGovernedContract = async (
       E(E(zoe).getInvitationIssuer()).getAmountOf(invitationP),
     ]);
     return { fakeInvitationPayment, fakeInvitationAmount };
-  }
+  };
 
   const { fakeInvitationAmount, fakeInvitationPayment } =
     await getFakeInvitation();
@@ -97,6 +98,8 @@ export const setUpGovernedContract = async (
       governed: {
         ...privateArgsOfGoverned,
         initialPoserInvitation: fakeInvitationPayment,
+        storageNode: makeMockChainStorageRoot().makeChildNode('governed'),
+        marshaller: remoteNullMarshaller,
       },
     },
   );
