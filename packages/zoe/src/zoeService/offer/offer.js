@@ -24,9 +24,8 @@ export const makeOfferMethod = offerDataAccess => {
   ) => {
     const invitationIssuer = offerDataAccess.getInvitationIssuer();
     const query = makeInvitationQueryFns(invitationIssuer);
-    const { instance, description } = await query.getInvitationDetails(
-      invitation,
-    );
+    const { instance, description } =
+      await query.getInvitationDetails(invitation);
     // AWAIT ///
 
     const instanceAdmin = await offerDataAccess.getInstanceAdmin(instance);

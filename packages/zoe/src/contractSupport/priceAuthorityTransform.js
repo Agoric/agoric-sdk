@@ -87,9 +87,8 @@ export const makePriceAuthorityTransform = async ({
       sourceBrandOut,
     );
 
-    const { value: sourceQuoteValue } = await E(sourceQuoteIssuer).getAmountOf(
-      sourceQuotePayment,
-    );
+    const { value: sourceQuoteValue } =
+      await E(sourceQuoteIssuer).getAmountOf(sourceQuotePayment);
 
     sourceQuoteValue.length === 1 ||
       Fail`sourceQuoteValue.length ${sourceQuoteValue.length} is not 1`;

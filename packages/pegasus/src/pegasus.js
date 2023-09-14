@@ -384,9 +384,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
         async onReceive(c, packetBytes) {
           const doReceive = async () => {
             // Dispatch the packet to the appropriate Peg for this connection.
-            const parts = await E(transferProtocol).parseTransferPacket(
-              packetBytes,
-            );
+            const parts =
+              await E(transferProtocol).parseTransferPacket(packetBytes);
 
             const { remoteDenom: receiveDenom } = parts;
             assert.typeof(receiveDenom, 'string');

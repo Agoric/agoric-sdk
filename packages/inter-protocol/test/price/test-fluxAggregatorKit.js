@@ -696,9 +696,8 @@ test('notifications', async t => {
 });
 
 test('storage keys', async t => {
-  const { public: publicFacet } = await t.context.makeTestFluxAggregator(
-    defaultConfig,
-  );
+  const { public: publicFacet } =
+    await t.context.makeTestFluxAggregator(defaultConfig);
 
   t.is(
     await topicPath(publicFacet, 'quotes'),
@@ -707,9 +706,8 @@ test('storage keys', async t => {
 });
 
 test('disabling', async t => {
-  const { creator, manualTimer } = await t.context.makeTestFluxAggregator(
-    defaultConfig,
-  );
+  const { creator, manualTimer } =
+    await t.context.makeTestFluxAggregator(defaultConfig);
 
   const kitA = await creator.initOracle('agoric1priceOracleA');
   const kitB = await creator.initOracle('agoric1priceOracleB');

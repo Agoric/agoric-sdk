@@ -154,9 +154,8 @@ test('non-fungible tokens example', async t => {
   // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
   // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive
   // access to its handle
-  const paymentAmountAlice = await balletTicketIssuer.getAmountOf(
-    myTicketPaymentAlice,
-  );
+  const paymentAmountAlice =
+    await balletTicketIssuer.getAmountOf(myTicketPaymentAlice);
   assert(Array.isArray(paymentAmountAlice.value));
   t.is(paymentAmountAlice.value.length, 1);
   t.is(paymentAmountAlice.value[0].seat, 1);
@@ -170,9 +169,8 @@ test('non-fungible tokens example', async t => {
     balletTicketIssuer.makeEmptyPurse(),
     paymentForBob,
   );
-  const paymentAmountBob = await balletTicketIssuer.getAmountOf(
-    bobTicketPayment,
-  );
+  const paymentAmountBob =
+    await balletTicketIssuer.getAmountOf(bobTicketPayment);
   assert(Array.isArray(paymentAmountBob.value));
   t.is(paymentAmountBob.value.length, 2);
   t.is(paymentAmountBob.value[0].seat, 4);

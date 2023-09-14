@@ -262,9 +262,8 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     const aliceTickets = seat.getPayout('Items');
-    const aliceBoughtTicketAmount = await E(ticketIssuer).getAmountOf(
-      aliceTickets,
-    );
+    const aliceBoughtTicketAmount =
+      await E(ticketIssuer).getAmountOf(aliceTickets);
 
     t.is(
       aliceBoughtTicketAmount.value[0].show,
@@ -290,9 +289,8 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
-    const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
-      ticketSalesInstance,
-    );
+    const ticketSalesPublicFacet =
+      await E(zoe).getPublicFacet(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
     const ticketBrand = await E(ticketIssuer).getBrand();
 
@@ -366,9 +364,8 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
-    const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
-      ticketSalesInstance,
-    );
+    const ticketSalesPublicFacet =
+      await E(zoe).getPublicFacet(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
     const ticketBrand = await E(ticketIssuer).getBrand();
 
@@ -436,9 +433,8 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
-    const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
-      ticketSalesInstance,
-    );
+    const ticketSalesPublicFacet =
+      await E(zoe).getPublicFacet(ticketSalesInstance);
     const terms = await E(zoe).getTerms(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
     const ticketBrand = await E(ticketIssuer).getBrand();

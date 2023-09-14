@@ -130,9 +130,8 @@ async function testRemotePeg(t) {
   );
 
   // Pretend we're Agoric.
-  const { handler: chandler, subscription: connectionSubscription } = await E(
-    pegasus,
-  ).makePegasusConnectionKit();
+  const { handler: chandler, subscription: connectionSubscription } =
+    await E(pegasus).makePegasusConnectionKit();
   const connP = E(portP).connect(portName, chandler);
 
   // Get some local Atoms.

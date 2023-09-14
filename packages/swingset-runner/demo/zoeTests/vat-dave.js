@@ -26,9 +26,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         E(invitationIssuer).makeEmptyPurse(),
         invitation,
       );
-      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const { value: invitationValue } =
+        await E(invitationIssuer).getAmountOf(exclInvitation);
       installation === installations.secondPriceAuction ||
         Fail`wrong installation`;
       keyEQ(
@@ -77,9 +76,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         E(invitationIssuer).makeEmptyPurse(),
         invitation,
       );
-      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const { value: invitationValue } =
+        await E(invitationIssuer).getAmountOf(exclInvitation);
 
       // TODO Check the integrity of the installation by its hash.
       // https://github.com/Agoric/agoric-sdk/issues/3859

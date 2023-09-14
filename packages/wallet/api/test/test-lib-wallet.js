@@ -1636,17 +1636,14 @@ test('stamps from dateNow', async t => {
   const paymentNotifier = E(wallet).getPaymentsNotifier();
 
   const date0 = currentDateMS;
-  const { value: val0, updateCount: count0 } = await E(
-    paymentNotifier,
-  ).getUpdateSince();
+  const { value: val0, updateCount: count0 } =
+    await E(paymentNotifier).getUpdateSince();
   await E(wallet).addPayment(pmt1);
-  const { value: val1a, updateCount: count1a } = await E(
-    paymentNotifier,
-  ).getUpdateSince(count0);
+  const { value: val1a, updateCount: count1a } =
+    await E(paymentNotifier).getUpdateSince(count0);
   E(wallet).addPayment(pmt4);
-  const { value: val1, updateCount: count1 } = await E(
-    paymentNotifier,
-  ).getUpdateSince(count1a);
+  const { value: val1, updateCount: count1 } =
+    await E(paymentNotifier).getUpdateSince(count1a);
 
   // Wait for tick to take effect.
   currentDateMS += 1234;
@@ -1654,9 +1651,8 @@ test('stamps from dateNow', async t => {
   t.is(dateNow(), startDateMS + 1234);
 
   await E(wallet).addPayment(pmt2);
-  const { value: val2, updateCount: count2 } = await E(
-    paymentNotifier,
-  ).getUpdateSince(count1);
+  const { value: val2, updateCount: count2 } =
+    await E(paymentNotifier).getUpdateSince(count1);
   await E(wallet).addPayment(pmt3);
   const { value: payments } = await E(paymentNotifier).getUpdateSince(count2);
 

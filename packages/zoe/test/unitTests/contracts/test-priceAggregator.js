@@ -470,17 +470,15 @@ test('oracle invitation', async t => {
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
-  const { value: value1, updateCount: uc1 } = await E(
-    notifier,
-  ).getUpdateSince();
+  const { value: value1, updateCount: uc1 } =
+    await E(notifier).getUpdateSince();
   t.deepEqual(value1.quoteAmount.value, makeQuoteValue(3n, 1_234_000_000n));
 
   updater1.updateState('1234.567');
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
-  const { value: value2, updateCount: uc2 } = await E(notifier).getUpdateSince(
-    uc1,
-  );
+  const { value: value2, updateCount: uc2 } =
+    await E(notifier).getUpdateSince(uc1);
   t.deepEqual(value2.quoteAmount.value, makeQuoteValue(5n, 1_234_567_000n));
 
   const inv2 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle2');
@@ -495,9 +493,8 @@ test('oracle invitation', async t => {
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
-  const { value: value3, updateCount: uc3 } = await E(notifier).getUpdateSince(
-    uc2,
-  );
+  const { value: value3, updateCount: uc3 } =
+    await E(notifier).getUpdateSince(uc2);
 
   // Check median calculation of two oracles.
   const price1 = parseRatio('1234.567', brandOut, brandIn);
@@ -515,27 +512,24 @@ test('oracle invitation', async t => {
 
   updater2.updateState('1234');
   await E(oracleTimer).tick();
-  const { value: value4, updateCount: uc4 } = await E(notifier).getUpdateSince(
-    uc3,
-  );
+  const { value: value4, updateCount: uc4 } =
+    await E(notifier).getUpdateSince(uc3);
   t.deepEqual(value4.quoteAmount.value, makeQuoteValue(9n, 1_234_000n));
 
   updater2.updateState('1234.567890');
 
   await eventLoopIteration(); // pretend this is a new kernel delivery
   await E(oracleTimer).tick();
-  const { value: value5, updateCount: uc5 } = await E(notifier).getUpdateSince(
-    uc4,
-  );
+  const { value: value5, updateCount: uc5 } =
+    await E(notifier).getUpdateSince(uc4);
   t.deepEqual(value5.quoteAmount.value, makeQuoteValue(10n, 1_234_567n));
 
   updater2.updateState(makeRatio(987_654n, brandOut, 500_000n, brandIn));
 
   await eventLoopIteration(); // pretend this is a new kernel delivery
   await E(oracleTimer).tick();
-  const { value: value6, updateCount: _uc6 } = await E(notifier).getUpdateSince(
-    uc5,
-  );
+  const { value: value6, updateCount: _uc6 } =
+    await E(notifier).getUpdateSince(uc5);
   t.deepEqual(value6.quoteAmount.value, makeQuoteValue(11n, 987_654n * 2n));
 
   await E(E.get(oracleAdmin2).admin).delete();

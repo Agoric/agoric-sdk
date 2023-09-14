@@ -86,9 +86,8 @@ export const makeOfferExecutor = ({
           deeplyFulfilledObject(paymentsManager.withdrawGive(proposal.give)));
 
         const invitation = invitationFromSpec(invitationSpec);
-        const invitationAmount = await E(invitationIssuer).getAmountOf(
-          invitation,
-        );
+        const invitationAmount =
+          await E(invitationIssuer).getAmountOf(invitation);
 
         // 2. Begin executing offer
         // No explicit signal to user that we reached here but if anything above

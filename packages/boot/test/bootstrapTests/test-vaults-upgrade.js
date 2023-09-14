@@ -95,9 +95,8 @@ test.serial('re-bootstrap', async t => {
   const oldContext = { ...t.context.shared };
   const { storage } = oldContext;
   t.is(oldContext.incarnation, 1);
-  const wd1 = await oldContext.walletFactoryDriver.provideSmartWallet(
-    'agoric1a',
-  );
+  const wd1 =
+    await oldContext.walletFactoryDriver.provideSmartWallet('agoric1a');
   t.true(wd1.isNew);
   // eslint-disable-next-line no-unused-vars
   const assertWalletCount = (walletsProvisioned, message) => {
@@ -146,15 +145,13 @@ test.serial('re-bootstrap', async t => {
   }
   // prettier-ignore
   assertWalletCount(1n, 'provisionPool metrics must not be modified by re-bootstrap');
-  const wd2 = await newContext.walletFactoryDriver.provideSmartWallet(
-    'agoric1a',
-  );
+  const wd2 =
+    await newContext.walletFactoryDriver.provideSmartWallet('agoric1a');
   t.false(wd2.isNew);
   // prettier-ignore
   assertWalletCount(1n, 'wallet restoration must not affect provisionPool metrics');
-  const wd3 = await newContext.walletFactoryDriver.provideSmartWallet(
-    'agoric1b',
-  );
+  const wd3 =
+    await newContext.walletFactoryDriver.provideSmartWallet('agoric1b');
   t.true(wd3.isNew);
   // prettier-ignore
   assertWalletCount(2n, 'new wallet provisioning must update revived provisionPool metrics');
@@ -294,9 +291,8 @@ test.serial('restart vaultFactory', async t => {
    *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
    * >}
    */
-  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
-    'vaultFactoryKit',
-  );
+  const vaultFactoryKit =
+    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
   // @ts-expect-error cast XXX missing from type
   const { privateArgs } = vaultFactoryKit;
@@ -325,9 +321,8 @@ test.serial('restart contractGovernor', async t => {
    *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
    * >}
    */
-  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
-    'vaultFactoryKit',
-  );
+  const vaultFactoryKit =
+    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
   const { governorAdminFacet } = vaultFactoryKit;
   // has no privateArgs of its own. the privateArgs.governed is only for the
@@ -336,9 +331,8 @@ test.serial('restart contractGovernor', async t => {
   const privateArgs = undefined;
 
   t.log('awaiting CG restartContract');
-  const upgradeResult = await EV(governorAdminFacet).restartContract(
-    privateArgs,
-  );
+  const upgradeResult =
+    await EV(governorAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
 });
 

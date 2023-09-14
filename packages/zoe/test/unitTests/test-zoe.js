@@ -272,9 +272,8 @@ test(`zoe.getInstallationForInstance`, async t => {
     },
   );
 
-  const installationReturned = await E(zoe).getInstallationForInstance(
-    instance,
-  );
+  const installationReturned =
+    await E(zoe).getInstallationForInstance(instance);
   t.is(installation, installationReturned);
 });
 

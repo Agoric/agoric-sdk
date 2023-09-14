@@ -727,9 +727,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    * @param {bigint} [lastMailboxUpdate]
    */
   const recurseEachMailboxUpdate = async (lastMailboxUpdate = undefined) => {
-    const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
-      lastMailboxUpdate,
-    );
+    const { updateCount, value: mailbox } =
+      await mbNotifier.getUpdateSince(lastMailboxUpdate);
     updateCount || Fail`${GCI} unexpectedly finished!`;
     if (mailbox) {
       const { outbox, ack } = mailbox;

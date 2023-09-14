@@ -51,16 +51,14 @@ function makeAliceMaker(log) {
             E(issuer).makeEmptyPurse(),
             paymentToClaim,
           );
-          const claimedPaymentAmount = await E(issuer).getAmountOf(
-            claimedPayment,
-          );
+          const claimedPaymentAmount =
+            await E(issuer).getAmountOf(claimedPayment);
           log('claimedPayment amount: ', claimedPaymentAmount);
 
           // combine
           const combinedPayment = combine(E(issuer).makeEmptyPurse(), payments);
-          const combinedPaymentAmount = await E(issuer).getAmountOf(
-            combinedPayment,
-          );
+          const combinedPaymentAmount =
+            await E(issuer).getAmountOf(combinedPayment);
           log('combinedPayment amount: ', combinedPaymentAmount);
         },
       });

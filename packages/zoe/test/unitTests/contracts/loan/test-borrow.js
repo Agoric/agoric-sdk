@@ -173,9 +173,8 @@ test('borrow makeCloseLoanInvitation', async t => {
 
 test('borrow makeAddCollateralInvitation', async t => {
   const { borrowFacet, zoe } = await setupBorrowFacet();
-  const addCollateralInvitation = await E(
-    borrowFacet,
-  ).makeAddCollateralInvitation();
+  const addCollateralInvitation =
+    await E(borrowFacet).makeAddCollateralInvitation();
   await checkDescription(t, zoe, addCollateralInvitation, 'addCollateral');
 });
 
@@ -247,9 +246,8 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
   const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
-  const addCollateralInvitation = await E(
-    borrowFacet,
-  ).makeAddCollateralInvitation();
+  const addCollateralInvitation =
+    await E(borrowFacet).makeAddCollateralInvitation();
 
   const addedAmount = AmountMath.make(collateralKit.brand, 3n);
 
@@ -318,16 +316,14 @@ test('getDebtNotifier with interest', async t => {
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
-  const { value: originalDebt, updateCount } = await E(
-    debtNotifier,
-  ).getUpdateSince();
+  const { value: originalDebt, updateCount } =
+    await E(debtNotifier).getUpdateSince();
   assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(6n);
 
-  const { value: debtCompounded1, updateCount: updateCount1 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount);
+  const { value: debtCompounded1, updateCount: updateCount1 } =
+    await E(debtNotifier).getUpdateSince(updateCount);
   assertAmountsEqual(
     t,
     debtCompounded1,
@@ -336,9 +332,8 @@ test('getDebtNotifier with interest', async t => {
 
   periodUpdater.updateState(11n);
 
-  const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
-    updateCount1,
-  );
+  const { value: debtCompounded2 } =
+    await E(debtNotifier).getUpdateSince(updateCount1);
   assertAmountsEqual(
     t,
     debtCompounded2,
@@ -396,16 +391,14 @@ test('aperiodic interest', async t => {
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
-  const { value: originalDebt, updateCount } = await E(
-    debtNotifier,
-  ).getUpdateSince();
+  const { value: originalDebt, updateCount } =
+    await E(debtNotifier).getUpdateSince();
   assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(6n);
 
-  const { value: debtCompounded1, updateCount: updateCount1 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount);
+  const { value: debtCompounded1, updateCount: updateCount1 } =
+    await E(debtNotifier).getUpdateSince(updateCount);
   assertAmountsEqual(
     t,
     debtCompounded1,
@@ -416,9 +409,8 @@ test('aperiodic interest', async t => {
   periodUpdater.updateState(16n);
 
   // both debt notifications are received
-  const { value: debtCompounded2, updateCount: updateCount2 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount1);
+  const { value: debtCompounded2, updateCount: updateCount2 } =
+    await E(debtNotifier).getUpdateSince(updateCount1);
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(16n));
   assertAmountsEqual(
     t,
@@ -427,9 +419,8 @@ test('aperiodic interest', async t => {
   );
 
   periodUpdater.updateState(21n);
-  const { value: debtCompounded3 } = await E(debtNotifier).getUpdateSince(
-    updateCount2,
-  );
+  const { value: debtCompounded3 } =
+    await E(debtNotifier).getUpdateSince(updateCount2);
   assertAmountsEqual(
     t,
     debtCompounded3,
@@ -474,15 +465,13 @@ test('interest starting from non-zero time', async t => {
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
-  const { value: originalDebt, updateCount } = await E(
-    debtNotifier,
-  ).getUpdateSince();
+  const { value: originalDebt, updateCount } =
+    await E(debtNotifier).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
   periodUpdater.updateState(9n);
-  const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
-    updateCount,
-  );
+  const { value: debtCompounded2 } =
+    await E(debtNotifier).getUpdateSince(updateCount);
   t.deepEqual(debtCompounded2, AmountMath.make(loanKit.brand, 40020n));
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(9n));
 });
@@ -498,18 +487,16 @@ test('short periods', async t => {
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
-  const { value: originalDebt, updateCount } = await E(
-    debtNotifier,
-  ).getUpdateSince();
+  const { value: originalDebt, updateCount } =
+    await E(debtNotifier).getUpdateSince();
   assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(5n);
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(1n));
 
   periodUpdater.updateState(9n);
-  const { value: debtCompounded1, updateCount: updateCount1 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount);
+  const { value: debtCompounded1, updateCount: updateCount1 } =
+    await E(debtNotifier).getUpdateSince(updateCount);
   assertAmountsEqual(
     t,
     debtCompounded1,
@@ -518,9 +505,8 @@ test('short periods', async t => {
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(6n));
 
   periodUpdater.updateState(14n);
-  const { value: debtCompounded2, updateCount: updateCount2 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount1);
+  const { value: debtCompounded2, updateCount: updateCount2 } =
+    await E(debtNotifier).getUpdateSince(updateCount1);
   assertAmountsEqual(
     t,
     debtCompounded2,
@@ -529,9 +515,8 @@ test('short periods', async t => {
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(11n));
 
   periodUpdater.updateState(17n);
-  const { value: debtCompounded3, updateCount: updateCount3 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount2);
+  const { value: debtCompounded3, updateCount: updateCount3 } =
+    await E(debtNotifier).getUpdateSince(updateCount2);
   assertAmountsEqual(
     t,
     debtCompounded3,
@@ -540,9 +525,8 @@ test('short periods', async t => {
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(16n));
 
   periodUpdater.updateState(21n);
-  const { value: debtCompounded4, updateCount: updateCount4 } = await E(
-    debtNotifier,
-  ).getUpdateSince(updateCount3);
+  const { value: debtCompounded4, updateCount: updateCount4 } =
+    await E(debtNotifier).getUpdateSince(updateCount3);
   assertAmountsEqual(
     t,
     debtCompounded4,
@@ -554,9 +538,8 @@ test('short periods', async t => {
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(21n));
 
   periodUpdater.updateState(29n);
-  const { value: debtCompounded5 } = await E(debtNotifier).getUpdateSince(
-    updateCount4,
-  );
+  const { value: debtCompounded5 } =
+    await E(debtNotifier).getUpdateSince(updateCount4);
   assertAmountsEqual(
     t,
     debtCompounded5,

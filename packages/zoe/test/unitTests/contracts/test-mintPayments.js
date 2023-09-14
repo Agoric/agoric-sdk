@@ -164,9 +164,8 @@ test('zoe - mint payments with unrelated give and want', async t => {
         const tokenBrand = await E(tokenIssuer).getBrand();
 
         const tokens1000 = await AmountMath.make(tokenBrand, 1000n);
-        const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(
-          tokenPaymentP,
-        );
+        const tokenPayoutAmount =
+          await E(tokenIssuer).getAmountOf(tokenPaymentP);
 
         // Bob got 1000 tokens
         t.deepEqual(tokenPayoutAmount, tokens1000);

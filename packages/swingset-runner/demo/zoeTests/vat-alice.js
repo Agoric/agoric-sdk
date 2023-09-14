@@ -477,9 +477,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await E(bobP).doOTCDesk(bobInvitation);
 
     // Remove Inventory
-    const removeInventoryInvitation = await E(
-      creatorFacet,
-    ).makeRemoveInventoryInvitation();
+    const removeInventoryInvitation =
+      await E(creatorFacet).makeRemoveInventoryInvitation();
     // Intentionally do not remove it all
     const removeInventoryProposal = harden({
       want: { Simolean: simoleans(2n) },
@@ -488,9 +487,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       removeInventoryInvitation,
       removeInventoryProposal,
     );
-    const removeInventoryOfferResult = await E(
-      removeInventorySeat,
-    ).getOfferResult();
+    const removeInventoryOfferResult =
+      await E(removeInventorySeat).getOfferResult();
     log(removeInventoryOfferResult);
     const simoleanPayout = await E(removeInventorySeat).getPayout('Simolean');
 

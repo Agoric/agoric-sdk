@@ -33,9 +33,8 @@ const assertContractGovernance = async (
     'The alleged governed did not match the governed contract retrieved from the governor',
   );
 
-  const governorInstallationFromGoverned = await E(
-    zoe,
-  ).getInstallationForInstance(realGovernorInstance);
+  const governorInstallationFromGoverned =
+    await E(zoe).getInstallationForInstance(realGovernorInstance);
 
   assert(
     governorInstallationFromGoverned === contractGovernorInstallation,

@@ -83,9 +83,8 @@ test('upgrade vat-board', async t => {
   t.regex(thingId, /^board0[0-9]+$/);
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
-    boardVatConfig,
-  );
+  const { incarnationNumber } =
+    await EV.vat('bootstrap').upgradeVat(boardVatConfig);
   t.is(incarnationNumber, 1, 'Board vat must be upgraded');
   const board2 = await EV.vat('board').getBoard();
   t.is(board2, board, 'must get the same board reference');
@@ -114,9 +113,8 @@ test.failing('upgrade bootstrap vat', async t => {
 
   t.log('now perform the null upgrade');
 
-  const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
-    chainVatConfig,
-  );
+  const { incarnationNumber } =
+    await EV.vat('bootstrap').upgradeVat(chainVatConfig);
   t.is(incarnationNumber, 1, 'vat must be upgraded');
 });
 
@@ -204,9 +202,8 @@ test('upgrade vat-bridge', async t => {
   );
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
-    bridgeVatConfig,
-  );
+  const { incarnationNumber } =
+    await EV.vat('bootstrap').upgradeVat(bridgeVatConfig);
 
   t.is(incarnationNumber, 1, 'Bridge vat must be upgraded');
 
@@ -357,9 +354,8 @@ test('upgrade vat-bank', async t => {
   });
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
-    bankVatConfig,
-  );
+  const { incarnationNumber } =
+    await EV.vat('bootstrap').upgradeVat(bankVatConfig);
 
   t.is(incarnationNumber, 1, 'Bank vat must be upgraded');
 

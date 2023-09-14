@@ -67,12 +67,10 @@ export const buildRootObject = async () => {
       v1BundleId || Fail`bundleId must not be empty`;
       installation = await E(zoe).installBundleID(v1BundleId);
 
-      const autoRefundBundleId = await E(vatAdmin).getBundleIDByName(
-        'automaticRefund',
-      );
-      const autoRefundInstallation = await E(zoe).installBundleID(
-        autoRefundBundleId,
-      );
+      const autoRefundBundleId =
+        await E(vatAdmin).getBundleIDByName('automaticRefund');
+      const autoRefundInstallation =
+        await E(zoe).installBundleID(autoRefundBundleId);
       const { instance } = await E(zoe).startInstance(autoRefundInstallation, {
         Moola: moolaKit.issuer,
       });

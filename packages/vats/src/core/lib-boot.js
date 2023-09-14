@@ -100,9 +100,8 @@ export const makeBootstrap = (
     );
 
     const namesVat = namedVat.consume.agoricNames;
-    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
-      namesVat,
-    ).getNameHubKit();
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+      await E(namesVat).getNameHubKit();
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);

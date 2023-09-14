@@ -885,9 +885,8 @@ test('adjust balances - withdraw RUN', async t => {
   );
   t.deepEqual(debtAmount, debtLevel);
 
-  const { Minted: lentAmount2 } = await E(
-    aliceWithdrawRunSeat,
-  ).getFinalAllocation();
+  const { Minted: lentAmount2 } =
+    await E(aliceWithdrawRunSeat).getFinalAllocation();
   const proceeds2 = await E(aliceWithdrawRunSeat).getPayouts();
   t.deepEqual(lentAmount2, additionalMinted, '100 RUN');
 
@@ -1195,9 +1194,8 @@ test('overdeposit', async t => {
   debtAmount = await E(aliceVault).getCurrentDebt();
   t.deepEqual(debtAmount, run.makeEmpty());
 
-  const { Minted: lentAmount5 } = await E(
-    aliceOverpaySeat,
-  ).getFinalAllocation();
+  const { Minted: lentAmount5 } =
+    await E(aliceOverpaySeat).getFinalAllocation();
   const proceeds5 = await E(aliceOverpaySeat).getPayouts();
   t.deepEqual(lentAmount5, run.make(750n));
 
@@ -1283,9 +1281,8 @@ test('collect fees from vault', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
