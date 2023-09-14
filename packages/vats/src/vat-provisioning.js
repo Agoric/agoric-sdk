@@ -39,7 +39,7 @@ const prepareSpecializedNameAdmin = zone => {
        * @param {string} address
        * @param {string[]} [reserved]
        * @returns {Promise<{
-       *   nameHub: NameHub;
+       *   nameHub: import('./types.js').NameHub;
        *   nameAdmin: import('./types.js').MyAddressNameAdmin;
        * }>}
        */

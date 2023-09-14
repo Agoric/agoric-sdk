@@ -111,7 +111,7 @@ const provideWeak = (store, key, make) => {
 
 /**
  * @param {import('./types.js').NameHubUpdateHandler | undefined} updateCallback
- * @param {NameHub} hub
+ * @param {import('./types.js').NameHub} hub
  * @param {unknown} [_newValue]
  */
 const updated = (updateCallback, hub, _newValue = undefined) => {
@@ -216,7 +216,7 @@ export const prepareNameHubKit = zone => {
           const { keyToAdmin, keyToValue } = this.state;
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
-            /** @type {NameHub} */
+            /** @type {import('./types.js').NameHub} */
             // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
             // @ts-ignore if an admin is present, it should be a namehub
             const childHub = keyToValue.get(key);
