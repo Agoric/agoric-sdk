@@ -754,9 +754,8 @@ test('liquidate two loans', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -1078,9 +1077,8 @@ test('sell goods at auction', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
 
@@ -1291,9 +1289,8 @@ test('collect fees from loan', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -1531,9 +1528,8 @@ test('Auction sells all collateral w/shortfall', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -1716,9 +1712,8 @@ test('liquidation Margin matters', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -1842,9 +1837,8 @@ test('reinstate vault', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -2173,9 +2167,8 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     totalDebt: { value: 332n },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -2413,9 +2406,8 @@ test('Bug 7346 excess collateral to holder', async t => {
     totalDebt: { value: totalDebt },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -2861,9 +2853,8 @@ test('Bug 7784 reconstitute both', async t => {
     totalDebt: { value: 309_540n },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -3084,9 +3075,8 @@ test('Bug 7796 missing lockedPrice', async t => {
     totalDebt: { value: totalDebt },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -3331,9 +3321,8 @@ test('Bug 7851 & no bidders', async t => {
     totalDebt: { value: aliceDebt },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 

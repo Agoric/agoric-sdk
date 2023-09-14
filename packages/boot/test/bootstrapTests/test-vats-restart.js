@@ -139,9 +139,8 @@ test.serial('read metrics', async t => {
    *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
    * >}
    */
-  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
-    'vaultFactoryKit',
-  );
+  const vaultFactoryKit =
+    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
 

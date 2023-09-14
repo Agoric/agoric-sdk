@@ -95,9 +95,8 @@ test.serial('home.wallet - receive zoe invite', async t => {
     '@agoric/zoe/src/contracts/automaticRefund.js',
   );
   const installationHandle = await E(zoe).install(bundle);
-  const { creatorInvitation: invite } = await E(zoe).startInstance(
-    installationHandle,
-  );
+  const { creatorInvitation: invite } =
+    await E(zoe).startInstance(installationHandle);
 
   // Check that the wallet knows about the Zoe invite issuer and starts out
   // with a default Zoe invite issuer purse.

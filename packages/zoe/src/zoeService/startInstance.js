@@ -212,9 +212,8 @@ export const makeStartInstance = (
       async upgradeContract(contractBundleId, newPrivateArgs = undefined) {
         const { state } = this;
 
-        const newContractBundleCap = await getBundleCapByIdNow(
-          contractBundleId,
-        );
+        const newContractBundleCap =
+          await getBundleCapByIdNow(contractBundleId);
         const vatParameters = {
           contractBundleCap: newContractBundleCap,
           privateArgs: newPrivateArgs,
@@ -233,9 +232,8 @@ export const makeStartInstance = (
     privateArgs = undefined,
     instanceLabel = '',
   ) => {
-    const { installation, bundle, bundleCap } = await E(
-      startInstanceAccess,
-    ).unwrapInstallation(installationP);
+    const { installation, bundle, bundleCap } =
+      await E(startInstanceAccess).unwrapInstallation(installationP);
     // AWAIT ///
 
     const contractBundleCap = bundle || bundleCap;

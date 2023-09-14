@@ -356,9 +356,8 @@ const assertPayouts = async (
   bidValue,
   collateralValue,
 ) => {
-  const { Collateral: collateralPayout, Bid: bidPayout } = await E(
-    seat,
-  ).getPayouts();
+  const { Collateral: collateralPayout, Bid: bidPayout } =
+    await E(seat).getPayouts();
 
   if (!bidPayout) {
     bidValue === 0n ||

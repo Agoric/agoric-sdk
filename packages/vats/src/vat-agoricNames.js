@@ -62,9 +62,8 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
         const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
 
         const kindNode = await E(nameStorage).makeChildNode(kind);
-        const recorderKit = await E(vatBoard).makePublishingRecorderKit(
-          kindNode,
-        );
+        const recorderKit =
+          await E(vatBoard).makePublishingRecorderKit(kindNode);
         kindAdmin.onUpdate(recorderKit.recorder);
       }),
     );

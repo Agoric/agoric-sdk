@@ -62,9 +62,8 @@ test('null swap', async t => {
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
 
-  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
-    'agoric1nullswap',
-  );
+  const { getBalanceFor, wallet } =
+    await t.context.provideWalletAndBalances('agoric1nullswap');
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const currents = sequenceCurrents(E(wallet).getCurrentSubscriber());
 
@@ -111,9 +110,8 @@ test('want stable', async t => {
   t.log('Start the PSM to ensure brands are registered');
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
-  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
-    'agoric1wantstable',
-  );
+  const { getBalanceFor, wallet } =
+    await t.context.provideWalletAndBalances('agoric1wantstable');
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
@@ -445,9 +443,8 @@ test('agoricName invitation source errors', async t => {
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
 
-  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
-    'agoric1nullswap',
-  );
+  const { getBalanceFor, wallet } =
+    await t.context.provideWalletAndBalances('agoric1nullswap');
 
   await t.throwsAsync(
     wallet.getOffersFacet().executeOffer({

@@ -81,9 +81,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
 
       // Bob checks that the invitation is for the right covered call
-      const { value: optionValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const { value: optionValue } =
+        await E(invitationIssuer).getAmountOf(exclInvitation);
       const { customDetails } = optionValue[0];
       assert(typeof customDetails === 'object');
       installation === installations.coveredCall || Fail`wrong installation`;
@@ -137,14 +136,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         invitation,
       );
 
-      const { UnderlyingAsset, StrikePrice } = await E(zoe).getIssuers(
-        instance,
-      );
+      const { UnderlyingAsset, StrikePrice } =
+        await E(zoe).getIssuers(instance);
 
       // Bob checks that the invitation is for the right covered call
-      const optionAmounts = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const optionAmounts =
+        await E(invitationIssuer).getAmountOf(exclInvitation);
       const optionValue = optionAmounts.value;
       const { customDetails } = optionValue[0];
       assert(typeof customDetails === 'object');
@@ -214,9 +211,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         E(invitationIssuer).makeEmptyPurse(),
         invitation,
       );
-      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const { value: invitationValue } =
+        await E(invitationIssuer).getAmountOf(exclInvitation);
       installation === installations.secondPriceAuction ||
         Fail`wrong installation`;
       keyEQ(
@@ -261,9 +257,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         E(invitationIssuer).makeEmptyPurse(),
         invitation,
       );
-      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const { value: invitationValue } =
+        await E(invitationIssuer).getAmountOf(exclInvitation);
       installation === installations.atomicSwap || Fail`wrong installation`;
       assert(
         keyEQ(

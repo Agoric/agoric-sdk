@@ -85,16 +85,14 @@ test('install several', async t => {
   const fakeBundle2 = {};
 
   const installation1 = await installationStorage.installBundle(fakeBundle1);
-  const unwrapped1 = await installationStorage.unwrapInstallation(
-    installation1,
-  );
+  const unwrapped1 =
+    await installationStorage.unwrapInstallation(installation1);
   t.is(unwrapped1.installation, installation1);
   t.deepEqual(unwrapped1.bundle, fakeBundle1);
 
   const installation2 = await installationStorage.installBundle(fakeBundle2);
-  const unwrapped2 = await installationStorage.unwrapInstallation(
-    installation2,
-  );
+  const unwrapped2 =
+    await installationStorage.unwrapInstallation(installation2);
   t.is(unwrapped2.installation, installation2);
   t.deepEqual(unwrapped2.bundle, fakeBundle2);
 });
@@ -109,9 +107,8 @@ test('install same twice', async t => {
   const fakeBundle1 = {};
 
   const installation1 = await installationStorage.installBundle(fakeBundle1);
-  const unwrapped1 = await installationStorage.unwrapInstallation(
-    installation1,
-  );
+  const unwrapped1 =
+    await installationStorage.unwrapInstallation(installation1);
   t.is(unwrapped1.installation, installation1);
   t.deepEqual(unwrapped1.bundle, fakeBundle1);
 
@@ -119,9 +116,8 @@ test('install same twice', async t => {
   // but the installation is different. Zoe does not currently care about
   // duplicate bundles.
   const installation2 = await installationStorage.installBundle(fakeBundle1);
-  const unwrapped2 = await installationStorage.unwrapInstallation(
-    installation2,
-  );
+  const unwrapped2 =
+    await installationStorage.unwrapInstallation(installation2);
   t.is(unwrapped2.installation, installation2);
   t.not(installation2, installation1);
   t.deepEqual(unwrapped2.bundle, fakeBundle1);
@@ -130,15 +126,13 @@ test('install same twice', async t => {
   const installation3 = await installationStorage.installBundleID('id');
   const installation4 = await installationStorage.installBundleID('id');
   t.not(installation3, installation4);
-  const unwrapped3 = await installationStorage.unwrapInstallation(
-    installation3,
-  );
+  const unwrapped3 =
+    await installationStorage.unwrapInstallation(installation3);
   t.is(unwrapped3.installation, installation3);
   t.is(unwrapped3.bundleID, 'id');
   t.is(unwrapped3.bundleCap, bundleCaps.id);
-  const unwrapped4 = await installationStorage.unwrapInstallation(
-    installation4,
-  );
+  const unwrapped4 =
+    await installationStorage.unwrapInstallation(installation4);
   t.is(unwrapped4.installation, installation4);
   t.is(unwrapped4.bundleID, 'id');
   t.is(unwrapped4.bundleCap, bundleCaps.id);

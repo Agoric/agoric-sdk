@@ -377,9 +377,8 @@ const prepareVaultDirector = (
           // zero-based index of the manager being made
           const managerIndex = vaultManagers.length();
           const managerId = `manager${managerIndex}`;
-          const managerStorageNode = await E(managersNode).makeChildNode(
-            managerId,
-          );
+          const managerStorageNode =
+            await E(managersNode).makeChildNode(managerId);
 
           vaultParamManagers.addParamManager(
             collateralBrand,

@@ -129,9 +129,8 @@ export const buildRootObject = async () => {
 
       const v1BundleId = await E(vatAdmin).getBundleIDByName(arV1BundleName);
       v1BundleId || Fail`bundleId must not be empty`;
-      installations.assetReserveV1 = await E(zoeService).installBundleID(
-        v1BundleId,
-      );
+      installations.assetReserveV1 =
+        await E(zoeService).installBundleID(v1BundleId);
 
       installations.puppetContractGovernor = await E(
         zoeService,

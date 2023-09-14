@@ -99,16 +99,14 @@ test(`storeIssuerKeywordRecord, twice`, async t => {
     Ticket: ticketKit.issuer,
   });
 
-  const { issuers, brands } = await storeIssuerKeywordRecord(
-    issuerKeywordRecord,
-  );
+  const { issuers, brands } =
+    await storeIssuerKeywordRecord(issuerKeywordRecord);
 
   t.deepEqual(issuers, issuerKeywordRecord);
   t.deepEqual(brands, { Stable: stableKit.brand, Ticket: ticketKit.brand });
 
-  const { issuers: issuers2, brands: brands2 } = await storeIssuerKeywordRecord(
-    issuerKeywordRecord,
-  );
+  const { issuers: issuers2, brands: brands2 } =
+    await storeIssuerKeywordRecord(issuerKeywordRecord);
 
   t.deepEqual(issuers2, issuerKeywordRecord);
   t.deepEqual(brands2, {

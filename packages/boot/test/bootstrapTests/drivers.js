@@ -227,9 +227,8 @@ export const makeGovernanceDriver = async (
   const committeeMembershipId = 'committeeMembership';
 
   /** @type {ERef<import('@agoric/time/src/types.js').TimerService>} */
-  const chainTimerService = await EV.vat('bootstrap').consumeItem(
-    'chainTimerService',
-  );
+  const chainTimerService =
+    await EV.vat('bootstrap').consumeItem('chainTimerService');
 
   let invitationsAccepted = false;
 

@@ -23,9 +23,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        invitation,
-      );
+      const { value: invitationValue } =
+        await E(invitationIssuer).getAmountOf(invitation);
       installation === installations.secondPriceAuction ||
         assert.fail(X`wrong installation`);
       assert(

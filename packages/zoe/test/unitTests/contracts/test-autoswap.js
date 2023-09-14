@@ -203,9 +203,8 @@ test('autoSwap API interactions, no jig', async t => {
   );
 
   // Alice removes her liquidity
-  const aliceSecondInvitation = await E(
-    publicFacet,
-  ).makeRemoveLiquidityInvitation();
+  const aliceSecondInvitation =
+    await E(publicFacet).makeRemoveLiquidityInvitation();
   // She's not picky...
   const aliceRemoveLiquidityProposal = harden({
     give: { Liquidity: liquidity(10n) },

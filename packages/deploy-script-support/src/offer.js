@@ -114,9 +114,8 @@ export const makeOfferAndFindInvitationAmount = (
     } = config;
 
     const invitationToUse = getInvitation(invitation, partialInvitationDetails);
-    const invitationDetails = await E(zoe).getInvitationDetails(
-      invitationToUse,
-    );
+    const invitationDetails =
+      await E(zoe).getInvitationDetails(invitationToUse);
     const payments = withdrawPayments(proposal, paymentsWithPursePetnames);
 
     const seat = E(zoe).offer(invitationToUse, proposal, payments);

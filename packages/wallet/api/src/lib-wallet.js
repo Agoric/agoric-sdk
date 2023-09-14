@@ -503,9 +503,8 @@ export function makeWalletRoot({
     const alreadyDisplayed =
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
-    const augmentedInvitationDetails = await expandInvitationBrands(
-      invitationDetails,
-    );
+    const augmentedInvitationDetails =
+      await expandInvitationBrands(invitationDetails);
 
     const offerForDisplay = {
       ...offer,

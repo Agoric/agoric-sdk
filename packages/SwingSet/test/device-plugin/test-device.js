@@ -75,9 +75,8 @@ async function setupVatController(t) {
 }
 
 test.serial('plugin first time', async t => {
-  const { bridge, cycle, dump, queueThunkForKernel } = await setupVatController(
-    t,
-  );
+  const { bridge, cycle, dump, queueThunkForKernel } =
+    await setupVatController(t);
 
   void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();
