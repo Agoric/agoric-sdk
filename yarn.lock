@@ -421,11 +421,6 @@
     "@endo/zip" "^0.2.35"
     ses "^0.18.8"
 
-"@endo/env-options@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-0.1.1.tgz#568e37d9be2cbbcb39de3c0bc717a9d8e2d55e6d"
-  integrity sha512-QlY6Z2r/izom+wZI0vQtU6yQf5V/EGRMwcqacmZv6j3e9bcYGZbG0ikoa8E155XETKr551BALlJhculBvlBLpg==
-
 "@endo/env-options@^0.1.4":
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-0.1.4.tgz#e516bc3864f00b154944e444fb8996a9a0c23a45"
@@ -440,13 +435,6 @@
     requireindex "~1.1.0"
     tsutils "~3.21.0"
     typescript "~5.2.2"
-
-"@endo/eventual-send@^0.17.3":
-  version "0.17.3"
-  resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-0.17.3.tgz#f9892186a7fb7a094cb2fd0c5edc9152dd63286f"
-  integrity sha512-lr1IMxXQXtJ95t1HI02gF+oStZwhF+rb+AxGqMWS+F+xjrEWSficlRTtEq/yIr9NE3a50XLlv0rdiBCQgs+MfA==
-  dependencies:
-    "@endo/env-options" "^0.1.1"
 
 "@endo/eventual-send@^0.17.5", "@endo/eventual-send@^0.17.6":
   version "0.17.6"
@@ -465,21 +453,13 @@
     "@endo/pass-style" "^0.1.7"
     "@endo/patterns" "^0.2.6"
 
-"@endo/far@^0.2.21", "@endo/far@^0.2.22":
+"@endo/far@^0.2.21", "@endo/far@^0.2.22", "@endo/far@^0.2.3":
   version "0.2.22"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-0.2.22.tgz#fda187289a903ee3f9d6dcc5664ee7fef1994b1f"
   integrity sha512-LFOicqyHslKOSk/H5EfGOcw347ftDSwYHARPasnrG4UJOEkcU1ZG5bN/BmfONtcidB776gWZKrV/tNl4WLIlyw==
   dependencies:
     "@endo/eventual-send" "^0.17.6"
     "@endo/pass-style" "^0.1.7"
-
-"@endo/far@^0.2.3":
-  version "0.2.19"
-  resolved "https://registry.yarnpkg.com/@endo/far/-/far-0.2.19.tgz#ae2d4e4426990174e0c9397a4b92aa7543d27e89"
-  integrity sha512-vX1kL+oskiyKSpRwW3HOwtpGFto3svj35jtx5AheVXmk34i+Uehpt8uS90HHX+OtrL0+yUMLKRWHCMMzDpJafg==
-  dependencies:
-    "@endo/eventual-send" "^0.17.3"
-    "@endo/pass-style" "^0.1.4"
 
 "@endo/import-bundle@^0.4.1":
   version "0.4.2"
@@ -532,14 +512,6 @@
     "@endo/stream" "^0.3.29"
     ses "^0.18.8"
 
-"@endo/pass-style@^0.1.4":
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-0.1.4.tgz#e46cf77bfd5310fcbdd90553bdefad17a53c2fe0"
-  integrity sha512-WPhPzfrmpw5goLQz1MUQJuml2FkjhrjeSvgQe9Ml7vZb8Z3Ia0o395nctJllth3IJ9VNYT4iBMGe9UcXFwT3pg==
-  dependencies:
-    "@endo/promise-kit" "^0.2.57"
-    "@fast-check/ava" "^1.1.5"
-
 "@endo/pass-style@^0.1.6", "@endo/pass-style@^0.1.7":
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-0.1.7.tgz#ea22568e8b86fb2d1a14a5fc042374cc0d8e310b"
@@ -556,13 +528,6 @@
     "@endo/eventual-send" "^0.17.6"
     "@endo/marshal" "^0.8.9"
     "@endo/promise-kit" "^0.2.60"
-
-"@endo/promise-kit@^0.2.57":
-  version "0.2.57"
-  resolved "https://registry.yarnpkg.com/@endo/promise-kit/-/promise-kit-0.2.57.tgz#cbd81c399fd7d0a83628dd17fa7baf9185b5e4cf"
-  integrity sha512-sl0VD7OtY6stfGShyMRC99LxdLqftgCPjD1Bq6PsBkpXxCD+JMnYzm57g7XDzj5n32RlBJi8YsD37396qLjPnw==
-  dependencies:
-    ses "^0.18.5"
 
 "@endo/promise-kit@^0.2.59", "@endo/promise-kit@^0.2.60":
   version "0.2.60"
@@ -2580,14 +2545,7 @@ argparse@^2.0.1:
   resolved "https://registry.yarnpkg.com/argparse/-/argparse-2.0.1.tgz#246f50f3ca78a3240f6c997e8a9bd1eac49e4b38"
   integrity sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==
 
-aria-query@^5.1.3:
-  version "5.2.1"
-  resolved "https://registry.yarnpkg.com/aria-query/-/aria-query-5.2.1.tgz#bc285d9d654d1df121bcd0c134880d415ca67c15"
-  integrity sha512-7uFg4b+lETFgdaJyETnILsXgnnzVnkHcgRbwbPwevm5x/LmUlt3MjczMRe1zg824iBgXZNRPTBftNYyRSKLp2g==
-  dependencies:
-    dequal "^2.0.3"
-
-aria-query@^5.3.0:
+aria-query@^5.1.3, aria-query@^5.3.0:
   version "5.3.0"
   resolved "https://registry.yarnpkg.com/aria-query/-/aria-query-5.3.0.tgz#650c569e41ad90b51b3d7df5e5eed1c7549c103e"
   integrity sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==
@@ -4159,12 +4117,7 @@ eslint-config-jessie@^0.0.6:
   resolved "https://registry.yarnpkg.com/eslint-config-jessie/-/eslint-config-jessie-0.0.6.tgz#429de65983cdfcb161c62a5169605ded6130487b"
   integrity sha512-L19U3+qWJdhdUjxW7NkkB9X+343MwUB81dplbxwcbBCvrWA8WwmiWYww0g23j4Oz/Vy8KmdW1cyW5Ii6s5IJzQ==
 
-eslint-config-prettier@>=8.0.0:
-  version "8.8.0"
-  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.8.0.tgz#bfda738d412adc917fd7b038857110efe98c9348"
-  integrity sha512-wLbQiFre3tdGgpDv67NQKnJuTlcUVYHas3k+DZCc2U2BadthoEY4B7hLPvAxaqdyOGCzuLfii2fqGph10va7oA==
-
-eslint-config-prettier@^9.0.0:
+eslint-config-prettier@>=8.0.0, eslint-config-prettier@^9.0.0:
   version "9.0.0"
   resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-9.0.0.tgz#eb25485946dd0c66cd216a46232dc05451518d1f"
   integrity sha512-IcJsTkJae2S35pRsRAwoCE+925rJJStOdkKnLVgtE+tEpqU0EVVM7OqrwxqgptKdX29NUwC82I5pXsGFIgSevw==
@@ -7878,12 +7831,7 @@ prettier-plugin-jsdoc@^1.0.0:
     comment-parser "^1.3.1"
     mdast-util-from-markdown "^1.2.0"
 
-prettier@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.0.tgz#e7b19f691245a21d618c68bc54dc06122f6105ae"
-  integrity sha512-zBf5eHpwHOGPC47h0zrPyNn+eAEIdEzfywMoYn2XPi0P44Zp0tSq64rq0xAREh4auw2cJZHo9QUob+NqCQky4g==
-
-prettier@^3.0.3:
+prettier@^3.0.0, prettier@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.3.tgz#432a51f7ba422d1469096c0fdc28e235db8f9643"
   integrity sha512-L/4pUDMxcNa8R/EthV08Zt42WBO4h1rarVtK0K+QJG0X187OLo7l699jWw0GKuwzkPQ//jMFA/8Xm6Fh3J/DAg==
@@ -8325,14 +8273,7 @@ rollup-pluginutils@^2.4.1:
   dependencies:
     estree-walker "^0.6.1"
 
-rollup@^2.58.0:
-  version "2.77.0"
-  resolved "https://registry.yarnpkg.com/rollup/-/rollup-2.77.0.tgz#749eaa5ac09b6baa52acc076bc46613eddfd53f4"
-  integrity sha512-vL8xjY4yOQEw79DvyXLijhnhh+R/O9zpF/LEgkCebZFtb6ELeN9H3/2T0r8+mp+fFTBHZ5qGpOpW2ela2zRt3g==
-  optionalDependencies:
-    fsevents "~2.3.2"
-
-rollup@^2.79.1:
+rollup@^2.58.0, rollup@^2.79.1:
   version "2.79.1"
   resolved "https://registry.yarnpkg.com/rollup/-/rollup-2.79.1.tgz#bedee8faef7c9f93a2647ac0108748f497f081c7"
   integrity sha512-uKxbd0IhMZOhjAiD5oAFp7BqvkA4Dv47qpOCtaNvng4HBwdbWtdOh8f5nZNuk2rp51PMGk3bzfWu5oayNEuYnw==
@@ -8460,13 +8401,6 @@ serve-static@1.15.0:
     escape-html "~1.0.3"
     parseurl "~1.3.3"
     send "0.18.0"
-
-ses@^0.18.5:
-  version "0.18.5"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.18.5.tgz#fc7a88c48dd292dd7253ce060104df5f1a36470d"
-  integrity sha512-paLV2JHUqGGpbLn+V4LM9g20WVzAn9jLU22Bx5/18fo6h6nF8SwhC+3cAMYxzmHmkAzplY5lkg1ms3xSkmSzdw==
-  dependencies:
-    "@endo/env-options" "^0.1.1"
 
 ses@^0.18.8:
   version "0.18.8"
