@@ -160,7 +160,7 @@ const trace = makeTracer('SmrtWlt');
  * TODO: consider moving to nameHub.js?
  *
  * @param {unknown} target - passable Key
- * @param {ERef<NameHub>} nameHub
+ * @param {ERef<import('@agoric/vats').NameHub>} nameHub
  */
 const namesOf = async (target, nameHub) => {
   const entries = await E(nameHub).entries();
@@ -447,7 +447,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * to facilitate a transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
+         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
