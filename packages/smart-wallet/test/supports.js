@@ -76,9 +76,11 @@ const makeFakeBridgeManager = () =>
           return E(handler).fromBridge(obj);
         },
         initHandler(newHandler) {
+          !handler || Fail`Handler already set`;
           handler = newHandler;
         },
         setHandler(newHandler) {
+          !!handler || Fail`Handler not set`;
           handler = newHandler;
         },
       });
