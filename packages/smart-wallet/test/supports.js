@@ -80,7 +80,7 @@ const makeFakeBridgeManager = () =>
           handler = newHandler;
         },
         setHandler(newHandler) {
-          handler || Fail`Handler not set`;
+          !!handler || Fail`Handler not set`;
           handler = newHandler;
         },
       });
