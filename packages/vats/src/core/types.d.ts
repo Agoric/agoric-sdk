@@ -355,15 +355,26 @@ type ChainBootstrapSpaceT = {
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
+  /** Utilities to support debugging */
   diagnostics: {
+    /**
+     * Intended to save arguments in durable storage for disaster recovery.
+     *
+     * Powerful. Can overwrite privateArgs storage for any instance.
+     */
     savePrivateArgs: (instance: Instance, privateArgs: unknown) => void;
   };
+  /** Super powerful ability to mint IST. ("License to print money") */
   feeMintAccess: FeeMintAccess;
   highPrioritySendersManager:
     | import('@agoric/internal/src/priority-senders.js').PrioritySendersManager
     | undefined
     | null;
   initialSupply: Payment<'nat'>;
+  /**
+   * Very powerful. Has the private args for critical contract instances such as
+   * Vault Factory. ONLY FOR DISASTER RECOVERY
+   */
   instancePrivateArgs: Map<Instance, unknown>;
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types').NamesByAddressAdmin;
@@ -378,13 +389,21 @@ type ChainBootstrapSpaceT = {
     | import('../types.js').ScopedBridgeManager
     | undefined;
   storageBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
-  contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
+  /**
+   * Convienence function for starting a contract (ungoverned) and saving its
+   * facets (including adminFacet)
+   */
   startUpgradable: StartUpgradable;
+  /** kits stored by startUpgradable */
+  contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
+  /** Convience function for starting contracts governed by the Econ Committee */
+  startGovernedUpgradable: StartGovernedUpgradable;
+  /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<
     Instance,
     GovernanceFacetKit<any> & { label: string }
   >;
-  startGovernedUpgradable: StartGovernedUpgradable;
+  /** Used only for testing. Should not appear in any production proposals. */
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>;
   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult;
