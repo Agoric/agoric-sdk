@@ -1,4 +1,3 @@
-// @ts-check
 /** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -8,20 +7,19 @@ import { promises as fsAmbientPromises } from 'fs';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeWalletFactoryDriver } from './drivers.ts';
+import { TestFn } from 'ava';
+import { BridgeHandler } from '@agoric/vats';
+import type { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
+import { makeWalletFactoryDriver } from './drivers.ts';
 
 const { Fail } = assert;
 
-/** @file Bootstrap test of restarting (almost) all vats */
-
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
-/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  /** @type {SwingsetTestKit} */
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
     configSpecifier: PLATFORM_CONFIG,
   });
@@ -64,12 +62,8 @@ export const makeTestContext = async t => {
     buildProposal,
   };
 };
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
- */
-const test = anyTest;
+
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
@@ -121,10 +115,9 @@ test.serial('run restart-vats proposal', async t => {
   };
   t.log({ bridgeMessage });
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
-  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
+  const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+    'bootstrap',
+  ).consumeItem('coreEvalBridgeHandler');
   await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
 
   t.log('restart-vats proposal executed');
@@ -134,13 +127,9 @@ test.serial('run restart-vats proposal', async t => {
 test.serial('read metrics', async t => {
   const { EV } = t.context.runUtils;
 
-  /**
-   * @type {Awaited<
-   *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
-   * >}
-   */
-  const vaultFactoryKit =
-    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  const vaultFactoryKit: Awaited<
+    EconomyBootstrapSpace['consume']['vaultFactoryKit']
+  > = await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
 
