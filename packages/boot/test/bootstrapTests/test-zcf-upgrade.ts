@@ -1,4 +1,3 @@
-// @ts-check
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -10,6 +9,8 @@ import processAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { TestFn } from 'ava';
+import { BridgeHandler } from '@agoric/vats';
 import { makeZoeDriver } from './drivers.ts';
 import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
 
@@ -17,8 +18,6 @@ const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const ZCF_PROBE_SRC = './zcfProbe.js';
-
-/** @typedef {Awaited<ReturnType<typeof makeSwingsetTestKit>>} SwingsetTestKit */
 
 /**
  * @file Bootstrap test of upgrading ZCF to support atomicRearrange internally.
@@ -42,7 +41,6 @@ const ZCF_PROBE_SRC = './zcfProbe.js';
 
 export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
-  /** @type {SwingsetTestKit} */
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
@@ -83,12 +81,7 @@ export const makeZoeTestContext = async t => {
   };
 };
 
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeZoeTestContext>>
- * >}
- */
-const test = anyTest;
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeZoeTestContext>>>;
 
 test.before(async t => {
   t.context = await makeZoeTestContext(t);
@@ -116,10 +109,9 @@ test('run restart-vats proposal', async t => {
     };
 
     t.log({ bridgeMessage });
-    /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
-    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-      'coreEvalBridgeHandler',
-    );
+    const coreEvalBridgeHandler: ERef<BridgeHandler> = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
   };
   const source = `${dirname}/${ZCF_PROBE_SRC}`;
