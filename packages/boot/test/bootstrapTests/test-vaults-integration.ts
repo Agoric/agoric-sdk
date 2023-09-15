@@ -1,5 +1,3 @@
-// @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /** @file Bootstrap test integration vaults with smart-wallet */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -13,15 +11,10 @@ import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import type { TestFn } from 'ava';
+import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 import { makeWalletFactoryDriver } from './drivers.ts';
 import { makeSwingsetTestKit } from './supports.ts';
-
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeDefaultTestContext>>
- * >}
- */
-const test = anyTest;
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
@@ -65,6 +58,10 @@ const makeDefaultTestContext = async t => {
 
   return { ...swingsetTestKit, agoricNamesRemotes, walletFactoryDriver };
 };
+
+const test = anyTest as TestFn<
+  Awaited<ReturnType<typeof makeDefaultTestContext>>
+>;
 
 test.before(async t => {
   t.context = await makeDefaultTestContext(t);
@@ -321,8 +318,7 @@ test('propose change to auction governance param', async t => {
     StartFrequency: { timerBrand, relValue: 5n * 60n },
   };
 
-  /** @type {import('@agoric/inter-protocol/src/econCommitteeCharter.js').ParamChangesOfferArgs} */
-  const offerArgs = {
+  const offerArgs: ParamChangesOfferArgs = {
     deadline: 1000n,
     params,
     instance: auctioneer,
