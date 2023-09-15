@@ -216,3 +216,7 @@ export const makeLiquidationTestContext = async t => {
     walletFactoryDriver,
   };
 };
+
+export type LiquidationTestContext = Awaited<
+  ReturnType<typeof makeLiquidationTestContext>
+>;

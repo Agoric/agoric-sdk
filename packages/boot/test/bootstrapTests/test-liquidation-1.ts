@@ -8,16 +8,13 @@ import type { ExecutionContext, TestFn } from 'ava';
 import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import { BridgeHandler } from '@agoric/vats';
 import {
+  LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
 } from './liquidation.ts';
 
-type LiquidationContext = Awaited<
-  ReturnType<typeof makeLiquidationTestContext>
->;
-
-const test = anyTest as TestFn<LiquidationContext>;
+const test = anyTest as TestFn<LiquidationTestContext>;
 
 //#region Product spec
 const setup = {
@@ -127,7 +124,7 @@ test.after.always(t => {
 
 // Reference: Flow 1 from https://github.com/Agoric/agoric-sdk/issues/7123
 const checkFlow1 = async (
-  t: ExecutionContext<LiquidationContext>,
+  t: ExecutionContext<LiquidationTestContext>,
   {
     collateralBrandKey,
     managerIndex,
