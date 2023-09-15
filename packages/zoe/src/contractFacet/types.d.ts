@@ -33,12 +33,33 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    */
   assertUniqueKeyword: (keyword: Keyword) => void;
   /**
-   * - save an issuer to ZCF and Zoe
-   * and get the AmountMath and brand synchronously accessible after
+   * Informs Zoe about an issuer and returns a promise for acknowledging
+   * when the issuer is added and ready.
+   *
+   * @returns the AmountMath and brand synchronously accessible after
    * saving
    */
-  saveIssuer: SaveIssuer;
-  makeInvitation: MakeInvitation;
+  saveIssuer: (
+    issuerP: ERef<Issuer>,
+    keyword: Keyword,
+  ) => Promise<IssuerRecord<any>>;
+
+  /**
+   * Make a credible Zoe invitation for a particular smart contract
+   * indicated by the `instance` in the details of the invitation. Zoe
+   * also puts the `installation` and a unique `handle` in the details
+   * of the invitation. The contract must provide a `description` for
+   * the invitation and should include whatever information is necessary
+   * for a potential buyer of the invitation to know what they are
+   * getting in the `customDetails`. `customDetails` will be
+   * placed in the details of the invitation.
+   */
+  makeInvitation: <Result>(
+    offerHandler: OfferHandler<Result>,
+    description: string,
+    customDetails?: object,
+    proposalShape?: Pattern,
+  ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
@@ -93,30 +114,7 @@ type TransferPart = [
   fromAmounts?: AmountKeywordRecord,
   toAmounts?: AmountKeywordRecord,
 ];
-/**
- * Informs Zoe about an issuer and returns a promise for acknowledging
- * when the issuer is added and ready.
- */
-type SaveIssuer = (
-  issuerP: ERef<Issuer>,
-  keyword: Keyword,
-) => Promise<IssuerRecord<any>>;
-/**
- * Make a credible Zoe invitation for a particular smart contract
- * indicated by the `instance` in the details of the invitation. Zoe
- * also puts the `installation` and a unique `handle` in the details
- * of the invitation. The contract must provide a `description` for
- * the invitation and should include whatever information is necessary
- * for a potential buyer of the invitation to know what they are
- * getting in the `customDetails`. `customDetails` will be
- * placed in the details of the invitation.
- */
-type MakeInvitation = <Result>(
-  offerHandler: OfferHandler<Result>,
-  description: string,
-  customDetails?: object,
-  proposalShape?: Pattern,
-) => Promise<Invitation<R, A>>;
+
 type ZCFRegisterFeeMint = (
   keyword: Keyword,
   allegedFeeMintAccess: FeeMintAccess,
