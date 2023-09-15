@@ -73,7 +73,8 @@
       "test/**/test-*.ts"
     ],
     "nodeArguments": [
-      "--loader=tsx"
+      "--loader=tsx",
+      "--no-warnings"
     ],
     "require": [
       "@endo/init/debug.js"
