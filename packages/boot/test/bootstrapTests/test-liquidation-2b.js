@@ -10,7 +10,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeLiquidationTestContext, scale6 } from './liquidation.js';
+import { makeLiquidationTestContext, scale6 } from './liquidation.ts';
 
 /**
  * @type {import('ava').TestFn<

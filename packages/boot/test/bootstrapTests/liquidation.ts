@@ -3,7 +3,10 @@ import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,
 } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import {
+  AgoricNamesRemotes,
+  makeAgoricNamesRemotesFromFakeStorage,
+} from '@agoric/vats/tools/board-utils.js';
 import {
   makeGovernanceDriver,
   makePriceFeedDriver,
@@ -39,10 +42,8 @@ export const makeLiquidationTestContext = async t => {
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
+  const agoricNamesRemotes: AgoricNamesRemotes =
+    makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage);
   const refreshAgoricNamesRemotes = () => {
     Object.assign(
       agoricNamesRemotes,
@@ -72,24 +73,22 @@ export const makeLiquidationTestContext = async t => {
   );
   console.timeLog('DefaultTestContext', 'governanceDriver');
 
-  /**
-   * @type {Record<
-   *   string,
-   *   Awaited<ReturnType<typeof makePriceFeedDriver>>
-   * >}
-   */
-  const priceFeedDrivers = {};
+  const priceFeedDrivers = {} as Record<
+    string,
+    Awaited<ReturnType<typeof makePriceFeedDriver>>
+  >;
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
 
   console.timeEnd('DefaultTestContext');
 
-  /**
-   * @param {object} opts
-   * @param {string} opts.collateralBrandKey
-   * @param {number} opts.managerIndex
-   */
-  const setupStartingState = async ({ collateralBrandKey, managerIndex }) => {
+  const setupStartingState = async ({
+    collateralBrandKey,
+    managerIndex,
+  }: {
+    collateralBrandKey: string;
+    managerIndex: number;
+  }) => {
     const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
     const { advanceTimeBy, readLatest } = swingsetTestKit;
 
@@ -192,12 +191,11 @@ export const makeLiquidationTestContext = async t => {
   };
 
   const check = {
-    /**
-     * @param {number} managerIndex
-     * @param {number} vaultIndex
-     * @param {Record<string, any>} partial
-     */
-    vaultNotification(managerIndex, vaultIndex, partial) {
+    vaultNotification(
+      managerIndex: number,
+      vaultIndex: number,
+      partial: Record<string, any>,
+    ) {
       const { readLatest } = swingsetTestKit;
 
       const notification = readLatest(
