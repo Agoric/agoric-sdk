@@ -198,6 +198,10 @@ type WellKnownName = {
   uiConfig: 'VaultFactory';
 };
 
+type ContractInstallationPromises<StartFns> = {
+  [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
+};
+
 type WellKnownSpaces = {
   issuer: {
     produce: Record<WellKnownName['issuer'], Producer<Issuer>>;
@@ -225,62 +229,22 @@ type WellKnownSpaces = {
     consume: Record<
       WellKnownName['installation'],
       Promise<Installation<unknown>>
-    > & {
-      auctioneer: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start
-        >
-      >;
-      centralSupply: Promise<
-        Installation<typeof import('@agoric/vats/src/centralSupply.js').start>
-      >;
-      committee: Promise<
-        Installation<
-          typeof import('@agoric/governance/src/committee.js')['start']
-        >
-      >;
-      contractGovernor: Promise<
-        Installation<
-          typeof import('@agoric/governance/src/contractGovernor.js')['start']
-        >
-      >;
-      econCommitteeCharter: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js')['start']
-        >
-      >;
-      feeDistributor: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/feeDistributor.js').start
-        >
-      >;
-      mintHolder: Promise<
-        Installation<typeof import('@agoric/vats/src/mintHolder.js').start>
-      >;
-      psm: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/psm/psm.js')['start']
-        >
-      >;
-      provisionPool: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/provisionPool.js')['start']
-        >
-      >;
-      reserve: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js')['start']
-        >
-      >;
-      VaultFactory: Promise<
-        Installation<
-          typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js')['start']
-        >
-      >;
-      walletFactory: Promise<
-        Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>
-      >;
-    };
+    > &
+      ContractInstallationPromises<{
+        auctioneer: typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start;
+        centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
+        committee: typeof import('@agoric/governance/src/committee.js').start;
+        contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
+        econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
+        feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
+        mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
+        psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
+        provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
+        reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+        VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
+        // no typeof because walletFactory is exporting `start` as a type
+        walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
+      }>;
   };
   instance: {
     produce: Record<WellKnownName['instance'], Producer<Instance>>;
