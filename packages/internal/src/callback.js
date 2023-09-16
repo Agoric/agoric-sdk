@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { isObject, isPassableSymbol } from '@endo/marshal';
+import { getInterfaceMethodKeys } from '@endo/patterns';
 
 const { Fail, quote: q } = assert;
 
@@ -314,9 +315,7 @@ harden(prepareAttenuator);
  * @param {string} [opts.tag]
  */
 export const prepareGuardedAttenuator = (zone, interfaceGuard, opts = {}) => {
-  // TODO: Handle symbolMethodGuards too?
-  const { methodGuards } = interfaceGuard;
-  const methodNames = ownKeys(methodGuards);
+  const methodNames = getInterfaceMethodKeys(interfaceGuard);
   const makeAttenuator = prepareAttenuator(zone, methodNames, {
     ...opts,
     interfaceGuard,

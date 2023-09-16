@@ -13,6 +13,7 @@ import {
 
 import '@agoric/ertp/exported.js';
 import '@agoric/notifier/exported.js';
+import { getInterfaceGuardPayload } from '@endo/patterns';
 
 const { Fail } = assert;
 
@@ -48,7 +49,7 @@ export const makeVirtualPurseKitIKit = (
   });
 
   const DepositFacetI = M.interface('DepositFacet', {
-    receive: VirtualPurseI.methodGuards.deposit,
+    receive: getInterfaceGuardPayload(VirtualPurseI).methodGuards.deposit,
   });
 
   const RetainRedeemI = M.interface('RetainRedeem', {
@@ -57,8 +58,8 @@ export const makeVirtualPurseKitIKit = (
   });
 
   const UtilsI = M.interface('Utils', {
-    retain: RetainRedeemI.methodGuards.retain,
-    redeem: RetainRedeemI.methodGuards.redeem,
+    retain: getInterfaceGuardPayload(RetainRedeemI).methodGuards.retain,
+    redeem: getInterfaceGuardPayload(RetainRedeemI).methodGuards.redeem,
     recoverableClaim: M.callWhen(M.await(PaymentShape))
       .optional(amountShape)
       .returns(PaymentShape),

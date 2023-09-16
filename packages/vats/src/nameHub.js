@@ -3,7 +3,7 @@
 import { assert, NonNullish } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { M } from '@agoric/store';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
 
 import './types.js';
 import {
@@ -48,7 +48,7 @@ export const NameHubIKit = harden({
 /** @param {import('@agoric/zone').Zone} zone */
 export const prepareMixinMyAddress = zone => {
   const MixinI = M.interface('MyAddressNameAdmin', {
-    ...NameHubIKit.nameAdmin.methodGuards,
+    ...getInterfaceGuardPayload(NameHubIKit.nameAdmin).methodGuards,
     getMyAddress: M.call().returns(M.string()),
   });
   /**

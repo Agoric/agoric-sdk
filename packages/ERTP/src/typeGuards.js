@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { M, matches } from '@agoric/store';
+import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
 
 export const BrandShape = M.remotable('Brand');
 export const IssuerShape = M.remotable('Issuer');
@@ -212,7 +212,7 @@ export const makeIssuerInterfaces = (
   });
 
   const DepositFacetI = M.interface('DepositFacet', {
-    receive: PurseI.methodGuards.deposit,
+    receive: getInterfaceGuardPayload(PurseI).methodGuards.deposit,
   });
 
   const PurseIKit = harden({

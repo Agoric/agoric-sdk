@@ -2,7 +2,7 @@
 
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';
-import { M } from '@endo/patterns';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import './types-ambient.js';
@@ -46,14 +46,16 @@ export const ForkableAsyncIterableIteratorShape = M.interface(
 );
 
 export const IterableEachTopicI = M.interface('IterableEachTopic', {
-  subscribeAfter: SubscriberI.methodGuards.subscribeAfter,
+  subscribeAfter:
+    getInterfaceGuardPayload(SubscriberI).methodGuards.subscribeAfter,
   [Symbol.asyncIterator]: M.call().returns(
     M.remotable('ForkableAsyncIterableIterator'),
   ),
 });
 
 export const IterableLatestTopicI = M.interface('IterableLatestTopic', {
-  getUpdateSince: SubscriberI.methodGuards.getUpdateSince,
+  getUpdateSince:
+    getInterfaceGuardPayload(SubscriberI).methodGuards.getUpdateSince,
   [Symbol.asyncIterator]: M.call().returns(
     M.remotable('ForkableAsyncIterableIterator'),
   ),
