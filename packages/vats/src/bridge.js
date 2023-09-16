@@ -3,7 +3,7 @@
 import { M } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { E } from '@endo/far';
-import './core/types.js';
+import './core/types-ambient.js';
 
 const { Fail, details: X } = assert;
 

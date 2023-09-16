@@ -341,7 +341,7 @@ type ChainBootstrapSpaceT = {
    */
   instancePrivateArgs: Map<Instance, unknown>;
   namesByAddress: import('../types.js').NameHub;
-  namesByAddressAdmin: import('../types').NamesByAddressAdmin;
+  namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
@@ -370,7 +370,7 @@ type ChainBootstrapSpaceT = {
   /** Used only for testing. Should not appear in any production proposals. */
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>;
   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
-  walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult;
+  walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: unknown;
   vatStore: import('./utils.js').VatStore;
   zoe: ZoeService;
@@ -437,7 +437,7 @@ type RemoteIssuerKit = {
   brand: Brand;
 };
 type AgoricNamesVat = ERef<
-  ReturnType<typeof import('../vat-agoricNames').buildRootObject>
+  ReturnType<typeof import('../vat-agoricNames.js').buildRootObject>
 >;
 type BankVat = ERef<
   ReturnType<typeof import('../vat-bank.js').buildRootObject>

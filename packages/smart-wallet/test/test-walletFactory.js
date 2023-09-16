@@ -11,7 +11,7 @@ import {
   topicPath,
 } from './supports.js';
 
-import '@agoric/vats/src/core/types.js';
+import '@agoric/vats/src/core/types-ambient.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;
