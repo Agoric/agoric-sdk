@@ -90,7 +90,7 @@ export const publishAgoricBrandsDisplayInfo = async ({
     await E(node).setValue(JSON.stringify(aux));
   };
 
-  /** @type {ERef<NameHub>} */
+  /** @type {ERef<import('@agoric/vats').NameHub>} */
   const brandHub = E(agoricNames).lookup('brand');
   const brands = await E(brandHub).values();
   // tolerate failure; in particular, for the timer brand

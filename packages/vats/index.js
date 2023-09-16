@@ -1,7 +1,7 @@
 // @ts-check
 // Ambient types
 import '@agoric/zoe/exported.js';
-import './src/core/types.js';
+import './src/core/types-ambient.js';
 
 // eslint-disable-next-line import/export -- no named exports
 export * from './src/types.js';

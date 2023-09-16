@@ -6,7 +6,7 @@ import { E } from '@endo/far';
 import path from 'path';
 import { makeMockTestSpace } from './supports.js';
 
-import '@agoric/vats/src/core/types.js';
+import '@agoric/vats/src/core/types-ambient.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;

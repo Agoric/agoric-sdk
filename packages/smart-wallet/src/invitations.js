@@ -59,7 +59,7 @@ const MAX_PIPE_LENGTH = 2;
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<NameHub>} agoricNames
+ * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
  * @param {Purse<'set'>} invitationsPurse
  * @param {(fromOfferId: string) => import('./types').InvitationMakers} getInvitationContinuation

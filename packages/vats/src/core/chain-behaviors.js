@@ -363,6 +363,7 @@ export const makeChainStorage = async ({
   if (!bridgeManager) {
     console.warn('Cannot support chainStorage without an actual chain.');
     chainStorageP.resolve(null);
+    // @ts-expect-error expects value or undefined
     storageBridgeManagerP.resolve(null);
     return;
   }

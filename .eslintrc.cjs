@@ -164,5 +164,19 @@ module.exports = {
         '@jessie.js/safe-await-separator': 'off',
       },
     },
+    {
+      // Types files have no promises to lint and that linter chokes on the .d.ts twin.
+      // Maybe due to https://github.com/typescript-eslint/typescript-eslint/issues/7435
+      files: ['types*.js'],
+      rules: {
+        // Disabled to prevent:
+        //         Error: Error while loading rule '@typescript-eslint/no-floating-promises': You have used a rule which requires parserServices to be generated. You must therefore provide a value for the "parserOptions.project" property for @typescript-eslint/parser.
+        // Occurred while linting ~agoric-sdk/packages/vats/src/core/types.js
+        //     at Object.getParserServices (~agoric-sdk/node_modules/@typescript-eslint/utils/dist/eslint-utils/getParserServices.js:24:15)
+        //     at create (~agoric-sdk/node_modules/@typescript-eslint/eslint-plugin/dist/rules/no-floating-promises.js:77:31)
+        //     at Object.create (~agoric-sdk/node_modules/@typescript-eslint/utils/dist/eslint-utils/RuleCreator.js:38:20)
+        '@typescript-eslint/no-floating-promises': 'off',
+      },
+    },
   ],
 };

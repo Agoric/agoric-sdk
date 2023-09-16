@@ -79,7 +79,7 @@
  * @property {InstanceStateGetTerms} getTerms
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
- * @property {SaveIssuer} saveIssuer
+ * @property {ZCF['saveIssuer']} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {GetInstanceRecord} getInstanceRecord

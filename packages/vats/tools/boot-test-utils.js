@@ -35,7 +35,6 @@ export const vatRoots = {
 export const noop = () => {};
 
 /** @type {DProxy} */
-// @ts-expect-error cast
 export const mockDProxy = d => d;
 
 export const makeMock = log =>
