@@ -1,5 +1,6 @@
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
 // called "slots" are references, but the word "slot" suggests something into

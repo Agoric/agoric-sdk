@@ -1,6 +1,7 @@
 // @ts-check
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
 

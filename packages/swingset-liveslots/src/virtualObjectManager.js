@@ -1,7 +1,8 @@
 /* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';

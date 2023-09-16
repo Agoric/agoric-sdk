@@ -3,7 +3,7 @@ import test from 'ava';
 
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeResolve, makeReject } from './util.js';

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
 

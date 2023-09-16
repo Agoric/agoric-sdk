@@ -1,6 +1,6 @@
 // @ts-check
 import { Far } from '@endo/far';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 
 import { parse } from '@agoric/network';
 

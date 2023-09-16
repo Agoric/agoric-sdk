@@ -1,7 +1,7 @@
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
 

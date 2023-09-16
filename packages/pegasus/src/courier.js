@@ -1,5 +1,5 @@
 // @ts-check
-import { details as X } from '@agoric/assert';
+import { redacted as X } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
 import { WalletName } from '@agoric/internal';

@@ -1,5 +1,5 @@
 import { Nat } from '@endo/nat';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
 import { kunser } from '../../lib/kmarshal.js';

@@ -1,5 +1,6 @@
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 
 // Object/promise references (in remote messages) contain a three-tuple of
 // (type, allocator flag, index). The allocator flag inside an inbound

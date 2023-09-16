@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { makeXorShift128 } from './xorshift128.js';
 
 const p = console.log;

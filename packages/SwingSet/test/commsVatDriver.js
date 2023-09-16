@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';

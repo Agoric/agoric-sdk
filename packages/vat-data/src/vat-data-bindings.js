@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { provideLazy } from '@agoric/store';
 
 /** @type {import('@agoric/swingset-liveslots').VatData} */

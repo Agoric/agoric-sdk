@@ -1,8 +1,7 @@
 // @ts-check
 
-import { Fail } from '@agoric/assert';
+import { Fail, assertAllDefined } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 // XXX support other decimal places

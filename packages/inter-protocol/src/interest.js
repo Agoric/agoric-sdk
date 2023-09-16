@@ -7,7 +7,7 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';
 
 /**

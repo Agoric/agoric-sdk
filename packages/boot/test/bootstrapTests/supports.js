@@ -7,7 +7,7 @@ import { basename } from 'path';
 import { inspect } from 'util';
 import childProcessAmbient from 'child_process';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';

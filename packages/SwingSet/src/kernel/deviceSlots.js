@@ -1,6 +1,7 @@
 import { Remotable, makeMarshal } from '@endo/marshal';
 import { passStyleOf } from '@endo/far';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import {
   insistVatType,
   makeVatSlot,

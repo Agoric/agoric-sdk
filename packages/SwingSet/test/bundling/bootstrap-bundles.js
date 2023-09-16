@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { Far, E } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 

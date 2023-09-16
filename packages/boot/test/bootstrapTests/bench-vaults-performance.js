@@ -6,7 +6,7 @@ import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 

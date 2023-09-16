@@ -1,5 +1,6 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 

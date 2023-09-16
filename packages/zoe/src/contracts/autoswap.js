@@ -1,5 +1,5 @@
 import { Far } from '@endo/marshal';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { AmountMath, isNatValue } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'

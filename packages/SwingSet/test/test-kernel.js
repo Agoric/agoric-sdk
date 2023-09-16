@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { makeVatSlot } from '../src/lib/parseVatSlots.js';

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { passStyleOf } from '@endo/far';
 import { kunser, krefOf } from './kmarshal.js';
 

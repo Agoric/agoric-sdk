@@ -1,6 +1,6 @@
 import { Far, E as defaultE } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';

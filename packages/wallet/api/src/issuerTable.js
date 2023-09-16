@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 import { makeScalarWeakMapStore } from '@agoric/store';

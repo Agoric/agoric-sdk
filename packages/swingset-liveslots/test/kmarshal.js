@@ -1,5 +1,5 @@
 import { Far, makeMarshal, passStyleOf } from '@endo/marshal';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 
 // Simple wrapper for serializing and unserializing marshalled values inside the
 // kernel, where we don't actually want to use clists nor actually allocate real

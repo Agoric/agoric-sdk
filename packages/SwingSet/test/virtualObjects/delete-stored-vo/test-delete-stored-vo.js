@@ -3,7 +3,7 @@
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
 import {

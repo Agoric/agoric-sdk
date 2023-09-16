@@ -1,6 +1,5 @@
-import { Fail } from '@agoric/assert';
+import { Fail, makeTracer } from '@agoric/internal';
 import { AmountMath, AmountShape, IssuerShape } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {

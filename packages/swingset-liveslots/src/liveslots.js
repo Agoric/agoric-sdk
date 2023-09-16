@@ -5,7 +5,8 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';

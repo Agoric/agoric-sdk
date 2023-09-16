@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { Far } from '@endo/far';
 
 function sanitize(data) {

@@ -1,5 +1,4 @@
-import { Fail } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+import { Fail, makeTracer } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 
 const trace = makeTracer('OrKit', true);

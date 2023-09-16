@@ -1,5 +1,6 @@
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 
 // Object/promise references (in the kernel) contain a two-tuple of (type,
 // index). All object references point to entries in the kernel Object

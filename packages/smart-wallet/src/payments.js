@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { E } from '@endo/far';
 

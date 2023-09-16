@@ -426,6 +426,13 @@
   resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-0.1.4.tgz#e516bc3864f00b154944e444fb8996a9a0c23a45"
   integrity sha512-Ol8ct0aW8VK1ZaqntnUJfrYT59P6Xn36XPbHzkqQhsYkpudKDn5ILYEwGmSO/Ff+XJjv/pReNI0lhOyyrDa9mg==
 
+"@endo/errors@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@endo/errors/-/errors-0.1.1.tgz#438c4bd0cfa3948f6212c410aed9d62e91736029"
+  integrity sha512-IuoE8eeQvE8ZoCT9Jte7MPjHmkwU8VyLE0u9wD0/2l/jm5bFT7tywUQxmVPuf8c5/Nx7jeEJyE8kcQJ+KSxcYw==
+  dependencies:
+    ses "^0.18.8"
+
 "@endo/eslint-plugin@^0.5.1":
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/@endo/eslint-plugin/-/eslint-plugin-0.5.2.tgz#835d22e9ff17d9935f7f565e50a21ef07aa92ca2"

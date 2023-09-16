@@ -28,7 +28,6 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/network": "^0.1.0",
@@ -39,6 +38,7 @@
     "@agoric/zoe": "^0.26.2",
     "@endo/bundle-source": "^2.7.0",
     "@endo/captp": "^3.1.4",
+    "@endo/errors": "^0.1.1",
     "@endo/far": "^0.2.21",
     "@endo/init": "^0.5.59",
     "@endo/nat": "^4.1.30",

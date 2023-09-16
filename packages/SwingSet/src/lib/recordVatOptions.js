@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { makeWorkerOptions } from './workerOptions.js';
 
 export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {

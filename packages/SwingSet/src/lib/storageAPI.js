@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 
 /**
  * Assert function to ensure that an object implements the StorageAPI

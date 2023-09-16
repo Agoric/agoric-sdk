@@ -2,7 +2,8 @@
 
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';
 import { kser, kunser } from '../lib/kmarshal.js';

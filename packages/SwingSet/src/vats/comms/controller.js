@@ -1,5 +1,6 @@
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { kser, kunser, kslot, krefOf } from '../../lib/kmarshal.js';
 
 // deliverToController() is used for local vats which want to talk to us as a

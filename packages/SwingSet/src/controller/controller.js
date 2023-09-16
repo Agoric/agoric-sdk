@@ -10,7 +10,8 @@ import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 

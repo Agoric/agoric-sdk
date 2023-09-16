@@ -1,6 +1,6 @@
 import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/far';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;

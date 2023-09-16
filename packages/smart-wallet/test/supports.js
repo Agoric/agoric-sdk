@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';

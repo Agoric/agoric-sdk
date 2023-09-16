@@ -1,5 +1,4 @@
-import { Fail } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+import { Fail, makeTracer } from '@agoric/internal';
 import { prepareExoClassKit } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { setupApiGovernance } from './contractGovernance/governApi.js';

@@ -1,6 +1,6 @@
 import './types.js';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 
 import { assertProposalShape } from '../../contractSupport/index.js';

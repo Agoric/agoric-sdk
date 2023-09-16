@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';

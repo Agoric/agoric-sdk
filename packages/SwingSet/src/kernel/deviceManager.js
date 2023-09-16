@@ -1,4 +1,5 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 

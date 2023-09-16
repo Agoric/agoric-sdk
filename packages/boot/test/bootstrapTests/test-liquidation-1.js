@@ -2,7 +2,7 @@
 /** @file Bootstrap test of liquidation across multiple collaterals */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import process from 'process';
 import {

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';

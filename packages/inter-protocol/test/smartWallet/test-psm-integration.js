@@ -4,7 +4,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import '@agoric/vats/src/core/types-ambient.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { Stable } from '@agoric/internal/src/tokens.js';

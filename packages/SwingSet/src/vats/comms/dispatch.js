@@ -1,4 +1,5 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 
 /* eslint-disable jsdoc/require-returns-check */
 /**

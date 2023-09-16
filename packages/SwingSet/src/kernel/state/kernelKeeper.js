@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 import { Nat, isNat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';

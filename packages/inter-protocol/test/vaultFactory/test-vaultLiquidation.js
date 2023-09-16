@@ -2,7 +2,7 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer, objectMap, NonNullish } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
@@ -16,7 +16,6 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { NonNullish } from '@agoric/assert';
 
 import {
   SECONDS_PER_DAY as ONE_DAY,

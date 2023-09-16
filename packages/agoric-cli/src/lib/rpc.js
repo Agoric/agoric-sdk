@@ -1,7 +1,7 @@
 // @ts-check
 /* global Buffer, fetch, process */
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   makeBoardRemote,

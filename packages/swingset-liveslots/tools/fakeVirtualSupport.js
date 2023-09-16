@@ -1,7 +1,7 @@
 /* global globalThis */
 /* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 
 import { makeVirtualReferenceManager } from '../src/virtualReferences.js';

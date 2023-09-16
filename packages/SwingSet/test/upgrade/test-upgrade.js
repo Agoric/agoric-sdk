@@ -3,7 +3,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
 import { objectMap } from '@agoric/internal';
 import { initSwingStore } from '@agoric/swing-store';

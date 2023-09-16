@@ -1,7 +1,7 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer, objectMap, NonNullish } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
@@ -13,7 +13,6 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import { NonNullish } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import {
   setupReserve,

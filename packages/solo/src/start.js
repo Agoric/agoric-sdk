@@ -16,7 +16,8 @@ import anylogger from 'anylogger';
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,

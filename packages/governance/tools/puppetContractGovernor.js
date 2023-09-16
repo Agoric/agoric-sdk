@@ -4,7 +4,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 // eslint-disable-next-line no-unused-vars
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 // eslint-disable-next-line no-unused-vars -- used by typedef
 import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';

@@ -3,7 +3,7 @@ import path from 'path';
 import parseArgs from 'minimist';
 import process from 'process';
 import { spawnSync } from 'child_process';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 
 import anylogger from 'anylogger';
 

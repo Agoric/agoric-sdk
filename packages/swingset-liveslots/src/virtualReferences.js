@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { parseVatSlot } from './parseVatSlots.js';
 import {

@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { Nat, isNat } from '@endo/nat';
 
 export const stringToNat = s => {

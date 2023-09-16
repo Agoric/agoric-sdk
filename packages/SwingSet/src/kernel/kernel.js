@@ -1,4 +1,5 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';

@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';

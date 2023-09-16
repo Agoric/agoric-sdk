@@ -1,6 +1,7 @@
 // import { spawn } from 'child_process'; // not from Compartment
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';

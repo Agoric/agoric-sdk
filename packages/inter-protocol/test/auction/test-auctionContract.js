@@ -4,7 +4,11 @@ import '@agoric/zoe/exported.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  NonNullish,
+} from '@agoric/internal';
 import { subscribeEach } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
@@ -18,7 +22,6 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
-import { NonNullish } from '@agoric/assert';
 
 import {
   setupReserve,

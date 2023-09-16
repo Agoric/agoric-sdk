@@ -2,7 +2,8 @@
 import fs from 'fs';
 import path from 'path';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';

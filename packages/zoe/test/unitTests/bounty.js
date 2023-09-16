@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, redacted as X } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 
 /**

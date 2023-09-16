@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 import { parseVatSlot, insistVatType } from '../../lib/parseVatSlots.js';
 import { parseLocalSlot } from './parseLocalSlots.js';
 import { cdebug } from './cdebug.js';

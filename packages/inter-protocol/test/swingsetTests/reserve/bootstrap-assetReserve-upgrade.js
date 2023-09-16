@@ -1,9 +1,13 @@
 // @ts-check
 
-import { Fail, NonNullish } from '@agoric/assert';
+import {
+  Fail,
+  NonNullish,
+  deeplyFulfilledObject,
+  makeTracer,
+} from '@agoric/internal';
 import { makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';

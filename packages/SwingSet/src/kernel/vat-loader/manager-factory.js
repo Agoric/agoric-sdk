@@ -1,4 +1,5 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert } from '@endo/errors';
+import { Fail } from '@agoric/internal';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';

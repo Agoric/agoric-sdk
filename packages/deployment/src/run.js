@@ -1,6 +1,6 @@
 import { Writable } from 'stream';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@agoric/internal';
 
 const { freeze } = Object;
 
