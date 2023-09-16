@@ -224,7 +224,7 @@ export const InstanceStorageManagerIKit = harden({
       InstanceHandleShape,
       M.remotable('instanceAdmin'),
     ).returns(M.promise()),
-    deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
+    deleteInstanceAdmin: M.call(InstanceAdminShape).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
       .optional(M.record(), M.pattern())
       .returns(PaymentShape),

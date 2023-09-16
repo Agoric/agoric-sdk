@@ -9,7 +9,8 @@ import {
   prepareDurablePublishKit,
   subscribeEach,
 } from '@agoric/notifier';
-import { M, provideLazy } from '@agoric/store';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { provideLazy } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E, Far } from '@endo/far';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
@@ -26,8 +27,10 @@ const { Fail } = assert;
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
 
 const BridgeChannelI = M.interface('BridgeChannel', {
-  fromBridge: BridgeScopedManagerI.methodGuards.fromBridge,
-  toBridge: BridgeScopedManagerI.methodGuards.toBridge,
+  fromBridge:
+    getInterfaceGuardPayload(BridgeScopedManagerI).methodGuards.fromBridge,
+  toBridge:
+    getInterfaceGuardPayload(BridgeScopedManagerI).methodGuards.toBridge,
 });
 
 /**

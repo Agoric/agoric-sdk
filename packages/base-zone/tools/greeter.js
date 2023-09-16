@@ -1,4 +1,4 @@
-import { M } from '@endo/patterns';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
 
 /**
  * @template {{}} T
@@ -33,8 +33,8 @@ export const adminFacet = {
 };
 
 export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
-  ...GreeterI.methodGuards,
-  ...GreeterAdminI.methodGuards,
+  ...getInterfaceGuardPayload(GreeterI).methodGuards,
+  ...getInterfaceGuardPayload(GreeterAdminI).methodGuards,
 });
 
 /**
@@ -44,6 +44,7 @@ export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
  */
 export const prepareGreeterSingleton = (zone, label, nick) => {
   const myThis = Object.freeze({ state: { nick } });
+  // @ts-expect-error Until https://github.com/endojs/endo/pull/1771
   return zone.exo(label, GreeterWithAdminI, {
     ...bindAllMethodsTo(greetFacet, myThis),
     ...bindAllMethodsTo(adminFacet, myThis),
@@ -54,6 +55,7 @@ export const prepareGreeterSingleton = (zone, label, nick) => {
  * @param {import('../src/types.js').Zone} zone
  */
 export const prepareGreeter = zone =>
+  // @ts-expect-error Until https://github.com/endojs/endo/pull/1771
   zone.exoClass('Greeter', GreeterWithAdminI, nick => ({ nick }), {
     ...greetFacet,
     ...adminFacet,
