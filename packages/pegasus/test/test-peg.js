@@ -84,50 +84,52 @@ async function testRemotePeg(t) {
   /**
    * Pretend we're Gaia.
    *
-   * @type {import('@agoric/network/src.js').Connection?}
+   * @type {Connection}
    */
   let gaiaConnection;
-  E(portP).addListener(
-    Far('acceptor', {
-      async onAccept(_p, _localAddr, _remoteAddr) {
-        return Far('handler', {
-          async onOpen(c) {
-            gaiaConnection = c;
-          },
-          async onReceive(_c, packetBytes) {
-            const packet = JSON.parse(packetBytes);
-            if (packet.memo) {
-              t.deepEqual(
-                packet,
-                {
-                  amount: '100000000000000000001',
-                  denom: 'portdef/chanabc/uatom',
-                  memo: 'I am a memo!',
-                  receiver: 'markaccount',
-                  sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
-                },
-                'expected transfer packet',
-              );
-              return JSON.stringify({ result: 'AQ==' });
-            } else {
-              t.deepEqual(
-                packet,
-                {
-                  amount: '100000000000000000001',
-                  denom: 'portdef/chanabc/uatom',
-                  memo: '',
-                  receiver: 'markaccount',
-                  sender: 'pegasus',
-                },
-                'expected transfer packet',
-              );
-              return JSON.stringify({ result: 'AQ==' });
-            }
-          },
-        });
-      },
-    }),
-  );
+  E(portP)
+    .addListener(
+      Far('acceptor', {
+        async onAccept(_p, _localAddr, _remoteAddr) {
+          return Far('handler', {
+            async onOpen(c) {
+              gaiaConnection = c;
+            },
+            async onReceive(_c, packetBytes) {
+              const packet = JSON.parse(packetBytes);
+              if (packet.memo) {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: 'I am a memo!',
+                    receiver: 'markaccount',
+                    sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
+                  },
+                  'expected transfer packet',
+                );
+                return JSON.stringify({ result: 'AQ==' });
+              } else {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: '',
+                    receiver: 'markaccount',
+                    sender: 'pegasus',
+                  },
+                  'expected transfer packet',
+                );
+                return JSON.stringify({ result: 'AQ==' });
+              }
+            },
+          });
+        },
+      }),
+    )
+    .catch(e => t.fail(e));
 
   // Pretend we're Agoric.
   const { handler: chandler, subscription: connectionSubscription } =
@@ -225,7 +227,9 @@ async function testRemotePeg(t) {
 
   // Wait for the packet to go through.
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
-  E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
+  E(pegConnActions)
+    .rejectTransfersWaitingForPegRemote('umuon')
+    .catch(e => t.fail(e));
 
   const sendAckData3 = await sendAckData3P;
   const sendAck3 = JSON.parse(sendAckData3);
