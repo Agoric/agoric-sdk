@@ -235,3 +235,4 @@ export const makeBootstrap = (
     //#endregion
   });
 };
+/** @typedef {Awaited<ReturnType<typeof makeBootstrap>>} BootstrapRootObject */

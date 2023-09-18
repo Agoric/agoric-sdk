@@ -182,7 +182,9 @@ const manifest2graph = manifest => {
       level1(fnName, name, part.consume || {}, true);
     };
     doPart('space', permit);
-    spaces.forEach(s => doPart(s, permit[s]));
+    for (const s of spaces) {
+      doPart(s, permit[s]);
+    }
 
     if ('runBehaviors' in permit) {
       throw Error('not impl');

@@ -1,4 +1,4 @@
-// @ts-check
+/* eslint-disable jsdoc/require-param-type, @jessie.js/safe-await-separator */
 /**
  * @file Bootstrap test integration vaults with smart-wallet. The tests in this
  *   file are NOT independent; a single `test.before()` handler creates shared
@@ -12,22 +12,22 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from './supports.js';
-import { makeWalletFactoryDriver } from './drivers.js';
+import { ExecutionContext, TestFn } from 'ava';
+import { FakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { makeWalletFactoryDriver } from './drivers.ts';
+import { makeSwingsetTestKit } from './supports.ts';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
 
-/**
- * @param {import('ava').ExecutionContext} t
- * @param {object} [options]
- * @param {number} [options.incarnation]
- * @param {boolean} [options.logTiming]
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
- */
 const makeDefaultTestContext = async (
-  t,
-  { incarnation = 1, logTiming = true, storage = undefined } = {},
+  t: ExecutionContext,
+  {
+    incarnation = 1,
+    logTiming = true,
+    storage = undefined as FakeStorageKit | undefined,
+  } = {},
 ) => {
   logTiming && console.time('DefaultTestContext');
   const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
@@ -79,12 +79,10 @@ const makeDefaultTestContext = async (
 /**
  * Shared context can be updated by re-bootstrapping, and is placed one property
  * deep so such changes propagate to later tests.
- *
- * @type {import('ava').TestFn<{
- *   shared: Awaited<ReturnType<typeof makeDefaultTestContext>>;
- * }>}
  */
-const test = anyTest;
+const test = anyTest as TestFn<{
+  shared: Awaited<ReturnType<typeof makeDefaultTestContext>>;
+}>;
 test.before(async t => {
   const shared = await makeDefaultTestContext(t);
   t.context = { shared };
@@ -286,13 +284,9 @@ test.serial('open vault', async t => {
 test.serial('restart vaultFactory', async t => {
   const { runUtils, readCollateralMetrics } = t.context.shared;
   const { EV } = runUtils;
-  /**
-   * @type {Awaited<
-   *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
-   * >}
-   */
-  const vaultFactoryKit =
-    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  const vaultFactoryKit = await (EV.vat('bootstrap').consumeItem(
+    'vaultFactoryKit',
+  ) as EconomyBootstrapSpace['consume']['vaultFactoryKit']);
 
   // @ts-expect-error cast XXX missing from type
   const { privateArgs } = vaultFactoryKit;
@@ -316,13 +310,9 @@ test.serial('restart vaultFactory', async t => {
 
 test.serial('restart contractGovernor', async t => {
   const { EV } = t.context.shared.runUtils;
-  /**
-   * @type {Awaited<
-   *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace['consume']['vaultFactoryKit']
-   * >}
-   */
-  const vaultFactoryKit =
-    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  const vaultFactoryKit = await (EV.vat('bootstrap').consumeItem(
+    'vaultFactoryKit',
+  ) as EconomyBootstrapSpace['consume']['vaultFactoryKit']);
 
   const { governorAdminFacet } = vaultFactoryKit;
   // has no privateArgs of its own. the privateArgs.governed is only for the
@@ -487,12 +477,13 @@ test.serial(
     // by inspection, we see that it is:
     // [ "v1.vs.vc.1.sBootstrap Powers", "{\"body\":\"#\\\"$0.Alleged: mapStore\\\"\",\"slots\":[\"o+d6/5\"]}",]
 
-    /** @type {MapStore} */
-    const powerStore = await EV.vat('bootstrap').consumeItem('powerStore');
+    const powerStore: MapStore =
+      await EV.vat('bootstrap').consumeItem('powerStore');
 
-    /** @type {(n: string) => Promise<[any, any][]>} */
-    const getStoreSnapshot = async name =>
-      EV.vat('bootstrap').snapshotStore(await EV(powerStore).get(name));
+    const getStoreSnapshot = async (name: string) =>
+      EV.vat('bootstrap').snapshotStore(
+        await EV(powerStore).get(name),
+      ) as Promise<[any, any][]>;
 
     const contractKits = await getStoreSnapshot('contractKits');
     // TODO refactor the entries to go into governedContractKits too (so the latter is sufficient to test)
@@ -503,11 +494,14 @@ test.serial(
     /**
      * Map refs to objects and find a vat containing one of them.
      *
-     * @param {Record<string, unknown>} refs
-     * @param {string[]} exclude don't report hits from these vatIDs
+     * @param refs
+     * @param exclude don't report hits from these vatIDs
      */
-    const findVat = async (refs, exclude = [zoeVat]) => {
-      const mapped = {};
+    const findVat = async (
+      refs: Record<string, unknown>,
+      exclude = [zoeVat],
+    ) => {
+      const mapped = {} as Record<string, any>;
       for await (const [prop, presence] of Object.entries(refs)) {
         if (!presence) {
           continue;

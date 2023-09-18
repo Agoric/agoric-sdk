@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "checkJs": true,
     "maxNodeModuleJsDepth": 2,
@@ -10,6 +11,7 @@
     "scripts/**/*.js",
     "src/**/*.js",
     "test/**/*.js",
+    "test/**/*.ts",
     "tools/**/*.js",
   ],
 }

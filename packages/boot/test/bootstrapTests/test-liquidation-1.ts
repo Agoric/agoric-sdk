@@ -1,25 +1,23 @@
-// @ts-check
 /** @file Bootstrap test of liquidation across multiple collaterals */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import process from 'process';
+import type { ExecutionContext, TestFn } from 'ava';
+import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import { BridgeHandler } from '@agoric/vats';
 import {
+  LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
-} from './liquidation.js';
+} from './liquidation.ts';
 
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
- * >}
- */
-const test = anyTest;
+const test = anyTest as TestFn<LiquidationTestContext>;
 
 //#region Product spec
-const setup = /** @type {const} */ ({
+const setup = {
   vaults: [
     {
       atom: 15,
@@ -61,9 +59,9 @@ const setup = /** @type {const} */ ({
       debt: 309.54,
     },
   },
-});
+} as const;
 
-const outcome = /** @type {const} */ ({
+const outcome = {
   bids: [
     {
       payouts: {
@@ -114,7 +112,7 @@ const outcome = /** @type {const} */ ({
       locked: 2.642185,
     },
   ],
-});
+} as const;
 //#endregion
 
 test.before(async t => {
@@ -125,21 +123,17 @@ test.after.always(t => {
 });
 
 // Reference: Flow 1 from https://github.com/Agoric/agoric-sdk/issues/7123
-/**
- * @param {import('ava').ExecutionContext<
- *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
- * >} t
- * @param {{ collateralBrandKey: string; managerIndex: number }} case
- * @param {any} _expected
- */
 const checkFlow1 = async (
-  t,
-  { collateralBrandKey, managerIndex },
-  _expected,
+  t: ExecutionContext<LiquidationTestContext>,
+  {
+    collateralBrandKey,
+    managerIndex,
+  }: { collateralBrandKey: string; managerIndex: number },
+  _expected: any,
 ) => {
   // fail if there are any unhandled rejections
-  process.on('unhandledRejection', error => {
-    t.fail(/** @type {Error} */ (error).message);
+  process.on('unhandledRejection', (error: Error) => {
+    t.fail(error.message);
   });
 
   const {
@@ -253,8 +247,9 @@ const checkFlow1 = async (
     await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
     // check nothing liquidating yet
-    /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} */
-    const liveSchedule = readLatest('published.auction.schedule');
+    const liveSchedule: ScheduleNotification = readLatest(
+      'published.auction.schedule',
+    );
     t.is(liveSchedule.activeStartTime, null);
     t.like(readLatest(metricsPath), {
       numActiveVaults: setup.vaults.length,
@@ -340,15 +335,9 @@ const checkFlow1 = async (
     console.log(collateralBrandKey, 'step 10 of 10');
     // continuing after now would start a new auction
     {
-      /**
-       * @type {Record<
-       *   string,
-       *   import('@agoric/time/src/types.js').TimestampRecord
-       * >}
-       */
       const { nextDescendingStepTime, nextStartTime } = readLatest(
         'published.auction.schedule',
-      );
+      ) as Record<string, import('@agoric/time/src/types.js').TimestampRecord>;
       t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
     }
 
@@ -421,10 +410,9 @@ test.serial('add STARS collateral', async t => {
   t.log({ bridgeMessage });
 
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
-  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
+  const coreEvalBridgeHandler: ERef<BridgeHandler> = await EV.vat(
+    'bootstrap',
+  ).consumeItem('coreEvalBridgeHandler');
   await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
 
   t.context.refreshAgoricNamesRemotes();

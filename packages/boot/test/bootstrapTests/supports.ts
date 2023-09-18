@@ -1,43 +1,40 @@
-// @ts-check
+/* eslint-disable jsdoc/require-param-type, jsdoc/require-param, @jessie.js/safe-await-separator */
 /* global process */
 
+import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename } from 'path';
 import { inspect } from 'util';
-import childProcessAmbient from 'child_process';
 
-import { Fail } from '@agoric/assert';
+import { Fail, NonNullish } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
+import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  FakeStorageKit,
+  makeFakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { E } from '@endo/eventual-send';
-import { makeQueue } from '@endo/stream';
-import { TimeMath } from '@agoric/time';
+import { TimeMath, Timestamp } from '@agoric/time';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import { makeQueue } from '@endo/stream';
 
-// to retain for ESlint, used by typedef
-E;
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot';
+import type { ExecutionContext } from 'ava';
+import type { E } from '@endo/eventual-send';
 
 const sink = () => {};
 
 const trace = makeTracer('BSTSupport', false);
 
-/**
- * @typedef {Awaited<
- *   ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>
- * >} BootstrapRootObject
- */
-
-/** @type {{ [P in keyof BootstrapRootObject]: P }} */
-export const bootstrapMethods = {
+export const bootstrapMethods: { [P in keyof BootstrapRootObject]: P } = {
   bootstrap: 'bootstrap',
   consumeItem: 'consumeItem',
   produceItem: 'produceItem',
@@ -49,50 +46,41 @@ export const bootstrapMethods = {
   snapshotStore: 'snapshotStore',
 };
 
-/**
- * @template {PropertyKey} K
- * @template V
- * @param {K[]} keys
- * @param {(key: K, i: number) => V} valueMaker
- */
-const keysToObject = (keys, valueMaker) => {
+const keysToObject = <K extends PropertyKey, V>(
+  keys: K[],
+  valueMaker: (key: K, i: number) => V,
+) => {
   return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
 };
 
 /**
  * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
  * strings.
- *
- * @param {{
- *   deepEqual: (a: unknown, b: unknown, message?: string) => void;
- * }} t
- * @param {PropertyKey[]} a
- * @param {PropertyKey[]} b
- * @param {string} [message]
  */
-export const keyArrayEqual = (t, a, b, message) => {
+export const keyArrayEqual = (
+  t: ExecutionContext,
+  a: PropertyKey[],
+  b: PropertyKey[],
+  message?: string,
+) => {
   const aobj = keysToObject(a, () => 1);
   const bobj = keysToObject(b, () => 1);
   return t.deepEqual(aobj, bobj, message);
 };
 
-/**
- * @param {import('@agoric/swingset-vat/src/controller/controller').SwingsetController} controller
- * @param {(..._: any[]) => any} log
- */
-export const makeRunUtils = (controller, log = (..._) => {}) => {
+export const makeRunUtils = (
+  controller: SwingsetController,
+  log = (..._) => {},
+) => {
   let cranksRun = 0;
 
   const mutex = makeQueue();
 
   mutex.put(controller.run());
 
-  /**
-   * @template {() => any} T
-   * @param {T} thunk
-   * @returns {Promise<ReturnType<T>>}
-   */
-  const runThunk = async thunk => {
+  const runThunk = async <T extends () => any>(
+    thunk: T,
+  ): Promise<ReturnType<T>> => {
     try {
       // this promise for the last lock may fail
       await mutex.get();
@@ -111,7 +99,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     return result;
   };
 
-  const runMethod = async (method, args = []) => {
+  const runMethod = async (method: string, args: object[] = []) => {
     log('runMethod', method, args, 'at', cranksRun);
     assert(Array.isArray(args));
 
@@ -132,15 +120,13 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     }
   };
 
-  /**
-   * @type {typeof E & {
-   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
-   *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-   *   rawBoot: Record<string, (...args: any) => Promise<any>>;
-   * }}
-   */
-  // @ts-expect-error cast, approximate
-  const EV = presence =>
+  type EVProxy = typeof E & {
+    sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+    vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
+    rawBoot: Record<string, (...args: any) => Promise<any>>;
+  };
+  // @ts-expect-error XXX casting
+  const EV: EVProxy = presence =>
     new Proxy(harden({}), {
       get: (_t, methodName, _rx) =>
         harden((...args) =>
@@ -151,6 +137,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     new Proxy(harden({}), {
       get: (_t, methodName, _rx) =>
         harden((...args) => {
+          assert.string(methodName);
           if (name === 'meta') {
             return runMethod(methodName, args);
           }
@@ -159,6 +146,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     });
   EV.rawBoot = new Proxy(harden({}), {
     get: (_t, methodName, _rx) =>
+      // @ts-expect-error FIXME runMethod takes string but proxy allows symbol
       harden((...args) => runMethod(methodName, args)),
   });
   // @ts-expect-error xxx
@@ -174,7 +162,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
             ]),
       },
     );
-  // @ts-expect-error xxx
+  // @ts-expect-error 'get' is a read-only property
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
@@ -183,6 +171,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   return harden({ runThunk, EV });
 };
+export type RunUtils = ReturnType<typeof makeRunUtils>;
 
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
@@ -191,10 +180,9 @@ export const getNodeTestVaultsConfig = async (
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
   );
-  const config = /** @type {SwingSetConfig & { coreProposals?: any[] }} */ (
-    await loadSwingsetConfigFile(fullPath)
+  const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
+    await loadSwingsetConfigFile(fullPath),
   );
-  assert(config);
 
   // speed up (e.g. 80s vs 133s with xs-worker in production config)
   config.defaultManagerType = 'local';
@@ -218,12 +206,12 @@ export const getNodeTestVaultsConfig = async (
   return testConfigPath;
 };
 
-/**
- * @param {object} powers
- * @param {Pick<typeof import('node:child_process'), 'execFileSync'>} powers.childProcess
- * @param {typeof import('node:fs/promises')} powers.fs
- */
-export const makeProposalExtractor = ({ childProcess, fs }) => {
+interface Powers {
+  childProcess: Pick<typeof import('node:child_process'), 'execFileSync'>;
+  fs: typeof import('node:fs/promises');
+}
+
+export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
 
@@ -240,8 +228,7 @@ export const makeProposalExtractor = ({ childProcess, fs }) => {
     harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
 
   // XXX parses the output to find the files but could write them to a path that can be traversed
-  /** @param {string} txt */
-  const parseProposalParts = txt => {
+  const parseProposalParts = (txt: string) => {
     const evals = [
       ...txt.matchAll(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/g),
     ].map(m => {
@@ -260,16 +247,14 @@ export const makeProposalExtractor = ({ childProcess, fs }) => {
     return { evals, bundles };
   };
 
-  /**
-   * @param {object} options
-   * @param {string} options.package
-   * @param {string} options.packageScriptName
-   * @param {Record<string, string>} [options.env]
-   */
   const buildAndExtract = async ({
     package: packageName,
     packageScriptName,
     env = {},
+  }: {
+    package: string;
+    packageScriptName: string;
+    env?: Record<string, string>;
   }) => {
     const scriptEnv = Object.assign(Object.create(process.env), env);
     // XXX use '@agoric/inter-protocol'?
@@ -300,7 +285,7 @@ export const makeProposalExtractor = ({ childProcess, fs }) => {
     const bundlesP = Promise.all(
       built.bundles.map(
         async bundleFile =>
-          /** @type {Promise<EndoZipBase64Bundle>} */ (loadJSON(bundleFile)),
+          loadJSON(bundleFile) as Promise<EndoZipBase64Bundle>,
       ),
     );
     return Promise.all([evalsP, bundlesP]).then(([evals, bundles]) => ({
@@ -323,16 +308,19 @@ harden(makeProposalExtractor);
  * a timeout error). Use t.after.always(shutdown), because the normal t.after()
  * hooks are not run if a test fails.
  *
- * @param {import('ava').ExecutionContext} t
- * @param {string} bundleDir directory to write bundles and config to
- * @param {object} [options]
- * @param {string} [options.configSpecifier] bootstrap config specifier
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} [options.storage]
+ * @param t
+ * @param bundleDir directory to write bundles and config to
+ * @param [options]
+ * @param [options.configSpecifier] bootstrap config specifier
+ * @param [options.storage]
  */
 export const makeSwingsetTestKit = async (
-  t,
-  bundleDir = 'bundles',
-  { configSpecifier, storage = makeFakeStorageKit('bootstrapTests') } = {},
+  t: ExecutionContext,
+  bundleDir: string = 'bundles',
+  {
+    configSpecifier,
+    storage = makeFakeStorageKit('bootstrapTests'),
+  }: { configSpecifier?: string; storage?: FakeStorageKit } = {},
 ) => {
   console.time('makeSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
@@ -351,11 +339,8 @@ export const makeSwingsetTestKit = async (
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
-   *
-   * @param {string} bridgeId
-   * @param {any} obj
    */
-  const bridgeOutbound = (bridgeId, obj) => {
+  const bridgeOutbound = (bridgeId: string, obj: any) => {
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(
@@ -442,8 +427,7 @@ export const makeSwingsetTestKit = async (
   console.timeEnd('makeSwingsetTestKit');
 
   let currentTime = 0n;
-  /** @param {Timestamp} targetTime */
-  const jumpTimeTo = targetTime => {
+  const jumpTimeTo = (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
     targetTime >= currentTime ||
       Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
@@ -451,8 +435,7 @@ export const makeSwingsetTestKit = async (
     trace('jumpTimeTo', currentTime);
     return runUtils.runThunk(() => timer.poll(currentTime));
   };
-  /** @param {Timestamp} targetTime */
-  const advanceTimeTo = async targetTime => {
+  const advanceTimeTo = async (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
     targetTime >= currentTime ||
       Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
@@ -462,11 +445,10 @@ export const makeSwingsetTestKit = async (
       await runUtils.runThunk(() => timer.poll(currentTime));
     }
   };
-  /**
-   * @param {number} n
-   * @param {'seconds' | 'minutes' | 'hours' | 'days'} unit
-   */
-  const advanceTimeBy = (n, unit) => {
+  const advanceTimeBy = (
+    n: number,
+    unit: 'seconds' | 'minutes' | 'hours' | 'days',
+  ) => {
     const multiplier = {
       seconds: 1,
       minutes: 60,
@@ -495,3 +477,4 @@ export const makeSwingsetTestKit = async (
     timer,
   };
 };
+export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;

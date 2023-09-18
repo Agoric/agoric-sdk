@@ -10,20 +10,21 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeLiquidationTestContext, scale6 } from './liquidation.js';
+import type { TestFn } from 'ava';
+import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import {
+  LiquidationTestContext,
+  makeLiquidationTestContext,
+  scale6,
+} from './liquidation.ts';
 
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeLiquidationTestContext>>
- * >}
- */
-const test = anyTest;
+const test = anyTest as TestFn<LiquidationTestContext>;
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
 
 //#region Product spec
-const setup = /** @type {const} */ ({
+const setup = {
   vaults: [
     {
       atom: 15,
@@ -61,9 +62,9 @@ const setup = /** @type {const} */ ({
       debt: 309.54,
     },
   },
-});
+} as const;
 
-const outcome = /** @type {const} */ ({
+const outcome = {
   bids: [
     {
       payouts: {
@@ -109,7 +110,7 @@ const outcome = /** @type {const} */ ({
       locked: 0,
     },
   ],
-});
+} as const;
 //#endregion
 
 test.before(async t => {
@@ -205,8 +206,9 @@ test.serial('scenario: Flow 2b', async t => {
     await priceFeedDrivers.ATOM.setPrice(9.99);
 
     // check nothing liquidating yet
-    /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} */
-    const liveSchedule = readLatest('published.auction.schedule');
+    const liveSchedule: ScheduleNotification = readLatest(
+      'published.auction.schedule',
+    );
     t.is(liveSchedule.activeStartTime, null);
     t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
       numActiveVaults: setup.vaults.length,
