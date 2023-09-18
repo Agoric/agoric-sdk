@@ -73,7 +73,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * Make the paymentLedger, the source of truth for the balances of payments. All
  * minting and transfer authority originates here.
  *
- * @template {AssetKind} K
+ * @template {AssetKind} [K=AssetKind]
  * @param {Baggage} issuerBaggage
  * @param {string} name
  * @param {K} assetKind
@@ -90,7 +90,10 @@ export const preparePaymentLedger = (
   elementShape,
   optShutdownWithFailure = undefined,
 ) => {
-  /** @type {Brand<K>} */
+  /**
+   * @template {AssetKind} [K=AssetKind]
+   * @type {Brand<K>}
+   */
   // @ts-expect-error XXX callWhen
   const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
@@ -324,7 +327,10 @@ export const preparePaymentLedger = (
     }),
   );
 
-  /** @type {Issuer<K>} */
+  /**
+   * @template {AssetKind} [K=AssetKind]
+   * @type {Issuer<K>}
+   */
   // @ts-expect-error cast due to callWhen discrepancy
   const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
@@ -380,13 +386,17 @@ export const preparePaymentLedger = (
    * `makeIssuerKit` drops it on the floor, it can still be recovered in an
    * emergency upgrade.
    *
+   * @template {AssetKind} [K=AssetKind]
    * @type {Purse<K>}
    */
   const mintRecoveryPurse = provide(issuerBaggage, 'mintRecoveryPurse', () =>
     makeEmptyPurse(),
   );
 
-  /** @type {Mint<K>} */
+  /**
+   * @template {AssetKind} [K=AssetKind]
+   * @type {Mint<K>}
+   */
   const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;
