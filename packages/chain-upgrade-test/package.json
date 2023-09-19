@@ -11,5 +11,8 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk/tree/HEAD/golang/cosmos",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "commander": "^11.0.0"
+  }
 }
