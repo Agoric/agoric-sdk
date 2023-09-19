@@ -6,6 +6,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { setUpGovernedContract } from '../../tools/puppetGovernance.js';
@@ -156,4 +157,21 @@ test('call API directly', async t => {
     await E(E(governorFacets.creatorFacet).getPublicFacet()).getApiCalled(),
     1,
   );
+});
+
+test('add issuerKeywordRecord', async t => {
+  const zoe = await makeZoeForTest();
+  const issuerKit = makeIssuerKit('Food', AssetKind.COPY_BAG);
+  const timer = buildManualTimer(t.log);
+  const { governorFacets } = await setUpGovernedContract(
+    zoe,
+    E(zoe).install(governedBundleP),
+    timer,
+    governedTerms,
+    {},
+    { Food: issuerKit.issuer },
+  );
+
+  const instance = await E(governorFacets.creatorFacet).getInstance();
+  t.deepEqual(await E(zoe).getIssuers(instance), { Food: issuerKit.issuer });
 });
