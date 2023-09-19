@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"strings"
-
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -18,14 +16,36 @@ const (
 	QueryChildren = "children"
 )
 
-// NewQuerier is the module level router for state queries
+// getVstorageEntryPath validates that a request URL path represents a valid
+// entry path with no extra data, and returns the path of that vstorage entry.
+func getVstorageEntryPath(urlPathSegments []string) (string, error) {
+	if len(urlPathSegments) != 1 || types.ValidatePath(urlPathSegments[0]) != nil {
+		return "", sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid vstorage entry path")
+	}
+	return urlPathSegments[0], nil
+}
+
+// NewQuerier returns the function for handling queries routed to this module.
+// It performs its own routing based on the first slash-separated URL path
+// segment (e.g., URL path `/data/foo.bar` is a request for the value associated
+// with vstorage path "foo.bar", and `/children/foo.bar` is a request for the
+// child path segments immediately underneath vstorage path "foo.bar" which may
+// be used to extend it to a vstorage path such as "foo.bar.baz").
 func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
-		switch path[0] {
+	return func(ctx sdk.Context, urlPathSegments []string, req abci.RequestQuery) (res []byte, err error) {
+		switch urlPathSegments[0] {
 		case QueryData:
-			return queryData(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
+			entryPath, entryPathErr := getVstorageEntryPath(urlPathSegments[1:])
+			if entryPathErr != nil {
+				return nil, entryPathErr
+			}
+			return queryData(ctx, entryPath, req, keeper, legacyQuerierCdc)
 		case QueryChildren:
-			return queryChildren(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
+			entryPath, entryPathErr := getVstorageEntryPath(urlPathSegments[1:])
+			if entryPathErr != nil {
+				return nil, entryPathErr
+			}
+			return queryChildren(ctx, entryPath, req, keeper, legacyQuerierCdc)
 		default:
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown vstorage query endpoint")
 		}
@@ -36,12 +56,12 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	entry := keeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get vstorage path")
+		return nil, sdkerrors.Wrap(sdkerrors.ErrNotFound, "no data for vstorage path")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Data{Value: entry.StringValue()})
-	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+	bz, marshalErr := codec.MarshalJSONIndent(legacyQuerierCdc, types.Data{Value: entry.StringValue()})
+	if marshalErr != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, marshalErr.Error())
 	}
 
 	return bz, nil

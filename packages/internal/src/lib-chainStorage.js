@@ -126,6 +126,7 @@ harden(unmarshalFromVstorage);
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity
 // (and future possibility of e.g. escaping) we currently limit to
 // ASCII alphanumeric plus underscore and dash.
+// Should remain consistent with golang/cosmos/x/vstorage/types/path_keys.go
 const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
 /** @type {(name: string) => void} */
