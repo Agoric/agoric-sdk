@@ -5,7 +5,9 @@ ARG BOOTSTRAP_MODE=main
 # TODO different naming scheme for upgrade handler (in app.go) and the image name
 
 ###
-# Kinds of layers:
+# This file uses [multi-stage builds](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#use-multi-stage-builds).
+
+# Kinds of stages:
 # START             ag0, start of the chain
 # UPGRADE+TEST      legacy layer type in which the chain upgrade and its tests are comingled
 # UPGRADE           layer that only runs the upgrade handler
