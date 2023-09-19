@@ -1,6 +1,7 @@
 name: Build release Docker Images
 
 on:
+  pull_request:
   push:
     branches:
       # $default-branch

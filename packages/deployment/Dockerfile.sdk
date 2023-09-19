@@ -71,7 +71,7 @@ RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/build/tmp
 FROM node:18-bullseye AS install
 
 # Install some conveniences.
-RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less && apt-get clean -y
+RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less prometheus-process-exporter && apt-get clean -y
 
 WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
