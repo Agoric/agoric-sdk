@@ -4,6 +4,11 @@ ARG BOOTSTRAP_MODE=main
 
 # TODO different naming scheme for upgrade handler (in app.go) and the image name
 
+# Be mindful of best practices
+# https://docs.docker.com/develop/dev-best-practices/
+# https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+
+
 ###
 # This file uses [multi-stage builds](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#use-multi-stage-builds).
 
@@ -158,6 +163,7 @@ COPY --from=propose-agoric-upgrade-12 /root/.agoric /root/.agoric
 WORKDIR /usr/src/agoric-sdk/
 COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
 RUN cd upgrade-test-scripts && yarn
+RUN cd upgrade-test-scripts && yarn install
 RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
 
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
