@@ -11,6 +11,7 @@ import { agoric, wellKnownIdentities } from '../cliHelper.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
 import { Fail, NonNullish } from '../lib/assert.js';
 import { dbTool } from './tools/vat-status.js';
+import { voteLatestProposalAndWait } from '../commonUpgradeHelpers.js';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
@@ -18,11 +19,17 @@ const test = anyTest;
 
 const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
 
-const makeTestContext = async () => {
+const fail = (t, msg) => {
+  t && t.fail(msg);
+  throw Error(msg);
+};
+
+const makeTestContext = async t => {
   const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
     keyringBackend: 'test',
   });
-  const { MN2_BUNDLE, MN2_INSTANCE, CHAINID, HOME } = process.env;
+  const { MN2_PERMIT, MN2_SCRIPT, MN2_BUNDLE, MN2_INSTANCE, CHAINID, HOME } =
+    process.env;
 
   const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
   const ksql = dbTool(dbOpenAmbient(fullPath, { readonly: true }));
@@ -32,17 +39,20 @@ const makeTestContext = async () => {
     agoric,
     ksql,
     config: {
-      instance: MN2_INSTANCE, // agoricNames.instance key
-      bundle: MN2_BUNDLE,
+      instance: MN2_INSTANCE || fail(t, '$MN2_INSTANCE required'), // agoricNames.instance key
+      bundle: MN2_BUNDLE || fail(t, '$MN2_BUNDLE required'),
+      permit: MN2_PERMIT || fail(t, '$MN2_PERMIT required'),
+      script: MN2_SCRIPT || fail(t, '$MN2_SCRIPT required'),
       installer: 'gov1', // name in keyring
+      proposer: 'validator',
       collateralPrice: 6, // conservatively low price. TODO: look up
-      chainId: CHAINID,
+      chainId: CHAINID || fail(t, '$CHAINID required'),
     },
     io: { stat: fspAmbient.stat, readFile: fspAmbient.readFile },
   };
 };
 
-test.before(async t => (t.context = await makeTestContext()));
+test.before(async t => (t.context = await makeTestContext(t)));
 
 /** @type {import('@endo/marshal').MakeMarshalOptions} */
 const smallCaps = { serializeBodyFormat: 'smallcaps' };
@@ -122,14 +132,9 @@ const mintCalc = (myIST, cost, opts) => {
   return { wantMinted, giveCollateral, sendValue };
 };
 
-const fail = (t, msg) => {
-  t && t.fail(msg);
-  throw Error(msg);
-};
-
 test.serial(`pre-flight: not in agoricNames.instance`, async t => {
   const { config, agoric } = t.context;
-  const { instance: target = fail(t, '$MN2_INSTANCE required') } = config;
+  const { instance: target } = config;
   const { instance } = await wellKnownIdentities({ agoric });
   const present = Object.keys(instance);
   t.log({ present: present.length, target });
@@ -143,7 +148,7 @@ const loadedBundleIds = ksql => {
 
 const readContractBundle = async (config, io) => {
   const t = undefined;
-  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
+  const { bundle } = config;
   return io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
 };
 
@@ -163,7 +168,7 @@ test.skip('bundle not yet installed', async t => {
 
 const ensureISTForInstall = async t => {
   const { agd, io, config } = t.context;
-  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
+  const { bundle } = config;
   const { size } = await io.stat(bundle);
   const cost = importBundleCost(size);
   t.log({ size, cost, bundle });
@@ -188,6 +193,11 @@ test.skip('ensure enough IST to install bundle', async t => {
   t.pass();
 });
 
+const txAbbr = tx => {
+  const { txhash, code, height, gas_used } = tx;
+  return { txhash, code, height, gas_used };
+};
+
 test.serial('ensure bundle installed', async t => {
   const { ids, id } = await contractBundleStatus(t);
   if (ids.includes(id)) {
@@ -199,10 +209,7 @@ test.serial('ensure bundle installed', async t => {
   const { agd, agoric, config, io } = t.context;
 
   const from = agd.lookup(config.installer);
-  const {
-    chainId = fail(t, '$CHAINID required'),
-    bundle = fail(t, '$MN2_BUNDLE required'),
-  } = config;
+  const { chainId, bundle } = config;
 
   const { endoZipBase64Sha512 } = await readContractBundle(config, io);
 
@@ -211,8 +218,7 @@ test.serial('ensure bundle installed', async t => {
     ['swingset', 'install-bundle', `@${bundle}`, '--gas', 'auto'],
     { from, chainId, yes: true },
   );
-  const { txhash, code, height, gas_used } = result;
-  t.log({ txhash, code, height, gas_used });
+  t.log(txAbbr(result));
   // t.log(result);
   t.is(result.code, 0);
 
@@ -223,4 +229,41 @@ test.serial('ensure bundle installed', async t => {
     error: null,
     installed: true,
   });
+});
+
+/**
+ * @param {Record<string, string>} record
+ * @returns {string[]}
+ */
+const flags = record => {
+  return Object.entries(record)
+    .map(([k, v]) => [`--${k}`, v])
+    .flat();
+};
+
+test.serial('core eval', async t => {
+  const { agd, config } = t.context;
+  const deposit = '10000000ubld';
+  const from = agd.lookup(config.proposer);
+  const { chainId, permit, script, instance } = config;
+  const info = { title: instance, description: `start ${instance}` };
+  t.log('submit proposal', instance);
+  const result = await agd.tx(
+    [
+      'gov',
+      'submit-proposal',
+      'swingset-core-eval',
+      permit,
+      script,
+      ...flags({ ...info, deposit }),
+      ...flags({ gas: 'auto', 'gas-adjustment': '1.2' }),
+    ],
+    { from, chainId, yes: true },
+  );
+  t.log(txAbbr(result));
+  t.is(result.code, 0);
+
+  const detail = await voteLatestProposalAndWait();
+  t.log(detail.proposal_id, detail.voting_end_time, detail.status);
+  t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
 });
