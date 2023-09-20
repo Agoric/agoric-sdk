@@ -1,5 +1,4 @@
 import { promises as fs } from 'fs';
-import assert from 'assert';
 
 import {
   agd,
@@ -116,6 +115,12 @@ const voteForNewParams = (accounts, position) => {
       agops.ec('vote', '--forPosition', position, '--send-from', account),
     ),
   );
+};
+
+const assert = (cond, msg = 'check failed') => {
+  if (!cond) {
+    throw Error(msg);
+  }
 };
 
 const paramChangeOfferGeneration = async (
