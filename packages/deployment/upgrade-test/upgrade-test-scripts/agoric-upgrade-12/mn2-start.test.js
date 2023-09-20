@@ -1,22 +1,37 @@
 // @ts-check
 /* global process */
+import anyTest from 'ava';
 import * as cpAmbient from 'child_process'; // TODO: use execa?
 import * as fspAmbient from 'node:fs/promises';
-import { makeAgd } from '../tools/agd-lib.js';
-import { mintIST } from '../../econHelpers.js';
-import { agoric, wellKnownIdentities } from '../../cliHelper.js';
-import { Far, makeMarshal, makeTranslationTable } from '../../lib/unmarshal.js';
-import { Fail } from '../../lib/assert.js';
+import { makeAgd } from './tools/agd-lib.js';
+import { mintIST } from '../econHelpers.js';
+import { agoric, wellKnownIdentities } from '../cliHelper.js';
+import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
+import { Fail } from '../lib/assert.js';
 
-const config = {
-  proposer: 'gov1', // name in keyring
-  instance: 'KREAd', // agoricNames.instance
-  collateralPrice: 6, // conservatively low price. TODO: look up
+/** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
+/** @type {import('ava').TestFn<TestContext>}} */
+const test = anyTest;
+
+const makeTestContext = async () => {
+  const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
+    keyringBackend: 'test',
+  });
+  const { MN2_BUNDLE, MN2_INSTANCE } = process.env;
+  return {
+    agd,
+    agoric,
+    config: {
+      instance: MN2_INSTANCE, // agoricNames.instance key
+      bundle: MN2_BUNDLE,
+      installer: 'gov1', // name in keyring
+      collateralPrice: 6, // conservatively low price. TODO: look up
+    },
+    io: { stat: fspAmbient.stat },
+  };
 };
 
-const importBundleCost = (bytes, price = 0.002) => {
-  return bytes * price;
-};
+test.before(async t => (t.context = await makeTestContext()));
 
 /** @type {import('@endo/marshal').MakeMarshalOptions} */
 const smallCaps = { serializeBodyFormat: 'smallcaps' };
@@ -67,72 +82,69 @@ const ensureMintLimit = async (targetNum, manager = 0, unit = 1_000_000) => {
   throw Error('raising mint limit not impl');
 };
 
-/**
- * @param {string[]} argv
- * @param {Record<string, string | undefined>} env
- * @param {object} io
- * @param {typeof import('child_process').execFileSync} io.execFileSync
- * @param {typeof import('fs/promises').stat} io.stat
- */
-const main = async (argv, env, { execFileSync, stat }) => {
-  const { instance } = await wellKnownIdentities({ agoric });
-  const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
-  const present = Object.keys(instance);
-  console.log(
-    'instance',
-    config.instance,
-    'in agoricNames?',
-    present.includes(config.instance),
-  );
-
-  const [_node, _script, proposal, bundle] = argv;
-  console.log({ proposal, bundle });
-
-  const myBal = async (addr, denom = 'uist', unit = 1_000_000) => {
-    const coins = await agd.query(['bank', 'balances', addr]);
-    // console.log('proposer balances:', coins);
-    const coin = coins.balances.find(a => a.denom === denom);
-    console.log(denom, 'balance:', coin);
-    return Number(coin.amount) / unit;
-  };
-
-  const { round } = Math;
-  const ensureInstallFunds = async (unit = 1_000_000, padding = 1) => {
-    const addr = agd.lookup(config.proposer);
-    console.log('proposer address', addr);
-    const { size } = await stat(bundle);
-    const cost = importBundleCost(size);
-    console.log({ size, cost });
-    for (
-      let myIST = await myBal(addr);
-      myIST < cost;
-      myIST = await myBal(addr)
-    ) {
-      const wantMinted = round(cost - myIST + 1);
-      console.log({ needed: wantMinted });
-      if (wantMinted - padding <= 0) return;
-      const giveCollateral = round(wantMinted / config.collateralPrice) + 1;
-      const sendValue = round(giveCollateral * unit);
-      await ensureMintLimit(wantMinted);
-      console.log('minting IST', {
-        sendValue,
-        wantMinted: wantMinted,
-        giveCollateral,
-      });
-      await mintIST(addr, sendValue, wantMinted, giveCollateral);
-    }
-  };
-
-  await ensureInstallFunds();
+const myISTBalance = async (agd, addr, denom = 'uist', unit = 1_000_000) => {
+  const coins = await agd.query(['bank', 'balances', addr]);
+  // console.log('proposer balances:', coins);
+  const coin = coins.balances.find(a => a.denom === denom);
+  console.log(denom, 'balance:', coin);
+  return Number(coin.amount) / unit;
 };
 
-main(
-  // defensive copies of argv, env
-  // to avoid global mutable state
-  [...process.argv],
-  { ...process.env },
-  {
-    execFileSync: cpAmbient.execFileSync,
-    stat: fspAmbient.stat,
-  },
-).catch(console.error);
+const importBundleCost = (bytes, price = 0.002) => {
+  return bytes * price;
+};
+
+/**
+ *
+ * @param {number} myIST
+ * @param {number} cost
+ * @param {{ unit?: number, padding?: number, collateralPrice: number }} opts
+ * @returns
+ */
+const mintCalc = (myIST, cost, opts) => {
+  const { unit = 1_000_000, padding = 1, collateralPrice } = opts;
+  const { round } = Math;
+  const wantMinted = round(cost - myIST + 1);
+  const giveCollateral = round(wantMinted / collateralPrice) + 1;
+  const sendValue = round(giveCollateral * unit);
+  return { wantMinted, giveCollateral, sendValue };
+};
+
+const fail = (t, msg) => {
+  t.fail(msg);
+  throw Error(msg);
+};
+
+test.serial(`pre-flight: not in agoricNames.instance`, async t => {
+  const { config, agoric } = t.context;
+  const { instance: target = fail(t, '$MN2_INSTANCE required') } = config;
+  const { instance } = await wellKnownIdentities({ agoric });
+  const present = Object.keys(instance);
+  t.log({ present: present.length, target });
+  t.false(present.includes(target));
+});
+
+test.serial('ensure enough IST to install bundle', async t => {
+  const { agd, io, config } = t.context;
+
+  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
+  const { size } = await io.stat(bundle);
+  const cost = importBundleCost(size);
+  t.log({ size, cost, bundle });
+
+  const addr = agd.lookup(config.installer);
+  const istBalance = await myISTBalance(agd, addr);
+  if (istBalance > cost) {
+    t.log('balance sufficient', { istBalance, cost });
+    t.pass();
+    return;
+  }
+  const { sendValue, wantMinted, giveCollateral } = mintCalc(
+    istBalance,
+    cost,
+    config,
+  );
+  t.log({ wantMinted });
+  await mintIST(addr, sendValue, wantMinted, giveCollateral);
+  t.pass();
+});
