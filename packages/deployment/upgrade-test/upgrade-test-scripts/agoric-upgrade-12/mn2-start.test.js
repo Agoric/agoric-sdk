@@ -123,7 +123,7 @@ const mintCalc = (myIST, cost, opts) => {
 };
 
 const fail = (t, msg) => {
-  t.fail(msg);
+  t && t.fail(msg);
   throw Error(msg);
 };
 
@@ -136,9 +136,33 @@ test.serial(`pre-flight: not in agoricNames.instance`, async t => {
   t.false(present.includes(target));
 });
 
-test.serial('ensure enough IST to install bundle', async t => {
-  const { agd, io, config } = t.context;
+const loadedBundleIds = ksql => {
+  const ids = ksql`SELECT bundleID FROM bundles`.map(r => r.bundleID);
+  return ids;
+};
 
+const readContractBundle = async (config, io) => {
+  const t = undefined;
+  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
+  return io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
+};
+
+const contractBundleStatus = async t => {
+  const { ksql, config, io } = t.context;
+  const data = await readContractBundle(config, io);
+  const { endoZipBase64Sha512 } = data;
+  const ids = loadedBundleIds(ksql);
+  return { ids, endoZipBase64Sha512, id: `b1-${endoZipBase64Sha512}` };
+};
+
+test.skip('bundle not yet installed', async t => {
+  const { ids, id } = await contractBundleStatus(t);
+  t.log('swingstore bundle count', ids.length, id);
+  t.false(ids.includes(id));
+});
+
+const ensureISTForInstall = async t => {
+  const { agd, io, config } = t.context;
   const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
   const { size } = await io.stat(bundle);
   const cost = importBundleCost(size);
@@ -148,7 +172,6 @@ test.serial('ensure enough IST to install bundle', async t => {
   const istBalance = await myISTBalance(agd, addr);
   if (istBalance > cost) {
     t.log('balance sufficient', { istBalance, cost });
-    t.pass();
     return;
   }
   const { sendValue, wantMinted, giveCollateral } = mintCalc(
@@ -158,35 +181,32 @@ test.serial('ensure enough IST to install bundle', async t => {
   );
   t.log({ wantMinted });
   await mintIST(addr, sendValue, wantMinted, giveCollateral);
+};
+
+test.skip('ensure enough IST to install bundle', async t => {
+  await ensureISTForInstall(t);
   t.pass();
 });
 
-const loadedBundleIds = ksql => {
-  const ids = ksql`SELECT bundleID FROM bundles`.map(r => r.bundleID);
-  return ids;
-};
+test.serial('ensure bundle installed', async t => {
+  const { ids, id } = await contractBundleStatus(t);
+  if (ids.includes(id)) {
+    t.log('bundle already installed', id);
+    t.pass();
+    return;
+  }
 
-test.serial('bundle not yet installed', async t => {
-  const { ksql, config, io } = t.context;
-  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
-  const data = await io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
-  const { endoZipBase64Sha512 } = data;
-  const ids = loadedBundleIds(ksql);
-  t.log('swingstore bundle count', ids.length, endoZipBase64Sha512);
-  t.false(ids.includes(`b1-${endoZipBase64Sha512}`));
-});
-
-test.serial('install bundle', async t => {
   const { agd, agoric, config, io } = t.context;
+
   const from = agd.lookup(config.installer);
   const {
     chainId = fail(t, '$CHAINID required'),
     bundle = fail(t, '$MN2_BUNDLE required'),
   } = config;
 
-  const data = await io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
-  const { endoZipBase64Sha512 } = data;
+  const { endoZipBase64Sha512 } = await readContractBundle(config, io);
 
+  await ensureISTForInstall(t);
   const result = await agd.tx(
     ['swingset', 'install-bundle', `@${bundle}`, '--gas', 'auto'],
     { from, chainId, yes: true },
