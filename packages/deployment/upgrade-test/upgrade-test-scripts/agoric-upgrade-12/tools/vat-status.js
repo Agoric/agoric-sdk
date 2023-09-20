@@ -14,7 +14,7 @@ const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
  *
  * @param {import('better-sqlite3').Database} db
  */
-const dbTool = db => {
+export const dbTool = db => {
   const prepare = (strings, ...params) => {
     const dml = strings.join('?');
     return { stmt: db.prepare(dml), params };
