@@ -3,31 +3,42 @@
 import anyTest from 'ava';
 import * as cpAmbient from 'child_process'; // TODO: use execa?
 import * as fspAmbient from 'node:fs/promises';
+import dbOpenAmbient from 'better-sqlite3';
+
 import { makeAgd } from './tools/agd-lib.js';
 import { mintIST } from '../econHelpers.js';
 import { agoric, wellKnownIdentities } from '../cliHelper.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
-import { Fail } from '../lib/assert.js';
+import { Fail, NonNullish } from '../lib/assert.js';
+import { dbTool } from './tools/vat-status.js';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
 const test = anyTest;
 
+const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
+
 const makeTestContext = async () => {
   const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
     keyringBackend: 'test',
   });
-  const { MN2_BUNDLE, MN2_INSTANCE } = process.env;
+  const { MN2_BUNDLE, MN2_INSTANCE, CHAINID, HOME } = process.env;
+
+  const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
+  const ksql = dbTool(dbOpenAmbient(fullPath, { readonly: true }));
+
   return {
     agd,
     agoric,
+    ksql,
     config: {
       instance: MN2_INSTANCE, // agoricNames.instance key
       bundle: MN2_BUNDLE,
       installer: 'gov1', // name in keyring
       collateralPrice: 6, // conservatively low price. TODO: look up
+      chainId: CHAINID,
     },
-    io: { stat: fspAmbient.stat },
+    io: { stat: fspAmbient.stat, readFile: fspAmbient.readFile },
   };
 };
 
@@ -52,8 +63,9 @@ export const getContractInfo = async (path, io = {}) => {
   const m = makeBoardUnmarshal();
   const {
     agoric: { follow = agoric.follow },
+    prefix = 'published.',
   } = io;
-  const txt = await follow('-lF', `:published.${path}`, '-o', 'text');
+  const txt = await follow('-lF', `:${prefix}${path}`, '-o', 'text');
   const { body, slots } = JSON.parse(txt);
   return m.fromCapData({ body, slots });
 };
@@ -147,4 +159,48 @@ test.serial('ensure enough IST to install bundle', async t => {
   t.log({ wantMinted });
   await mintIST(addr, sendValue, wantMinted, giveCollateral);
   t.pass();
+});
+
+const loadedBundleIds = ksql => {
+  const ids = ksql`SELECT bundleID FROM bundles`.map(r => r.bundleID);
+  return ids;
+};
+
+test.serial('bundle not yet installed', async t => {
+  const { ksql, config, io } = t.context;
+  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
+  const data = await io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
+  const { endoZipBase64Sha512 } = data;
+  const ids = loadedBundleIds(ksql);
+  t.log('swingstore bundle count', ids.length, endoZipBase64Sha512);
+  t.false(ids.includes(`b1-${endoZipBase64Sha512}`));
+});
+
+test.serial('install bundle', async t => {
+  const { agd, agoric, config, io } = t.context;
+  const from = agd.lookup(config.installer);
+  const {
+    chainId = fail(t, '$CHAINID required'),
+    bundle = fail(t, '$MN2_BUNDLE required'),
+  } = config;
+
+  const data = await io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
+  const { endoZipBase64Sha512 } = data;
+
+  const result = await agd.tx(
+    ['swingset', 'install-bundle', `@${bundle}`, '--gas', 'auto'],
+    { from, chainId, yes: true },
+  );
+  const { txhash, code, height, gas_used } = result;
+  t.log({ txhash, code, height, gas_used });
+  // t.log(result);
+  t.is(result.code, 0);
+
+  const info = await getContractInfo('bundles', { agoric, prefix: '' });
+  t.log(info);
+  t.deepEqual(info, {
+    endoZipBase64Sha512,
+    error: null,
+    installed: true,
+  });
 });
