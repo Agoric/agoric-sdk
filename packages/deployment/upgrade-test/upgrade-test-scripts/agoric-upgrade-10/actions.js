@@ -3,10 +3,11 @@ import assert from 'assert';
 
 import {
   agd,
-  agoric,
   agops,
   agopsLocation,
   executeCommand,
+  smallCapsContext,
+  wellKnownIdentities,
 } from '../cliHelper.js';
 import {
   HOME,
@@ -122,50 +123,23 @@ const paramChangeOfferGeneration = async (
   previousOfferId,
   voteDur,
   debtLimit,
+  io = {},
 ) => {
+  const { now = Date.now, agoricNames = await wellKnownIdentities(io) } = io;
+  const { brand, instance } = agoricNames;
+  assert(instance.VaultFactory);
+  assert(brand.IST);
+  assert(brand.ATOM);
+
   const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
   const voteDurSec = BigInt(voteDur);
   const debtLimitValue = BigInt(debtLimit) * ISTunit;
   const toSec = ms => BigInt(Math.round(ms / 1000));
 
-  const id = `propose-${Date.now()}`;
-  const deadline = toSec(Date.now()) + voteDurSec;
+  const id = `propose-${now()}`;
+  const deadline = toSec(now()) + voteDurSec;
 
-  const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-  const fromSmallCapsEntries = txt => {
-    const { body, slots } = JSON.parse(txt);
-    const theEntries = zip(JSON.parse(body.slice(1)), slots).map(
-      ([[name, ref], boardID]) => {
-        const iface = ref.replace(/^\$\d+\./, '');
-        return [name, { iface, boardID }];
-      },
-    );
-    return Object.fromEntries(theEntries);
-  };
-
-  const slots = []; // XXX global mutable state
-  const smallCaps = {
-    Nat: n => `+${n}`,
-    // XXX mutates obj
-    ref: obj => {
-      if (obj.ix) return obj.ix;
-      const ix = slots.length;
-      slots.push(obj.boardID);
-      obj.ix = `$${ix}.Alleged: ${obj.iface}`;
-      return obj.ix;
-    },
-  };
-
-  const instance = fromSmallCapsEntries(
-    await agoric.follow('-lF', ':published.agoricNames.instance', '-o', 'text'),
-  );
-  assert(instance.VaultFactory);
-
-  const brand = fromSmallCapsEntries(
-    await agoric.follow('-lF', ':published.agoricNames.brand', '-o', 'text'),
-  );
-  assert(brand.IST);
-  assert(brand.ATOM);
+  const { smallCaps, toCapData } = smallCapsContext();
 
   const body = {
     method: 'executeOffer',
@@ -197,8 +171,7 @@ const paramChangeOfferGeneration = async (
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  return toCapData(body);
 };
 
 export const provisionWallet = async user => {
@@ -251,7 +224,7 @@ export const proposeNewDebtCeiling = async address => {
 
   return executeOffer(
     address,
-    paramChangeOfferGeneration(charterAcceptOfferId, 30, 123000000),
+    paramChangeOfferGeneration(charterAcceptOfferId, 30, 123_000_000),
   );
 };
 

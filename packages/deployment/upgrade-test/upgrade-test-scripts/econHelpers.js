@@ -54,7 +54,7 @@ export const closeVault = (address, vaultId, mint) => {
   );
 };
 
-export const mintIST = async (addr, sendValue, giveCollateral, wantMinted) => {
+export const mintIST = async (addr, sendValue, wantMinted, giveCollateral) => {
   await agd.tx(
     'bank',
     'send',
@@ -69,5 +69,5 @@ export const mintIST = async (addr, sendValue, giveCollateral, wantMinted) => {
     'test',
     '--yes',
   );
-  await openVault(addr, giveCollateral, wantMinted);
+  await openVault(addr, wantMinted, giveCollateral);
 };
