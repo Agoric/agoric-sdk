@@ -68,7 +68,7 @@
     "anylogger": "^0.21.0",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
-    "dd-trace": "^3.3.0",
+    "dd-trace": "^4.11.1",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^8.2.2",
