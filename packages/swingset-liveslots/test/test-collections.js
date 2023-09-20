@@ -102,6 +102,12 @@ function exerciseMapOperations(t, collectionName, testStore) {
     m(`key 86 not found in collection "${collectionName}"`),
   );
   t.throws(
+    () => testStore.set(somethingMissing, 'not work'),
+    m(
+      `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
+    ),
+  );
+  t.throws(
     () => testStore.init(47, 'already there'),
     m(`key 47 already registered in collection "${collectionName}"`),
   );
@@ -118,10 +124,16 @@ function exerciseMapOperations(t, collectionName, testStore) {
   t.is(testStore.get(somethingElse), something);
 
   testStore.delete(47);
+  testStore.delete(something);
   t.falsy(testStore.has(47));
+  t.falsy(testStore.has(something));
   t.throws(
     () => testStore.get(47),
     m(`key 47 not found in collection "${collectionName}"`),
+  );
+  t.throws(
+    () => testStore.get(something),
+    m(`key "[Alleged: something]" not found in collection "${collectionName}"`),
   );
   t.throws(
     () => testStore.delete(22),
@@ -147,7 +159,9 @@ function exerciseSetOperations(t, collectionName, testStore) {
   t.notThrows(() => testStore.add(47));
 
   testStore.delete(47);
+  testStore.delete(something);
   t.falsy(testStore.has(47));
+  t.falsy(testStore.has(something));
   t.throws(
     () => testStore.delete(22),
     m(`key 22 not found in collection "${collectionName}"`),
