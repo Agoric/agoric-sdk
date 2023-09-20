@@ -129,3 +129,51 @@ export const bundleSource = async (filePath, bundleName) => {
   console.log(output.stderr);
   return `/tmp/bundle-${bundleName}.json`;
 };
+
+export const wellKnownIdentities = async (io = {}) => {
+  const {
+    agoric: { follow = agoric.follow },
+  } = io;
+  const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
+  const fromSmallCapsEntries = txt => {
+    const { body, slots } = JSON.parse(txt);
+    const theEntries = zip(JSON.parse(body.slice(1)), slots).map(
+      ([[name, ref], boardID]) => {
+        const iface = ref.replace(/^\$\d+\./, '');
+        return [name, { iface, boardID }];
+      },
+    );
+    return Object.fromEntries(theEntries);
+  };
+  const instance = fromSmallCapsEntries(
+    await follow('-lF', ':published.agoricNames.instance', '-o', 'text'),
+  );
+
+  const brand = fromSmallCapsEntries(
+    await follow('-lF', ':published.agoricNames.brand', '-o', 'text'),
+  );
+
+  return { brand, instance };
+};
+
+export const smallCapsContext = () => {
+  const slots = []; // XXX global mutable state
+  const smallCaps = {
+    Nat: n => `+${n}`,
+    // XXX mutates obj
+    ref: obj => {
+      if (obj.ix) return obj.ix;
+      const ix = slots.length;
+      slots.push(obj.boardID);
+      obj.ix = `$${ix}.Alleged: ${obj.iface}`;
+      return obj.ix;
+    },
+  };
+
+  const toCapData = body => {
+    const capData = { body: `#${JSON.stringify(body)}`, slots };
+    return JSON.stringify(capData);
+  };
+
+  return { smallCaps, toCapData };
+};
