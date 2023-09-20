@@ -32,11 +32,11 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/store": "^0.9.3-u11.0",
-    "@endo/nat": "^4.1.27"
+    "@endo/nat": "4.1.27"
   },
   "devDependencies": {
-    "@endo/far": "^0.2.18",
-    "@endo/init": "^0.5.56",
+    "@endo/far": "0.2.18",
+    "@endo/init": "0.5.56",
     "ava": "^5.2.0"
   },
   "files": [

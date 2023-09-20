@@ -27,7 +27,7 @@
   "dependencies": {
     "@agoric/store": "^0.9.3-u11.0",
     "@agoric/vat-data": "^0.5.3-u11.0",
-    "@endo/far": "^0.2.18"
+    "@endo/far": "0.2.18"
   },
   "publishConfig": {
     "access": "public"

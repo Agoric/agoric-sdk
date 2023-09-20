@@ -23,8 +23,8 @@
     "@agoric/notifier": "^0.6.3-u11.0",
     "@agoric/store": "^0.9.3-u11.0",
     "@agoric/vat-data": "^0.5.3-u11.0",
-    "@endo/far": "^0.2.18",
-    "@endo/marshal": "^0.8.5"
+    "@endo/far": "0.2.18",
+    "@endo/marshal": "0.8.5"
   },
   "devDependencies": {
     "@agoric/zoe": "^0.26.3-u11.0",

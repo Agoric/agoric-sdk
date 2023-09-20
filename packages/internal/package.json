@@ -21,16 +21,16 @@
   },
   "dependencies": {
     "@agoric/zone": "^0.2.3-u11.0",
-    "@endo/far": "^0.2.18",
-    "@endo/marshal": "^0.8.5",
-    "@endo/patterns": "^0.2.2",
-    "@endo/promise-kit": "^0.2.56",
-    "@endo/stream": "^0.3.25",
+    "@endo/far": "0.2.18",
+    "@endo/marshal": "0.8.5",
+    "@endo/patterns": "0.2.2",
+    "@endo/promise-kit": "0.2.56",
+    "@endo/stream": "0.3.25",
     "anylogger": "^0.21.0",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.56",
+    "@endo/init": "0.5.56",
     "ava": "^5.2.0",
     "tsd": "^0.28.1"
   },
