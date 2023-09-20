@@ -1,13 +1,50 @@
 // @ts-check
-/* global process */
+
+/**
+ * @file mainnet-2 contract start test
+ *
+ * TODO: several test.todo, especially provision wallets
+ *
+ * Requires several environment variables:
+ *
+ * $MN2_PROPOSAL_INFO is a directory with the results of
+ * running `agoric run xyz-script.js` one or more times.
+ * Note: include the trailing / in the $MN_PROPOSAL_INFO.
+ *
+ * Each time, in addition to any *-permit.json and *.js files,
+ * stdout is parsed with `parseProposals.js` to produce
+ * a *-info.json file containing...
+ *
+ * @typedef {{
+ *   bundles: string[],
+ *   evals: { permit: string; script: string }[],
+ * }} ProposalInfo
+ *
+ * Only the last path segment of ProposalInfo.bundles is used.
+ * All bundles must be available in $MN2_PROPOSAL_INFO/bundles/ .
+ *
+ * $MN2_INSTANCE is a key in agoricNames.instance
+ * where the mainnet-2 contract instance is expected to be installed.
+ * A vstorage node under published by this name is also expected.
+ */
+
 import anyTest from 'ava';
-import * as cpAmbient from 'child_process'; // TODO: use execa?
-import * as fspAmbient from 'node:fs/promises';
+import * as cpAmbient from 'child_process'; // TODO: use execa
+import * as fspAmbient from 'fs/promises';
+import * as pathAmbient from 'path';
+import * as processAmbient from 'process';
 import dbOpenAmbient from 'better-sqlite3';
 
-import { makeAgd } from './tools/agd-lib.js';
+// TODO: factor out ambient authority from these
+// or at least allow caller to supply authority.
 import { mintIST } from '../econHelpers.js';
 import { agoric, wellKnownIdentities } from '../cliHelper.js';
+import {
+  provisionSmartWallet,
+  voteLatestProposalAndWait,
+} from '../commonUpgradeHelpers.js';
+
+import { makeAgd } from '../lib/agd-lib.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
 import { Fail, NonNullish } from '../lib/assert.js';
 import { dbTool } from './tools/vat-status.js';
@@ -16,36 +53,101 @@ import { dbTool } from './tools/vat-status.js';
 /** @type {import('ava').TestFn<TestContext>}} */
 const test = anyTest;
 
-const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
+/**
+ * Reify file read access as an object.
+ *
+ * @param {string} root
+ * @param {object} io
+ * @param {Pick<typeof import('fs/promises'), 'stat' | 'readFile' | 'readdir'>} io.fsp
+ * @param {Pick<typeof import('path'), 'join'>} io.path
+ *
+ * @typedef {ReturnType<typeof makeFileRd>} FileRd
+ */
+const makeFileRd = (root, { fsp, path }) => {
+  /** @param {string} there */
+  const make = there => {
+    const self = {
+      toString: () => there,
+      /** @param {string[]} segments */
+      join: (...segments) => make(path.join(there, ...segments)),
+      stat: () => fsp.stat(there),
+      readText: () => fsp.readFile(there, 'utf8'),
+      readDir: () =>
+        fsp.readdir(there).then(names => names.map(ref => self.join(ref))),
+    };
+    return self;
+  };
+  return make(root);
+};
 
+const staticConfig = {
+  deposit: '10000000ubld', // 10 BLD
+  installer: 'gov1', // as in: agd keys show gov1
+  proposer: 'validator',
+  collateralPrice: 6, // conservatively low price. TODO: look up
+  swingstorePath: '~/.agoric/data/agoric/swingstore.sqlite',
+};
+
+/**
+ * Provide access to the outside world via t.context.
+ */
 const makeTestContext = async () => {
+  const theEnv = name => {
+    const value = processAmbient.env[name];
+    if (value === undefined) {
+      throw Error(`$${name} required`);
+    }
+    return value;
+  };
+
+  const config = {
+    proposalDir: makeFileRd(theEnv('MN2_PROPOSAL_INFO'), {
+      fsp: fspAmbient,
+      path: pathAmbient,
+    }),
+    instance: theEnv('MN2_INSTANCE'), // agoricNames.instance key
+    vstorageNode: theEnv('MN2_INSTANCE'),
+    // TODO: feeAddress: theEnv('FEE_ADDRESS'),
+    chainId: processAmbient.env.CHAINID || 'agoriclocal',
+    ...staticConfig,
+  };
+
+  // This agd API is based on experience "productizing"
+  // the inter bid CLI in #7939
   const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
     keyringBackend: 'test',
   });
-  const { MN2_BUNDLE, MN2_INSTANCE, CHAINID, HOME } = process.env;
 
-  const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
-  const ksql = dbTool(dbOpenAmbient(fullPath, { readonly: true }));
+  const dbPath = staticConfig.swingstorePath.replace(/^~/, theEnv('HOME'));
+  const swingstore = dbTool(dbOpenAmbient(dbPath, { readonly: true }));
 
-  return {
-    agd,
-    agoric,
-    ksql,
-    config: {
-      instance: MN2_INSTANCE, // agoricNames.instance key
-      bundle: MN2_BUNDLE,
-      installer: 'gov1', // name in keyring
-      collateralPrice: 6, // conservatively low price. TODO: look up
-      chainId: CHAINID,
-    },
-    io: { stat: fspAmbient.stat, readFile: fspAmbient.readFile },
-  };
+  return { agd, agoric, swingstore, config };
 };
 
 test.before(async t => (t.context = await makeTestContext()));
 
-/** @type {import('@endo/marshal').MakeMarshalOptions} */
-const smallCaps = { serializeBodyFormat: 'smallcaps' };
+const testIncludes = (t, needle, haystack, label, sense = true) => {
+  t.log(needle, sense ? 'in' : 'not in', haystack.length, label, '?');
+  const check = sense ? t.deepEqual : t.notDeepEqual;
+  if (sense) {
+    t.deepEqual(
+      haystack.filter(c => c === needle),
+      [needle],
+    );
+  } else {
+    t.deepEqual(
+      haystack.filter(c => c === needle),
+      [],
+    );
+  }
+};
+
+test.serial(`pre-flight: not in agoricNames.instance`, async t => {
+  const { config, agoric } = t.context;
+  const { instance: target } = config;
+  const { instance } = await wellKnownIdentities({ agoric });
+  testIncludes(t, target, Object.keys(instance), 'instance keys');
+});
 
 const makeBoardUnmarshal = () => {
   const synthesizeRemotable = (_slot, iface) =>
@@ -56,7 +158,7 @@ const makeBoardUnmarshal = () => {
     synthesizeRemotable,
   );
 
-  return makeMarshal(convertValToSlot, convertSlotToVal, smallCaps);
+  return makeMarshal(convertValToSlot, convertSlotToVal);
 };
 
 export const getContractInfo = async (path, io = {}) => {
@@ -65,11 +167,13 @@ export const getContractInfo = async (path, io = {}) => {
     agoric: { follow = agoric.follow },
     prefix = 'published.',
   } = io;
+  console.log('@@TODO: prevent agoric follow hang', prefix, path);
   const txt = await follow('-lF', `:${prefix}${path}`, '-o', 'text');
   const { body, slots } = JSON.parse(txt);
   return m.fromCapData({ body, slots });
 };
 
+// XXX dead code - worth keeping somewhere?
 const ensureMintLimit = async (targetNum, manager = 0, unit = 1_000_000) => {
   const io = { agoric };
   const [{ current }, metrics] = await Promise.all([
@@ -96,9 +200,7 @@ const ensureMintLimit = async (targetNum, manager = 0, unit = 1_000_000) => {
 
 const myISTBalance = async (agd, addr, denom = 'uist', unit = 1_000_000) => {
   const coins = await agd.query(['bank', 'balances', addr]);
-  // console.log('proposer balances:', coins);
   const coin = coins.balances.find(a => a.denom === denom);
-  console.log(denom, 'balance:', coin);
   return Number(coin.amount) / unit;
 };
 
@@ -107,71 +209,102 @@ const importBundleCost = (bytes, price = 0.002) => {
 };
 
 /**
- *
  * @param {number} myIST
  * @param {number} cost
- * @param {{ unit?: number, padding?: number, collateralPrice: number }} opts
+ * @param {{
+ *  unit?: number, padding?: number, minInitialDebt?: number,
+ *  collateralPrice: number,
+ * }} opts
  * @returns
  */
 const mintCalc = (myIST, cost, opts) => {
-  const { unit = 1_000_000, padding = 1, collateralPrice } = opts;
-  const { round } = Math;
-  const wantMinted = round(cost - myIST + 1);
+  const {
+    unit = 1_000_000,
+    padding = 1,
+    minInitialDebt = 6,
+    collateralPrice,
+  } = opts;
+  const { round, max } = Math;
+  const wantMinted = max(round(cost - myIST + padding), minInitialDebt);
   const giveCollateral = round(wantMinted / collateralPrice) + 1;
   const sendValue = round(giveCollateral * unit);
   return { wantMinted, giveCollateral, sendValue };
 };
 
-const fail = (t, msg) => {
-  t && t.fail(msg);
-  throw Error(msg);
-};
-
-test.serial(`pre-flight: not in agoricNames.instance`, async t => {
-  const { config, agoric } = t.context;
-  const { instance: target = fail(t, '$MN2_INSTANCE required') } = config;
-  const { instance } = await wellKnownIdentities({ agoric });
-  const present = Object.keys(instance);
-  t.log({ present: present.length, target });
-  t.false(present.includes(target));
-});
-
-const loadedBundleIds = ksql => {
-  const ids = ksql`SELECT bundleID FROM bundles`.map(r => r.bundleID);
+const loadedBundleIds = swingstore => {
+  const ids = swingstore`SELECT bundleID FROM bundles`.map(r => r.bundleID);
   return ids;
 };
 
-const readContractBundle = async (config, io) => {
-  const t = undefined;
-  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
-  return io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
+/**
+ * @param {FileRd} rd - assumed to contain ProposalInfo
+ * @returns {Promise<ProposalInfo[]>}
+ */
+const proposalInfo = async rd => {
+  const all = await rd.readDir();
+  const runInfos = all.filter(f => `${f}`.endsWith('-info.json'));
+  return Promise.all(
+    runInfos.map(async infoRd => {
+      const txt = await infoRd.readText();
+      /** @type {ProposalInfo} */
+      const p = JSON.parse(txt);
+      return p;
+    }),
+  );
 };
 
-const contractBundleStatus = async t => {
-  const { ksql, config, io } = t.context;
-  const data = await readContractBundle(config, io);
-  const { endoZipBase64Sha512 } = data;
-  const ids = loadedBundleIds(ksql);
-  return { ids, endoZipBase64Sha512, id: `b1-${endoZipBase64Sha512}` };
+/**
+ * @param {string} cacheFn - e.g. /home/me.agoric/cache/b1-DEADBEEF.json
+ */
+const bundleDetail = cacheFn => {
+  const fileName = NonNullish(cacheFn.split('/').at(-1));
+  const id = fileName.replace(/\.json$/, '');
+  const hash = id.replace(/^b1-/, '');
+  return { fileName, endoZipBase64Sha512: hash, id };
 };
 
-test.skip('bundle not yet installed', async t => {
-  const { ids, id } = await contractBundleStatus(t);
-  t.log('swingstore bundle count', ids.length, id);
-  t.false(ids.includes(id));
+test.serial('bundles not yet installed', async t => {
+  const { swingstore, config } = t.context;
+  const loaded = loadedBundleIds(swingstore);
+  const info = await proposalInfo(config.proposalDir);
+  for (const { bundles, evals } of info) {
+    t.log(evals[0].script, evals.length, 'eval', bundles.length, 'bundles');
+    for (const bundle of bundles) {
+      const { id } = bundleDetail(bundle);
+      testIncludes(t, id, loaded, 'loaded bundles', false);
+    }
+  }
 });
 
-const ensureISTForInstall = async t => {
-  const { agd, io, config } = t.context;
-  const { bundle = fail(t, '$MN2_BUNDLE required') } = config;
-  const { size } = await io.stat(bundle);
-  const cost = importBundleCost(size);
-  t.log({ size, cost, bundle });
+/** @param {number[]} xs */
+const sum = xs => xs.reduce((a, b) => a + b, 0);
 
-  const addr = agd.lookup(config.installer);
+/** @param {FileRd} proposalDir */
+const readBundleSizes = async proposalDir => {
+  const info = await proposalInfo(proposalDir);
+  const bundleRds = info
+    .map(({ bundles }) =>
+      bundles.map(b => proposalDir.join('bundles', bundleDetail(b).fileName)),
+    )
+    .flat();
+  const bundleSizes = await Promise.all(
+    bundleRds.map(rd => rd.stat().then(st => st.size)),
+  );
+  const totalSize = sum(bundleSizes);
+  return { bundleSizes, totalSize };
+};
+
+const ensureISTForInstall = async (agd, config, { log }) => {
+  const { proposalDir, installer } = config;
+  const { bundleSizes, totalSize } = await readBundleSizes(proposalDir);
+  const cost = importBundleCost(sum(bundleSizes));
+  log({ bundleSizes, totalSize, cost });
+
+  const addr = agd.lookup(installer);
   const istBalance = await myISTBalance(agd, addr);
+
   if (istBalance > cost) {
-    t.log('balance sufficient', { istBalance, cost });
+    log('balance sufficient', { istBalance, cost });
     return;
   }
   const { sendValue, wantMinted, giveCollateral } = mintCalc(
@@ -179,48 +312,142 @@ const ensureISTForInstall = async t => {
     cost,
     config,
   );
-  t.log({ wantMinted });
+  log({ wantMinted });
   await mintIST(addr, sendValue, wantMinted, giveCollateral);
 };
 
-test.skip('ensure enough IST to install bundle', async t => {
-  await ensureISTForInstall(t);
+test.serial('ensure enough IST to install bundles', async t => {
+  const { agd, config } = t.context;
+  await ensureISTForInstall(agd, config, { log: t.log });
   t.pass();
 });
 
-test.serial('ensure bundle installed', async t => {
-  const { ids, id } = await contractBundleStatus(t);
-  if (ids.includes(id)) {
-    t.log('bundle already installed', id);
-    t.pass();
-    return;
+const txAbbr = tx => {
+  const { txhash, code, height, gas_used } = tx;
+  return { txhash, code, height, gas_used };
+};
+
+test.serial('ensure bundles installed', async t => {
+  const { agd, swingstore, agoric, config, io } = t.context;
+  const { chainId, proposalDir } = config;
+  const loaded = loadedBundleIds(swingstore);
+  const from = agd.lookup(config.installer);
+
+  let todo = 0;
+  let done = 0;
+  for (const { bundles } of await proposalInfo(proposalDir)) {
+    todo += bundles.length;
+    for (const bundle of bundles) {
+      const { id, fileName, endoZipBase64Sha512 } = bundleDetail(bundle);
+      if (loaded.includes(id)) {
+        t.log('bundle already installed', id);
+        done += 1;
+        continue;
+      }
+
+      const bundleRd = proposalDir.join('bundles', fileName);
+      const result = await agd.tx(
+        ['swingset', 'install-bundle', `@${bundleRd}`, '--gas', 'auto'],
+        { from, chainId, yes: true },
+      );
+      t.log(txAbbr(result));
+      t.is(result.code, 0);
+
+      const info = await getContractInfo('bundles', { agoric, prefix: '' });
+      t.log(info);
+      done += 1;
+      t.deepEqual(info, {
+        endoZipBase64Sha512,
+        error: null,
+        installed: true,
+      });
+    }
+  }
+  t.is(todo, done);
+});
+
+/**
+ * @param {Record<string, string>} record - e.g. { color: 'blue' }
+ * @returns {string[]} - e.g. ['--color', 'blue']
+ */
+const flags = record => {
+  return Object.entries(record)
+    .map(([k, v]) => [`--${k}`, v])
+    .flat();
+};
+
+test.todo(
+  'core eval prereqs: provision recipient wallets (feeAddress etc.)',
+  // , async t => {
+  //   const { config } = t.context;
+  //   const { feeAddress } = config;
+  // TODO: check if already provisioned
+  // await provisionSmartWallet(feeAddress, `20000000ubld`);
+  //   t.pass();
+  // }
+);
+
+test.serial('core eval proposal passes', async t => {
+  const { agd, swingstore, config } = t.context;
+  const from = agd.lookup(config.proposer);
+  const { chainId, deposit, proposalDir, instance } = config;
+  const info = { title: instance, description: `start ${instance}` };
+  t.log('submit proposal', instance);
+
+  // double-check that bundles are loaded
+  const loaded = loadedBundleIds(swingstore);
+  const proposals = await proposalInfo(proposalDir);
+  for (const { bundles } of proposals) {
+    for (const bundle of bundles) {
+      const { id } = bundleDetail(bundle);
+      testIncludes(t, id, loaded, 'loaded bundles');
+    }
   }
 
-  const { agd, agoric, config, io } = t.context;
-
-  const from = agd.lookup(config.installer);
-  const {
-    chainId = fail(t, '$CHAINID required'),
-    bundle = fail(t, '$MN2_BUNDLE required'),
-  } = config;
-
-  const { endoZipBase64Sha512 } = await readContractBundle(config, io);
-
-  await ensureISTForInstall(t);
+  const evalNames = proposals
+    .map(({ evals }) => evals)
+    .flat()
+    .map(e => [e.permit, e.script])
+    .flat();
+  const evalPaths = evalNames.map(e => proposalDir.join(e).toString());
+  t.log(evalPaths);
   const result = await agd.tx(
-    ['swingset', 'install-bundle', `@${bundle}`, '--gas', 'auto'],
+    [
+      'gov',
+      'submit-proposal',
+      'swingset-core-eval',
+      ...evalPaths,
+      ...flags({ ...info, deposit }),
+      ...flags({ gas: 'auto', 'gas-adjustment': '1.2' }),
+    ],
     { from, chainId, yes: true },
   );
-  const { txhash, code, height, gas_used } = result;
-  t.log({ txhash, code, height, gas_used });
-  // t.log(result);
+  t.log(txAbbr(result));
   t.is(result.code, 0);
 
-  const info = await getContractInfo('bundles', { agoric, prefix: '' });
-  t.log(info);
-  t.deepEqual(info, {
-    endoZipBase64Sha512,
-    error: null,
-    installed: true,
-  });
+  const detail = await voteLatestProposalAndWait();
+  t.log(detail.proposal_id, detail.voting_end_time, detail.status);
+  t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
 });
+
+test.serial(`agoricNames.instance is populated`, async t => {
+  const { config, agoric } = t.context;
+  const { instance: target } = config;
+  const { instance, brand } = await wellKnownIdentities({ agoric });
+  const present = Object.keys(instance);
+  testIncludes(t, target, present, 'instance keys');
+});
+
+// needs 2 brand names
+test.todo(`agoricNames.brand is populated`);
+
+test.serial('vstorage published.CHILD is present', async t => {
+  const { agd, config } = t.context;
+  const { vstorageNode } = config;
+  const { children } = await agd.query(['vstorage', 'children', 'published']);
+  testIncludes(t, vstorageNode, children, 'published children');
+});
+
+test.todo('test contract features- mint character');
+test.todo('test contract governance - pause');
+test.todo('test contract governance - API');
