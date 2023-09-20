@@ -35,8 +35,8 @@ const modules = harden({
  *   logger: (msg) => void,
  * }} vatPowers
  * @param {{
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
- *   coreProposalCode?: string,
+ *   bootstrapManifest?: Record<string, Record<string, unknown>>;
+ *   coreProposalCodeSteps?: string[];
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
