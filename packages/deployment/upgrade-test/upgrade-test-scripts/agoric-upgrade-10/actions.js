@@ -251,7 +251,7 @@ export const proposeNewDebtCeiling = async address => {
 
   return executeOffer(
     address,
-    paramChangeOfferGeneration(charterAcceptOfferId, 30, 123000000),
+    paramChangeOfferGeneration(charterAcceptOfferId, 30, 123_000_000),
   );
 };
 
