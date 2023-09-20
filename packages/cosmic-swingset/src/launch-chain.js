@@ -89,6 +89,7 @@ export async function buildSwingset(
   bootstrapArgs,
   env,
   {
+    callerWillEvaluateCoreProposals = !!bridgeOutbound,
     debugName = undefined,
     slogCallbacks,
     slogSender,
@@ -152,18 +153,6 @@ export async function buildSwingset(
     const bootVat =
       swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
-    // Find the entrypoints for all the core proposals.
-    if (coreProposals) {
-      const { bundles, code } = await extractCoreProposalBundles(
-        coreProposals,
-        configLocation, // for path resolution
-      );
-      swingsetConfig.bundles = { ...swingsetConfig.bundles, ...bundles };
-
-      // Tell the bootstrap code how to run the core proposals.
-      bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
-    }
-
     if (bridgeOutbound) {
       const batchChainStorage = (method, args) =>
         bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
@@ -177,14 +166,32 @@ export async function buildSwingset(
       bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
     }
 
+    let bridgedCoreProposals;
+    if (callerWillEvaluateCoreProposals) {
+      bridgedCoreProposals = coreProposals;
+    } else if (coreProposals) {
+      // We don't have a bridge to run the coreProposals, so do it in the bootVat.
+      const { bundles, codeSteps } = await extractCoreProposalBundles(
+        coreProposals,
+        configLocation, // for path resolution
+      );
+      swingsetConfig.bundles = { ...swingsetConfig.bundles, ...bundles };
+      bootVat.parameters = {
+        ...bootVat.parameters,
+        coreProposalCodeSteps: codeSteps,
+      };
+    }
+
     swingsetConfig.pinBootstrapRoot = true;
     await initializeSwingset(swingsetConfig, bootstrapArgs, kernelStorage, {
       // @ts-expect-error debugPrefix? what's that?
       debugPrefix,
     });
+    // Let our caller schedule our core proposals.
+    return bridgedCoreProposals;
   }
 
-  await ensureSwingsetInitialized();
+  const coreProposals = await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
     kernelStorage,
     deviceEndowments,
@@ -202,6 +209,7 @@ export async function buildSwingset(
   // (either on bootstrap block (0) or in endBlock).
 
   return {
+    coreProposals,
     controller,
     mb: mailboxDevice,
     bridgeInbound: bridgeDevice && bridgeDevice.deliverInbound,
@@ -342,19 +350,20 @@ export async function launch({
   });
 
   console.debug(`buildSwingset`);
-  const { controller, mb, bridgeInbound, timer } = await buildSwingset(
-    mailboxStorage,
-    bridgeOutbound,
-    kernelStorage,
-    vatconfig,
-    argv,
-    env,
-    {
-      debugName,
-      slogCallbacks,
-      slogSender,
-    },
-  );
+  const { coreProposals, controller, mb, bridgeInbound, timer } =
+    await buildSwingset(
+      mailboxStorage,
+      bridgeOutbound,
+      kernelStorage,
+      vatconfig,
+      argv,
+      env,
+      {
+        debugName,
+        slogCallbacks,
+        slogSender,
+      },
+    );
 
   /** @type {{publish: (value: unknown) => Promise<void>} | undefined} */
   let installationPublisher;
@@ -583,8 +592,7 @@ export async function launch({
    */
   async function processActions(inboundQueue, runSwingset) {
     let keepGoing = true;
-    await null;
-    for (const { action, context } of inboundQueue.consumeAll()) {
+    for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
       inboundQueueMetrics.decStat();
       await performAction(action, inboundNum);
@@ -754,7 +762,8 @@ export async function launch({
     // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
-        const { isBootstrap, upgradePlan, blockTime, params } = action;
+        const { isBootstrap, blockTime, params } = action;
+        let upgradePlan = action.upgradePlan;
         // This only runs for the very first block on the chain.
         if (isBootstrap) {
           verboseBlocks && blockManagerConsole.info('block bootstrap');
@@ -772,6 +781,12 @@ export async function launch({
           await processAction(action.type, async () =>
             bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
           );
+          if (!upgradePlan && coreProposals) {
+            upgradePlan = harden({
+              info: JSON.stringify({ coreProposals }),
+              height: blockHeight,
+            });
+          }
           controller.writeSlogObject({
             type: 'cosmic-swingset-bootstrap-block-finish',
             blockTime,
@@ -818,17 +833,17 @@ export async function launch({
           parseLocatedJson(upgradeInfoJson, 'ENACTED_UPGRADE upgradePlan.info');
 
         // Handle the planned core proposals as just another action.
-        const { coreProposals = [] } = upgradePlanInfo || {};
+        const { coreProposals: upgradeCoreProposals } = upgradePlanInfo || {};
 
-        if (!coreProposals.length) {
+        if (!upgradeCoreProposals) {
           // Nothing to do.
           return undefined;
         }
 
         // Find scripts relative to our location.
         const myFilename = fileURLToPath(import.meta.url);
-        const { bundles, code: coreEvalCode } =
-          await extractCoreProposalBundles(coreProposals, myFilename, {
+        const { bundles, codeSteps: coreEvalCodeSteps } =
+          await extractCoreProposalBundles(upgradeCoreProposals, myFilename, {
             handleToBundleSpec: async (handle, source, _sequence, _piece) => {
               const bundle = await bundleSource(source);
               const { endoZipBase64Sha512: hash } = bundle;
@@ -846,25 +861,27 @@ export async function launch({
         }
 
         // Now queue the code for evaluation.
-        const coreEvalAction = {
-          type: ActionType.CORE_EVAL,
-          blockHeight,
-          blockTime,
-          evals: [
-            {
-              json_permits: 'true',
-              js_code: coreEvalCode,
-            },
-          ],
-        };
-        runThisBlock.push({
-          context: {
+        for (const [key, coreEvalCode] of Object.entries(coreEvalCodeSteps)) {
+          const coreEvalAction = {
+            type: ActionType.CORE_EVAL,
             blockHeight,
-            txHash: 'x/upgrade',
-            msgIdx: 0,
-          },
-          action: coreEvalAction,
-        });
+            blockTime,
+            evals: [
+              {
+                json_permits: 'true',
+                js_code: coreEvalCode,
+              },
+            ],
+          };
+          runThisBlock.push({
+            context: {
+              blockHeight,
+              txHash: 'x/upgrade',
+              msgIdx: key,
+            },
+            action: coreEvalAction,
+          });
+        }
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-upgrade-finish',
