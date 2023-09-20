@@ -56,6 +56,7 @@ DEBUG ?= SwingSet:ls,SwingSet:vat
 RUN = docker run --rm -it \
 	-p 26656:26656 -p 26657:26657 -p 1317:1317 \
 	-v "$${PWD}:/workspace" \
+	-v "$${MN2}:/mn2" \
 	-e "DEBUG=$(DEBUG)"
 
 run:
