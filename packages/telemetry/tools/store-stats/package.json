@@ -1,0 +1,12 @@
+{
+  "name": "store-stats",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "@opentelemetry/api": "^1.6.0",
+    "@opentelemetry/exporter-prometheus": "^0.43.0",
+    "@opentelemetry/sdk-metrics-base": "^0.31.0",
+    "sqlite3": "^5.1.6"
+  }
+}
