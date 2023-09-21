@@ -11,7 +11,11 @@ import { agoric, wellKnownIdentities } from '../cliHelper.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
 import { Fail, NonNullish } from '../lib/assert.js';
 import { dbTool } from './tools/vat-status.js';
-import { voteLatestProposalAndWait } from '../commonUpgradeHelpers.js';
+import {
+  provisionSmartWallet,
+  voteLatestProposalAndWait,
+} from '../commonUpgradeHelpers.js';
+import { execaNode } from 'execa';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
@@ -28,12 +32,20 @@ const makeTestContext = async t => {
   const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
     keyringBackend: 'test',
   });
-  const { MN2_PERMIT, MN2_SCRIPT, MN2_BUNDLE, MN2_INSTANCE, CHAINID, HOME } =
-    process.env;
+  const {
+    MN2_PERMIT,
+    MN2_SCRIPT,
+    MN2_BUNDLE,
+    MN2_INSTANCE,
+    FEE_ADDRESS,
+    CHAINID,
+    HOME,
+  } = process.env;
 
   const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
   const ksql = dbTool(dbOpenAmbient(fullPath, { readonly: true }));
 
+  const sdk = '/usr/src/agoric-sdk';
   return {
     agd,
     agoric,
@@ -42,13 +54,15 @@ const makeTestContext = async t => {
       instance: MN2_INSTANCE || fail(t, '$MN2_INSTANCE required'), // agoricNames.instance key
       bundle: MN2_BUNDLE || fail(t, '$MN2_BUNDLE required'),
       permit: MN2_PERMIT || fail(t, '$MN2_PERMIT required'),
+      feeAddress: FEE_ADDRESS || fail(t, '$FEE_ADDRESS required'),
       script: MN2_SCRIPT || fail(t, '$MN2_SCRIPT required'),
       installer: 'gov1', // name in keyring
       proposer: 'validator',
+      clean: `${sdk}/packages/cosmic-swingset/scripts/clean-core-eval.js`,
       collateralPrice: 6, // conservatively low price. TODO: look up
       chainId: CHAINID || fail(t, '$CHAINID required'),
     },
-    io: { stat: fspAmbient.stat, readFile: fspAmbient.readFile },
+    io: { stat: fspAmbient.stat, readFile: fspAmbient.readFile, execaNode },
   };
 };
 
@@ -117,16 +131,23 @@ const importBundleCost = (bytes, price = 0.002) => {
 };
 
 /**
- *
  * @param {number} myIST
  * @param {number} cost
- * @param {{ unit?: number, padding?: number, collateralPrice: number }} opts
+ * @param {{
+ *  unit?: number, padding?: number, minInitialDebt?: number,
+ *  collateralPrice: number,
+ * }} opts
  * @returns
  */
 const mintCalc = (myIST, cost, opts) => {
-  const { unit = 1_000_000, padding = 1, collateralPrice } = opts;
-  const { round } = Math;
-  const wantMinted = round(cost - myIST + 1);
+  const {
+    unit = 1_000_000,
+    padding = 1,
+    minInitialDebt = 6,
+    collateralPrice,
+  } = opts;
+  const { round, max } = Math;
+  const wantMinted = max(round(cost - myIST + padding), minInitialDebt);
   const giveCollateral = round(wantMinted / collateralPrice) + 1;
   const sendValue = round(giveCollateral * unit);
   return { wantMinted, giveCollateral, sendValue };
@@ -241,11 +262,22 @@ const flags = record => {
     .flat();
 };
 
+test.serial('core eval prereqs', async t => {
+  const { config } = t.context;
+  const { feeAddress } = config;
+  // TODO: check if already provisioned
+  // await provisionSmartWallet(feeAddress, `20000000ubld`);
+  t.pass();
+});
+
 test.serial('core eval', async t => {
-  const { agd, config } = t.context;
+  const { agd, config, io } = t.context;
   const deposit = '10000000ubld';
   const from = agd.lookup(config.proposer);
   const { chainId, permit, script, instance } = config;
+  const defanged = `${script}-DEFANG`;
+  t.log({ defanged });
+  await io.execaNode(config.clean, [script]).pipeStdout(defanged);
   const info = { title: instance, description: `start ${instance}` };
   t.log('submit proposal', instance);
   const result = await agd.tx(
@@ -254,7 +286,7 @@ test.serial('core eval', async t => {
       'submit-proposal',
       'swingset-core-eval',
       permit,
-      script,
+      defanged,
       ...flags({ ...info, deposit }),
       ...flags({ gas: 'auto', 'gas-adjustment': '1.2' }),
     ],
