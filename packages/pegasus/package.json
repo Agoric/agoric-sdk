@@ -37,7 +37,7 @@
     "@agoric/swingset-vat": "^0.32.3-u11.0",
     "@agoric/vats": "^0.15.2-u11.0",
     "@agoric/zoe": "^0.26.3-u11.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/captp": "3.1.1",
     "@endo/far": "0.2.18",
     "@endo/init": "0.5.56",

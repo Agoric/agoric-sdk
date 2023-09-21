@@ -30,7 +30,7 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.3-u11.0",
     "@agoric/xsnap-lockdown": "^0.14.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/eventual-send": "0.17.2",
     "@endo/init": "0.5.56",
     "@endo/netstring": "0.3.26",

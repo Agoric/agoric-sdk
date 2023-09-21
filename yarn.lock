@@ -1325,10 +1325,10 @@
   resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.31.tgz#92378462cd791e0258a2291d44d2cfd15415cf32"
   integrity sha512-7IndkaZ7buIuFw8oBovNZV7epuyFWs0gdusSJ/zrx6fMXRqX0ycSTtxr6M5xADQGss1I9fqP3vteVLiNFlyIbw==
 
-"@endo/bundle-source@2.5.1":
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/@endo/bundle-source/-/bundle-source-2.5.1.tgz#6ec870335bd88ee561e6c2a323080c3b4a1894b4"
-  integrity sha512-O8aEiOF3GmMbXjmz47CYNfvT6c16CNGT1ups2Spt29noejCoklmF5L7mEbeS8w7XUGA0Cs1IrZDfkiyTZ+ckmA==
+"@endo/bundle-source@2.5.2-upstream-rollup":
+  version "2.5.2-upstream-rollup"
+  resolved "https://registry.yarnpkg.com/@endo/bundle-source/-/bundle-source-2.5.2-upstream-rollup.tgz#89fdc6b1b6625ca8c484c12e7762f04cd711ca9f"
+  integrity sha512-UoQlCMZ8jnQA6ulKYII+plWdyK0/XAj1clHPnAW1ILEthQWN1h9WeQT26mIWowGp+sX8CIyiRSVRQN/0pC35Fw==
   dependencies:
     "@agoric/babel-generator" "^7.17.4"
     "@babel/parser" "^7.17.3"
@@ -1341,7 +1341,7 @@
     "@rollup/plugin-node-resolve" "^13.0.0"
     acorn "^8.2.4"
     jessie.js "^0.3.2"
-    rollup endojs/endo#rollup-2.7.1-patch-1
+    rollup "^2.79.1"
     source-map "^0.7.3"
 
 "@endo/captp@3.1.1":
@@ -11891,9 +11891,10 @@ rollup@^2.58.0:
   optionalDependencies:
     fsevents "~2.3.2"
 
-rollup@endojs/endo#rollup-2.7.1-patch-1:
-  version "2.70.1-endo.1"
-  resolved "https://codeload.github.com/endojs/endo/tar.gz/54060e784a4dbe77b6692f17344f4d84a198530d"
+rollup@^2.79.1:
+  version "2.79.1"
+  resolved "https://registry.yarnpkg.com/rollup/-/rollup-2.79.1.tgz#bedee8faef7c9f93a2647ac0108748f497f081c7"
+  integrity sha512-uKxbd0IhMZOhjAiD5oAFp7BqvkA4Dv47qpOCtaNvng4HBwdbWtdOh8f5nZNuk2rp51PMGk3bzfWu5oayNEuYnw==
   optionalDependencies:
     fsevents "~2.3.2"
 

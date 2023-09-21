@@ -42,7 +42,7 @@
     "@agoric/store": "^0.9.3-u11.0",
     "@agoric/zoe": "^0.26.3-u11.0",
     "@endo/base64": "0.2.31",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/far": "0.2.18",
     "@endo/marshal": "0.8.5",
     "@endo/nat": "4.1.27",

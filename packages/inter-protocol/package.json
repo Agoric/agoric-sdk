@@ -52,7 +52,7 @@
     "@agoric/smart-wallet": "^0.5.4-u11.0",
     "@agoric/swingset-liveslots": "^0.10.3-u11.0",
     "@agoric/swingset-vat": "^0.32.3-u11.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/init": "0.5.56",
     "@endo/promise-kit": "0.2.56",
     "@fast-check/ava": "^1.1.3",

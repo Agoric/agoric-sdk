@@ -25,7 +25,7 @@
   "devDependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/swingset-liveslots": "^0.10.3-u11.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/import-bundle": "0.3.4",
     "@endo/init": "0.5.56",
     "@endo/marshal": "0.8.5",

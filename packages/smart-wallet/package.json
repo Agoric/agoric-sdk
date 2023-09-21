@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.3.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/captp": "3.1.1",
     "@endo/init": "0.5.56",
     "ava": "^5.2.0",

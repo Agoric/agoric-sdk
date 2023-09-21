@@ -55,7 +55,7 @@
     "@agoric/smart-wallet": "^0.5.4-u11.0",
     "@agoric/swing-store": "^0.9.2-u11.0",
     "@agoric/swingset-liveslots": "^0.10.3-u11.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/captp": "3.1.1",
     "@endo/stream": "0.3.25",
     "ava": "^5.2.0",

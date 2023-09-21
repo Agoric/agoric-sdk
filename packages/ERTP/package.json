@@ -51,7 +51,7 @@
     "@endo/promise-kit": "0.2.56"
   },
   "devDependencies": {
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@fast-check/ava": "^1.1.3",
     "ava": "^5.2.0",
     "tsd": "^0.28.1"

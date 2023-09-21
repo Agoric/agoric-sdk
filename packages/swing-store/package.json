@@ -24,7 +24,7 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.3-u11.0",
     "@endo/base64": "0.2.31",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/check-bundle": "0.2.18",
     "@endo/nat": "4.1.27",
     "better-sqlite3": "^8.2.0"

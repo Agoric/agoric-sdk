@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@agoric/vats": "^0.15.2-u11.0",
-    "@endo/bundle-source": "2.5.1",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/init": "0.5.56",
     "ava": "^5.2.0"
   },
