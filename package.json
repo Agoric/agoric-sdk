@@ -40,7 +40,7 @@
     "**/protobufjs": "^7.2.4"
   },
   "engines": {
-    "node": "^16.13 || ^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9"
   },
   "prettier": {
     "arrowParens": "avoid",
