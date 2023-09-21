@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - master
-      - release-pismo
+      - 'release-*'
       - beta
     tags:
       - '@agoric/sdk@*'
