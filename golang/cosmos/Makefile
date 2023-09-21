@@ -32,13 +32,18 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
 		-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 gcflags =
+shared_ldflags = $(ldflags)
 
 ifneq ($(GO_DEBUG),)
 ldflags += -compressdwarf=false
 gcflags += -N -l
+else ifeq ($(shell uname -s 2>/dev/null),Darwin)
+# Darwin's latest ld crashes with https://github.com/Agoric/agoric-sdk/issues/8367
+shared_ldflags += -w
 endif
 
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
+SHARED_BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(shared_ldflags)'
 
 all: compile-chain
 
@@ -69,7 +74,8 @@ compile-gyp:
 	rm -f binding.gyp
 
 compile-libdaemon: go-mod-cache
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
+	go build -v $(MOD_READONLY) $(SHARED_BUILD_FLAGS) -buildmode=c-shared \
+		-o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
 
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
