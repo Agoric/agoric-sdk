@@ -1,9 +1,3 @@
-// This is a version of bench-vaults-performance.js designed to run as a
-// standalone node executable, without reference to Ava, using the
-// benchmarkerator module.  It has had all intrinsic performance measurement
-// code stripped out of it, purely implementing the vault benchmark test code in
-// expectation of extrinsic measurement.
-
 import { bench } from './benchmarkerator.js';
 
 // eslint-disable-next-line import/order

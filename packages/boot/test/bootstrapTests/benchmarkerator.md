@@ -74,7 +74,7 @@ invoking:
 where `name` is a string naming the benchmark run for purposes of error and
 result reporting.
 
-#### The `Benchmark` object
+### The `Benchmark` object
 
 The `benchmark` object may have the following properties, all of which are
 optional except for `executeRound`:
@@ -90,7 +90,7 @@ optional except for `executeRound`:
 
   A required async method which is called to actually execute one round of the
   benchmark.  The `round` argument is the number of the benchmark round
-  that this call to `executeRound` is being asked to execute.
+  that this call to `executeRound` is being asked to execute (counting from 1).
 
 `finish?: (context: BenchmarkContext) => Promise<void>`
 
@@ -99,9 +99,10 @@ optional except for `executeRound`:
 `rounds?: number`
 
   The number of benchmark rounds that will be run if not overridden on the
-  command line.  If omitted, it defaults to `1`.
+  command line.  If no number is provided either here or on the command line, a
+  single round will be run.
 
-#### The `BenchmarkContext` object
+### The `BenchmarkContext` object
 
 The first parameter to each of the benchmark methods is a context object that
 provides various information about the execution.  It has the properties:
@@ -147,13 +148,15 @@ The supported command line options are:
 | `-r N`<br/>`--rounds N` | Execute _N_ rounds of each benchmark |
 | `-b PATT`<br/>`--benchmark PATT` | Only execute benchmarks matching _PATT_ (may be specified more than once; this is similar to Ava's `-m` option)|
 | `-o NAME VAL`<br/>`--option NAME VAL` | Set option _NAME_ to _VAL_ in the `context.options` record (may be specified more than once)  |
-| `-v`<br/>`--verbose` | Output verbose debug log messages as it runs |
-| `-l`<br/>`--local` | Use the `'local'` vat manager (instead of `'xs-worker'`; yields less realistic perf numbers but runs way faster and is much easier to debug) |
+| `-v`<br/>`--verbose` | Enable verbose output |
+| `--vat-type TYPE` | Use the specified vat manager type rather than the default `xs-worker` |
+| `-l`<br/>`--local` | Shorthand for `--vat-type local` (vats run in the same process as the kernel; less realistic than `xs-worker` but much faster and easier to debug) |
 | `-d`<br/>`--dump` | Output JSON-formated benchmark data to a file |
 | `-h`<br/>`--help` | Output this helpful usage information and then exit |
 
-additional unparsed _OPTIONS_ are passed to the benchmark itself in the `context.argv`
-array.
+An optional `--` flag ends the options list.  Any remaining command line
+arguments after `--` are are passed to the benchmark itself in the
+`context.argv` array.
 
 ## Results output
 

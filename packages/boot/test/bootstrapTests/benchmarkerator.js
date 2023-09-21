@@ -39,7 +39,7 @@ import { makeWalletFactoryDriver } from './drivers.js';
  *    options: Record<string, string>,
  *    argv: string[],
  *    actors: Record<string, import('./drivers.js').SmartWalletDriver>,
- *    label?: string,
+ *    title?: string,
  *    rounds?: number,
  *    config?: Record<string, unknown>,
  * }} BenchmarkContext
@@ -59,7 +59,7 @@ import { makeWalletFactoryDriver } from './drivers.js';
  *  actors: Record<string, SmartWalletDriver>,
  *
  *  // The label string for the benchmark currently being executed
- *  label: string,
+ *  title: string,
  *
  *  // The number of rounds of this benchmark that will be executed
  *  rounds: number,
@@ -99,7 +99,7 @@ import { makeWalletFactoryDriver } from './drivers.js';
  * The benchmarkerator object.  The benchmarkerator framework supplies this.
  *
  * @typedef {{
- *    addBenchmark: (label: string, benchmark: Benchmark) => void,
+ *    addBenchmark: (title: string, benchmark: Benchmark) => void,
  *    run: (name?: string) => Promise<void>,
  * }} Benchmarkerator
  */
@@ -108,7 +108,7 @@ const log = console.log;
 
 const argv = process.argv.slice(2);
 
-let defaultRounds = 1;
+let commandLineRounds;
 let verbose = false;
 let help = false;
 let dump = false;
@@ -121,7 +121,7 @@ const readClock = () => process.hrtime.bigint();
 
 const usage = () => {
   log(`
-${process.argv[0]} ${process.argv[1]} [FLAGS] [ARGS...]
+${process.argv[0]} ${process.argv[1]} [FLAGS] [-- [ARGS...]]
 
 FLAGS may be:
   -r N
@@ -136,9 +136,11 @@ FLAGS may be:
   -o NAME VAL
   --option NAME VAL - set named option NAME to VAL
 
+  --vat-type TYPE  - use the specified vat manager type rather than the default 'xs-worker'
+
   -l
-  --local          - use the 'local' vat manager (instead of 'xs-worker')
-                     (less realistic perf numbers but way faster and much easier to debug)
+  --local          - shorthand for '--vat-type local'
+                     (less realistic perf numbers but faster and easier to debug)
 
   -d
   --dump           - output JSON-formatted benchmark data to a file
@@ -159,12 +161,12 @@ const fail = (message, printUsage) => {
 };
 
 let stillScanningArgs = true;
-while (argv[0] && argv[0].startsWith('-') && stillScanningArgs) {
+while (argv[0] && stillScanningArgs) {
   const flag = argv.shift();
   switch (flag) {
     case '-r':
     case '--rounds':
-      defaultRounds = Number(argv.shift());
+      commandLineRounds = Number(argv.shift());
       break;
     case '-b':
     case '--benchmark':
@@ -178,6 +180,20 @@ while (argv[0] && argv[0].startsWith('-') && stillScanningArgs) {
     case '--dump':
       dump = true;
       break;
+    case '--vat-type': {
+      const type = argv.shift();
+      if (
+        type !== 'local' &&
+        type !== 'xs-worker' &&
+        type !== 'xsnap' &&
+        type !== 'node-subprocess'
+      ) {
+        fail(`invalid vat manager type ${type}`);
+      } else {
+        defaultManagerType = type;
+      }
+      break;
+    }
     case '-l':
     case '--local':
       defaultManagerType = 'local';
@@ -198,7 +214,7 @@ while (argv[0] && argv[0].startsWith('-') && stillScanningArgs) {
       stillScanningArgs = false;
       break;
     default:
-      fail(`invalid flag ${flag}`, true);
+      fail(`invalid command line option ${flag}`, true);
       break;
   }
 }
@@ -213,16 +229,16 @@ if (help) {
 /**
  * Test if a given benchmark should be included in the benchmarks that get run.
  *
- * @param {string} label  The label of the benchmark in question
+ * @param {string} title  The title of the benchmark in question
  *
  * @returns {boolean} true iff the benchmark should be run this time through.
  */
-const shouldIncludeBenchmark = label => {
+const shouldIncludeBenchmark = title => {
   if (benchmarkPatts.length === 0) {
     return true;
   }
   for (const patt of benchmarkPatts) {
-    if (label.match(patt)) {
+    if (title.match(patt)) {
       return true;
     }
   }
@@ -248,14 +264,7 @@ const isMainKey = key =>
  *
  * @returns {string} a prettily formatted representation of `n`
  */
-const pn = n => {
-  const str = n.toFixed(3);
-  if (str.endsWith('.000')) {
-    return `${str.substring(0, str.length - 4)}    `;
-  } else {
-    return str;
-  }
-};
+const pn = n => n.toFixed(3).replace(/[.]000$/, '    ');
 
 const printSetupStats = stats => {
   const w1 = 32;
@@ -484,18 +493,18 @@ export const makeBenchmarkerator = async () => {
    * Add a benchmark to the set being run by an execution of the benchmark
    * framework.
    *
-   * @param {string} label - string identifying the benchmark.  Used for logging
+   * @param {string} title - string identifying the benchmark.  Used for logging
    *    and execution control.
    * @param {Benchmark} benchmark - the benchmark itself
    */
-  const addBenchmark = (label, benchmark) => {
-    typeof label === 'string' || Fail`benchmark label must be a string`;
+  const addBenchmark = (title, benchmark) => {
+    typeof title === 'string' || Fail`benchmark title must be a string`;
     if (benchmark.setup) {
       typeof benchmark.setup === 'function' ||
         Fail`benchmark setup must be a function`;
     }
     benchmark.executeRound ||
-      Fail`no executeRound function for benchmark ${label}`;
+      Fail`no executeRound function for benchmark ${title}`;
     typeof benchmark.executeRound === 'function' ||
       Fail`benchmark executeRound must be a function`;
     if (benchmark.finish) {
@@ -506,7 +515,7 @@ export const makeBenchmarkerator = async () => {
       typeof benchmark.rounds === 'number' ||
         Fail`benchmark rounds must be a number`;
     }
-    benchmarks.set(label, benchmark);
+    benchmarks.set(title, benchmark);
   };
 
   /**
@@ -519,14 +528,14 @@ export const makeBenchmarkerator = async () => {
     /** @type {object} */
     const benchmarkContext = { ...context };
     await null;
-    for (const [label, benchmark] of benchmarks.entries()) {
-      if (!shouldIncludeBenchmark(label)) {
+    for (const [title, benchmark] of benchmarks.entries()) {
+      if (!shouldIncludeBenchmark(title)) {
         continue;
       }
-      benchmarkContext.label = label;
-      const rounds = benchmark.rounds || defaultRounds;
+      benchmarkContext.title = title;
+      const rounds = commandLineRounds || benchmark.rounds || 1;
       benchmarkContext.rounds = rounds;
-      log(`Benchmark "${label}" setup:`);
+      log(`Benchmark "${title}" setup:`);
       benchmarkContext.config = await (benchmark.setup
         ? benchmark.setup(benchmarkContext)
         : {});
@@ -534,7 +543,7 @@ export const makeBenchmarkerator = async () => {
       const roundsStartTime = readClock();
       const cranksAtRoundsStart = getCrankNumber();
       for (let round = 1; round <= rounds; round += 1) {
-        log(`Benchmark "${label}" round ${round}:`);
+        log(`Benchmark "${title}" round ${round}:`);
         await benchmark.executeRound(benchmarkContext, round);
       }
       const roundsEndRawStats = controller.getStats();
@@ -550,9 +559,9 @@ export const makeBenchmarkerator = async () => {
         rounds,
       );
       log('-'.repeat(70));
-      log(`Benchmark "${label}" stats:`);
+      log(`Benchmark "${title}" stats:`);
       printBenchmarkStats(benchmarkStats);
-      benchmarkReport[label] = benchmarkStats;
+      benchmarkReport[title] = benchmarkStats;
       log('-'.repeat(70));
       if (benchmark.finish) {
         await benchmark.finish(benchmarkContext);
