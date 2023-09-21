@@ -7,6 +7,8 @@ on:
       - master
       - 'release-*'
       - beta
+    tags:
+      - '@agoric/sdk@*'
   pull_request:
     types:
       - opened
@@ -28,6 +30,7 @@ jobs:
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         cli: [link-cli/yarn, registry/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
