@@ -6,7 +6,8 @@ on:
     branches:
       # $default-branch
       - master
-      - release-pismo
+      - 'release-*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -54,13 +55,20 @@ jobs:
         run: npm whoami
       - name: publish to NPM tag
         run: |
-          if [ "${{ github.ref_name }}" = "release-pismo" ]; then
-            # A pismo dev release.
-            TAG=pismo-dev
-          else
-            # Just a dev release.
-            TAG=dev
-          fi
+          case $GITHUB_REF_NAME in
+            release-*)
+              # A pre-release.
+              TAG=${GITHUB_REF_NAME#release-}-dev
+              ;;
+            master)
+              # A trunk dev release.
+              TAG=dev
+              ;;
+            *)
+              # Some other dev release.
+              TAG=other-dev
+              ;;
+          esac
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
           yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
@@ -102,7 +110,7 @@ jobs:
       - uses: nwtgck/actions-netlify@v1.1
         with:
           # Production deployment if a push or merged PR.
-          production-deploy: ${{github.event_name == 'push'}}
+          production-deploy: ${{ github.event_name == 'push' && github.ref_name == 'master' }}
           publish-dir: coverage/html
           # SECURITY: we don't want to hand out the Github token to this action.
           # github-token: ${{ secrets.GITHUB_TOKEN }}
