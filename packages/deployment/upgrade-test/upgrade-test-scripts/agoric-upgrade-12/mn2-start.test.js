@@ -3,8 +3,6 @@
 /**
  * @file mainnet-2 contract start test
  *
- * TODO: several test.todo, especially provision wallets
- *
  * Requires several environment variables:
  *
  * $MN2_PROPOSAL_INFO is a directory with the results of
@@ -86,6 +84,29 @@ const staticConfig = {
   proposer: 'validator',
   collateralPrice: 6, // conservatively low price. TODO: look up
   swingstorePath: '~/.agoric/data/agoric/swingstore.sqlite',
+  initialCoins: `20000000ubld`,
+  accounts: {
+    krgov1: {
+      address: 'agoric1890064p6j3xhzzdf8daknd6kpvhw766ds8flgw',
+      mnemonic:
+        'loop clump life tattoo action wish loop garbage room custom tooth lunar increase major draw wage bind vanish order behind bounce unknown cry practice',
+    },
+    krgov2: {
+      address: 'agoric1vqm5x5sj4lxmj2kem7x92tuhaum0k2yzyj6mgu',
+      mnemonic:
+        'expect wheel safe ankle caution vote reduce sell night pencil suit scrap tumble divorce element become result front hurt begin deputy liberty develop next',
+    },
+    kRoyalties: {
+      address: 'agoric1yjc8llu3fugm7tgqye4rd5n92l9x2dhe30dazp',
+      mnemonic:
+        'talent approve render pool chief inch nuclear minor rhythm laundry praise swift clog neck shoot elder rely junior rule basket energy payment giggle torch',
+    },
+    kPlatform: {
+      address: 'agoric1enwuyn2hzyyvt39x87tk9rhlkpqtyv9haj7mgs',
+      mnemonic:
+        'magic enrich village office myth depth upper pair april dad visit memory resemble castle lab surface globe debate chair upper army pony moon tone',
+    },
+  },
 };
 
 /**
@@ -109,6 +130,7 @@ const makeTestContext = async () => {
     vstorageNode: theEnv('MN2_INSTANCE'),
     // TODO: feeAddress: theEnv('FEE_ADDRESS'),
     chainId: processAmbient.env.CHAINID || 'agoriclocal',
+    royaltyThingy: theEnv('GOV3ADDR'),
     ...staticConfig,
   };
 
@@ -146,7 +168,7 @@ test.serial(`pre-flight: not in agoricNames.instance`, async t => {
   const { config, agoric } = t.context;
   const { instance: target } = config;
   const { instance } = await wellKnownIdentities({ agoric });
-  testIncludes(t, target, Object.keys(instance), 'instance keys');
+  testIncludes(t, target, Object.keys(instance), 'instance keys', false);
 });
 
 const makeBoardUnmarshal = () => {
@@ -376,16 +398,32 @@ const flags = record => {
     .flat();
 };
 
-test.todo(
-  'core eval prereqs: provision recipient wallets (feeAddress etc.)',
-  // , async t => {
-  //   const { config } = t.context;
-  //   const { feeAddress } = config;
-  // TODO: check if already provisioned
-  // await provisionSmartWallet(feeAddress, `20000000ubld`);
-  //   t.pass();
-  // }
-);
+test.serial('core eval prereqs: provision royalty, gov, ...', async t => {
+  const { agd, config } = t.context;
+  const { entries } = Object;
+
+  for (const [name, { address, mnemonic }] of entries(config.accounts)) {
+    try {
+      agd.lookup(address);
+      t.log(name, 'key already added');
+      continue;
+    } catch (_e) {}
+    t.log('add key', name);
+    agd.keys.add(name, mnemonic);
+  }
+
+  for (const [name, { address }] of entries(config.accounts)) {
+    const walletPath = `published.wallet.${address}`;
+    const data = await agd.query(['vstorage', 'data', walletPath]);
+    if (data.value.length > 0) {
+      t.log(name, 'wallet already provisioned');
+      continue;
+    }
+    await provisionSmartWallet(address, config.initialCoins);
+  }
+
+  t.pass();
+});
 
 test.serial('core eval proposal passes', async t => {
   const { agd, swingstore, config } = t.context;
