@@ -11,13 +11,10 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import {
-  FakeStorageKit,
-  makeFakeStorageKit,
-} from '@agoric/internal/src/storage-test-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { krefOf, kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
 import { TimeMath, Timestamp } from '@agoric/time';
 import {
   boardSlottingMarshaller,
@@ -27,8 +24,8 @@ import { makeQueue } from '@endo/stream';
 
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot';
-import type { ExecutionContext } from 'ava';
 import type { E } from '@endo/eventual-send';
+import type { ExecutionContext as AvaT } from 'ava';
 
 const sink = () => {};
 
@@ -39,9 +36,6 @@ export const bootstrapMethods: { [P in keyof BootstrapRootObject]: P } = {
   consumeItem: 'consumeItem',
   produceItem: 'produceItem',
   resetItem: 'resetItem',
-  messageVat: 'messageVat',
-  messageVatObject: 'messageVatObject',
-  messageVatObjectSendOnly: 'messageVatObjectSendOnly',
   awaitVatObject: 'awaitVatObject',
   snapshotStore: 'snapshotStore',
 };
@@ -58,7 +52,7 @@ const keysToObject = <K extends PropertyKey, V>(
  * strings.
  */
 export const keyArrayEqual = (
-  t: ExecutionContext,
+  t: AvaT,
   a: PropertyKey[],
   b: PropertyKey[],
   message?: string,
@@ -99,14 +93,14 @@ export const makeRunUtils = (
     return result;
   };
 
-  const runMethod = async (method: string, args: object[] = []) => {
-    log('runMethod', method, args, 'at', cranksRun);
-    assert(Array.isArray(args));
+  const queueAndRun = async (deliveryThunk, voidResult = false) => {
+    log('queueAndRun at', cranksRun);
 
-    const kpid = await runThunk(() =>
-      controller.queueToVatRoot('bootstrap', method, args),
-    );
+    const kpid = await runThunk(deliveryThunk);
 
+    if (voidResult) {
+      return undefined;
+    }
     const status = controller.kpStatus(kpid);
     switch (status) {
       case 'fulfilled':
@@ -114,7 +108,7 @@ export const makeRunUtils = (
       case 'rejected':
         throw kunser(controller.kpResolution(kpid));
       case 'unresolved':
-        throw Error(`unresolved for method ${method}`);
+        throw Error(`unresolved value for ${kpid}`);
       default:
         throw Fail`unknown status ${status}`;
     }
@@ -123,52 +117,46 @@ export const makeRunUtils = (
   type EVProxy = typeof E & {
     sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
     vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-    rawBoot: Record<string, (...args: any) => Promise<any>>;
   };
-  // @ts-expect-error XXX casting
+  // @ts-expect-error cast, approximate
   const EV: EVProxy = presence =>
     new Proxy(harden({}), {
-      get: (_t, methodName, _rx) =>
+      get: (_t, method, _rx) =>
         harden((...args) =>
-          runMethod('messageVatObject', [{ presence, methodName, args }]),
+          queueAndRun(() =>
+            controller.queueToVatObject(presence, method, args),
+          ),
         ),
     });
-  EV.vat = name =>
+  EV.vat = vatName =>
     new Proxy(harden({}), {
-      get: (_t, methodName, _rx) =>
-        harden((...args) => {
-          assert.string(methodName);
-          if (name === 'meta') {
-            return runMethod(methodName, args);
-          }
-          return runMethod('messageVat', [{ name, methodName, args }]);
-        }),
+      get: (_t, method, _rx) =>
+        harden((...args) =>
+          queueAndRun(() => controller.queueToVatRoot(vatName, method, args)),
+        ),
     });
-  EV.rawBoot = new Proxy(harden({}), {
-    get: (_t, methodName, _rx) =>
-      // @ts-expect-error FIXME runMethod takes string but proxy allows symbol
-      harden((...args) => runMethod(methodName, args)),
-  });
   // @ts-expect-error xxx
   EV.sendOnly = presence =>
-    new Proxy(
-      {},
-      {
-        get:
-          (_t, methodName, _rx) =>
-          (...args) =>
-            runMethod('messageVatObjectSendOnly', [
-              { presence, methodName, args },
-            ]),
-      },
-    );
-  // @ts-expect-error 'get' is a read-only property
+    new Proxy(harden({}), {
+      get: (_t, method, _rx) =>
+        harden((...args) =>
+          queueAndRun(
+            () => controller.queueToVatObject(presence, method, args),
+            true,
+          ),
+        ),
+    });
+  // @ts-expect-error xxx
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
-        runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+        queueAndRun(() =>
+          controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
+            presence,
+            [pathElement],
+          ]),
+        ),
     });
-
   return harden({ runThunk, EV });
 };
 export type RunUtils = ReturnType<typeof makeRunUtils>;
@@ -308,6 +296,37 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   return buildAndExtract;
 };
 harden(makeProposalExtractor);
+
+export const matchRef = (
+  t: AvaT,
+  ref1: unknown,
+  ref2: unknown,
+  message?: string,
+) => t.is(krefOf(ref1), krefOf(ref2), message);
+
+export const matchAmount = (
+  t: AvaT,
+  amount: Amount,
+  refBrand: Brand,
+  refValue,
+  message?: string,
+) => {
+  matchRef(t, amount.brand, refBrand);
+  t.is(amount.value, refValue, message);
+};
+
+export const matchValue = (t: AvaT, value, ref) => {
+  matchRef(t, value.brand, ref.brand);
+  t.is(value.denom, ref.denom);
+  matchRef(t, value.issuer, ref.issuer);
+  t.is(value.issuerName, ref.issuerName);
+  t.is(value.proposedName, ref.proposedName);
+};
+
+export const matchIter = (t: AvaT, iter, valueRef) => {
+  t.is(iter.done, false);
+  matchValue(t, iter.value, valueRef);
+};
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
