@@ -79,6 +79,8 @@ const makeTestContext = async t => {
         { fsp: fspAmbient, path: pathAmbient },
       ),
       instance: MN2_INSTANCE || fail(t, '$MN2_INSTANCE required'), // agoricNames.instance key
+      // assume agoricNames.instance matches vstorage node
+      vstorageNode: MN2_INSTANCE,
       feeAddress: FEE_ADDRESS || fail(t, '$FEE_ADDRESS required'),
       chainId: CHAINID || fail(t, '$CHAINID required'),
       ...staticConfig,
@@ -109,6 +111,7 @@ export const getContractInfo = async (path, io = {}) => {
     agoric: { follow = agoric.follow },
     prefix = 'published.',
   } = io;
+  console.log('@@TODO: prevent agoric follow hang', prefix, path);
   const txt = await follow('-lF', `:${prefix}${path}`, '-o', 'text');
   const { body, slots } = JSON.parse(txt);
   return m.fromCapData({ body, slots });
@@ -173,13 +176,27 @@ const mintCalc = (myIST, cost, opts) => {
   return { wantMinted, giveCollateral, sendValue };
 };
 
+const testIncludes = (t, needle, haystack, label, sense = true) => {
+  t.log(needle, sense ? 'in' : 'not in', haystack.length, label, '?');
+  const check = sense ? t.deepEqual : t.notDeepEqual;
+  if (sense) {
+    t.deepEqual(
+      haystack.filter(c => c === needle),
+      [needle],
+    );
+  } else {
+    t.deepEqual(
+      haystack.filter(c => c === needle),
+      [],
+    );
+  }
+};
+
 test.serial(`pre-flight: not in agoricNames.instance`, async t => {
   const { config, agoric } = t.context;
   const { instance: target } = config;
   const { instance } = await wellKnownIdentities({ agoric });
-  const present = Object.keys(instance);
-  t.log({ present: present.length, target });
-  t.false(present.includes(target));
+  testIncludes(t, target, Object.keys(instance), 'instance keys');
 });
 
 const loadedBundleIds = ksql => {
@@ -220,13 +237,12 @@ const bundleDetail = cacheFn => {
 test.serial('bundles not yet installed', async t => {
   const { ksql, config } = t.context;
   const loaded = loadedBundleIds(ksql);
-  t.log('swingstore bundle count', loaded.length);
   const info = await proposalInfo(config.proposalDir);
   for (const { bundles, evals } of info) {
     t.log(evals[0].script, evals.length, 'eval', bundles.length, 'bundles');
     for (const bundle of bundles) {
       const { id } = bundleDetail(bundle);
-      t.false(loaded.includes(id), id);
+      testIncludes(t, id, loaded, 'loaded bundles', false);
     }
   }
 });
@@ -248,17 +264,16 @@ const readBundleSizes = async proposalDir => {
   return { bundleSizes, totalSize };
 };
 
-const ensureISTForInstall = async t => {
-  const { agd, io, config } = t.context;
-  const { proposalDir } = config;
+const ensureISTForInstall = async (agd, config, { log }) => {
+  const { proposalDir, installer } = config;
   const { bundleSizes, totalSize } = await readBundleSizes(proposalDir);
   const cost = importBundleCost(sum(bundleSizes));
-  t.log({ bundleSizes, totalSize, cost });
+  log({ bundleSizes, totalSize, cost });
 
-  const addr = agd.lookup(config.installer);
+  const addr = agd.lookup(installer);
   const istBalance = await myISTBalance(agd, addr);
   if (istBalance > cost) {
-    t.log('balance sufficient', { istBalance, cost });
+    log('balance sufficient', { istBalance, cost });
     return;
   }
   const { sendValue, wantMinted, giveCollateral } = mintCalc(
@@ -266,12 +281,13 @@ const ensureISTForInstall = async t => {
     cost,
     config,
   );
-  t.log({ wantMinted });
+  log({ wantMinted });
   await mintIST(addr, sendValue, wantMinted, giveCollateral);
 };
 
 test.serial('ensure enough IST to install bundles', async t => {
-  await ensureISTForInstall(t);
+  const { agd, config } = t.context;
+  await ensureISTForInstall(agd, config, { log: t.log });
   t.pass();
 });
 
@@ -281,7 +297,6 @@ const txAbbr = tx => {
 };
 
 test.serial('ensure bundles installed', async t => {
-  await ensureISTForInstall(t);
   const { agd, ksql, agoric, config, io } = t.context;
   const { chainId, proposalDir } = config;
   const loaded = loadedBundleIds(ksql);
@@ -299,7 +314,7 @@ test.serial('ensure bundles installed', async t => {
         continue;
       }
 
-      const bundleRd = config.proposalDir.join('bundles', fileName);
+      const bundleRd = proposalDir.join('bundles', fileName);
       const result = await agd.tx(
         ['swingset', 'install-bundle', `@${bundleRd}`, '--gas', 'auto'],
         { from, chainId, yes: true },
@@ -330,28 +345,45 @@ const flags = record => {
     .flat();
 };
 
-test.serial('core eval prereqs', async t => {
-  const { config } = t.context;
-  const { feeAddress } = config;
+test.todo(
+  'core eval prereqs: provision recipient wallets',
+  // , async t => {
+  //   const { config } = t.context;
+  //   const { feeAddress } = config;
   // TODO: check if already provisioned
   // await provisionSmartWallet(feeAddress, `20000000ubld`);
-  t.pass();
-});
+  //   t.pass();
+  // }
+);
 
 test.serial('core eval', async t => {
-  const { agd, config, io } = t.context;
-  const deposit = '10000000ubld';
+  const { agd, ksql, config } = t.context;
   const from = agd.lookup(config.proposer);
-  const { chainId, permit, script, instance } = config;
+  const { chainId, deposit, proposalDir, instance } = config;
   const info = { title: instance, description: `start ${instance}` };
   t.log('submit proposal', instance);
+
+  const loaded = loadedBundleIds(ksql);
+  const proposals = await proposalInfo(proposalDir);
+  for (const { bundles } of proposals) {
+    for (const bundle of bundles) {
+      const { id } = bundleDetail(bundle);
+      testIncludes(t, id, loaded, 'loaded bundles');
+    }
+  }
+  const evalNames = proposals
+    .map(({ evals }) => evals)
+    .flat()
+    .map(e => [e.permit, e.script])
+    .flat();
+  const evalPaths = evalNames.map(e => proposalDir.join(e).toString());
+  t.log(evalPaths);
   const result = await agd.tx(
     [
       'gov',
       'submit-proposal',
       'swingset-core-eval',
-      permit,
-      defanged,
+      ...evalPaths,
       ...flags({ ...info, deposit }),
       ...flags({ gas: 'auto', 'gas-adjustment': '1.2' }),
     ],
@@ -365,6 +397,23 @@ test.serial('core eval', async t => {
   t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
 });
 
-test.todo('check agoricNames.instance, agoricNames.brand');
+test.serial(`agoricNames populated (instance)`, async t => {
+  const { config, agoric } = t.context;
+  const { instance: target } = config;
+  const { instance, brand } = await wellKnownIdentities({ agoric });
+  const present = Object.keys(instance);
+  testIncludes(t, target, present, 'instance keys');
+});
 
-test.todo('check vstorage published.kread');
+test.todo(`agoricNames populated (brand)`);
+
+test.serial('check vstorage published.kread', async t => {
+  const { agd, config } = t.context;
+  const { vstorageNode } = config;
+  const { children } = await agd.query(['vstorage', 'children', 'published']);
+  testIncludes(t, vstorageNode, children, 'published children');
+});
+
+test.todo('test contract features- mint character');
+test.todo('test contract governance - pause');
+test.todo('test contract governance - API');
