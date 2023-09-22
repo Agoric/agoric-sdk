@@ -131,9 +131,7 @@ export const bundleSource = async (filePath, bundleName) => {
 };
 
 export const wellKnownIdentities = async (io = {}) => {
-  const {
-    agoric: { follow = agoric.follow },
-  } = io;
+  const { agoric: { follow = agoric.follow } = {} } = io;
   const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
   const fromSmallCapsEntries = txt => {
     const { body, slots } = JSON.parse(txt);
