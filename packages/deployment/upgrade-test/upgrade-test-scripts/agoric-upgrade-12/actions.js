@@ -2,9 +2,9 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { voteLatestProposalAndWait } from '../commonUpgradeHelpers.js';
-import { CHAINID, GOV1ADDR, VALIDATORADDR } from '../constants.js';
-import { agd, bundleSource } from '../cliHelper.js';
+import { voteLatestProposalAndWait } from '../lib/commonUpgradeHelpers.js/index.js';
+import { CHAINID, GOV1ADDR, VALIDATORADDR } from '../lib/constants.js/index.js';
+import { agd, bundleSource } from '../lib/cliHelper.js/index.js';
 
 const directoryName = dirname(fileURLToPath(import.meta.url));
 

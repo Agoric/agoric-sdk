@@ -8,20 +8,20 @@ import {
   executeCommand,
   smallCapsContext,
   wellKnownIdentities,
-} from '../cliHelper.js';
+} from '../lib/cliHelper.js/index.js';
 import {
   HOME,
   ATOM_DENOM,
   GOV1ADDR,
   GOV2ADDR,
   GOV3ADDR,
-} from '../constants.js';
+} from '../lib/constants.js/index.js';
 import {
   waitForBlock,
   executeOffer,
   getUser,
   provisionSmartWallet,
-} from '../commonUpgradeHelpers.js';
+} from '../lib/commonUpgradeHelpers.js/index.js';
 
 const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 

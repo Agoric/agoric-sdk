@@ -2,8 +2,8 @@
 import { $ } from 'execa';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { agd, agoric, agops } from './cliHelper.js';
-import { CHAINID, VALIDATORADDR } from './constants.js';
+import { agd, agoric, agops } from './lib/cliHelper.js/index.js';
+import { CHAINID, VALIDATORADDR } from './constants.js/index.js';
 
 const waitForBootstrap = async () => {
   const endpoint = 'localhost';
