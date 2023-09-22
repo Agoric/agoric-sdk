@@ -13,7 +13,7 @@ import { BridgeId, makeTracer, VBankAccount } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
+import { kunser, krefOf } from '@agoric/swingset-vat/src/lib/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
@@ -42,9 +42,6 @@ export const bootstrapMethods = {
   consumeItem: 'consumeItem',
   produceItem: 'produceItem',
   resetItem: 'resetItem',
-  messageVat: 'messageVat',
-  messageVatObject: 'messageVatObject',
-  messageVatObjectSendOnly: 'messageVatObjectSendOnly',
   awaitVatObject: 'awaitVatObject',
   snapshotStore: 'snapshotStore',
 };
@@ -111,6 +108,27 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     return result;
   };
 
+  const queueAndRun = async (deliveryThunk, voidResult = false) => {
+    log('queueAndRun at', cranksRun);
+
+    const kpid = await runThunk(deliveryThunk);
+
+    if (voidResult) {
+      return undefined;
+    }
+    const status = controller.kpStatus(kpid);
+    switch (status) {
+      case 'fulfilled':
+        return kunser(controller.kpResolution(kpid));
+      case 'rejected':
+        throw kunser(controller.kpResolution(kpid));
+      case 'unresolved':
+        throw Error(`unresolved value for ${kpid}`);
+      default:
+        throw Fail`unknown status ${status}`;
+    }
+  };
+
   const runMethod = async (method, args = []) => {
     log('runMethod', method, args, 'at', cranksRun);
     assert(Array.isArray(args));
@@ -136,51 +154,42 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
    * @type {typeof E & {
    *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-   *   rawBoot: Record<string, (...args: any) => Promise<any>>;
    * }}
    */
   // @ts-expect-error cast, approximate
   const EV = presence =>
     new Proxy(harden({}), {
-      get: (_t, methodName, _rx) =>
+      get: (_t, method, _rx) =>
         harden((...args) =>
-          runMethod('messageVatObject', [{ presence, methodName, args }]),
+          queueAndRun(() =>
+            controller.queueToVatObject(presence, method, args),
+          ),
         ),
     });
-  EV.vat = name =>
+  EV.vat = vatName =>
     new Proxy(harden({}), {
-      get: (_t, methodName, _rx) =>
-        harden((...args) => {
-          if (name === 'meta') {
-            return runMethod(methodName, args);
-          }
-          return runMethod('messageVat', [{ name, methodName, args }]);
-        }),
+      get: (_t, method, _rx) =>
+        harden((...args) =>
+          queueAndRun(() => controller.queueToVatRoot(vatName, method, args)),
+        ),
     });
-  EV.rawBoot = new Proxy(harden({}), {
-    get: (_t, methodName, _rx) =>
-      harden((...args) => runMethod(methodName, args)),
-  });
   // @ts-expect-error xxx
   EV.sendOnly = presence =>
-    new Proxy(
-      {},
-      {
-        get:
-          (_t, methodName, _rx) =>
-          (...args) =>
-            runMethod('messageVatObjectSendOnly', [
-              { presence, methodName, args },
-            ]),
-      },
-    );
+    new Proxy(harden({}), {
+      get: (_t, method, _rx) =>
+        harden((...args) =>
+          queueAndRun(
+            () => controller.queueToVatObject(presence, method, args),
+            true,
+          ),
+        ),
+    });
   // @ts-expect-error xxx
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
-        runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+        runMethod('awaitVatObject', [presence, [pathElement]]),
     });
-
   return harden({ runThunk, EV });
 };
 
@@ -323,6 +332,27 @@ export const makeProposalExtractor = ({ childProcess, fs }) => {
   return buildAndExtract;
 };
 harden(makeProposalExtractor);
+
+export const matchRef = (t, ref1, ref2, message) =>
+  t.is(krefOf(ref1), krefOf(ref2), message);
+
+export const matchAmount = (t, amount, refBrand, refValue, message) => {
+  matchRef(t, amount.brand, refBrand);
+  t.is(amount.value, refValue, message);
+};
+
+export const matchValue = (t, value, ref) => {
+  matchRef(t, value.brand, ref.brand);
+  t.is(value.denom, ref.denom);
+  matchRef(t, value.issuer, ref.issuer);
+  t.is(value.issuerName, ref.issuerName);
+  t.is(value.proposedName, ref.proposedName);
+};
+
+export const matchIter = (t, iter, valueRef) => {
+  t.is(iter.done, false);
+  matchValue(t, iter.value, valueRef);
+};
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.

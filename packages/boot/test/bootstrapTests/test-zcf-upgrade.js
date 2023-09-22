@@ -11,7 +11,11 @@ import { promises as fsAmbientPromises } from 'fs';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeZoeDriver } from './drivers.js';
-import { makeProposalExtractor, makeSwingsetTestKit } from './supports.js';
+import {
+  makeProposalExtractor,
+  makeSwingsetTestKit,
+  matchAmount,
+} from './supports.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -134,7 +138,6 @@ test('run restart-vats proposal', async t => {
 
   const brandRecord = await zoeDriver.instantiateProbeContract(zcfProbeBundle);
   const { brand, issuer } = brandRecord;
-  const ducatAmountRecord = v => ({ Ducats: { brand, value: v } });
 
   t.deepEqual(await zoeDriver.verifyRealloc(), {});
 
@@ -146,7 +149,7 @@ test('run restart-vats proposal', async t => {
   t.true(beforeResult.helperResult);
   // In this version of the test, we're upgrading from new ZCF to new ZCF
   t.true(beforeResult.internalResult);
-  t.deepEqual(await zoeDriver.verifyRealloc(), ducatAmountRecord(3n));
+  matchAmount(t, (await zoeDriver.verifyRealloc()).Ducats, brand, 3n);
 
   t.log('building proposal');
   // /////// Upgrading ////////////////////////////////
@@ -165,5 +168,5 @@ test('run restart-vats proposal', async t => {
   t.true(afterResult.stagingResult);
   t.true(afterResult.helperResult);
   t.true(afterResult.internalResult);
-  t.deepEqual(await zoeDriver.verifyRealloc(), ducatAmountRecord(6n));
+  matchAmount(t, (await zoeDriver.verifyRealloc()).Ducats, brand, 6n);
 });
