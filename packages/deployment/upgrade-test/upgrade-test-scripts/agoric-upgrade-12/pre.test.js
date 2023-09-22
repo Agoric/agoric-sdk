@@ -1,7 +1,7 @@
 import test from 'ava';
 
-import { waitForBlock } from '../commonUpgradeHelpers.js';
-import { getIncarnation } from './tools/vat-status.js';
+import { waitForBlock } from '../lib/commonUpgradeHelpers.js';
+import { getIncarnation } from '../lib/vat-status.js';
 
 test.before(async () => {
   console.log('Wait for upgrade to settle');

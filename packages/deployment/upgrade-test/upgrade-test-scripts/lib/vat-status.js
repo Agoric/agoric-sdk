@@ -1,6 +1,6 @@
 // @ts-check
 import dbOpenAmbient from 'better-sqlite3';
-import { HOME } from '../../constants.js';
+import { HOME } from './constants.js';
 
 /**
  * @file look up vat incarnation from kernel DB

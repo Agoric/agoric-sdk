@@ -1,9 +1,14 @@
 import test from 'ava';
 
-import { agd, agoric, agops } from '../cliHelper.js';
-import { GOV1ADDR, SDK_ROOT } from '../constants.js';
+import { agd, agoric, agops } from '../lib/cliHelper.js';
+import { GOV1ADDR, SDK_ROOT } from '../lib/constants.js';
 import { installBundles, runZcfUpgrade, runProber } from './actions.js';
-import { adjustVault, closeVault, mintIST, openVault } from '../econHelpers.js';
+import {
+  adjustVault,
+  closeVault,
+  mintIST,
+  openVault,
+} from '../lib/econHelpers.js';
 
 test.before(async t => {
   await mintIST(GOV1ADDR, 12340000000, 10000, 2000);
