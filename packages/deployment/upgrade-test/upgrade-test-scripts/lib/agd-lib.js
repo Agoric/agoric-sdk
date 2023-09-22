@@ -92,6 +92,15 @@ export const makeAgd = ({ execFileSync }) => {
       ...nameHub,
       readOnly: () => ro,
       nameHub: () => nameHub,
+      keys: {
+        add: (name, mnemonic) => {
+          return execFileSync(
+            agdBinary,
+            [...keyringArgs, 'keys', 'add', name, '--recover'],
+            { input: mnemonic },
+          ).toString();
+        },
+      },
       withOpts: opts => make({ home, keyringBackend, rpcAddrs, ...opts }),
     });
     return rw;
