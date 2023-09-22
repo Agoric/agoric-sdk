@@ -17,9 +17,9 @@
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.3.0",
-    "@endo/bundle-source": "^2.5.1",
-    "@endo/captp": "^3.1.1",
-    "@endo/init": "^0.5.56",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
+    "@endo/captp": "3.1.1",
+    "@endo/init": "0.5.56",
     "ava": "^5.2.0",
     "import-meta-resolve": "^2.2.1"
   },
@@ -34,11 +34,11 @@
     "@agoric/vat-data": "^0.5.3-u11.0",
     "@agoric/vats": "^0.15.2-u11.0",
     "@agoric/zoe": "^0.26.3-u11.0",
-    "@endo/eventual-send": "^0.17.2",
-    "@endo/far": "^0.2.18",
-    "@endo/marshal": "^0.8.5",
-    "@endo/nat": "^4.1.27",
-    "@endo/promise-kit": "^0.2.56"
+    "@endo/eventual-send": "0.17.2",
+    "@endo/far": "0.2.18",
+    "@endo/marshal": "0.8.5",
+    "@endo/nat": "4.1.27",
+    "@endo/promise-kit": "0.2.56"
   },
   "files": [
     "src/"

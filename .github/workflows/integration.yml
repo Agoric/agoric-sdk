@@ -5,8 +5,10 @@ on:
   push:
     branches:
       - master
-      - release-pismo
+      - 'release-*'
       - beta
+    tags:
+      - '@agoric/sdk@*'
   pull_request:
     types:
       - opened
@@ -28,10 +30,10 @@ jobs:
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        # FIXME: Use this to enable NPM deploys...
-        # cli: [link-cli, local-npm]
-        cli: [link-cli]
+        cli: [link-cli/yarn, registry/yarn, registry/npm, registry/npx]
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v3
         with:
@@ -41,17 +43,10 @@ jobs:
         shell: bash
 
       # Prerequisites
-
-      - uses: actions/setup-node@v3
+      - uses: ./.github/actions/restore-node
         with:
-          node-version: '16.x'
-      - name: cache node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          node-version: 16.x
+          keep-endo: 'true'
 
       # Select a branch on dapp to test against by adding text to the body of the
       # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
@@ -74,53 +69,16 @@ jobs:
             console.log(branch);
             return branch;
 
-      # 'yarn install' must be done at the top level, to build all the
-      # cross-package symlinks
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
-
-      - name: Link Agoric CLI from SDK
-        if: ${{ matrix.cli == 'link-cli' }}
-        run: |
-          yarn link-cli "$HOME/bin/agoric"
-          echo "AGORIC_CMD=[\"$HOME/bin/agoric\"]" >> $GITHUB_ENV
-
       - name: Start local NPM registry
-        if: ${{ matrix.cli == 'local-npm' }}
+        if: ${{ startsWith(matrix.cli, 'registry') }}
         run: |
-          tmp_registry_log=`mktemp`
-          nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
-          # Wait for `verdaccio` to boot
-          grep -q 'http address' <(tail -f $tmp_registry_log)
-
-          # Set registry to local registry
-          npm set registry http://localhost:4873
-          yarn config set registry http://localhost:4873
-
-          # Login so we can publish packages
-          npx npm-cli-login@^1.0.0 -u user -p password -e user@example.com \
-            -r http://localhost:4873 --quotes
-
-          npm whoami
-
-          yarn lerna publish --conventional-prerelease --canary --exact \
-            --dist-tag=blah --preid=dev-$(git rev-parse --short=7 HEAD) \
-            --no-push --no-verify-access --yes
-
-          yarn global add agoric@blah </dev/null
-
-          # Use the locally-installed dist-tag.
-          echo 'AGORIC_INSTALL_OPTIONS=["blah"]' >> $GITHUB_ENV
-          echo 'AGORIC_START_OPTIONS=["--rebuild"]' >> $GITHUB_ENV
-          echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
+          set -xe
+          git reset --hard HEAD
+          git config user.email "noreply@agoric.com"
+          REGISTRY_PUBLISH_WORKSPACES="$HOME/endo" scripts/registry.sh bg-publish ${{ matrix.cli }}
 
       - name: run agoric-cli integration-test
-        working-directory: ./packages/agoric-cli
-        run: yarn integration-test
-        env:
-          AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
-          # Try to avoid hitting a pessimal Actions output rate-limitation.
-          SOLO_MAX_DEBUG_LENGTH: '1024'
+        run: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
 
       - name: notify on failure
         if: >

@@ -15,7 +15,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'force:integration') || (
         (
           github.event.pull_request.base.ref == 'master' ||
-          github.event.pull_request.base.ref == 'release-pismo' ||
+          startsWith(github.event.pull_request.base.ref, 'release-') ||
           github.event.pull_request.base.ref == 'beta'
         ) &&
         github.event.pull_request.draft == false &&

@@ -41,17 +41,17 @@
     "@agoric/notifier": "^0.6.3-u11.0",
     "@agoric/store": "^0.9.3-u11.0",
     "@agoric/zoe": "^0.26.3-u11.0",
-    "@endo/base64": "^0.2.31",
-    "@endo/bundle-source": "^2.5.1",
-    "@endo/far": "^0.2.18",
-    "@endo/marshal": "^0.8.5",
-    "@endo/nat": "^4.1.27",
-    "@endo/promise-kit": "^0.2.56",
-    "@endo/zip": "^0.2.31"
+    "@endo/base64": "0.2.31",
+    "@endo/bundle-source": "2.5.2-upstream-rollup",
+    "@endo/far": "0.2.18",
+    "@endo/marshal": "0.8.5",
+    "@endo/nat": "4.1.27",
+    "@endo/promise-kit": "0.2.56",
+    "@endo/zip": "0.2.31"
   },
   "devDependencies": {
     "@agoric/vats": "^0.15.2-u11.0",
-    "@endo/init": "^0.5.56",
+    "@endo/init": "0.5.56",
     "ava": "^5.2.0",
     "import-meta-resolve": "^2.2.1"
   },
