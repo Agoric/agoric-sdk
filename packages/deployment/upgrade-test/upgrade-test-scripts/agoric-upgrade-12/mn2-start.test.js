@@ -37,12 +37,12 @@ import dbOpenAmbient from 'better-sqlite3';
 
 // TODO: factor out ambient authority from these
 // or at least allow caller to supply authority.
-import { mintIST } from '../econHelpers.js';
-import { agoric, wellKnownIdentities } from '../cliHelper.js';
+import { mintIST } from '../lib/econHelpers.js/index.js';
+import { agoric, wellKnownIdentities } from '../lib/cliHelper.js/index.js';
 import {
   provisionSmartWallet,
   voteLatestProposalAndWait,
-} from '../commonUpgradeHelpers.js';
+} from '../lib/commonUpgradeHelpers.js/index.js';
 
 import { makeAgd } from '../lib/agd-lib.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
