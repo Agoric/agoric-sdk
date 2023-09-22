@@ -5,7 +5,6 @@ import * as cpAmbient from 'child_process'; // TODO: use execa?
 import * as fspAmbient from 'fs/promises';
 import * as pathAmbient from 'path';
 import dbOpenAmbient from 'better-sqlite3';
-import { execaNode } from 'execa';
 
 import { makeAgd } from '../lib/agd-lib.js';
 import { mintIST } from '../econHelpers.js';
@@ -52,6 +51,13 @@ const makeFileRd = (root, { fsp, path }) => {
   return make(root);
 };
 
+const staticConfig = {
+  deposit: '10000000ubld',
+  installer: 'gov1', // name in keyring
+  proposer: 'validator',
+  collateralPrice: 6, // conservatively low price. TODO: look up
+};
+
 const makeTestContext = async t => {
   const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
     keyringBackend: 'test',
@@ -74,12 +80,9 @@ const makeTestContext = async t => {
       ),
       instance: MN2_INSTANCE || fail(t, '$MN2_INSTANCE required'), // agoricNames.instance key
       feeAddress: FEE_ADDRESS || fail(t, '$FEE_ADDRESS required'),
-      installer: 'gov1', // name in keyring
-      proposer: 'validator',
-      collateralPrice: 6, // conservatively low price. TODO: look up
       chainId: CHAINID || fail(t, '$CHAINID required'),
+      ...staticConfig,
     },
-    io: { stat: fspAmbient.stat, readFile: fspAmbient.readFile, execaNode },
   };
 };
 
@@ -184,8 +187,6 @@ const loadedBundleIds = ksql => {
   return ids;
 };
 
-const JSONParse = s => JSON.parse(s);
-
 /**
  * @param {FileRd} rd
  * @returns {Promise<ProposalInfo[]>}
@@ -208,10 +209,11 @@ const proposalInfo = rd =>
       ),
     );
 
+/** @param {string} cacheFn */
 const bundleDetail = cacheFn => {
-  const fileName = cacheFn.split('/').at(-1);
-  const hash = fileName.replace(/\.json$/, '');
-  const id = `b1-${hash}`;
+  const fileName = cacheFn.split('/').at(-1) || fail(null, 'bad file name');
+  const id = fileName.replace(/\.json$/, '');
+  const hash = id.replace(/^b1-/, '');
   return { fileName, endoZipBase64Sha512: hash, id };
 };
 
@@ -268,7 +270,7 @@ const ensureISTForInstall = async t => {
   await mintIST(addr, sendValue, wantMinted, giveCollateral);
 };
 
-test.only('ensure enough IST to install bundles', async t => {
+test.serial('ensure enough IST to install bundles', async t => {
   await ensureISTForInstall(t);
   t.pass();
 });
@@ -279,36 +281,43 @@ const txAbbr = tx => {
 };
 
 test.serial('ensure bundles installed', async t => {
-  const { ids, id } = await contractBundleStatus(t);
-  if (ids.includes(id)) {
-    t.log('bundle already installed', id);
-    t.pass();
-    return;
-  }
-
-  const { agd, agoric, config, io } = t.context;
-
-  const from = agd.lookup(config.installer);
-  const { chainId, bundle } = config;
-
-  const { endoZipBase64Sha512 } = await readContractBundle(config, io);
-
   await ensureISTForInstall(t);
-  const result = await agd.tx(
-    ['swingset', 'install-bundle', `@${bundle}`, '--gas', 'auto'],
-    { from, chainId, yes: true },
-  );
-  t.log(txAbbr(result));
-  // t.log(result);
-  t.is(result.code, 0);
+  const { agd, ksql, agoric, config, io } = t.context;
+  const { chainId, proposalDir } = config;
+  const loaded = loadedBundleIds(ksql);
+  const from = agd.lookup(config.installer);
 
-  const info = await getContractInfo('bundles', { agoric, prefix: '' });
-  t.log(info);
-  t.deepEqual(info, {
-    endoZipBase64Sha512,
-    error: null,
-    installed: true,
-  });
+  let todo = 0;
+  let done = 0;
+  for (const { bundles } of await proposalInfo(proposalDir)) {
+    todo += bundles.length;
+    for (const bundle of bundles) {
+      const { id, fileName, endoZipBase64Sha512 } = bundleDetail(bundle);
+      if (loaded.includes(id)) {
+        t.log('bundle already installed', id);
+        done += 1;
+        continue;
+      }
+
+      const bundleRd = config.proposalDir.join('bundles', fileName);
+      const result = await agd.tx(
+        ['swingset', 'install-bundle', `@${bundleRd}`, '--gas', 'auto'],
+        { from, chainId, yes: true },
+      );
+      t.log(txAbbr(result));
+      t.is(result.code, 0);
+
+      const info = await getContractInfo('bundles', { agoric, prefix: '' });
+      t.log(info);
+      done += 1;
+      t.deepEqual(info, {
+        endoZipBase64Sha512,
+        error: null,
+        installed: true,
+      });
+    }
+  }
+  t.is(todo, done);
 });
 
 /**
@@ -334,9 +343,6 @@ test.serial('core eval', async t => {
   const deposit = '10000000ubld';
   const from = agd.lookup(config.proposer);
   const { chainId, permit, script, instance } = config;
-  const defanged = `${script}-DEFANG`;
-  t.log({ defanged });
-  await io.execaNode(config.clean, [script]).pipeStdout(defanged);
   const info = { title: instance, description: `start ${instance}` };
   t.log('submit proposal', instance);
   const result = await agd.tx(
