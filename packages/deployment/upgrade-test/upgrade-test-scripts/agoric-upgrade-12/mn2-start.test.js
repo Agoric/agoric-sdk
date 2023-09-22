@@ -33,7 +33,7 @@ import * as cpAmbient from 'child_process'; // TODO: use execa
 import * as fspAmbient from 'fs/promises';
 import * as pathAmbient from 'path';
 import * as processAmbient from 'process';
-import * as dbOpenAmbient from 'better-sqlite3';
+import dbOpenAmbient from 'better-sqlite3';
 
 // TODO: factor out ambient authority from these
 // or at least allow caller to supply authority.
