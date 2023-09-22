@@ -2,10 +2,12 @@
 /* global process */
 import anyTest from 'ava';
 import * as cpAmbient from 'child_process'; // TODO: use execa?
-import * as fspAmbient from 'node:fs/promises';
+import * as fspAmbient from 'fs/promises';
+import * as pathAmbient from 'path';
 import dbOpenAmbient from 'better-sqlite3';
+import { execaNode } from 'execa';
 
-import { makeAgd } from './tools/agd-lib.js';
+import { makeAgd } from '../lib/agd-lib.js';
 import { mintIST } from '../econHelpers.js';
 import { agoric, wellKnownIdentities } from '../cliHelper.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
@@ -15,7 +17,6 @@ import {
   provisionSmartWallet,
   voteLatestProposalAndWait,
 } from '../commonUpgradeHelpers.js';
-import { execaNode } from 'execa';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
@@ -28,19 +29,35 @@ const fail = (t, msg) => {
   throw Error(msg);
 };
 
+/**
+ * @param {string} root
+ * @param {object} io
+ * @param {typeof import('fs/promises')} io.fsp
+ * @param {typeof import('path')} io.path
+ *
+ * @typedef {ReturnType<typeof makeFileRd>} FileRd
+ */
+const makeFileRd = (root, { fsp, path }) => {
+  const make = there => {
+    const self = {
+      toString: () => there,
+      join: (...segments) => make(path.join(there, ...segments)),
+      stat: () => fsp.stat(there),
+      readText: () => fsp.readFile(there, 'utf8'),
+      readDir: () =>
+        fsp.readdir(there).then(names => names.map(ref => self.join(ref))),
+    };
+    return self;
+  };
+  return make(root);
+};
+
 const makeTestContext = async t => {
   const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
     keyringBackend: 'test',
   });
-  const {
-    MN2_PERMIT,
-    MN2_SCRIPT,
-    MN2_BUNDLE,
-    MN2_INSTANCE,
-    FEE_ADDRESS,
-    CHAINID,
-    HOME,
-  } = process.env;
+  const { MN2_PROPOSAL_INFO, MN2_INSTANCE, FEE_ADDRESS, CHAINID, HOME } =
+    process.env;
 
   const fullPath = swingstorePath.replace(/^~/, NonNullish(HOME));
   const ksql = dbTool(dbOpenAmbient(fullPath, { readonly: true }));
@@ -51,14 +68,14 @@ const makeTestContext = async t => {
     agoric,
     ksql,
     config: {
+      proposalDir: makeFileRd(
+        MN2_PROPOSAL_INFO || fail(t, '$MN2_PROPOSAL_INFO required'),
+        { fsp: fspAmbient, path: pathAmbient },
+      ),
       instance: MN2_INSTANCE || fail(t, '$MN2_INSTANCE required'), // agoricNames.instance key
-      bundle: MN2_BUNDLE || fail(t, '$MN2_BUNDLE required'),
-      permit: MN2_PERMIT || fail(t, '$MN2_PERMIT required'),
       feeAddress: FEE_ADDRESS || fail(t, '$FEE_ADDRESS required'),
-      script: MN2_SCRIPT || fail(t, '$MN2_SCRIPT required'),
       installer: 'gov1', // name in keyring
       proposer: 'validator',
-      clean: `${sdk}/packages/cosmic-swingset/scripts/clean-core-eval.js`,
       collateralPrice: 6, // conservatively low price. TODO: look up
       chainId: CHAINID || fail(t, '$CHAINID required'),
     },
@@ -167,32 +184,74 @@ const loadedBundleIds = ksql => {
   return ids;
 };
 
-const readContractBundle = async (config, io) => {
-  const t = undefined;
-  const { bundle } = config;
-  return io.readFile(bundle, 'utf8').then(s => JSON.parse(s));
+const JSONParse = s => JSON.parse(s);
+
+/**
+ * @param {FileRd} rd
+ * @returns {Promise<ProposalInfo[]>}
+ *
+ * @typedef {{ bundles: string[], evals: { permit: string; script: string }[] }} ProposalInfo
+ */
+const proposalInfo = rd =>
+  rd
+    .readDir()
+    .then(files => files.filter(f => `${f}`.endsWith('-info.json')))
+    .then(xs =>
+      Promise.all(
+        xs.map(x =>
+          x.readText().then(txt => {
+            /** @type {ProposalInfo} */
+            const p = JSON.parse(txt);
+            return p;
+          }),
+        ),
+      ),
+    );
+
+const bundleDetail = cacheFn => {
+  const fileName = cacheFn.split('/').at(-1);
+  const hash = fileName.replace(/\.json$/, '');
+  const id = `b1-${hash}`;
+  return { fileName, endoZipBase64Sha512: hash, id };
 };
 
-const contractBundleStatus = async t => {
-  const { ksql, config, io } = t.context;
-  const data = await readContractBundle(config, io);
-  const { endoZipBase64Sha512 } = data;
-  const ids = loadedBundleIds(ksql);
-  return { ids, endoZipBase64Sha512, id: `b1-${endoZipBase64Sha512}` };
-};
-
-test.skip('bundle not yet installed', async t => {
-  const { ids, id } = await contractBundleStatus(t);
-  t.log('swingstore bundle count', ids.length, id);
-  t.false(ids.includes(id));
+test.serial('bundles not yet installed', async t => {
+  const { ksql, config } = t.context;
+  const loaded = loadedBundleIds(ksql);
+  t.log('swingstore bundle count', loaded.length);
+  const info = await proposalInfo(config.proposalDir);
+  for (const { bundles, evals } of info) {
+    t.log(evals[0].script, evals.length, 'eval', bundles.length, 'bundles');
+    for (const bundle of bundles) {
+      const { id } = bundleDetail(bundle);
+      t.false(loaded.includes(id), id);
+    }
+  }
 });
+
+const sum = xs => xs.reduce((a, b) => a + b, 0);
+
+/** @param {FileRd} proposalDir */
+const readBundleSizes = async proposalDir => {
+  const info = await proposalInfo(proposalDir);
+  const bundleRds = info
+    .map(({ bundles }) =>
+      bundles.map(b => proposalDir.join('bundles', bundleDetail(b).fileName)),
+    )
+    .flat();
+  const bundleSizes = await Promise.all(
+    bundleRds.map(rd => rd.stat().then(st => st.size)),
+  );
+  const totalSize = sum(bundleSizes);
+  return { bundleSizes, totalSize };
+};
 
 const ensureISTForInstall = async t => {
   const { agd, io, config } = t.context;
-  const { bundle } = config;
-  const { size } = await io.stat(bundle);
-  const cost = importBundleCost(size);
-  t.log({ size, cost, bundle });
+  const { proposalDir } = config;
+  const { bundleSizes, totalSize } = await readBundleSizes(proposalDir);
+  const cost = importBundleCost(sum(bundleSizes));
+  t.log({ bundleSizes, totalSize, cost });
 
   const addr = agd.lookup(config.installer);
   const istBalance = await myISTBalance(agd, addr);
@@ -209,7 +268,7 @@ const ensureISTForInstall = async t => {
   await mintIST(addr, sendValue, wantMinted, giveCollateral);
 };
 
-test.skip('ensure enough IST to install bundle', async t => {
+test.only('ensure enough IST to install bundles', async t => {
   await ensureISTForInstall(t);
   t.pass();
 });
@@ -219,7 +278,7 @@ const txAbbr = tx => {
   return { txhash, code, height, gas_used };
 };
 
-test.serial('ensure bundle installed', async t => {
+test.serial('ensure bundles installed', async t => {
   const { ids, id } = await contractBundleStatus(t);
   if (ids.includes(id)) {
     t.log('bundle already installed', id);
@@ -299,3 +358,7 @@ test.serial('core eval', async t => {
   t.log(detail.proposal_id, detail.voting_end_time, detail.status);
   t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
 });
+
+test.todo('check agoricNames.instance, agoricNames.brand');
+
+test.todo('check vstorage published.kread');
