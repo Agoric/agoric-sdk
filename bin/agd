@@ -91,6 +91,7 @@ if $NEED_NODEJS; then
 fi
 
 (
+  ${NO_BUILD:-false} && exit 0
   # Send the build output to stderr unless we're only building.  This prevents
   # the daemon's stdout from being polluted with build output.
   $BUILD_ONLY || exec 1>&2
