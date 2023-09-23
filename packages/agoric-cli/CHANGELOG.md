@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.2-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.2-u11.0...agoric@0.21.2-u11wf.0) (2023-09-23)
+
+
+### Bug Fixes
+
+* **agoric:** relax override mistake using `@endo/init/legacy.js` ([f46e279](https://github.com/Agoric/agoric-sdk/commit/f46e27978bf46180f8bda784829dc62b43301140))
+
+
+
 ### [0.21.2-u11.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.1...agoric@0.21.2-u11.0) (2023-08-24)
 
 

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.15.2-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.2-u11.0...@agoric/vats@0.15.2-u11wf.0) (2023-09-23)
+
+
+### Features
+
+* **smart-wallet:** upgrade walletFactory for non-vbank assets ([073b450](https://github.com/Agoric/agoric-sdk/commit/073b450b0790d1837d59e80c0109f0923b5f0cd2))
+
+
+
 ### [0.15.2-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.1...@agoric/vats@0.15.2-u11.0) (2023-08-24)
 
 

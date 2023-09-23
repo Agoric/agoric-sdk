@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.4-u11wf.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u11.0...@agoric/smart-wallet@0.5.4-u11wf.0) (2023-09-23)
+
+
+### Features
+
+* **smart-wallet:** trading in non-vbank asset ([dc99ca0](https://github.com/Agoric/agoric/commit/dc99ca0b58af3a66778071993f0d73d099605069))
+* **smart-wallet:** upgrade walletFactory for non-vbank assets ([073b450](https://github.com/Agoric/agoric/commit/073b450b0790d1837d59e80c0109f0923b5f0cd2))
+* **smart-wallet:** withdraw payments before getting invitation ([82ed64e](https://github.com/Agoric/agoric/commit/82ed64ec20ce7884d6cdf6caac63fab85d02af40)), closes [#7098](https://github.com/Agoric/agoric/issues/7098)
+
+
+
 ### [0.5.4-u11.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.3...@agoric/smart-wallet@0.5.4-u11.0) (2023-08-24)
 
 **Note:** Version bump only for package @agoric/smart-wallet

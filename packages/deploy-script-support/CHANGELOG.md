@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.4-u11.0...@agoric/deploy-script-support@0.10.4-u11wf.0) (2023-09-23)
+
+
+### Bug Fixes
+
+* **deploy-scripts-support:** correct bare module resolution ([f1e7109](https://github.com/Agoric/agoric-sdk/commit/f1e710937cd25fc261ca34c670c206fbaed583d3))
+
+
+
 ### [0.10.4-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.3...@agoric/deploy-script-support@0.10.4-u11.0) (2023-08-24)
 
 **Note:** Version bump only for package @agoric/deploy-script-support
