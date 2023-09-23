@@ -1,6 +1,6 @@
-import { agd, agops } from './lib/cliHelper.js';
-import { ATOM_DENOM, CHAINID, VALIDATORADDR } from './lib/constants.js';
-import { executeOffer } from './lib/commonUpgradeHelpers.js';
+import { agd, agops } from './cliHelper.js';
+import { ATOM_DENOM, CHAINID, VALIDATORADDR } from './constants.js';
+import { executeOffer } from './commonUpgradeHelpers.js';
 
 export const openVault = (address, mint, collateral) => {
   return executeOffer(
