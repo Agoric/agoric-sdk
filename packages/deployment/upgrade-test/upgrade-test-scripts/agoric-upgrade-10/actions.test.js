@@ -6,19 +6,15 @@ import {
   raiseDebtCeiling,
   pushPrice,
 } from './actions.js';
-import { agd, agoric, agops } from '../lib/cliHelper.js/index.js';
-import { GOV1ADDR, GOV2ADDR } from '../lib/constants.js/index.js';
+import { agd, agoric, agops } from '../lib/cliHelper.js';
+import { GOV1ADDR, GOV2ADDR } from '../lib/constants.js';
 import {
   getUser,
   newOfferId,
   waitForBlock,
-} from '../lib/commonUpgradeHelpers.js/index.js';
+} from '../lib/commonUpgradeHelpers.js';
 import { submitDeliverInbound } from './upgradeHelpers.js';
-import {
-  openVault,
-  adjustVault,
-  closeVault,
-} from '../lib/econHelpers.js/index.js';
+import { openVault, adjustVault, closeVault } from '../lib/econHelpers.js';
 
 const START_FREQUENCY = 600; // StartFrequency: 600s (auction runs every 10m)
 const CLOCK_STEP = 20; // ClockStep: 20s (ensures auction completes in time)
