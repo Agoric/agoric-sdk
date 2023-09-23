@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.3-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.3-u11.0...@agoric/internal@0.3.3-u11wf.0) (2023-09-23)
+
+
+### Features
+
+* **internal:** fakeStorage.getBody() supports index other than -1 ([d2e05c4](https://github.com/Agoric/agoric-sdk/commit/d2e05c43dcd5dfa3719feecc0b303b8294efeef0))
+
+
+
 ### [0.3.3-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.2...@agoric/internal@0.3.3-u11.0) (2023-08-24)
 
 **Note:** Version bump only for package @agoric/internal

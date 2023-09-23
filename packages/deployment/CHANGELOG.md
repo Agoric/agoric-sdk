@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ssh-node@4.0.0-u11.0...@agoric/deployment@4.0.0-u11wf.0) (2023-09-23)
+
+**Note:** Packaged renamed from @agoric/ssh-node to @agoric/deployment
+
+### Features
+
+* **smart-wallet:** upgrade walletFactory for non-vbank assets ([073b450](https://github.com/Agoric/agoric-sdk/commit/073b450b0790d1837d59e80c0109f0923b5f0cd2))
+
+
+
 ## [4.0.0-u11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ssh-node@3.0.0...@agoric/ssh-node@4.0.0-u11.0) (2023-08-24)
 
 
