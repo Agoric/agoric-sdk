@@ -82,8 +82,10 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @returns {Promise<{
  *   controller: Awaited<ReturnType<typeof makeSwingsetController>>,
  *   kvStore: KVStore,
- *   messageToVat: (vatName: string, method: string, args?: unknown[]) => Promise<unknown>,
- *   messageToVatAndRetain: (method: string, args?: unknown[]) => Promise<unknown>,
+ *   messageToVat: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   messageToVatAndRetain: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   messageToObject: (target: unknown, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   messageToObjectAndRetain: (target: unknown, method: string, ...args: unknown[]) => Promise<unknown>,
  * }>}
  */
 const initKernelForTest = async (t, bundleData, config, options = {}) => {
@@ -109,12 +111,10 @@ const initKernelForTest = async (t, bundleData, config, options = {}) => {
   };
   const makeRun = kpResolutionOptions => {
     const messageToVat = async (vatName, method, ...args) => {
-      assert(Array.isArray(args));
       const kpid = c.queueToVatRoot(vatName, method, args);
       return awaitRun(kpid, kpResolutionOptions);
     };
     const messageToObject = async (target, method, ...args) => {
-      assert(Array.isArray(args));
       const kpid = c.queueToVatObject(target, method, args);
       return awaitRun(kpid, kpResolutionOptions);
     };

@@ -72,8 +72,7 @@ export const buildRootObject = () => {
       // `objectMap` hardens its result, but...
       const methods = objectMap(returnValues, makeGetterFunction);
       // ... `Far` requires its methods argument not to be hardened.
-      const unhardenedMethods = { ...methods };
-      const remotable = Far(label, unhardenedMethods);
+      const remotable = Far(label, { ...methods });
       callLogsByRemotable.set(remotable, callLogs);
       return remotable;
     },

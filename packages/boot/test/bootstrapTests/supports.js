@@ -129,27 +129,6 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     }
   };
 
-  const runMethod = async (method, args = []) => {
-    log('runMethod', method, args, 'at', cranksRun);
-    assert(Array.isArray(args));
-
-    const kpid = await runThunk(() =>
-      controller.queueToVatRoot('bootstrap', method, args),
-    );
-
-    const status = controller.kpStatus(kpid);
-    switch (status) {
-      case 'fulfilled':
-        return kunser(controller.kpResolution(kpid));
-      case 'rejected':
-        throw kunser(controller.kpResolution(kpid));
-      case 'unresolved':
-        throw Error(`unresolved for method ${method}`);
-      default:
-        throw Fail`unknown status ${status}`;
-    }
-  };
-
   /**
    * @type {typeof E & {
    *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
@@ -188,7 +167,12 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
-        runMethod('awaitVatObject', [presence, [pathElement]]),
+        queueAndRun(() =>
+          controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
+            presence,
+            [pathElement],
+          ]),
+        ),
     });
   return harden({ runThunk, EV });
 };

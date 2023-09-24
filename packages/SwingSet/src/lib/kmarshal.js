@@ -72,9 +72,9 @@ export const krefOf = obj => {
       // Other half of Bizarro World hack for handling promises.  Note the
       // peculiar way the @@toStringTag getter is used.
       const desc = Object.getOwnPropertyDescriptor(obj, toStringTag);
-      assert(desc !== undefined);
+      assert(desc !== undefined, 'promise lacks toStringTag getter');
       const getter = desc.get;
-      assert.typeof(getter, 'function');
+      assert.typeof(getter, 'function', 'toStringTag getter is not a function');
       // @ts-expect-error violates the norm that getters have zero parameters
       const kref = getter(true);
       assert.typeof(kref, 'string');
@@ -82,7 +82,7 @@ export const krefOf = obj => {
     }
     case 'remotable': {
       const getKref = obj.getKref;
-      assert.typeof(getKref, 'function', 'object lacking getKref function');
+      assert.typeof(getKref, 'function', 'object lacks getKref function');
       return getKref();
     }
     default:

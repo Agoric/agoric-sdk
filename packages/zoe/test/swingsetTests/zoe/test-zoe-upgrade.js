@@ -45,12 +45,10 @@ test('zoe vat upgrade trauma', async t => {
   };
 
   const messageToVat = async (vatName, method, ...args) => {
-    assert(Array.isArray(args));
     const kpid = c.queueToVatRoot(vatName, method, args);
     return awaitRun(kpid);
   };
   const messageToObject = async (presence, method, ...args) => {
-    assert(Array.isArray(args));
     const kpid = c.queueToVatObject(presence, method, args);
     return awaitRun(kpid);
   };
