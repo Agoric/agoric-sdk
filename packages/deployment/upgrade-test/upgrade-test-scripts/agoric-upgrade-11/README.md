@@ -14,7 +14,7 @@ KREAD_COMMITTEE_ADDRESSES='{"kgov1": "agoric1890064p6j3xhzzdf8daknd6kpvhw766ds8f
 KREAD_COMMITTEE_NAME=kread-gov \
 KREAD_ROYALTY_ADDRESS=agoric1yjc8llu3fugm7tgqye4rd5n92l9x2dhe30dazp \
 KREAD_PLATFORM_ADDRESS=agoric1enwuyn2hzyyvt39x87tk9rhlkpqtyv9haj7mgs \
-make build-proposals
+make clean build-proposals
 ```
 
 Build the images if you haven't lately,
@@ -25,17 +25,15 @@ make build
 
 Then with MN2 set to the repo you build the above from:
 ```
-MN2=/opt/agoric/KREAd/ make run
+TARGET=agoric-upgrade-11 MN2=/opt/agoric/KREAd/ make run
 ```
 
 That will run:
 ```
 docker run --rm -it -p 26656:26656 -p 26657:26657 -p 1317:1317 -v "${PWD}:/workspace" -v "${MN2}:/mn2" -e "DEBUG=SwingSet:ls,SwingSet:vat" -e "DEST=1" -e "TMUX_USE_CC=0" \
         --entrypoint /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh \
-         agoric/upgrade-test:agoric-upgrade-12
+         agoric/upgrade-test:agoric-upgrade-11
 ```
-
-**Note**: The test is in agoric-upgrade-12 as a convenience. We might move it.
 
 Then in the shell that opens up, replace its `upgrade-test-scripts` with a symlink:
 ```sh
@@ -50,5 +48,5 @@ cd /usr/src/agoric-sdk/upgrade-test-scripts
 NO_BUILD=true \
 MN2_PROPOSAL_INFO=/mn2/agoric/dist/ \
 MN2_INSTANCE=kread \
-yarn ava /usr/src/agoric-sdk/upgrade-test-scripts/agoric-upgrade-12/mn2-start.test.js
+yarn ava /usr/src/agoric-sdk/upgrade-test-scripts/agoric-upgrade-11/mn2-start.test.js
 ```
