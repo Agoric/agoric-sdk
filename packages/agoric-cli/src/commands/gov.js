@@ -15,6 +15,11 @@ import {
 
 /** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
 
+const collectValues = (val, memo) => {
+  memo.push(val);
+  return memo;
+};
+
 /**
  * @param {import('anylogger').Logger} _logger
  * @param {{
@@ -26,7 +31,7 @@ import {
  *   delay?: (ms: number) => Promise<void>,
  * }} [io]
  */
-export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
+export const makeGovCommand = (_logger, io = {}) => {
   const {
     // Allow caller to provide access explicitly, but
     // default to conventional ambient IO facilities.
@@ -38,7 +43,10 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
   } = io;
 
-  const ec = new Command('ec').description('Economic Committee commands');
+  const cmd = new Command('gov').description('Electoral governance commands');
+  // backwards compatibility with less general "ec" command. To make this work
+  // the new CLI options default to the values used for Economic Committee
+  cmd.alias('ec');
 
   /** @param {string} literalOrName */
   const normalizeAddress = literalOrName =>
@@ -67,7 +75,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
    * }} detail
    * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
    */
-  const processOffer = async function ({ toOffer, sendFrom }, optUtils) {
+  const processOffer = async ({ toOffer, sendFrom }, optUtils) => {
     const networkConfig = await getNetworkConfig(env);
     const utils = await (optUtils || makeRpcUtils({ fetch }));
     const { agoricNames, readLatestHead } = utils;
@@ -126,8 +134,14 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
     show(blockInfo);
   };
 
-  ec.command('committee')
-    .description('accept invitation to join the economic committee')
+  cmd
+    .command('committee')
+    .description('accept invitation to join a committee')
+    .requiredOption(
+      '--name <string>',
+      'Committee instance name',
+      'economicCommittee',
+    )
     .option('--voter <number>', 'Voter number', Number, 0)
     .option(
       '--offerId <string>',
@@ -141,14 +155,16 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts) {
+      const { name: instanceName } = opts;
+
       /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
       const toOffer = (agoricNames, current) => {
-        const instance = agoricNames.instance.economicCommittee;
-        assert(instance, `missing economicCommittee`);
+        const instance = agoricNames.instance[instanceName];
+        assert(instance, `missing ${instanceName}`);
 
         if (current) {
           const found = findContinuingIds(current, agoricNames);
-          abortIfSeen('economicCommittee', found);
+          abortIfSeen(instanceName, found);
         }
 
         return {
@@ -164,28 +180,36 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
       await processOffer({
         toOffer,
-        instanceName: 'economicCommittee',
+        instanceName,
         ...opts,
       });
     });
 
-  ec.command('charter')
+  cmd
+    .command('charter')
     .description('accept the charter invitation')
-    .option('--offerId <string>', 'Offer id', String, `ecCharter-${Date.now()}`)
+    .requiredOption(
+      '--name <string>',
+      'Charter instance name',
+      'economicCommitteeCharter',
+    )
+    .option('--offerId <string>', 'Offer id', String, `charter-${Date.now()}`)
     .option(
       '--send-from <name-or-address>',
       'Send from address',
       normalizeAddress,
     )
     .action(async function (opts) {
+      const { name: instanceName } = opts;
+
       /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
       const toOffer = (agoricNames, current) => {
-        const instance = agoricNames.instance.econCommitteeCharter;
-        assert(instance, `missing econCommitteeCharter`);
+        const instance = agoricNames.instance[instanceName];
+        assert(instance, `missing ${instanceName}`);
 
         if (current) {
           const found = findContinuingIds(current, agoricNames);
-          abortIfSeen('econCommitteeCharter', found);
+          abortIfSeen(instanceName, found);
         }
 
         return {
@@ -201,12 +225,13 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
 
       await processOffer({
         toOffer,
-        instanceName: 'econCommitteeCharter',
+        instanceName,
         ...opts,
       });
     });
 
-  ec.command('find-continuing-id')
+  cmd
+    .command('find-continuing-id')
     .description('print id of specified voting continuing invitation')
     .requiredOption(
       '--from <name-or-address>',
@@ -232,7 +257,8 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       console.log(match.offerId);
     });
 
-  ec.command('find-continuing-ids')
+  cmd
+    .command('find-continuing-ids')
     .description('print records of voting continuing invitations')
     .requiredOption(
       '--from <name-or-address>',
@@ -247,9 +273,22 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       found.forEach(it => show({ ...it, address: opts.from }));
     });
 
-  ec.command('vote')
-    .description('vote on a question (hard-coded for now))')
-    .option('--offerId <number>', 'Offer id', String, `ecVote-${Date.now()}`)
+  cmd
+    .command('vote')
+    .description('vote on latest question')
+    .requiredOption(
+      '--instance <string>',
+      'Committee name under agoricNames.instances',
+      String,
+      'economicCommittee',
+    )
+    .requiredOption(
+      '--pathname <string>',
+      'Committee name under published.committees',
+      String,
+      'Economic_Committee',
+    )
+    .option('--offerId <number>', 'Offer id', String, `gov-vote-${Date.now()}`)
     .requiredOption(
       '--forPosition <number>',
       'index of one position to vote for (within the question description.positions); ',
@@ -265,7 +304,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       const { readLatestHead } = utils;
 
       const info = await readLatestHead(
-        'published.committees.Economic_Committee.latestQuestion',
+        `published.committees.${opts.pathname}.latestQuestion`,
       ).catch(err => {
         throw new CommanderError(1, 'VSTORAGE_FAILURE', err.message);
       });
@@ -279,9 +318,7 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
       const toOffer = (agoricNames, current) => {
         const cont = current ? findContinuingIds(current, agoricNames) : [];
-        const votingRight = cont.find(
-          it => it.instance === agoricNames.instance.economicCommittee,
-        );
+        const votingRight = cont.find(it => it.instanceName === opts.instance);
         if (!votingRight) {
           console.debug('continuing ids', cont, 'for', current);
           throw new CommanderError(
@@ -309,5 +346,5 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       await processOffer({ toOffer, sendFrom: opts.sendFrom }, utils);
     });
 
-  return ec;
+  return cmd;
 };

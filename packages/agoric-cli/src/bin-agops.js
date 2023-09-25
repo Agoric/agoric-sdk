@@ -18,7 +18,7 @@ import process from 'process';
 import anylogger from 'anylogger';
 import { Command, CommanderError, createCommand } from 'commander';
 import { makeOracleCommand } from './commands/oracle.js';
-import { makeEconomicCommiteeCommand } from './commands/ec.js';
+import { makeGovCommand } from './commands/gov.js';
 import { makePsmCommand } from './commands/psm.js';
 import { makeReserveCommand } from './commands/reserve.js';
 import { makeVaultsCommand } from './commands/vaults.js';
@@ -34,7 +34,7 @@ const program = new Command();
 program.name(progname).version('unversioned');
 
 program.addCommand(makeOracleCommand(logger));
-program.addCommand(makeEconomicCommiteeCommand(logger));
+program.addCommand(makeGovCommand(logger));
 program.addCommand(makePerfCommand(logger));
 program.addCommand(makePsmCommand(logger));
 program.addCommand(makeVaultsCommand(logger));
