@@ -47,7 +47,7 @@ import {
 import { makeAgd } from '../lib/agd-lib.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
 import { Fail, NonNullish } from '../lib/assert.js';
-import { dbTool } from './tools/vat-status.js';
+import { dbTool } from '../lib/vat-status.js';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
