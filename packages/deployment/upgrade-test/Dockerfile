@@ -22,7 +22,7 @@ RUN echo "${BOOTSTRAP_MODE}"
 RUN mkdir -p /usr/src/agoric-sdk/upgrade-test-scripts
 WORKDIR /usr/src/agoric-sdk/
 COPY ./start_ag0.sh ./upgrade-test-scripts/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 SHELL ["/bin/bash", "-c"]
 # this is the only layer that starts ag0
 RUN . ./upgrade-test-scripts/start_ag0.sh
@@ -37,7 +37,7 @@ COPY --from=agoric-upgrade-7-2 /root/.agoric /root/.agoric
 
 # boilerplate to copy scripts for this upgrade
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 RUN chmod +x ./upgrade-test-scripts/*.sh
 SHELL ["/bin/bash", "-c"]
@@ -50,7 +50,7 @@ FROM ghcr.io/agoric/agoric-sdk:30 as agoric-upgrade-8-1
 ARG BOOTSTRAP_MODE UPGRADE_INFO_9
 ENV THIS_NAME=agoric-upgrade-8-1 UPGRADE_TO=agoric-upgrade-9 UPGRADE_INFO=${UPGRADE_INFO_9} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8 /root/.agoric /root/.agoric
 RUN chmod +x ./upgrade-test-scripts/*.sh
@@ -65,7 +65,7 @@ ARG BOOTSTRAP_MODE UPGRADE_INFO_10
 ENV THIS_NAME=agoric-upgrade-9 UPGRADE_TO=agoric-upgrade-10 UPGRADE_INFO=${UPGRADE_INFO_10} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
 COPY --from=agoric-upgrade-8-1 /root/.agoric /root/.agoric
 WORKDIR /usr/src/agoric-sdk/
@@ -81,7 +81,7 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-10 USE_JS=1 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
 RUN cd upgrade-test-scripts && yarn
 RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
 
@@ -99,7 +99,7 @@ FROM ghcr.io/agoric/agoric-sdk:35 as propose-agoric-upgrade-11
 ARG BOOTSTRAP_MODE UPGRADE_INFO_11
 ENV THIS_NAME=propose-agoric-upgrade-11 UPGRADE_TO=agoric-upgrade-11 UPGRADE_INFO=${UPGRADE_INFO_11} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 RUN cd upgrade-test-scripts && yarn
 RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
 
@@ -117,7 +117,7 @@ ARG BOOTSTRAP_MODE
 ENV THIS_NAME=agoric-upgrade-11 BOOTSTRAP_MODE=${BOOTSTRAP_MODE} USE_JS=1
 # start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
 RUN cd upgrade-test-scripts && yarn
 RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
 
@@ -136,7 +136,7 @@ ENV THIS_NAME=propose-agoric-upgrade-12 UPGRADE_TO=agoric-upgrade-12 UPGRADE_INF
 COPY --from=agoric-upgrade-11 /root/.agoric /root/.agoric
 # start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 RUN cd upgrade-test-scripts && yarn
 RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
 
@@ -154,12 +154,11 @@ ENV THIS_NAME=agoric-upgrade-12 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 COPY --from=propose-agoric-upgrade-12 /root/.agoric /root/.agoric
 # start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/
-COPY ./bash_entrypoint.sh ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
+COPY ./env_setup.sh ./start_to_to.sh ./package.json ./*.js ./upgrade-test-scripts/
 RUN cd upgrade-test-scripts && yarn
 RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
 
 COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-RUN apt install -y tmux
 SHELL ["/bin/bash", "-c"]
 RUN chmod +x ./upgrade-test-scripts/*.sh
 # enter image in interactive shell
