@@ -507,6 +507,10 @@ test.serial('vstorage published.CHILD is present', async t => {
 // KREAd specific below here
 // TODO refactor this test for re-use across MN2 scripts
 
+// TODO test this more robustly with the pausing feature
+// This doesn't work with mainline KREAd becaues they don't have anything
+// to write upon contract start. The pausing test will ensure there's
+// a latestQuestion node published.
 test.serial('kread commmittee is present', async t => {
   const { agd, config } = t.context;
   const { vstorageNode } = config;
