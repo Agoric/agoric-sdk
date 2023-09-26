@@ -9,7 +9,7 @@ import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only
 // simoleanMint.
 
 export function buildRootObject() {
-  /** @type {MapStore<string, { mint: Mint, brand: Brand}>} */
+  /** @type {MapStore<string, { mint: Mint; brand: Brand }>} */
   const mintsAndBrands = makeScalarMapStore('issuerName');
 
   const api = Far('api', {
@@ -22,9 +22,9 @@ export function buildRootObject() {
     getIssuers: issuerNames => issuerNames.map(api.getIssuer),
 
     /**
-     * WARNING: a mint is ability to mint new digital assets,
-     * a very powerful authority that is usually closely held.
-     * But this mint is for demo / faucet purposes.
+     * WARNING: a mint is ability to mint new digital assets, a very powerful
+     * authority that is usually closely held. But this mint is for demo /
+     * faucet purposes.
      *
      * @param {string} name
      */
@@ -35,8 +35,8 @@ export function buildRootObject() {
     /** @param {string[]} issuerNames */
     getMints: issuerNames => issuerNames.map(api.getMint),
     /**
-     * @param {*} issuerNameSingular For example, 'moola', or 'simolean'
-     * @param  {[AssetKind?, DisplayInfo?]} issuerArgs
+     * @param {any} issuerNameSingular For example, 'moola', or 'simolean'
+     * @param {[AssetKind?, DisplayInfo?]} issuerArgs
      */
     makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {
       notForProductionUse();

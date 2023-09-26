@@ -50,6 +50,14 @@ function throwNotDurable(value, slotIndex, serializedValue) {
   Fail`value is not durable: ${value} at slot ${q(slotIndex)} of ${serializedValue.body}`;
 }
 
+function failNotFound(key, label) {
+  Fail`key ${key} not found in collection ${q(label)}`;
+}
+
+function failNotIterable(value) {
+  Fail`provided data source is not iterable: ${value}`;
+}
+
 function prefixc(collectionID, dbEntryKey) {
   return `vc.${collectionID}.${dbEntryKey}`;
 }
@@ -339,24 +347,26 @@ export function makeCollectionManager(
       const { keyShape } = getSchema();
       if (!matches(key, keyShape)) {
         return false;
-      }
-      if (passStyleOf(key) === 'remotable') {
+      } else if (passStyleOf(key) === 'remotable') {
         return getOrdinal(key) !== undefined;
       } else {
         return syscall.vatstoreGet(keyToDBKey(key)) !== undefined;
       }
     }
 
+    function mustGet(key, label) {
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        failNotFound(key, label);
+      }
+      const dbKey = keyToDBKey(key);
+      const result = syscall.vatstoreGet(dbKey) || failNotFound(key, label);
+      return { dbKey, result };
+    }
+
     function get(key) {
       const { keyShape, label } = getSchema();
       mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
-      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
-        throw Fail`key ${key} not found in collection ${q(label)}`;
-      }
-      const result = syscall.vatstoreGet(keyToDBKey(key));
-      if (!result) {
-        throw Fail`key ${key} not found in collection ${q(label)}`;
-      }
+      const { result } = mustGet(key, label);
       return unserializeValue(JSON.parse(result));
     }
 
@@ -380,11 +390,11 @@ export function makeCollectionManager(
       currentGenerationNumber += 1;
       assertAcceptableSyscallCapdataSize([serializedValue]);
       if (durable) {
-        serializedValue.slots.forEach((vref, slotIndex) => {
+        for (const [slotIndex, vref] of serializedValue.slots.entries()) {
           if (!vrm.isDurable(vref)) {
             throwNotDurable(value, slotIndex, serializedValue);
           }
-        });
+        }
       }
       if (passStyleOf(key) === 'remotable') {
         /** @type {string} */
@@ -400,7 +410,9 @@ export function makeCollectionManager(
           vrm.addReachableVref(vref);
         }
       }
-      serializedValue.slots.forEach(vrm.addReachableVref);
+      for (const vref of serializedValue.slots) {
+        vrm.addReachableVref(vref);
+      }
       syscall.vatstoreSet(keyToDBKey(key), JSON.stringify(serializedValue));
       updateEntryCount(1);
     };
@@ -419,15 +431,13 @@ export function makeCollectionManager(
       const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
-        after.slots.forEach((vref, i) => {
+        for (const [i, vref] of after.slots.entries()) {
           if (!vrm.isDurable(vref)) {
             throwNotDurable(value, i, after);
           }
-        });
+        }
       }
-      const dbKey = keyToDBKey(key);
-      const rawBefore = syscall.vatstoreGet(dbKey);
-      rawBefore || Fail`key ${key} not found in collection ${q(label)}`;
+      const { dbKey, result: rawBefore } = mustGet(key, label);
       const before = JSON.parse(rawBefore);
       vrm.updateReferenceCounts(before.slots, after.slots);
       syscall.vatstoreSet(dbKey, JSON.stringify(after));
@@ -436,12 +446,7 @@ export function makeCollectionManager(
     function deleteInternal(key) {
       const { keyShape, label } = getSchema();
       mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
-      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
-        throw Fail`key ${key} not found in collection ${q(label)}`;
-      }
-      const dbKey = keyToDBKey(key);
-      const rawValue = syscall.vatstoreGet(dbKey);
-      rawValue || Fail`key ${key} not found in collection ${q(label)}`;
+      const { dbKey, result: rawValue } = mustGet(key, label);
       const value = JSON.parse(rawValue);
       const doMoreGC1 = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(dbKey);
@@ -477,18 +482,15 @@ export function makeCollectionManager(
       const end = prefix(coverEnd); // exclusive
 
       const generationAtStart = currentGenerationNumber;
-      function checkGen() {
-        if (generationAtStart !== currentGenerationNumber) {
-          Fail`keys in store cannot be added to during iteration`;
-        }
-      }
+      const checkGen = () =>
+        currentGenerationNumber === generationAtStart ||
+        Fail`keys in store cannot be added to during iteration`;
 
       const needToMatchKey = !matchAny(keyPatt);
       const needToMatchValue = !matchAny(valuePatt);
 
-      // we always get the dbKey, but we might not need to unserialize it
+      // we might not need to unserialize the dbKey or get the dbValue
       const needKeys = yieldKeys || needToMatchKey;
-      // we don't always need the dbValue
       const needValues = yieldValues || needToMatchValue;
 
       /**
@@ -629,11 +631,10 @@ export function makeCollectionManager(
 
     const addAllToSet = elems => {
       if (typeof elems[Symbol.iterator] !== 'function') {
-        if (Object.isFrozen(elems) && isCopySet(elems)) {
-          elems = getCopySetKeys(elems);
-        } else {
-          Fail`provided data source is not iterable: ${elems}`;
-        }
+        elems =
+          Object.isFrozen(elems) && isCopySet(elems)
+            ? getCopySetKeys(elems)
+            : failNotIterable(elems);
       }
       for (const elem of elems) {
         addToSet(elem);
@@ -642,11 +643,10 @@ export function makeCollectionManager(
 
     const addAllToMap = mapEntries => {
       if (typeof mapEntries[Symbol.iterator] !== 'function') {
-        if (Object.isFrozen(mapEntries) && isCopyMap(mapEntries)) {
-          mapEntries = getCopyMapEntries(mapEntries);
-        } else {
-          Fail`provided data source is not iterable: ${mapEntries}`;
-        }
+        mapEntries =
+          Object.isFrozen(mapEntries) && isCopyMap(mapEntries)
+            ? getCopyMapEntries(mapEntries)
+            : failNotIterable(mapEntries);
       }
       for (const [key, value] of mapEntries) {
         if (has(key)) {
@@ -793,13 +793,15 @@ export function makeCollectionManager(
     }
     const schemataCapData = serialize(harden(schemata));
     if (isDurable) {
-      schemataCapData.slots.forEach((vref, slotIndex) => {
+      for (const [slotIndex, vref] of schemataCapData.slots.entries()) {
         if (!vrm.isDurable(vref)) {
           throwNotDurable(vref, slotIndex, schemataCapData);
         }
-      });
+      }
     }
-    schemataCapData.slots.forEach(vrm.addReachableVref);
+    for (const vref of schemataCapData.slots) {
+      vrm.addReachableVref(vref);
+    }
 
     schemaCache.set(
       collectionID,
@@ -896,7 +898,7 @@ export function makeCollectionManager(
    * Produce a big map.
    *
    * @template K,V
-   * @param {string} [label='map'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {MapStore<K,V>}
    */
@@ -940,7 +942,7 @@ export function makeCollectionManager(
    * Produce a weak big map.
    *
    * @template K,V
-   * @param {string} [label='weakMap'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakMapStore<K,V>}
    */
@@ -969,7 +971,7 @@ export function makeCollectionManager(
    * Produce a big set.
    *
    * @template K
-   * @param {string} [label='set'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {SetStore<K>}
    */
@@ -996,7 +998,7 @@ export function makeCollectionManager(
    * Produce a weak big set.
    *
    * @template K
-   * @param {string} [label='weakSet'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakSetStore<K>}
    */
@@ -1073,7 +1075,7 @@ export function makeCollectionManager(
    * remotables.
    *
    * @template K,V
-   * @param {string} [label='map'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {MapStore<K,V>}
    */
@@ -1085,7 +1087,7 @@ export function makeCollectionManager(
    * primitives, or remotables.
    *
    * @template K,V
-   * @param {string} [label='weakMap'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakMapStore<K,V>}
    */
@@ -1097,7 +1099,7 @@ export function makeCollectionManager(
    * remotables.
    *
    * @template K
-   * @param {string} [label='set'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {SetStore<K>}
    */
@@ -1109,7 +1111,7 @@ export function makeCollectionManager(
    * primitives, or remotables.
    *
    * @template K
-   * @param {string} [label='weakSet'] - diagnostic label for the store
+   * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakSetStore<K>}
    */

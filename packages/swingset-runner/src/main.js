@@ -6,19 +6,21 @@ import util from 'util';
 
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
+  buildTimer,
   loadSwingsetConfigFile,
   loadBasedir,
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.js';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 
 import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';
 
 import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
+import { initEmulatedChain } from './chain.js';
 import {
   organizeBenchmarkStats,
   printBenchmarkStats,
@@ -43,11 +45,12 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --init           - discard any existing saved state at startup
+  --resume         - resume execution using existing saved state
   --initonly       - initialize the swingset but exit without running it
   --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --usexs          - run vats using the the XS engine
+  --usebundlecache - cache bundles created by swingset loader
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
@@ -71,6 +74,8 @@ FLAGS may be:
   --stats          - print a performance stats report at the end of a run
   --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
+  --sbench FILE    - run a whole-swingset benchmark with the driver vat in FILE
+  --chain          - emulate the behavior of the Cosmos-based chain
   --indirect       - launch swingset from a vat instead of launching directly
   --config FILE    - read swingset config from FILE instead of inferring it
 
@@ -82,10 +87,15 @@ CMD is one of:
   shell  - starts a simple CLI allowing the swingset to be run or stepped or
            interrogated interactively.
 
-BASEDIR is the base directory for locating the swingset's vat definitions.
-  If BASEDIR is omitted or '--' it defaults to the current working directory.
+BASEDIR is the base directory for locating the swingset's vat definitions and
+  for storing the swingset's state.  If BASEDIR is omitted or '--' it defaults
+  to, in order of preference:
+    - the directory of the benchmark driver, if there is one
+    - the directory of the config file, if there is one
+    - the current working directory
 
-Any remaining args are passed to the swingset's bootstrap vat.
+Any remaining command line args are passed to the swingset's bootstrap vat in
+the 'argv' vat parameter.
 `);
 }
 
@@ -95,6 +105,72 @@ function fail(message, printUsage) {
     usage();
   }
   process.exit(1);
+}
+
+/**
+ * In swingset benchmark mode, the configured swingset is loaded indirectly,
+ * interposing a benchmark controller vat we provide here as the swingset's
+ * bootstrap vat.  In addition, the benchmark author is expected to provide a
+ * benchmark driver vat from a file specified on the command line.  This
+ * benchmark driver vat is expected to expose the methods `setup` and
+ * `runBenchmarkRound`.  The controller vat's `bootstrap` method invokes the
+ * swingset's "real" `bootstrap` method and then tells the benchmark driver vat
+ * to perform setup for the benchmark.  The controller vat then orchestrates the
+ * execution of the directed number of bootstrap rounds.
+ *
+ * In order to perform the controller interposition and benchmark orchestration,
+ * this function generates a new swingset configuration with selective
+ * modifications and changes to the original swingset configuration.
+ *
+ * @param {*} baseConfig  The original configuration being adapted for benchmark use
+ * @param {string} swingsetBenchmarkDriverPath  Path to the benchmark driver vat source
+ * @param {string[]} bootstrapArgv  Bootstrap args from the swingset-runner command line
+ *
+ * @returns {*} a new configuration that is a copy of `baseConfig` with modifications applied.
+ */
+function generateSwingsetBenchmarkConfig(
+  baseConfig,
+  swingsetBenchmarkDriverPath,
+  bootstrapArgv,
+) {
+  if (baseConfig.vats.benchmarkBootstrap) {
+    fail(
+      `you can't have a vat named benchmarkBootstrap in a benchmark swingset`,
+    );
+  }
+  if (baseConfig.vats.benchmarkDriver) {
+    fail(`you can't have a vat named benchmarkDriver in a benchmark swingset`);
+  }
+  // eslint-disable-next-line prefer-const
+  let { benchmarkDriver, ...baseConfigOptions } = baseConfig;
+  if (!benchmarkDriver) {
+    benchmarkDriver = {
+      sourceSpec: swingsetBenchmarkDriverPath,
+    };
+  }
+  const config = {
+    ...baseConfigOptions,
+    bootstrap: 'benchmarkBootstrap',
+    defaultManagerType: 'local',
+    vats: {
+      benchmarkBootstrap: {
+        sourceSpec: new URL('vat-benchmarkBootstrap.js', import.meta.url)
+          .pathname,
+        parameters: {
+          config: {
+            bootstrap: baseConfig.bootstrap,
+          },
+        },
+      },
+      benchmarkDriver,
+      ...baseConfig.vats,
+    },
+  };
+  if (!config.vats[baseConfig.bootstrap].parameters) {
+    config.vats[baseConfig.bootstrap].parameters = {};
+  }
+  config.vats[baseConfig.bootstrap].parameters.argv = bootstrapArgv;
+  return config;
 }
 
 function generateIndirectConfig(baseConfig) {
@@ -152,7 +228,7 @@ function generateIndirectConfig(baseConfig) {
 export async function main() {
   const argv = process.argv.slice(2);
 
-  let forceReset = false;
+  let forceReset = true;
   let dbMode = '--sqlite';
   let blockSize = 200;
   let batchSize = 200;
@@ -179,7 +255,10 @@ export async function main() {
   let dbDir = null;
   let initOnly = false;
   let useXS = false;
+  let useBundleCache = false;
   let activityHash = false;
+  let emulateChain = false;
+  let swingsetBenchmarkDriverPath = null;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -190,6 +269,7 @@ export async function main() {
       case '--init':
         forceReset = true;
         break;
+      case '--resume':
       case '--noinit':
         forceReset = false;
         break;
@@ -280,6 +360,16 @@ export async function main() {
       case '--useXS':
         useXS = true;
         break;
+      case '--usebundlecache':
+      case '--useBundleCache':
+        useBundleCache = true;
+        break;
+      case '--chain':
+        emulateChain = true;
+        break;
+      case '--sbench':
+        swingsetBenchmarkDriverPath = argv.shift();
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -312,7 +402,7 @@ export async function main() {
 
   // Prettier demands that the conditional not be parenthesized.  Prettier is wrong.
   // prettier-ignore
-  let basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
+  let basedir = (argv[0] === '--' || argv[0] === undefined) ? undefined : argv.shift();
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   let config;
@@ -322,23 +412,52 @@ export async function main() {
     if (config === null) {
       fail(`config file ${configPath} not found`);
     }
-    basedir = path.dirname(configPath);
+    if (!basedir) {
+      basedir = swingsetBenchmarkDriverPath
+        ? path.dirname(swingsetBenchmarkDriverPath)
+        : path.dirname(configPath);
+    }
   } else {
+    if (!basedir) {
+      basedir = swingsetBenchmarkDriverPath
+        ? path.dirname(swingsetBenchmarkDriverPath)
+        : '.';
+    }
     config = loadBasedir(basedir);
   }
-  const deviceEndowments = {};
+  if (config.bundleCachePath) {
+    const base = new URL(configPath, `file://${process.cwd()}/`);
+    config.bundleCachePath = new URL(config.bundleCachePath, base).pathname;
+  } else if (useBundleCache) {
+    config.bundleCachePath = path.join(basedir, 'bundles');
+  }
+
+  const timer = buildTimer();
+  config.devices = {
+    timer: {
+      sourceSpec: timer.srcPath,
+    },
+  };
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
+  };
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
-    config.devices = {
-      loopbox: {
-        sourceSpec: loopboxSrcPath,
-        parameters: {
-          senders: config.loopboxSenders,
-        },
+    config.devices.loopbox = {
+      sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: config.loopboxSenders,
       },
     };
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
+  }
+  if (emulateChain) {
+    const bridge = await initEmulatedChain(config, configPath);
+    config.devices.bridge = {
+      sourceSpec: bridge.srcPath,
+    };
+    deviceEndowments.bridge = { ...bridge.endowments };
   }
   if (!config.defaultManagerType) {
     if (useXS) {
@@ -346,6 +465,15 @@ export async function main() {
     } else {
       config.defaultManagerType = 'local';
     }
+  }
+  config.pinBootstrapRoot = true;
+
+  if (swingsetBenchmarkDriverPath) {
+    config = generateSwingsetBenchmarkConfig(
+      config,
+      swingsetBenchmarkDriverPath,
+      bootstrapArgv,
+    );
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
@@ -445,7 +573,7 @@ export async function main() {
   if (benchmarkRounds > 0) {
     // Pin the vat root that will run benchmark rounds so it'll still be there
     // when it comes time to run them.
-    controller.pinVatRoot(launchIndirectly ? 'launcher' : 'bootstrap');
+    controller.pinVatRoot(config.bootstrap);
   }
 
   let blockNumber = 0;
@@ -592,7 +720,7 @@ export async function main() {
     await null;
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
-        launchIndirectly ? 'launcher' : 'bootstrap',
+        config.bootstrap,
         'runBenchmarkRound',
         [],
         'ignore',
@@ -654,7 +782,7 @@ export async function main() {
         log(`activityHash: ${controller.getActivityhash()}`);
       }
       if (verbose) {
-        log(`===> end of crank ${crankNumber}`);
+        log(`===> end of crank ${crankNumber - 1}`);
       }
     }
     const commitStartTime = readClock();

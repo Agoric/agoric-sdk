@@ -37,7 +37,7 @@ const makeDefaultParams = ({
 
 /**
  * @param {any} t
- * @param {*} params
+ * @param {any} params
  * @param {number} baseTime
  * @param {any} rawExpect
  */
@@ -58,7 +58,7 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
 
 /**
  * @param {any} t
- * @param {*} params
+ * @param {any} params
  * @param {number} baseTime
  * @param {string | RegExp} message
  */

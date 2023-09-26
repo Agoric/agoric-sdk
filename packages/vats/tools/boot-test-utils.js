@@ -35,22 +35,21 @@ export const vatRoots = {
 export const noop = () => {};
 
 /** @type {DProxy} */
-// @ts-expect-error cast
 export const mockDProxy = d => d;
 
 export const makeMock = log =>
   harden({
     devices: {
-      command: /** @type { any } */ ({ registerInboundHandler: noop }),
-      mailbox: /** @type { any } */ ({
+      command: /** @type {any} */ ({ registerInboundHandler: noop }),
+      mailbox: /** @type {any} */ ({
         registerInboundHandler: noop,
       }),
-      timer: /** @type { any } */ ({}),
-      plugin: /** @type { any } */ ({ registerReceiver: noop }),
+      timer: /** @type {any} */ ({}),
+      plugin: /** @type {any} */ ({ registerReceiver: noop }),
       ...devices,
     },
     vats: {
-      vattp: /** @type { any } */ (
+      vattp: /** @type {any} */ (
         Far('vattp', {
           registerMailboxDevice: noop,
           addRemote: () => harden({}),
@@ -142,7 +141,7 @@ export const makePopulatedFakeVatAdmin = () => {
   const criticalVatKey = vatAdminState.getCriticalVatKey();
   const getCriticalVatKey = () => criticalVatKey;
   const createVatAdminService = () => vatAdminService;
-  /** @type { any } */
+  /** @type {any} */
   const vatAdminRoot = { getCriticalVatKey, createVatAdminService };
   return { vatAdminService, vatAdminRoot };
 };
@@ -154,13 +153,4 @@ export const mockSwingsetVats = mock => {
     vatAdmin: vatAdminRoot,
   };
   return vats;
-};
-
-/**
- * @param {(msg: string) => void} log
- */
-export const mockPsmBootstrapArgs = log => {
-  const mock = makeMock(log);
-  const vats = mockSwingsetVats(mock);
-  return [vats, mock.devices];
 };

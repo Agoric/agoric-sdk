@@ -23,7 +23,7 @@ const trace = makeTracer('TestVaultInterest', false);
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
  * @property {Function} advanceRecordingPeriod
- * @property {Function} setStabilityFee
+ * @property {Function} setInterestRate
  */
 let testJig;
 /** @param {TestContext} jig */
@@ -137,7 +137,7 @@ test('charges', async t => {
     AmountMath.make(stableBrand, startingDebt - normalizedPaybackValue),
   );
 
-  testJig.setStabilityFee(25n);
+  testJig.setInterestRate(25n);
 
   for (const [i, charge] of [22n, 27n, 34n].entries()) {
     // XXX https://github.com/Agoric/agoric-sdk/issues/5527

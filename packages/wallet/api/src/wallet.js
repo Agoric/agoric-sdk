@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the vat launched by the spawner in the ../deploy.js script.
@@ -587,9 +588,8 @@ export function buildRootObject(vatPowers) {
 
               case 'walletGetDepositFacetId': {
                 const { brandBoardId } = obj;
-                const result = await walletAdmin.getDepositFacetId(
-                  brandBoardId,
-                );
+                const result =
+                  await walletAdmin.getDepositFacetId(brandBoardId);
                 return {
                   type: 'walletDepositFacetIdResponse',
                   data: result,

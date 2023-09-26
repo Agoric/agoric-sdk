@@ -41,9 +41,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
   vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
-  const coveredCallInstallation = await E(zoe).installBundleID(
-    'b1-coveredcall',
-  );
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
   vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
@@ -283,9 +282,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Dave should get 3 moola, Bob should get 1 buck, and Alice
   // get 7 simoleans
-  const daveMoolaPayout = await daveCoveredCallSeat.getPayout(
-    'UnderlyingAsset',
-  );
+  const daveMoolaPayout =
+    await daveCoveredCallSeat.getPayout('UnderlyingAsset');
   const daveSimoleanPayout = await daveCoveredCallSeat.getPayout('StrikePrice');
   const aliceMoolaPayout = await aliceSeat.getPayout('UnderlyingAsset');
   const aliceSimoleanPayout = await aliceSeat.getPayout('StrikePrice');

@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeCache } from '@agoric/cache';
 import { E } from '@endo/eventual-send';
@@ -106,8 +107,8 @@ export function buildRootObject(vatPowers) {
     setCommandDevice(d) {
       commandDevice = d;
 
-      const replHandler = getReplHandler(replObjects, send, vatPowers);
-      registerURLHandler(replHandler, '/private/repl');
+      const replHandler = getReplHandler(replObjects, send);
+      void registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
       const captpHandler = Far('captpHandler', {
@@ -126,7 +127,7 @@ export function buildRootObject(vatPowers) {
           return harden(exported);
         },
       });
-      registerURLHandler(captpHandler, '/private/captp');
+      void registerURLHandler(captpHandler, '/private/captp');
     },
 
     registerURLHandler,

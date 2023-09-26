@@ -1,5 +1,5 @@
+// @ts-nocheck
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';

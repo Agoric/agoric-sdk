@@ -1,3 +1,4 @@
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 
@@ -9,21 +10,16 @@ import { deeplyFulfilled, Far } from '@endo/marshal';
  */
 
 /**
- * @callback StartCounter
+ * Start up a new Counter for a question
+ *
  * @param {ZCF} zcf
  * @param {QuestionSpec} questionSpec
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter
  * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
- * @param {Publisher<unknown>} questionPublisher
+ * @param {Publisher<unknown>} questionsPublisher
  * @param {Publisher<OutcomeRecord>} outcomePublisher
- * @returns {AddQuestionReturn}
- */
-
-/**
- * Start up a new Counter for a question
- *
- * @type {StartCounter}
+ * @returns {Promise<AddQuestionReturn>}
  */
 const startCounter = async (
   zcf,
@@ -91,8 +87,16 @@ const getQuestion = (questionHandleP, questionStore) =>
  * @param {AddQuestion} addQuestion
  */
 const getPoserInvitation = (zcf, addQuestion) => {
-  const questionPoserHandler = () => Far(`questionPoser`, { addQuestion });
-  return zcf.makeInvitation(questionPoserHandler, `questionPoser`);
+  const questionPoserHandler = seat => {
+    seat.exit();
+    return Far(`questionPoser`, { addQuestion });
+  };
+  return zcf.makeInvitation(
+    questionPoserHandler,
+    `questionPoser`,
+    undefined,
+    EmptyProposalShape,
+  );
 };
 
 harden(startCounter);

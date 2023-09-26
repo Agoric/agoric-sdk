@@ -1,4 +1,5 @@
 /* global process */
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* eslint no-await-in-loop: ["off"] */
 
 /**
@@ -151,7 +152,7 @@ export async function xsnap(options) {
       sourceStream.pipe(destStream, { end: false });
 
       done = finished(sourceStream);
-      done.catch(noop).then(() => sourceStream.unpipe(destStream));
+      void done.catch(noop).then(() => sourceStream.unpipe(destStream));
     };
 
     return harden({
@@ -257,7 +258,7 @@ export async function xsnap(options) {
   await loadSnapshotHandler?.afterSpawn(snapshotLoadStream);
 
   if (loadSnapshotHandler) {
-    vatExit.promise.catch(noop).then(() => {
+    void vatExit.promise.catch(noop).then(() => {
       if (loadSnapshotHandler) {
         const { cleanup } = loadSnapshotHandler;
         loadSnapshotHandler = undefined;
@@ -457,10 +458,13 @@ export async function xsnap(options) {
         const handle = await fs.open(snapPath, 'w+');
         // @ts-expect-error 'close' event added in Node 15.4
         handle.on('close', () => {
-          fs.unlink(snapPath);
+          // Safe to ignore the result because we are skipping to to clean up the temp directory.
+          void fs.unlink(snapPath);
         });
         sourceStream = handle.createReadStream();
-        finished(output).finally(() => sourceStream.destroy());
+        finished(output)
+          .finally(() => sourceStream.destroy())
+          .catch(noop);
       } else {
         sourceStream = snapshotSaveStream;
         snapPath = `@${SNAPSHOT_SAVE_FD}`;
@@ -469,7 +473,7 @@ export async function xsnap(options) {
         // ensuring that any previous save stream usage has ended. However we
         // must start the flow before receiving the command's response or the
         // xsnap process would block on a full pipe, causing an IPC deadlock.
-        batonKit.promise.then(maybePipe);
+        batonKit.promise.then(maybePipe, noop);
       }
 
       const cleanup = () => {

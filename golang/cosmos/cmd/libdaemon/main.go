@@ -10,8 +10,9 @@ package main
 import "C"
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
+	"net/rpc"
 	"os"
 	"path/filepath"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
 type goReturn = struct {
@@ -30,8 +32,32 @@ type goReturn = struct {
 
 const SwingSetPort = 123
 
-var replies = map[int]chan goReturn{}
-var lastReply = 0
+var vmClientCodec *vm.ClientCodec
+var agdServer *vm.AgdServer
+
+// ConnectVMClientCodec creates an RPC client codec and a sender to the
+// in-process implementation of the VM.
+func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, daemoncmd.Sender) {
+	vmClientCodec = vm.NewClientCodec(context.Background(), sendFunc)
+	vmClient := rpc.NewClientWithCodec(vmClientCodec)
+
+	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
+		if str == "shutdown" {
+			return "", vmClientCodec.Close()
+		}
+
+		msg := vm.Message{
+			Port: nodePort,
+			NeedsReply: needReply,
+			Data: str,
+		}
+		var reply string
+		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		return reply, err
+	}
+
+	return vmClientCodec, sendToNode
+}
 
 //export RunAgCosmosDaemon
 func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
@@ -42,46 +68,39 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 
 	gaia.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-chain-cosmos")
 	daemoncmd.AppName = "ag-chain-cosmos"
-
-	// FIXME: Decouple the sending logic from the Cosmos app.
-	sendToNode := func(needReply bool, str string) (string, error) {
-		var rPort int
-		if needReply {
-			lastReply++
-			rPort = lastReply
-			replies[rPort] = make(chan goReturn)
-		}
-
-		// Send the message
-		C.invokeSendFunc(toNode, nodePort, C.int(rPort), C.CString(str))
-		if !needReply {
-			// Return immediately
-			// fmt.Fprintln(os.Stderr, "Don't wait")
-			return "<no-reply-requested>", nil
-		}
-
-		// Block the sending goroutine while we wait for the reply
-		// fmt.Fprintln(os.Stderr, "Waiting for", rPort)
-		ret := <-replies[rPort]
-		delete(replies, rPort)
-		// fmt.Fprintln(os.Stderr, "Woken, got", ret)
-		return ret.str, ret.err
+	if err := os.Setenv(daemoncmd.EmbeddedVmEnvVar, "libdaemon"); err != nil {
+		panic(err)
 	}
+
+	var sendToNode daemoncmd.Sender
+
+	sendFunc := func(port int, reply int, str string) {
+		C.invokeSendFunc(toNode, C.int(port), C.int(reply), C.CString(str))
+	}
+
+	vmClientCodec, sendToNode = ConnectVMClientCodec(
+		context.Background(),
+		int(nodePort),
+		sendFunc,
+	)
+	agdServer = vm.NewAgdServer()
 
 	args := make([]string, len(cosmosArgs))
 	for i, s := range cosmosArgs {
 		args[i] = C.GoString(s)
 	}
+
 	// fmt.Fprintln(os.Stderr, "Starting Cosmos", args)
 	os.Args = args
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
 		exitCode := 0
-		daemoncmd.OnStartHook = func(logger log.Logger) {
+		daemoncmd.OnStartHook = func(logger log.Logger, appOpts servertypes.AppOptions) error {
 			// We tried running start, which should never exit, so exit with non-zero
 			// code if we ever stop.
 			exitCode = 99
+			return nil
 		}
 		daemon.RunWithController(sendToNode)
 		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
@@ -94,22 +113,10 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 //export ReplyToGo
 func ReplyToGo(replyPort C.int, isError C.int, resp C.Body) C.int {
 	respStr := C.GoString(resp)
-	// fmt.Fprintln(os.Stderr, "Reply to Go", respStr)
-	returnCh := replies[int(replyPort)]
-	if returnCh == nil {
-		// Unexpected reply.
-		// This is okay, since the caller decides whether or
-		// not she wants to listen for replies.
-		return C.int(0)
+	// fmt.Printf("Reply to Go %d %s\n", replyPort, respStr)
+	if err := vmClientCodec.Receive(int(replyPort), int(isError) != 0, respStr); err != nil {
+		return C.int(1)
 	}
-	// Wake up the waiting goroutine
-	ret := goReturn{}
-	if int(isError) == 0 {
-		ret.str = respStr
-	} else {
-		ret.err = errors.New(respStr)
-	}
-	returnCh <- ret
 	return C.int(0)
 }
 
@@ -121,20 +128,27 @@ type errorWrapper struct {
 func SendToGo(port C.int, msg C.Body) C.Body {
 	msgStr := C.GoString(msg)
 	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
-	respStr, err := vm.ReceiveFromController(int(port), msgStr)
-	if err != nil {
-		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
-		errResp := errorWrapper{
-			Error: err.Error(),
-		}
-		respBytes, err := json.Marshal(&errResp)
-		if err != nil {
-			panic(err)
-		}
-		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
-		respStr = string(respBytes)
+	var respStr string
+	message := &vm.Message{
+		Port: int(port),
+		NeedsReply: true,
+		Data: msgStr,
 	}
-	return C.CString(respStr)
+	
+	err := agdServer.ReceiveMessage(message, &respStr)
+	if err == nil {
+		return C.CString(respStr)
+	}
+
+	// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
+	errResp := errorWrapper{
+		Error: err.Error(),
+	}
+	respBytes, err := json.Marshal(&errResp)
+	if err != nil {
+		panic(err)
+	}
+	return C.CString(string(respBytes))
 }
 
 // Do nothing in main.

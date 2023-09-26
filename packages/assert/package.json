@@ -15,11 +15,16 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.56",
+    "@endo/init": "^0.5.59",
     "ava": "^5.3.0"
+  },
+  "ava": {
+    "require": [
+      "@endo/init/debug.js"
+    ]
   },
   "repository": {
     "type": "git",

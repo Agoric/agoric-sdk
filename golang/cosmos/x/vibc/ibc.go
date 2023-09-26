@@ -1,6 +1,7 @@
 package vibc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -63,8 +64,9 @@ func NewIBCModule(keeper Keeper) IBCModule {
 	}
 }
 
-func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
+func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
+	ctx := sdk.UnwrapSDKContext(cctx)
 	keeper := ch.keeper
 
 	msg := new(portMessage)
@@ -80,7 +82,7 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 	switch msg.Method {
 	case "sendPacket":
 		seq, ok := keeper.GetNextSequenceSend(
-			ctx.Context,
+			ctx,
 			msg.Packet.SourcePort,
 			msg.Packet.SourceChannel,
 		)
@@ -91,7 +93,7 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		timeoutTimestamp := msg.Packet.TimeoutTimestamp
 		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
 			// Use the relative timeout if no absolute timeout is specifiied.
-			timeoutTimestamp = uint64(ctx.Context.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
+			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
 		}
 
 		packet := channeltypes.NewPacket(
@@ -100,7 +102,7 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
 			msg.Packet.TimeoutHeight, timeoutTimestamp,
 		)
-		err = keeper.SendPacket(ctx.Context, packet)
+		err = keeper.SendPacket(ctx, packet)
 		if err == nil {
 			bytes, err := json.Marshal(&packet)
 			if err == nil {
@@ -109,14 +111,14 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "receiveExecuted":
-		err = keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
+		err = keeper.WriteAcknowledgement(ctx, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "startChannelOpenInit":
 		err = keeper.ChanOpenInit(
-			ctx.Context, stringToOrder(msg.Order), msg.Hops,
+			ctx, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort,
 			msg.Packet.DestinationPort,
 			msg.Version,
@@ -126,19 +128,19 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "startChannelCloseInit":
-		err = keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
+		err = keeper.ChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "bindPort":
-		err = keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
+		err = keeper.BindPort(ctx, msg.Packet.SourcePort)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "timeoutExecuted":
-		err = keeper.TimeoutExecuted(ctx.Context, msg.Packet)
+		err = keeper.TimeoutExecuted(ctx, msg.Packet)
 		if err == nil {
 			ret = "true"
 		}
@@ -228,7 +230,6 @@ type channelOpenAckEvent struct {
 	Event                 string                    `json:"event"` // channelOpenAck
 	PortID                string                    `json:"portID"`
 	ChannelID             string                    `json:"channelID"`
-	CounterpartyChannelID string                    `json:"counterpartyChannelID"`
 	CounterpartyVersion   string                    `json:"counterpartyVersion"`
 	Counterparty          channeltypes.Counterparty `json:"counterparty"`
 	ConnectionHops        []string                  `json:"connectionHops"`
@@ -247,12 +248,12 @@ func (im IBCModule) OnChanOpenAck(
 	// returns an empty channel object that we can still use without crashing.
 	channel, _ := im.keeper.GetChannel(ctx, portID, channelID)
 
+	channel.Counterparty.ChannelId = counterpartyChannelID
 	event := channelOpenAckEvent{
 		Type:                  "IBC_EVENT",
 		Event:                 "channelOpenAck",
 		PortID:                portID,
 		ChannelID:             channelID,
-		CounterpartyChannelID: counterpartyChannelID,
 		CounterpartyVersion:   counterpartyVersion,
 		Counterparty:          channel.Counterparty,
 		ConnectionHops:        channel.ConnectionHops,

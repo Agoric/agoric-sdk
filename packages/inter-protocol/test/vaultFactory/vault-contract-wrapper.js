@@ -1,14 +1,12 @@
 /** @file DEPRECATED use the vault test driver instead */
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
 import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
 import {
-  atomicRearrange,
   prepareRecorderKit,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -35,7 +33,7 @@ const marshaller = makeFakeMarshaller();
 
 /**
  * @param {ZCF} zcf
- * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
 export async function start(zcf, privateArgs, baggage) {
@@ -59,7 +57,7 @@ export async function start(zcf, privateArgs, baggage) {
   let vaultCounter = 0;
 
   let currentInterest = makeRatio(5n, stableBrand); // 5%
-  let compoundedStabilityFee = makeRatio(100n, stableBrand); // starts at 1.0, no interest
+  let compoundedInterest = makeRatio(100n, stableBrand); // starts at 1.0, no interest
 
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
@@ -101,14 +99,14 @@ export async function start(zcf, privateArgs, baggage) {
   const mintAndTransfer = (mintReceiver, toMint, fee, nonMintTransfers) => {
     const kept = AmountMath.subtract(toMint, fee);
     stableMint.mintGains(harden({ Minted: toMint }), mintSeat);
-    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+    /** @type {TransferPart[]} */
     const transfers = [
       ...nonMintTransfers,
       [mintSeat, vaultFactorySeat, { Minted: fee }],
       [mintSeat, mintReceiver, { Minted: kept }],
     ];
     try {
-      atomicRearrange(zcf, harden(transfers));
+      zcf.atomicRearrange(harden(transfers));
     } catch (e) {
       console.error('mintAndTransfer caught', e);
       stableMint.burnLosses(harden({ Minted: toMint }), mintSeat);
@@ -136,7 +134,7 @@ export async function start(zcf, privateArgs, baggage) {
         getMintFee() {
           return makeRatio(500n, stableBrand, BASIS_POINTS);
         },
-        getStabilityFee() {
+        getInterestRate() {
           return currentInterest;
         },
         getChargingPeriod() {
@@ -166,7 +164,7 @@ export async function start(zcf, privateArgs, baggage) {
     getCollateralQuote() {
       return Promise.reject(Error('Not implemented'));
     },
-    getCompoundedStabilityFee: () => compoundedStabilityFee,
+    getCompoundedInterest: () => compoundedInterest,
     scopeDescription: base => `VCW: ${base}`,
     handleBalanceChange: () => {
       console.warn('mock handleBalanceChange does nothing');
@@ -195,13 +193,13 @@ export async function start(zcf, privateArgs, baggage) {
       100n + currentInterest.numerator.value,
       currentInterest.numerator.brand,
     );
-    compoundedStabilityFee = multiplyRatios(
-      compoundedStabilityFee,
+    compoundedInterest = multiplyRatios(
+      compoundedInterest,
       currentInterestAsMultiplicand,
     );
   };
 
-  const setStabilityFee = percent => {
+  const setInterestRate = percent => {
     currentInterest = makeRatio(percent, stableBrand);
   };
 
@@ -209,7 +207,7 @@ export async function start(zcf, privateArgs, baggage) {
     advanceRecordingPeriod,
     collateralKit,
     stableMint,
-    setStabilityFee,
+    setInterestRate,
     vault,
   }));
 

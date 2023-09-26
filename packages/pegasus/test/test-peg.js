@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -5,7 +6,7 @@ import { E, Far } from '@endo/far';
 import {
   makeNetworkProtocol,
   makeLoopbackProtocolHandler,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
+} from '@agoric/network';
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
@@ -83,7 +84,7 @@ async function testRemotePeg(t) {
   /**
    * Pretend we're Gaia.
    *
-   * @type {import('@agoric/swingset-vat/src/vats/network').Connection?}
+   * @type {import('@agoric/network/src').Connection?}
    */
   let gaiaConnection;
   E(portP).addListener(
@@ -129,9 +130,8 @@ async function testRemotePeg(t) {
   );
 
   // Pretend we're Agoric.
-  const { handler: chandler, subscription: connectionSubscription } = await E(
-    pegasus,
-  ).makePegasusConnectionKit();
+  const { handler: chandler, subscription: connectionSubscription } =
+    await E(pegasus).makePegasusConnectionKit();
   const connP = E(portP).connect(portName, chandler);
 
   // Get some local Atoms.

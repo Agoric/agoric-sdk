@@ -151,15 +151,17 @@ export const makePsmCommand = logger => {
     .option('--giveMinted <DOLLARS>', 'amount of minted tokens to give', Number)
     .option('--feePct [%]', 'Gas fee percentage', Number)
     .option('--offerId <string>', 'Offer id', String, `swap-${Date.now()}`)
-    .action(async function (
-      /** @type {Parameters<typeof Offers.psm.swap>[2]} */ opts,
-    ) {
-      console.warn('running with options', opts);
-      const { agoricNames, lookupPsmInstance } = await rpcTools();
-      const instance = await lookupPsmInstance(opts.pair);
-      const offer = Offers.psm.swap(agoricNames, instance, opts);
-      outputExecuteOfferAction(offer);
-    });
+    .action(
+      async function (
+        /** @type {Parameters<typeof Offers.psm.swap>[2]} */ opts,
+      ) {
+        console.warn('running with options', opts);
+        const { agoricNames, lookupPsmInstance } = await rpcTools();
+        const instance = await lookupPsmInstance(opts.pair);
+        const offer = Offers.psm.swap(agoricNames, instance, opts);
+        outputExecuteOfferAction(offer);
+      },
+    );
 
   psm
     .command('proposePauseOffers')

@@ -95,9 +95,8 @@ test.serial('home.wallet - receive zoe invite', async t => {
     '@agoric/zoe/src/contracts/automaticRefund.js',
   );
   const installationHandle = await E(zoe).install(bundle);
-  const { creatorInvitation: invite } = await E(zoe).startInstance(
-    installationHandle,
-  );
+  const { creatorInvitation: invite } =
+    await E(zoe).startInstance(installationHandle);
 
   // Check that the wallet knows about the Zoe invite issuer and starts out
   // with a default Zoe invite issuer purse.
@@ -155,7 +154,7 @@ test.serial('home.localTimerService makeNotifier', async t => {
   const notifier = E(localTimerService).makeNotifier(1n, 1n);
   const update1 = await E(notifier).getUpdateSince();
   const firstUpdate = update1.updateCount;
-  t.truthy(firstUpdate > 0);
+  t.true(firstUpdate > 0);
   const update2 = await E(notifier).getUpdateSince(update1.updateCount);
   t.truthy(BigInt(update2.updateCount) > BigInt(firstUpdate));
 

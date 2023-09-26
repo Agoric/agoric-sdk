@@ -1,5 +1,4 @@
 import { AmountMath } from '@agoric/ertp';
-import { atomicRearrange } from '../../contractSupport/index.js';
 
 /**
  * @param {ZCF} zcf
@@ -20,7 +19,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   let highestBidSeat = bidSeats[0];
   let activeBidsCount = 0n;
 
-  bidSeats.forEach(bidSeat => {
+  for (const bidSeat of bidSeats) {
     if (!bidSeat.hasExited()) {
       activeBidsCount += 1n;
       /** @type {Amount<'nat'>} */
@@ -35,15 +34,14 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
         highestBidSeat = bidSeat;
       }
     }
-  });
+  }
 
   if (activeBidsCount === 0n) {
     throw sellSeat.fail(Error(`Could not close auction. No bids were active`));
   }
 
   // Everyone else gets a refund so their values remain the same.
-  atomicRearrange(
-    zcf,
+  zcf.atomicRearrange(
     harden([
       [highestBidSeat, sellSeat, { Bid: highestBid }, { Ask: highestBid }],
       [sellSeat, highestBidSeat, { Asset: assetAmount }],
@@ -51,10 +49,10 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   );
 
   sellSeat.exit();
-  bidSeats.forEach(bidSeat => {
+  for (const bidSeat of bidSeats) {
     if (!bidSeat.hasExited()) {
       bidSeat.exit();
     }
-  });
+  }
   zcf.shutdown('Auction closed.');
 };

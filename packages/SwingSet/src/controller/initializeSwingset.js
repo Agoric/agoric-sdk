@@ -128,7 +128,7 @@ export function loadBasedir(basedir, options = {}) {
   const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
-  subs.forEach(dirent => {
+  for (const dirent of subs) {
     if (
       dirent.name.startsWith('vat-') &&
       dirent.name.endsWith('.js') &&
@@ -138,7 +138,7 @@ export function loadBasedir(basedir, options = {}) {
       const vatSourcePath = path.resolve(basedir, dirent.name);
       vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
     }
-  });
+  }
   /** @type {string | void} */
   let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
   try {
@@ -237,10 +237,7 @@ export async function loadSwingsetConfigFile(configPath) {
   await null;
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    const referrer = new URL(
-      configPath,
-      `file:///${process.cwd()}/`,
-    ).toString();
+    const referrer = new URL(configPath, `file://${process.cwd()}/`).toString();
     await normalizeConfigDescriptor(config.vats, referrer, true);
     await normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
@@ -249,6 +246,7 @@ export async function loadSwingsetConfigFile(configPath) {
       Fail`bootstrap vat ${config.bootstrap} not found in ${configPath}`;
     return config;
   } catch (e) {
+    console.error(`failed to load ${configPath}`);
     if (e.code === 'ENOENT') {
       return null;
     } else {

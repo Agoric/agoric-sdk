@@ -3,10 +3,7 @@ import './types.js';
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import {
-  assertProposalShape,
-  atomicRearrange,
-} from '../../contractSupport/index.js';
+import { assertProposalShape } from '../../contractSupport/index.js';
 
 // The debt, the amount which must be repaid, is just the amount
 // loaned plus interest (aka stability fee). All debt must be repaid
@@ -44,8 +41,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
       'Collateral',
       collateralBrand,
     );
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         [collateralSeat, repaySeat, { Collateral: collateralAmount }],
         [repaySeat, lenderSeat, { Loan: debt }],

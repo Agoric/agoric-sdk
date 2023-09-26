@@ -5,7 +5,7 @@ on:
     branches:
       # $default-branch
       - master
-      - release-pismo
+      - 'release-*'
     tags:
       - '@agoric/sdk@*'
   workflow_dispatch:
@@ -139,16 +139,23 @@ jobs:
         id: docker-tags
         run: |
           set -ex
-          SDK_TAG=$(echo "${{ github.ref_name }}" | sed -ne 's!^@agoric/sdk@!!p')
+          SDK_TAG=$(echo "$GITHUB_REF_NAME" | sed -ne 's!^@agoric/sdk@!!p')
           case $SDK_TAG in
             "")
-              if [ "${{ github.ref_name }}" = "release-pismo" ]; then
-                # A pismo dev release.
-                DOCKER_TAGS=pismo-dev
-              else
-                # Just a dev release.
-                DOCKER_TAGS=dev
-              fi
+              case $GITHUB_REF_NAME in
+                release-*)
+                  # A pre-release.
+                  DOCKER_TAGS=${GITHUB_REF_NAME#release-}-dev
+                  ;;
+                master)
+                  # A trunk dev release.
+                  DOCKER_TAGS=dev
+                  ;;
+                *)
+                  # Some other dev release.
+                  DOCKER_TAGS=other-dev
+                  ;;
+              esac
               ;;
             *)
               # A tagged SDK release.

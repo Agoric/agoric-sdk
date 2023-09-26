@@ -1,9 +1,8 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
-test('non-object initial data message', async t => {
+test('non-object initial data message', t => {
   const vom = makeFakeVirtualObjectManager();
   const goodInit = () => ({ value: 0 });
   // 'badInit' is  () =>  { value: 0 }

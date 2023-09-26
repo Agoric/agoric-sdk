@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define, no-undef */
 import type { ERef } from '@endo/eventual-send';
 
-import type { RankComparison } from '@agoric/store';
+import type { RankComparison } from '@endo/marshal';
 
 /// <reference types="@agoric/notifier/src/types.js"/>
 

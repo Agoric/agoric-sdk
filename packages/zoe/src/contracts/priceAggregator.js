@@ -1,4 +1,5 @@
-/// <reference path="../../../time/src/types.d.ts" />
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
+/// <reference types="@agoric/time/src/types.d.ts" />
 
 import { Fail, q } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
@@ -457,6 +458,7 @@ const start = async (zcf, privateArgs) => {
         seat,
         { notifier: oracleNotifier, scaleValueOut = 1 } = {},
       ) => {
+        seat.exit();
         const admin = await creatorFacet.initOracle(oracleKey);
         const invitationMakers = Far('invitation makers', {
           /** @param {ParsableNumber} price */
@@ -468,7 +470,6 @@ const start = async (zcf, privateArgs) => {
             }, 'PushPrice');
           },
         });
-        seat.exit();
 
         if (oracleNotifier) {
           pushFromOracle(oracleNotifier, scaleValueOut, r =>

@@ -2,7 +2,7 @@
 
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   BridgeId,
   deeplyFulfilledObject,
@@ -22,12 +22,11 @@ import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 const { details: X } = assert;
 
 /**
- * In golang/cosmos/app/app.go, we define
- * cosmosInitAction with type AG_COSMOS_INIT,
- * with the following shape.
+ * In golang/cosmos/app/app.go, we define cosmosInitAction with type
+ * AG_COSMOS_INIT, with the following shape.
  *
- * The uist supplyCoins value is taken from genesis,
- * thereby authorizing the minting an initial supply of RUN.
+ * The uist supplyCoins value is taken from genesis, thereby authorizing the
+ * minting an initial supply of RUN.
  */
 // eslint-disable-next-line no-unused-vars
 const bootMsgEx = {
@@ -40,20 +39,22 @@ const bootMsgEx = {
     { denom: 'ubld', amount: '1000000000000000' },
     { denom: 'uist', amount: '50000000000' },
   ],
+  swingsetPort: 4,
   vbankPort: 3,
   vibcPort: 2,
 };
 
 /**
- * TODO: review behaviors carefully for powers that go out of scope,
- * since we may want/need them later.
+ * TODO: review behaviors carefully for powers that go out of scope, since we
+ * may want/need them later.
  */
 
 /**
- * @param {BootstrapPowers & {
- * }} powers
+ * @param {BootstrapPowers & {}} powers
  *
- * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
+ *   as from createVatByName
+ *
  * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
@@ -78,7 +79,7 @@ export const makeVatsFromBundles = async ({
       const vatInfoP = provideLazy(tmpStore, vatName, async _k => {
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
-          /** @type { Promise<CreateVatResults> } */
+          /** @type {Promise<CreateVatResults>} */
           const vatInfo = E(svc).createVatByName(bundleName, {
             ...defaultVatCreationOptions,
             name: vatName,
@@ -88,7 +89,7 @@ export const makeVatsFromBundles = async ({
         console.info(`createVat(${bundleID})`);
         assert(bundleID);
         const bcap = await E(svc).getBundleCap(bundleID);
-        /** @type { Promise<CreateVatResults> } */
+        /** @type {Promise<CreateVatResults>} */
         const vatInfo = E(svc).createVat(bcap, {
           ...defaultVatCreationOptions,
           name: vatName,
@@ -134,7 +135,7 @@ export const produceStartUpgradable = async ({
   consume: { diagnostics, zoe },
   produce, // startUpgradable, contractKits
 }) => {
-  /** @type {MapStore<Instance, StartedInstanceKitWithLabel> } */
+  /** @type {MapStore<Instance, StartedInstanceKitWithLabel>} */
   const contractKits = zone.mapStore('ContractKits');
 
   /** @type {StartUpgradable} */
@@ -166,20 +167,19 @@ harden(produceStartUpgradable);
 
 /**
  * @template {GovernableStartFn} SF
- *
  * @param {{
- *   zoe: ERef<ZoeService>,
- *   governedContractInstallation: ERef<Installation<SF>>,
- *   issuerKeywordRecord?: IssuerKeywordRecord,
- *   terms: Record<string, unknown>,
- *   privateArgs: any, // TODO: connect with Installation type
- *   label: string,
+ *   zoe: ERef<ZoeService>;
+ *   governedContractInstallation: ERef<Installation<SF>>;
+ *   issuerKeywordRecord?: IssuerKeywordRecord;
+ *   terms: Record<string, unknown>;
+ *   privateArgs: any; // TODO: connect with Installation type
+ *   label: string;
  * }} zoeArgs
  * @param {{
- *   governedParams: Record<string, unknown>,
- *   timer: ERef<import('@agoric/time/src/types').TimerService>,
- *   contractGovernor: ERef<Installation>,
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
+ *   governedParams: Record<string, unknown>;
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>;
+ *   contractGovernor: ERef<Installation>;
+ *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
  * }} govArgs
  * @returns {Promise<GovernanceFacetKit<SF>>}
  */
@@ -257,10 +257,10 @@ const startGovernedInstance = async (
 
 /**
  * @param {BootstrapSpace & {
- *   zone: import('@agoric/zone').Zone,
+ *   zone: import('@agoric/zone').Zone;
  *   consume: {
- *     economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
- *   }
+ *     economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *   };
  * }} powers
  */
 export const produceStartGovernedUpgradable = async ({
@@ -276,7 +276,12 @@ export const produceStartGovernedUpgradable = async ({
     consume: { contractGovernor },
   },
 }) => {
-  /** @type {MapStore<Instance, GovernanceFacetKit<any> & {label: string}>} */
+  /**
+   * @type {MapStore<
+   *   Instance,
+   *   GovernanceFacetKit<any> & { label: string }
+   * >}
+   */
   const contractKits = zone.mapStore('GovernedContractKits');
 
   /** @type {startGovernedUpgradable} */
@@ -321,8 +326,8 @@ export const produceStartGovernedUpgradable = async ({
 harden(produceStartGovernedUpgradable);
 
 /**
- * @param { BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> }
+ * @param {BootstrapPowers & {
+ *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
@@ -355,10 +360,12 @@ harden(buildZoe);
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>>},
+ *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
  * }} powers
  *
- * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
+ * @typedef {ERef<
+ *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
+ * >} PriceAuthorityVat
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
@@ -398,9 +405,7 @@ export const makeOracleBrands = async ({
 };
 harden(makeOracleBrands);
 
-/**
- * @param {BootstrapPowers & NamedVatPowers} powers
- */
+/** @param {BootstrapPowers & NamedVatPowers} powers */
 export const produceBoard = async ({
   consume: { client },
   produce: { board: pBoard },
@@ -416,10 +421,9 @@ harden(produceBoard);
 
 /**
  * @deprecated use produceBoard
- *
  * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>>
- * }}} powers
+ *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>> };
+ * }} powers
  */
 export const makeBoard = async ({
   consume: { loadCriticalVat, client },
@@ -436,12 +440,11 @@ harden(makeBoard);
 /**
  * Produce the remote namesByAddress hierarchy.
  *
- * namesByAddress is a NameHub for each provisioned client,
- * available, for example, as `E(home.namesByAddress).lookup('agoric1...')`.
- * `depositFacet` as in `E(home.namesByAddress).lookup('agoric1...', 'depositFacet')`
- * is reserved for use by the Agoric wallet. Each client
- * is given `home.myAddressNameAdmin`, which they can use to
- * assign (update / reserve) any other names they choose.
+ * namesByAddress is a NameHub for each provisioned client, available, for
+ * example, as `E(home.namesByAddress).lookup('agoric1...')`. `depositFacet` as
+ * in `E(home.namesByAddress).lookup('agoric1...', 'depositFacet')` is reserved
+ * for use by the Agoric wallet. Each client is given `home.myAddressNameAdmin`,
+ * which they can use to assign (update / reserve) any other names they choose.
  *
  * @param {BootstrapPowers} powers
  */
@@ -564,8 +567,8 @@ export const installBootContracts = async ({
 /**
  * Mint IST genesis supply.
  *
- * @param { BootstrapPowers & {
- *   vatParameters: { argv: { bootMsg?: typeof bootMsgEx }},
+ * @param {BootstrapPowers & {
+ *   vatParameters: { argv: { bootMsg?: typeof bootMsgEx } };
  * }} powers
  */
 export const mintInitialSupply = async ({
@@ -586,7 +589,11 @@ export const mintInitialSupply = async ({
   ) || { amount: '0' };
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
-  /** @type {Awaited<ReturnType<typeof import('../centralSupply.js').start>>} */
+  /**
+   * @type {Awaited<
+   *   ReturnType<typeof import('../centralSupply.js').start>
+   * >}
+   */
   const { creatorFacet } = await E(zoe).startInstance(
     centralSupply,
     {},
@@ -603,8 +610,8 @@ harden(mintInitialSupply);
 /**
  * Add IST (with initialSupply payment), BLD (with mint) to BankManager.
  *
- * @param { BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<BankVat>> },
+ * @param {BootstrapSpace & {
+ *   consume: { loadCriticalVat: ERef<VatLoader<BankVat>> };
  * }} powers
  */
 export const addBankAssets = async ({

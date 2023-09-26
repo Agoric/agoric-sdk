@@ -7,20 +7,20 @@ import { calculateCurrentDebt, reverseInterest } from '../src/interest-math.js';
 const brand = makeIssuerKit('foo').brand;
 
 /**
- * @param {*} t
+ * @param {any} t
  * @param {readonly [bigint, bigint, bigint]} input
  * @param {bigint} result
  */
 function checkDebt(t, [debt, interest, compounded], result) {
   /** @type {Amount<'nat'>} */
   const debtSnapshot = AmountMath.make(brand, debt);
-  const stabilityFeeSnapshot = makeRatio(100n + interest, brand);
-  const currentCompoundedStabilityFee = makeRatio(100n + compounded, brand);
+  const interestSnapshot = makeRatio(100n + interest, brand);
+  const currentCompoundedInterest = makeRatio(100n + compounded, brand);
   t.is(
     calculateCurrentDebt(
       debtSnapshot,
-      stabilityFeeSnapshot,
-      currentCompoundedStabilityFee,
+      interestSnapshot,
+      currentCompoundedInterest,
     ).value,
     result,
   );

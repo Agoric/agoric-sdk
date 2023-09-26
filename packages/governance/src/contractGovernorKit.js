@@ -53,9 +53,8 @@ export const prepareContractGovernorKit = (baggage, powers) => {
         /** @type {() => Promise<Instance>} */
         async getElectorateInstance() {
           const { publicFacet } = this.state;
-          const invitationAmount = await E(publicFacet).getInvitationAmount(
-            CONTRACT_ELECTORATE,
-          );
+          const invitationAmount =
+            await E(publicFacet).getInvitationAmount(CONTRACT_ELECTORATE);
           return invitationAmount.value[0].instance;
         },
         /** @type {() => Promise<PoserFacet>} */

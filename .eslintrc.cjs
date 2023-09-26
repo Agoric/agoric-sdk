@@ -1,8 +1,5 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-env node */
-const process = require('process');
-
-const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
 const deprecatedForLoanContract = [
   ['currency', 'brand, asset or another descriptor'],
@@ -34,26 +31,31 @@ const deprecatedTerminology = Object.fromEntries(
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
-  parserOptions: lintTypes
-    ? {
-        sourceType: 'module',
-        project: [
-          './packages/*/jsconfig.json',
-          './packages/*/tsconfig.json',
-          './packages/wallet/*/jsconfig.json',
-          './tsconfig.json',
-        ],
-        tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs'],
-      }
-    : undefined,
+  parserOptions: {
+    // Works for us!
+    EXPERIMENTAL_useProjectService: true,
+    sourceType: 'module',
+    project: [
+      './packages/*/tsconfig.json',
+      './packages/*/tsconfig.json',
+      './packages/wallet/*/tsconfig.json',
+      './tsconfig.json',
+    ],
+    tsconfigRootDir: __dirname,
+    extraFileExtensions: ['.cjs'],
+  },
   plugins: ['@typescript-eslint', 'prettier'],
-  extends: ['@agoric'],
+  extends: ['@agoric', 'plugin:ava/recommended'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
-    '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
+    '@typescript-eslint/no-floating-promises': 'error',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
+
+    // We allow disabled tests in master
+    'ava/no-skip-test': 'off',
+    // Contrary to recommendation https://github.com/avajs/ava/blob/main/docs/recipes/typescript.md#typing-tcontext
+    'ava/use-test': 'off',
 
     // The rule is “safe await separator" which implements the architectural
     // goal of “clearly separate an async function's synchronous prelude from
@@ -111,9 +113,23 @@ module.exports = {
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
+        // sometimes used for organizing logic
+        'no-lone-blocks': 'off',
+
         // NOTE: This rule is enabled for the repository in general.  We turn it
         // off for test code for now.
         '@jessie.js/safe-await-separator': 'off',
+      },
+    },
+    {
+      // These tests use EV() instead of E(), which are easy to confuse.
+      // Help by erroring when E() packages are imported.
+      files: ['packages/boot/test/**/test-*'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          { paths: ['@endo/eventual-send', '@endo/far'] },
+        ],
       },
     },
     {
@@ -138,6 +154,28 @@ module.exports = {
       files: ['*.html'],
       parserOptions: {
         project: false,
+      },
+    },
+    {
+      files: ['packages/**/upgrade-test-scripts/**/*.*js'],
+      rules: {
+        // NOTE: This rule is enabled for the repository in general.  We turn it
+        // off for test code for now.
+        '@jessie.js/safe-await-separator': 'off',
+      },
+    },
+    {
+      // Types files have no promises to lint and that linter chokes on the .d.ts twin.
+      // Maybe due to https://github.com/typescript-eslint/typescript-eslint/issues/7435
+      files: ['types*.js'],
+      rules: {
+        // Disabled to prevent:
+        //         Error: Error while loading rule '@typescript-eslint/no-floating-promises': You have used a rule which requires parserServices to be generated. You must therefore provide a value for the "parserOptions.project" property for @typescript-eslint/parser.
+        // Occurred while linting ~agoric-sdk/packages/vats/src/core/types.js
+        //     at Object.getParserServices (~agoric-sdk/node_modules/@typescript-eslint/utils/dist/eslint-utils/getParserServices.js:24:15)
+        //     at create (~agoric-sdk/node_modules/@typescript-eslint/eslint-plugin/dist/rules/no-floating-promises.js:77:31)
+        //     at Object.create (~agoric-sdk/node_modules/@typescript-eslint/utils/dist/eslint-utils/RuleCreator.js:38:20)
+        '@typescript-eslint/no-floating-promises': 'off',
       },
     },
   ],

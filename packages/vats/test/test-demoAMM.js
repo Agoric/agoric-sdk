@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { Stable } from '@agoric/inter-protocol/src/tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 
 import {
   AMMDemoState,
@@ -13,7 +13,7 @@ import {
   splitAllCentralPayments,
 } from '../src/core/demoIssuers.js';
 
-/** @param { bigint } n */
+/** @param {bigint} n */
 const showIST = n => `${decimal(n, 6)} IST`;
 
 // TODO: prune showIST formatting utility
@@ -63,8 +63,8 @@ test('poolRates: spot check WETH', t => {
   t.is(decimal(initialValue, DecimalPlaces.WETH), '1_000_000');
   t.is((AMMDemoState.WETH.config || {}).collateralValue, 1_000_000n);
 
-  t.is(showBrand(rates.stabilityFee.numerator.brand), Stable.symbol);
-  t.is(showAmount(rates.stabilityFee.numerator), '0.00025 IST');
+  t.is(showBrand(rates.interestRate.numerator.brand), Stable.symbol);
+  t.is(showAmount(rates.interestRate.numerator), '0.00025 IST');
 
   const showRatio = ({ numerator, denominator }) =>
     numerator.brand === denominator.brand
@@ -79,7 +79,7 @@ test('poolRates: spot check WETH', t => {
     initialPrice: '3_286.01 IST / 1 WETH',
     initialMargin: '1.5',
     liquidationMargin: '1.25',
-    stabilityFee: '0.025',
+    interestRate: '0.025',
     mintFee: '0.0001',
   };
   Object.entries(expected).forEach(([prop, val]) =>

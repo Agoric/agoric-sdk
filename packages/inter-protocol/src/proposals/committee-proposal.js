@@ -4,14 +4,14 @@ import { reserveThenDeposit } from './utils.js';
 
 const { values } = Object;
 
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteCommitteeMembers = async (
   {
@@ -26,18 +26,14 @@ export const inviteCommitteeMembers = async (
 
   const highPrioritySendersManager = await consume.highPrioritySendersManager;
 
-  /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
-   */
+  /** @param {[string, Promise<Invitation>][]} addrInvitations */
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
-        await reserveThenDeposit(
-          `econ committee member ${addr}`,
-          namesByAddressAdmin,
-          addr,
-          [invitationP],
-        );
+        const debugName = `econ committee member ${addr}`;
+        await reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+          invitationP,
+        ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
         if (highPrioritySendersManager) {
           await E(highPrioritySendersManager).add(
             EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
@@ -48,14 +44,14 @@ export const inviteCommitteeMembers = async (
     );
   };
 
-  await distributeInvitations(zip(values(voterAddresses), invitations));
+  // This doesn't resolve until the committee members create their smart wallets.
+  // Don't block bootstrap on it.
+  void distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
 harden(inviteCommitteeMembers);
 
-/**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- */
+/** @param {import('./econ-behaviors').EconomyBootstrapPowers} powers */
 export const startEconCharter = async ({
   consume: { zoe },
   produce: { econCharterKit },
@@ -131,7 +127,7 @@ harden(addGovernorsToEconCharter);
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteToEconCharter = async (
   { consume: { namesByAddressAdmin, econCharterKit } },
@@ -139,15 +135,15 @@ export const inviteToEconCharter = async (
 ) => {
   const { creatorFacet } = E.get(econCharterKit);
 
-  await Promise.all(
-    values(voterAddresses).map(async addr =>
-      reserveThenDeposit(
-        `econ charter member ${addr}`,
-        namesByAddressAdmin,
-        addr,
-        [E(creatorFacet).makeCharterMemberInvitation()],
-      ),
-    ),
+  // This doesn't resolve until the committee members create their smart wallets.
+  // Don't block bootstrap on it.
+  void Promise.all(
+    values(voterAddresses).map(async addr => {
+      const debugName = `econ charter member ${addr}`;
+      reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+        E(creatorFacet).makeCharterMemberInvitation(),
+      ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+    }),
   );
 };
 
@@ -180,8 +176,6 @@ export const getManifestForInviteCommittee = async (
       [addGovernorsToEconCharter.name]: {
         consume: {
           auctioneerKit: t,
-          reserveGovernorCreatorFacet: t,
-          vaultFactoryGovernorCreator: t,
           econCharterKit: t,
           zoe: t,
           agoricNames: t,

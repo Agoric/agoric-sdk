@@ -10,36 +10,42 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 const trace = makeTracer('AR', true);
 
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
 /**
  * @typedef {{
- *   increaseLiquidationShortfall: (increase: Amount) => void
- *   reduceLiquidationShortfall: (reduction: Amount) => void
+ *   increaseLiquidationShortfall: (increase: Amount) => void;
+ *   reduceLiquidationShortfall: (reduction: Amount) => void;
  * }} ShortfallReportingFacet
  */
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * Asset Reserve holds onto assets for the Inter Protocol, and can
- * dispense it for various purposes under governance control.
+ * Asset Reserve holds onto assets for the Inter Protocol, and can dispense it
+ * for various purposes under governance control.
  *
  * This contract has the ability to mint Fee tokens, granted through its private
  * arguments.
  *
- * @param {ZCF<GovernanceTerms<{}> &
- * {
- *   governedApis: ['burnFeesToReduceShortfall'],
- * }
+ * @param {ZCF<
+ *   GovernanceTerms<{}> & {
+ *     governedApis: ['burnFeesToReduceShortfall'];
+ *   }
  * >} zcf
  * @param {{
- *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Invitation,
- *   marshaller: ERef<Marshaller>,
- *   storageNode: ERef<StorageNode>,
+ *   feeMintAccess: FeeMintAccess;
+ *   initialPoserInvitation: Invitation;
+ *   marshaller: ERef<Marshaller>;
+ *   storageNode: ERef<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare', Object.keys(privateArgs), [...baggage.keys()]);
   // This contract mixes two styles of access to durable state. durableStores
   // are declared at the top level and referenced lexically. local state is
@@ -106,7 +112,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet: /** @type {any} */ (assetReserveKit.public),
   };
 };
-harden(prepare);
+harden(start);
 
 /**
  * @typedef {object} ShortfallReporter
@@ -121,5 +127,8 @@ harden(prepare);
  * @property {() => Promise<Invitation<ShortfallReporter>>} makeShortfallReportingInvitation
  */
 
-/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} AssetReservePublicFacet */
-/** @typedef {Awaited<ReturnType<typeof prepare>>['creatorFacet']} AssetReserveCreatorFacet the creator facet for the governor */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
+/**
+ * @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet
+ *   the creator facet for the governor
+ */

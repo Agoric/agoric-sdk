@@ -1,4 +1,5 @@
 // @jessie-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -16,7 +17,7 @@ export const makeWithQueue = () => {
     }
     const [thunk, resolve, reject] = queue[0];
     // Run the thunk in a new turn.
-    Promise.resolve()
+    void Promise.resolve()
       .then(thunk)
       // Resolve or reject our caller with the thunk's value.
       .then(resolve, reject)

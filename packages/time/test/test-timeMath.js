@@ -1,6 +1,3 @@
-import '@endo/init';
-
-// eslint-disable-next-line import/order
 import test from 'ava';
 import { Far } from '@endo/far';
 import { TimeMath } from '../src/timeMath.js';
@@ -56,7 +53,7 @@ test('timeMath one label', t => {
 });
 
 test('timeMath no labels', t => {
-  t.deepEqual(TimeMath.addAbsRel(100n, 3n), 103n);
+  t.is(TimeMath.addAbsRel(100n, 3n), 103n);
 });
 
 // TODO: < should fail

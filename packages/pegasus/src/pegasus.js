@@ -9,8 +9,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
-import '@agoric/vats/exported.js';
-import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/network/exported.js';
 import '@agoric/zoe/exported.js';
 
 import '../exported.js';
@@ -304,9 +303,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
         checkAbort = () => {
           throw reason;
         };
-        pegs.forEach(peg => {
+        for (const peg of pegs) {
           pegToDenomState.delete(peg);
-        });
+        }
       },
     });
     return pegasusConnectionActions;
@@ -316,8 +315,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
     /**
      * Return a handler that can be used with the Network API.
      *
-     * @param {ERef<TransferProtocol>} [transferProtocol=DEFAULT_TRANSFER_PROTOCOL]
-     * @param {ERef<DenomTransformer>} [denomTransformer=DEFAULT_DENOM_TRANSFORMER]
+     * @param {ERef<TransferProtocol>} [transferProtocol]
+     * @param {ERef<DenomTransformer>} [denomTransformer]
      * @returns {PegasusConnectionKit}
      */
     makePegasusConnectionKit(
@@ -385,9 +384,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
         async onReceive(c, packetBytes) {
           const doReceive = async () => {
             // Dispatch the packet to the appropriate Peg for this connection.
-            const parts = await E(transferProtocol).parseTransferPacket(
-              packetBytes,
-            );
+            const parts =
+              await E(transferProtocol).parseTransferPacket(packetBytes);
 
             const { remoteDenom: receiveDenom } = parts;
             assert.typeof(receiveDenom, 'string');

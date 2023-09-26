@@ -1,5 +1,5 @@
+// @ts-nocheck
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { Remotable } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
@@ -7,7 +7,7 @@ import { initEmpty } from '@agoric/store';
 import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-test('VOM tracks reachable vrefs', async t => {
+test('VOM tracks reachable vrefs', t => {
   const { vom, vrm, cm } = makeFakeVirtualStuff();
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;

@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
@@ -15,7 +14,7 @@ function attack2(mut1, immut2) {
   Reflect.apply(mutableProto.set, immut2, [6]);
 }
 
-test('forbid cross-facet prototype attack', async t => {
+test('forbid cross-facet prototype attack', t => {
   const vom = makeFakeVirtualObjectManager();
   const init = () => ({ value: 0 });
   const behavior = {

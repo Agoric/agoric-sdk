@@ -1,3 +1,3 @@
 // @jessie-check
 
-export * from './src/heap.js';
+export * from '@agoric/base-zone/heap.js';

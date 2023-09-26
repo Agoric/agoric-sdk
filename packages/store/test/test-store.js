@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
+import test from 'ava';
 
 import { Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';

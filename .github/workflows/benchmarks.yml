@@ -23,10 +23,10 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: yarn bench (vats)
+      - name: yarn bench (boot)
         shell: bash
         run: |
-          cd packages/vats && yarn bench
+          cd packages/boot && yarn bench
           echo "METRIC_VALUE=`cat benchmark-stress-vaults.json | jq .avgPerVaultMs`" >> $GITHUB_ENV
 
       - uses: ./.github/actions/publish-metric

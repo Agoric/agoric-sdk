@@ -75,9 +75,9 @@ The [zone API](https://github.com/Agoric/agoric-sdk/tree/master/packages/zone#re
 
 You can obtain individual zones implementing this API as follows:
   * Heap objects in vat RAM
-    - `import { heapZone } from '@agoric/zone';`
+    - `import { makeHeapZone } from '@agoric/zone';`
   * Virtual objects in disk-based storage
-    - `import { virtualZone } from '@agoric/zone/virtual.js';`
+    - `import { makeVirtualZone } from '@agoric/zone/virtual.js';`
   * Durable objects in disk-based storage
     - zone API maker found at `import { makeDurableZone } from '@agoric/zone/durable.js';` and
     - zone API backed by a durable map and created by `makeDurableZone(durableMap)`
@@ -136,7 +136,8 @@ const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods
 or with the zone API:
 
 ```js
-import { M, makeDurableZone } from '@agoric/zone';
+import { M } from '@endo/patterns';
+import { makeDurableZone } from '@agoric/zone';
 const FooI = M.interface('foo', fooMethodGuards);
 // someDurableMap should generally be reachable from baggage.
 const zone = makeDurableZone(someDurableMap);

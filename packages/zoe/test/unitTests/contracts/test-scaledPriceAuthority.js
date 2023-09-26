@@ -15,6 +15,7 @@ import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js
 
 import '../../../src/contracts/exported.js';
 
+// This contract still uses 'prepare', so this test covers that case.
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe

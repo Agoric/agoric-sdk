@@ -15,7 +15,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc",
     "lint:eslint": "eslint ."
   },
   "keywords": [],
@@ -23,6 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
+    "@agoric/builders": "^0.1.0",
     "@agoric/cosmos": "^0.34.1",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/internal": "^0.3.2",
@@ -30,12 +31,14 @@
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/telemetry": "^0.6.2",
-    "@endo/far": "^0.2.18",
-    "@endo/import-bundle": "^0.3.4",
-    "@endo/init": "^0.5.56",
-    "@endo/marshal": "^0.8.5",
-    "@endo/nat": "^4.1.27",
-    "@endo/promise-kit": "^0.2.56",
+    "@agoric/vm-config": "^0.1.0",
+    "@endo/bundle-source": "^2.7.0",
+    "@endo/far": "^0.2.21",
+    "@endo/import-bundle": "^0.4.1",
+    "@endo/init": "^0.5.59",
+    "@endo/marshal": "^0.8.8",
+    "@endo/nat": "^4.1.30",
+    "@endo/promise-kit": "^0.2.59",
     "@iarna/toml": "^2.2.3",
     "@opentelemetry/sdk-metrics": "~1.9.0",
     "@opentelemetry/api": "~1.3.0",
@@ -57,6 +60,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "20m"
   }

@@ -95,9 +95,8 @@ test('fundedCallSpread below Strike1', async t => {
     terms,
   );
 
-  const { customDetails } = await E(zoe).getInvitationDetails(
-    creatorInvitation,
-  );
+  const { customDetails } =
+    await E(zoe).getInvitationDetails(creatorInvitation);
   assert(typeof customDetails === 'object');
   const longOptionAmount = customDetails.longAmount;
   const shortOptionAmount = customDetails.shortAmount;
@@ -203,9 +202,8 @@ test('fundedCallSpread above Strike2', async t => {
     terms,
   );
 
-  const { customDetails } = await E(zoe).getInvitationDetails(
-    creatorInvitation,
-  );
+  const { customDetails } =
+    await E(zoe).getInvitationDetails(creatorInvitation);
   assert(typeof customDetails === 'object');
   const longOptionAmount = customDetails.longAmount;
   const shortOptionAmount = customDetails.shortAmount;
@@ -310,9 +308,8 @@ test('fundedCallSpread, mid-strike', async t => {
     terms,
   );
 
-  const { customDetails } = await E(zoe).getInvitationDetails(
-    creatorInvitation,
-  );
+  const { customDetails } =
+    await E(zoe).getInvitationDetails(creatorInvitation);
   assert(typeof customDetails === 'object');
   const longOptionAmount = customDetails.longAmount;
   const shortOptionAmount = customDetails.shortAmount;
@@ -417,9 +414,8 @@ test('fundedCallSpread, late exercise', async t => {
     terms,
   );
 
-  const { customDetails } = await E(zoe).getInvitationDetails(
-    creatorInvitation,
-  );
+  const { customDetails } =
+    await E(zoe).getInvitationDetails(creatorInvitation);
   assert(typeof customDetails === 'object');
   const aliceProposal = harden({
     want: {
@@ -526,9 +522,8 @@ test('fundedCallSpread, sell options', async t => {
     terms,
   );
 
-  const { customDetails } = await E(zoe).getInvitationDetails(
-    creatorInvitation,
-  );
+  const { customDetails } =
+    await E(zoe).getInvitationDetails(creatorInvitation);
   assert(typeof customDetails === 'object');
   const longOptionAmount = customDetails.longAmount;
   const shortOptionAmount = customDetails.shortAmount;

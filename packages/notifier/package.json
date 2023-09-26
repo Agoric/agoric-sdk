@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build jsconfig.build.json",
+    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' src/types.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
@@ -17,7 +17,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc"
   },
   "repository": {
     "type": "git",
@@ -36,16 +36,17 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/far": "^0.2.18",
-    "@endo/marshal": "^0.8.5",
-    "@endo/patterns": "^0.2.2",
-    "@endo/promise-kit": "^0.2.56"
+    "@endo/far": "^0.2.21",
+    "@endo/marshal": "^0.8.8",
+    "@endo/patterns": "^0.2.5",
+    "@endo/promise-kit": "^0.2.59"
   },
   "devDependencies": {
+    "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",
-    "@endo/init": "^0.5.56",
-    "@endo/ses-ava": "^0.2.40",
+    "@endo/init": "^0.5.59",
+    "@endo/ses-ava": "^0.2.43",
     "ava": "^5.3.0",
     "c8": "^7.13.0"
   },
@@ -67,6 +68,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "2m"
   }

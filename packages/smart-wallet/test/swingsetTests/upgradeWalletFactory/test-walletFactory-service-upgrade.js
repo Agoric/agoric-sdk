@@ -12,6 +12,9 @@ import {
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
+const importSpec = spec =>
+  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */
   const config = {
@@ -22,17 +25,18 @@ test('walletFactory service upgrade', async t => {
         // TODO refactor to use bootstrap-relay.js
         sourceSpec: bfile('bootstrap-walletFactory-service-upgrade.js'),
       },
-      zoe: { sourceSpec: bfile('../../../../vats/src/vat-zoe.js') },
+      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
     },
     bundles: {
       zcf: {
-        sourceSpec: bfile('../../../../zoe/src/contractFacet/vatRoot.js'),
+        sourceSpec: await importSpec(
+          '@agoric/zoe/src/contractFacet/vatRoot.js',
+        ),
       },
       automaticRefund: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: await importSpec(
           '@agoric/zoe/src/contracts/automaticRefund.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       [wfV1BundleName]: {
         sourceSpec: bfile('../../../src/walletFactory.js'),

@@ -1,6 +1,6 @@
 import type { Callable } from '@agoric/internal/src/utils.js';
-import { VatUpgradeResults } from '@agoric/swingset-vat';
-import { Baggage } from '@agoric/vat-data';
+import type { VatUpgradeResults } from '@agoric/swingset-vat';
+import type { Baggage } from '@agoric/swingset-liveslots';
 
 import type { IssuerKeywordRecord, Payment } from './types.js';
 

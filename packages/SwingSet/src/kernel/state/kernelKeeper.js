@@ -671,7 +671,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
           body: kvStore.get(`${kernelSlot}.data.body`),
           slots: commaSplit(kvStore.get(`${kernelSlot}.data.slots`)),
         };
-        p.data.slots.forEach(parseKernelSlot);
+        for (const s of p.data.slots) {
+          parseKernelSlot(s);
+        }
         break;
       }
       default: {
@@ -1434,13 +1436,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
           state: { transcript: Array.from(vk.getTranscript()) },
         };
         vatTables.push(vatTable);
-        vk.dumpState().forEach(e => kernelTable.push(e));
+        for (const e of vk.dumpState()) {
+          kernelTable.push(e);
+        }
       }
     }
 
     for (const deviceID of getAllDeviceIDs()) {
       const dk = allocateDeviceKeeperIfNeeded(deviceID);
-      dk.dumpState().forEach(e => kernelTable.push(e));
+      for (const e of dk.dumpState()) {
+        kernelTable.push(e);
+      }
     }
 
     function compareNumbers(a, b) {

@@ -1,4 +1,5 @@
 /* global setTimeout */
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 // NOTE: Runs outside SES
 
 /* global WebSocket fetch document window walletFrame localStorage */
@@ -265,7 +266,7 @@ function run() {
     commands[commands.length - 1] = inp.value;
     commands[commands.length] = '';
     inp.value = '';
-    call({ type: 'doEval', number, body: command });
+    void call({ type: 'doEval', number, body: command });
   }
 
   function inputKeyup(ev) {

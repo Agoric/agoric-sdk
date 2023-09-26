@@ -488,7 +488,7 @@ const doInit =
       config.OFFSETS[PLACEMENT] = offset;
     }
     Object.values(ROLE_INSTANCE).some(i => i > 0) ||
-      Fail`Aborting due to no nodes configured!`;
+      Fail`Aborting due to no nodes configured! (${ROLE_INSTANCE})`;
 
     await wr.createFile(
       `vars.tf`,

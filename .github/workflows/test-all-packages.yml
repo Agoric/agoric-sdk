@@ -49,7 +49,7 @@ jobs:
         run: sudo apt install -y graphviz
 
       - name: Check for cycles
-        run: scripts/check-dependency-cycles.sh 1
+        run: scripts/check-dependency-cycles.sh
 
   ##################
   # Lint tests
@@ -57,7 +57,7 @@ jobs:
   # We split the package tests into two jobs because type linting
   # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +74,7 @@ jobs:
         run: ./scripts/lint-with-types.sh primary
 
   lint-rest:
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -142,9 +142,6 @@ jobs:
       - name: yarn test (same-structure)
         if: (success() || failure())
         run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (sharing-service)
-        if: (success() || failure())
-        run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -202,6 +199,12 @@ jobs:
       - name: yarn test (agoric-cli)
         if: (success() || failure())
         run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (base-zone)
+        if: (success() || failure())
+        run: cd packages/base-zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (builders)
+        if: (success() || failure())
+        run: cd packages/builders && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmos)
         if: (success() || failure())
         run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -214,6 +217,9 @@ jobs:
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (network)
+        if: (success() || failure())
+        run: cd packages/network && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (pegasus)
         if: (success() || failure())
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -250,6 +256,12 @@ jobs:
       - name: yarn test (swingset-xsnap-supervisor)
         if: (success() || failure())
         run: cd packages/swingset-xsnap-supervisor && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (vats)
+        if: (success() || failure())
+        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (vm-config)
+        if: (success() || failure())
+        run: cd packages/vm-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (zone)
         if: (success() || failure())
         run: cd packages/zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -403,9 +415,9 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
-  test-vats:
+  test-boot:
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -424,9 +436,9 @@ jobs:
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
-      - name: yarn test (vats)
+      - name: yarn test (boot)
         if: (success() || failure())
-        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+        run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -621,6 +633,16 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
+  test-vats:
+    # XXX remove once this is no longer a required check (and test-boot is)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: ['16.x', '18.x', 'xs']
+    steps:
+      - name: yarn test (vats)
+        run: exit 0
+
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
@@ -704,32 +726,3 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  test-docker-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        bootstrap-version: ['test', 'main']
-    steps:
-      - uses: actions/checkout@v3
-      - name: docker build (sdk)
-        run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
-      - name: docker build upgrade test
-        run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
-      - name: docker run upgrade final stage
-        run: docker run --env "DEST=0" docker-upgrade-test:latest
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}

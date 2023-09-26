@@ -1,9 +1,8 @@
 // @ts-check
-import '@endo/init';
 import test from 'ava';
 
 import { Far } from '@endo/far';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from '../src/callback.js';
 
 test('near function callbacks', t => {
@@ -188,7 +187,7 @@ test('far function callbacks', async t => {
   t.is(await p2r, '19go');
 });
 
-test('bad callbacks', async t => {
+test('bad callbacks', t => {
   t.throws(
     // @ts-expect-error deliberate: number is not assignable to function
     () => cb.makeFunctionCallback(42),
@@ -266,12 +265,8 @@ test('isCallback', t => {
 });
 
 test('makeAttenuator', async t => {
-  const makeAttenuator = cb.prepareAttenuator(heapZone, [
-    'm0',
-    'm1',
-    'm2',
-    'm4',
-  ]);
+  const zone = makeHeapZone();
+  const makeAttenuator = cb.prepareAttenuator(zone, ['m0', 'm1', 'm2', 'm4']);
   const target = Far('original', {
     m0() {
       return 'return original.m0';

@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 // this sets process.env.DEBUG = 'label-instances'
 import './set-debug-label-instances.js';
 
@@ -16,7 +15,7 @@ const init = () => ({});
 const behavior = {};
 const facets = { foo: {}, bar: {} };
 
-test('representatives with label-instances', async t => {
+test('representatives with label-instances', t => {
   const { fakeStuff, vom } = makeFakeVirtualStuff();
   const { getSlotForVal } = fakeStuff;
   const makeThing = vom.defineKind('thing', init, behavior);
@@ -33,7 +32,7 @@ test('representatives with label-instances', async t => {
   t.is(`${q(thing2)}`, `"[Alleged: thing#${thing2vref}]"`);
 });
 
-test('facets with label-instances', async t => {
+test('facets with label-instances', t => {
   const { fakeStuff, vom } = makeFakeVirtualStuff();
   const { getSlotForVal } = fakeStuff;
   const makeThings = vom.defineKindMulti('thing', init, facets);

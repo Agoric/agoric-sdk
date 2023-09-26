@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
@@ -9,7 +10,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import '../internal-types.js';
 import { ZcfMintI } from '../typeGuards.js';
 import './internal-types.js';
-import './types.js';
+import './types-ambient.js';
 
 const { Fail } = assert;
 

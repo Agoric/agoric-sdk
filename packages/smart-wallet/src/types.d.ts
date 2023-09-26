@@ -5,7 +5,7 @@
  * Downside is it can't reference any ambient types, which most of agoric-sdk type are presently.
  */
 
-import type { ERef, FarRef } from '@endo/far';
+import type { ERef } from '@endo/far';
 import type { CapData } from '@endo/marshal';
 import type { MsgWalletSpendAction } from '@agoric/cosmic-proto/swingset/msgs';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
@@ -21,10 +21,9 @@ declare const CapDataShape: unique symbol;
  */
 export type Petname = string | string[];
 
-export type RemotePurse<T = unknown> = FarRef<Purse<T>>;
-
-export type RemoteInvitationMakers = FarRef<
-  Record<string, (...args: any[]) => Promise<Invitation>>
+export type InvitationMakers = Record<
+  string,
+  (...args: any[]) => Promise<Invitation>
 >;
 
 export type PublicSubscribers = Record<string, ERef<StoredFacet>>;

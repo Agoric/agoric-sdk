@@ -18,6 +18,7 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
+import { NonNullish } from '@agoric/assert';
 
 import {
   setupReserve,
@@ -39,14 +40,20 @@ const test = anyTest;
 
 /**
  * @typedef {Record<string, any> & {
- * bid: IssuerKit & import('../supports.js').AmountUtils,
- * collateral: IssuerKit & import('../supports.js').AmountUtils,
- * zoe: ZoeService,
+ *   bid: IssuerKit & import('../supports.js').AmountUtils;
+ *   collateral: IssuerKit & import('../supports.js').AmountUtils;
+ *   zoe: ZoeService;
  * }} Context
  */
 
 /**
- * @typedef {Awaited<ReturnType<subscriptionTracker<import('../../src/auction/auctionBook.js').BookDataNotification>>>} BookDataTracker
+ * @typedef {Awaited<
+ *   ReturnType<
+ *     subscriptionTracker<
+ *       import('../../src/auction/auctionBook.js').BookDataNotification
+ *     >
+ *   >
+ * >} BookDataTracker
  */
 
 const trace = makeTracer('Test AuctContract', false);
@@ -86,8 +93,10 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
- * @param {*} params
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
+ * @param {any} params
  */
 export const setupServices = async (t, params = defaultParams) => {
   const {
@@ -101,6 +110,11 @@ export const setupServices = async (t, params = defaultParams) => {
 
   const space = await setupBootstrap(t, timer);
   installPuppetGovernance(zoe, space.installation.produce);
+
+  t.context.puppetGovernors = {
+    auctioneer: E.get(space.consume.auctioneerKit).governorCreatorFacet,
+    vaultFactory: E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
+  };
 
   // @ts-expect-error not all installs are needed for auctioneer.
   produceInstallations(space, t.context.installs);
@@ -122,7 +136,9 @@ export const setupServices = async (t, params = defaultParams) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
  * @param {any} [params]
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {
@@ -208,7 +224,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     return seat;
   };
 
-  /** @type {MapStore<Brand,BookDataTracker>} */
+  /** @type {MapStore<Brand, BookDataTracker>} */
   const bookDataTrackers = makeScalarMapStore('trackers');
 
   /**
@@ -299,6 +315,15 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
         await eventLoopIteration();
       }
     },
+
+    setGovernedParam: (name, newValue) => {
+      trace(t, 'setGovernedParam', name);
+      const auctionGov = NonNullish(t.context.puppetGovernors.auctioneer);
+      return E(auctionGov).changeParams(
+        harden({ changes: { [name]: newValue } }),
+      );
+    },
+
     async updatePriceAuthority(newPrice) {
       priceAuthorities.get(newPrice.denominator.brand).setPrice(newPrice);
       await eventLoopIteration();
@@ -331,9 +356,8 @@ const assertPayouts = async (
   bidValue,
   collateralValue,
 ) => {
-  const { Collateral: collateralPayout, Bid: bidPayout } = await E(
-    seat,
-  ).getPayouts();
+  const { Collateral: collateralPayout, Bid: bidPayout } =
+    await E(seat).getPayouts();
 
   if (!bidPayout) {
     bidValue === 0n ||
@@ -1397,4 +1421,76 @@ test.serial('time jumps forward', async t => {
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 1570n);
   t.is(schedules.liveAuctionSchedule?.startTime.absValue, 1530n);
   t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1550n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('add collateral type during auction', async t => {
+  const { collateral, bid } = t.context;
+  const driver = await makeAuctionDriver(t);
+  const asset = withAmountUtils(makeIssuerKit('Asset'));
+  const timerBrand = await E(driver.getTimerService()).getTimerBrand();
+
+  const liqSeat = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(1000n),
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(bid.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeat).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const seat = await driver.bidForCollateralSeat(
+    // 1.1 * 1.05 * 200
+    bid.make(231n),
+    collateral.make(200n),
+  );
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
+  t.false(await E(seat).hasExited());
+
+  const scheduleTracker = await driver.getScheduleTracker();
+  await scheduleTracker.assertInitial({
+    activeStartTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
+    nextDescendingStepTime: TimeMath.coerceTimestampRecord(170n, timerBrand),
+    nextStartTime: TimeMath.coerceTimestampRecord(210n, timerBrand),
+  });
+
+  await driver.advanceTo(170n, 'wait');
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 175n },
+  });
+
+  await driver.advanceTo(175n, 'wait');
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 180n },
+  });
+
+  // before the fix for #8296 in AuctionBook, this broke the ongoing auction.
+  await driver.setupCollateralAuction(asset, asset.make(500n));
+
+  await driver.advanceTo(180n, 'wait');
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 185n },
+  });
+
+  await driver.advanceTo(185n, 'wait');
+
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 190n },
+  });
+
+  t.true(await E(seat).hasExited());
+  await assertPayouts(t, seat, bid, collateral, 0n, 200n);
+
+  await driver.advanceTo(210n, 'wait');
+
+  t.true(await E(liqSeat).hasExited());
+  await assertPayouts(t, liqSeat, bid, collateral, 231n, 800n);
+
+  await scheduleTracker.assertChange({
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: 210n },
+  });
 });

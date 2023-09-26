@@ -226,9 +226,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
   const { creatorInvitation } = await alice.startInstance(installation);
 
-  const { seat: aliceSeat, makeBidInvitationObj } = await alice.offer(
-    creatorInvitation,
-  );
+  const { seat: aliceSeat, makeBidInvitationObj } =
+    await alice.offer(creatorInvitation);
 
   const bidInvitation1 = E(makeBidInvitationObj).makeBidInvitation();
   const bidInvitation2 = E(makeBidInvitationObj).makeBidInvitation();
@@ -1054,9 +1053,8 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
 
   const { creatorInvitation } = await alice.startInstance(installation);
 
-  const { seat: aliceSeat, makeBidInvitationObj } = await alice.offer(
-    creatorInvitation,
-  );
+  const { seat: aliceSeat, makeBidInvitationObj } =
+    await alice.offer(creatorInvitation);
 
   const bidInvitation1 = E(makeBidInvitationObj).makeBidInvitation();
   const bidInvitation2 = E(makeBidInvitationObj).makeBidInvitation();

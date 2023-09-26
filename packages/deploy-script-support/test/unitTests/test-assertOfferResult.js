@@ -1,6 +1,5 @@
 // @ts-check
 import test from 'ava';
-import '@endo/init';
 
 import { assertOfferResult } from '../../src/assertOfferResult.js';
 

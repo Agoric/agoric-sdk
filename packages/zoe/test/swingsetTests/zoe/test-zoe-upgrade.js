@@ -1,4 +1,4 @@
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
 import { buildVatController } from '@agoric/swingset-vat';
 import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
@@ -14,7 +14,7 @@ test('zoe vat upgrade trauma', async t => {
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('../../../../SwingSet/test/bootstrap-relay.js'),
+        sourceSpec: bfile('../../../../SwingSet/tools/bootstrap-relay.js'),
       },
       // TODO: Move vat-ertp-service.js up a level.
       ertp: { sourceSpec: bfile('../upgradeCoveredCall/vat-ertp-service.js') },

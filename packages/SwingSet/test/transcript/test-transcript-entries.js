@@ -1,5 +1,6 @@
+// @ts-nocheck
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import test from 'ava';
-import '@endo/init/debug.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
@@ -116,12 +117,12 @@ test('transcript spans', async t => {
   const { commit } = hostStorage;
   const initOpts = { addComms: false, addVattp: false, addTimer: false };
   await initializeSwingset(config, [], kernelStorage, initOpts);
-  commit();
+  await commit();
 
   let c;
   const restart = async () => {
     if (c) {
-      commit();
+      await commit();
       await c.shutdown();
     }
     const { runtimeOptions } = t.context.data;

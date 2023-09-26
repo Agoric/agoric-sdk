@@ -41,7 +41,7 @@ export const buildRootObject = async () => {
   let wallet;
 
   // for startInstance
-  /** @type {Installation<import('../../../src/walletFactory.js').prepare>} */
+  /** @type {Installation<import('../../../src/walletFactory.js').start>} */
   let installation;
   const terms = {
     agoricNames,
@@ -67,12 +67,10 @@ export const buildRootObject = async () => {
       v1BundleId || Fail`bundleId must not be empty`;
       installation = await E(zoe).installBundleID(v1BundleId);
 
-      const autoRefundBundleId = await E(vatAdmin).getBundleIDByName(
-        'automaticRefund',
-      );
-      const autoRefundInstallation = await E(zoe).installBundleID(
-        autoRefundBundleId,
-      );
+      const autoRefundBundleId =
+        await E(vatAdmin).getBundleIDByName('automaticRefund');
+      const autoRefundInstallation =
+        await E(zoe).installBundleID(autoRefundBundleId);
       const { instance } = await E(zoe).startInstance(autoRefundInstallation, {
         Moola: moolaKit.issuer,
       });
@@ -111,7 +109,6 @@ export const buildRootObject = async () => {
       const payment = moolaKit.mint.mintPayment(
         AmountMath.make(moolaKit.brand, 100n),
       );
-      // @ts-expect-error casting far for test
       await E(depositFacet).receive(payment);
 
       return true;

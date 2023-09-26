@@ -3,6 +3,11 @@
 import { initEmpty } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 
+/** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
+/**
+ * @template {Record<string | symbol, MethodGuard>} [T=Record<string | symbol, MethodGuard>]
+ * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
+ */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**

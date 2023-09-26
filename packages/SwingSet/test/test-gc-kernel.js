@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import anylogger from 'anylogger';
@@ -7,7 +8,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
@@ -610,7 +611,9 @@ test('retire before drop is error', async t => {
   await kernel.run();
 
   let survivingVats = new Set();
-  kernel.dump().vatTables.forEach(v => survivingVats.add(v.vatID));
+  for (const v of kernel.dump().vatTables) {
+    survivingVats.add(v.vatID);
+  }
   t.true(survivingVats.has(vatB));
 
   kernel.queueToKref(bob, 'retire', [], 'none');
@@ -625,7 +628,9 @@ test('retire before drop is error', async t => {
 
   // vat should be terminated
   survivingVats = new Set();
-  kernel.dump().vatTables.forEach(v => survivingVats.add(v.vatID));
+  for (const v of kernel.dump().vatTables) {
+    survivingVats.add(v.vatID);
+  }
   t.false(survivingVats.has(vatB));
 });
 
@@ -1046,9 +1051,13 @@ test('terminated vat', async t => {
   function getRefCountsAndOwners() {
     const refcounts = {};
     const data = c.dump();
-    data.objects.forEach(o => (refcounts[o[0]] = [o[2], o[3]]));
+    for (const o of data.objects) {
+      refcounts[o[0]] = [o[2], o[3]];
+    }
     const owners = {};
-    data.objects.forEach(o => (owners[o[0]] = o[1]));
+    for (const o of data.objects) {
+      owners[o[0]] = o[1];
+    }
     return [refcounts, owners];
   }
 
@@ -1066,7 +1075,9 @@ test('terminated vat', async t => {
       .kernelTable.filter(o => o[1] === doomedVat)
       .map(o => [o[0], o[2]]);
     const vrefs = {};
-    usedByDoomed.forEach(([kref, vref]) => (vrefs[vref] = kref));
+    for (const [kref, vref] of usedByDoomed) {
+      vrefs[vref] = kref;
+    }
     return vrefs;
   }
   // console.log(`usedByDoomed vrefs`, vrefs);

@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { isObject, isPassableSymbol } from '@endo/marshal';
+import { getInterfaceMethodKeys } from '@endo/patterns';
 
 const { Fail, quote: q } = assert;
 
@@ -193,10 +194,12 @@ harden(isCallback);
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
  * @template {PropertyKey} M
- * @param {import('@agoric/zone').Zone} zone The zone in which to allocate attenuators.
+ * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
- * @param {InterfaceGuard} [opts.interfaceGuard] An interface guard for the
+ * @param {import('@endo/patterns').InterfaceGuard<{
+ *  [K in M]: import('@endo/patterns').MethodGuard
+ * }>} [opts.interfaceGuard] An interface guard for the
  * new attenuator.
  * @param {string} [opts.tag] A tag for the new attenuator exoClass.
  */
@@ -265,7 +268,7 @@ export const prepareAttenuator = (
     /**
      * @param {object} opts
      * @param {any} [opts.target]
-     * @param {boolean} [opts.isSync=false]
+     * @param {boolean} [opts.isSync]
      * @param {Overrides} [opts.overrides]
      */
     ({
@@ -305,14 +308,14 @@ harden(prepareAttenuator);
 /**
  * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
  *
- * @param {import('@agoric/zone').Zone} zone
- * @param {InterfaceGuard} interfaceGuard
+ * @template {import('@endo/patterns').InterfaceGuard} G
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {G} interfaceGuard
  * @param {object} [opts]
  * @param {string} [opts.tag]
  */
 export const prepareGuardedAttenuator = (zone, interfaceGuard, opts = {}) => {
-  const { methodGuards } = interfaceGuard;
-  const methodNames = ownKeys(methodGuards);
+  const methodNames = getInterfaceMethodKeys(interfaceGuard);
   const makeAttenuator = prepareAttenuator(zone, methodNames, {
     ...opts,
     interfaceGuard,

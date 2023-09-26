@@ -42,12 +42,12 @@ import {
 
 /**
  * @typedef {Record<string, any> & {
- * aeth: IssuerKit & import('../supports.js').AmountUtils,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
- * rates: VaultManagerParamValues,
- * interestTiming: InterestTiming,
- * zoe: ZoeService,
+ *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   rates: VaultManagerParamValues;
+ *   interestTiming: InterestTiming;
+ *   zoe: ZoeService;
  * }} Context
  */
 
@@ -124,7 +124,7 @@ test.before(async t => {
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {import('ava').ExecutionContext<Context>} t
- * @param {Array<NatValue> | Ratio} priceOrList
+ * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
@@ -194,7 +194,17 @@ const setupServices = async (
   );
   /** @typedef {import('../../src/proposals/econ-behaviors.js').AuctioneerKit} AuctioneerKit */
   /** @typedef {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} ManualPriceAuthority */
-  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, AuctioneerKit, ManualPriceAuthority, CollateralManager]} */
+  /**
+   * @type {[
+   *   any,
+   *   VaultFactoryCreatorFacet,
+   *   VFC['publicFacet'],
+   *   VaultManager,
+   *   AuctioneerKit,
+   *   ManualPriceAuthority,
+   *   CollateralManager,
+   * ]}
+   */
   const [
     governorInstance,
     vaultFactory, // creator
@@ -416,7 +426,7 @@ test('price drop', async t => {
   t.is(notification.value.vaultState, Phase.ACTIVE);
   t.deepEqual((await notification.value).debtSnapshot, {
     debt: AmountMath.add(wantMinted, fee),
-    stabilityFee: makeRatio(100n, run.brand),
+    interest: makeRatio(100n, run.brand),
   });
   const { Minted: lentAmount } = await E(vaultSeat).getFinalAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, wantMinted), 'received 470 Minted');
@@ -653,7 +663,7 @@ test('liquidate two loans', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 40% interest / year
-    stabilityFee: run.makeRatio(40n),
+    interestRate: run.makeRatio(40n),
     liquidationMargin: run.makeRatio(103n),
   });
   t.context.rates = rates;
@@ -744,9 +754,8 @@ test('liquidate two loans', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -939,8 +948,17 @@ test('liquidate two loans', async t => {
     manualTimer,
   );
 
-  totalDebt += 7n;
+  totalDebt += 6n;
   await aethVaultMetrics.assertChange({
+    lockedQuote: null,
+    totalDebt: { value: totalDebt },
+  });
+  totalDebt += 1n;
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(7_000_000n),
+    ),
     totalDebt: { value: totalDebt },
   });
   totalDebt += 6n;
@@ -1004,7 +1022,7 @@ test('sell goods at auction', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 200% interest
-    stabilityFee: run.makeRatio(200n),
+    interestRate: run.makeRatio(200n),
     liquidationMargin: run.makeRatio(103n),
   });
   t.context.rates = rates;
@@ -1059,9 +1077,8 @@ test('sell goods at auction', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
 
@@ -1272,9 +1289,8 @@ test('collect fees from loan', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -1423,7 +1439,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 40% interest / year
-    stabilityFee: run.makeRatio(40n),
+    interestRate: run.makeRatio(40n),
     liquidationMargin: run.makeRatio(130n),
   });
   t.context.rates = rates;
@@ -1512,9 +1528,8 @@ test('Auction sells all collateral w/shortfall', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -1643,7 +1658,7 @@ test('liquidation Margin matters', async t => {
 
   const rates = harden({
     ...defaultRates,
-    stabilityFee: run.makeRatio(0n),
+    interestRate: run.makeRatio(0n),
     liquidationMargin: run.makeRatio(150n),
   });
   t.context.rates = rates;
@@ -1697,9 +1712,8 @@ test('liquidation Margin matters', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -1747,7 +1761,7 @@ test('reinstate vault', async t => {
 
   const rates = harden({
     ...defaultRates,
-    stabilityFee: run.makeRatio(0n),
+    interestRate: run.makeRatio(0n),
     liquidationMargin: run.makeRatio(150n),
   });
   t.context.rates = rates;
@@ -1823,9 +1837,8 @@ test('reinstate vault', async t => {
     aliceRunDebtLevel,
     'vault lent 5000 Minted + fees',
   );
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -2154,9 +2167,8 @@ test('Bug 7422 vault reinstated with no assets', async t => {
     totalDebt: { value: 332n },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -2394,9 +2406,8 @@ test('Bug 7346 excess collateral to holder', async t => {
     totalDebt: { value: totalDebt },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -2623,7 +2634,7 @@ test('refund to one of two loans', async t => {
   t.is(aliceNotification.value.vaultState, Phase.ACTIVE);
   t.deepEqual((await aliceNotification.value).debtSnapshot, {
     debt: AmountMath.add(aliceWantMinted, aliceFee),
-    stabilityFee: makeRatio(100n, run.brand),
+    interest: makeRatio(100n, run.brand),
   });
   const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, aliceWantMinted));
@@ -2842,9 +2853,8 @@ test('Bug 7784 reconstitute both', async t => {
     totalDebt: { value: 309_540n },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -3065,9 +3075,8 @@ test('Bug 7796 missing lockedPrice', async t => {
     totalDebt: { value: totalDebt },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -3146,7 +3155,13 @@ test('Bug 7796 missing lockedPrice', async t => {
   const penaltyAeth = 309_850n;
 
   await aethVaultMetrics.assertChange({
-    lockedQuote: { denominator: { value: 9_990_000n } },
+    lockedQuote: null,
+  });
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(9_990_000n),
+    ),
   });
   await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: totalDebt },
@@ -3306,9 +3321,8 @@ test('Bug 7851 & no bidders', async t => {
     totalDebt: { value: aliceDebt },
   });
 
-  const { Minted: aliceLentAmount } = await E(
-    aliceVaultSeat,
-  ).getFinalAllocation();
+  const { Minted: aliceLentAmount } =
+    await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceWantMinted, 'received 95 Minted');
 
@@ -3336,7 +3350,13 @@ test('Bug 7851 & no bidders', async t => {
   );
 
   await aethVaultMetrics.assertChange({
-    lockedQuote: { denominator: { value: 9_990_000n } },
+    lockedQuote: null,
+  });
+  await aethVaultMetrics.assertChange({
+    lockedQuote: makeRatioFromAmounts(
+      aeth.make(1_000_000n),
+      run.make(9_990_000n),
+    ),
   });
   await aethVaultMetrics.assertChange({
     liquidatingDebt: { value: aliceDebt },

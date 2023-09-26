@@ -98,7 +98,9 @@ export function makeKernelQueueHandler(tools) {
     // queue a message on the end of the queue, with 'absolute' krefs.
     // Use 'step' or 'run' to execute it
     const methargs = kser([method, args]);
-    methargs.slots.forEach(s => parseKernelSlot(s));
+    for (const s of methargs.slots) {
+      parseKernelSlot(s);
+    }
     let resultKPID;
     if (policy !== 'none') {
       resultKPID = kernelKeeper.addKernelPromise(policy);

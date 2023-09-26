@@ -8,14 +8,17 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
  * @typedef {{
- *   oracleId: string,
- *   roundPowers: { handlePush: (status: OracleStatus, result: import('./roundsManager.js').PriceRound) => Promise<OracleStatus> }
+ *   oracleId: string;
+ *   roundPowers: {
+ *     handlePush: (
+ *       status: OracleStatus,
+ *       result: import('./roundsManager.js').PriceRound,
+ *     ) => Promise<OracleStatus>;
+ *   };
  * }} HeldParams
  */
 
-/**
- * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceDatum
- */
+/** @typedef {{ roundId: number | undefined; unitPrice: NatValue }} PriceDatum */
 
 /**
  * @typedef {object} OracleStatus
@@ -26,11 +29,9 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * @property {string} oracleId
  */
 /**
- * @typedef {Readonly<HeldParams & {
- * }>} ImmutableState
+ * @typedef {Readonly<HeldParams & {}>} ImmutableState
  *
- * @typedef {OracleStatus & {
- * }} MutableState
+ * @typedef {OracleStatus & {}} MutableState
  */
 /** @typedef {ImmutableState & MutableState} State */
 
@@ -106,10 +107,7 @@ export const prepareOracleAdminKit = baggage =>
           state.lastStartedRound = result.lastStartedRound;
           state.latestSubmission = result.latestSubmission;
         },
-        /**
-         *
-         * @returns {OracleStatus}
-         */
+        /** @returns {OracleStatus} */
         getStatus() {
           const { state } = this;
           return {

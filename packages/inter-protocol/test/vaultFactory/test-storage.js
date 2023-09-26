@@ -9,10 +9,7 @@ import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 import '../../src/vaultFactory/types.js';
 
-/**
- * @typedef {import('./driver.js').DriverContext & {
- * }} Context
- */
+/** @typedef {import('./driver.js').DriverContext & {}} Context */
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
@@ -23,7 +20,7 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-test.only('storage keys', async t => {
+test('storage keys', async t => {
   const { aeth, run } = t.context;
   const d = await makeManagerDriver(t);
 
@@ -48,7 +45,7 @@ test.only('storage keys', async t => {
     managerA,
     'asset',
     'mockChainStorageRoot.vaultFactory.managers.manager0',
-    ['compoundedStabilityFee', 'latestStabilityFeeUpdate', 'stabilityFee'],
+    ['compoundedInterest', 'interestRate', 'latestInterestUpdate'],
   );
   await assertTopicPathData(
     t,

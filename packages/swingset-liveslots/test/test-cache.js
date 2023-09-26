@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { makeCache } from '../src/cache.js';
 

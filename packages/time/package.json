@@ -12,7 +12,7 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc",
     "lint:eslint": "eslint .",
     "lint-fix": "yarn lint:eslint --fix"
   },
@@ -31,13 +31,18 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@agoric/store": "^0.9.2",
-    "@endo/nat": "^4.1.27"
+    "@endo/nat": "^4.1.30",
+    "@endo/patterns": "^0.2.5"
   },
   "devDependencies": {
-    "@endo/far": "^0.2.18",
-    "@endo/init": "^0.5.56",
+    "@endo/far": "^0.2.21",
+    "@endo/init": "^0.5.59",
     "ava": "^5.3.0"
+  },
+  "ava": {
+    "require": [
+      "@endo/init/debug.js"
+    ]
   },
   "files": [
     "*.js",

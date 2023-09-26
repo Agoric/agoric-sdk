@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -236,9 +237,8 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
   vatAdminState.installBundle('b1-coveredcall', bundle);
-  const coveredCallInstallation = await E(zoe).installBundleID(
-    'b1-coveredcall',
-  );
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
   const timer = buildManualTimer(t.log);
   const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 
@@ -378,9 +378,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
   vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
-  const coveredCallInstallation = await E(zoe).installBundleID(
-    'b1-coveredcall',
-  );
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
   vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
@@ -576,9 +575,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Dave should get 3 moola, Bob should get 1 buck, and Alice
   // get 7 simoleans
-  const daveMoolaPayout = await daveCoveredCallSeat.getPayout(
-    'UnderlyingAsset',
-  );
+  const daveMoolaPayout =
+    await daveCoveredCallSeat.getPayout('UnderlyingAsset');
   const daveSimoleanPayout = await daveCoveredCallSeat.getPayout('StrikePrice');
   const aliceMoolaPayout = await aliceSeat.getPayout('UnderlyingAsset');
   const aliceSimoleanPayout = await aliceSeat.getPayout('StrikePrice');
@@ -651,9 +649,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const bundle = await bundleSource(coveredCallRoot);
 
   vatAdminState.installBundle('b1-coveredcall', bundle);
-  const coveredCallInstallation = await E(zoe).installBundleID(
-    'b1-coveredcall',
-  );
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -834,12 +831,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     `dave second offer accepted`,
   );
 
-  const firstCoveredCallInvitation = await daveSecondCoveredCallSeat.getPayout(
-    'UnderlyingAsset',
-  );
-  const daveBucksPayout = await daveSecondCoveredCallSeat.getPayout(
-    'StrikePrice',
-  );
+  const firstCoveredCallInvitation =
+    await daveSecondCoveredCallSeat.getPayout('UnderlyingAsset');
+  const daveBucksPayout =
+    await daveSecondCoveredCallSeat.getPayout('StrikePrice');
 
   // Dave exercises his option by making an offer to the covered
   // call. First, he escrows with Zoe.
@@ -866,12 +861,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Dave should get 3 moola, Bob should get 1 buck, and Alice
   // get 7 simoleans
 
-  const daveMoolaPayout = await daveFirstCoveredCallSeat.getPayout(
-    'UnderlyingAsset',
-  );
-  const daveSimoleanPayout = await daveFirstCoveredCallSeat.getPayout(
-    'StrikePrice',
-  );
+  const daveMoolaPayout =
+    await daveFirstCoveredCallSeat.getPayout('UnderlyingAsset');
+  const daveSimoleanPayout =
+    await daveFirstCoveredCallSeat.getPayout('StrikePrice');
 
   const aliceMoolaPayout = await aliceSeat.getPayout('UnderlyingAsset');
   const aliceSimoleanPayout = await aliceSeat.getPayout('StrikePrice');
@@ -942,9 +935,8 @@ test('zoe - coveredCall non-fungible', async t => {
   const bundle = await bundleSource(coveredCallRoot);
   vatAdminState.installBundle('b1-coveredcall', bundle);
 
-  const coveredCallInstallation = await E(zoe).installBundleID(
-    'b1-coveredcall',
-  );
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
   const timer = buildManualTimer(t.log);
   const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 

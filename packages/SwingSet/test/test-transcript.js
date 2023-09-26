@@ -40,9 +40,9 @@ test('transcript-one save', async t => {
   });
   const states2 = await buildTrace(c2, debug2);
 
-  states1.forEach((s, i) => {
+  for (const [i, s] of states1.entries()) {
     t.deepEqual(s.dump, states2[i].dump);
-  });
+  }
 });
 
 test('transcript-one load', async t => {

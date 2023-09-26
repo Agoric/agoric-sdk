@@ -80,7 +80,7 @@ func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 // nolint: unparam
 func legacyQueryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	entry := keeper.vstorageKeeper.GetEntry(ctx, path)
-	if !entry.HasData() {
+	if !entry.HasValue() {
 		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get swingset %+v", path)
 	}
 

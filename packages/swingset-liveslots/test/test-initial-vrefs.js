@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { Far } from '@endo/far';
 import { M } from '@agoric/store';
@@ -148,5 +147,5 @@ test('vrefs', async t => {
   const expectedStore1Vref = `o+v${initialKindIDs.scalarMapStore}/5`;
   const store1Vref = (await run('getStore1')).slots[0];
   t.is(store1Vref, expectedStore1Vref);
-  t.deepEqual(kunser(JSON.parse(fakestore.get(`vc.5.s${'key'}`))), 'value');
+  t.is(kunser(JSON.parse(fakestore.get(`vc.5.s${'key'}`))), 'value');
 });

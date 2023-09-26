@@ -59,7 +59,9 @@ export const doLiquidation = async (
  *
  * For simplicity, we will sell all collateral.
  *
- * @type {Liquidate}
+ * @param {ZCF} zcf
+ * @param {LoanConfigWithBorrower} config
+ * @returns {Promise<void>}
  */
 export const liquidate = async (zcf, config) => {
   const { collateralSeat, autoswapInstance, lenderSeat, loanBrand } = config;

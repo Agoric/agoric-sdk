@@ -87,7 +87,7 @@ const makeFormatters = assets => {
    * @param {(_: T) => string} f
    * @returns { (x: T | null | undefined ) => string | undefined }
    */
-  const maybe = f => x => x ? f(x) : undefined;
+  const maybe = f => x => (x ? f(x) : undefined);
 
   return {
     amount,
@@ -107,7 +107,7 @@ const makeFormatters = assets => {
  * Dynamic check that an OfferStatus is also a BidSpec.
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
- * @param {Awaited<ReturnType<import('../lib/rpc').makeAgoricNames>>} agoricNames
+ * @param {import('../lib/wallet.js').AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
  * returns null if offerStatus is not a BidSpec
  */
@@ -205,6 +205,10 @@ export const makeInterCommand = (
   const interCmd = createCommand('inter')
     .description('Inter Protocol commands for liquidation bidding etc.')
     .option('--home <dir>', 'agd CosmosSDK application home directory')
+    .option(
+      '--fees <amount>',
+      'set fees for transaction broadcast (e.g. 5000ubld)',
+    )
     .option(
       '--keyring-backend <os|file|test>',
       `keyring's backend (os|file|test) (default "${
@@ -337,10 +341,10 @@ inter auction status
     const { networkConfig, agoricNames, pollOffer } = tools;
     const io = { ...networkConfig, execFileSync, delay, stdout };
 
-    const { home, keyringBackend: backend } = interCmd.opts();
+    const { home, keyringBackend: backend, fees } = interCmd.opts();
     const result = await sendAction(
       { method: 'executeOffer', offer },
-      { keyring: { home, backend }, from, verbose: false, dryRun, ...io },
+      { keyring: { home, backend }, from, fees, verbose: false, dryRun, ...io },
     );
     if (dryRun) {
       return;

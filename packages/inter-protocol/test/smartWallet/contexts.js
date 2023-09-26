@@ -7,7 +7,7 @@ import {
   produceStartGovernedUpgradable,
   produceDiagnostics,
 } from '@agoric/vats/src/core/basic-behaviors.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
 import {
@@ -31,7 +31,13 @@ export const importBootTestUtils = async (log, bundleCache) => {
       bundleCache.validateOrAdd(entrypoint, name),
     ),
   );
-  return import('@agoric/vats/tools/boot-test-utils.js');
+  const utils = await import('./boot-test-utils.js');
+  const mockPsmBootstrapArgs = () => {
+    const mock = utils.makeMock(log);
+    const vats = utils.mockSwingsetVats(mock);
+    return [vats, mock.devices];
+  };
+  return { ...utils, mockPsmBootstrapArgs };
 };
 
 /**
@@ -43,6 +49,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const log = () => null;
 
   const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const zone = makeHeapZone();
 
   // @ts-expect-error xxx
   const { consume, produce, instance } = await makeSpace(log, bundleCache);
@@ -52,7 +59,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   // @ts-expect-error Doesnt actually require all bootstrap powers
   await produceDiagnostics({ consume, produce });
   // @ts-expect-error Doesnt actually require all bootstrap powers
-  await produceStartUpgradable({ zone: heapZone, consume, produce });
+  await produceStartUpgradable({ zone, consume, produce });
 
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;
@@ -62,7 +69,11 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../../../smart-wallet/src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>} */
+  /**
+   * @type {Promise<
+   *   Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>
+   * >}
+   */
   const installation = E(zoe).install(bundle);
 
   const contractGovernorBundle = await bundleCache.load(
@@ -78,7 +89,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     consume,
     // @ts-expect-error Doesnt actually require all bootstrap powers
     produce,
-    zone: heapZone,
+    zone,
     installation: {
       // @ts-expect-error Doesnt actually require all bootstrap powers
       consume: { contractGovernor },
@@ -135,7 +146,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     provideWalletAndBalances(address).then(({ wallet }) => wallet);
 
   /**
-   *
    * @param {string[]} oracleAddresses
    * @param {string} inBrandName
    * @param {string} outBrandName
@@ -154,7 +164,13 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       '../inter-protocol/src/price/fluxAggregatorContract.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>>} */
+    /**
+     * @type {Promise<
+     *   Installation<
+     *     import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
+     *   >
+     * >}
+     */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 
@@ -221,11 +237,14 @@ export const currentPurseBalance = (record, brand) => {
 };
 
 /**
- * Voting yes (first position) on the one open question using the continuing offer.
+ * Voting yes (first position) on the one open question using the continuing
+ * offer.
  *
  * @param {ERef<CommitteeElectoratePublic>} committeePublic
  * @param {string} voterAcceptanceOID
- * @returns {Promise<import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec>}
+ * @returns {Promise<
+ *   import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec
+ * >}
  */
 export const voteForOpenQuestion = async (
   committeePublic,

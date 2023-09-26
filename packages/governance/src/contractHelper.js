@@ -32,7 +32,7 @@ const publicMixinAPI = harden({
 
 /**
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<unknown>} paramManager
+ * @param {import('./contractGovernance/typedParamManager').TypedParamManager<any>} paramManager
  */
 export const validateElectorate = (zcf, paramManager) => {
   const { governedParams } = zcf.getTerms();
@@ -53,7 +53,7 @@ harden(validateElectorate);
 /**
  * Utility function for `makeParamGovernance`.
  *
- * @template T
+ * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
  * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
@@ -155,7 +155,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
+    /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),

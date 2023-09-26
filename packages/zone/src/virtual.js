@@ -1,17 +1,21 @@
+// @ts-check
 // @jessie-check
 
+import { Far } from '@endo/far';
 import {
-  canBeDurable,
   defineVirtualExoClass,
   defineVirtualExoClassKit,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
   makeScalarBigWeakMapStore,
   makeScalarBigWeakSetStore,
-  M,
 } from '@agoric/vat-data';
 
-import { Far } from '@endo/far';
+import {
+  agoricVatDataKeys as keys,
+  isPassable,
+  makeOnceKit,
+} from '@agoric/base-zone';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
@@ -22,7 +26,7 @@ const initEmpty = harden(() => emptyRecord);
  *
  * @type {import('.').Zone['exo']}
  */
-const defineVirtualExo = (
+const makeVirtualExo = (
   label,
   interfaceGuard,
   methods,
@@ -43,9 +47,9 @@ const defineVirtualExo = (
 };
 
 /** @type {import('.').Stores} */
-export const detachedVirtualStores = Far('virtualStores', {
+const detachedVirtualStores = Far('virtualStores', {
   detached: () => detachedVirtualStores,
-  isStorable: canBeDurable,
+  isStorable: isPassable,
   mapStore: makeScalarBigMapStore,
   setStore: makeScalarBigSetStore,
   weakMapStore: makeScalarBigWeakMapStore,
@@ -56,15 +60,35 @@ export const detachedVirtualStores = Far('virtualStores', {
  * A zone that utilizes external storage to reduce the memory footprint of the
  * current vat.
  *
- * @type {import('.').Zone}
+ * @param {string} [baseLabel]
+ * @returns {import('.').Zone}
  */
-export const virtualZone = Far('virtualZone', {
-  exo: defineVirtualExo,
-  exoClass: defineVirtualExoClass,
-  exoClassKit: defineVirtualExoClassKit,
-  subZone: (_label, _options = {}) => virtualZone,
+export const makeVirtualZone = (baseLabel = 'virtualZone') => {
+  const { makeOnce, wrapProvider } = makeOnceKit(
+    baseLabel,
+    detachedVirtualStores,
+  );
 
-  ...detachedVirtualStores,
-});
+  /**
+   * @param {string} label
+   * @param {any} _options
+   */
+  const makeSubZone = (label, _options) =>
+    makeVirtualZone(`${baseLabel}.${label}`);
 
-export { M };
+  return Far('virtualZone', {
+    exo: wrapProvider(makeVirtualExo, keys.exo),
+    exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
+    exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
+    subZone: wrapProvider(makeSubZone),
+
+    makeOnce,
+    detached: detachedVirtualStores.detached,
+    isStorable: detachedVirtualStores.isStorable,
+
+    mapStore: wrapProvider(detachedVirtualStores.mapStore),
+    setStore: wrapProvider(detachedVirtualStores.setStore),
+    weakMapStore: wrapProvider(detachedVirtualStores.weakMapStore),
+    weakSetStore: wrapProvider(detachedVirtualStores.weakSetStore),
+  });
+};

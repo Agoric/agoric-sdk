@@ -96,7 +96,7 @@ export function buildRootDeviceNode(tools) {
    * Load a module and connect to it.
    *
    * @param {string} mod module with an exported `bootPlugin(state = undefined)`
-   * @param {number} [index=connectedMods.length] the module instance index
+   * @param {number} [index] the module instance index
    * @returns {number} the allocated index
    */
   function connect(mod, index = connectedMods.length) {
@@ -132,12 +132,12 @@ export function buildRootDeviceNode(tools) {
   }
 
   endowments.registerResetter(() => {
-    connectedMods.forEach((mod, index) => {
+    for (const [index, mod] of connectedMods.entries()) {
       if (mod) {
         // console.info('Startup resetting', index, mod, nextEpochs[index]);
         SO(registeredReceiver).reset(index, nextEpochs[index]);
       }
-    });
+    }
   });
 
   return Far('root', {

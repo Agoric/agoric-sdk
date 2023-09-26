@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
@@ -17,14 +18,14 @@ import {
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
-const mixinMyAddress = prepareMixinMyAddress(heapZone);
+const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin } = makeNameHubKit();
@@ -1635,17 +1636,14 @@ test('stamps from dateNow', async t => {
   const paymentNotifier = E(wallet).getPaymentsNotifier();
 
   const date0 = currentDateMS;
-  const { value: val0, updateCount: count0 } = await E(
-    paymentNotifier,
-  ).getUpdateSince();
+  const { value: val0, updateCount: count0 } =
+    await E(paymentNotifier).getUpdateSince();
   await E(wallet).addPayment(pmt1);
-  const { value: val1a, updateCount: count1a } = await E(
-    paymentNotifier,
-  ).getUpdateSince(count0);
+  const { value: val1a, updateCount: count1a } =
+    await E(paymentNotifier).getUpdateSince(count0);
   E(wallet).addPayment(pmt4);
-  const { value: val1, updateCount: count1 } = await E(
-    paymentNotifier,
-  ).getUpdateSince(count1a);
+  const { value: val1, updateCount: count1 } =
+    await E(paymentNotifier).getUpdateSince(count1a);
 
   // Wait for tick to take effect.
   currentDateMS += 1234;
@@ -1653,9 +1651,8 @@ test('stamps from dateNow', async t => {
   t.is(dateNow(), startDateMS + 1234);
 
   await E(wallet).addPayment(pmt2);
-  const { value: val2, updateCount: count2 } = await E(
-    paymentNotifier,
-  ).getUpdateSince(count1);
+  const { value: val2, updateCount: count2 } =
+    await E(paymentNotifier).getUpdateSince(count1);
   await E(wallet).addPayment(pmt3);
   const { value: payments } = await E(paymentNotifier).getUpdateSince(count2);
 

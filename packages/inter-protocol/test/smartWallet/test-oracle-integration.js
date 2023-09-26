@@ -1,4 +1,4 @@
-import '@agoric/vats/src/core/types.js';
+import '@agoric/vats/src/core/types-ambient.js';
 
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -23,11 +23,11 @@ import {
 } from './contexts.js';
 
 /**
- * @typedef {Awaited<ReturnType<typeof makeDefaultTestContext>>
-  & { consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'] } } TestContext */
-/**
- * @type {import('ava').TestFn<TestContext>}
+ * @typedef {Awaited<ReturnType<typeof makeDefaultTestContext>> & {
+ *   consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ * }} TestContext
  */
+/** @type {import('ava').TestFn<TestContext>} */
 const test = anyTest;
 
 const committeeAddress = 'econCommitteeMemberA';
@@ -53,7 +53,7 @@ const makeTestSpace = async (log, bundleCache) => {
     },
     psmParams,
   );
-  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs());
 
   // TODO mimic the proposals and manifest of price-feed-proposal and price-feed-core
   // calling ensureOracleBrands and createPriceFeed
@@ -75,9 +75,8 @@ const makeTestSpace = async (log, bundleCache) => {
     OUT_BRAND_DECIMALS: '6',
   };
   /**
-   *
    * @param {string} name
-   * @param {number|string} decimals
+   * @param {number | string} decimals
    */
   const ensureOracleBrand = (name, decimals) => {
     const { brand } = makeIssuerKit(name, AssetKind.NAT, {
@@ -120,7 +119,11 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
 
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>} */
+  /**
+   * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
+   *   import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
+   * >}
+   */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
     instanceNameFor('ATOM', 'USD'),
@@ -151,7 +154,7 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 
 let pushPriceCounter = 0;
 /**
- * @param {*} wallet
+ * @param {any} wallet
  * @param {string} adminOfferId
  * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
  * @returns {Promise<string>} offer id
@@ -195,7 +198,7 @@ test.serial('invitations', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {any} balances XXX please improve this
-   * @returns {Promise<[{description: string, instance: Instance}]>}
+   * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) => {
     await eventLoopIteration();
@@ -260,6 +263,7 @@ test.serial('admin price', async t => {
     [operatorAddress],
   );
   const wallet = oracleWallets[operatorAddress];
+  await eventLoopIteration();
   const adminOfferId = await acceptInvitation(wallet, governedPriceAggregator);
 
   // Push a new price result /////////////////////////
@@ -297,6 +301,7 @@ test.serial('errors', async t => {
   const { oracleWallets, governedPriceAggregator: priceAggregator } =
     await setupFeedWithWallets(t, [operatorAddress]);
   const wallet = oracleWallets[operatorAddress];
+  await eventLoopIteration();
   const adminOfferId = await acceptInvitation(wallet, priceAggregator);
 
   // TODO move to smart-wallet package when it has sufficient test supports
@@ -368,7 +373,11 @@ test.serial('govern oracles list', async t => {
     'instance',
     'econCommitteeCharter',
   );
-  /** @type {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/committee.js')['prepare']> } */
+  /**
+   * @type {import('@agoric/zoe/src/zoeService/utils').Instance<
+   *   import('@agoric/governance/src/committee.js')['start']
+   * >}
+   */
   const economicCommittee = await E(agoricNames).lookup(
     'instance',
     'economicCommittee',
@@ -380,8 +389,8 @@ test.serial('govern oracles list', async t => {
    *
    * @param {string} desc
    * @param {number} len
-   * @param {{get: (b: Brand) => Amount | undefined}} balances
-   * @returns {Promise<[{description: string, instance: Instance}]>}
+   * @param {{ get: (b: Brand) => Amount | undefined }} balances
+   * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) =>
     E(E(zoe).getInvitationIssuer())

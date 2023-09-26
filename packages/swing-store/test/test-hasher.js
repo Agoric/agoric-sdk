@@ -1,4 +1,3 @@
-import '@endo/init/debug.js';
 import test from 'ava';
 
 // eslint-disable-next-line import/order

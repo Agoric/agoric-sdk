@@ -3,14 +3,14 @@
 import { assert, NonNullish } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { M } from '@agoric/store';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
 
 import './types.js';
 import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { deeplyFulfilled } from '@endo/marshal';
 
 const { Fail, quote: q } = assert;
@@ -48,10 +48,14 @@ export const NameHubIKit = harden({
 /** @param {import('@agoric/zone').Zone} zone */
 export const prepareMixinMyAddress = zone => {
   const MixinI = M.interface('MyAddressNameAdmin', {
-    ...NameHubIKit.nameAdmin.methodGuards,
+    ...getInterfaceGuardPayload(NameHubIKit.nameAdmin).methodGuards,
     getMyAddress: M.call().returns(M.string()),
   });
-  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<import('./types.js').MyAddressNameAdmin>} */
+  /**
+   * @type {import('@agoric/internal/src/callback.js').MakeAttenuator<
+   *   import('./types.js').MyAddressNameAdmin
+   * >}
+   */
   const mixin = prepareGuardedAttenuator(zone, MixinI, {
     tag: 'MyAddressNameAdmin',
   });
@@ -107,7 +111,7 @@ const provideWeak = (store, key, make) => {
 
 /**
  * @param {import('./types.js').NameHubUpdateHandler | undefined} updateCallback
- * @param {NameHub} hub
+ * @param {import('./types.js').NameHub} hub
  * @param {unknown} [_newValue]
  */
 const updated = (updateCallback, hub, _newValue = undefined) => {
@@ -122,8 +126,8 @@ const updated = (updateCallback, hub, _newValue = undefined) => {
 };
 
 /**
- * Make two facets of a node in a name hierarchy: the nameHub
- * is read access and the nameAdmin is write access.
+ * Make two facets of a node in a name hierarchy: the nameHub is read access and
+ * the nameAdmin is write access.
  *
  * @param {import('@agoric/zone').Zone} zone
  */
@@ -139,7 +143,7 @@ export const prepareNameHubKit = zone => {
   /** @param {{}} me */
   const my = me => provideWeak(ephemera, me, init1);
 
-  /** @type {() => import('./types').NameHubKit } */
+  /** @type {() => import('./types').NameHubKit} */
   const makeNameHubKit = zone.exoClassKit(
     'NameHubKit',
     NameHubIKit,
@@ -212,7 +216,7 @@ export const prepareNameHubKit = zone => {
           const { keyToAdmin, keyToValue } = this.state;
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
-            /** @type {NameHub} */
+            /** @type {import('./types.js').NameHub} */
             // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
             // @ts-ignore if an admin is present, it should be a namehub
             const childHub = keyToValue.get(key);
@@ -220,7 +224,7 @@ export const prepareNameHubKit = zone => {
           }
           const child = makeNameHubKit();
           await Promise.all(reserved.map(k => child.nameAdmin.reserve(k)));
-          nameAdmin.update(key, child.nameHub, child.nameAdmin);
+          void nameAdmin.update(key, child.nameHub, child.nameAdmin);
           return child;
         },
         async reserve(key) {
@@ -262,7 +266,7 @@ export const prepareNameHubKit = zone => {
               return /** @type {any} */ (keyToValue.get(key));
             }
           }
-          nameAdmin.update(key, newValue, adminValue);
+          void nameAdmin.update(key, newValue, adminValue);
           return newValue;
         },
         set(key, newValue, adminValue) {
@@ -270,7 +274,7 @@ export const prepareNameHubKit = zone => {
           keyToValue.has(key) || Fail`key ${key} is not already initialized`;
 
           const { nameAdmin } = this.facets;
-          nameAdmin.update(key, newValue, adminValue);
+          void nameAdmin.update(key, newValue, adminValue);
         },
         onUpdate(fn) {
           const { state } = this;
@@ -283,7 +287,13 @@ export const prepareNameHubKit = zone => {
           const { keyToPK, keyToAdminPK } = my(this.facets.nameHub);
           const { keyToValue, keyToAdmin, updateCallback } = this.state;
 
-          /** @type {[Map<string, PromiseKit<unknown>>, MapStore<string, unknown>, unknown][]} */
+          /**
+           * @type {[
+           *   Map<string, PromiseKit<unknown>>,
+           *   MapStore<string, unknown>,
+           *   unknown,
+           * ][]}
+           */
           const valueMapEntries = [
             [keyToAdminPK, keyToAdmin, adminValue],
             [keyToPK, keyToValue, newValue],
@@ -354,9 +364,9 @@ export const prepareNameHubKit = zone => {
 };
 
 /**
- * Make two facets of a node in a name hierarchy: the nameHub
- * is read access and the nameAdmin is write access.
+ * Make two facets of a node in a name hierarchy: the nameHub is read access and
+ * the nameAdmin is write access.
  *
  * @returns {import('./types.js').NameHubKit}
  */
-export const makeNameHubKit = prepareNameHubKit(heapZone);
+export const makeNameHubKit = prepareNameHubKit(makeHeapZone());

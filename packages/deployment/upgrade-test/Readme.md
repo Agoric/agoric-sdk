@@ -77,6 +77,16 @@ docker ps
 docker attach sweet_edison
 ```
 
+**To pass specific `software-upgrade --upgrade-info`**
+
+```shell
+json='{"some":"json","here":123}'
+make build BUILD_OPTS="--build-arg UPGRADE_INFO_11='$json'"
+```
+
+Search this directory for `UPGRADE_INFO` if you want to see how it is plumbed
+through.
+
 **To test CLI**
 
 You can point your local CLI tools to the chain running in Docker. Our Docker config binds on the same port (26656) as running a local chain. So you can use the agoric-cli commands on the Docker chain the same way. But note that the Cosmos account keys will be different from in your dev keyring.
@@ -91,6 +101,21 @@ docker exec -it sweet_edison bash
 
 To make the wallet ui talk to your local chain, set the network config to
 `https://local.agoric.net/network-config`
+
+## To add an upgrade
+
+1. Update the upgrade handler in app.go
+2. Duplicate the last pair of UPGRADE and TEST blocks
+3. Update their number from the UPGRADE / DEST block at the end
+4. Make directory for tests (e.g. `agoric-upgrade-12`)
+4. Make directory for ugprade (e.g. `propose-agoric-upgrade-12` with a `.keep`)
+5. Update the UPGRADE/DEST pair to be your new upgrade (THIS_NAME matching the upgrade handler string in app.go)
+6. Update the `Makefile`
+  - the two targets to `Makefile` (e.g. `propose-agoric-upgrade-12` and `agoric-upgrade-12`)
+  - set the default TARGET (e.g. `agoric-upgrade-12`)
+  - add the DEST target to the `.phony` in `Makefile`
+7. Test with `make local_sdk build run`
+
 
 ## Development
 

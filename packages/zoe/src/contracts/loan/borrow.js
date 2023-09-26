@@ -9,7 +9,6 @@ import {
   getAmountOut,
   ceilMultiplyBy,
   getTimestamp,
-  atomicRearrange,
 } from '../../contractSupport/index.js';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
@@ -72,8 +71,7 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         // Transfer the wanted Loan amount to the borrower
         [lenderSeat, borrowerSeat, { Loan: loanWanted }],

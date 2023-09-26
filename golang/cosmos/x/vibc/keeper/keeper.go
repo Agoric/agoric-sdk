@@ -92,13 +92,7 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 		return err
 	}
 
-	// We need to emit a channel event to notify the relayer.
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, channeltypes.AttributeValueCategory),
-		),
-	})
+	k.channelKeeper.WriteOpenInitChannel(ctx, portID, channelID, order, connectionHops, counterparty, version)
 	return nil
 }
 
@@ -157,14 +151,6 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	if err != nil {
 		return err
 	}
-
-	// We need to emit a channel event to notify the relayer.
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, channeltypes.AttributeValueCategory),
-		),
-	})
 	return nil
 }
 

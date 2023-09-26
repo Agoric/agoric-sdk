@@ -1,5 +1,4 @@
 import test from 'ava';
-import '@endo/init/debug.js';
 import unconfinedInspect from '../lib/object-inspect.js';
 
 const testCases = [
@@ -85,14 +84,16 @@ const testCases = [
   ],
 ];
 
-test('unconfined inspect', async t => {
+test('unconfined inspect', t => {
   for (const testCase of testCases) {
     const [toEval, toRender] = Array.isArray(testCase)
       ? testCase
       : [testCase, testCase];
+    // @ts-expect-error Left side of comma operator is unused and has no side effects.
     // eslint-disable-next-line no-eval
     const evaled = (1, eval)(`(${toEval})`);
     // t.log(evaled);
+    // eslint-disable-next-line ava/assertion-arguments
     t.is(unconfinedInspect(evaled), toRender, toEval);
   }
 });

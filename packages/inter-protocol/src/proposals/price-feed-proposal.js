@@ -23,12 +23,12 @@ export const instanceNameFor = (inBrandName, outBrandName) =>
 
 /**
  * @typedef {{
- * brandIn?: ERef<Brand<'nat'> | undefined>,
- * brandOut?: ERef<Brand<'nat'> | undefined>,
- * IN_BRAND_NAME: string,
- * IN_BRAND_DECIMALS: string,
- * OUT_BRAND_NAME: string,
- * OUT_BRAND_DECIMALS: string,
+ *   brandIn?: ERef<Brand<'nat'> | undefined>;
+ *   brandOut?: ERef<Brand<'nat'> | undefined>;
+ *   IN_BRAND_NAME: string;
+ *   IN_BRAND_DECIMALS: string;
+ *   OUT_BRAND_NAME: string;
+ *   OUT_BRAND_DECIMALS: string;
  * }} PriceFeedOptions
  */
 
@@ -36,7 +36,7 @@ export const instanceNameFor = (inBrandName, outBrandName) =>
  * Create inert brands (no mint or issuer) referred to by price oracles.
  *
  * @param {ChainBootstrapSpace & NamedVatPowers} space
- * @param {{options: {priceFeedOptions: PriceFeedOptions}}} opt
+ * @param {{ options: { priceFeedOptions: PriceFeedOptions } }} opt
  * @returns {Promise<[Brand<'nat'>, Brand<'nat'>]>}
  */
 export const ensureOracleBrands = async (
@@ -81,7 +81,17 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{
+ *   options: {
+ *     priceFeedOptions: {
+ *       AGORIC_INSTANCE_NAME: string;
+ *       oracleAddresses: string[];
+ *       contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
+ *       IN_BRAND_NAME: string;
+ *       OUT_BRAND_NAME: string;
+ *     };
+ *   };
+ * }} config
  */
 export const createPriceFeed = async (
   {
@@ -120,9 +130,17 @@ export const createPriceFeed = async (
   const timer = await chainTimerService;
 
   /**
-   * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
+   * Values come from economy-template.json, which at this writing had IN:ATOM,
+   * OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>]]}
+   * @type {[
+   *   [Brand<'nat'>, Brand<'nat'>],
+   *   [
+   *     Installation<
+   *       import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js')['start]
+   *     >,
+   *   ],
+   * ]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
@@ -200,22 +218,23 @@ export const createPriceFeed = async (
    */
   const addOracle = async addr => {
     const invitation = await E(faKit.creatorFacet).makeOracleInvitation(addr);
-    await reserveThenDeposit(
-      `${AGORIC_INSTANCE_NAME} member ${addr}`,
-      namesByAddressAdmin,
-      addr,
-      [invitation],
-    );
+    const debugName = `${AGORIC_INSTANCE_NAME} member ${addr}`;
+    await reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+      invitation,
+    ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
   };
 
   trace('distributing invitations', oracleAddresses);
-  await Promise.all(oracleAddresses.map(addOracle));
+  // This doesn't resolve until oracle operators create their smart wallets.
+  // Don't block bootstrap on it.
+  void Promise.all(oracleAddresses.map(addOracle));
   trace('createPriceFeed complete');
 };
 
 const t = 'priceFeed';
 /**
- * Add a price feed to a running chain, returning the manifest, installations, and options.
+ * Add a price feed to a running chain, returning the manifest, installations,
+ * and options.
  *
  * @param {object} utils
  * @param {(ref: unknown) => Promise<unknown>} [utils.restoreRef]
@@ -233,7 +252,6 @@ export const getManifestForPriceFeed = async (
         chainStorage: t,
         chainTimerService: t,
         client: t,
-        contractGovernor: t,
         econCharterKit: t,
         economicCommitteeCreatorFacet: t,
         highPrioritySendersManager: t,

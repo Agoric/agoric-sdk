@@ -41,80 +41,86 @@ const { Fail } = assert;
 
 /**
  * @file The Parity Stability Module supports efficiently minting/burning a
- * stable token at a specified fixed ratio to a reference stable token, which
- * thereby acts as an anchor to provide additional stability. For flexible
- * economic policies, the fee percentage for trading into and out of the stable
- * token are specified separately.
+ *   stable token at a specified fixed ratio to a reference stable token, which
+ *   thereby acts as an anchor to provide additional stability. For flexible
+ *   economic policies, the fee percentage for trading into and out of the
+ *   stable token are specified separately.
  */
 
 /**
- * @typedef {object} MetricsNotification
- * Metrics naming scheme is that nouns are present values and past-participles
- * are accumulative.
- *
- * @property {Amount<'nat'>} anchorPoolBalance  amount of Anchor token
- * available to be swapped
- * @property {Amount<'nat'>} mintedPoolBalance  amount of Minted token
- * outstanding (the amount minted minus the amount burned).
- * @property {Amount<'nat'>} feePoolBalance     amount of Minted token
- * fees available to be collected
- *
- * @property {Amount<'nat'>} totalAnchorProvided  running sum of Anchor
- * ever given by this contract
- * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted
- * ever given by this contract
+ * @typedef {object} MetricsNotification Metrics naming scheme is that nouns are
+ *   present values and past-participles are accumulative.
+ * @property {Amount<'nat'>} anchorPoolBalance amount of Anchor token available
+ *   to be swapped
+ * @property {Amount<'nat'>} mintedPoolBalance amount of Minted token
+ *   outstanding (the amount minted minus the amount burned).
+ * @property {Amount<'nat'>} feePoolBalance amount of Minted token fees
+ *   available to be collected
+ * @property {Amount<'nat'>} totalAnchorProvided running sum of Anchor ever
+ *   given by this contract
+ * @property {Amount<'nat'>} totalMintedProvided running sum of Minted ever
+ *   given by this contract
  */
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
-export const customTermsShape = {
-  anchorBrand: BrandShape,
-  anchorPerMinted: RatioShape,
-  electionManager: InstanceHandleShape,
-  governedParams: {
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: AmountShape,
+/** @type {ContractMeta} */
+export const meta = {
+  upgradability: 'canUpgrade',
+  customTermsShape: {
+    anchorBrand: BrandShape,
+    anchorPerMinted: RatioShape,
+    electionManager: InstanceHandleShape,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: AmountShape,
+      },
+      WantMintedFee: {
+        type: ParamTypes.RATIO,
+        value: RatioShape,
+      },
+      GiveMintedFee: {
+        type: ParamTypes.RATIO,
+        value: RatioShape,
+      },
+      MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
     },
-    WantMintedFee: {
-      type: ParamTypes.RATIO,
-      value: RatioShape,
-    },
-    GiveMintedFee: {
-      type: ParamTypes.RATIO,
-      value: RatioShape,
-    },
-    MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
   },
+  privateArgsShape: M.splitRecord(
+    {
+      marshaller: M.remotable('Marshaller'),
+      storageNode: StorageNodeShape,
+    },
+    {
+      // only necessary on first invocation, not subsequent
+      feeMintAccess: FeeMintAccessShape,
+      initialPoserInvitation: InvitationShape,
+    },
+  ),
 };
-harden(customTermsShape);
-
-export const privateArgsShape = M.splitRecord(
-  harden({
-    marshaller: M.remotable('Marshaller'),
-    storageNode: StorageNodeShape,
-  }),
-  harden({
-    // only necessary on first invocation, not subsequent
-    feeMintAccess: FeeMintAccessShape,
-    initialPoserInvitation: InvitationShape,
-  }),
-);
-harden(privateArgsShape);
+harden(meta);
 
 /**
- * @param {ZCF<GovernanceTerms<{
- *    GiveMintedFee: 'ratio',
- *    WantMintedFee: 'ratio',
- *    MintLimit: 'amount',
+ * @param {ZCF<
+ *   GovernanceTerms<{
+ *     GiveMintedFee: 'ratio';
+ *     WantMintedFee: 'ratio';
+ *     MintLimit: 'amount';
  *   }> & {
- *    anchorBrand: Brand<'nat'>,
- *    anchorPerMinted: Ratio,
- * }>} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
+ *     anchorBrand: Brand<'nat'>;
+ *     anchorPerMinted: Ratio;
+ *   }
+ * >} zcf
+ * @param {{
+ *   feeMintAccess: FeeMintAccess;
+ *   initialPoserInvitation: Invitation;
+ *   storageNode: StorageNode;
+ *   marshaller: Marshaller;
+ * }} privateArgs
  * @param {Baggage} baggage
  */
-export const prepare = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
@@ -231,9 +237,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     updateMetrics();
   };
 
-  /**
-   * @param {Amount<'nat'>} toMint
-   */
+  /** @param {Amount<'nat'>} toMint */
   const assertUnderLimit = toMint => {
     const mintedAfter = AmountMath.add(
       baggage.get('mintedPoolBalance'),
@@ -262,7 +266,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   /**
    * @param {ZCFSeat} seat
    * @param {Amount<'nat'>} given
-   * @param {Amount<'nat'>} [wanted] defaults to maximum anchor (given exchange rate minus fees)
+   * @param {Amount<'nat'>} [wanted] defaults to maximum anchor (given exchange
+   *   rate minus fees)
    */
   const giveMinted = (seat, given, wanted = emptyAnchor) => {
     const fee = ceilMultiplyBy(given, params.getGiveMintedFee());
@@ -440,5 +445,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicFacet,
   });
 };
+harden(start);
 
-/** @typedef {Awaited<ReturnType<typeof prepare>>['publicFacet']} PsmPublicFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */

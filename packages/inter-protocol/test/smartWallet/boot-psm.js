@@ -33,8 +33,8 @@ import {
   WALLET_FACTORY_MANIFEST,
 } from '@agoric/vats/src/core/startWalletFactory.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import { heapZone } from '@agoric/zone';
-import { Stable, Stake } from '../../src/tokens.js';
+import { makeHeapZone } from '@agoric/zone';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -91,8 +91,7 @@ export const installGovAndPSMContracts = async ({
 };
 
 /**
- * PSM and gov contracts are available as
- * named swingset bundles only in
+ * PSM and gov contracts are available as named swingset bundles only in
  * decentral-psm-config.json
  *
  * @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest}
@@ -113,9 +112,7 @@ export const PSM_GOV_MANIFEST = {
   },
 };
 
-/**
- * We reserve these keys in name hubs.
- */
+/** We reserve these keys in name hubs. */
 export const agoricNamesReserved = harden(
   /** @type {const} */ ({
     issuer: {
@@ -157,10 +154,10 @@ export const agoricNamesReserved = harden(
 
 /**
  * @typedef {{
- *   denom: string,
- *   keyword?: string,
- *   proposedName?: string,
- *   decimalPlaces?: number
+ *   denom: string;
+ *   keyword?: string;
+ *   proposedName?: string;
+ *   decimalPlaces?: number;
  * }} AnchorOptions
  */
 const AnchorOptionsShape = M.splitRecord(
@@ -184,12 +181,12 @@ export const ParametersShape = M.splitRecord(
  * Build root object of the PSM-only bootstrap vat.
  *
  * @param {{
- *   D: DProxy
- *   logger?: (msg: string) => void
+ *   D: DProxy;
+ *   logger?: (msg: string) => void;
  * }} vatPowers
  * @param {{
- *     economicCommitteeAddresses: Record<string, string>,
- *     anchorAssets: { denom: string, keyword?: string }[],
+ *   economicCommitteeAddresses: Record<string, string>;
+ *   anchorAssets: { denom: string; keyword?: string }[];
  * }} vatParameters
  */
 export const buildRootObject = async (vatPowers, vatParameters) => {
@@ -207,7 +204,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
 
   const runBootstrapParts = async (vats, devices) => {
     /** TODO: BootstrapPowers type puzzle */
-    /** @type { any } */
+    /** @type {any} */
     const allPowers = harden({
       vatPowers,
       vatParameters,
@@ -215,7 +212,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       devices,
       produce,
       consume,
-      zone: heapZone,
+      zone: makeHeapZone(),
       ...spaces,
       // ISSUE: needed? runBehaviors,
       // These module namespaces might be useful for core eval governance.

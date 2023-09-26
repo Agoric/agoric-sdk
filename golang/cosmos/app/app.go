@@ -1,6 +1,7 @@
 package gaia
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -21,6 +23,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -100,11 +103,13 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
+	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
@@ -121,6 +126,14 @@ import (
 )
 
 const appName = "agoric"
+
+// FlagSwingStoreExportDir defines the config flag used to specify where a
+// genesis swing-store export is expected. For start from genesis, the default
+// value is config/swing-store in the home directory. For genesis export, the
+// value is always a "swing-store" directory sibling to the exported
+// genesis.json file.
+// TODO: document this flag in config, likely alongside the genesis path
+const FlagSwingStoreExportDir = "swing-store-export-dir"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -196,10 +209,14 @@ type GaiaApp struct { // nolint: golint
 	interfaceRegistry types.InterfaceRegistry
 
 	controllerInited bool
+	bootstrapNeeded  bool
 	lienPort         int
+	swingsetPort     int
 	vbankPort        int
 	vibcPort         int
 	vstoragePort     int
+
+	upgradePlan *upgradetypes.Plan
 
 	invCheckPeriod uint
 
@@ -228,12 +245,13 @@ type GaiaApp struct { // nolint: golint
 	FeeGrantKeeper feegrantkeeper.Keeper
 	AuthzKeeper    authzkeeper.Keeper
 
-	SwingSetKeeper      swingset.Keeper
-	SwingSetSnapshotter swingset.Snapshotter
-	VstorageKeeper      vstorage.Keeper
-	VibcKeeper          vibc.Keeper
-	VbankKeeper         vbank.Keeper
-	LienKeeper          lien.Keeper
+	SwingStoreExportsHandler swingset.SwingStoreExportsHandler
+	SwingSetSnapshotter      swingset.ExtensionSnapshotter
+	SwingSetKeeper           swingset.Keeper
+	VstorageKeeper           vstorage.Keeper
+	VibcKeeper               vibc.Keeper
+	VbankKeeper              vbank.Keeper
+	LienKeeper               lien.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -270,7 +288,7 @@ func NewGaiaApp(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
-	defaultController := func(needReply bool, str string) (string, error) {
+	defaultController := func(ctx context.Context, needReply bool, str string) (string, error) {
 		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
 		return "", nil
 	}
@@ -282,7 +300,7 @@ func NewGaiaApp(
 }
 
 func NewAgoricApp(
-	sendToController func(bool, string) (string, error),
+	sendToController func(context.Context, bool, string) (string, error),
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
@@ -429,17 +447,20 @@ func NewAgoricApp(
 
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
+		app.CheckControllerInited(true)
 		// We use SwingSet-level metering to charge the user for the call.
-		app.MustInitController(ctx)
 		defer vm.SetControllerContext(ctx)()
-		return sendToController(true, str)
+		return sendToController(sdk.WrapSDKContext(ctx), true, str)
+	}
+
+	setBootstrapNeeded := func() {
+		app.bootstrapNeeded = true
 	}
 
 	app.VstorageKeeper = vstorage.NewKeeper(
 		keys[vstorage.StoreKey],
 	)
-	vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
-	app.vstoragePort = vm.GetPort("vstorage")
+	app.vstoragePort = vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
@@ -448,11 +469,36 @@ func NewAgoricApp(
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
 	)
+	app.swingsetPort = vm.RegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))
 
-	app.SwingSetSnapshotter = swingsetkeeper.NewSwingsetSnapshotter(
+	app.SwingStoreExportsHandler = *swingsetkeeper.NewSwingStoreExportsHandler(
+		app.Logger(),
+		func(action vm.Jsonable, mustNotBeInited bool) (string, error) {
+			if mustNotBeInited {
+				app.CheckControllerInited(false)
+			}
+
+			bz, err := json.Marshal(action)
+			if err != nil {
+				return "", err
+			}
+			return sendToController(context.Background(), true, string(bz))
+		},
+	)
+
+	getSwingStoreExportDataShadowCopyReader := func(height int64) agorictypes.KVEntryReader {
+		ctx := app.NewUncachedContext(false, tmproto.Header{Height: height})
+		exportDataIterator := app.SwingSetKeeper.GetSwingStore(ctx).Iterator(nil, nil)
+		if !exportDataIterator.Valid() {
+			exportDataIterator.Close()
+			return nil
+		}
+		return agorictypes.NewKVIteratorReader(exportDataIterator)
+	}
+	app.SwingSetSnapshotter = *swingsetkeeper.NewExtensionSnapshotter(
 		bApp,
-		app.SwingSetKeeper,
-		sendToController,
+		&app.SwingStoreExportsHandler,
+		getSwingStoreExportDataShadowCopyReader,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
@@ -551,6 +597,7 @@ func NewAgoricApp(
 	app.EvidenceKeeper = *evidenceKeeper
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	swingStoreExportDir := cast.ToString(appOpts.Get(FlagSwingStoreExportDir))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -580,7 +627,7 @@ func NewAgoricApp(
 		transferModule,
 		icaModule,
 		vstorage.NewAppModule(app.VstorageKeeper),
-		swingset.NewAppModule(app.SwingSetKeeper),
+		swingset.NewAppModule(app.SwingSetKeeper, &app.SwingStoreExportsHandler, setBootstrapNeeded, app.ensureControllerInited, swingStoreExportDir),
 		vibcModule,
 		vbankModule,
 		lienModule,
@@ -613,6 +660,8 @@ func NewAgoricApp(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		vstorage.ModuleName,
+		// This will cause the swingset controller to init if it hadn't yet, passing
+		// any upgrade plan or bootstrap flag when starting at an upgrade height
 		swingset.ModuleName,
 		vibc.ModuleName,
 		vbank.ModuleName,
@@ -742,13 +791,18 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	const (
+		upgradeName     = "agoric-upgrade-12"
+		upgradeNameTest = "agorictest-upgrade-12"
+	)
+	
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade10Handler(app, upgradeName),
+		upgrade12Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade10Handler(app, upgradeNameTest),
+		upgrade12Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -771,39 +825,20 @@ func NewAgoricApp(
 	return app
 }
 
-func upgrade10Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade12Handler performs standard upgrade actions plus custom actions for upgrade-12.
+func upgrade12Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		// change bootrap gov parameter to correct vaults parameter
+		app.CheckControllerInited(false)
+		// Record the plan to send to SwingSet
+		app.upgradePlan = &plan
 
-		prevParams := app.SwingSetKeeper.GetParams(ctx)
-
-		ctx.Logger().Info("Pre-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
-
-		switch targetUpgrade {
-		case upgradeName:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-main-vaults-config.json"
-		case upgradeNameTest:
-			prevParams.BootstrapVatConfig = "@agoric/vats/decentral-test-vaults-config.json"
-		default:
-			return fromVm, fmt.Errorf("invalid upgrade name")
-		}
-
-		app.SwingSetKeeper.SetParams(ctx, prevParams)
-		ctx.Logger().Info("Post-upgrade swingset params", "BeansPerUnit", fmt.Sprintf("%v", prevParams.BeansPerUnit), "BootstrapVatConfig", prevParams.BootstrapVatConfig)
-
-		app.VstorageKeeper.MigrateNoDataPlaceholders(ctx) // upgrade-10 only
-		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
-		normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
-
+		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
 			return mvm, err
 		}
 
-		// Just run the SwingSet kernel to finish bootstrap and get ready to open for
-		// business.
-		stdlog.Println("Rebooting SwingSet")
-		return mvm, swingset.BootSwingset(ctx, app.SwingSetKeeper)
+		return mvm, nil
 	}
 }
 
@@ -825,53 +860,92 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 }
 
 type cosmosInitAction struct {
-	Type        string          `json:"type"`
-	ChainID     string          `json:"chainID"`
-	Params      swingset.Params `json:"params"`
-	StoragePort int             `json:"storagePort"`
-	SupplyCoins sdk.Coins       `json:"supplyCoins"`
-	VibcPort    int             `json:"vibcPort"`
-	VbankPort   int             `json:"vbankPort"`
-	LienPort    int             `json:"lienPort"`
+	Type         string             `json:"type"`
+	ChainID      string             `json:"chainID"`
+	BlockTime    int64              `json:"blockTime,omitempty"`
+	IsBootstrap  bool               `json:"isBootstrap"`
+	Params       swingset.Params    `json:"params"`
+	SupplyCoins  sdk.Coins          `json:"supplyCoins"`
+	UpgradePlan  *upgradetypes.Plan `json:"upgradePlan,omitempty"`
+	LienPort     int                `json:"lienPort"`
+	StoragePort  int                `json:"storagePort"`
+	SwingsetPort int                `json:"swingsetPort"`
+	VbankPort    int                `json:"vbankPort"`
+	VibcPort     int                `json:"vibcPort"`
 }
 
 // Name returns the name of the App
 func (app *GaiaApp) Name() string { return app.BaseApp.Name() }
 
-func (app *GaiaApp) MustInitController(ctx sdk.Context) {
-	if app.controllerInited {
-		return
+// CheckControllerInited exits if the controller initialization state does not match `expected`.
+func (app *GaiaApp) CheckControllerInited(expected bool) {
+	if app.controllerInited != expected {
+		fmt.Fprintf(os.Stderr, "controllerInited != %t\n", expected)
+		debug.PrintStack()
+		os.Exit(1)
 	}
+}
+
+// initController sends the initialization message to the VM.
+// Exits if the controller has already been initialized.
+// The init message will contain any upgrade plan if we're starting after an
+// upgrade, and a flag indicating whether this is a bootstrap of the controller.
+func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
+	app.CheckControllerInited(false)
 	app.controllerInited = true
+
+	var blockTime int64 = 0
+	if bootstrap || app.upgradePlan != nil {
+		blockTime = ctx.BlockTime().Unix()
+	}
+
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		Type:        "AG_COSMOS_INIT",
-		ChainID:     ctx.ChainID(),
-		Params:      app.SwingSetKeeper.GetParams(ctx),
-		StoragePort: app.vstoragePort,
-		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
-		VibcPort:    app.vibcPort,
-		VbankPort:   app.vbankPort,
-		LienPort:    app.lienPort,
+		Type:         "AG_COSMOS_INIT",
+		ChainID:      ctx.ChainID(),
+		BlockTime:    blockTime,
+		IsBootstrap:  bootstrap,
+		Params:       app.SwingSetKeeper.GetParams(ctx),
+		SupplyCoins:  sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
+		UpgradePlan:  app.upgradePlan,
+		LienPort:     app.lienPort,
+		StoragePort:  app.vstoragePort,
+		SwingsetPort: app.swingsetPort,
+		VbankPort:    app.vbankPort,
+		VibcPort:     app.vibcPort,
 	}
+	// This really abuses `BlockingSend` to get back at `sendToController`
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintf(os.Stderr, "AG_COSMOS_INIT Returned from SwingSet: %s, %v\n", out, err)
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
-		os.Exit(1)
+		panic(errors.Wrap(err, "cannot initialize Controller"))
 	}
 	var res bool
 	err = json.Unmarshal([]byte(out), &res)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot unmarshal Controller init response", out, err)
-		os.Exit(1)
+		panic(errors.Wrapf(err, "cannot unmarshal Controller init response: %s", out))
 	}
 	if !res {
-		fmt.Fprintln(os.Stderr, "Controller negative init response")
-		os.Exit(1)
+		panic(fmt.Errorf("controller negative init response"))
 	}
+}
+
+// ensureControllerInited inits the controller if needed. It's used by the
+// x/swingset module's BeginBlock to lazily start the JS controller.
+// We cannot init early as we don't know when starting the software if this
+// might be a simple restart, or a chain init from genesis or upgrade which
+// require the controller to not be inited yet.
+func (app *GaiaApp) ensureControllerInited(ctx sdk.Context) {
+	if app.controllerInited {
+		return
+	}
+
+	// While we don't expect it anymore, some upgrade may want to throw away
+	// the current JS state and bootstrap again (bulldozer). In that case the
+	// upgrade handler can just set the bootstrapNeeded flag.
+	app.initController(ctx, app.bootstrapNeeded)
 }
 
 // BeginBlocker application updates every begin block
@@ -894,6 +968,16 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
 	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 
+	// initialize the provision and reserve module accounts, to avoid their implicit creation
+	// as a default account upon receiving a transfer. See BlockedAddrs().
+	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
+	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
+
+	// Init early (before first BeginBlock) to run the potentially lengthy bootstrap
+	if app.bootstrapNeeded {
+		app.initController(ctx, true)
+	}
+
 	// Agoric: report the genesis time explicitly.
 	genTime := req.GetTime()
 	if genTime.After(time.Now()) {
@@ -901,20 +985,15 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 		stdlog.Printf("Genesis time %s is in %s\n", genTime, d)
 	}
 
-	// initialize the provision and reserve module accounts, to avoid their implicit creation
-	// as a default account upon receiving a transfer. See BockedAddrs().
-	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
-	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
-
 	return res
 }
 
 // Commit tells the controller that the block is commited
 func (app *GaiaApp) Commit() abci.ResponseCommit {
-	err := app.SwingSetSnapshotter.WaitUntilSnapshotStarted()
+	err := swingsetkeeper.WaitUntilSwingStoreExportStarted()
 
 	if err != nil {
-		app.Logger().Error("swingset snapshot failed to start", "err", err)
+		app.Logger().Error("swing-store export failed to start", "err", err)
 	}
 
 	// Frontrun the BaseApp's Commit method

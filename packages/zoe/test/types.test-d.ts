@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /**
  * @file uses .ts syntax to be able to declare types (e.g. of kit.creatorFacet as {})
  * because "there is no JavaScript syntax for passing a a type argument"
@@ -6,6 +7,7 @@
 import { E } from '@endo/eventual-send';
 import { expectType } from 'tsd';
 
+// 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 
 {

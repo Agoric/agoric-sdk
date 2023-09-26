@@ -2,7 +2,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
-import '@agoric/vats/src/core/types.js';
+import '@agoric/vats/src/core/types-ambient.js';
 import {
   makeAgoricNamesAccess,
   runModuleBehaviors,

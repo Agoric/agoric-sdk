@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';
@@ -61,7 +62,7 @@ export const main = async (argv, { readFile, stdout }) => {
 
 if (isEntrypoint(import.meta.url)) {
   /* global process */
-  farExports.E.when(
+  void farExports.E.when(
     import('fs/promises'),
     fsp =>
       main([...process.argv], {

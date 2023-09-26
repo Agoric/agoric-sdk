@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -12,38 +12,45 @@ import { makePromiseSpace } from './promise-space.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @typedef {true | string | { [key: string]: BootstrapManifestPermit }} BootstrapManifestPermit
+ * @typedef {| true
+ *   | string
+ *   | { [key: string]: BootstrapManifestPermit | undefined }} BootstrapManifestPermit
  */
 
 /**
- * A manifest is an object in which each key is the name of a function to run
- * at bootstrap and the corresponding value is a "permit" describing an
- * attenuation of allPowers that should be provided as its first argument
- * (cf. packages/vats/src/core/boot.js).
+ * A manifest is an object in which each key is the name of a function to run at
+ * bootstrap and the corresponding value is a "permit" describing an attenuation
+ * of allPowers that should be provided as its first argument (cf.
+ * packages/vats/src/core/boot.js).
  *
  * A permit is either
- * - `true` or a string (both meaning no attenuation, with a string serving
- *   as a grouping label for convenience and diagram generation), or
- * - an object whose keys identify properties to preserve and whose values
- *   are themselves (recursive) permits.
+ *
+ * - `true` or a string (both meaning no attenuation, with a string serving as a
+ *   grouping label for convenience and diagram generation), or
+ * - an object whose keys identify properties to preserve and whose values are
+ *   themselves (recursive) permits.
  *
  * @typedef {Record<string, BootstrapManifestPermit>} BootstrapManifest
- *
  */
 
 /**
- * @typedef {(powers: *, config?: *) => Promise<void>} BootBehavior
+ * @typedef {(powers: any, config?: any) => Promise<void>} BootBehavior
+ *
  * @typedef {Record<string, unknown>} ModuleNamespace
- * @typedef {{ utils: typeof import('./utils.js') } & Record<string, Record<string, any>>} BootModules
+ *
+ * @typedef {{ utils: typeof import('./utils.js') } & Record<
+ *   string,
+ *   Record<string, any>
+ * >} BootModules
  */
 
 /** @type {<X>(a: X[], b: X[]) => X[]} */
 const setDiff = (a, b) => a.filter(x => !b.includes(x));
 
 /**
- * @param {VatPowers & {
- *   D: DProxy,
- *   logger: (msg) => void,
+ * @param {import('@agoric/swingset-vat').VatPowers & {
+ *   D: DProxy;
+ *   logger: (msg) => void;
  * }} vatPowers
  * @param {Record<string, unknown>} vatParameters
  * @param {BootstrapManifest} bootManifest
@@ -57,7 +64,7 @@ export const makeBootstrap = (
   bootManifest,
   behaviors,
   modules,
-  zone = heapZone,
+  zone = makeHeapZone(),
 ) => {
   const { keys } = Object;
   const extra = setDiff(keys(bootManifest), keys(behaviors));
@@ -93,9 +100,8 @@ export const makeBootstrap = (
     );
 
     const namesVat = namedVat.consume.agoricNames;
-    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = await E(
-      namesVat,
-    ).getNameHubKit();
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+      await E(namesVat).getNameHubKit();
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
@@ -147,7 +153,11 @@ export const makeBootstrap = (
         },
       ],
     };
-    /** @type {{coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>}} */
+    /**
+     * @type {{
+     *   coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>;
+     * }}
+     */
     // @ts-expect-error cast
     const { coreEvalBridgeHandler } = consume;
     await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
@@ -225,3 +235,4 @@ export const makeBootstrap = (
     //#endregion
   });
 };
+/** @typedef {Awaited<ReturnType<typeof makeBootstrap>>} BootstrapRootObject */

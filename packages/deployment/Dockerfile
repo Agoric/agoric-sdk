@@ -2,22 +2,13 @@ ARG TAG=latest
 ARG REPO=agoric/agoric-sdk
 ARG REGISTRY=ghcr.io
 
-# FIXME: Journalbeat compilation is currently broken, but non-essential.
-# Removed from the build.
-# FROM golang:1.20-bullseye AS go-build
-
-# WORKDIR /usr/src/journalbeat
-# RUN apt-get update -y && apt-get install -y libsystemd-dev
-# RUN go get github.com/mheese/journalbeat
-
 FROM $REGISTRY/$REPO:$TAG
 
+COPY ./scripts/install-deps.sh /usr/src/agoric-sdk/packages/deployment/scripts/
 RUN /usr/src/agoric-sdk/packages/deployment/scripts/install-deps.sh
 
-# # Copy journalbeat for logging support
-# COPY --from=go-build /go/bin/journalbeat /usr/local/bin/
-
 WORKDIR /usr/src/agoric-sdk/packages/deployment
+COPY . .
 RUN ln -sf $PWD/bin/ag-setup-cosmos /usr/local/bin/ag-setup-cosmos
 
 WORKDIR /data/chains

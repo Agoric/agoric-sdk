@@ -30,6 +30,7 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
  * @param {object} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
+// 'prepare' is deprecated but still supported
 export const prepare = async (zcf, privateArgs, baggage) => {
   const quoteMint = provideQuoteMint(baggage);
 
@@ -85,3 +86,4 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   );
   return harden({ publicFacet });
 };
+harden(prepare);

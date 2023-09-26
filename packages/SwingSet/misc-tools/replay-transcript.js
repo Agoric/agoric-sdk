@@ -3,8 +3,8 @@
 /* global WeakRef FinalizationRegistry */
 /* eslint-disable no-constant-condition */
 import fs from 'fs';
-// import '@endo/init';
-import '../tools/install-ses-debug.js';
+import '@agoric/internal/src/install-ses-debug.js';
+
 import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
@@ -21,14 +21,14 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
-import engineGC from '../src/lib-nodejs/engine-gc.js';
 
 const finished = promisify(finishedCallback);
 
@@ -332,6 +332,7 @@ async function replay(transcriptFile) {
     throw Error(`unhandled worker type ${worker}`);
   }
 
+  // @ts-expect-error missing symbol
   /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
   let syscallResults = {};
 
@@ -339,6 +340,7 @@ async function replay(transcriptFile) {
     const numWorkers = workers.length;
     let divergent = false;
     for (const [kind, kindSummary] of Object.entries(syscallResults)) {
+      // @ts-expect-error due to missing symbol above, but also `syscallResults` is never populated
       for (const [syscallKey, workerList] of kindSummary.entries()) {
         if (workerList.length !== numWorkers) {
           console.error(

@@ -1,5 +1,6 @@
 // @ts-nocheck
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import path from 'path';
 

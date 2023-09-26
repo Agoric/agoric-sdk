@@ -38,6 +38,7 @@ harden(normalizeAddressWithOptions);
  * @param {ReadonlyArray<string>} swingsetArgs
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
+ *   fees?: string,
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
@@ -48,6 +49,7 @@ harden(normalizeAddressWithOptions);
 export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const {
     from,
+    fees,
     dryRun = false,
     verbose = true,
     keyring = undefined,
@@ -60,9 +62,11 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const backendOpt = keyring?.backend
     ? [`--keyring-backend=${keyring.backend}`]
     : [];
+  const feeOpt = fees ? ['--fees', fees] : [];
   const cmd = [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`].concat(
     homeOpt,
     backendOpt,
+    feeOpt,
     [`--from=${from}`, 'tx', 'swingset'],
     swingsetArgs,
   );
@@ -75,7 +79,15 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   } else {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', yesCmd);
-    return execFileSync(agdBinary, yesCmd, { encoding: 'utf-8' });
+    const out = execFileSync(agdBinary, yesCmd, { encoding: 'utf-8' });
+
+    // agd puts this diagnostic on stdout rather than stderr :-/
+    // "Default sign-mode 'direct' not supported by Ledger, using sign-mode 'amino-json'.
+    if (out.startsWith('Default sign-mode')) {
+      const stripDiagnostic = out.replace(/^Default[^\n]+\n/, '');
+      return stripDiagnostic;
+    }
+    return out;
   }
 };
 harden(execSwingsetTransaction);

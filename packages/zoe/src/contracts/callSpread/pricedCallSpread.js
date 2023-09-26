@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import './types.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
@@ -10,7 +11,6 @@ import {
   assertNatAssetKind,
   makeRatio,
   ceilMultiplyBy,
-  atomicRearrange,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
@@ -132,8 +132,7 @@ const start = zcf => {
         'wanted option not a match',
       );
 
-      atomicRearrange(
-        zcf,
+      zcf.atomicRearrange(
         harden([
           [collateralSeat, depositSeat, spreadAmount],
           [depositSeat, collateralSeat, { Collateral: newCollateral }],

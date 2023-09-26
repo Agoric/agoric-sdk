@@ -9,6 +9,10 @@ inputs:
     description: 'The relative path to the agoric-sdk directory'
     required: false
     default: '.'
+  keep-endo:
+    description: 'Keep Endo repository after installing from it'
+    required: false
+    default: 'false'
   xsnap-random-init:
     description: Build xsnap binary with random memory init
     required: false
@@ -27,13 +31,13 @@ runs:
       shell: bash
     - uses: actions/checkout@v3
       with:
-        clean: 'false'
+        clean: false
         submodules: 'true'
         persist-credentials: false
         path: ${{ inputs.path }}
     # Select a branch on Endo to test against by adding text to the body of the
     # pull request. For example: #endo-branch: some-pr-branch
-    # The default is '*NONE*' to indicate not to check out Endo, just use
+    # The default is '*NOPE*' to indicate not to check out Endo, just use
     # the published NPM packages.
     - name: Get the appropriate Endo branch
       id: endo-branch
@@ -76,13 +80,25 @@ runs:
           echo "sha=NOPE" >> $GITHUB_OUTPUT
         fi
       shell: bash
+    - name: merge endo integration branch
+      id: endo-integration-merge
+      run: |-
+        set -e
+        git ls-remote --exit-code --heads origin "refs/heads/integration-endo-${{ steps.endo-branch.outputs.result }}" || exit 0
+        git fetch --unshallow origin integration-endo-${{ steps.endo-branch.outputs.result }}
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git merge --commit --no-edit origin/integration-endo-${{ steps.endo-branch.outputs.result }}
+      shell: bash
+      working-directory: ${{ inputs.path }}
+      if: steps.endo-branch.outputs.result != 'NOPE'
     - name: Reconfigure git to use HTTP authentication
       run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
       shell: bash
     - uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'yarn'
+        cache: yarn
         cache-dependency-path: ${{ inputs.path }}/yarn.lock
     - uses: kenchan0130/actions-system-info@master
       id: system-info
@@ -111,9 +127,9 @@ runs:
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-installed
         if test -e ~/endo; then
-          # Remove traces of the redirected `yarn install`.
-          git restore package.json yarn.lock
-          rm -rf ~/endo
+          # Stage the redirected `yarn install` consequences.
+          git add package.json yarn.lock
+          ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
@@ -131,9 +147,12 @@ runs:
     - name: git dirty check
       working-directory: ${{ inputs.path }}
       run: |-
-        if [ -n "$(git status --porcelain)" ];
-        then
+        set -x
+        # In case of Endo override, ignore matching index and worktree.
+        # (First column is non-space, second column is space, followed by separator.)
+        if [ -n "$(git status --porcelain | grep -Eve '^[^ ]  '; true)" ]; then
           git status
+          echo "Unexpected dirty git status" 1>&2
           exit 1
         fi
       shell: bash

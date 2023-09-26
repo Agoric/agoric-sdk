@@ -11,6 +11,7 @@
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
+    "lint": "run-s --continue-on-error lint:*",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint ."
   },
@@ -31,7 +32,7 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/store": "^0.9.2",
-    "@endo/marshal": "^0.8.5"
+    "@endo/marshal": "^0.8.8"
   },
   "files": [
     "*.js",

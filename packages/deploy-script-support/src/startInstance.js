@@ -100,9 +100,8 @@ export const makeStartInstance = (
         `creatorInvitation must be defined to be deposited`,
       );
       console.log(`-- Adding Invitation for: ${instancePetname}`);
-      const invitationAmount = await E(zoeInvitationPurse).deposit(
-        creatorInvitation,
-      );
+      const invitationAmount =
+        await E(zoeInvitationPurse).deposit(creatorInvitation);
       console.log(`- Created Contract Instance: ${instancePetname}`);
 
       const creatorInvitationDetails = invitationAmount.value[0];

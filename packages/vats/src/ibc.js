@@ -1,18 +1,15 @@
 // @ts-check
 
-import {
-  dataToBase64,
-  base64ToBytes,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
 
-import '@agoric/store/exported.js';
-import '@agoric/swingset-vat/src/vats/network/types.js';
-
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { dataToBase64, base64ToBytes } from '@agoric/network';
+
+import '@agoric/store/exported.js';
+import '@agoric/network/exported.js';
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
@@ -21,13 +18,13 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 // Default timeout after 10 minutes.
 const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
 
-/**
- * @typedef {import('./types.js').BridgeHandler} BridgeHandler
- */
+/** @typedef {import('./types.js').BridgeHandler} BridgeHandler */
 
 /**
  * @typedef {string} IBCPortID
+ *
  * @typedef {string} IBCChannelID
+ *
  * @typedef {string} IBCConnectionID
  */
 
@@ -41,8 +38,8 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
  */
 
 /**
- * Create a handler for the IBC protocol, both from the network
- * and from the bridge.
+ * Create a handler for the IBC protocol, both from the network and from the
+ * bridge.
  *
  * @param {typeof import('@endo/far').E} E
  * @param {(method: string, params: any) => Promise<any>} rawCallIBCDevice
@@ -56,9 +53,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     console.info('IBC downcall', method, params);
     return rawCallIBCDevice(method, params);
   };
-  /**
-   * @type {MapStore<string, Promise<Connection>>}
-   */
+  /** @type {MapStore<string, Promise<Connection>>} */
   const channelKeyToConnP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
@@ -67,7 +62,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    * @property {string} channel_id
    *
    * @typedef {object} ConnectingInfo
-   * @property {'ORDERED'|'UNORDERED'} order
+   * @property {'ORDERED' | 'UNORDERED'} order
    * @property {string[]} connectionHops
    * @property {string} portID
    * @property {string} channelID
@@ -75,31 +70,25 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    * @property {string} version
    *
    * @typedef {PromiseRecord<AttemptDescription>} OnConnectP
+   *
    * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
-   *   localAddr: Endpoint, onConnectP: OnConnectP
-   *   counterparty: { port_id: string },
+   *   localAddr: Endpoint;
+   *   onConnectP: OnConnectP;
+   *   counterparty: { port_id: string };
    * }} Outbound
    */
 
-  /**
-   * @type {LegacyMap<string, Array<Outbound>>}
-   */
+  /** @type {LegacyMap<string, Outbound[]>} */
   // Legacy because it holds a mutable Javascript Array
   const srcPortToOutbounds = makeLegacyMap('SRC-PORT');
 
-  /**
-   * @type {MapStore<string, ConnectingInfo>}
-   */
+  /** @type {MapStore<string, ConnectingInfo>} */
   const channelKeyToInfo = makeScalarMapStore('CHANNEL:PORT');
 
-  /**
-   * @type {MapStore<string, Promise<InboundAttempt>>}
-   */
+  /** @type {MapStore<string, Promise<InboundAttempt>>} */
   const channelKeyToAttemptP = makeScalarMapStore('CHANNEL:PORT');
 
-  /**
-   * @type {LegacyMap<string, LegacyMap<number, PromiseRecord<Bytes>>>}
-   */
+  /** @type {LegacyMap<string, LegacyMap<number, PromiseRecord<Bytes>>>} */
   // Legacy because it holds a LegacyMap
   const channelKeyToSeqAck = makeLegacyMap('CHANNEL:PORT');
 
@@ -124,9 +113,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     // Extract the actual sequence number from the return.
     const { sequence } = fullPacket;
 
-    /**
-     * @type {PromiseRecord<Bytes>}
-     */
+    /** @type {PromiseRecord<Bytes>} */
     const ackDeferred = makePromiseKit();
 
     // Register the ack resolver/rejector with this sequence number.
@@ -139,7 +126,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    * @param {string} portID
    * @param {string} rChannelID
    * @param {string} rPortID
-   * @param {'ORDERED'|'UNORDERED'} order
+   * @param {'ORDERED' | 'UNORDERED'} order
    * @returns {ConnectionHandler}
    */
   function makeIBCConnectionHandler(
@@ -213,9 +200,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     });
   }
 
-  /**
-   * @param {string} localAddr
-   */
+  /** @param {string} localAddr */
   const localAddrToPortID = localAddr => {
     const m = localAddr.match(/^\/ibc-port\/([-a-zA-Z0-9._+#[\]<>]+)$/);
     if (!m) {
@@ -226,29 +211,23 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     return m[1];
   };
 
-  /**
-   * @type {ProtocolImpl}
-   */
+  /** @type {ProtocolImpl} */
   let protocolImpl;
 
   /**
    * @typedef {object} OutboundCircuitRecord
    * @property {IBCConnectionID} dst
-   * @property {'ORDERED'|'UNORDERED'} order
+   * @property {'ORDERED' | 'UNORDERED'} order
    * @property {string} version
    * @property {IBCPacket} packet
    * @property {PromiseRecord<ConnectionHandler>} deferredHandler
    */
 
-  /**
-   * @type {LegacyMap<Port, Set<PromiseRecord<ConnectionHandler>>>}
-   */
+  /** @type {LegacyMap<Port, Set<PromiseRecord<ConnectionHandler>>>} */
   // Legacy because it holds a raw JavaScript Set
   const portToPendingConns = makeLegacyMap('Port');
 
-  /**
-   * @type {ProtocolHandler}
-   */
+  /** @type {ProtocolHandler} */
   const protocol = Far('IBCProtocolHandler', {
     async onCreate(impl, _protocolHandler) {
       console.debug('IBC onCreate');

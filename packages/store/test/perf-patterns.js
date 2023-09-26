@@ -1,9 +1,4 @@
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
-
 import { Far, makeTagged } from '@endo/marshal';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
-import { makeGcAndFinalize } from '@agoric/swingset-vat/src/lib-nodejs/gc-and-finalize.js';
-
 import {
   makeCopyBag,
   makeCopyMap,
@@ -11,6 +6,9 @@ import {
   matches,
   M,
 } from '@endo/patterns';
+import engineGC from './engine-gc.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
+
 import {
   AmountShape,
   BrandShape,

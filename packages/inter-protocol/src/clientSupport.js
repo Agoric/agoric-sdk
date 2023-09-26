@@ -9,16 +9,22 @@ import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 
-// TODO use '@satisfies" in TS 5.1 to make sure these each conform to OfferMaker interface
-
 // NB: not really a Proposal because the brands are not remotes
 // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
 // mustMatch(harden(proposal), ProposalShape);
 /**
  * Give/want
  *
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand'>} agoricNames
- * @param {{ giveMinted?: number, wantMinted?: number } | { collateralBrandKey: string, giveCollateral?: number, wantCollateral?: number }} opts
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
+ * @param {| { giveMinted?: number; wantMinted?: number }
+ *   | {
+ *       collateralBrandKey: string;
+ *       giveCollateral?: number;
+ *       wantCollateral?: number;
+ *     }} opts
  * @returns {Proposal}
  */
 const makeVaultProposal = ({ brand }, opts) => {
@@ -56,8 +62,16 @@ const makeVaultProposal = ({ brand }, opts) => {
 };
 
 /**
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand'>} agoricNames
- * @param {{ offerId: string, wantMinted: number, giveCollateral: number, collateralBrandKey: string }} opts
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
+ * @param {{
+ *   offerId: string;
+ *   wantMinted: number;
+ *   giveCollateral: number;
+ *   collateralBrandKey: string;
+ * }} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makeOpenOffer = ({ brand }, opts) => {
@@ -84,8 +98,18 @@ const makeOpenOffer = ({ brand }, opts) => {
 };
 
 /**
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand'>} agoricNames
- * @param {{ offerId: string, collateralBrandKey?: string, giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number }} opts
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
+ * @param {{
+ *   offerId: string;
+ *   collateralBrandKey?: string;
+ *   giveCollateral?: number;
+ *   wantCollateral?: number;
+ *   giveMinted?: number;
+ *   wantMinted?: number;
+ * }} opts
  * @param {string} previousOffer
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
@@ -107,8 +131,15 @@ const makeAdjustOffer = ({ brand }, opts, previousOffer) => {
 };
 
 /**
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand'>} agoricNames
- * @param {{ offerId: string, collateralBrandKey?: string, giveMinted: number }} opts
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
+ * @param {{
+ *   offerId: string;
+ *   collateralBrandKey?: string;
+ *   giveMinted: number;
+ * }} opts
  * @param {string} previousOffer
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
@@ -128,7 +159,9 @@ const makeCloseOffer = ({ brand }, opts, previousOffer) => {
 
 /**
  * @param {string} vaultId
- * @param {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentP
+ * @param {Promise<
+ *   import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
+ * >} currentP
  * @returns {Promise<string>} offer id in which the vault was made
  */
 export const lookupOfferIdForVault = async (vaultId, currentP) => {
@@ -143,11 +176,14 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 };
 
 /**
- * @param {Record<string, Brand>} brands
- * @param {({ wantMinted: number, giveMinted?: undefined } | { giveMinted: number, wantMinted?: undefined })} opts
- * @param {number} [fee=0]
+ * @param {Record<
+ *   string,
+ *   import('@agoric/internal/src/marshal.js').BoardRemote
+ * >} brands
+ * @param {| { wantMinted: number; giveMinted?: undefined }
+ *   | { giveMinted: number; wantMinted?: undefined }} opts
+ * @param {number} [fee]
  * @param {string} [anchor]
- * @returns {Proposal} XXX not a real proposal, uses BoardRemote
  */
 const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const giving = 'giveMinted' in opts ? 'minted' : 'anchor';
@@ -173,10 +209,15 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 };
 
 /**
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand'>} agoricNames
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
  * @param {Instance} instance
- * @param {{ offerId: string, feePct?: number, pair: [string, string] } &
- *         ({ wantMinted: number } | { giveMinted: number })} opts
+ * @param {{ offerId: string; feePct?: number; pair: [string, string] } & (
+ *   | { wantMinted: number }
+ *   | { giveMinted: number }
+ * )} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makePsmSwapOffer = ({ brand }, instance, opts) => {
@@ -202,15 +243,16 @@ const makePsmSwapOffer = ({ brand }, instance, opts) => {
       instance,
       publicInvitationMaker: method,
     },
+    // @ts-expect-error BoardRemote not a Brand object
     proposal,
   };
 };
 
 /**
- * @param {{
- *   brand: Record<string, Brand>,
- *   vbankAsset: Record<string, { brand: Brand, displayInfo: DisplayInfo }>,
- * }} agoricNames
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand' | 'vbankAsset'
+ * >} agoricNames
  * @param {(msg: string) => Error} makeError error constructor
  * @returns {(a: string) => Amount<'nat'>}
  */
@@ -248,17 +290,23 @@ export const makeParseAmount =
   };
 
 /**
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand' | 'vbankAsset'>} agoricNames
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand' | 'vbankAsset'
+ * >} agoricNames
  * @param {{
- *   offerId: string,
- *   give: string,
- *   maxBuy: string,
- *   wantMinimum?: string,
- * } & ({
- *   price: number,
- * } | {
- *   discount: number,  // -1 to 1. e.g. 0.10 for 10% discount, -0.05 for 5% markup
- * })} opts
+ *   offerId: string;
+ *   give: string;
+ *   maxBuy: string;
+ *   wantMinimum?: string;
+ * } & (
+ *   | {
+ *       price: number;
+ *     }
+ *   | {
+ *       discount: number; // -1 to 1. e.g. 0.10 for 10% discount, -0.05 for 5% markup
+ *     }
+ * )} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makeBidOffer = (agoricNames, opts) => {
@@ -317,11 +365,14 @@ const makeBidOffer = (agoricNames, opts) => {
 };
 
 /**
- * @param {Pick<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes, 'brand'>} agoricNames
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
  * @param {{
- *   offerId: string,
- *   give: number,
- *   collateralBrandKey: string,
+ *   offerId: string;
+ *   give: number;
+ *   collateralBrandKey: string;
  * }} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
@@ -329,6 +380,7 @@ const makeAddCollateralOffer = ({ brand }, opts) => {
   /** @type {AmountKeywordRecord} */
   const give = {
     Collateral: AmountMath.make(
+      // @ts-expect-error BoardRemote not a Brand object
       brand[opts.collateralBrandKey],
       scaleDecimals(opts.give),
     ),
@@ -348,12 +400,11 @@ const makeAddCollateralOffer = ({ brand }, opts) => {
 };
 
 /**
- *
  * @param {unknown} _agoricNames
  * @param {{
- *   offerId: string,
- *   roundId?: bigint,
- *   unitPrice: bigint,
+ *   offerId: string;
+ *   roundId?: bigint;
+ *   unitPrice: bigint;
  * }} opts
  * @param {string} previousOffer
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
@@ -373,6 +424,12 @@ const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
   };
 };
 
+/**
+ * @satisfies {Record<
+ *   string,
+ *   Record<string, import('@agoric/smart-wallet/src/types.js').OfferMaker>
+ * >}
+ */
 export const Offers = {
   auction: {
     Bid: makeBidOffer,

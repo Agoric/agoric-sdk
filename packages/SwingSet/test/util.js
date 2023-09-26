@@ -4,7 +4,7 @@ import anylogger from 'anylogger';
 import bundleSource from '@endo/bundle-source';
 
 import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { extractMessage, ignore, vstr } from './vat-util.js';
 import { kser } from '../src/lib/kmarshal.js';
 

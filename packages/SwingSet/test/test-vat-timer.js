@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -5,8 +7,8 @@ import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { buildRootObject, debugTools } from '../src/vats/timer/vat-timer.js';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 
 test('schedule', t => {
   const schedule = makeScalarMapStore();
@@ -267,8 +269,8 @@ test('brand', async t => {
   const whenNobrand = 123n;
   const delayNobrand = 123n;
   ts.setWakeup(whenNobrand, handler);
-  ts.wakeAt(whenNobrand);
-  ts.delay(delayNobrand);
+  void ts.wakeAt(whenNobrand);
+  void ts.delay(delayNobrand);
   ts.makeRepeater(delayNobrand, delayNobrand);
   ts.repeatAfter(delayNobrand, delayNobrand, handler);
   ts.makeNotifier(delayNobrand, delayNobrand);

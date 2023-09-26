@@ -30,8 +30,8 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
-import { heapZone } from '@agoric/zone';
-import { Stable } from '../../src/tokens.js';
+import { makeHeapZone } from '@agoric/zone';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,
@@ -179,7 +179,9 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeTestContext>>
+ * >} t
  * @param {{}} [customTerms]
  */
 async function makePsmDriver(t, customTerms) {
@@ -195,7 +197,7 @@ async function makePsmDriver(t, customTerms) {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').prepare>>} */
+  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
@@ -396,7 +398,15 @@ test('limit is for minted', async t => {
   );
 });
 
-/** @type {[kind: 'want' | 'give', give: number, want: number, ok: boolean, wants?: number][]} */
+/**
+ * @type {[
+ *   kind: 'want' | 'give',
+ *   give: number,
+ *   want: number,
+ *   ok: boolean,
+ *   wants?: number,
+ * ][]}
+ */
 const trades = [
   ['give', 200, 190, false],
   ['want', 101, 100, true, 1],
@@ -740,7 +750,7 @@ const makeMockBankManager = t => {
 };
 
 test('restore PSM: startPSM with previous metrics, params', async t => {
-  /** @type { import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers } */
+  /** @type {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
   const { agoricNames, agoricNamesAdmin, spaces } =
@@ -749,9 +759,10 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
 
   // Prep bootstrap space
   {
+    const zone = makeHeapZone();
     await produceDiagnostics({ produce });
     // @ts-expect-error Doesnt actually require all bootstrap powers
-    await produceStartUpgradable({ zone: heapZone, consume, produce });
+    await produceStartUpgradable({ zone, consume, produce });
 
     const {
       installs,

@@ -1,5 +1,10 @@
 // @ts-check
+
+// Ambient types. Needed only for dev but this does a runtime import.
+// https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/time';
 import '@agoric/zoe/exported.js';
+
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 

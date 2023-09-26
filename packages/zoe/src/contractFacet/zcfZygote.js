@@ -1,27 +1,28 @@
-import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { AssetKind } from '@agoric/ertp';
-import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern, mustMatch } from '@agoric/store';
 import {
   canBeDurable,
   M,
   makeScalarBigMapStore,
-  provideDurableMapStore,
   prepareExo,
   prepareExoClass,
+  provideDurableMapStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
+import { passStyleOf, Remotable } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { objectMap } from '@agoric/internal';
 import { cleanProposal } from '../cleanProposal.js';
+import { handlePKitWarning } from '../handleWarning.js';
+import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
+import { defineDurableHandle } from '../makeHandle.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeMakeExiter } from './exit.js';
-import { defineDurableHandle } from '../makeHandle.js';
-import { provideIssuerStorage } from '../issuerStorage.js';
-import { createSeatManager } from './zcfSeat.js';
-import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
-import { handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
+import { createSeatManager } from './zcfSeat.js';
 
 import '../internal-types.js';
 import './internal-types.js';
@@ -210,6 +211,25 @@ export const makeZCFZygote = async (
   });
   const handleOfferObj = makeHandleOfferObj(taker);
 
+  /**
+   * @type {() => Promise<
+   *   | {
+   *       buildRootObject: any;
+   *       start: undefined;
+   *       meta: undefined;
+   *     }
+   *   | {
+   *       prepare: ContractStartFn;
+   *       customTermsShape?: Pick<ContractMeta, 'customTermsShape'>,
+   *       privateArgsShape?: Pick<ContractMeta, 'privateArgsShape'>,
+   *     }
+   *   | {
+   *       buildRootObject: undefined;
+   *       start: ContractStartFn;
+   *       meta?: ContractMeta;
+   *     }
+   * >}
+   */
   const evaluateContract = () => {
     let bundle;
     if (passStyleOf(contractBundleCap) === 'remotable') {
@@ -222,22 +242,44 @@ export const makeZCFZygote = async (
     return evalContractBundle(bundle);
   };
   // evaluate the contract (either the first version, or an upgrade)
-  const {
-    start,
-    buildRootObject,
-    privateArgsShape,
-    customTermsShape,
-    prepare,
-  } = await evaluateContract();
+  const bundleResult = await evaluateContract();
 
-  if (start === undefined && prepare === undefined) {
-    buildRootObject === undefined ||
-      Fail`Did you provide a vat bundle instead of a contract bundle?`;
-    Fail`contract exports missing start/prepare`;
+  //#region backwards compatibility with prepare()
+  const { start, meta = {} } = (() => {
+    if ('prepare' in bundleResult) {
+      if ('start' in bundleResult) {
+        Fail`contract must provide exactly one of "start" and "prepare"`;
+      }
+      // A contract must have one expression of upgradability
+      if (/** @type {any} */ (bundleResult).meta?.upgradability) {
+        Fail`prepare() is deprecated and incompatible with the 'upgradability' indicator`;
+      }
+      return {
+        start: bundleResult.prepare,
+        meta: {
+          upgradability: 'canUpgrade',
+          customTermsShape: bundleResult.customTermsShape,
+          privateArgsShape: bundleResult.privateArgsShape,
+        },
+      };
+    }
+    // normal behavior
+    return bundleResult;
+  })();
+  //#endregion
+
+  if (start === undefined) {
+    if ('buildRootObject' in bundleResult) {
+      // diagnose a common mistake
+      throw Fail`Did you provide a vat bundle instead of a contract bundle?`;
+    }
+    throw Fail`contract exports missing start`;
   }
-  !start ||
-    !prepare ||
-    Fail`contract must provide exactly one of "start" and "prepare"`;
+
+  start.length <= 3 || Fail`invalid start parameters`;
+  const durabilityRequired =
+    meta.upgradability &&
+    ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability);
 
   /** @type {ZCF} */
   // Using Remotable rather than Far because there are too many complications
@@ -245,6 +287,7 @@ export const makeZCFZygote = async (
   // accept raw functions. assert cannot be a valid passable! (It's a function
   // and has members.)
   const zcf = Remotable('Alleged: zcf', undefined, {
+    atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
     reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
@@ -300,6 +343,7 @@ export const makeZCFZygote = async (
       const terms = getInstanceRecHolder().getTerms();
 
       // If the contract provided customTermsShape, validate the customTerms.
+      const { customTermsShape } = meta;
       if (customTermsShape) {
         const { brands: _b, issuers: _i, ...customTerms } = terms;
         mustMatch(harden(customTerms), customTermsShape, 'customTerms');
@@ -372,13 +416,13 @@ export const makeZCFZygote = async (
       instantiateIssuerStorage(issuerStorageFromZoe);
       zcfBaggage.init('instanceRecHolder', instanceRecHolder);
 
-      const startFn = start || prepare;
+      const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
       // start a contract for the first time
       return E.when(
-        startFn(zcf, privateArgs, contractBaggage),
+        start(zcf, privateArgs, contractBaggage),
         ({
           creatorFacet = undefined,
           publicFacet = undefined,
@@ -387,18 +431,16 @@ export const makeZCFZygote = async (
         }) => {
           const unexpectedKeys = Object.keys(unexpected);
           unexpectedKeys.length === 0 ||
-            Fail`contract ${
-              prepare ? 'prepare' : 'start'
-            } returned unrecognized properties ${unexpectedKeys}`;
+            Fail`contract "start" returned unrecognized properties ${unexpectedKeys}`;
 
           const areDurable = objectMap(
             { creatorFacet, publicFacet, creatorInvitation },
             canBeDurable,
           );
           const allDurable = Object.values(areDurable).every(Boolean);
-          if (prepare) {
+          if (durabilityRequired) {
             allDurable ||
-              Fail`values from prepare() must be durable ${areDurable}`;
+              Fail`with ${meta.upgradability}, values from start() must be durable ${areDurable}`;
           }
 
           if (allDurable) {
@@ -418,18 +460,21 @@ export const makeZCFZygote = async (
     },
 
     restartContract: async (privateArgs = undefined) => {
-      prepare || Fail`prepare must be defined to upgrade a contract`;
+      if (meta.upgradability) {
+        meta.upgradability === 'canUpgrade' || Fail`contract cannot upgrade`;
+      }
       zoeInstanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintKind();
 
+      const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
 
       // restart an upgradeable contract
       return E.when(
-        prepare(zcf, privateArgs, contractBaggage),
+        start(zcf, privateArgs, contractBaggage),
         ({
           creatorFacet = undefined,
           publicFacet = undefined,

@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { observeIteration } from '@agoric/notifier';
-import { heapZone } from '@agoric/zone';
+import { makeHeapZone } from '@agoric/zone';
 import { buildRootObject } from '../src/vat-bank.js';
 import {
   mintInitialSupply,
@@ -22,11 +22,13 @@ import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   // Supply bootstrap prerequisites.
-  const space = /** @type { any } */ (makePromiseSpace(t.log));
-  const { produce, consume } =
-    /** @type { BootstrapPowers & { consume: { loadCriticalVat: VatLoader<any> }}} */ (
-      space
-    );
+  const space = /** @type {any} */ (makePromiseSpace(t.log));
+  /**
+   * @type {BootstrapPowers & {
+   *   consume: { loadCriticalVat: VatLoader<any> };
+   * }}
+   */
+  const { produce, consume } = space;
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -49,6 +51,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     chainID: 'ag',
     storagePort: 1,
     supplyCoins: [{ amount: '50000000', denom: 'uist' }],
+    swingsetPort: 4,
     vbankPort: 2,
     vibcPort: 3,
   };
@@ -63,13 +66,13 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
         PROVISIONER_INDEX: 1,
       },
     },
-    zone: heapZone,
+    zone: makeHeapZone(),
     consume,
     produce,
-    devices: /** @type { any } */ ({}),
-    vats: /** @type { any } */ ({}),
-    vatPowers: /** @type { any } */ ({}),
-    runBehaviors: /** @type { any } */ ({}),
+    devices: /** @type {any} */ ({}),
+    vats: /** @type {any} */ ({}),
+    vatPowers: /** @type {any} */ ({}),
+    runBehaviors: /** @type {any} */ ({}),
     modules: {},
     ...spaces,
   });
@@ -96,7 +99,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);
 
-  const zone = heapZone;
+  const zone = makeHeapZone();
   await Promise.all([
     produceDiagnostics({ produce }),
     produceStartUpgradable({ zone, consume, produce, ...spaces }),

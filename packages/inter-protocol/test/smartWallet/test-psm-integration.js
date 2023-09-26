@@ -1,13 +1,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import '@agoric/vats/src/core/types.js';
+import '@agoric/vats/src/core/types-ambient.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { Stable } from '../../src/tokens.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { buildRootObject as buildPSMRootObject } from './boot-psm.js';
 import {
@@ -19,9 +19,11 @@ import {
 import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
- * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
- * & {consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']}>
- * }
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<makeDefaultTestContext>> & {
+ *     consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ *   }
+ * >}
  */
 const test = anyTest;
 
@@ -45,7 +47,7 @@ const makePsmTestSpace = async (log, bundleCache) => {
     },
     psmParams,
   );
-  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs());
 
   return psmVatRoot.getPromiseSpace();
 };
@@ -60,9 +62,8 @@ test('null swap', async t => {
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
 
-  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
-    'agoric1nullswap',
-  );
+  const { getBalanceFor, wallet } =
+    await t.context.provideWalletAndBalances('agoric1nullswap');
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const currents = sequenceCurrents(E(wallet).getCurrentSubscriber());
 
@@ -109,9 +110,8 @@ test('want stable', async t => {
   t.log('Start the PSM to ensure brands are registered');
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
-  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
-    'agoric1wantstable',
-  );
+  const { getBalanceFor, wallet } =
+    await t.context.provideWalletAndBalances('agoric1wantstable');
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
@@ -121,7 +121,6 @@ test('want stable', async t => {
   t.log('Fund the wallet');
   assert(anchor.mint);
   const payment = anchor.mint.mintPayment(anchor.make(swapSize));
-  // @ts-expect-error deposit does take a FarRef<Payment>
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
@@ -167,7 +166,6 @@ test('want stable (insufficient funds)', async t => {
   t.log('Fund the wallet insufficiently');
   assert(anchor.mint);
   const payment = anchor.mint.mintPayment(anchor.make(anchorFunding));
-  // @ts-expect-error deposit does take a FarRef<Payment>
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
@@ -233,7 +231,7 @@ test('govern offerFilter', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {any} balances XXX please improve this
-   * @returns {Promise<[{description: string, instance: Instance}]>}
+   * @returns {Promise<[{ description: string; instance: Instance }]>}
    */
   const getInvitationFor = async (desc, len, balances) =>
     // @ts-expect-error TS can't tell that it's going to satisfy the @returns.
@@ -380,10 +378,9 @@ test('deposit multiple payments to unknown brand', async t => {
   // assume that if the call succeeds then it's in durable storage.
   for await (const amt of [1n, 2n]) {
     const payment = rial.mint.mintPayment(rial.make(amt));
-    // @ts-expect-error deposit does take a FarRef<Payment>
-    const result = await wallet.getDepositFacet().receive(harden(payment));
-    // successful request but not deposited
-    t.deepEqual(result, { brand: rial.brand, value: 0n });
+    await t.throwsAsync(wallet.getDepositFacet().receive(harden(payment)), {
+      message: /cannot deposit .*: no purse/,
+    });
   }
 });
 
@@ -446,9 +443,8 @@ test('agoricName invitation source errors', async t => {
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
 
-  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
-    'agoric1nullswap',
-  );
+  const { getBalanceFor, wallet } =
+    await t.context.provideWalletAndBalances('agoric1nullswap');
 
   await t.throwsAsync(
     wallet.getOffersFacet().executeOffer({
@@ -463,7 +459,9 @@ test('agoricName invitation source errors', async t => {
     }),
     {
       message:
-        '{"source":"agoricContract","instancePath":["psm-IST-AUSD"]} - Must have missing properties ["callPipe"]',
+        // TODO The pattern is here only as a temporary measure to tolerate
+        // the property order being sorted and not.
+        /\{("instancePath":\["psm-IST-AUSD"\]|,|"source":"agoricContract"){3}\} - Must have missing properties \["callPipe"\]/,
     },
   );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);

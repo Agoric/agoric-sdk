@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 /* eslint-disable no-void */
 
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
 import { E } from '@endo/far';
 import {
@@ -239,7 +239,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     defaultReapInterval: 'never',
     vats: {
       bootstrap: {
-        sourceSpec: bfile('../../SwingSet/test/bootstrap-relay.js'),
+        sourceSpec: bfile('../../SwingSet/tools/bootstrap-relay.js'),
       },
     },
     bundles: {
@@ -395,6 +395,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const eachIterator2 = await run('messageVatObject', [
     { presence: eachIterable, methodName: Symbol.asyncIterator },
   ]);
+  // eslint-disable-next-line ava/prefer-async-await
   const assertDisconnection = (p, label) => {
     const expected = {
       incarnationNumber: 0,
@@ -402,7 +403,8 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
       upgradeMessage: 'vat upgraded',
     };
     return p.then(
-      (...args) => t.deepEqual(args, undefined, `${label} must be rejected`),
+      // @ts-expect-error Argument of type 'undefined' is not assignable to parameter of type 'any[]'.
+      (...args) => t.is(args, undefined, `${label} must be rejected`),
       failure =>
         t.deepEqual(failure, expected, `${label} must indicate disconnection`),
     );
@@ -458,7 +460,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
 // TODO: Find a way to test virtual object rehydration
 // without the overhead of vats.
 // https://github.com/Agoric/agoric-sdk/pull/6502#discussion_r1008492055
-test.skip('durable publish kit upgrade trauma', async t => {
+test.failing('durable publish kit upgrade trauma', async t => {
   const baggage = makeBaggage();
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,

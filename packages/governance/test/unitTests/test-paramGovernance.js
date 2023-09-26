@@ -1,18 +1,18 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
+import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
+import { remoteNullMarshaller } from '../swingsetTests/utils.js';
 
 const voteCounterRoot = '../../src/binaryVoteCounter.js';
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
@@ -61,7 +61,7 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     electorateTerms,
     {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: remoteNullMarshaller,
     },
   );
 

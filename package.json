@@ -10,34 +10,54 @@
   "type": "module",
   "packageManager": "yarn@1.22.19",
   "devDependencies": {
-    "@endo/eslint-plugin": "^0.4.4",
+    "@endo/eslint-plugin": "^0.5.1",
     "@jessie.js/eslint-plugin": "^0.4.0",
     "@types/express": "^4.17.17",
     "@types/node": "^16.13.0",
-    "@typescript-eslint/eslint-plugin": "^5.59.11",
-    "@typescript-eslint/parser": "^5.59.11",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
     "ava": "^5.3.0",
     "c8": "^7.13.0",
     "conventional-changelog-conventionalcommits": "^4.6.0",
-    "eslint": "^8.36.0",
+    "eslint": "^8.47.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-jessie": "^0.0.6",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-github": "^4.8.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-ava": "^14.0.0",
+    "eslint-plugin-github": "^4.10.0",
     "eslint-plugin-import": "^2.25.3",
-    "eslint-plugin-jsdoc": "^40.1.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "lerna": "^3.22.1",
+    "eslint-plugin-jsdoc": "^46.4.3",
+    "eslint-plugin-prettier": "^5.0.0",
+    "lerna": "^5.6.2",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.8.3",
-    "typescript": "~4.7.4"
+    "prettier": "^3.0.3",
+    "prettier-plugin-jsdoc": "^1.0.0",
+    "typescript": "~5.2.2"
   },
   "engines": {
     "node": "^16.13 || ^18.12"
   },
   "prettier": {
     "arrowParens": "avoid",
-    "trailingComma": "all",
+    "overrides": [
+      {
+        "files": [
+          "packages/ERTP/**/*.{js,ts}",
+          "packages/inter-protocol/**/*.{js,ts}",
+          "packages/store/**/*.{js,ts}",
+          "packages/vats/**/*.{js,ts}"
+        ],
+        "options": {
+          "plugins": [
+            "prettier-plugin-jsdoc"
+          ],
+          "jsdocAddDefaultToDescription": false,
+          "jsdocParser": true,
+          "jsdocCapitalizeDescription": false,
+          "tsdoc": true
+        }
+      }
+    ],
     "singleQuote": true
   },
   "scripts": {
@@ -66,15 +86,5 @@
   },
   "dependencies": {
     "patch-package": "^6.5.1"
-  },
-  "resolutions": {
-    "**/http-errors/depd": "^2.0.0",
-    "**/morgan/depd": "^2.0.0",
-    "**/agentkeepalive/depd": "^2.0.0",
-    "**/acorn-globals/acorn": "^8.7.1",
-    "**/acorn-node/acorn": "^8.7.1",
-    "**/espree/acorn": "^8.7.1",
-    "**/eslint/@babel/code-frame": "^7.12.11",
-    "**/@endo/eslint-config/@jessie.js/eslint-plugin": "^0.4.0"
   }
 }

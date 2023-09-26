@@ -1,6 +1,5 @@
 // @ts-check
 import test from 'ava';
-import '@endo/init/debug.js';
 import { Buffer } from 'node:buffer';
 import { initSwingStore } from '../src/swingStore.js';
 

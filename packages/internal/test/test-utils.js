@@ -1,6 +1,5 @@
 // @ts-check
 import test from 'ava';
-import '@endo/init';
 
 import { Far } from '@endo/far';
 import {

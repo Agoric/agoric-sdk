@@ -1,4 +1,5 @@
 /* global process setTimeout */
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@endo/captp';
@@ -108,7 +109,7 @@ export async function makeFixture(PORT, noisy = false) {
         // We only reject if the child exits before CapTP is established.
         reject(Error(`CapTP fixture exited with ${code}`));
       });
-      tryConnect(resolve, reject);
+      void tryConnect(resolve, reject);
     });
   }
 

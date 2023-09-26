@@ -10,7 +10,7 @@ a timer object in order to create the timer's endowments, source code, and
 The timer service consists of a device (`device-timer`) and a helper vat (`vat-timer`). The host application must configure the device as it builds the swingset kernel, and then the bootstrap vat must finish the job by wiring the device and vat together.
 
 ```js
-import { buildTimer } from `@agoric/swingset-vat`;
+import { buildTimer } from '@agoric/swingset-vat';
 const timer = buildTimer();
 ```
 

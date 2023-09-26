@@ -1,7 +1,8 @@
 // @jessie-check
 
-export const BOOTSTRAP_BLOCK = 'BOOTSTRAP_BLOCK';
-export const COSMOS_SNAPSHOT = 'COSMOS_SNAPSHOT';
+export const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
+export const SWING_STORE_EXPORT = 'SWING_STORE_EXPORT';
+export const ENACTED_UPGRADE = 'ENACTED_UPGRADE';
 export const BEGIN_BLOCK = 'BEGIN_BLOCK';
 export const CALCULATE_FEES_IN_BEANS = 'CALCULATE_FEES_IN_BEANS';
 export const CORE_EVAL = 'CORE_EVAL';

@@ -1,0 +1,195 @@
+{
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vaults in a decentralized network in an automated fashion. It includes coreProposals to start vaults. Its testing facilities are limited to known testing keys for EC and Oracle operators.",
+  "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
+  "coreProposals": [
+    "@agoric/builders/scripts/vats/init-core.js",
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "econCommitteeOptions": {
+            "committeeSize": 3
+          },
+          "referencedUi": "NO REFERENCED UI",
+          "minInitialPoolLiquidity": "0"
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "debtLimitValue": 0,
+          "interchainAssetOptions": {
+            "denom": "ibc/06362C6F7F4FB702B94C13CD2E7C03DEC357683FD978936340B43FBFBC5351EB",
+            "decimalPlaces": 6,
+            "keyword": "ATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyusdc",
+            "decimalPlaces": 6,
+            "keyword": "ToyUSD",
+            "proposedName": "ToyUSD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/4B53406F2FD21ABE4EF15977D0585D0C1B9C1DBBA1F911BD1463F42B067FB4D8",
+            "decimalPlaces": 6,
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "keyword": "DAI_axl",
+            "proposedName": "DAI",
+            "decimalPlaces": 18,
+            "denom": "ibc/3914BDEF46F429A26917E4D8D434620EC4817DC6B6E68FB327E190902F1E9242"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "keyword": "DAI_grv",
+            "proposedName": "DAI",
+            "decimalPlaces": 18,
+            "denom": "ibc/3D5291C23D776C3AA7A7ABB34C7B023193ECD2BC42EA19D3165B2CF9652117E7"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "contractTerms": {
+            "POLL_INTERVAL": 30,
+            "maxSubmissionCount": 1000,
+            "minSubmissionCount": 2,
+            "restartDelay": 1,
+            "timeout": 10,
+            "minSubmissionValue": 1,
+            "maxSubmissionValue": 9007199254740991
+          },
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": [
+            "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "voterAddresses": {
+            "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
+            "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
+          }
+        }
+      ]
+    }
+  ],
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
+      "creationOptions": {
+        "critical": true
+      }
+    }
+  },
+  "clearStorageSubtrees": [
+    "published"
+  ],
+  "exportStorageSubtrees": [
+    "published.psm.IST",
+    "published.wallet",
+    "published.provisionPool.metrics"
+  ],
+  "bundles": {
+    "agoricNames": {
+      "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+    },
+    "provisionPool": {
+      "sourceSpec": "@agoric/inter-protocol/src/provisionPool.js"
+    },
+    "provisioning": {
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
+    },
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

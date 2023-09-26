@@ -1,3 +1,4 @@
+// @ts-nocheck
 import fs from 'fs';
 import zlib from 'zlib';
 import readline from 'readline';

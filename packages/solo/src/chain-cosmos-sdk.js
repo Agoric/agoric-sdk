@@ -1,4 +1,5 @@
 /* global clearTimeout setTimeout Buffer */
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import path from 'path';
 import fs from 'fs';
 import url from 'url';
@@ -257,7 +258,7 @@ export async function connectToChain(
    */
   const getMailboxNotifier = () => {
     const { notifier, updater } = makeNotifierKit();
-    retryRpcHref(async rpcHref => {
+    void retryRpcHref(async rpcHref => {
       // Every time we enter this function, we are establishing a
       // new websocket to a potentially different RPC server.
       //
@@ -485,7 +486,7 @@ export async function connectToChain(
 
         waitForTxHash = subscribeAndWaitForTxHash;
         if (postponedTxHash) {
-          subscribeAndWaitForTxHash(postponedTxHash);
+          void subscribeAndWaitForTxHash(postponedTxHash);
         }
 
         subscribeToStorage(`mailbox.${clientAddr}`, (err, storageValue) => {
@@ -691,15 +692,20 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           // Wait for the transaction to be included in a block.
           const txHash = out.txhash;
 
-          waitForTxHash(txHash).then(txResult => {
-            // The result had an error code (not 0 or undefined for success).
-            if (txResult.code) {
+          waitForTxHash(txHash)
+            .then(txResult => {
+              // The result had an error code (not 0 or undefined for success).
+              if (txResult.code) {
+                // eslint-disable-next-line no-use-before-define
+                failedSend(
+                  assert.error(`Error in tx processing: ${txResult.log}`),
+                );
+              }
+            })
+            .catch(err =>
               // eslint-disable-next-line no-use-before-define
-              failedSend(
-                assert.error(`Error in tx processing: ${txResult.log}`),
-              );
-            }
-          });
+              failedSend(assert.error(`Error in tx processing: ${err}`)),
+            );
 
           // We submitted the transaction to the mempool successfully.
           // Preemptively increment our sequence number to avoid needing to
@@ -721,9 +727,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    * @param {bigint} [lastMailboxUpdate]
    */
   const recurseEachMailboxUpdate = async (lastMailboxUpdate = undefined) => {
-    const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
-      lastMailboxUpdate,
-    );
+    const { updateCount, value: mailbox } =
+      await mbNotifier.getUpdateSince(lastMailboxUpdate);
     updateCount || Fail`${GCI} unexpectedly finished!`;
     if (mailbox) {
       const { outbox, ack } = mailbox;
@@ -777,7 +782,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     updateCount || Fail`Sending unexpectedly finished!`;
 
     await sendFromMessagePool().then(successfulSend, failedSend);
-    recurseEachSend(updateCount);
+    void recurseEachSend(updateCount);
   };
 
   // Begin the sender when we get the first (empty) mailbox update.

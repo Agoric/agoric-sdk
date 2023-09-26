@@ -11,7 +11,7 @@ import {
   makeBoard,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
-import '@agoric/vats/src/core/types.js';
+import '@agoric/vats/src/core/types-ambient.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
@@ -76,9 +76,11 @@ const makeFakeBridgeManager = () =>
           return E(handler).fromBridge(obj);
         },
         initHandler(newHandler) {
+          !handler || Fail`Handler already set`;
           handler = newHandler;
         },
         setHandler(newHandler) {
+          !!handler || Fail`Handler not set`;
           handler = newHandler;
         },
       });
@@ -94,8 +96,10 @@ export const makeMockTestSpace = async log => {
     /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
       space
     );
-  const { agoricNames, spaces } = await makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } =
+    await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);

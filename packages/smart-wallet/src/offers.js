@@ -1,4 +1,5 @@
 import { E, passStyleOf } from '@endo/far';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { makePaymentsHelper } from './payments.js';
 
 /**
@@ -35,9 +36,9 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {object} opts.powers
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
- * @param {(brand: Brand) => Promise<import('./types').RemotePurse>} opts.powers.purseForBrand
+ * @param {(brand: Brand) => Promise<Purse>} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
+ * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,
@@ -80,14 +81,13 @@ export const makeOfferExecutor = ({
         // 1. Prepare values and validate synchronously.
         const { id, invitationSpec, proposal, offerArgs } = offerSpec;
 
-        const invitation = invitationFromSpec(invitationSpec);
-        const invitationAmount = await E(invitationIssuer).getAmountOf(
-          invitation,
-        );
+        /** @type {PaymentKeywordRecord | undefined} */
+        const paymentKeywordRecord = await (proposal?.give &&
+          deeplyFulfilledObject(paymentsManager.withdrawGive(proposal.give)));
 
-        const paymentKeywordRecord = proposal?.give
-          ? paymentsManager.withdrawGive(proposal.give)
-          : undefined;
+        const invitation = invitationFromSpec(invitationSpec);
+        const invitationAmount =
+          await E(invitationIssuer).getAmountOf(invitation);
 
         // 2. Begin executing offer
         // No explicit signal to user that we reached here but if anything above

@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';

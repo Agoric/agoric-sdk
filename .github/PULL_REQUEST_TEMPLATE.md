@@ -34,3 +34,7 @@ Backwards compatibility: what happens to existing data or deployments when this 
 
 <!-- Every PR should of course come with tests of its own functionality. What additional tests are still needed beyond those unit tests? How does this affect CI, other test automation, or the testnet?
 -->
+
+### Upgrade Considerations
+
+<!-- What aspects of this PR are relevant to upgrading live production systems, and how should they be addressed? -->

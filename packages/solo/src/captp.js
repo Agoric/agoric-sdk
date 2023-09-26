@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E, makeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
 
@@ -42,7 +43,9 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         dispatch,
         abort,
       });
-      doFallback('onOpen', obj, meta);
+      doFallback('onOpen', obj, meta).catch(e => {
+        console.error(`Error in fallback onOpen`, e);
+      });
     },
     onClose(obj, meta) {
       console.debug(`Finishing CapTP`, meta);
@@ -52,7 +55,9 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         abort();
       }
       chans.delete(meta.channelHandle);
-      doFallback('onClose', obj, meta);
+      doFallback('onClose', obj, meta).catch(e => {
+        console.error(`Error in fallback onClose`, e);
+      });
     },
     onError(obj, meta) {
       console.debug(`Error in CapTP`, meta, obj.error);
@@ -61,7 +66,9 @@ export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
         const { abort } = chan;
         abort(obj.error);
       }
-      doFallback('onError', obj, meta);
+      doFallback('onError', obj, meta).catch(e => {
+        console.error(`Error in fallback onError`, e);
+      });
     },
     async onMessage(obj, meta) {
       console.debug('processing inbound', obj);

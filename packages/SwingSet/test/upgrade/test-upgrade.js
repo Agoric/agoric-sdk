@@ -1,3 +1,4 @@
+// @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
@@ -76,7 +77,6 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @param {SwingSetConfig} config
  * @param {object} [options]
  * @param {object} [options.extraRuntimeOpts]
- * @param {boolean} [options.holdObjectRefs=true] - DEPRECATED -
  * Refcount incrementing should be manual,
  * see https://github.com/Agoric/agoric-sdk/issues/7213
  * @returns {Promise<{
@@ -121,7 +121,7 @@ const initKernelForTest = async (t, bundleData, config, options = {}) => {
 };
 
 const testNullUpgrade = async (t, defaultManagerType) => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType,
     defaultReapInterval: 'never',
     bundlePaths: {
@@ -180,7 +180,7 @@ test('null upgrade - xsnap', async t => {
 });
 
 test('kernel sends bringOutYourDead for vat upgrade', async t => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultReapInterval: 'never',
     snapshotInitial: 10000, // effectively disabled
     snapshotInterval: 10000, // effectively disabled
@@ -306,8 +306,8 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
  * @param {import('ava').ExecutionContext} t
  * @param {ManagerType} defaultManagerType
  * @param {object} [options]
- * @param {boolean} [options.restartVatAdmin=false]
- * @param {boolean} [options.suppressGC=false]
+ * @param {boolean} [options.restartVatAdmin]
+ * @param {boolean} [options.suppressGC]
  */
 const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const { restartVatAdmin: doVatAdminRestart = false, suppressGC = false } =
@@ -411,7 +411,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
    * @param {string} when
    * @param {object} expectations
    * @param {boolean} expectations.afterGC
-   * @param {string[]} [expectations.stillOwned=retainedNames]
+   * @param {string[]} [expectations.stillOwned]
    */
   const verifyObjectTracking = (when, expectations) => {
     const { afterGC, stillOwned = retainedNames } = expectations;
@@ -533,7 +533,7 @@ test('vat upgrade - omit vatParameters', async t => {
 });
 
 test('non-durable exports are abandoned by upgrade of liveslots vat', async t => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType: 'xs-worker',
     bundlePaths: {
       exporter: '../vat-exporter.js',
@@ -662,7 +662,7 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
 });
 
 test('non-durable exports are abandoned by upgrade of non-liveslots vat', async t => {
-  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType: 'xs-worker',
   });
   config.vats.exporter = {

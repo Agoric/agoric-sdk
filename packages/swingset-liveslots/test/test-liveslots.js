@@ -1,5 +1,5 @@
+// @ts-nocheck
 import test from 'ava';
-import '@endo/init/debug.js';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -45,14 +45,14 @@ test('calls', async t => {
 
   // root!one() // sendOnly
   await dispatch(makeMessage(rootA, 'one', ['args']));
-  t.deepEqual(log.shift(), 'one');
+  t.is(log.shift(), 'one');
 
   // pr = makePromise()
   // root!two(pr.promise)
   // pr.resolve('result')
   await dispatch(makeMessage(rootA, 'two', [kslot('p-1')]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
-  t.deepEqual(log.shift(), 'two true');
+  t.is(log.shift(), 'two true');
 
   await dispatch(makeResolve('p-1', kser('result')));
   t.deepEqual(log.shift(), ['res', 'result']);
@@ -63,7 +63,7 @@ test('calls', async t => {
 
   await dispatch(makeMessage(rootA, 'two', [kslot('p-2')]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
-  t.deepEqual(log.shift(), 'two true');
+  t.is(log.shift(), 'two true');
 
   await dispatch(makeReject('p-2', kser('rejection')));
   t.deepEqual(log.shift(), ['rej', 'rejection']);
@@ -99,7 +99,7 @@ test('liveslots pipelines to syscall.send', async t => {
   // for x!pipe1(), a second pipelined to the result promise of it, and a
   // third pipelined to the result of the second.
 
-  t.deepEqual(log.shift(), 'sent p1p2p3');
+  t.is(log.shift(), 'sent p1p2p3');
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: x,
@@ -656,8 +656,7 @@ test('capdata size limit on syscalls', async t => {
   };
 
   const send = op => dispatch(makeMessage(rootA, op, [kslot(target)], rp));
-  const expectFail = () =>
-    t.deepEqual(log.shift(), 'fail: syscall capdata too large');
+  const expectFail = () => t.is(log.shift(), 'fail: syscall capdata too large');
   const expectVoidReturn = () =>
     t.deepEqual(log.shift(), {
       type: 'resolve',
@@ -906,7 +905,7 @@ test('disable disavow', async t => {
 
   // root~.one() // sendOnly
   await dispatch(makeMessage(rootA, 'one', []));
-  t.deepEqual(log.shift(), false);
+  t.is(log.shift(), false);
   t.deepEqual(log, []);
 });
 
@@ -967,7 +966,7 @@ test('disavow', async t => {
   // root~.one(import1) // sendOnly
   await dispatch(makeMessage(rootA, 'one', [kslot(import1)]));
   t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
-  t.deepEqual(log.shift(), 'disavowed pres1');
+  t.is(log.shift(), 'disavowed pres1');
 
   function loggedError(re) {
     const l = log.shift();
@@ -975,11 +974,11 @@ test('disavow', async t => {
     t.truthy(re.test(l.message));
   }
   loggedError(/attempt to disavow unknown/);
-  t.deepEqual(log.shift(), 'tried duplicate disavow');
+  t.is(log.shift(), 'tried duplicate disavow');
   loggedError(/attempt to disavow unknown/);
-  t.deepEqual(log.shift(), 'tried to disavow Promise');
+  t.is(log.shift(), 'tried to disavow Promise');
   loggedError(/attempt to disavow an export/);
-  t.deepEqual(log.shift(), 'tried to disavow export');
+  t.is(log.shift(), 'tried to disavow export');
   const msg = log.shift();
   t.like(msg, {
     type: 'exit',
@@ -987,7 +986,7 @@ test('disavow', async t => {
   });
   expectError(t, msg.info, /this Presence has been disavowed/);
   t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
-  t.deepEqual(log.shift(), 'tried to send to disavowed');
+  t.is(log.shift(), 'tried to send to disavowed');
   t.deepEqual(log, []);
 });
 

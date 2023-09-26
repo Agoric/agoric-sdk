@@ -118,18 +118,29 @@ export function checkBaggage(db, vatID, verbose = false) {
 
   // Kinds which have been used but whose kindID handles have not been seen
   const usedButNotKnownKinds = new Set();
-  usedKinds.forEach(v => usedButNotKnownKinds.add(v));
-  knownKinds.forEach(v => usedButNotKnownKinds.delete(v));
+  for (const v of usedKinds) {
+    usedButNotKnownKinds.add(v);
+  }
+  for (const v of knownKinds) {
+    usedButNotKnownKinds.delete(v);
+  }
 
   // Kinds which exist but whose kind handles have not been seen
   const extantButNotSeen = new Map();
-  extantKinds.forEach((k, v) => extantButNotSeen.set(v, k));
-  knownKinds.forEach(k => extantButNotSeen.delete(k));
-
+  for (const [k, v] of extantKinds) {
+    extantButNotSeen.set(v, k);
+  }
+  for (const k of knownKinds) {
+    extantButNotSeen.delete(k);
+  }
   // Kinds which exist but are not used
   const extantButNotUsed = new Map();
-  extantKinds.forEach((k, v) => extantButNotUsed.set(v, k));
-  usedKinds.forEach(k => extantButNotUsed.delete(k));
+  for (const [k, v] of extantKinds) {
+    extantButNotUsed.set(v, k);
+  }
+  for (const k of usedKinds) {
+    extantButNotUsed.delete(k);
+  }
 
   if (verbose || usedButNotKnownKinds.size > 0) {
     console.log('predefinedKinds', predefinedKinds);

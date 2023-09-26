@@ -445,9 +445,8 @@ export const makeCosmjsFollower = (
     // contain data.
     await null;
     for (;;) {
-      ({ value: cursorData, height: cursorBlockHeight } = await getDataAtHeight(
-        cursorBlockHeight,
-      ));
+      ({ value: cursorData, height: cursorBlockHeight } =
+        await getDataAtHeight(cursorBlockHeight));
       if (cursorData.length !== 0) {
         const cursorStreamCell = streamCellForData(
           cursorBlockHeight,
@@ -558,9 +557,8 @@ export const makeCosmjsFollower = (
     let cursorData;
     await null;
     while (cursorBlockHeight === undefined || cursorBlockHeight > 0) {
-      ({ value: cursorData, height: cursorBlockHeight } = await getDataAtHeight(
-        cursorBlockHeight,
-      ));
+      ({ value: cursorData, height: cursorBlockHeight } =
+        await getDataAtHeight(cursorBlockHeight));
       if (cursorData.length === 0) {
         // No data at the cursor height, so signal beginning of stream.
         return;

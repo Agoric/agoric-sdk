@@ -12,15 +12,19 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
+    "lint": "run-s --continue-on-error lint:*",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "eslint ."
+    "lint:eslint": "eslint .",
+    "lint:types": "tsc"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
     "n-readlines": "^1.0.0",
+    "proper-lockfile": "^4.1.2",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@types/n-readlines": "^1.0.3",
+    "@types/proper-lockfile": "^4.1.2",
     "ava": "^5.3.0",
     "c8": "^7.13.0"
   },
@@ -30,6 +34,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "2m"
   }

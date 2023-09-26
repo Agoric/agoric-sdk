@@ -90,6 +90,12 @@ export const FullProposalShape = harden({
 /** @see {Proposal} type */
 export const ProposalShape = M.splitRecord({}, FullProposalShape, {});
 
+export const EmptyProposalShape = M.splitRecord({
+  give: {},
+  want: {},
+  exit: { onDemand: null },
+});
+
 export const isOnDemandExitRule = exit => {
   const [exitKey] = Object.keys(exit);
   return exitKey === 'onDemand';
@@ -218,7 +224,7 @@ export const InstanceStorageManagerIKit = harden({
       InstanceHandleShape,
       M.remotable('instanceAdmin'),
     ).returns(M.promise()),
-    deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
+    deleteInstanceAdmin: M.call(InstanceAdminShape).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
       .optional(M.record(), M.pattern())
       .returns(PaymentShape),

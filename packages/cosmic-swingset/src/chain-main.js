@@ -11,8 +11,8 @@ import tmpfs from 'tmp';
 import { fork } from 'node:child_process';
 
 import { E } from '@endo/far';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
-import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import {
   importMailbox,
   exportMailbox,
@@ -39,13 +39,17 @@ import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { makeProcessValue } from './helpers/process-value.js';
-import { spawnSwingStoreExport } from './export-kernel-db.js';
-import { performStateSyncImport } from './import-kernel-db.js';
+import {
+  spawnSwingStoreExport,
+  validateExporterOptions,
+} from './export-kernel-db.js';
+import {
+  performStateSyncImport,
+  validateImporterOptions,
+} from './import-kernel-db.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
-
-const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
 const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
@@ -240,11 +244,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  // this storagePort changes for every single message. We define it out here
-  // so the 'externalStorage' object can close over the single mutable
-  // instance, and we update the 'portNums.storage' value each time toSwingSet is called
+  // the storagePort used to change for every single message. It's defined out
+  // here so 'sendToChainStorage' can close over the single mutable instance,
+  // when we updated the 'portNums.storage' value each time toSwingSet was called.
   async function launchAndInitializeSwingSet(bootMsg) {
-    const sendToChain = msg => chainSend(portNums.storage, msg);
+    const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
     const fromBridgeMailbox = data => {
       const ack = toNumber(data.ack);
@@ -253,7 +257,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
     const mailboxStorage = makeReadCachingStorage(
       makePrefixedBridgeStorage(
-        sendToChain,
+        sendToChainStorage,
         `${STORAGE_PATH.MAILBOX}.`,
         'legacySet',
         val => fromBridgeMailbox(JSON.parse(val)),
@@ -263,7 +267,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const makeQueueStorage = queuePath => {
       const { kvStore, commit, abort } = makeBufferedStorage(
         makePrefixedBridgeStorage(
-          sendToChain,
+          sendToChainStorage,
           `${queuePath}.`,
           'setWithoutNotify',
           x => x,
@@ -294,20 +298,20 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         if (typeof key !== 'string') {
           throw Fail`Unexpected swingStore exported key ${q(key)}`;
         }
-        const path = `${STORAGE_PATH.SWING_STORE}.${key}`;
         if (value == null) {
-          return [path];
+          return [key];
         }
         if (typeof value !== 'string') {
           throw Fail`Unexpected ${typeof value} value for swingStore exported key ${q(
             key,
           )}`;
         }
-        return [path, value];
+        return [key, value];
       });
-      sendToChain(
+      chainSend(
+        portNums.swingset,
         stringify({
-          method: 'setWithoutNotify',
+          method: 'swingStoreUpdateExportData',
           args: entries,
         }),
       );
@@ -355,12 +359,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const argv = {
       bootMsg,
     };
-    const vatHref = await importMetaResolve(
-      env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-        argv.bootMsg.params.bootstrap_vat_config,
-      import.meta.url,
-    );
-    const vatconfig = new URL(vatHref).pathname;
+    const getVatConfig = async () => {
+      const vatHref = await importMetaResolve(
+        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+          argv.bootMsg.params.bootstrap_vat_config,
+        import.meta.url,
+      );
+      const vatconfig = new URL(vatHref).pathname;
+      return vatconfig;
+    };
 
     // Delay makeShutdown to override the golang interrupts
     const { registerShutdown } = makeShutdown();
@@ -459,7 +466,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       clearChainSends,
       replayChainSends,
       bridgeOutbound: doOutboundBridge,
-      vatconfig,
+      vatconfig: getVatConfig,
       argv,
       env,
       verboseBlocks: true,
@@ -493,26 +500,50 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
   }
 
-  async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
+  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
+  let blockingSend;
+
+  async function handleSwingStoreExport(blockHeight, request, requestArgs) {
     await null;
     switch (request) {
       case 'restore': {
-        const exportDir = requestArgs[0];
-        if (typeof exportDir !== 'string') {
-          throw Fail`Invalid exportDir argument ${q(exportDir)}`;
-        }
+        const requestOptions =
+          typeof requestArgs[0] === 'string'
+            ? { exportDir: requestArgs[0] }
+            : requestArgs[0] || {};
+        const options = {
+          ...requestOptions,
+          stateDir: stateDBDir,
+          blockHeight,
+        };
+        validateImporterOptions(options);
+        !stateSyncExport ||
+          Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
+        !blockingSend || Fail`Cannot restore snapshot after init`;
         console.info(
           'Restoring SwingSet state from snapshot at block height',
           blockHeight,
+          'with options',
+          JSON.stringify(requestOptions),
         );
-        return performStateSyncImport(
-          { exportDir, stateDir: stateDBDir, blockHeight },
-          { fs: { ...fs, ...fsPromises }, pathResolve, log: null },
-        );
+        return performStateSyncImport(options, {
+          fs: { ...fs, ...fsPromises },
+          pathResolve,
+          log: null,
+        });
       }
       case 'initiate': {
         !stateSyncExport ||
           Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
+
+        const requestOptions = requestArgs[0] || {};
+
+        validateExporterOptions({
+          ...requestOptions,
+          stateDir: stateDBDir,
+          exportDir: '',
+          blockHeight,
+        });
 
         const exportData =
           /** @type {Required<NonNullable<typeof stateSyncExport>>} */ ({
@@ -553,12 +584,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           );
         });
 
-        console.info(
+        console.warn(
           'Initiating SwingSet state snapshot at block height',
           blockHeight,
+          'with options',
+          JSON.stringify(requestOptions),
         );
         exportData.exporter = spawnSwingStoreExport(
           {
+            ...requestOptions,
             stateDir: stateDBDir,
             exportDir: exportData.exportDir,
             blockHeight,
@@ -607,74 +641,90 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
   }
 
-  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
-  let blockingSend;
-
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
-    if (action.vibcPort) {
-      portNums.dibc = action.vibcPort;
+
+    await null;
+
+    switch (action.type) {
+      case ActionType.AG_COSMOS_INIT: {
+        // console.error('got AG_COSMOS_INIT', action);
+
+        !blockingSend || Fail`Swingset already initialized`;
+
+        if (action.swingsetPort) {
+          portNums.swingset = action.swingsetPort;
+        }
+
+        if (action.vibcPort) {
+          portNums.dibc = action.vibcPort;
+        }
+
+        if (action.storagePort) {
+          portNums.storage = action.storagePort;
+        }
+
+        if (action.vbankPort) {
+          portNums.bank = action.vbankPort;
+        }
+
+        if (action.lienPort) {
+          portNums.lien = action.lienPort;
+        }
+        harden(portNums);
+
+        // Ensure that initialization has completed.
+        blockingSend = await launchAndInitializeSwingSet(action);
+
+        return blockingSend(action);
+      }
+
+      // Snapshot actions are specific to cosmos chains and handled here
+      case ActionType.SWING_STORE_EXPORT: {
+        const { blockHeight, request, args: requestArgs } = action;
+        writeSlogObject?.({
+          type: 'cosmic-swingset-snapshot-start',
+          blockHeight,
+          request,
+          args: requestArgs,
+        });
+
+        const resultP = handleSwingStoreExport(
+          blockHeight,
+          request,
+          requestArgs,
+        );
+
+        resultP.then(
+          result => {
+            writeSlogObject?.({
+              type: 'cosmic-swingset-snapshot-finish',
+              blockHeight,
+              request,
+              args: requestArgs,
+              result,
+            });
+          },
+          error => {
+            writeSlogObject?.({
+              type: 'cosmic-swingset-snapshot-finish',
+              blockHeight,
+              request,
+              args: requestArgs,
+              error,
+            });
+          },
+        );
+
+        return resultP;
+      }
+
+      default: {
+        if (!blockingSend) throw Fail`Swingset not initialized`;
+
+        // Block related actions are processed by `blockingSend`
+        return blockingSend(action);
+      }
     }
-
-    if (action.storagePort) {
-      // Initialize the storage for this particular transaction.
-      // console.log(` setting portNums.storage to`, action.storagePort);
-      portNums.storage = action.storagePort;
-    }
-
-    if (action.vbankPort) {
-      portNums.bank = action.vbankPort;
-    }
-
-    if (action.lienPort) {
-      portNums.lien = action.lienPort;
-    }
-
-    // Snapshot actions are specific to cosmos chains and handled here
-    if (action.type === ActionType.COSMOS_SNAPSHOT) {
-      const { blockHeight, request, args: requestArgs } = action;
-      writeSlogObject?.({
-        type: 'cosmic-swingset-snapshot-start',
-        blockHeight,
-        request,
-        args: requestArgs,
-      });
-
-      const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
-
-      resultP.then(
-        result => {
-          writeSlogObject?.({
-            type: 'cosmic-swingset-snapshot-finish',
-            blockHeight,
-            request,
-            args: requestArgs,
-            result,
-          });
-        },
-        error => {
-          writeSlogObject?.({
-            type: 'cosmic-swingset-snapshot-finish',
-            blockHeight,
-            request,
-            args: requestArgs,
-            error,
-          });
-        },
-      );
-
-      return resultP;
-    }
-
-    // Ensure that initialization has completed.
-    blockingSend = await (blockingSend || launchAndInitializeSwingSet(action));
-
-    if (action.type === AG_COSMOS_INIT) {
-      // console.error('got AG_COSMOS_INIT', action);
-      return true;
-    }
-
-    // Block related actions are processed by `blockingSend`
-    return blockingSend(action);
   }
 }

@@ -17,13 +17,14 @@
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xsnap vat manager'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc",
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.5.0",
     "@types/microtime": "^2.1.0",
-    "@types/tmp": "^0.2.0"
+    "@types/tmp": "^0.2.0",
+    "@types/yargs-parser": "^21.0.0"
   },
   "dependencies": {
     "@agoric/assert": "^0.6.0",
@@ -36,20 +37,21 @@
     "@agoric/vat-data": "^0.5.2",
     "@agoric/xsnap": "^0.14.2",
     "@agoric/xsnap-lockdown": "^0.14.0",
-    "@endo/base64": "^0.2.31",
-    "@endo/bundle-source": "^2.5.1",
-    "@endo/captp": "^3.1.1",
-    "@endo/check-bundle": "^0.2.18",
-    "@endo/compartment-mapper": "^0.8.4",
-    "@endo/eventual-send": "^0.17.2",
-    "@endo/far": "^0.2.18",
-    "@endo/import-bundle": "^0.3.4",
-    "@endo/init": "^0.5.56",
-    "@endo/marshal": "^0.8.5",
-    "@endo/nat": "^4.1.27",
-    "@endo/promise-kit": "^0.2.56",
-    "@endo/ses-ava": "^0.2.40",
-    "@endo/zip": "^0.2.31",
+    "@endo/base64": "^0.2.34",
+    "@endo/bundle-source": "^2.7.0",
+    "@endo/captp": "^3.1.4",
+    "@endo/check-bundle": "^0.2.21",
+    "@endo/compartment-mapper": "^0.9.1",
+    "@endo/eventual-send": "^0.17.5",
+    "@endo/far": "^0.2.21",
+    "@endo/import-bundle": "^0.4.1",
+    "@endo/init": "^0.5.59",
+    "@endo/marshal": "^0.8.8",
+    "@endo/nat": "^4.1.30",
+    "@endo/patterns": "^0.2.5",
+    "@endo/promise-kit": "^0.2.59",
+    "@endo/ses-ava": "^0.2.43",
+    "@endo/zip": "^0.2.34",
     "ansi-styles": "^6.2.1",
     "anylogger": "^0.21.0",
     "better-sqlite3": "^8.2.0",
@@ -85,6 +87,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "20m",
     "workerThreads": false

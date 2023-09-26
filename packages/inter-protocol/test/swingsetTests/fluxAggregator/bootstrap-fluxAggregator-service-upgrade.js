@@ -39,16 +39,29 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   * committee?: Installation<import('@agoric/governance/src/committee.js')['prepare']>,
-   * fluxAggregatorV1?: Installation<import('../../../src/price/fluxAggregatorContract').prepare>,
-   * puppetContractGovernor?: Installation<import('@agoric/governance/tools/puppetContractGovernor').start>,
+   *   committee?: Installation<
+   *     import('@agoric/governance/src/committee.js')['start']
+   *   >;
+   *   fluxAggregatorV1?: Installation<
+   *     import('../../../src/price/fluxAggregatorContract').start
+   *   >;
+   *   puppetContractGovernor?: Installation<
+   *     import('@agoric/governance/tools/puppetContractGovernor').start
+   *   >;
    * }}
    */
   const installations = {};
 
-  /** @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<import('../../../src/price/fluxAggregatorContract.js').prepare>} */
   let governorFacets;
-  /** @type {ReturnType<Awaited<ReturnType<import('../../../src/price/fluxAggregatorContract.js').prepare>>['creatorFacet']['getLimitedCreatorFacet']>} */
+  /**
+   * @type {ReturnType<
+   *   Awaited<
+   *     ReturnType<
+   *       import('../../../src/price/fluxAggregatorContract.js').start
+   *     >
+   *   >['creatorFacet']['getLimitedCreatorFacet']
+   * >}
+   */
   let faLimitedFacet;
 
   /** @type {import('../../../src/price/priceOracleKit.js').OracleKit} */
@@ -58,7 +71,14 @@ export const buildRootObject = async () => {
   /** @type {UpdateRecord<any>} */
   let lastQuote;
 
-  /** @type {Omit<import('@agoric/zoe/src/zoeService/utils.js').StartParams<import('../../../src/price/fluxAggregatorContract.js').prepare>['terms'], 'issuers' | 'brands'>} */
+  /**
+   * @type {Omit<
+   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
+   *     import('../../../src/price/fluxAggregatorContract.js').start
+   *   >['terms'],
+   *   'issuers' | 'brands'
+   * >}
+   */
   const faTerms = {
     // driven by one oracle
     maxSubmissionCount: 1,
@@ -151,7 +171,6 @@ export const buildRootObject = async () => {
 
       // Complete round-trip without upgrade
       trace(`BOOT buildV1 startInstance`);
-      // @ts-expect-error
       governorFacets = await E(zoe).startInstance(
         NonNullish(installations.puppetContractGovernor),
         undefined,

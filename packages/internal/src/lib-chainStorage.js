@@ -1,7 +1,8 @@
 // @ts-check
 
 import { E } from '@endo/far';
-import { M, heapZone } from '@agoric/zone';
+import { M } from '@endo/patterns';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
 
 const { Fail } = assert;
@@ -94,6 +95,7 @@ harden(assertCapData);
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity
 // (and future possibility of e.g. escaping) we currently limit to
 // ASCII alphanumeric plus underscore and dash.
+// Should remain consistent with golang/cosmos/x/vstorage/types/path_keys.go
 const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
 /** @type {(name: string) => void} */
@@ -122,7 +124,7 @@ harden(assertPathSegment);
  */
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {import('@agoric/base-zone').Zone} zone
  */
 export const prepareChainStorageNode = zone => {
   /**
@@ -207,7 +209,7 @@ export const prepareChainStorageNode = zone => {
   return makeChainStorageNode;
 };
 
-const makeHeapChainStorageNode = prepareChainStorageNode(heapZone);
+const makeHeapChainStorageNode = prepareChainStorageNode(makeHeapZone());
 
 /**
  * Create a heap-based root storage node for a given backing function and root path.

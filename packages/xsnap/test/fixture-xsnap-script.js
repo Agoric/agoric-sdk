@@ -1,4 +1,5 @@
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* global issueCommand */
-(async () => {
+void (async () => {
   issueCommand(new TextEncoder().encode('Hello, World!').buffer);
 })();

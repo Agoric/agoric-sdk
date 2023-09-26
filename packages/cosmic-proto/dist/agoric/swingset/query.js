@@ -280,21 +280,21 @@ export class QueryClientImpl {
   Params(request) {
     const data = QueryParamsRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Params', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       QueryParamsResponse.decode(new _m0.Reader(data)),
     );
   }
   Egress(request) {
     const data = QueryEgressRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Egress', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       QueryEgressResponse.decode(new _m0.Reader(data)),
     );
   }
   Mailbox(request) {
     const data = QueryMailboxRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Mailbox', data);
-    return promise.then((data) =>
+    return promise.then(data =>
       QueryMailboxResponse.decode(new _m0.Reader(data)),
     );
   }
@@ -331,7 +331,7 @@ function base64FromBytes(arr) {
     return globalThis.Buffer.from(arr).toString('base64');
   } else {
     const bin = [];
-    arr.forEach((byte) => {
+    arr.forEach(byte => {
       bin.push(String.fromCharCode(byte));
     });
     return globalThis.btoa(bin.join(''));

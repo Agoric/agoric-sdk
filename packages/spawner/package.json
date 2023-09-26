@@ -13,6 +13,7 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
+    "lint": "run-s --continue-on-error lint:*",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint ."
   },
@@ -31,15 +32,15 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@endo/eventual-send": "^0.17.2",
-    "@endo/import-bundle": "^0.3.4",
-    "@endo/marshal": "^0.8.5"
+    "@endo/eventual-send": "^0.17.5",
+    "@endo/import-bundle": "^0.4.1",
+    "@endo/marshal": "^0.8.8"
   },
   "devDependencies": {
     "@agoric/internal": "^0.3.2",
     "@agoric/swingset-vat": "^0.32.2",
-    "@endo/bundle-source": "^2.5.1",
-    "@endo/init": "^0.5.56",
+    "@endo/bundle-source": "^2.7.0",
+    "@endo/init": "^0.5.59",
     "ava": "^5.3.0",
     "c8": "^7.13.0"
   },
@@ -54,6 +55,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "2m"
   }

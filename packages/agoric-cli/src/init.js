@@ -5,7 +5,7 @@ import { makePspawn } from './helpers.js';
 // https://github.com/Agoric/agoric-sdk/issues/6512
 import '@endo/captp/src/types.js';
 import '@agoric/swingset-vat/exported.js';
-import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/network/exported.js';
 
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {
@@ -40,9 +40,10 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
     dappBranch = ['-b', opts.dappBranch];
   }
 
+  const shallow = ['--depth', '1', '--shallow-submodules'];
   const exitStatus = await pspawn(
     'git',
-    ['clone', '--origin=upstream', dappURL, DIR, ...dappBranch],
+    ['clone', '--origin=upstream', ...shallow, dappURL, DIR, ...dappBranch],
     {
       stdio: 'inherit',
     },

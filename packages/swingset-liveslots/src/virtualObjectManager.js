@@ -16,9 +16,18 @@ import {
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
-const { hasOwn, defineProperty, getOwnPropertyNames } = Object;
+const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
+
+// See https://github.com/Agoric/agoric-sdk/issues/8005
+// Once agoric-sdk is upgraded to depend on endo post
+// https://github.com/endojs/endo/pull/1606 then remove this
+// definition of `b` and say instead
+// ```js
+//   const { quote: q, base: b } = assert;
+// ```
+const b = index => q(Number(index));
 
 // import { kdebug } from './kdebug.js';
 
@@ -141,9 +150,8 @@ const makeContextCache = (makeState, makeContext) => {
  * @param {*} getSlotForVal
  * @returns {ContextProvider}
  */
-const makeContextProvider = (contextCache, getSlotForVal) => {
-  return harden(rep => contextCache.get(getSlotForVal(rep)));
-};
+const makeContextProvider = (contextCache, getSlotForVal) =>
+  harden(rep => contextCache.get(getSlotForVal(rep)));
 
 const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   /** @type { Record<string, any> } */
@@ -260,15 +268,15 @@ const makeFacets = (
 };
 
 const insistDurableCapdata = (vrm, what, capdata, valueFor) => {
-  capdata.slots.forEach((vref, idx) => {
+  for (const [idx, vref] of entries(capdata.slots)) {
     if (!vrm.isDurable(vref)) {
       if (valueFor) {
-        Fail`value for ${what} is not durable: slot ${q(idx)} of ${capdata}`;
+        Fail`value for ${what} is not durable: slot ${b(idx)} of ${capdata}`;
       } else {
-        Fail`${what} is not durable: slot ${q(idx)} of ${capdata}`;
+        Fail`${what} is not durable: slot ${b(idx)} of ${capdata}`;
       }
     }
-  });
+  }
 };
 
 const insistSameCapData = (oldCD, newCD) => {
@@ -281,11 +289,11 @@ const insistSameCapData = (oldCD, newCD) => {
   if (oldCD.slots.length !== newCD.slots.length) {
     Fail`durable Kind stateShape mismatch (slots.length)`;
   }
-  oldCD.slots.forEach((oldVref, idx) => {
+  for (const [idx, oldVref] of entries(oldCD.slots)) {
     if (newCD.slots[idx] !== oldVref) {
       Fail`durable Kind stateShape mismatch (slot[${idx}])`;
     }
-  });
+  }
 };
 
 /**
@@ -707,10 +715,16 @@ export const makeVirtualObjectManager = (
     durableKindDescriptor = undefined, // only for durables
   ) => {
     const {
-      finish,
+      finish = undefined,
       stateShape = undefined,
       thisfulMethods = false,
+    } = options;
+    let {
+      // These are "let" rather than "const" only to accommodate code
+      // below that tolerates an old version of the vat-data package.
+      // See there for more explanation.
       interfaceGuard = undefined,
+      interfaceGuardKit = undefined,
     } = options;
 
     const statePrototype = {}; // Not frozen yet
@@ -731,11 +745,38 @@ export const makeVirtualObjectManager = (
     switch (assessFacetiousness(behavior)) {
       case 'one': {
         assert(!multifaceted);
+        interfaceGuardKit === undefined ||
+          Fail`Use an interfaceGuard, not interfaceGuardKit, to protect class ${q(
+            tag,
+          )}`;
         proposedFacetNames = undefined;
         break;
       }
       case 'many': {
         assert(multifaceted);
+
+        if (interfaceGuard && interfaceGuardKit === undefined) {
+          // This if clause is for the purpose of tolerating versions
+          // of the vata-data package that precede
+          // https://github.com/Agoric/agoric-sdk/pull/8220 .
+          // Before that PR, the options name `interfaceGuard` would
+          // actually carry the InterfaceGuardKit.
+          //
+          // Tolerating the old vat-data with the new types.
+          // at-expect-error here causes inconsistent reports, so
+          // doing the at-ts-ignore-error ritual instead.
+          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+          // @ts-ignore
+          interfaceGuardKit = interfaceGuard;
+          interfaceGuard = undefined;
+          // The rest of the code from here makes no further compromise
+          // for that old version of the vat-data package.
+        }
+
+        interfaceGuard === undefined ||
+          Fail`Use an interfaceGuardKit, not an interfaceGuard, to protect class kit ${q(
+            tag,
+          )}`;
         proposedFacetNames = ownKeys(behavior).sort();
         break;
       }
@@ -946,7 +987,7 @@ export const makeVirtualObjectManager = (
         makeContextProviderKit(contextCache, getSlotForVal, facetNames),
         behavior,
         thisfulMethods,
-        interfaceGuard,
+        interfaceGuardKit,
       );
     } else {
       proto = defendPrototype(
@@ -974,9 +1015,9 @@ export const makeVirtualObjectManager = (
       let doMoreGC = false;
       const record = dataCache.get(baseRef);
       for (const valueCD of Object.values(record.capdatas)) {
-        valueCD.slots.forEach(vref => {
+        for (const vref of valueCD.slots) {
           doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
-        });
+        }
       }
       dataCache.delete(baseRef);
       return doMoreGC;
@@ -1015,6 +1056,7 @@ export const makeVirtualObjectManager = (
         if (isDurable) {
           insistDurableCapdata(vrm, prop, valueCD, true);
         }
+        // eslint-disable-next-line github/array-foreach
         valueCD.slots.forEach(vrm.addReachableVref);
         capdatas[prop] = valueCD;
         valueMap.set(prop, value);

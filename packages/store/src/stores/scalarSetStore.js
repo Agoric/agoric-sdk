@@ -74,18 +74,18 @@ export const makeSetStoreMethods = (
 };
 
 /**
- * Distinguishes between adding a new key (init) and updating or
- * referencing a key (get, set, delete).
+ * Distinguishes between adding a new key (init) and updating or referencing a
+ * key (get, set, delete).
  *
- * `init` is only allowed if the key does not already exist. `Get`,
- * `set` and `delete` are only allowed if the key does already exist.
+ * `init` is only allowed if the key does not already exist. `Get`, `set` and
+ * `delete` are only allowed if the key does already exist.
  *
- * This is a *scalar* set in that the keys can only be atomic values, primitives
+ * This is a _scalar_ set in that the keys can only be atomic values, primitives
  * or remotables. Other storeSets will accept, for example, copyArrays and
  * copyRecords, as keys and look them up based on equality of their contents.
  *
  * @template K
- * @param {string} [tag='key'] - tag for debugging
+ * @param {string} [tag] - tag for debugging
  * @param {StoreOptions} [options]
  * @returns {SetStore<K>}
  */

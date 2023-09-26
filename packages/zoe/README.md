@@ -4,7 +4,7 @@
 
 Zoe is a framework for building smart contracts like auctions, swaps,
 decentralized exchanges, and more. Zoe itself is a smart contract
-written in JavaScript and running on the Agoric platform. 
+written in JavaScript and running on the Agoric platform.
 
 _For users_: Zoe guarantees that as a user of a smart contract, you will
 either get what you wanted or get a full refund, even if the smart
@@ -17,7 +17,7 @@ losing their assets due to a bug in the code that you wrote. Writing a
 smart contract on Zoe is easy: all of the Zoe smart contracts are
 written in the familiar language of JavaScript.
 
-To learn more, please see the [Zoe guide](https://agoric.com/documentation/zoe/guide/). 
+To learn more, please see the [Zoe guide](https://agoric.com/documentation/zoe/guide/).
 
 ## Reading data off-chain
 
@@ -63,7 +63,7 @@ The upgrade process is triggered through the "adminFacet" of the instance, and r
 const results = E(instanceAdminFacet).upgradeContract(newBundleID);
 ```
 
-This will replace the behavior of the existing instance with that defined in the new bundle. The new behavior is an additional _incarnation_ of the instance. Most state from the old incarnation is discarded, however "durable" collections are retained for use by its replacement. 
+This will replace the behavior of the existing instance with that defined in the new bundle. The new behavior is an additional _incarnation_ of the instance. Most state from the old incarnation is discarded, however "durable" collections are retained for use by its replacement.
 
 There are a few requirements for the contract that differ from non-upgradable contracts:
 1. Export
@@ -82,7 +82,7 @@ import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 
 const { quote: q, Fail } = assert;
 
-export const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+export const start = async (zcf, _privateArgs, instanceBaggage) => {
   const CODE_VERSION = 2;
   const isFirstIncarnation = !instanceBaggage.has('codeVersion');
   if (isFirstIncarnation) {
@@ -117,18 +117,18 @@ export const prepare = async (zcf, _privateArgs, instanceBaggage) => {
     },
   );
 
-  const creatorI = M.interface('CounterExample', {
+  const CreatorI = M.interface('CounterExample', {
     makeCounter: M.call().returns(M.remotable('Counter')),
   });
   const creatorFacet = prepareExo(
     instanceBaggage,
     'creatorFacet',
-    creatorI,
+    CreatorI,
     { makeCounter },
   );
   return harden({ creatorFacet });
 };
-harden(prepare);
+harden(start);
 ```
 
 For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .

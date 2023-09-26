@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the wallet internals without dependency on the ag-solo on
@@ -502,9 +503,8 @@ export function makeWalletRoot({
     const alreadyDisplayed =
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
-    const augmentedInvitationDetails = await expandInvitationBrands(
-      invitationDetails,
-    );
+    const augmentedInvitationDetails =
+      await expandInvitationBrands(invitationDetails);
 
     const offerForDisplay = {
       ...offer,
@@ -726,7 +726,7 @@ export function makeWalletRoot({
         // eslint-disable-next-line no-use-before-define
         p = makeEmptyPurse(petnameForBrand, petnameForBrand, true);
       } else {
-        p = Promise.resolve();
+        p = Promise.resolve(undefined);
       }
       return E.when(p, _ => petnameForBrand);
     };

@@ -1,4 +1,4 @@
-import '@endo/init/debug.js';
+// @ts-nocheck
 import test from 'ava';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../../src/index.js';

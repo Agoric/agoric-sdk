@@ -1,5 +1,5 @@
+// @ts-nocheck
 /* global globalThis */
-import '@endo/init/debug.js';
 
 import { spawn } from 'child_process';
 import fs from 'fs';
