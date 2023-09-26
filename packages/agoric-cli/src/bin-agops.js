@@ -19,6 +19,7 @@ import anylogger from 'anylogger';
 import { Command, CommanderError, createCommand } from 'commander';
 import { makeOracleCommand } from './commands/oracle.js';
 import { makeEconomicCommiteeCommand } from './commands/ec.js';
+import { makeGovCommand } from './commands/gov.js';
 import { makePsmCommand } from './commands/psm.js';
 import { makeReserveCommand } from './commands/reserve.js';
 import { makeVaultsCommand } from './commands/vaults.js';
@@ -31,10 +32,11 @@ const logger = anylogger('agops');
 const progname = path.basename(process.argv[1]);
 
 const program = new Command();
-program.name(progname).version('unversioned');
+program.name(progname).version('docker');
 
 program.addCommand(makeOracleCommand(logger));
 program.addCommand(makeEconomicCommiteeCommand(logger));
+program.addCommand(makeGovCommand(logger));
 program.addCommand(makePerfCommand(logger));
 program.addCommand(makePsmCommand(logger));
 program.addCommand(makeVaultsCommand(logger));
