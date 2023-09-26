@@ -2,7 +2,7 @@
 
 1. upgrade-handler
 2. 11wf with walletFactory
-3. 11kk with kreadKit
+3. 11kr with kreadKit
 
 # Testing 11kr
 
@@ -40,6 +40,11 @@ Then in the shell that opens up, replace its `upgrade-test-scripts` with a symli
 rm -rf upgrade-test-scripts
 ln -s /workspace/upgrade-test-scripts
 ```
+
+Then patch `/usr/src/agoric-sdk/bin/agd`:
+- find `$BUILD_ONLY || exec 1>&2` (line 94?)
+- put this in above it: `${NO_BUILD:-false} && exit 0`
+TODO have the layer modify agd to never build itself
 
 Then use the `/mn2` that `make run` mounted:
 ```sh
