@@ -446,6 +446,7 @@ test.serial('core eval proposal passes', async t => {
   const { chainId, deposit, proposalDir, instance } = config;
   const info = { title: instance, description: `start ${instance}` };
   t.log('submit proposal', instance);
+  console.debug('submit proposal', instance);
 
   // double-check that bundles are loaded
   const loaded = loadedBundleIds(swingstore);
@@ -464,6 +465,7 @@ test.serial('core eval proposal passes', async t => {
     .flat();
   const evalPaths = evalNames.map(e => proposalDir.join(e).toString());
   t.log(evalPaths);
+  console.debug('await tx', evalPaths);
   const result = await agd.tx(
     [
       'gov',
@@ -478,6 +480,7 @@ test.serial('core eval proposal passes', async t => {
   t.log(txAbbr(result));
   t.is(result.code, 0);
 
+  console.debug('await voteLatestProposalAndWait', evalPaths);
   const detail = await voteLatestProposalAndWait();
   t.log(detail.proposal_id, detail.voting_end_time, detail.status);
   t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
@@ -499,6 +502,20 @@ test.serial('vstorage published.CHILD is present', async t => {
   const { vstorageNode } = config;
   const { children } = await agd.query(['vstorage', 'children', 'published']);
   testIncludes(t, vstorageNode, children, 'published children');
+});
+
+// KREAd specific below here
+// TODO refactor this test for re-use across MN2 scripts
+
+test.serial('kread commmittee is present', async t => {
+  const { agd, config } = t.context;
+  const { vstorageNode } = config;
+  const { children } = await agd.query([
+    'vstorage',
+    'children',
+    'published.committees',
+  ]);
+  testIncludes(t, 'kread-gov', children, 'published children');
 });
 
 test.todo('test contract features- mint character');
