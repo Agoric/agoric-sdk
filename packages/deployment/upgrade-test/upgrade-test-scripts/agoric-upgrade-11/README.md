@@ -76,4 +76,17 @@ agops gov charter --name kreadCommitteeCharter --send-from krgov1
 # now should have two used invitations
 agoric wallet show --keyring-backend=test --from krgov1
 
+# propose to pause offers
+agops gov proposePauseOffers --instance kread --send-from krgov1 --substring foo
+
+# verify it's there
+agd query vstorage data published.committees.kread-gov.latestQuestion
+
+agops gov vote --instance kreadCommittee --pathname kread-gov --forPosition 0 --send-from krgov1
+
+# after a minute the chain output should report the question resolving in the affirmative
+agd query vstorage data published.committees.kread-gov.latestOutcome
+# TODO a way to read capdata out of vstorage
+# this should say "win" for the strings you specified
+agd query vstorage data --output json published.committees.kread-gov.latestOutcome | jq -r .value | jq -r .values[0] | jq
 ```
