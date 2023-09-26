@@ -31,7 +31,7 @@ const logger = anylogger('agops');
 const progname = path.basename(process.argv[1]);
 
 const program = new Command();
-program.name(progname).version('unversioned');
+program.name(progname).version('docker');
 
 program.addCommand(makeOracleCommand(logger));
 program.addCommand(makeGovCommand(logger));

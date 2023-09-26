@@ -44,7 +44,12 @@ export const makeAgd = ({ execFileSync }) => {
         const out = await exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
           stdio: ['ignore', 'pipe', 'ignore'],
         });
-        return JSON.parse(out);
+        try {
+          return JSON.parse(out);
+        } catch (e) {
+          console.error(e);
+          console.info('output:', out);
+        }
       },
     });
     const nameHub = freeze({
@@ -86,7 +91,12 @@ export const makeAgd = ({ execFileSync }) => {
           ...outJson,
         ];
         const out = exec(args);
-        return JSON.parse(out);
+        try {
+          return JSON.parse(out);
+        } catch (e) {
+          console.error(e);
+          console.info('output:', out);
+        }
       },
       ...ro,
       ...nameHub,
