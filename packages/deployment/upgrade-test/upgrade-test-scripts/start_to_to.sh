@@ -3,16 +3,9 @@
 grep -qF 'env_setup.sh' /root/.bashrc || echo ". ./upgrade-test-scripts/env_setup.sh" >> /root/.bashrc
 grep -qF 'printKeys' /root/.bashrc || echo "printKeys" >> /root/.bashrc
 
-tmux -V 2>/dev/null || apt-get install -y tmux
-
-if [[ "$DEST" == "1" ]] && [[ "$TMUX" == "" ]]; then
-  echo "launching entrypoint"
-  cd /usr/src/agoric-sdk || exit 1
-  . ./upgrade-test-scripts/bash_entrypoint.sh
-  exit 0
-fi
-
 . ./upgrade-test-scripts/env_setup.sh
+
+export SLOGFILE=slog.slog
 
 startAgd
 
