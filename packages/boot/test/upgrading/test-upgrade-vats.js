@@ -1,10 +1,15 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
-import { makeRunUtils } from '../bootstrapTests/supports.ts';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import {
+  makeRunUtils,
+  matchAmount,
+  matchIter,
+  matchRef,
+} from '../bootstrapTests/supports.ts';
 
 /**
  * @type {import('ava').TestFn<{}>}
@@ -76,9 +81,9 @@ test('upgrade vat-board', async t => {
     name: 'board',
     bundleCapName: 'board',
   };
-  await EV.vat('bootstrap').createVat(boardVatConfig);
-  const board = await EV.vat('board').getBoard();
-  const thing = await EV.rawBoot.makeRemotable('Thing', {});
+  const boardRoot = await EV.vat('bootstrap').createVat(boardVatConfig);
+  const board = await EV(boardRoot).getBoard();
+  const thing = await EV.vat('bootstrap').makeRemotable('Thing', {});
   const thingId = await EV(board).getId(thing);
   t.regex(thingId, /^board0[0-9]+$/);
 
@@ -86,10 +91,10 @@ test('upgrade vat-board', async t => {
   const { incarnationNumber } =
     await EV.vat('bootstrap').upgradeVat(boardVatConfig);
   t.is(incarnationNumber, 1, 'Board vat must be upgraded');
-  const board2 = await EV.vat('board').getBoard();
-  t.is(board2, board, 'must get the same board reference');
+  const board2 = await EV(boardRoot).getBoard();
+  matchRef(t, board2, board, 'must get the same board reference');
   const actualThing = await EV(board2).getValue(thingId);
-  t.is(actualThing, thing, 'must get original value back');
+  matchRef(t, actualThing, thing, 'must get original value back');
 });
 
 test.failing('upgrade bootstrap vat', async t => {
@@ -106,8 +111,8 @@ test.failing('upgrade bootstrap vat', async t => {
     name: 'chain',
     bundleCapName: 'chain',
   };
-  await EV.vat('bootstrap').createVat(chainVatConfig);
-  await EV.vat('chain')
+  const chainRoot = await EV.vat('bootstrap').createVat(chainVatConfig);
+  await EV(chainRoot)
     .bootstrap({}, {})
     .catch(problem => t.log('TODO: address problem:', problem));
 
@@ -151,10 +156,10 @@ test('upgrade vat-bridge', async t => {
     name: 'bridge',
     bundleCapName: 'bridge',
   };
-  await EV.vat('bootstrap').createVat(bridgeVatConfig);
+  const bridgeRoot = await EV.vat('bootstrap').createVat(bridgeVatConfig);
 
   await t.throwsAsync(
-    () => EV.vat('bridge').provideManagerForBridge(1),
+    () => EV(bridgeRoot).provideManagerForBridge(1),
     {
       message: /must be given a device node/,
     },
@@ -162,12 +167,12 @@ test('upgrade vat-bridge', async t => {
   );
 
   const dev = await EV.vat('bootstrap').getDevice('bridge');
-  const bridge1 = await EV.vat('bridge').provideManagerForBridge(dev);
-  const bridge2 = await EV.vat('bridge').provideManagerForBridge(dev);
-  t.is(bridge1, bridge2, 'must get the same bridge reference');
+  const bridge1 = await EV(bridgeRoot).provideManagerForBridge(dev);
+  const bridge2 = await EV(bridgeRoot).provideManagerForBridge(dev);
+  matchRef(t, bridge1, bridge2, 'must get the same bridge reference');
 
   const storageBridge = await EV(bridge1).register(BridgeId.STORAGE);
-  const storageRoot = await EV.vat('bridge').makeBridgedChainStorageRoot(
+  const storageRoot = await EV(bridgeRoot).makeBridgedChainStorageRoot(
     storageBridge,
     'root1',
     { sequence: false },
@@ -182,7 +187,7 @@ test('upgrade vat-bridge', async t => {
     message: /No inbound handler for/,
   });
 
-  const storageHandler = await EV.rawBoot.makeRemotable(
+  const storageHandler = await EV.vat('bootstrap').makeRemotable(
     'loggingStorageHandler',
     {
       fromBridge: undefined,
@@ -190,13 +195,13 @@ test('upgrade vat-bridge', async t => {
   );
   await EV(storageBridge).initHandler(storageHandler);
   t.deepEqual(
-    await EV.rawBoot.getLogForRemotable(storageHandler),
+    await EV.vat('bootstrap').getLogForRemotable(storageHandler),
     [],
     'log must start empty',
   );
   await EV(storageBridge).fromBridge('storage handler is good');
   t.deepEqual(
-    await EV.rawBoot.getLogForRemotable(storageHandler),
+    await EV.vat('bootstrap').getLogForRemotable(storageHandler),
     [['fromBridge', 'storage handler is good']],
     'log must show one handler call',
   );
@@ -210,15 +215,15 @@ test('upgrade vat-bridge', async t => {
   const path1b = await EV(storageRoot).getPath();
   t.is(path1b, 'root1', 'must get the same path back');
 
-  const bridge1b = await EV.vat('bridge').provideManagerForBridge(dev);
-  t.is(bridge1b, bridge1, 'must get the same bridge reference');
+  const bridge1b = await EV(bridgeRoot).provideManagerForBridge(dev);
+  matchRef(t, bridge1b, bridge1, 'must get the same bridge reference');
 
   const ret2 = await EV(storageRoot).setValue('def');
   t.is(ret2, undefined, 'setValue must return undefined');
 
   await EV(storageBridge).fromBridge('storage handler is still good');
   t.deepEqual(
-    await EV.rawBoot.getLogForRemotable(storageHandler),
+    await EV.vat('bootstrap').getLogForRemotable(storageHandler),
     [
       ['fromBridge', 'storage handler is good'],
       ['fromBridge', 'storage handler is still good'],
@@ -272,30 +277,28 @@ test('upgrade vat-bank', async t => {
     name: 'mint',
     bundleCapName: 'mint',
   };
-  await Promise.all([
-    EV.vat('bootstrap').createVat(bridgeVatConfig),
-    EV.vat('bootstrap').createVat(bankVatConfig),
-    EV.vat('bootstrap').createVat(mintVatConfig),
-  ]);
+  const bridgeRoot = await EV.vat('bootstrap').createVat(bridgeVatConfig);
+  const bankRoot = await EV.vat('bootstrap').createVat(bankVatConfig);
+  const mintRoot = await EV.vat('bootstrap').createVat(mintVatConfig);
 
   t.log(`create a non-bridged bank manager`);
   /** @type {ERef<BankManager>} */
-  const noBridgeMgr = await EV.vat('bank').makeBankManager();
+  const noBridgeMgr = await EV(bankRoot).makeBankManager();
 
   t.log(`create a bridged bank manager`);
   const dev = await EV.vat('bootstrap').getDevice('bridge');
-  const bridge1 = await EV.vat('bridge').provideManagerForBridge(dev);
+  const bridge1 = await EV(bridgeRoot).provideManagerForBridge(dev);
   const bankBridge = await EV(bridge1).register(BridgeId.BANK);
   /** @type {ERef<BankManager>} */
-  const bridgedMgr = await EV.vat('bank').makeBankManager(bankBridge);
+  const bridgedMgr = await EV(bankRoot).makeBankManager(bankBridge);
 
   t.log('subscribe to no bridge asset lists');
   const noBridgeAssetSub1 = await EV(noBridgeMgr).getAssetSubscription();
   const noBridgeIterator = await EV(noBridgeAssetSub1)[Symbol.asyncIterator]();
 
   t.log('add an asset to both');
-  const abcKit = await EV.vat('mint').makeIssuerKit('ABC');
-  const defKit = await EV.vat('mint').makeIssuerKit('DEF');
+  const abcKit = await EV(mintRoot).makeIssuerKit('ABC');
+  const defKit = await EV(mintRoot).makeIssuerKit('DEF');
   await EV(noBridgeMgr).addAsset('uabc', 'ABC', 'A Bank Coin', abcKit);
   await EV(bridgedMgr).addAsset('uabc', 'ABC', 'A Bank Coin', abcKit);
   await EV(bridgedMgr).addAsset('udef', 'DEF', 'Definitely a coin', defKit);
@@ -307,22 +310,19 @@ test('upgrade vat-bank', async t => {
 
   const abcPurse1 = await EV(banks.agoric1234).getPurse(abcKit.brand);
   const abcPurse2 = await EV(banks.agoric1234).getPurse(abcKit.brand);
-  t.is(abcPurse1, abcPurse2, 'must get the same purse back');
+  matchRef(t, abcPurse1, abcPurse2, 'must get the same purse back');
 
   const defPurse1 = await EV(banks.agoric1bbb).getPurse(defKit.brand);
   const defPurse2 = await EV(banks.agoric1bbb).getPurse(defKit.brand);
-  t.is(defPurse1, defPurse2, 'must get the same purse back');
+  matchRef(t, defPurse1, defPurse2, 'must get the same purse back');
 
   const pmt1 = await EV(abcKit.mint).mintPayment({
     brand: abcKit.brand,
     value: 1000n,
   });
   await EV(abcPurse1).deposit(pmt1);
-  t.deepEqual(
-    await EV(abcPurse1).getCurrentAmount(),
-    { brand: abcKit.brand, value: 1000n },
-    'purse must have 1000n',
-  );
+  const abcAmount = await EV(abcPurse1).getCurrentAmount();
+  matchAmount(t, abcAmount, abcKit.brand, 1000n, 'purse must have 1000n');
 
   const abcAsset = harden({
     brand: abcKit.brand,
@@ -348,10 +348,7 @@ test('upgrade vat-bank', async t => {
   );
   const bridgedIterator = await EV(bridgedAssetSub1)[Symbol.asyncIterator]();
 
-  t.deepEqual(await EV(bridgedIterator).next(), {
-    value: abcAsset,
-    done: false,
-  });
+  matchIter(t, await EV(bridgedIterator).next(), abcAsset);
 
   t.log('now perform the null upgrade');
   const { incarnationNumber } =
@@ -367,52 +364,50 @@ test('upgrade vat-bank', async t => {
   });
 
   const abcPurse3 = await EV(banks.agoric1234).getPurse(abcKit.brand);
-  t.is(abcPurse3, abcPurse1, 'must get the same purse back');
-  t.deepEqual(
+  matchRef(t, abcPurse3, abcPurse1, 'must get the same purse back');
+  matchAmount(
+    t,
     await EV(abcPurse3).getCurrentAmount(),
-    { brand: abcKit.brand, value: 1000n },
+    abcKit.brand,
+    1000n,
     'purse must have 1000n',
   );
 
   const noBridgeAssetSub2 = await EV(noBridgeMgr).getAssetSubscription();
-  t.is(
+  matchRef(
+    t,
     noBridgeAssetSub1,
     noBridgeAssetSub2,
     'must get the same subscription back',
   );
   const noBridgeIterator2 = await EV(noBridgeAssetSub2)[Symbol.asyncIterator]();
-  t.deepEqual(await EV(noBridgeIterator2).next(), {
-    value: abcAsset,
-    done: false,
-  });
+  matchIter(t, await EV(noBridgeIterator2).next(), abcAsset);
 
   const bridgedAssetSub2 = await EV(bridgedMgr).getAssetSubscription();
-  t.is(
+  matchRef(
+    t,
     bridgedAssetSub1,
     bridgedAssetSub2,
     'must get the same subscription back',
   );
   const bridgedIteratorpub = await EV(bridgedAssetSub2).subscribeAfter();
-  t.deepEqual(bridgedIteratorpub, {
-    head: { done: false, value: abcAsset },
+  matchIter(t, bridgedIteratorpub.head, abcAsset);
+  t.like(bridgedIteratorpub, {
     publishCount: 1n,
     tail: bridgedIteratorpub.tail,
   });
 
-  const bridgedIteratorpub2 = await EV.rawBoot.awaitVatObject({
-    presence: bridgedIteratorpub.tail,
-  });
-  t.deepEqual(bridgedIteratorpub2, {
-    head: { done: false, value: defAsset },
+  const bridgedIteratorpub2 = await EV.vat('bootstrap').awaitVatObject(
+    bridgedIteratorpub.tail,
+  );
+  matchIter(t, bridgedIteratorpub2.head, defAsset);
+  t.like(bridgedIteratorpub2, {
     publishCount: 2n,
     tail: bridgedIteratorpub2.tail,
   });
 
   await EV(noBridgeMgr).addAsset('udef', 'DEF', 'Definitely a coin', defKit);
-  t.deepEqual(await EV(noBridgeIterator2).next(), {
-    value: defAsset,
-    done: false,
-  });
+  matchIter(t, await EV(noBridgeIterator2).next(), defAsset);
 });
 
 test('upgrade vat-priceAuthority', async t => {
@@ -429,10 +424,12 @@ test('upgrade vat-priceAuthority', async t => {
     name: 'priceAuthority',
     bundleCapName: 'priceAuthority',
   };
-  await EV.vat('bootstrap').createVat(priceAuthorityVatConfig);
+  const priceAuthorityRoot = await EV.vat('bootstrap').createVat(
+    priceAuthorityVatConfig,
+  );
 
   /** @type {import('@agoric/zoe/tools/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
-  const registry = await EV.vat('priceAuthority').getRegistry();
+  const registry = await EV(priceAuthorityRoot).getRegistry();
 
   // Ideally we'd also test registering a PA and verifying the same one comes out the def end.
   // But we don't have a way to produce one through the kser that EV does here
@@ -445,9 +442,9 @@ test('upgrade vat-priceAuthority', async t => {
   t.is(incarnationNumber, 1, 'vat must be reincarnated');
 
   t.log('get again');
-  const reincarnatedRegistry = await EV.vat('priceAuthority').getRegistry();
+  const reincarnatedRegistry = await EV(priceAuthorityRoot).getRegistry();
   // facet holder object changes but the members have the same identity
   t.not(reincarnatedRegistry, registry);
-  t.is(reincarnatedRegistry.priceAuthority, registry.priceAuthority);
-  t.is(reincarnatedRegistry.adminFacet, registry.adminFacet);
+  matchRef(t, reincarnatedRegistry.priceAuthority, registry.priceAuthority);
+  matchRef(t, reincarnatedRegistry.adminFacet, registry.adminFacet);
 });

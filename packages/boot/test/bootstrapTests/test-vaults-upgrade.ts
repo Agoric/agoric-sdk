@@ -30,7 +30,7 @@ const makeDefaultTestContext = async (
   } = {},
 ) => {
   logTiming && console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
     storage,
   });
 
@@ -506,10 +506,7 @@ test.serial(
         if (!presence) {
           continue;
         }
-        const obj = await EV.rawBoot.awaitVatObject({
-          presence,
-          rawOutput: true,
-        });
+        const obj = await EV.vat('bootstrap').awaitVatObject(presence);
         mapped[prop] = obj;
       }
       for (const obj of Object.values(mapped)) {
