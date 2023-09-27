@@ -346,5 +346,78 @@ export const makeGovCommand = (_logger, io = {}) => {
       await processOffer({ toOffer, sendFrom: opts.sendFrom }, utils);
     });
 
+  cmd
+    .command('proposePauseOffers')
+    .description('propose a vote to pause offers')
+    .option(
+      '--send-from <name-or-address>',
+      'Send from address',
+      normalizeAddress,
+    )
+    .option(
+      '--offerId <string>',
+      'Offer id',
+      String,
+      `proposePauseOffers-${Date.now()}`,
+    )
+    .requiredOption(
+      '--instance <string>',
+      'name of governed instance in agoricNames',
+    )
+    .requiredOption(
+      '--substring <string>',
+      'an offer string to pause (can be repeated)',
+      collectValues,
+      [],
+    )
+    .option(
+      '--deadline <minutes>',
+      'minutes from now to close the vote',
+      Number,
+      1,
+    )
+    .action(async function (opts) {
+      const { instance: instanceName } = opts;
+
+      /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
+      const toOffer = (agoricNames, current) => {
+        const instance = agoricNames.instance[instanceName];
+        assert(instance, `missing ${instanceName}`);
+        assert(current, 'missing current wallet');
+
+        const known = findContinuingIds(current, agoricNames);
+
+        assert(known, 'could not find committee acceptance offer id');
+
+        // TODO magic string
+        const match = known.find(
+          r => r.description === 'charter member invitation',
+        );
+        assert(match, 'no offer found for charter member invitation');
+
+        return {
+          id: opts.offerId,
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: match.offerId,
+            invitationMakerName: 'VoteOnPauseOffers',
+            // ( instance, strings list, timer deadline seconds )
+            invitationArgs: harden([
+              instance,
+              opts.substring,
+              BigInt(opts.deadline * 60 + Math.round(Date.now() / 1000)),
+            ]),
+          },
+          proposal: {},
+        };
+      };
+
+      await processOffer({
+        toOffer,
+        instanceName,
+        ...opts,
+      });
+    });
+
   return cmd;
 };
