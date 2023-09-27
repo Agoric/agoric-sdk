@@ -20,6 +20,8 @@ const collectValues = (val, memo) => {
   return memo;
 };
 
+const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
+
 /**
  * @param {import('anylogger').Logger} _logger
  * @param {{
@@ -47,10 +49,18 @@ export const makeGovCommand = (_logger, io = {}) => {
   // backwards compatibility with less general "ec" command. To make this work
   // the new CLI options default to the values used for Economic Committee
   cmd.alias('ec');
+  cmd.option(
+    '--keyring-backend <os|file|test>',
+    `keyring's backend (os|file|test) (default "${defaultKeyring}")`,
+    defaultKeyring,
+  );
 
   /** @param {string} literalOrName */
   const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, { keyringBackend: 'test' });
+    normalizeAddressWithOptions(literalOrName, {
+      // FIXME does not observe keyring-backend option, which isn't available during arg parsing
+      keyringBackend: defaultKeyring,
+    });
 
   /** @type {(info: unknown, indent?: unknown) => boolean } */
   const show = (info, indent) =>
@@ -71,14 +81,20 @@ export const makeGovCommand = (_logger, io = {}) => {
    * @param {{
    *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined) => OfferSpec,
    *   sendFrom?: string | undefined,
+   *   keyringBackend: string,
    *   instanceName?: string,
    * }} detail
    * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
    */
-  const processOffer = async ({ toOffer, sendFrom }, optUtils) => {
+  const processOffer = async function (
+    { toOffer, sendFrom, keyringBackend },
+    optUtils,
+  ) {
     const networkConfig = await getNetworkConfig(env);
     const utils = await (optUtils || makeRpcUtils({ fetch }));
     const { agoricNames, readLatestHead } = utils;
+
+    assert(keyringBackend, 'missing keyring-backend option');
 
     let current;
     if (sendFrom) {
@@ -97,7 +113,7 @@ export const makeGovCommand = (_logger, io = {}) => {
     const result = await sendAction(
       { method: 'executeOffer', offer },
       {
-        keyring: { backend: 'test' }, // XXX
+        keyring: { backend: keyringBackend },
         from: sendFrom,
         verbose: false,
         ...networkConfig,
@@ -140,6 +156,7 @@ export const makeGovCommand = (_logger, io = {}) => {
     .requiredOption(
       '--name <string>',
       'Committee instance name',
+      String,
       'economicCommittee',
     )
     .option('--voter <number>', 'Voter number', Number, 0)
@@ -147,14 +164,14 @@ export const makeGovCommand = (_logger, io = {}) => {
       '--offerId <string>',
       'Offer id',
       String,
-      `ecCommittee-${Date.now()}`,
+      `gov-committee-${Date.now()}`,
     )
     .option(
       '--send-from <name-or-address>',
       'Send from address',
       normalizeAddress,
     )
-    .action(async function (opts) {
+    .action(async function (opts, options) {
       const { name: instanceName } = opts;
 
       /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
@@ -181,7 +198,8 @@ export const makeGovCommand = (_logger, io = {}) => {
       await processOffer({
         toOffer,
         instanceName,
-        ...opts,
+        sendFrom: opts.sendFrom,
+        keyringBackend: options.optsWithGlobals().keyringBackend,
       });
     });
 
@@ -199,7 +217,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       'Send from address',
       normalizeAddress,
     )
-    .action(async function (opts) {
+    .action(async function (opts, options) {
       const { name: instanceName } = opts;
 
       /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
@@ -226,7 +244,8 @@ export const makeGovCommand = (_logger, io = {}) => {
       await processOffer({
         toOffer,
         instanceName,
-        ...opts,
+        sendFrom: opts.sendFrom,
+        keyringBackend: options.optsWithGlobals().keyringBackend,
       });
     });
 
@@ -270,7 +289,9 @@ export const makeGovCommand = (_logger, io = {}) => {
       const current = await getCurrent(opts.from, { readLatestHead });
 
       const found = findContinuingIds(current, agoricNames);
-      found.forEach(it => show({ ...it, address: opts.from }));
+      for (const it of found) {
+        show({ ...it, address: opts.from });
+      }
     });
 
   cmd
@@ -299,7 +320,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       'Send from address',
       normalizeAddress,
     )
-    .action(async function (opts) {
+    .action(async function (opts, options) {
       const utils = await makeRpcUtils({ fetch });
       const { readLatestHead } = utils;
 
@@ -308,8 +329,9 @@ export const makeGovCommand = (_logger, io = {}) => {
       ).catch(err => {
         throw new CommanderError(1, 'VSTORAGE_FAILURE', err.message);
       });
+
       // XXX runtime shape-check
-      const questionDesc = /** @type {any} */ (info);
+      const questionDesc = /** @type {QuestionDetails} */ (info);
 
       // TODO support multiple position arguments
       const chosenPositions = [questionDesc.positions[opts.forPosition]];
@@ -343,7 +365,14 @@ export const makeGovCommand = (_logger, io = {}) => {
         };
       };
 
-      await processOffer({ toOffer, sendFrom: opts.sendFrom }, utils);
+      await processOffer(
+        {
+          toOffer,
+          sendFrom: opts.sendFrom,
+          keyringBackend: options.optsWithGlobals().keyringBackend,
+        },
+        utils,
+      );
     });
 
   cmd
@@ -376,7 +405,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       Number,
       1,
     )
-    .action(async function (opts) {
+    .action(async function (opts, options) {
       const { instance: instanceName } = opts;
 
       /** @type {Parameters<typeof processOffer>[0]['toOffer']} */
@@ -415,7 +444,8 @@ export const makeGovCommand = (_logger, io = {}) => {
       await processOffer({
         toOffer,
         instanceName,
-        ...opts,
+        sendFrom: opts.sendFrom,
+        keyringBackend: options.optsWithGlobals().keyringBackend,
       });
     });
 
