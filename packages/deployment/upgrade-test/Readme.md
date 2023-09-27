@@ -41,7 +41,9 @@ make run
 
 This will start a container with the output of chain start.
 
-To get a shell use `docker exec -it`. For more info: https://phase2.github.io/devtools/common-tasks/ssh-into-a-container/
+To get a shell: `make shell`
+
+  For more info: https://phase2.github.io/devtools/common-tasks/ssh-into-a-container/
 
 The container and chain will halt once you detach from the session.
 
@@ -86,6 +88,11 @@ You can point your local CLI tools to the chain running in Docker. Our Docker co
 If when reattaching you get a log tail, you need to start a new TTY (with the container name).
 ```sh
 docker exec -it sweet_edison bash
+```
+
+or just use this helper,
+```
+make shell
 ```
 
 
