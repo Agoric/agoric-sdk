@@ -29,7 +29,6 @@ import { prepareZcMint } from './zcfMint.js';
 
 /// <reference path="../internal-types.js" />
 /// <reference path="./internal-types.js" />
-/// <reference path="../../../SwingSet/src/types-ambient.js" />
 
 /** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
 
