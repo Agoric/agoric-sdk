@@ -1,7 +1,8 @@
 // @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/order
+
+import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
 import {
@@ -9,7 +10,6 @@ import {
   loadSwingsetConfigFile,
   buildKernelBundles,
 } from '../../../src/index.js';
-import { kser } from '../../../src/lib/kmarshal.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

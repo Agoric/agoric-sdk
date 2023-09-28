@@ -1,9 +1,9 @@
 import test from 'ava';
 
 import { Far } from '@endo/far';
+import { kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { setupTestLiveslots } from './liveslots-helpers.js';
-import { kunser } from './kmarshal.js';
 
 function buildRootObject(vatPowers, vatParameters, baggage) {
   const vd = vatPowers.VatData;

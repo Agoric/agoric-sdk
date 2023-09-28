@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { kser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
+import { kser } from '@agoric/kmarshal';
 
 export default function setup(syscall, _state, _helpers, _vatPowers) {
   function deliver(target, method, args) {

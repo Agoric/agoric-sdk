@@ -42,6 +42,7 @@
     "@endo/promise-kit": "^0.2.59"
   },
   "devDependencies": {
+    "@agoric/kmarshal": "^0.1.0",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",

@@ -1,6 +1,6 @@
 import { Fail } from '@agoric/assert';
 import { passStyleOf } from '@endo/far';
-import { kunser, krefOf } from './kmarshal.js';
+import { kunser, krefOf } from '@agoric/kmarshal';
 
 /* eslint-disable jsdoc/require-returns-check */
 /**
