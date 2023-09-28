@@ -41,6 +41,7 @@ export const makePspawn = ({
    * @param {string} cmd command name to run
    * @param {Array<string>} cargs arguments to the command
    * @param {object} param2
+   * @param {string} [param2.cwd]
    * @param {string | [string, string, string]} [param2.stdio] standard IO
    * specification
    * @param {Record<string, string | undefined>} [param2.env] environment
