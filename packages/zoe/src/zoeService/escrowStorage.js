@@ -4,7 +4,7 @@ import { q, Fail } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
-import './types.js';
+/// <reference path="./types.js" />
 import './internal-types.js';
 
 import { cleanKeywords } from '../cleanProposal.js';

@@ -8,7 +8,7 @@ import {
   insistVatDeliveryResult,
 } from '../../lib/message.js';
 import '../../types-ambient.js';
-import './types.js';
+/// <reference path="./types.js" />
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject

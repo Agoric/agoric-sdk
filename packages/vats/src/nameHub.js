@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
 
-import './types.js';
+/// <reference path="./types.js" />
 import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,

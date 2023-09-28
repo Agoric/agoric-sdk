@@ -1,4 +1,4 @@
-import './types.js';
+/// <reference path="./types.js" />
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
 import { assert } from '@agoric/assert';

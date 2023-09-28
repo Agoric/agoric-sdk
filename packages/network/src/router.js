@@ -4,7 +4,7 @@ import { Fail } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';
-import './types.js';
+/// <reference path="./types.js" />
 
 /**
  * @template T
