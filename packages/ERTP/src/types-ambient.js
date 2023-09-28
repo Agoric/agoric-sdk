@@ -132,9 +132,10 @@
 
 /**
  * @callback IssuerBurn Burn all of the digital assets in the payment.
- *   `optAmount` is optional. If `optAmount` is present, the code will insist
- *   that the amount of the digital assets in the payment is equal to
- *   `optAmount`, to prevent sending the wrong payment and other confusion.
+ *   `optAmountShape` is optional. If the `optAmountShape` pattern is present,
+ *   the amount of the digital assets in the payment must match
+ *   `optAmountShape`, to prevent sending the wrong payment and other
+ *   confusion.
  *
  *   If the payment is a promise, the operation will proceed upon resolution.
  * @param {ERef<Payment>} payment
@@ -171,7 +172,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} PaymentLedger
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse
+ * @property {Purse<K>} [mintRecoveryPurse] Omitted if this issuer has opted out
+ *   of payment recovery support.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
@@ -180,7 +182,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse
+ * @property {Purse<K>} [mintRecoveryPurse] Omitted if this issuer has opted out
+ *   of payment recovery support.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
@@ -210,6 +213,15 @@
  * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment Creates a new
  *   Payment containing newly minted amount.
  */
+
+/**
+ * See [Recovery Sets Upgrade State
+ * Machine](../docs/recovery-sets-upgrade-state-machine.md)
+ *
+ * @typedef {'noRecoverySets' | 'killRecoverySets'} RecoverySetOption
+ */
+
+// /////////////////////////// Purse / Payment /////////////////////////////////
 
 /**
  * @callback DepositFacetReceive
@@ -262,18 +274,22 @@
  *   `receive` method deposits to the current Purse.
  * @property {(amount: Amount<K>) => Payment<K>} withdraw Withdraw amount from
  *   this purse into a new Payment.
- * @property {() => CopySet<Payment<K>>} getRecoverySet The set of payments
- *   withdrawn from this purse that are still live. These are the payments that
- *   can still be recovered in emergencies by, for example, depositing into this
- *   purse. Such a deposit action is like canceling an outstanding check because
- *   you're tired of waiting for it. Once your cancellation is acknowledged, you
- *   can spend the assets at stake on other things. Afterwards, if the recipient
- *   of the original check finally gets around to depositing it, their deposit
- *   fails.
- * @property {() => Amount<K>} recoverAll For use in emergencies, such as coming
- *   back from a traumatic crash and upgrade. This deposits all the payments in
- *   this purse's recovery set into the purse itself, returning the total amount
- *   of assets recovered.
+ * @property {() => CopySet<Payment<K>> | undefined} getRecoverySet The set of
+ *   payments withdrawn from this purse that are still live. These are the
+ *   payments that can still be recovered in emergencies by, for example,
+ *   depositing into this purse. Such a deposit action is like canceling an
+ *   outstanding check because you're tired of waiting for it. Once your
+ *   cancellation is acknowledged, you can spend the assets at stake on other
+ *   things. Afterwards, if the recipient of the original check finally gets
+ *   around to depositing it, their deposit fails.
+ *
+ *   Returns undefined if this issuer has opted out of payment recovery support.
+ * @property {() => Amount<K> | undefined} recoverAll For use in emergencies,
+ *   such as coming back from a traumatic crash and upgrade. This deposits all
+ *   the payments in this purse's recovery set into the purse itself, returning
+ *   the total amount of assets recovered.
+ *
+ *   Returns undefined if this issuer has opted out of payment recovery support.
  */
 
 /**
@@ -297,6 +313,8 @@
  *   use. Because payments are not trusted, any method calls on payments should
  *   be treated with suspicion and verified elsewhere.
  */
+
+// /////////////////////////// MathHelpers /////////////////////////////////////
 
 /**
  * @template {AmountValue} V

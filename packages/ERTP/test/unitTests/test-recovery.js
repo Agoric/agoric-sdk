@@ -30,11 +30,13 @@ test('payment recovery from purse recovery set', async t => {
   t.assert(keyEQ(alicePurse.getRecoverySet(), emptySet));
 
   const aliceRecovered = alicePurse.recoverAll();
+  assert(aliceRecovered !== undefined);
   t.assert(isEmpty(aliceRecovered));
   t.assert(isEqual(alicePurse.getCurrentAmount(), precious(32n)));
 
   t.assert(isEqual(bobPurse.getCurrentAmount(), precious(46n)));
   const bobRecovered = bobPurse.recoverAll();
+  assert(bobRecovered !== undefined);
   t.assert(isEqual(bobRecovered, precious(0n)));
   t.assert(isEqual(bobPurse.getCurrentAmount(), precious(46n)));
   t.assert(keyEQ(bobPurse.getRecoverySet(), emptySet));
@@ -46,6 +48,7 @@ test('payment recovery from mint recovery set', async t => {
   const mindyPurse = issuer.makeEmptyPurse();
   const bobPurse = issuer.makeEmptyPurse();
 
+  assert(mintRecoveryPurse !== undefined);
   t.assert(keyEQ(mintRecoveryPurse.getRecoverySet(), emptySet));
   const payment1 = mint.mintPayment(precious(37n));
   const payment2 = mint.mintPayment(precious(41n));

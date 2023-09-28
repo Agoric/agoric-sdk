@@ -3,8 +3,28 @@ import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
+// TODO `InterfaceGuard` type parameter
+/** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
 const { Fail } = assert;
 
+/**
+ * @param {Baggage} issuerBaggage
+ * @param {string} name
+ * @param {AssetKind} assetKind
+ * @param {Brand} brand
+ * @param {{
+ *   purse: InterfaceGuard;
+ *   depositFacet: InterfaceGuard;
+ * }} PurseIKit
+ * @param {{
+ *   depositInternal: any;
+ *   withdrawInternal: any;
+ * }} purseMethods
+ * @param {RecoverySetOption} [recoverySetOption] Added in upgrade, so last and
+ *   optional.
+ */
 export const preparePurseKind = (
   issuerBaggage,
   name,
@@ -12,6 +32,7 @@ export const preparePurseKind = (
   brand,
   PurseIKit,
   purseMethods,
+  recoverySetOption = undefined,
 ) => {
   const amountShape = brand.getAmountShape();
 
@@ -38,10 +59,13 @@ export const preparePurseKind = (
     () => {
       const currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
-      /** @type {SetStore<Payment>} */
-      const recoverySet = makeScalarBigSetStore('recovery set', {
-        durable: true,
-      });
+      /** @type {SetStore<Payment> | undefined} */
+      const recoverySet =
+        recoverySetOption === 'noRecoverySets'
+          ? undefined
+          : makeScalarBigSetStore('recovery set', {
+              durable: true,
+            });
 
       return {
         currentBalance,
@@ -89,10 +113,18 @@ export const preparePurseKind = (
         },
 
         getRecoverySet() {
+          if (recoverySetOption === 'noRecoverySets') {
+            return undefined;
+          }
+          assert(this.state.recoverySet !== undefined);
           return this.state.recoverySet.snapshot();
         },
         recoverAll() {
+          if (recoverySetOption === 'noRecoverySets') {
+            return undefined;
+          }
           const { state, facets } = this;
+          assert(state.recoverySet !== undefined);
           let amount = AmountMath.makeEmpty(brand, assetKind);
           for (const payment of state.recoverySet.keys()) {
             // This does cause deletions from the set while iterating,
@@ -114,7 +146,8 @@ export const preparePurseKind = (
     {
       stateShape: {
         currentBalance: amountShape,
-        recoverySet: M.remotable('recoverySet'),
+        // NOTE: Schema change!
+        recoverySet: M.opt(M.remotable('recoverySet')),
       },
     },
   );

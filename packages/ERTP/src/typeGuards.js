@@ -207,8 +207,8 @@ export const makeIssuerInterfaces = (
     deposit: M.call(PaymentShape).optional(M.pattern()).returns(amountShape),
     getDepositFacet: M.call().returns(DepositFacetShape),
     withdraw: M.call(amountShape).returns(PaymentShape),
-    getRecoverySet: M.call().returns(M.setOf(PaymentShape)),
-    recoverAll: M.call().returns(amountShape),
+    getRecoverySet: M.call().returns(M.opt(M.setOf(PaymentShape))),
+    recoverAll: M.call().returns(M.opt(amountShape)),
   });
 
   const DepositFacetI = M.interface('DepositFacet', {

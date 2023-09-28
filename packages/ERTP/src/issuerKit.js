@@ -32,12 +32,15 @@ import './types-ambient.js';
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {RecoverySetOption} [recoverySetOption] Added in upgrade, so last and
+ *   optional.
  * @returns {IssuerKit<K>}
  */
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
   issuerBaggage,
   optShutdownWithFailure = undefined,
+  recoverySetOption = undefined,
 ) => {
   assert.typeof(name, 'string');
   assertAssetKind(assetKind);
@@ -62,6 +65,7 @@ const setupIssuerKit = (
     cleanDisplayInfo,
     elementShape,
     optShutdownWithFailure,
+    recoverySetOption,
   );
 
   return harden({
@@ -87,14 +91,22 @@ const INSTANCE_KEY = 'issuer';
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {RecoverySetOption} [recoverySetOption] Added in upgrade, so last and
+ *   optional.
  * @returns {IssuerKit<K>}
  */
 export const prepareIssuerKit = (
   issuerBaggage,
   optShutdownWithFailure = undefined,
+  recoverySetOption = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
-  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
+  return setupIssuerKit(
+    issuerRecord,
+    issuerBaggage,
+    optShutdownWithFailure,
+    recoverySetOption,
+  );
 };
 harden(prepareIssuerKit);
 
@@ -106,7 +118,15 @@ harden(prepareIssuerKit);
  */
 export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
-/** @typedef {Partial<{ elementShape: Pattern }>} IssuerOptionsRecord */
+/**
+ * `recoverySetOption` added in upgrade. Note that `IssuerOptionsRecord` is
+ * never stored.
+ *
+ * @typedef {Partial<{
+ *   elementShape: Pattern;
+ *   recoverySetOption: RecoverySetOption;
+ * }>} IssuerOptionsRecord
+ */
 
 /**
  * @template {AssetKind} K The name becomes part of the brand in asset
@@ -142,11 +162,21 @@ export const makeDurableIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementShape = undefined } = {},
+  { elementShape = undefined, recoverySetOption = undefined } = {},
 ) => {
-  const issuerData = harden({ name, assetKind, displayInfo, elementShape });
+  const issuerData = harden({
+    name,
+    assetKind,
+    displayInfo,
+    elementShape,
+  });
   issuerBaggage.init(INSTANCE_KEY, issuerData);
-  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
+  return setupIssuerKit(
+    issuerData,
+    issuerBaggage,
+    optShutdownWithFailure,
+    recoverySetOption,
+  );
 };
 harden(makeDurableIssuerKit);
 
@@ -182,7 +212,7 @@ export const makeIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementShape = undefined } = {},
+  { elementShape = undefined, recoverySetOption = undefined } = {},
 ) =>
   makeDurableIssuerKit(
     makeScalarBigMapStore('dropped issuer kit', { durable: true }),
@@ -190,6 +220,6 @@ export const makeIssuerKit = (
     assetKind,
     displayInfo,
     optShutdownWithFailure,
-    { elementShape },
+    { elementShape, recoverySetOption },
   );
 harden(makeIssuerKit);
