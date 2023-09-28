@@ -14,6 +14,85 @@ import { assert, Fail } from '@agoric/assert';
 
 const { toStringTag } = Symbol;
 
+const makeStringStandinPromise = kref => {
+  const p = Promise.resolve(`${kref} stand in`);
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  Object.defineProperty(p, toStringTag, {
+    value: kref,
+    enumerable: false,
+  });
+  return harden(p);
+};
+
+const getStringStandinPromiseTag = p => {
+  const desc = Object.getOwnPropertyDescriptor(p, toStringTag);
+  assert(desc !== undefined, 'promise lacks own @@toStringTag property');
+  const kref = desc.value;
+  assert.typeof(kref, 'string');
+  return kref;
+};
+
+const makeAccessorStandinPromise = kref => {
+  // TODO This Bizarro world hack is only for the version of Endo that
+  // agoric-sdk currently depends on, and is already inconsistent with
+  // the "current" endo. Once agoric-sdk depends only on the next endo,
+  // we should delete this code, and rename `makeStringStandinPromise`
+  // above to `makeStandinPromise`.
+  //
+  // Bizarro World hack for attaching a string property to a Promise, courtesy
+  // of MarkM.  Even though the @@toStringTag property nominally *is* a
+  // string, some unfortunate stuff in our hardened JS safety checks blows up
+  // if it actually is.  Eventually that will be fixed and we'll be able to
+  // use the @@toStringTag property directly, but for now we need to use this
+  // weird construct employing a sneaky getter function.  Note that this is
+  // only necessary in the first place because smallcaps encodes promise
+  // references differently from remotable object references, and the current
+  // version of the smallcaps decoder annoyingly insists that if the encoded
+  // body string says a slot is a promise, then convertSlotToVal had better by
+  // damn return an actual Promise, even if, as in the intended use case here,
+  // we neither want nor need a promise nor are capable of making any use of
+  // the fact that it is one.
+  const p = Promise.resolve(`${kref} stand in`);
+  // Bizarro World makes eslint hallucinate
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  Object.defineProperty(p, toStringTag, {
+    get: reveal => (reveal ? kref : NaN),
+    enumerable: false,
+  });
+  return harden(p);
+};
+
+const getAccessorStandinPromiseTag = p => {
+  // Other half of Bizarro World hack for handling promises.  Note the
+  // peculiar way the @@toStringTag getter is used.
+  const desc = Object.getOwnPropertyDescriptor(p, toStringTag);
+  assert(desc !== undefined, 'promise lacks toStringTag getter');
+
+  const getter = desc.get;
+  assert.typeof(getter, 'function', 'toStringTag getter is not a function');
+  // @ts-expect-error violates the norm that getters have zero parameters
+  const kref = getter(true);
+  assert.typeof(kref, 'string');
+  return kref;
+};
+
+const [makeStandinPromise, getStandinPromiseTag] = (() => {
+  // Use whatever works
+  try {
+    const p = makeStringStandinPromise('string mascot');
+    assert(passStyleOf(p) === 'promise');
+    return [makeStringStandinPromise, getStringStandinPromiseTag];
+  } catch (_1) {
+    try {
+      const p = makeAccessorStandinPromise('accessor mascot');
+      assert(passStyleOf(p) === 'promise');
+      return [makeAccessorStandinPromise, getAccessorStandinPromiseTag];
+    } catch (_2) {
+      throw Error('One of the promise tagging schemes should have worked');
+    }
+  }
+})();
+
 /**
  * @param {string} kref
  * @param {string} [iface]
@@ -32,27 +111,7 @@ export const kslot = (kref, iface = 'undefined') => {
     kref.startsWith('lp') ||
     kref.startsWith('rp')
   ) {
-    // Bizarro World hack for attaching a string property to a Promise, courtesy
-    // of MarkM.  Even though the @@toStringTag property nominally *is* a
-    // string, some unfortunate stuff in our hardened JS safety checks blows up
-    // if it actually is.  Eventually that will be fixed and we'll be able to
-    // use the @@toStringTag property directly, but for now we need to use this
-    // weird construct employing a sneaky getter function.  Note that this is
-    // only necessary in the first place because smallcaps encodes promise
-    // references differently from remotable object references, and the current
-    // version of the smallcaps decoder annoyingly insists that if the encoded
-    // body string says a slot is a promise, then convertSlotToVal had better by
-    // damn return an actual Promise, even if, as in the intended use case here,
-    // we neither want nor need a promise nor are capable of making any use of
-    // the fact that it is one.
-    const p = Promise.resolve(`${kref} stand in`);
-    // Bizarro World makes eslint hallucinate
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    Object.defineProperty(p, toStringTag, {
-      get: reveal => (reveal ? kref : NaN),
-      enumerable: false,
-    });
-    return harden(p);
+    return makeStandinPromise(kref);
   } else {
     const o = Far(iface, {
       iface: () => iface,
@@ -69,16 +128,7 @@ export const kslot = (kref, iface = 'undefined') => {
 export const krefOf = obj => {
   switch (passStyleOf(obj)) {
     case 'promise': {
-      // Other half of Bizarro World hack for handling promises.  Note the
-      // peculiar way the @@toStringTag getter is used.
-      const desc = Object.getOwnPropertyDescriptor(obj, toStringTag);
-      assert(desc !== undefined, 'promise lacks toStringTag getter');
-      const getter = desc.get;
-      assert.typeof(getter, 'function', 'toStringTag getter is not a function');
-      // @ts-expect-error violates the norm that getters have zero parameters
-      const kref = getter(true);
-      assert.typeof(kref, 'string');
-      return kref;
+      return getStandinPromiseTag(obj);
     }
     case 'remotable': {
       const getKref = obj.getKref;
