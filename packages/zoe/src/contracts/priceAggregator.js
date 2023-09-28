@@ -33,7 +33,7 @@ import {
   ratiosSame,
 } from '../contractSupport/ratio.js';
 
-import '@agoric/ertp/src/types-ambient.js';
+/// <reference path="../../../ERTP/exported.js" />
 
 /** @typedef {bigint | number | string} ParsableNumber */
 /**

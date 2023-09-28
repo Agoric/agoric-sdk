@@ -2,12 +2,15 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
-import '@agoric/vats/src/core/types-ambient.js';
 import {
   makeAgoricNamesAccess,
   runModuleBehaviors,
 } from '@agoric/vats/src/core/utils.js';
 import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
+
+// TODO remove this stubborn case
+// https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/vats/src/core/types-ambient.js';
 
 // TODO: we need to rewrite writeCoreProposal.js to produce BundleIDs,
 // although this test doesn't exercise that.
