@@ -64,22 +64,8 @@ const finished = promisify(finishedCallback);
 
 /**
  * @param {*} db
- * @param {() => void} ensureTxn
- * @param {{
- *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
- * }} io
- * @param {(key: string, value: string | undefined) => void} noteExport
- * @param {object} [options]
- * @param {boolean | undefined} [options.keepSnapshots]
- * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
-export function makeSnapStore(
-  db,
-  ensureTxn,
-  { measureSeconds },
-  noteExport = () => {},
-  { keepSnapshots = false } = {},
-) {
+export function initSnapStore(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
       vatID TEXT,
@@ -109,7 +95,26 @@ export function makeSnapStore(
 
   // pruned snapshots will have compressedSnapshot of NULL, and might
   // also have NULL for uncompressedSize and compressedSize
+}
 
+/**
+ * @param {*} db
+ * @param {() => void} ensureTxn
+ * @param {{
+ *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
+ * }} io
+ * @param {(key: string, value: string | undefined) => void} noteExport
+ * @param {object} [options]
+ * @param {boolean | undefined} [options.keepSnapshots]
+ * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
+ */
+export function makeSnapStore(
+  db,
+  ensureTxn,
+  { measureSeconds },
+  noteExport = () => {},
+  { keepSnapshots = false } = {},
+) {
   const sqlDeleteAllUnusedSnapshots = db.prepare(`
     DELETE FROM snapshots
     WHERE inUse is null

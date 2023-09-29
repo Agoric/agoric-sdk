@@ -56,18 +56,8 @@ function insistTranscriptPosition(position) {
 
 /**
  * @param {*} db
- * @param {() => void} ensureTxn
- * @param {(key: string, value: string | undefined ) => void} noteExport
- * @param {object} [options]
- * @param {boolean | undefined} [options.keepTranscripts]
- * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
-export function makeTranscriptStore(
-  db,
-  ensureTxn,
-  noteExport = () => {},
-  { keepTranscripts = true } = {},
-) {
+export function initTranscriptStore(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptItems (
       vatID TEXT,
@@ -108,7 +98,22 @@ export function makeTranscriptStore(
     CREATE INDEX IF NOT EXISTS currentTranscriptIndex
     ON transcriptSpans (vatID, isCurrent)
   `);
+}
 
+/**
+ * @param {*} db
+ * @param {() => void} ensureTxn
+ * @param {(key: string, value: string | undefined ) => void} noteExport
+ * @param {object} [options]
+ * @param {boolean | undefined} [options.keepTranscripts]
+ * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
+ */
+export function makeTranscriptStore(
+  db,
+  ensureTxn,
+  noteExport = () => {},
+  { keepTranscripts = true } = {},
+) {
   const sqlDumpItemsQuery = db.prepare(`
     SELECT vatID, position, item
     FROM transcriptItems

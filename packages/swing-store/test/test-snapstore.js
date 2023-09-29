@@ -6,7 +6,7 @@ import sqlite3 from 'better-sqlite3';
 
 import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
-import { makeSnapStore } from '../src/snapStore.js';
+import { initSnapStore, makeSnapStore } from '../src/snapStore.js';
 
 function makeExportLog() {
   const exportLog = [];
@@ -30,6 +30,7 @@ async function* getSnapshotStream(payload) {
 test('compress to cache file; closes snapshot stream', async t => {
   const db = sqlite3(':memory:');
   const exportLog = makeExportLog();
+  initSnapStore(db);
   const store = makeSnapStore(
     db,
     ensureTxn,
@@ -94,6 +95,7 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
+  initSnapStore(db);
   const store = makeSnapStore(db, ensureTxn, io, () => {}, {
     keepSnapshots: true,
   });

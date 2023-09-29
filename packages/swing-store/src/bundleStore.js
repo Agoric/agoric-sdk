@@ -56,11 +56,8 @@ function bundleIDFromName(name) {
 
 /**
  * @param {*} db
- * @param {() => void} ensureTxn
- * @param {(key: string, value: string | undefined) => void} noteExport
- * @returns {BundleStore & BundleStoreInternal & BundleStoreDebug}
  */
-export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
+export function initBundleStore(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS bundles (
       bundleID TEXT,
@@ -68,10 +65,17 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
       PRIMARY KEY (bundleID)
     )
   `);
-
   // A populated record contains both bundleID and bundle, while a
   // pruned record has a bundle of NULL.
+}
 
+/**
+ * @param {*} db
+ * @param {() => void} ensureTxn
+ * @param {(key: string, value: string | undefined) => void} noteExport
+ * @returns {BundleStore & BundleStoreInternal & BundleStoreDebug}
+ */
+export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   function bundleArtifactName(bundleID) {
     return `bundle.${bundleID}`;
   }

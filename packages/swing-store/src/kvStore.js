@@ -25,20 +25,26 @@ export function getKeyType(key) {
 
 /**
  * @param {object} db  The SQLite database connection.
- * @param {() => void} ensureTxn  Called before mutating methods to establish a DB transaction
- * @param {(...args: string[]) => void} trace  Called after sets/gets to record a debug log
- * @returns { KVStore }
  */
 
-export function makeKVStore(db, ensureTxn, trace) {
+export function initKVStore(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS kvStore (
       key TEXT,
       value TEXT,
       PRIMARY KEY (key)
     )
-  `);
+`);
+}
 
+/**
+ * @param {object} db  The SQLite database connection.
+ * @param {() => void} ensureTxn  Called before mutating methods to establish a DB transaction
+ * @param {(...args: string[]) => void} trace  Called after sets/gets to record a debug log
+ * @returns { KVStore }
+ */
+
+export function makeKVStore(db, ensureTxn, trace) {
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore

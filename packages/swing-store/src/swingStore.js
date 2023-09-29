@@ -8,10 +8,10 @@ import sqlite3 from 'better-sqlite3';
 import { Fail, q } from '@agoric/assert';
 
 import { dbFileInDirectory } from './util.js';
-import { makeKVStore, getKeyType } from './kvStore.js';
-import { makeTranscriptStore } from './transcriptStore.js';
-import { makeSnapStore } from './snapStore.js';
-import { makeBundleStore } from './bundleStore.js';
+import { initKVStore, makeKVStore, getKeyType } from './kvStore.js';
+import { initTranscriptStore, makeTranscriptStore } from './transcriptStore.js';
+import { initSnapStore, makeSnapStore } from './snapStore.js';
+import { initBundleStore, makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
@@ -230,14 +230,12 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     )
   `);
 
-  /*
   initKVStore(db);
   initTranscriptStore(db);
   initSnapStore(db);
   initBundleStore(db);
   // At this point, all database initialization should be complete, so commit now.
   sqlCommit.run();
-  */
 
   const { traceFile, keepSnapshots, keepTranscripts } = options;
 
@@ -303,9 +301,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     ensureTxn,
     noteExport,
   );
-
-  // At this point, all database initialization should be complete, so commit now.
-  sqlCommit.run();
 
   let inCrank = false;
 
