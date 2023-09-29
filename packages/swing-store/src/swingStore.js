@@ -169,25 +169,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     filePath = ':memory:';
   }
 
-  const { traceFile, keepSnapshots, keepTranscripts } = options;
-
-  let traceOutput = traceFile
-    ? fs.createWriteStream(path.resolve(traceFile), {
-        flags: 'a',
-      })
-    : null;
-
-  function trace(...args) {
-    if (!traceOutput) return;
-
-    traceOutput.write(args.join(' '));
-    traceOutput.write('\n');
-  }
-  function stopTrace() {
-    traceOutput && traceOutput.end();
-    traceOutput = null;
-  }
-
   /** @type {*} */
   let db = sqlite3(
     serialized || filePath,
@@ -239,6 +220,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
 
   // Perform all database initialization in a single transaction
   sqlBeginTransaction.run();
+  const sqlCommit = db.prepare('COMMIT');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS pendingExports (
@@ -247,6 +229,34 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
       PRIMARY KEY (key)
     )
   `);
+
+  /*
+  initKVStore(db);
+  initTranscriptStore(db);
+  initSnapStore(db);
+  initBundleStore(db);
+  // At this point, all database initialization should be complete, so commit now.
+  sqlCommit.run();
+  */
+
+  const { traceFile, keepSnapshots, keepTranscripts } = options;
+
+  let traceOutput = traceFile
+    ? fs.createWriteStream(path.resolve(traceFile), {
+        flags: 'a',
+      })
+    : null;
+
+  function trace(...args) {
+    if (!traceOutput) return;
+
+    traceOutput.write(args.join(' '));
+    traceOutput.write('\n');
+  }
+  function stopTrace() {
+    traceOutput && traceOutput.end();
+    traceOutput = null;
+  }
 
   let exportCallback;
   function setExportCallback(cb) {
@@ -293,8 +303,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     ensureTxn,
     noteExport,
   );
-
-  const sqlCommit = db.prepare('COMMIT');
 
   // At this point, all database initialization should be complete, so commit now.
   sqlCommit.run();
