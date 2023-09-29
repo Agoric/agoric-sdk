@@ -13,5 +13,6 @@
     "test/**/*.js",
     "test/**/*.ts",
     "tools/**/*.js",
+    "test/test-walletFactorytjs",
   ],
 }
