@@ -4,7 +4,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeMockTestSpace } from './supports.js';
+import { makeMockTestSpace } from './supports.ts';
 
 import '@agoric/vats/src/core/types-ambient.js';
 

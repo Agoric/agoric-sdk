@@ -10,8 +10,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeDefaultTestContext } from './contexts.js';
-import { ActionType, headValue, makeMockTestSpace } from './supports.js';
+import { makeDefaultTestContext } from './contexts.ts';
+import { ActionType, headValue, makeMockTestSpace } from './supports.ts';
 import { makeImportContext } from '../src/marshal-contexts.js';
 
 const { Fail } = assert;

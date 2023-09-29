@@ -3,13 +3,13 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
 import { makeImportContext } from '../src/marshal-contexts.js';
-import { makeDefaultTestContext } from './contexts.js';
+import { makeDefaultTestContext } from './contexts.ts';
 import {
   ActionType,
   headValue,
   makeMockTestSpace,
   topicPath,
-} from './supports.js';
+} from './supports.ts';
 
 import '@agoric/vats/src/core/types-ambient.js';
 
