@@ -84,6 +84,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 0
+    "atLeast": 90.37
   }
 }
