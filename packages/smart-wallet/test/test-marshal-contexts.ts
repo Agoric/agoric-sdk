@@ -1,26 +1,26 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { Far } from '@endo/far';
+
+import type { Board } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { Far } from '@endo/far';
 import {
   makeExportContext,
   makeImportContext,
 } from '../src/marshal-contexts.js';
 
-/** @param {import('@agoric/vats').Board} board */
-const makeAMM = board => {
+const makeAMM = (board: Board) => {
   const atom = Far('ATOM brand', {});
   const pub = board.getPublishingMarshaller();
   return harden({ getMetrics: () => pub.toCapData(harden([atom])) });
 };
 
-/** @param {import('@agoric/vats').Board} board */
-const makeOnChainWallet = board => {
+const makeOnChainWallet = (board: Board) => {
   const context = makeExportContext();
   let brand;
   return harden({
-    suggestIssuer: (name, boardId) => {
+    suggestIssuer: (name: string, boardId: string) => {
       brand = board.getValue(boardId);
       const purse = Far(`${name} purse`, {
         getCurrentAmount: () => harden({ brand, value: 100 }),
@@ -62,10 +62,8 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
     slots: ['board011'],
   });
 
-  /** @type {Brand[]} */
-  const [b1] = context.fromBoard.fromCapData(ammMetricsCapData);
-  /** @type {Brand[]} */
-  const [b2] = context.fromBoard.fromCapData(amm.getMetrics());
+  const [b1] = context.fromBoard.fromCapData(ammMetricsCapData) as Brand[];
+  const [b2] = context.fromBoard.fromCapData(amm.getMetrics()) as Brand[];
   t.is(b1, b2, 'unserialization twice from same source');
 
   const myWallet = makeOnChainWallet(board);
@@ -139,9 +137,9 @@ test('makeExportContext.serialize handles unregistered identities', t => {
 
   t.deepEqual(context.fromCapData(actual), invitationAmount);
 
-  const myPayment = /** @type {Payment} */ (
-    Far('payment', { getAllegedBrand: () => assert.fail('no impl') })
-  );
+  const myPayment = Far('payment', {
+    getAllegedBrand: () => assert.fail('no impl'),
+  }) as Payment;
   context.savePaymentActions(myPayment);
   const cap2 = context.toCapData(myPayment);
   t.deepEqual(cap2, {
