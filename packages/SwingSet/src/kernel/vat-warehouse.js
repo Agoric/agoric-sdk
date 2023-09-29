@@ -708,6 +708,7 @@ export function makeVatWarehouse({
     deliverToVat,
     maybeSaveSnapshot,
     setSnapshotInterval,
+    ensureVatOnline,
 
     beginNewWorkerIncarnation,
     stopWorker,
