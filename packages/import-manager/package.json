@@ -31,7 +31,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
     "@agoric/swingset-vat": "^0.32.2",
-    "ava": "^5.3.0",
+    "ava": "^5.3.1",
     "c8": "^7.13.0"
   },
   "files": [

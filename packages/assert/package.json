@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@endo/init": "^0.5.59",
-    "ava": "^5.3.0"
+    "ava": "^5.3.1"
   },
   "ava": {
     "require": [

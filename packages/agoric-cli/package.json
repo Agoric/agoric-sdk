@@ -30,7 +30,7 @@
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/cosmic-swingset": "^0.41.3",
-    "ava": "^5.3.0",
+    "ava": "^5.3.1",
     "c8": "^7.13.0",
     "dd-trace": "^4.11.1"
   },

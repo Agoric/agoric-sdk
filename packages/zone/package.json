@@ -35,7 +35,7 @@
   "devDependencies": {
     "@agoric/swingset-liveslots": "^0.10.2",
     "@endo/patterns": "^0.2.5",
-    "ava": "^5.3.0"
+    "ava": "^5.3.1"
   },
   "publishConfig": {
     "access": "public"
