@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/base64"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -44,5 +45,9 @@ func DumpIavlCommand() *cobra.Command {
 			return nil
 		},
 	}
+	userHomeDir, _ := os.UserHomeDir()
+	defaultNodeHome := filepath.Join(userHomeDir, ".agoric")
+	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
+
 	return cmd
 }
