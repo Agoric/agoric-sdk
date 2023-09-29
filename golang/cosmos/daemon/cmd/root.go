@@ -149,6 +149,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 		queryCommand(),
 		txCommand(),
 		keys.Commands(gaia.DefaultNodeHome),
+		DumpIavlCommand(),
 	)
 	// add rosetta
 	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
@@ -157,7 +158,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 const (
 	// FlagSplitVm is the command-line flag for subcommands that can use a
 	// split-process Agoric VM.  The default is to use an embedded VM.
-	FlagSplitVm = "split-vm"
+	FlagSplitVm      = "split-vm"
 	EmbeddedVmEnvVar = "AGD_EMBEDDED_VM"
 )
 
