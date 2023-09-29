@@ -94,5 +94,8 @@
     ],
     "timeout": "2m",
     "workerThreads": false
+  },
+  "typeCoverage": {
+    "atLeast": 0
   }
 }

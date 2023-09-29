@@ -34,5 +34,8 @@
   "homepage": "https://github.com/Agoric/agoric-sdk/tree/HEAD/golang/cosmos",
   "publishConfig": {
     "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 0
   }
 }
