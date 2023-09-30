@@ -1,3 +1,7 @@
+// FIXME importing this breaks line numbering in stack traces
+// (all code is in one line, probably a bug in resolving source map)
+// import '@endo/init/debug.js';
+
 import test from 'ava';
 
 type Foo = {
