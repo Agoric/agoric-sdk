@@ -32,6 +32,7 @@ source "$thisdir/../repoconfig.sh"
 
 if test "${1-''}" = build; then
   BUILD_ONLY=true
+  NO_BUILD=false
   # Enable shell debugging.
   set -x
   case "${2-''}" in
@@ -90,7 +91,7 @@ if $NEED_NODEJS; then
   esac
 fi
 
-(
+${NO_BUILD:-false} || (
   # Send the build output to stderr unless we're only building.  This prevents
   # the daemon's stdout from being polluted with build output.
   $BUILD_ONLY || exec 1>&2
