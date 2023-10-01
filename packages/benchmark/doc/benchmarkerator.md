@@ -101,7 +101,7 @@ provides various information about the execution.  It has the properties:
 
 `options: Record<string, string>`
 
-  Named options from the command line (see Command Line below).
+  Named configuration options from the command line (see Command Line below).
 
 `argv: string[]`
 
@@ -139,12 +139,16 @@ The supported command line options are:
 |--------|------|
 | `-r N`<br/>`--rounds N` | Execute _N_ rounds of each benchmark |
 | `-b PATT`<br/>`--benchmark PATT` | Only execute benchmarks matching _PATT_ (may be specified more than once; this is similar to Ava's `-m` option)|
-| `-o NAME VAL`<br/>`--option NAME VAL` | Set option _NAME_ to _VAL_ in the `context.options` record (may be specified more than once)  |
+| `-c NAME VAL`<br/>`--config NAME VAL` | Set configuration option _NAME_ to _VAL_ in the `context.options` record (may be specified more than once)  |
 | `-v`<br/>`--verbose` | Enable verbose output |
 | `--vat-type TYPE` | Use the specified vat manager type rather than the default `xs-worker` |
 | `-l`<br/>`--local` | Shorthand for `--vat-type local` (vats run in the same process as the kernel; less realistic than `xs-worker` but much faster and easier to debug) |
-| `-d PATH`<br/>`--dump PATH` | Output JSON-formated benchmark data into _PATH_ |
-| `-s PATH`<br/>`--slot PATH` | Output a log file into _PATH_ |
+| `-n`<br/>`--node` | Shorthand for `--vat-type node-subprocess` |
+| `-x`<br/>`--xs` | Shorthand for `--vat-type xs-worker` |
+| `-o PATH`<br/>`--output PATH` | Output JSON-formated benchmark data into _PATH_ |
+| `-s PATH`<br/>`--slog PATH` | Output a slog file into _PATH_ |
+| `-p VATID`<br/>`--profile VATID` | Collect CPU profile data for vat VATID |
+| `-d VATID`<br/>`--debug VATID` | Enable debug mode for vat VATID |
 | `-h`<br/>`--help` | Output this helpful usage information and then exit |
 
 An optional `--` flag ends the options list.  Any remaining command line
@@ -157,13 +161,21 @@ Timing results and other collected metrics are output to _stdout_.  Two batches
 of information are provided: one for the setup phase and one for the benchmark
 rounds themselves (in aggregate).
 
-If you specify the `--dump FILEPATH` command line option, a JSON-formatted
+If you specify the `--output FILEPATH` command line option, a JSON-formatted
 (i.e., machine readable) version of this same data will be output to the
 indicated file.
 
 Output results include execution times (according to Node's nanosecond clock),
 crank counts, and the various kernel resource usage data reported by
 `controller.getStats()`.
+
+Per-vat JS engine-level profiling is enabled for a given vat via the `--profile
+VATID` command line option.  Note that this option is only available when the
+vat manager type is `node-process` or `xs-worker`.  For `node-process` vats, the
+profiling data will be placed in the file `CPU.${vatID}:${vatName}.cpuprofile`.
+The `.cpuprofile` file format can be read and displayed by Chrome debugger, VS
+Code plugins available for this purpose, and various other tools.  For
+`xs-worker` vats, profiling data format is TBD.
 
 In addition, if you specify the `--slog FILEPATH` command line option, a
 SwingSet slog file for the run will be output to the file indicated.

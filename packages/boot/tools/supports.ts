@@ -244,6 +244,8 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.storage]
  * @param [options.verbose]
  * @param [options.slogFile]
+ * @param [options.profileVats]
+ * @param [options.debugVats]
  * @param [options.defaultManagerType]
  */
 export const makeSwingsetTestKit = async (
@@ -254,6 +256,8 @@ export const makeSwingsetTestKit = async (
     storage = makeFakeStorageKit('bootstrapTests'),
     verbose = false,
     slogFile = undefined as string | undefined,
+    profileVats = [] as string[],
+    debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
   } = {},
 ) => {
@@ -363,7 +367,7 @@ export const makeSwingsetTestKit = async (
     configPath,
     [],
     {},
-    { debugName: 'TESTBOOT', verbose, slogSender },
+    { debugName: 'TESTBOOT', verbose, slogSender, profileVats, debugVats },
   );
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
