@@ -22,7 +22,7 @@ By modifying the replay tool, you can control how the replay is performed:
 
 Suppose you have an agoric chain node (validator or non-voting fullnode) that keeps its state in `~/.ag-chain-cosmos/`. After stopping the node (so the database is not being modified during read), the following invocation will extract a list of vatIDs to choose from:
 
-```
+```console
 $ node extract-transcript-from-kerneldb.js ~/.ag-chain-cosmos/data/agoric
 
 all vats:
@@ -54,7 +54,7 @@ v24 : (dynamic) {"managerType":"xs-worker"}    (1 deliveries)
 
 To replay the "zoe" vat, first extract the transcript:
 
-```
+```console
 $ node extract-transcript-from-kerneldb.js ~/.ag-chain-cosmos/data/agoric zoe
 
 extracting transcript for vat v11 into transcript-v11.sst
@@ -66,7 +66,7 @@ $ ls -l transcript-v11.sst
 
 You can look at the last line of the transcript to see how many deliveries it includes, which can help you estimate how far along the replay is going later:
 
-```
+```console
 $ tail -1 transcript-v11.sst
 
 {"transcriptNum":29905,"d":["message","o+12",{"method":"getDisplayInfo","args":{"body":"[]","slots":[]},"result":"p-28997"}],"syscalls":[{"d":["resolve",[["p-28997",false,{"body":"{\"decimalPlaces\":6}","slots":[]}]]],"response":null}]}
@@ -74,7 +74,7 @@ $ tail -1 transcript-v11.sst
 
 This transcript has 29905 deliveries. Note that you can compress the transcript (`gzip transcript-v11.sst`), to save space, and the replay tool will decompress it as it runs. The tool accepts both `.sst` and `.sst.gz` files.
 
-```
+```console
 $ gzip transcript-v11.sst
 $ ls
 -rw-r--r-- 1 warner warner  2436123 May 17 19:24 transcript-v11.sst.gz
@@ -83,7 +83,7 @@ $ node -r esm replay-transcript.js transcript-v11.sst.gz
 
 Then, to perform the replay, use the `replay-transcript` tool:
 
-```
+```console
 $ node -r esm replay-transcript.js transcript-v11.sst.gz
 using transcript transcript-v11.sst.gz
 manager created

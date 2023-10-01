@@ -32,7 +32,7 @@ argument lists and delivered from one vat to another like normal objects.
 However, they cannot be the target of a `syscall.send`. Instead, a special
 `syscall.callNow` accepts a device reference as its first argument:
 
-```
+```js
 syscall.callNow(device, argsbytes, slots) -> { bytes, slots }
 ```
 
@@ -48,7 +48,7 @@ allowing userspace code to use `E(presence).method(args) -> promise` instead
 of raw syscalls. It provides a similar frontend to `callNow`, which looks
 like:
 
-```
+```js
 retval = D(devicenode).method(args)
 ```
 
@@ -62,7 +62,7 @@ device does not get to hear about the results of delivering the message.
 
 The `deviceSlots` wrapper exposes `sendOnly` with a special wrapper:
 
-```
+```js
 SO(presence).method(args)
 ```
 

@@ -23,7 +23,7 @@ including `agoric-cli`, which we encourage to use these published stubs.
 To prepare this package, we created an IDL tree under the directory `proto`
 that includes our transitive dependencies.
 
-```console
+```sh
 mkdir -p proto
 cd proto
 ln -s ../../../golang/cosmos/proto/agoric .
@@ -52,4 +52,3 @@ To surface additional stubs:
    symbolic links for aliasing when necessary.
 
 [1] http://google.github.io/proto-lens/installing-protoc.html
-

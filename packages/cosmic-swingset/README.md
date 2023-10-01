@@ -52,7 +52,7 @@ agd --help
 
 #### Scenario 3 : no testnet (develop off-chain demo)
 
-In this scenario, you run: 
+In this scenario, you run:
 - a **solo node** with the server-side Pixel Demo running and exposing an HTTP server in localhost
 - a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
 
@@ -76,7 +76,7 @@ The HTML frontend code is pure JS/DOM (no additional libraries yet) in the
 
 #### Scenario 2: a single local testnet node (develop on-chain demo)
 
-In this scenario, you run: 
+In this scenario, you run:
 - one or several **solo node(s)** each exposing an HTTP server in localhost (each to a different port)
 - a **single local blockchain testnet node** with the server-side Pixel Demo running
 - a **web browser** connecting to each solo node via a different port and enabling user interaction with the Pixel Demo
@@ -107,12 +107,12 @@ You can communicate with the node by opening http://localhost:8000/
 You can start other solo nodes with `make scenario2-run-client BASE_PORT=8001` and `make scenario2-run-client BASE_PORT=8002` and communicate with them respectively with on http://localhost:8001/ and http://localhost:8002/
 
 
-  
+
 #### Scenario 1: your own local testnet (develop testnet provisioner)
 
-In this scenario, you run: 
+In this scenario, you run:
 - a **solo node** exposing an HTTP server in localhost
-- a **several local blockchain testnet nodes** with the server-side Pixel Demo running on top. 
+- a **several local blockchain testnet nodes** with the server-side Pixel Demo running on top.
 - a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
 
 This scenario is only useful for moving toward deploying the local source code as a new testnet. Before using this scenario, you should test your on-chain code under Scenario 2.
@@ -132,7 +132,7 @@ See [Testnet Tutorial](#testnet-tutorial) for more guidance.
 
 #### Scenario 0: a public testnet (kick the tires)
 
-In this scenario, you run: 
+In this scenario, you run:
 - a **solo node** exposing an HTTP server in localhost
 - a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
 
@@ -148,7 +148,7 @@ Alternatively, running the solo node from a Docker image and no local source cod
 
 Now go to http://localhost:8000/ to interact with your new solo node.
 
-Learn more about ERTP [here](https://agoric.com/documentation/ertp/guide/). 
+Learn more about ERTP [here](https://agoric.com/documentation/ertp/guide/).
 
 ### Initial Endowments
 
@@ -194,7 +194,7 @@ If you are not running on Linux, you will need to use Docker to provide the setu
 
 If you want to install the Docker image scripts on this machine, run:
 
-```
+```sh
 $ sudo make docker-install
 ```
 
