@@ -13,8 +13,8 @@ import {
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
-} from './drivers.ts';
-import { makeSwingsetTestKit } from './supports.ts';
+  makeSwingsetTestKit,
+} from '@agoric/test-support';
 
 export type LiquidationSetup = {
   vaults: {

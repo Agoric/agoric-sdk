@@ -9,7 +9,7 @@ import {
   matchAmount,
   matchIter,
   matchRef,
-} from '../bootstrapTests/supports.ts';
+} from '@agoric/test-support';
 
 /**
  * @type {import('ava').TestFn<{}>}

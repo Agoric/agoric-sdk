@@ -12,8 +12,10 @@ import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from './supports.ts';
-import { makeWalletFactoryDriver } from './drivers.ts';
+import {
+  makeSwingsetTestKit,
+  makeWalletFactoryDriver,
+} from '@agoric/test-support';
 
 /**
  * @type {import('ava').TestFn<

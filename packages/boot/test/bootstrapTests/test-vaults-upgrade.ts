@@ -15,8 +15,10 @@ import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-
 import { ExecutionContext, TestFn } from 'ava';
 import { FakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { makeWalletFactoryDriver } from './drivers.ts';
-import { makeSwingsetTestKit } from './supports.ts';
+import {
+  makeSwingsetTestKit,
+  makeWalletFactoryDriver,
+} from '@agoric/test-support';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

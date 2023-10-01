@@ -4,11 +4,19 @@ import fs from 'node:fs';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 
+// XXX The following four imports are present only to make `tsc` shut up.  They do no actual work.
+import '@agoric/vats/exported.js';
+import '@agoric/inter-protocol/exported.js';
+import '@agoric/zoe/exported.js';
+import '@agoric/cosmic-swingset/src/launch-chain.js';
+
 import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from './supports.ts';
-import { makeWalletFactoryDriver } from './drivers.ts';
+import {
+  makeSwingsetTestKit,
+  makeWalletFactoryDriver,
+} from '@agoric/test-support';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is
@@ -38,7 +46,7 @@ import { makeWalletFactoryDriver } from './drivers.ts';
  * @typedef {{
  *    options: Record<string, string>,
  *    argv: string[],
- *    actors: Record<string, import('./drivers.js').SmartWalletDriver>,
+ *    actors: Record<string, import('@agoric/test-support').SmartWalletDriver>,
  *    title?: string,
  *    rounds?: number,
  *    config?: Record<string, unknown>,
@@ -586,4 +594,5 @@ export const makeBenchmarkerator = async () => {
 /**
  * The normal singleton benchmarkerator.
  */
+// eslint-disable-next-line @jessie.js/safe-await-separator
 export const bench = await makeBenchmarkerator();

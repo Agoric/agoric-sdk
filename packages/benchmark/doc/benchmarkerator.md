@@ -39,15 +39,10 @@ yourself).[^2]
     Those will themselves be deprecated and/or moved into `benchmarks`.
     However, as of this writing that has not yet been done.
 
-The first thing a benchmark should do is import The Benchmarkerator:[^3]
+The first thing a benchmark should do is import The Benchmarkerator:
 ```
 import { bench } from '@agoric/benchmark';
 ```
-
-[^3]: As of this writing The Benchmarkerator actually lives in
-    `@agoric/boot/test/boostrapTests/benchmarkerator.js`.  This should be
-    changed soon, hopefully before the first PR containing this writeup is
-    landed, in which case you will never see this footnote.
 
 Note that this importation usually should be the very first thing you do, much
 as you typically import `@agoric/swingset-vat/tools/prepare-test-env-ava.js` or

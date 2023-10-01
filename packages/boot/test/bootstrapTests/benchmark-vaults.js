@@ -1,4 +1,4 @@
-import { bench } from './benchmarkerator.js';
+import { bench } from '@agoric/benchmark';
 
 // eslint-disable-next-line import/order
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';

@@ -16,6 +16,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { krefOf, kunser } from '@agoric/kmarshal';
 import { TimeMath, Timestamp } from '@agoric/time';
+import '@agoric/vats/exported.js';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
@@ -213,7 +214,7 @@ interface Powers {
 
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
-    new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
+    new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
 
   const importSpec = spec =>
     importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
