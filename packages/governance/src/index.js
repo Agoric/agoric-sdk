@@ -1,9 +1,8 @@
-// Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/network/exported.js';
-import '@agoric/ertp/exported.js';
-import '@agoric/zoe/exported.js';
+/// <reference path="../../network/exported.js" />
+/// <reference path="../../ERTP/exported.js" />
+/// <reference path="../../zoe/exported.js" />
 
-import './types-ambient.js';
+/// <reference path="./types-ambient.js" />
 
 export {
   ChoiceMethod,

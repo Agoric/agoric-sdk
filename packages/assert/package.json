@@ -47,5 +47,8 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 100
   }
 }
