@@ -115,7 +115,7 @@
 /**
  * @callback IssuerIsLive Return true if the payment continues to exist.
  *
- *   If the payment is a promise, the operation will proceed upon resolution.
+ *   If the payment is a promise, the operation will proceed upon fulfillment.
  * @param {ERef<Payment>} payment
  * @returns {Promise<boolean>}
  */
@@ -125,18 +125,25 @@
  *   Because the payment is not trusted, we cannot call a method on it directly,
  *   and must use the issuer instead.
  *
- *   If the payment is a promise, the operation will proceed upon resolution.
+ *   If the payment is a promise, the operation will proceed upon fulfillment.
  * @param {ERef<Payment>} payment
  * @returns {Promise<Amount<K>>}
  */
 
 /**
  * @callback IssuerBurn Burn all of the digital assets in the payment.
- *   `optAmount` is optional. If `optAmount` is present, the code will insist
- *   that the amount of the digital assets in the payment is equal to
- *   `optAmount`, to prevent sending the wrong payment and other confusion.
+ *   `optAmountShape` is optional. If the `optAmountShape` pattern is present,
+ *   the amount of the digital assets in the payment must match
+ *   `optAmountShape`, to prevent sending the wrong payment and other
+ *   confusion.
  *
- *   If the payment is a promise, the operation will proceed upon resolution.
+ *   If the payment is a promise, the operation will proceed upon fulfillment.
+ *
+ *   As always with optional `Pattern` arguments, keep in mind that technically
+ *   the value `undefined` itself is a valid `Key` and therefore a valid
+ *   `Pattern`. But in optional pattern position, a top level `undefined` will
+ *   be interpreted as absence. If you want to express a `Pattern` that will
+ *   match only `undefined`, use `M.undefined()` instead.
  * @param {ERef<Payment>} payment
  * @param {Pattern} [optAmountShape]
  * @returns {Promise<Amount>}
@@ -171,7 +178,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} PaymentLedger
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse
+ * @property {Purse<K>} mintRecoveryPurse Externally useful only if this issuer
+ *   uses recovery sets.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
@@ -180,7 +188,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse
+ * @property {Purse<K>} mintRecoveryPurse Externally useful only if this issuer
+ *   uses recovery sets.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
@@ -210,6 +219,31 @@
  * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment Creates a new
  *   Payment containing newly minted amount.
  */
+
+/**
+ * Issuers first became durable with recovery sets and no option to suppress
+ * them. Thus, absence of a `RecoverySetsOption` state is equivalent to
+ * `'hasRecoverySets'`. By contrast, the absence of `RecoverySetsOption` provide
+ * parameter defaults to the ancestor's `RecoverySetsOption` state, or
+ * `'hasRecoverySets'` if none.
+ *
+ * The `'noRecoverySets'` state, if used for the first incarnation, makes an
+ * issuer without recovery sets. If used for a successor incarnation, no matter
+ * whether the ancestor was `'hasRecoverySets'` or `'noRecoverySets'`,
+ *
+ * - will start emptying recovery sets,
+ * - will prevent any new payments from being added to recovery sets,
+ * - and (controversially) will not provide access via recovery sets of any
+ *   payments that have not yet been emptied out.
+ *
+ * At this time, a `'noRecoverySets'` ancestor cannot be upgraded to a
+ * `'hasRecoverySets'` successor. If it turns out this transition is needed, it
+ * can likely be supported in a future upgrade.
+ *
+ * @typedef {'hasRecoverySets' | 'noRecoverySets'} RecoverySetsOption
+ */
+
+// /////////////////////////// Purse / Payment /////////////////////////////////
 
 /**
  * @callback DepositFacetReceive
@@ -270,10 +304,14 @@
  *   can spend the assets at stake on other things. Afterwards, if the recipient
  *   of the original check finally gets around to depositing it, their deposit
  *   fails.
+ *
+ *   Returns an empty set if this issuer does not support recovery sets.
  * @property {() => Amount<K>} recoverAll For use in emergencies, such as coming
  *   back from a traumatic crash and upgrade. This deposits all the payments in
  *   this purse's recovery set into the purse itself, returning the total amount
  *   of assets recovered.
+ *
+ *   Returns an empty amount if this issuer does not support recovery sets.
  */
 
 /**
@@ -297,6 +335,8 @@
  *   use. Because payments are not trusted, any method calls on payments should
  *   be treated with suspicion and verified elsewhere.
  */
+
+// /////////////////////////// MathHelpers /////////////////////////////////////
 
 /**
  * @template {AmountValue} V

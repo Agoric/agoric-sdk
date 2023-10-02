@@ -1,34 +1,23 @@
-import {
-  AssetKind,
-  makeDurableIssuerKit,
-  prepareIssuerKit,
-} from '@agoric/ertp';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { AssetKind, reallyPrepareIssuerKit } from '@agoric/ertp';
+import { provideDurableMapStore } from '@agoric/vat-data';
 
 /**
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
+ * @returns {ERef<Mint<'set'>>}
  */
 export const provideQuoteMint = baggage => {
-  /** @type {ERef<Mint<'set'>>} */
-  let baggageQuoteMint;
-  if (baggage.has(`quoteMintIssuerBaggage`)) {
-    const issuerBaggage = baggage.get(`quoteMintIssuerBaggage`);
-    baggageQuoteMint = /** @type {Mint<'set'>} */ (
-      prepareIssuerKit(issuerBaggage).mint
-    );
-  } else {
-    const issuerBaggage = makeScalarBigMapStore(
-      `scaledPriceAuthority quoteMintIssuerBaggage`,
-      { durable: true },
-    );
-    baggage.init(`quoteMintIssuerBaggage`, issuerBaggage);
-    baggageQuoteMint = makeDurableIssuerKit(
-      issuerBaggage,
-      'quote',
-      AssetKind.SET,
-    ).mint;
-  }
-
-  return baggageQuoteMint;
+  const issuerBaggage = provideDurableMapStore(
+    baggage,
+    'quoteMintIssuerBaggage',
+  );
+  const issuerKit = reallyPrepareIssuerKit(
+    issuerBaggage,
+    'quote',
+    AssetKind.SET,
+    undefined,
+    undefined,
+    { recoverySetsOption: 'noRecoverySets' },
+  );
+  return issuerKit.mint;
 };

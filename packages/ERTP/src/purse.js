@@ -3,8 +3,27 @@ import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
+// TODO `InterfaceGuard` type parameter
+/** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
 const { Fail } = assert;
 
+/**
+ * @param {Baggage} issuerBaggage
+ * @param {string} name
+ * @param {AssetKind} assetKind
+ * @param {Brand} brand
+ * @param {{
+ *   purse: InterfaceGuard;
+ *   depositFacet: InterfaceGuard;
+ * }} PurseIKit
+ * @param {{
+ *   depositInternal: any;
+ *   withdrawInternal: any;
+ * }} purseMethods
+ * @param {RecoverySetsOption} recoverySetsState
+ */
 export const preparePurseKind = (
   issuerBaggage,
   name,
@@ -12,6 +31,7 @@ export const preparePurseKind = (
   brand,
   PurseIKit,
   purseMethods,
+  recoverySetsState,
 ) => {
   const amountShape = brand.getAmountShape();
 
@@ -22,6 +42,34 @@ export const preparePurseKind = (
   const updatePurseBalance = (state, newPurseBalance, purse) => {
     state.currentBalance = newPurseBalance;
     updateBalance(purse, purse.getCurrentAmount());
+  };
+
+  /**
+   * @param {any} state
+   * @returns {SetStore<Payment> | undefined}
+   */
+  const getRecoverySet = state => {
+    const { recoverySet } = state;
+    if (recoverySetsState === 'hasRecoverySets') {
+      return recoverySet;
+    } else {
+      assert(recoverySetsState === 'noRecoverySets');
+      if (recoverySet.getSize() >= 1) {
+        // The stateShape constraint and the current lack of support for schema
+        // upgrade means that we cannot upgrade `state.recoverySet` to
+        // `undefined` or any non-remotable.
+        //
+        // Upgrade by dropping the old recoverySet and replacing it with a
+        // new empty one, which we hopefully never add to.
+        // Depending on conditions elsewhere, this may cause lots of payments
+        // to become unreachable simultaneously. This code depends on SwingSet to
+        // incrementalize the resulting gc work. (TODO this SwingSet feature is
+        // not yet implemented.)
+
+        state.recoverySet = makeScalarBigSetStore('recovery set');
+      }
+      return undefined;
+    }
   };
 
   // - This kind is a pair of purse and depositFacet that have a 1:1
@@ -71,7 +119,7 @@ export const preparePurseKind = (
             newPurseBalance =>
               updatePurseBalance(state, newPurseBalance, this.facets.purse),
             amount,
-            state.recoverySet,
+            getRecoverySet(state),
           );
         },
         getCurrentAmount() {
@@ -89,18 +137,24 @@ export const preparePurseKind = (
         },
 
         getRecoverySet() {
-          return this.state.recoverySet.snapshot();
+          const { state } = this;
+          void getRecoverySet(state); // just for the possible side effect
+          return state.recoverySet.snapshot();
         },
         recoverAll() {
           const { state, facets } = this;
           let amount = AmountMath.makeEmpty(brand, assetKind);
-          for (const payment of state.recoverySet.keys()) {
+          const recoverySet = getRecoverySet(state);
+          if (recoverySet === undefined) {
+            return amount; // empty at this time
+          }
+          for (const payment of recoverySet.keys()) {
             // This does cause deletions from the set while iterating,
             // but this special case is allowed.
             const delta = facets.purse.deposit(payment);
             amount = AmountMath.add(amount, delta, brand);
           }
-          state.recoverySet.getSize() === 0 ||
+          recoverySet.getSize() === 0 ||
             Fail`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`;
           return amount;
         },

@@ -79,6 +79,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
+ * @param {RecoverySetsOption} recoverySetsState
  * @param {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
@@ -88,6 +89,7 @@ export const preparePaymentLedger = (
   assetKind,
   displayInfo,
   elementShape,
+  recoverySetsState,
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
@@ -145,6 +147,18 @@ export const preparePaymentLedger = (
     { valueShape: amountShape },
   );
 
+  if (
+    recoverySetsState === 'noRecoverySets' &&
+    issuerBaggage.has('paymentRecoverySets')
+  ) {
+    // Upgrade to `'noRecoverySets'` by dropping this all at once.
+    // Depending on conditions elsewhere, this may result in a ton of
+    // payments becoming unreachable all at once. Depend on (TODO upcoming)
+    // SwingSet support for incrementalizing the resulting deallocation
+    // work.
+    issuerBaggage.delete('paymentRecoverySets');
+  }
+
   /**
    * A withdrawn live payment is associated with the recovery set of the purse
    * it was withdrawn from. Let's call these "recoverable" payments. All
@@ -162,12 +176,12 @@ export const preparePaymentLedger = (
    * - A purse's recovery set only contains payments withdrawn from that purse and
    *   not yet consumed.
    *
-   * @type {WeakMapStore<Payment, SetStore<Payment>>}
+   * @type {WeakMapStore<Payment, SetStore<Payment>> | undefined}
    */
-  const paymentRecoverySets = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentRecoverySets',
-  );
+  const paymentRecoverySets =
+    recoverySetsState === 'noRecoverySets'
+      ? undefined
+      : provideDurableWeakMapStore(issuerBaggage, 'paymentRecoverySets');
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
@@ -179,6 +193,7 @@ export const preparePaymentLedger = (
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
     if (optRecoverySet !== undefined) {
+      assert(paymentRecoverySets !== undefined);
       optRecoverySet.add(payment);
       paymentRecoverySets.init(payment, optRecoverySet);
     }
@@ -193,7 +208,7 @@ export const preparePaymentLedger = (
    */
   const deletePayment = payment => {
     paymentLedger.delete(payment);
-    if (paymentRecoverySets.has(payment)) {
+    if (paymentRecoverySets !== undefined && paymentRecoverySets.has(payment)) {
       const recoverySet = paymentRecoverySets.get(payment);
       paymentRecoverySets.delete(payment);
       recoverySet.delete(payment);
@@ -283,14 +298,14 @@ export const preparePaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
    *   purse balance
    * @param {Amount} amount - the amount to be withdrawn
-   * @param {SetStore<Payment>} recoverySet
+   * @param {SetStore<Payment>} [recoverySet]
    * @returns {Payment}
    */
   const withdrawInternal = (
     currentBalance,
     updatePurseBalance,
     amount,
-    recoverySet,
+    recoverySet = undefined,
   ) => {
     amount = coerce(amount);
     AmountMath.isGTE(currentBalance, amount) ||
@@ -310,6 +325,8 @@ export const preparePaymentLedger = (
     return payment;
   };
 
+  /** @type {() => Purse<K>} */
+  // @ts-expect-error type parameter confusion
   const makeEmptyPurse = preparePurseKind(
     issuerBaggage,
     name,
@@ -320,6 +337,7 @@ export const preparePaymentLedger = (
       depositInternal,
       withdrawInternal,
     }),
+    recoverySetsState,
   );
 
   /** @type {Issuer<K>} */
