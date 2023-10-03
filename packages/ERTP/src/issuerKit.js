@@ -86,13 +86,13 @@ harden(setupIssuerKit);
 const INSTANCE_KEY = 'issuer';
 /**
  * The key at which the issuerKit's `RecoverySetsOption` state is stored.
- * Introduced by an upgrade, so may be absent on an ancestor. See
+ * Introduced by an upgrade, so may be absent on a predecessor incarnation. See
  * `RecoverySetsOption` for defaulting behavior.
  */
 const RECOVERY_SETS_STATE = 'recoverySetsState';
 
 /**
- * Used _only_ to upgrade an ancestor issuerKit. Use `makeDurableIssuerKit` to
+ * Used _only_ to upgrade a predecessor issuerKit. Use `makeDurableIssuerKit` to
  * make a new one.
  *
  * @template {AssetKind} K
@@ -126,8 +126,8 @@ export const upgradeIssuerKit = (
   const recoverySetsState = recoverySetsOption || oldRecoverySetsState;
   return setupIssuerKit(
     issuerRecord,
-    issuerBaggage,
     recoverySetsState,
+    issuerBaggage,
     optShutdownWithFailure,
   );
 };
@@ -135,7 +135,7 @@ harden(upgradeIssuerKit);
 
 /**
  * Confusingly, `prepareIssuerKit` was the original name for `upgradeIssuerKit`,
- * even though it is used only to upgrade an ancestor issuerKit. Use
+ * even though it is used only to upgrade a predecessor issuerKit. Use
  * `makeDurableIssuerKit` to make a new one.
  *
  * @deprecated Use `upgradeIssuerKit` instead if that's what you want. Or
@@ -161,9 +161,9 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * payment is often referred to in the singular as "an invitation".)
  *
  * `recoverySetsOption` added in upgrade. Note that `IssuerOptionsRecord` is
- * never stored, so we never need to worry about inheriting one from an ancestor
- * predating the introduction of recovery sets. See `RecoverySetsOption` for
- * defaulting behavior.
+ * never stored, so we never need to worry about inheriting one from a
+ * predecessor predating the introduction of recovery sets. See
+ * `RecoverySetsOption` for defaulting behavior.
  *
  * @typedef {Partial<{
  *   elementShape: Pattern;
@@ -229,9 +229,9 @@ export const makeDurableIssuerKit = (
 harden(makeDurableIssuerKit);
 
 /**
- * What _should_ have been named `prepareIssuerKit`. Used to either revive an
- * ancestor issuer kit, or to make a new durable if it absent, and to place it
- * in baggage for the next successor.
+ * What _should_ have been named `prepareIssuerKit`. Used to either revive a
+ * predecessor issuerKit, or to make a new durable one if it is absent, and to
+ * place it in baggage for the next successor.
  *
  * @template {AssetKind} K The name becomes part of the brand in asset
  *   descriptions. The name is useful for debugging and double-checking

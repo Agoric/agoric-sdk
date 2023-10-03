@@ -224,19 +224,19 @@
  * Issuers first became durable with recovery sets and no option to suppress
  * them. Thus, absence of a `RecoverySetsOption` state is equivalent to
  * `'hasRecoverySets'`. By contrast, the absence of `RecoverySetsOption` provide
- * parameter defaults to the ancestor's `RecoverySetsOption` state, or
+ * parameter defaults to the predecessor's `RecoverySetsOption` state, or
  * `'hasRecoverySets'` if none.
  *
  * The `'noRecoverySets'` state, if used for the first incarnation, makes an
  * issuer without recovery sets. If used for a successor incarnation, no matter
- * whether the ancestor was `'hasRecoverySets'` or `'noRecoverySets'`,
+ * whether the predecessor was `'hasRecoverySets'` or `'noRecoverySets'`,
  *
  * - will start emptying recovery sets,
  * - will prevent any new payments from being added to recovery sets,
  * - and (controversially) will not provide access via recovery sets of any
  *   payments that have not yet been emptied out.
  *
- * At this time, a `'noRecoverySets'` ancestor cannot be upgraded to a
+ * At this time, a `'noRecoverySets'` predecessor cannot be upgraded to a
  * `'hasRecoverySets'` successor. If it turns out this transition is needed, it
  * can likely be supported in a future upgrade.
  *

@@ -160,6 +160,17 @@ export const preparePaymentLedger = (
   }
 
   /**
+   * An issuer may choose to omit recovery sets. The quote issuer, for example,
+   * omits recovery sets since its "payments" do not actually represent
+   * transferable value. Recovery sets preserve payments that are otherwise
+   * inaccessible, so that they can be recovered. This is their point. But this
+   * means that useless payments might accumulate into a large storage leak.
+   * Quote payments should never need to be recovered, since one can always ask
+   * for a more recent quote. Thus, they should not pay the cost of this
+   * potential storage leak.
+   *
+   * For an issuerKit that has not opted out of recovery sets...
+   *
    * A withdrawn live payment is associated with the recovery set of the purse
    * it was withdrawn from. Let's call these "recoverable" payments. All
    * recoverable payments are live, but not all live payments are recoverable.

@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Fail } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { AssetKind, hasIssuer, reallyPrepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';

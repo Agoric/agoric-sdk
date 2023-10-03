@@ -41,13 +41,15 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
     // Upgrade this legacy state by simply deleting it.
     mintBaggage.delete(FEE_MINT_KIT);
   }
-  /** @type {IssuerKit} */
-  const feeIssuerKit = reallyPrepareIssuerKit(
-    mintBaggage,
-    feeIssuerConfig.name,
-    feeIssuerConfig.assetKind,
-    feeIssuerConfig.displayInfo,
-    shutdownZoeVat,
+
+  const feeIssuerKit = /** @type {IssuerKit<'nat'>} */ (
+    reallyPrepareIssuerKit(
+      mintBaggage,
+      feeIssuerConfig.name,
+      feeIssuerConfig.assetKind,
+      feeIssuerConfig.displayInfo,
+      shutdownZoeVat,
+    )
   );
 
   const FeeMintIKit = harden({
