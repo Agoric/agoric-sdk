@@ -7,7 +7,7 @@ demos in debug mode, add the following
 to `.vscode/launch.json`. (The arguments can of course be changed to
 run different versions of the demo):
 
-```
+```json
 {
   "version": "0.2.0",
   "configurations": [

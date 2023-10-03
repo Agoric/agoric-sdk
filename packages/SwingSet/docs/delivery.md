@@ -1281,9 +1281,9 @@ Vat-2 then gets a `dispatch.deliver(target=o+3001, msg={method: "foo", args:
 * `syscall.resolve(to=Fulfill())`, showing how queued messages are then rejected
 * `syscall.resolve(to=Rejection())`, ditto
 
-```
+```js
 p1 = make_promise();
-x~.foo(p1);
+E(x).foo(p1);
 function foo(arg) {
   return p1;
 }

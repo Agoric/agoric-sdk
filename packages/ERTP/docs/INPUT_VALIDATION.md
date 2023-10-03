@@ -76,7 +76,7 @@ Object.defineProperty(object1, 'value', {
  },
 });
 ```
-```sh
+```console
 > object1.value
 1n
 > object1.value
