@@ -314,3 +314,37 @@ test('close will abort transaction', async t => {
   t.is(kvStore.get('key2'), undefined);
   t.falsy(kvStore.has('key2'));
 });
+
+test('savepoints', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const ss1 = initSwingStore(dbDir);
+  ss1.kernelStorage.startCrank();
+  ss1.kernelStorage.kvStore.set('key', 'value1');
+  ss1.kernelStorage.establishCrankSavepoint('sp1');
+  ss1.kernelStorage.kvStore.set('key', 'value2');
+  ss1.kernelStorage.establishCrankSavepoint('sp2');
+  ss1.kernelStorage.kvStore.set('key', 'value3');
+  ss1.kernelStorage.rollbackCrank('sp1');
+  ss1.kernelStorage.endCrank();
+  await ss1.hostStorage.commit();
+  await ss1.hostStorage.close();
+
+  const ss2 = openSwingStore(dbDir);
+  t.is(ss2.kernelStorage.kvStore.get('key'), 'value1');
+});
+
+test('savepoints do not automatically commit', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const ss1 = initSwingStore(dbDir);
+  ss1.kernelStorage.startCrank();
+  ss1.kernelStorage.establishCrankSavepoint('sp1');
+  ss1.kernelStorage.kvStore.set('key', 'value1');
+  // #8423 meant this .endCrank() accidentally did a commit()
+  ss1.kernelStorage.endCrank();
+  await ss1.hostStorage.close();
+
+  const ss2 = openSwingStore(dbDir);
+  t.false(ss2.kernelStorage.kvStore.has('key'));
+});
