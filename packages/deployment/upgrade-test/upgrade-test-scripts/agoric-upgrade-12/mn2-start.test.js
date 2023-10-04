@@ -3,8 +3,6 @@
 /**
  * @file mainnet-2 contract start test
  *
- * TODO: several test.todo, especially provision wallets
- *
  * Requires several environment variables:
  *
  * $MN2_PROPOSAL_INFO is a directory with the results of
