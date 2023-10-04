@@ -112,9 +112,17 @@ const staticConfig = {
 /**
  * Provide access to the outside world via t.context.
  */
-const makeTestContext = async () => {
+const makeTestContext = async (io = {}) => {
+  const {
+    process: { env } = processAmbient,
+    child_process: { execFileSync } = cpAmbient,
+    dbOpen = dbOpenAmbient,
+    fsp = fspAmbient,
+    path = pathAmbient,
+  } = io;
+
   const theEnv = name => {
-    const value = processAmbient.env[name];
+    const value = env[name];
     if (value === undefined) {
       throw Error(`$${name} required`);
     }
@@ -122,26 +130,23 @@ const makeTestContext = async () => {
   };
 
   const config = {
-    proposalDir: makeFileRd(theEnv('MN2_PROPOSAL_INFO'), {
-      fsp: fspAmbient,
-      path: pathAmbient,
-    }),
+    proposalDir: makeFileRd(theEnv('MN2_PROPOSAL_INFO'), { fsp, path }),
     instance: theEnv('MN2_INSTANCE'), // agoricNames.instance key
     vstorageNode: theEnv('MN2_INSTANCE'),
     // TODO: feeAddress: theEnv('FEE_ADDRESS'),
-    chainId: processAmbient.env.CHAINID || 'agoriclocal',
+    chainId: env.CHAINID || 'agoriclocal',
     royaltyThingy: theEnv('GOV3ADDR'),
     ...staticConfig,
   };
 
   // This agd API is based on experience "productizing"
   // the inter bid CLI in #7939
-  const agd = makeAgd({ execFileSync: cpAmbient.execFileSync }).withOpts({
+  const agd = makeAgd({ execFileSync: execFileSync }).withOpts({
     keyringBackend: 'test',
   });
 
   const dbPath = staticConfig.swingstorePath.replace(/^~/, theEnv('HOME'));
-  const swingstore = dbTool(dbOpenAmbient(dbPath, { readonly: true }));
+  const swingstore = dbTool(dbOpen(dbPath, { readonly: true }));
 
   return { agd, agoric, swingstore, config };
 };
