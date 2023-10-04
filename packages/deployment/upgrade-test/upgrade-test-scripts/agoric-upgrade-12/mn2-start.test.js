@@ -3,7 +3,8 @@
 /**
  * @file mainnet-2 contract start test
  *
- * Requires several environment variables:
+ * Expects several environment variables:
+ * If $MN2_PROPOSAL_INFO is not set, no tests are run.
  *
  * $MN2_PROPOSAL_INFO is a directory with the results of
  * running `agoric run xyz-script.js` one or more times.
@@ -49,7 +50,16 @@ import { dbTool } from './tools/vat-status.js';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
-const test = anyTest;
+let test = anyTest;
+
+// If $MN2_PROPOSAL_INFO is not set, no tests are run.
+if (!('MN2_PROPOSAL_INFO' in processAmbient.env)) {
+  console.log('MN2_PROPOSAL_INFO not set. Skipping all tests.');
+  const noop = (..._args) => {};
+  // @ts-expect-error
+  test = noop;
+  Object.assign(test, { before: noop, serial: noop });
+}
 
 /**
  * Reify file read access as an object.
