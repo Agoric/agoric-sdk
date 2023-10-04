@@ -370,6 +370,10 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     inCrank || Fail`establishCrankSavepoint outside of crank`;
     const savepointOrdinal = savepoints.length;
     savepoints.push(savepoint);
+    // We must be in a transaction when creating the savepoint or releasing it
+    // later will cause an autocommit.
+    // See https://github.com/Agoric/agoric-sdk/issues/8423
+    ensureTxn();
     const sql = db.prepare(`SAVEPOINT t${savepointOrdinal}`);
     sql.run();
   }
