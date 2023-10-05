@@ -7,7 +7,7 @@ import {
   LiquidationTestContext,
   makeLiquidationTestContext,
 } from './liquidation.ts';
-import { makeProposalExtractor } from './supports.ts';
+import { makeProposalExtractor } from '../../tools/supports.ts';
 
 const test = anyTest as TestFn<
   LiquidationTestContext & {

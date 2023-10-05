@@ -13,10 +13,8 @@ import '@agoric/cosmic-swingset/src/launch-chain.js';
 import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import {
-  makeSwingsetTestKit,
-  makeWalletFactoryDriver,
-} from '@agoric/test-support';
+import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.ts';
+import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is
@@ -46,7 +44,7 @@ import {
  * @typedef {{
  *    options: Record<string, string>,
  *    argv: string[],
- *    actors: Record<string, import('@agoric/test-support').SmartWalletDriver>,
+ *    actors: Record<string, import('@agoric/boot/tools/drivers.ts').SmartWalletDriver>,
  *    title?: string,
  *    rounds?: number,
  *    config?: Record<string, unknown>,

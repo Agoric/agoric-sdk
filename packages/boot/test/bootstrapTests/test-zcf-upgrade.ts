@@ -13,10 +13,10 @@ import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-
 import { TestFn } from 'ava';
 import {
   matchAmount,
-  makeZoeDriver,
   makeProposalExtractor,
   makeSwingsetTestKit,
-} from '@agoric/test-support';
+} from '../../tools/supports.ts';
+import { makeZoeDriver } from '../../tools/drivers.ts';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

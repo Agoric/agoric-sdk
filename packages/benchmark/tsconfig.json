@@ -10,6 +10,8 @@
     "*.js",
     "scripts/**/*.js",
     "src/**/*.js",
+    "benchmark/**/*.js",
+    "benchmark/**/*.ts",
     "test/**/*.js",
     "test/**/*.ts",
     "tools/**/*.js",

@@ -52,6 +52,7 @@
     "@endo/patterns": "^0.2.5",
     "@endo/promise-kit": "^0.2.59",
     "@endo/ses-ava": "^0.2.43",
+    "@endo/stream": "^0.3.28",
     "@endo/zip": "^0.2.34",
     "ansi-styles": "^6.2.1",
     "anylogger": "^0.21.0",

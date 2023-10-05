@@ -38,7 +38,6 @@ export default [
   "@agoric/swingset-vat",
   "@agoric/swingset-xsnap-supervisor",
   "@agoric/telemetry",
-  "@agoric/test-support",
   "@agoric/time",
   "@agoric/vat-data",
   "@agoric/vats",

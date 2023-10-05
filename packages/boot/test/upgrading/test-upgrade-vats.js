@@ -3,13 +3,9 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.ts';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import {
-  makeRunUtils,
-  matchAmount,
-  matchIter,
-  matchRef,
-} from '@agoric/test-support';
+import { matchAmount, matchIter, matchRef } from '../../tools/supports.ts';
 
 /**
  * @type {import('ava').TestFn<{}>}

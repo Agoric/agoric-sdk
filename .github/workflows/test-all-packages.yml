@@ -160,9 +160,6 @@ jobs:
       - name: yarn test (swing-store)
         if: (success() || failure())
         run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (test-support)
-        if: (success() || failure())
-        run: cd packages/test-support && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
         if: (success() || failure())
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
