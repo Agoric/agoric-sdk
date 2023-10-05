@@ -30,6 +30,7 @@
 import anyTest from 'ava';
 import * as cpAmbient from 'child_process'; // TODO: use execa
 import * as fspAmbient from 'fs/promises';
+import { tmpName as tmpNameAmbient } from 'tmp';
 import * as pathAmbient from 'path';
 import * as processAmbient from 'process';
 import dbOpenAmbient from 'better-sqlite3';
@@ -47,45 +48,51 @@ import { makeAgd } from '../lib/agd-lib.js';
 import { Far, makeMarshal, makeTranslationTable } from '../lib/unmarshal.js';
 import { Fail, NonNullish } from '../lib/assert.js';
 import { dbTool } from '../lib/vat-status.js';
+import { makeFileRW, makeWebCache, makeWebRd } from '../lib/webAsset.js';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
-let test = anyTest;
-
-// If $MN2_PROPOSAL_INFO is not set, no tests are run.
-if (!('MN2_PROPOSAL_INFO' in processAmbient.env)) {
-  console.log('MN2_PROPOSAL_INFO not set. Skipping all tests.');
-  const noop = (..._args) => {};
-  // @ts-expect-error
-  test = noop;
-  Object.assign(test, { before: noop, serial: noop });
-}
+const test = anyTest;
 
 /**
- * Reify file read access as an object.
+ * URLs of release assets, including bundle hashes agreed by BLD stakers
  *
- * @param {string} root
- * @param {object} io
- * @param {Pick<typeof import('fs/promises'), 'stat' | 'readFile' | 'readdir'>} io.fsp
- * @param {Pick<typeof import('path'), 'join'>} io.path
+ * TODO: get permits, scripts from blockchain?
+ * TODO: verify bundle contents against hashes?
  *
- * @typedef {ReturnType<typeof makeFileRd>} FileRd
+ * KREAd-rc1 to Mainnet
+ * voting 2023-09-28 to 2023-10-01
+ * https://agoric.explorers.guru/proposal/53
  */
-const makeFileRd = (root, { fsp, path }) => {
-  /** @param {string} there */
-  const make = there => {
-    const self = {
-      toString: () => there,
-      /** @param {string[]} segments */
-      join: (...segments) => make(path.join(there, ...segments)),
-      stat: () => fsp.stat(there),
-      readText: () => fsp.readFile(there, 'utf8'),
-      readDir: () =>
-        fsp.readdir(there).then(names => names.map(ref => self.join(ref))),
-    };
-    return self;
-  };
-  return make(root);
+const releaseInfo = {
+  url: 'https://github.com/Kryha/KREAd/releases/tag/KREAd-rc1',
+  /** @type {Record<string, ProposalInfo>} */
+  buildAssets: {
+    'kread-committee-info.json': {
+      evals: [
+        {
+          permit: 'kread-invite-committee-permit.json',
+          script: 'kread-invite-committee.js',
+        },
+      ],
+      bundles: [
+        '/Users/wietzes/.agoric/cache/b1-51085a4ad4ac3448ccf039c0b54b41bd11e9367dfbd641deda38e614a7f647d7f1c0d34e55ba354d0331b1bf54c999fca911e6a796c90c30869f7fb8887b3024.json',
+        '/Users/wietzes/.agoric/cache/b1-a724453e7bfcaae1843be4532e18c1236c3d6d33bf6c44011f2966e155bc7149b904573014e583fdcde2b9cf2913cb8b337fc9daf79c59a38a37c99030fcf7dc.json',
+      ],
+    },
+    'start-kread-info.json': {
+      evals: [{ permit: 'start-kread-permit.json', script: 'start-kread.js' }],
+      bundles: [
+        '/Users/wietzes/.agoric/cache/b1-853acd6ba3993f0f19d6c5b0a88c9a722c9b41da17cf7f98ff7705e131860c4737d7faa758ca2120773632dbaf949e4bcce2a2cbf2db224fa09cd165678f64ac.json',
+        '/Users/wietzes/.agoric/cache/b1-0c3363b8737677076e141a84b84c8499012f6ba79c0871fc906c8be1bb6d11312a7d14d5a3356828a1de6baa4bee818a37b7cb1ca2064f6eecbabc0a40d28136.json',
+      ],
+    },
+  },
+};
+
+const dappAPI = {
+  instance: 'kread', // agoricNames.instance key
+  vstorageNode: 'kread',
 };
 
 const staticConfig = {
@@ -94,7 +101,9 @@ const staticConfig = {
   proposer: 'validator',
   collateralPrice: 6, // conservatively low price. TODO: look up
   swingstorePath: '~/.agoric/data/agoric/swingstore.sqlite',
-  initialCoins: `20000000ubld`,
+  releaseAssets: releaseInfo.url.replace('/tag/', '/download/') + '/',
+  buildInfo: Object.values(releaseInfo.buildAssets),
+  initialCoins: `20000000ubld`, // enough to provision a smartWallet
   accounts: {
     krgov1: {
       address: 'agoric1890064p6j3xhzzdf8daknd6kpvhw766ds8flgw',
@@ -117,6 +126,7 @@ const staticConfig = {
         'magic enrich village office myth depth upper pair april dad visit memory resemble castle lab surface globe debate chair upper army pony moon tone',
     },
   },
+  ...dappAPI,
 };
 
 /**
@@ -129,23 +139,20 @@ const makeTestContext = async (io = {}) => {
     dbOpen = dbOpenAmbient,
     fsp = fspAmbient,
     path = pathAmbient,
+    tmpName = tmpNameAmbient,
   } = io;
 
-  const theEnv = name => {
-    const value = env[name];
-    if (value === undefined) {
-      throw Error(`$${name} required`);
-    }
-    return value;
-  };
+  const src = makeWebRd(staticConfig.releaseAssets, { fetch });
+  const td = await new Promise((resolve, reject) =>
+    tmpName({ prefix: 'assets' }, (err, x) => (err ? reject(err) : resolve(x))),
+  );
+  const dest = makeFileRW(td, { fsp, path });
+  td.teardown(() => assets.remove());
+  const assets = makeWebCache(src, dest);
 
   const config = {
-    proposalDir: makeFileRd(theEnv('MN2_PROPOSAL_INFO'), { fsp, path }),
-    instance: theEnv('MN2_INSTANCE'), // agoricNames.instance key
-    vstorageNode: theEnv('MN2_INSTANCE'),
-    // TODO: feeAddress: theEnv('FEE_ADDRESS'),
-    chainId: env.CHAINID || 'agoriclocal',
-    royaltyThingy: theEnv('GOV3ADDR'),
+    assets,
+    chainId: 'agoriclocal',
     ...staticConfig,
   };
 
@@ -155,7 +162,7 @@ const makeTestContext = async (io = {}) => {
     keyringBackend: 'test',
   });
 
-  const dbPath = staticConfig.swingstorePath.replace(/^~/, theEnv('HOME'));
+  const dbPath = staticConfig.swingstorePath.replace(/^~/, env.HOME);
   const swingstore = dbTool(dbOpen(dbPath, { readonly: true }));
 
   return { agd, agoric, swingstore, config };
@@ -274,23 +281,6 @@ const loadedBundleIds = swingstore => {
 };
 
 /**
- * @param {FileRd} rd - assumed to contain ProposalInfo
- * @returns {Promise<ProposalInfo[]>}
- */
-const proposalInfo = async rd => {
-  const all = await rd.readDir();
-  const runInfos = all.filter(f => `${f}`.endsWith('-info.json'));
-  return Promise.all(
-    runInfos.map(async infoRd => {
-      const txt = await infoRd.readText();
-      /** @type {ProposalInfo} */
-      const p = JSON.parse(txt);
-      return p;
-    }),
-  );
-};
-
-/**
  * @param {string} cacheFn - e.g. /home/me.agoric/cache/b1-DEADBEEF.json
  */
 const bundleDetail = cacheFn => {
@@ -303,7 +293,7 @@ const bundleDetail = cacheFn => {
 test.serial('bundles not yet installed', async t => {
   const { swingstore, config } = t.context;
   const loaded = loadedBundleIds(swingstore);
-  const info = await proposalInfo(config.proposalDir);
+  const info = staticConfig.buildInfo;
   for (const { bundles, evals } of info) {
     t.log(evals[0].script, evals.length, 'eval', bundles.length, 'bundles');
     for (const bundle of bundles) {
@@ -316,16 +306,15 @@ test.serial('bundles not yet installed', async t => {
 /** @param {number[]} xs */
 const sum = xs => xs.reduce((a, b) => a + b, 0);
 
-/** @param {FileRd} proposalDir */
-const readBundleSizes = async proposalDir => {
-  const info = await proposalInfo(proposalDir);
-  const bundleRds = info
-    .map(({ bundles }) =>
-      bundles.map(b => proposalDir.join('bundles', bundleDetail(b).fileName)),
-    )
-    .flat();
+/** @param {import('../lib/webAsset.js').WebCache} assets */
+const readBundleSizes = async assets => {
+  const info = staticConfig.buildInfo;
   const bundleSizes = await Promise.all(
-    bundleRds.map(rd => rd.stat().then(st => st.size)),
+    info
+      .map(({ bundles }) =>
+        bundles.map(b => assets.size(bundleDetail(b).fileName)),
+      )
+      .flat(),
   );
   const totalSize = sum(bundleSizes);
   return { bundleSizes, totalSize };
@@ -366,13 +355,13 @@ const txAbbr = tx => {
 
 test.serial('ensure bundles installed', async t => {
   const { agd, swingstore, agoric, config, io } = t.context;
-  const { chainId, proposalDir } = config;
+  const { chainId, assets } = config;
   const loaded = loadedBundleIds(swingstore);
   const from = agd.lookup(config.installer);
 
   let todo = 0;
   let done = 0;
-  for (const { bundles } of await proposalInfo(proposalDir)) {
+  for (const { bundles } of staticConfig.buildInfo) {
     todo += bundles.length;
     for (const bundle of bundles) {
       const { id, fileName, endoZipBase64Sha512 } = bundleDetail(bundle);
@@ -382,7 +371,7 @@ test.serial('ensure bundles installed', async t => {
         continue;
       }
 
-      const bundleRd = proposalDir.join('bundles', fileName);
+      const bundleRd = await assets.storedPath(fileName);
       const result = await agd.tx(
         ['swingset', 'install-bundle', `@${bundleRd}`, '--gas', 'auto'],
         { from, chainId, yes: true },
@@ -443,27 +432,26 @@ test.serial('core eval prereqs: provision royalty, gov, ...', async t => {
 test.serial('core eval proposal passes', async t => {
   const { agd, swingstore, config } = t.context;
   const from = agd.lookup(config.proposer);
-  const { chainId, deposit, proposalDir, instance } = config;
+  const { chainId, deposit, assets, instance } = config;
   const info = { title: instance, description: `start ${instance}` };
   t.log('submit proposal', instance);
-  console.debug('submit proposal', instance);
 
   // double-check that bundles are loaded
   const loaded = loadedBundleIds(swingstore);
-  const proposals = await proposalInfo(proposalDir);
-  for (const { bundles } of proposals) {
+  const { buildInfo } = staticConfig;
+  for (const { bundles } of buildInfo) {
     for (const bundle of bundles) {
       const { id } = bundleDetail(bundle);
       testIncludes(t, id, loaded, 'loaded bundles');
     }
   }
 
-  const evalNames = proposals
+  const evalNames = buildInfo
     .map(({ evals }) => evals)
     .flat()
     .map(e => [e.permit, e.script])
     .flat();
-  const evalPaths = evalNames.map(e => proposalDir.join(e).toString());
+  const evalPaths = await Promise.all(evalNames.map(e => assets.storedPath(e)));
   t.log(evalPaths);
   console.debug('await tx', evalPaths);
   const result = await agd.tx(
@@ -496,6 +484,7 @@ test.serial(`agoricNames.instance is populated`, async t => {
 
 // needs 2 brand names
 test.todo(`agoricNames.brand is populated`);
+test.todo('boardAux is populated');
 
 test.serial('vstorage published.CHILD is present', async t => {
   const { agd, config } = t.context;
