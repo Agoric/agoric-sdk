@@ -7,14 +7,22 @@ import {
   LiquidationTestContext,
   makeLiquidationTestContext,
 } from './liquidation.ts';
+import { makeProposalExtractor } from './supports.ts';
 
-const test = anyTest as TestFn<LiquidationTestContext>;
+const test = anyTest as TestFn<
+  LiquidationTestContext & {
+    getCollateralProposal: (
+      name: string,
+      id: string,
+    ) => Awaited<ReturnType<ReturnType<typeof makeProposalExtractor>>>;
+  }
+>;
 
 const auctioneerPath = 'published.auction';
 
 test.before(async t => {
-  t.context = await makeLiquidationTestContext(t);
-  const proposal = await t.context.buildProposal({
+  const context = await makeLiquidationTestContext(t);
+  const proposal = await context.buildProposal({
     package: 'builders',
     packageScriptName: 'build:add-STARS-proposal',
   });
@@ -23,11 +31,22 @@ test.before(async t => {
   // share a single proposal so tests don't stomp on each other's files; It has
   // to be edited by each so as not to re-use keywords.
   for await (const bundle of proposal.bundles) {
-    await t.context.controller.validateAndInstallBundle(bundle);
+    await context.controller.validateAndInstallBundle(bundle);
   }
   t.log('installed', proposal.bundles.length, 'bundles');
-  // @ts-expect-error override
-  t.context.proposal = proposal;
+
+  const getCollateralProposal = (name, id) => {
+    // stringify, modify and parse because modifying a deep copy was fragile.
+    const proposalJSON = JSON.stringify(proposal);
+    const proposalMod = proposalJSON
+      .replaceAll('STARS', name)
+      .replaceAll('ibc/987C17B1', `ibc/987C17B1${id}`);
+    return JSON.parse(proposalMod);
+  };
+  t.context = {
+    ...context,
+    getCollateralProposal,
+  };
   t.log('installed', proposal.bundles.length, 'bundles');
 });
 
@@ -41,21 +60,12 @@ test.after.always(t => {
 });
 
 test('addAsset to quiescent auction', async t => {
-  const {
-    advanceTimeTo,
-    readLatest,
-    // @ts-expect-error override
-    proposal,
-  } = t.context;
+  const { advanceTimeTo, readLatest } = t.context;
 
-  // stringify, modify and parse because modifying a deep copy was fragile.
-  const proposalJSON = JSON.stringify(proposal);
-  const proposalMod = proposalJSON.replaceAll('STARS', 'COMETS');
-  const proposalNew = JSON.parse(proposalMod);
-
+  const proposal = t.context.getCollateralProposal('COMETS', 'A');
   const bridgeMessage = {
     type: 'CORE_EVAL',
-    evals: proposalNew.evals,
+    evals: proposal.evals,
   };
 
   const { EV } = t.context.runUtils;
@@ -77,7 +87,7 @@ test('addAsset to quiescent auction', async t => {
     'coreEvalBridgeHandler',
   );
   await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-  t.log('add-STARS proposal executed');
+  t.log('proposal executed');
 
   t.like(readLatest(`${auctioneerPath}.book1`), {
     currentPriceLevel: null,
@@ -85,12 +95,7 @@ test('addAsset to quiescent auction', async t => {
 });
 
 test('addAsset to active auction', async t => {
-  const {
-    advanceTimeTo,
-    readLatest,
-    // @ts-expect-error override
-    proposal,
-  } = t.context;
+  const { advanceTimeTo, readLatest } = t.context;
   const { EV } = t.context.runUtils;
 
   t.like(readLatest(`${auctioneerPath}.book0`), { startPrice: null });
@@ -110,15 +115,10 @@ test('addAsset to active auction', async t => {
 
   t.log('launching proposal');
 
-  const proposalJSON = JSON.stringify(proposal);
-  const proposalMod = proposalJSON
-    .replaceAll('STARS', 'PLANETS')
-    .replaceAll('ibc/987C17B1', 'ibc/987C17B2');
-  const proposalNew = JSON.parse(proposalMod);
-
+  const proposal = t.context.getCollateralProposal('PLANETS', 'B');
   const bridgeMessage = {
     type: 'CORE_EVAL',
-    evals: proposalNew.evals,
+    evals: proposal.evals,
   };
   t.log({ bridgeMessage });
 
@@ -130,6 +130,7 @@ test('addAsset to active auction', async t => {
   const nextEndTime = nextAuctionSchedule.endTime;
   const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
   await advanceTimeTo(afterEndTime);
+  t.log('proposal executed');
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   // TimeMath.compareAbs() complains that the brands don't match
@@ -142,12 +143,7 @@ test('addAsset to active auction', async t => {
 });
 
 test('addAsset to auction starting soon', async t => {
-  const {
-    advanceTimeTo,
-    // @ts-expect-error override
-    proposal,
-    readLatest,
-  } = t.context;
+  const { advanceTimeTo, readLatest } = t.context;
   const { EV } = t.context.runUtils;
 
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
@@ -163,16 +159,11 @@ test('addAsset to auction starting soon', async t => {
 
   await advanceTimeTo(tooCloseTime);
 
-  const proposalJSON = JSON.stringify(proposal);
-  const proposalMod = proposalJSON
-    .replaceAll('STARS', 'MOONS')
-    .replaceAll('ibc/987C17B1', 'ibc/987C17B3');
-  const proposalNew = JSON.parse(proposalMod);
-
+  const proposal = t.context.getCollateralProposal('MOONS', 'C');
   t.log('launching proposal');
   const bridgeMessage = {
     type: 'CORE_EVAL',
-    evals: proposalNew.evals,
+    evals: proposal.evals,
   };
   t.log({ bridgeMessage });
 
@@ -185,7 +176,7 @@ test('addAsset to auction starting soon', async t => {
   const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
   await advanceTimeTo(afterEndTime);
 
-  t.log('add-STARS proposal executed');
+  t.log('proposal executed');
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   t.truthy(
