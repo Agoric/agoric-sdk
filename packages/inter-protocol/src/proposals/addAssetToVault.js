@@ -231,11 +231,19 @@ const BUFFER = 5n * 60n;
 // let's insist on 20 minutes leeway for running the scripts
 const COMPLETION = 20n * 60n;
 
-// If there is a liveSchedule, 1) run now if start is far enough away,
-// otherwise, 2) run after endTime.
-// If neither liveSchedule nor nextSchedule is defined, 3) run now.
-// If there is only a nextSchedule, 4) run now if startTime is far enough away,
-// else 5) run after endTime
+/**
+ * This function works around an issue identified in #8307 and #8296, and fixed
+ * in #8301. The fix is needed until #8301 makes it into production.
+ *
+ * If there is a liveSchedule, 1) run now if start is far enough away,
+ * otherwise, 2) run after endTime. If neither liveSchedule nor nextSchedule is
+ * defined, 3) run now. If there is only a nextSchedule, 4) run now if startTime
+ * is far enough away, else 5) run after endTime
+ *
+ * @param {import('../auction/scheduler.js').FullSchedule} schedules
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {() => void} thunk
+ */
 const whenQuiescent = async (schedules, timer, thunk) => {
   const { nextAuctionSchedule, liveAuctionSchedule } = schedules;
   const now = await E(timer).getCurrentTimestamp();
@@ -282,6 +290,7 @@ const whenQuiescent = async (schedules, timer, thunk) => {
     }
   }
 
+  // cases 1, 3, and 4 fall through to here.
   console.warn(`Add Asset immediately`, thunk);
   return thunk();
 };
@@ -342,8 +351,7 @@ export const addAssetToVault = async (
   const finishPromiseKit = makePromiseKit();
   const addBrandThenResolve = ToFarFunction('addBrandThenResolve', async () => {
     await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
-    finishPromiseKit.resolve(true);
-    return true;
+    finishPromiseKit.resolve(undefined);
   });
 
   // schedules actions on a timer (or does it immediately).

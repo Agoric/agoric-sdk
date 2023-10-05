@@ -132,7 +132,7 @@ test('addAsset to active auction', async t => {
   await advanceTimeTo(afterEndTime);
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
-  // brand equality is broken
+  // TimeMath.compareAbs() complains that the brands don't match
   t.truthy(
     schedules.nextAuctionSchedule.endTime.absValue <
       schedulesAfter.nextAuctionSchedule.endTime.absValue,
