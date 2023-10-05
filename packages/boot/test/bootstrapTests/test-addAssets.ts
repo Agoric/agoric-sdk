@@ -133,7 +133,7 @@ test('addAsset to active auction', async t => {
   t.log('proposal executed');
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
-  // TimeMath.compareAbs() complains that the brands don't match
+  // TimeMath.compareAbs() can't handle brands processed by kmarshall
   t.truthy(
     schedules.nextAuctionSchedule.endTime.absValue <
       schedulesAfter.nextAuctionSchedule.endTime.absValue,
