@@ -7,10 +7,12 @@ import { withAmountUtils } from './supports.js';
 
 const ist = withAmountUtils(makeIssuerKit('IST'));
 const atom = withAmountUtils(makeIssuerKit('ATOM'));
+const stAtom = withAmountUtils(makeIssuerKit('stATOM'));
 
 const brands = {
   IST: ist.brand,
   ATOM: atom.brand,
+  stATOM: stAtom.brand,
 };
 
 // XXX use @satisfies
@@ -33,6 +35,14 @@ const agoricNames = /** @type {any} */ ({
       issuer: /** @type {any} */ ({}),
       issuerName: 'ATOM',
       proposedName: 'ATOM',
+    },
+    'ibc/sttoyatom': {
+      denom: 'ibc/sttoyatom',
+      brand: /** @type {any} */ (stAtom.brand),
+      displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
+      issuer: /** @type {any} */ ({}),
+      issuerName: 'stATOM',
+      proposedName: 'stATOM',
     },
   },
 });
@@ -121,6 +131,34 @@ test('Offers.auction.Bid', async t => {
       },
     },
     'optional want',
+  );
+
+  const offerPrice2 = makeRatio(7n, ist.brand, 1n, stAtom.brand);
+  t.deepEqual(
+    Offers.auction.Bid(agoricNames, {
+      offerId: 'by-price3',
+      maxBuy: '10_000stATOM',
+      wantMinimum: '1.23stATOM',
+      give: '4.56IST',
+      price,
+    }),
+    {
+      id: 'by-price3',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['auctioneer'],
+        callPipe: [['makeBidInvitation', [stAtom.brand]]],
+      },
+      proposal: {
+        give: { Bid: ist.make(4_560_000n) },
+        want: { Collateral: stAtom.make(1_230_000n) },
+      },
+      offerArgs: {
+        offerPrice: offerPrice2,
+        maxBuy: stAtom.make(10_000_000_000n),
+      },
+    },
+    'lowercase brand',
   );
 
   t.throws(
