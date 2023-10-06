@@ -1,15 +1,23 @@
 // @jessie-check
+// @ts-check
 
+import { ToFarFunction } from '@endo/captp';
+import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { TimeMath } from '@agoric/time/src/timeMath.js';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { instanceNameFor } from './price-feed-proposal.js';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
+
+const { quote: q } = assert;
 
 /**
  * @typedef {object} InterchainAssetOptions
@@ -24,8 +32,10 @@ export * from './startPSM.js';
  * @property {number} [initialPrice]
  */
 
+/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {BootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
@@ -216,7 +226,74 @@ export const registerScaledPriceAuthority = async (
   );
 };
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+// wait a short while after end to allow things to settle
+const BUFFER = 5n * 60n;
+// let's insist on 20 minutes leeway for running the scripts
+const COMPLETION = 20n * 60n;
+
+/**
+ * This function works around an issue identified in #8307 and #8296, and fixed
+ * in #8301. The fix is needed until #8301 makes it into production.
+ *
+ * If there is a liveSchedule, 1) run now if start is far enough away,
+ * otherwise, 2) run after endTime. If neither liveSchedule nor nextSchedule is
+ * defined, 3) run now. If there is only a nextSchedule, 4) run now if startTime
+ * is far enough away, else 5) run after endTime
+ *
+ * @param {import('../auction/scheduler.js').FullSchedule} schedules
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {() => void} thunk
+ */
+const whenQuiescent = async (schedules, timer, thunk) => {
+  const { nextAuctionSchedule, liveAuctionSchedule } = schedules;
+  const now = await E(timer).getCurrentTimestamp();
+
+  const waker = Far('addAssetWaker', { wake: () => thunk() });
+
+  if (liveAuctionSchedule) {
+    const safeStart = TimeMath.subtractAbsRel(
+      liveAuctionSchedule.startTime,
+      COMPLETION,
+    );
+
+    if (TimeMath.compareAbs(safeStart, now) < 0) {
+      // case 2
+      console.warn(
+        `Add Asset after live schedule's endtime: ${q(
+          liveAuctionSchedule.endTime,
+        )}`,
+      );
+
+      return E(timer).setWakeup(
+        TimeMath.addAbsRel(liveAuctionSchedule.endTime, BUFFER),
+        waker,
+      );
+    }
+  }
+
+  if (!liveAuctionSchedule && nextAuctionSchedule) {
+    const safeStart = TimeMath.subtractAbsRel(
+      nextAuctionSchedule.startTime,
+      COMPLETION,
+    );
+    if (TimeMath.compareAbs(safeStart, now) < 0) {
+      // case 5
+      console.warn(
+        `Add Asset after next schedule's endtime: ${q(
+          nextAuctionSchedule.endTime,
+        )}`,
+      );
+      return E(timer).setWakeup(
+        TimeMath.addAbsRel(nextAuctionSchedule.endTime, BUFFER),
+        waker,
+      );
+    }
+  }
+
+  // cases 1, 3, and 4 fall through to here.
+  console.warn(`Add Asset immediately`, thunk);
+  return thunk();
+};
 
 /**
  * @param {EconomyBootstrapPowers} powers
@@ -228,7 +305,12 @@ export const registerScaledPriceAuthority = async (
  */
 export const addAssetToVault = async (
   {
-    consume: { vaultFactoryKit, agoricNamesAdmin, auctioneerKit },
+    consume: {
+      vaultFactoryKit,
+      agoricNamesAdmin,
+      auctioneerKit,
+      chainTimerService,
+    },
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
@@ -263,6 +345,20 @@ export const addAssetToVault = async (
   // eslint-disable-next-line no-restricted-syntax -- allow this computed property
   await consumeInstance[oracleInstanceName];
 
+  const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
+  const schedules = await E(auctioneerCreator).getSchedule();
+
+  const finishPromiseKit = makePromiseKit();
+  const addBrandThenResolve = ToFarFunction('addBrandThenResolve', async () => {
+    await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
+    finishPromiseKit.resolve(undefined);
+  });
+
+  // schedules actions on a timer (or does it immediately).
+  // finishPromiseKit signals completion.
+  void whenQuiescent(schedules, chainTimerService, addBrandThenResolve);
+  await finishPromiseKit.promise;
+
   const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, keyword, {
@@ -277,8 +373,6 @@ export const addAssetToVault = async (
     mintFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
   });
-  const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
-  await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
 };
 
 export const getManifestForAddAssetToVault = (
@@ -338,6 +432,7 @@ export const getManifestForAddAssetToVault = (
           auctioneerKit: 'auctioneer',
           vaultFactoryKit: 'vaultFactory',
           agoricNamesAdmin: true,
+          chainTimerService: true,
         },
         brand: {
           consume: { [Stable.symbol]: true },
