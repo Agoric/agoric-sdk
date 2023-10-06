@@ -227,7 +227,7 @@ export const makeScheduler = async (
             trace('wake step', now);
             clockTick(liveSchedule);
           } catch (e) {
-            console.warn(`🧯Auction threw ${e}. Caught in PriceStepWaker.`);
+            console.error(`⚠️ Auction threw ${e}. Caught in PriceStepWaker.`);
           }
         },
       }),
@@ -248,7 +248,7 @@ export const makeScheduler = async (
             // eslint-disable-next-line no-use-before-define
             return startAuction();
           } catch (e) {
-            console.warn(`🧯Auction threw ${e}. Caught in SchedulerWaker.`);
+            console.error(`⚠️ Auction threw ${e}. Caught in SchedulerWaker.`);
           }
         },
       }),
