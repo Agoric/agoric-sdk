@@ -26,9 +26,7 @@ a specific build:
 ```shell
 DEST_IMAGE=docker pull ghcr.io/agoric/agoric-sdk:20230515033839-e56ae7
 ```
-
 To use a build based on local changes:
-
 ```shell
 # build ghcr.io/agoric/agoric-sdk:latest
 make local_sdk build
@@ -45,12 +43,11 @@ This will start a container with the output of chain start.
 
 To get a shell: `make shell`
 
-For more info: https://phase2.github.io/devtools/common-tasks/ssh-into-a-container/
+  For more info: https://phase2.github.io/devtools/common-tasks/ssh-into-a-container/
 
 The container and chain will halt once you detach from the session.
 
 ### Troubleshooting
-
 If you get an error about port 26656 already in use, you have a local chain running on your OS.
 
 If you run into other problems, you might have a local `agoric-sdk:latest` that
@@ -65,8 +62,8 @@ TARGET=agoric-upgrade-10 make build run
 
 This will put you in `/usr/src/agoric-sdk`. You'll run commands from here. `upgrade-test-scripts` is copied here with only the test scripts for the current image.
 
-If you lose the connection and want to get back,
 
+If you lose the connection and want to get back,
 ```sh
 # find the container id
 docker ps
@@ -89,16 +86,15 @@ through.
 You can point your local CLI tools to the chain running in Docker. Our Docker config binds on the same port (26656) as running a local chain. So you can use the agoric-cli commands on the Docker chain the same way. But note that the Cosmos account keys will be different from in your dev keyring.
 
 If when reattaching you get a log tail, you need to start a new TTY (with the container name).
-
 ```sh
 docker exec -it sweet_edison bash
 ```
 
 or just use this helper,
-
 ```
 make shell
 ```
+
 
 **To test GUI**
 
@@ -114,12 +110,11 @@ To make the wallet ui talk to your local chain, set the network config to
 5. Make directory for ugprade (e.g. `propose-agoric-upgrade-12` with a `.keep`)
 6. Update the UPGRADE/DEST pair to be your new upgrade (THIS_NAME matching the upgrade handler string in app.go)
 7. Update the `Makefile`
-
-- the two targets to `Makefile` (e.g. `propose-agoric-upgrade-12` and `agoric-upgrade-12`)
-- set the default TARGET (e.g. `agoric-upgrade-12`)
-- add the DEST target to the `.phony` in `Makefile`
-
+  - the two targets to `Makefile` (e.g. `propose-agoric-upgrade-12` and `agoric-upgrade-12`)
+  - set the default TARGET (e.g. `agoric-upgrade-12`)
+  - add the DEST target to the `.phony` in `Makefile`
 7. Test with `make local_sdk build run`
+
 
 ## Development
 
@@ -130,7 +125,6 @@ By default targets that use "agoric-sdk:latest" will source from CI builds. To u
 ```shell
 make local_sdk
 ```
-
 Builds an image: ghcr.io/agoric/agoric-sdk:latest that will be used by all your builds.
 
 That will produce the an image tagged agoric-sdk:latest in your local resolution. (Then run `make build run` again.)
@@ -143,8 +137,8 @@ Some IDEs support connecting to a running container. For VS Code you can use [De
 Note that whatever changes you make within the running container will be lost when you terminate it. Use this just for iterating and be sure to copy any changes you want back to your real workspace.
 
 # TODO
-
 - [x] make the Docker test environment log verbosely (agd start is just printing "block N" begin, commit)
 - [ ] a target like `local_sdk` that just copies the local filesystem, without a full rebuild
 - [ ] alternately, mount the local agoric-sdk in the container
 - [ ] provide a utility to import the Docker's GOV123 keys into a local keyring
+
