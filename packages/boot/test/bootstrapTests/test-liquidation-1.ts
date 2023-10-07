@@ -2,22 +2,22 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import process from 'process';
 import type { ExecutionContext, TestFn } from 'ava';
 import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
-import { BridgeHandler } from '@agoric/vats';
 import {
+  ensureVaultCollateral,
   LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
+  LiquidationSetup,
 } from './liquidation.ts';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 
 //#region Product spec
-const setup = {
+const setup: LiquidationSetup = {
   vaults: [
     {
       atom: 15,
@@ -58,8 +58,12 @@ const setup = {
       collateral: 45,
       debt: 309.54,
     },
+    end: {
+      collateral: 9.659301,
+      debt: 0,
+    },
   },
-} as const;
+};
 
 const outcome = {
   bids: [
@@ -139,105 +143,20 @@ const checkFlow1 = async (
   const {
     advanceTimeBy,
     advanceTimeTo,
-    agoricNamesRemotes,
     check,
-    setupStartingState,
     priceFeedDrivers,
     readLatest,
     walletFactoryDriver,
+    setupVaults,
+    placeBids,
   } = t.context;
 
   const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
 
-  await setupStartingState({
-    collateralBrandKey,
-    managerIndex,
-  });
-
-  const minter = await walletFactoryDriver.provideSmartWallet('agoric1minter');
-
-  for (let i = 0; i < setup.vaults.length; i += 1) {
-    const offerId = `open-${collateralBrandKey}-vault${i}`;
-    await minter.executeOfferMaker(Offers.vaults.OpenVault, {
-      offerId,
-      collateralBrandKey,
-      wantMinted: setup.vaults[i].ist,
-      giveCollateral: setup.vaults[i].atom,
-    });
-    t.like(minter.getLatestUpdateRecord(), {
-      updated: 'offerStatus',
-      status: { id: offerId, numWantsSatisfied: 1 },
-    });
-  }
-
-  // Verify starting balances
-  for (let i = 0; i < setup.vaults.length; i += 1) {
-    check.vaultNotification(managerIndex, i, {
-      debtSnapshot: { debt: { value: scale6(setup.vaults[i].debt) } },
-      locked: { value: scale6(setup.vaults[i].atom) },
-      vaultState: 'active',
-    });
-  }
+  await setupVaults(collateralBrandKey, managerIndex, setup);
 
   const buyer = await walletFactoryDriver.provideSmartWallet('agoric1buyer');
-  {
-    // ---------------
-    //  Place bids
-    // ---------------
-
-    await buyer.sendOffer(
-      Offers.psm.swap(
-        agoricNamesRemotes,
-        agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        {
-          offerId: `print-${collateralBrandKey}-ist`,
-          wantMinted: 1_000,
-          pair: ['IST', 'USDC_axl'],
-        },
-      ),
-    );
-
-    const maxBuy = `10000${collateralBrandKey}`;
-
-    // bids are long-lasting offers so we can't wait here for completion
-    await buyer.sendOfferMaker(Offers.auction.Bid, {
-      offerId: `${collateralBrandKey}-bid1`,
-      ...setup.bids[0],
-      maxBuy,
-    });
-
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: `${collateralBrandKey}-bid1`,
-        result: 'Your bid has been accepted',
-        payouts: undefined,
-      },
-    });
-    await buyer.sendOfferMaker(Offers.auction.Bid, {
-      offerId: `${collateralBrandKey}-bid2`,
-      ...setup.bids[1],
-      maxBuy,
-    });
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: `${collateralBrandKey}-bid2`,
-        result: 'Your bid has been accepted',
-        payouts: undefined,
-      },
-    });
-    await buyer.sendOfferMaker(Offers.auction.Bid, {
-      offerId: `${collateralBrandKey}-bid3`,
-      ...setup.bids[2],
-      maxBuy,
-    });
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: `${collateralBrandKey}-bid3`,
-        result: 'Your bid has been accepted',
-        payouts: undefined,
-      },
-    });
-  }
+  await placeBids(collateralBrandKey, 'agoric1buyer', setup);
 
   {
     // ---------------
@@ -389,35 +308,7 @@ test.serial(
 );
 
 test.serial('add STARS collateral', async t => {
-  const { controller, buildProposal } = t.context;
-
-  t.log('building proposal');
-  const proposal = await buildProposal({
-    package: 'builders',
-    packageScriptName: 'build:add-STARS-proposal',
-  });
-
-  for await (const bundle of proposal.bundles) {
-    await controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
-  t.log('launching proposal');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
-
-  const { EV } = t.context.runUtils;
-  const coreEvalBridgeHandler: ERef<BridgeHandler> = await EV.vat(
-    'bootstrap',
-  ).consumeItem('coreEvalBridgeHandler');
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-
-  t.context.refreshAgoricNamesRemotes();
-
-  t.log('add-STARS proposal executed');
+  await ensureVaultCollateral('STARS', t);
   t.pass(); // reached here without throws
 });
 
