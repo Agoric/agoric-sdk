@@ -6,7 +6,7 @@ import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { extractMethod } from '../src/lib/kdebug.js';
 import { makeKernelEndowments, buildDispatch } from './util.js';
-import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
+import { kser, kunser, kslot } from '@agoric/kmarshal';
 
 const makeKernel = async () => {
   const endowments = makeKernelEndowments();

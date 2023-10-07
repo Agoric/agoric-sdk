@@ -1,10 +1,10 @@
 import { assert, Fail } from '@agoric/assert';
+import { kser, kunser } from '@agoric/kmarshal';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';
 import { deliverToController } from './controller.js';
 import { insistCapData } from '../../lib/capdata.js';
-import { kser, kunser } from '../../lib/kmarshal.js';
 
 import { makeCListKit } from './clist.js';
 import { makeDeliveryKit } from './delivery.js';

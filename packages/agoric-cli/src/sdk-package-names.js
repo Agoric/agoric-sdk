@@ -20,6 +20,7 @@ export default [
   "@agoric/import-manager",
   "@agoric/inter-protocol",
   "@agoric/internal",
+  "@agoric/kmarshal",
   "@agoric/network",
   "@agoric/notifier",
   "@agoric/pegasus",

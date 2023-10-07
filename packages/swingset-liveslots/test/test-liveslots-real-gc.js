@@ -4,9 +4,9 @@ import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { kslot, kser } from '@agoric/kmarshal';
 import engineGC from './engine-gc.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
-import { kslot, kser } from './kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   makeMessage,

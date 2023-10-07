@@ -2,12 +2,12 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
+import { kser, kslot, kunser } from '@agoric/kmarshal';
 import {
   buildVatController,
   loadBasedir,
   buildKernelBundles,
 } from '../src/index.js';
-import { kser, kslot, kunser } from '../src/lib/kmarshal.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

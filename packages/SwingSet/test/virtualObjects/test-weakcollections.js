@@ -1,11 +1,11 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
+import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
-import { kser } from '../../src/lib/kmarshal.js';
 
 test('weakMap in vat', async t => {
   const config = {

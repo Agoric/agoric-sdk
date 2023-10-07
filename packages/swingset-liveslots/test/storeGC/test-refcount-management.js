@@ -1,5 +1,6 @@
 import test from 'ava';
 
+import { kslot } from '@agoric/kmarshal';
 import {
   findSyscallsByType,
   setupTestLiveslots,
@@ -11,7 +12,6 @@ import {
   refValString,
   assertCollectionDeleted,
 } from '../gc-helpers.js';
-import { kslot } from '../kmarshal.js';
 import { vstr } from '../util.js';
 
 // These tests follow the model described in

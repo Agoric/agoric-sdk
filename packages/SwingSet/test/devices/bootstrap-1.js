@@ -1,6 +1,6 @@
 import { Fail } from '@agoric/assert';
+import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { extractMessage } from '../vat-util.js';
-import { kser, kunser, krefOf } from '../../src/lib/kmarshal.js';
 
 export default function setup(syscall, state, _helpers, vatPowers) {
   const { testLog } = vatPowers;

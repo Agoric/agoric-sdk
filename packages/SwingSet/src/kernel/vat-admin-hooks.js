@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
+import { kser, kunser } from '@agoric/kmarshal';
 import { insistVatID } from '../lib/id.js';
-import { kser, kunser } from '../lib/kmarshal.js';
 
 export function makeVatAdminHooks(tools) {
   const { kernelKeeper, terminateVat } = tools;

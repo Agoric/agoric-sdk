@@ -1,12 +1,12 @@
 /* eslint-disable no-use-before-define */
 
 import { assert, Fail } from '@agoric/assert';
+import { kser } from '@agoric/kmarshal';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
-import { kser } from '../../lib/kmarshal.js';
 
 export function makeDeliveryKit(
   state,

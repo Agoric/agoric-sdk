@@ -2,8 +2,8 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { spawn } from 'child_process';
+import { kser, kunser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
@@ -12,7 +12,6 @@ import {
   makeSwingsetController,
 } from '../src/index.js';
 import { checkKT } from './util.js';
-import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
 const emptyVP = kser({});
 

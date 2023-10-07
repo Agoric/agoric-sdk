@@ -2,13 +2,12 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { Fail } from '@agoric/assert';
+import { kser, kslot } from '@agoric/kmarshal';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { makeVatSlot } from '../src/lib/parseVatSlots.js';
 import { checkKT, extractMessage, makeKernelEndowments } from './util.js';
-import { kser, kslot } from '../src/lib/kmarshal.js';
 
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, rejected, data]];
