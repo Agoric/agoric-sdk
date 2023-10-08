@@ -1,6 +1,6 @@
+import { kunser, kser, kslot, krefOf } from '@agoric/kmarshal';
 import { insistVatType } from '../../src/lib/parseVatSlots.js';
 import { extractMessage } from '../vat-util.js';
-import { kunser, kser, kslot, krefOf } from '../../src/lib/kmarshal.js';
 
 // to exercise the error we get when syscall.callNow() is given a promise
 // identifier, we must bypass liveslots, which would otherwise protect us

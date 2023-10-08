@@ -3,10 +3,10 @@ import anylogger from 'anylogger';
 
 import bundleSource from '@endo/bundle-source';
 
+import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { extractMessage, ignore, vstr } from './vat-util.js';
-import { kser } from '../src/lib/kmarshal.js';
 
 export { extractMessage, ignore, vstr };
 

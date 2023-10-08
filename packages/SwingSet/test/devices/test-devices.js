@@ -3,8 +3,9 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
-import { initSwingStore } from '@agoric/swing-store';
 import { parse } from '@endo/marshal';
+import { kser, kslot } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   initializeSwingset,
@@ -13,7 +14,6 @@ import {
 } from '../../src/index.js';
 import buildCommand from '../../src/devices/command/command.js';
 import { bundleOpts, vstr } from '../util.js';
-import { kser, kslot } from '../../src/lib/kmarshal.js';
 
 function dfile(name) {
   return new URL(`./${name}`, import.meta.url).pathname;

@@ -1,6 +1,6 @@
 // @ts-nocheck
+import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
 import { extractMessage } from './vat-util.js';
-import { krefOf, kser, kslot, kunser } from '../src/lib/kmarshal.js';
 
 /**
  * A testing vat that generically exposes kernel interactions

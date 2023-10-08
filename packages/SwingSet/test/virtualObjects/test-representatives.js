@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
+import { kser, kslot } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { initSwingStore } from '@agoric/swing-store';
 import {
@@ -11,7 +12,6 @@ import {
 } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
 
-import { kser, kslot } from '../../src/lib/kmarshal.js';
 import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 import { vstr } from '../util.js';
 

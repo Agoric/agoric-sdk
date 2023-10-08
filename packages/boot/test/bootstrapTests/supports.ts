@@ -14,7 +14,7 @@ import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { krefOf, kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
+import { krefOf, kunser } from '@agoric/kmarshal';
 import { TimeMath, Timestamp } from '@agoric/time';
 import {
   boardSlottingMarshaller,

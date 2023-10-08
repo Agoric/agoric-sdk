@@ -2,7 +2,7 @@
 // modules
 
 import { assert } from '@agoric/assert';
-import { kser, kunser } from '../src/lib/kmarshal.js';
+import { kser, kunser } from '@agoric/kmarshal';
 
 export function extractMessage(vatDeliverObject) {
   const [type, ...vdoargs] = vatDeliverObject;
