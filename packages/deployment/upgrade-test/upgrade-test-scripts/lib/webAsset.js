@@ -1,4 +1,11 @@
+// @ts-check
 import { tmpName } from 'tmp';
+
+const dbg = label => x => {
+  label;
+  // console.log(label, x);
+  return x;
+};
 
 /**
  *
@@ -11,6 +18,7 @@ export const makeWebRd = (root, { fetch }) => {
   /** @param {string} there */
   const make = there => {
     const join = (...segments) => {
+      dbg('web.join')({ there, segments });
       let out = there;
       for (const segment of segments) {
         out = `${new URL(segment, out)}`;
@@ -21,7 +29,14 @@ export const makeWebRd = (root, { fetch }) => {
       toString: () => there,
       /** @param {string[]} segments */
       join: (...segments) => make(join(...segments)),
-      readText: () => fetch(there).then(res => res.text()),
+      readText: async () => {
+        console.log('WebRd fetch:', there);
+        const res = await fetch(there);
+        if (!res.ok) {
+          throw Error(res.statusText);
+        }
+        return res.text();
+      },
     };
     return self;
   };
@@ -73,7 +88,8 @@ export const makeFileRW = (root, { fsp, path }) => {
       toString: () => there,
       readOnly: () => ro,
       /** @param {string[]} segments */
-      join: (...segments) => make(path.join(there, ...segments)),
+      join: (...segments) =>
+        make(dbg('FileRW join')(path.join(there, ...segments))),
       writeText: text => fsp.writeFile(there, text, 'utf8'),
       unlink: () => fsp.unlink(there),
       mkdir: () => fsp.mkdir(there, { recursive: true }),
@@ -98,7 +114,7 @@ export const makeWebCache = (src, dest) => {
   const getFileP = segment => {
     const target = src.join(segment);
     const addr = `${target}`;
-    let cached = saved.get(addr);
+    const cached = saved.get(addr);
     if (cached) return cached;
 
     const f = dest.join(segment);
@@ -106,10 +122,11 @@ export const makeWebCache = (src, dest) => {
     const p = new Promise((resolve, reject) =>
       target
         .readText()
-        .then(txt => {
-          dest.mkdir();
-          f.writeText(txt).then(_ => resolve(f.readOnly()));
-        })
+        .then(txt =>
+          dest
+            .mkdir()
+            .then(() => f.writeText(txt).then(_ => resolve(f.readOnly()))),
+        )
         .catch(reject),
     );
     saved.set(addr, p);
