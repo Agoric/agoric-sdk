@@ -230,8 +230,6 @@ test.serial('core eval proposal passes', async t => {
     .map(e => [e.permit, e.script])
     .flat();
   const evalPaths = await Promise.all(evalNames.map(e => assets.storedPath(e)));
-  t.log(evalPaths);
-  console.debug('await tx', evalPaths);
   const result = await agd.tx(
     [
       'gov',
@@ -246,7 +244,6 @@ test.serial('core eval proposal passes', async t => {
   t.log(txAbbr(result));
   t.is(result.code, 0);
 
-  console.debug('await voteLatestProposalAndWait', evalPaths);
   const detail = await voteLatestProposalAndWait();
   t.log(detail.proposal_id, detail.voting_end_time, detail.status);
   t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
