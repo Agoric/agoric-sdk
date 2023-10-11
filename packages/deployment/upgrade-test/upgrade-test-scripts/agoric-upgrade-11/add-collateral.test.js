@@ -21,7 +21,7 @@ import {
   testIncludes,
   txAbbr,
 } from './core-eval-support.js';
-import { agoric } from '../lib/cliHelper.js';
+import { agoric, wellKnownIdentities } from '../lib/cliHelper.js';
 
 /** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
 /** @type {import('ava').TestFn<TestContext>}} */
@@ -248,3 +248,13 @@ test.serial('core eval proposal passes', async t => {
   t.log(detail.proposal_id, detail.voting_end_time, detail.status);
   t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
 });
+
+test('stATOM-USD price feed instance in agoricNames', async t => {
+  const { agoric } = t.context;
+  const { instance } = await wellKnownIdentities({ agoric });
+  testIncludes(t, 'stATOM-USD price feed', Object.keys(instance), 'instance');
+});
+
+test.todo('manager in vstorage');
+test.todo('price feed in vstorage - after setting prices');
+test.todo('create a vault as dapp-inter does');
