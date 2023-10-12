@@ -354,6 +354,9 @@ export const addAssetToVault = async (
   // don't add the collateral offering to vaultFactory until its price feed is available
   // eslint-disable-next-line no-restricted-syntax -- allow this computed property
   await consumeInstance[oracleBrandFeedName(oracleBrand, 'USD')];
+  // await also the negotiable brand
+  // eslint-disable-next-line no-restricted-syntax -- allow this computed property
+  await consumeInstance[scaledPriceFeedName(issuerName)];
 
   const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
   const schedules = await E(auctioneerCreator).getSchedule();
@@ -430,8 +433,8 @@ export const getManifestForAddAssetToVault = (
           priceAuthorityAdmin: true,
           priceAuthority: true,
         },
-        produce: {
-          scaledPriceAuthorityKits: true,
+        instance: {
+          produce: true,
         },
         installation: {
           consume: { scaledPriceAuthority: true },
