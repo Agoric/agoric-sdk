@@ -427,6 +427,9 @@ export async function launch({
   }
 
   let savedHeight = Number(kvStore.get(getHostKey('height')) || 0);
+  let savedBeginHeight = Number(
+    kvStore.get(getHostKey('beginHeight')) || savedHeight,
+  );
   let runTime = 0;
   let chainTime;
   let saveTime = 0;
@@ -658,6 +661,11 @@ export async function launch({
     throw decohered;
   }
 
+  function saveBeginHeight(blockHeight) {
+    savedBeginHeight = blockHeight;
+    kvStore.set(getHostKey('beginHeight'), `${savedBeginHeight}`);
+  }
+
   async function afterCommit(blockHeight, blockTime) {
     await waitUntilQuiescent()
       .then(afterCommitCallback)
@@ -688,7 +696,7 @@ export async function launch({
         // This only runs for the very first block on the chain.
         if (isBootstrap) {
           verboseBlocks && blockManagerConsole.info('block bootstrap');
-          savedHeight === 0 ||
+          (savedHeight === 0 && savedBeginHeight === 0) ||
             Fail`Cannot run a bootstrap block at height ${savedHeight}`;
           const blockHeight = 0;
           const runNum = 0;
@@ -701,6 +709,9 @@ export async function launch({
             blockHeight,
             runNum,
           });
+          // Start a block transaction, but without changing state
+          // for the upcoming begin block check
+          saveBeginHeight(savedBeginHeight);
           await processAction(action.type, async () =>
             bootstrapBlock(blockHeight, blockTime),
           );
@@ -790,6 +801,17 @@ export async function launch({
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
 
+        if (blockNeedsExecution(blockHeight)) {
+          if (savedBeginHeight === blockHeight) {
+            decohered = Error(
+              `Inconsistent committed state. Block ${blockHeight} had already began execution`,
+            );
+            throw decohered;
+          }
+          // Start a block transaction, recording which block height is executed
+          saveBeginHeight(blockHeight);
+        }
+
         controller.writeSlogObject({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
@@ -827,6 +849,13 @@ export async function launch({
             throw e;
           }
         } else {
+          if (blockHeight !== savedBeginHeight) {
+            decohered = Error(
+              `Inconsistent committed state. Trying to end block ${blockHeight}, expected began block ${savedBeginHeight}`,
+            );
+            throw decohered;
+          }
+
           // And now we actually process the queued actions down here, during
           // END_BLOCK, but still reentrancy-protected.
 
