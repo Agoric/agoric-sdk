@@ -156,3 +156,6 @@ export const makeInstallCache = async (
 
   return { wrapInstall, saveCache };
 };
+
+export const oracleBrandFeedName = (inBrandName, outBrandName) =>
+  `${inBrandName}-${outBrandName} price feed`;

@@ -7,7 +7,14 @@ import {
 import { E } from '@endo/far';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
-import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
+import {
+  oracleBrandFeedName,
+  reserveThenDeposit,
+  reserveThenGetNames,
+} from './utils.js';
+
+// backwards compatibility
+export { oracleBrandFeedName as instanceNameFor };
 
 const trace = makeTracer('RunPriceFeed', true);
 
@@ -17,9 +24,6 @@ const sanitizePathSegment = name => {
   assertPathSegment(candidate);
   return candidate;
 };
-
-export const instanceNameFor = (inBrandName, outBrandName) =>
-  `${inBrandName}-${outBrandName} price feed`;
 
 /**
  * @typedef {{
@@ -334,7 +338,7 @@ export const startPriceFeeds = async (
     {
       options: {
         priceFeedOptions: {
-          AGORIC_INSTANCE_NAME: instanceNameFor(inBrandName, outBrandName),
+          AGORIC_INSTANCE_NAME: oracleBrandFeedName(inBrandName, outBrandName),
           contractTerms: {
             minSubmissionCount: 2,
             minSubmissionValue: 1,
