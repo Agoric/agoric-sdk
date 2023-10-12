@@ -112,3 +112,29 @@
  * @property {ConnectionHandler} handler
  * @property {Subscription<PegasusConnection>} subscription
  */
+
+/**
+ * @typedef {Object} ForwardTransfer
+ * @property {string} receiver - The bech32 address of the receiver.
+ * @property {string} port - The port to be used for the transfer.
+ * @property {string} channel - The channel identifier.
+ * @property {string} [timeout] - The timeout for the action, e.g., "10m" for 10 minutes. Optional.
+ * @property {number} [retries] - The number of retries in case of failure. Optional.
+ * @property {string|Forward} [next] - The next forward action, either as a JSON string or a nested object. Optional.
+ */
+
+/**
+ * @typedef {Object} ForwardCall
+ * @property {string} contractKey the key the contract public facet is attached to
+ * @property {string} functionName the function name of the method to call in the public facet
+ * @property {string} args json encoded string of the args to pass into the method to call from the public facet
+ */
+
+/**
+ * 
+ * The forward object. Supports IBC Transfer forward (Transfer key) & Contract Call forward (Call key).
+ * 
+ * @typedef {Object} Forward
+ * @property {ForwardTransfer} [transfer] - The forward IBC transfer action.
+ * @property {ForwardCall} [call] - The forward Call action.
+ */
