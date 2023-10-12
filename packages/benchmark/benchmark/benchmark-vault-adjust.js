@@ -67,4 +67,4 @@ bench.addBenchmark('adjust vault balance', {
   },
 });
 
-await bench.run('vault-adjust');
+await bench.run();

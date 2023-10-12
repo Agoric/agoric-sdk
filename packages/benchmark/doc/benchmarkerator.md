@@ -64,10 +64,7 @@ labelled in Ava), and `benchmark` is an object describing the benchmark itself
 After defining one or more benchmarks with `addBenchmark` you must then end by
 invoking:
 
-```await bench.run(name);```
-
-where `name` is a string naming the benchmark run for purposes of error and
-result reporting.
+```await bench.run();```
 
 ### The `Benchmark` object
 
@@ -146,7 +143,8 @@ The supported command line options are:
 | `-v`<br/>`--verbose` | Enable verbose output |
 | `--vat-type TYPE` | Use the specified vat manager type rather than the default `xs-worker` |
 | `-l`<br/>`--local` | Shorthand for `--vat-type local` (vats run in the same process as the kernel; less realistic than `xs-worker` but much faster and easier to debug) |
-| `-d`<br/>`--dump` | Output JSON-formated benchmark data to a file |
+| `-d PATH`<br/>`--dump PATH` | Output JSON-formated benchmark data into _PATH_ |
+| `-s PATH`<br/>`--slot PATH` | Output a log file into _PATH_ |
 | `-h`<br/>`--help` | Output this helpful usage information and then exit |
 
 An optional `--` flag ends the options list.  Any remaining command line
@@ -159,11 +157,13 @@ Timing results and other collected metrics are output to _stdout_.  Two batches
 of information are provided: one for the setup phase and one for the benchmark
 rounds themselves (in aggregate).
 
-In addition, if you specify the `--dump` command line option, a JSON-formatted
-(i.e., machine readable) version of this same data will be output to the file
-`benchmark-NAME.json` in the current working directory (where _NAME_ is the name
-that you provided as the argument to `bench.run`).
+If you specify the `--dump FILEPATH` command line option, a JSON-formatted
+(i.e., machine readable) version of this same data will be output to the
+indicated file.
 
 Output results include execution times (according to Node's nanosecond clock),
 crank counts, and the various kernel resource usage data reported by
 `controller.getStats()`.
+
+In addition, if you specify the `--slog FILEPATH` command line option, a
+SwingSet slog file for the run will be output to the file indicated.

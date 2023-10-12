@@ -36,4 +36,4 @@ bench.addBenchmark('open vault', {
   },
 });
 
-await bench.run('vault-open');
+await bench.run();

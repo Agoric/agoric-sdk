@@ -15,6 +15,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { krefOf } from '@agoric/kmarshal';
+import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
 import '@agoric/vats/exported.js';
 import {
@@ -242,6 +243,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.configSpecifier] bootstrap config specifier
  * @param [options.storage]
  * @param [options.verbose]
+ * @param [options.slogFile]
  * @param [options.defaultManagerType]
  */
 export const makeSwingsetTestKit = async (
@@ -251,6 +253,7 @@ export const makeSwingsetTestKit = async (
     configSpecifier = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
     verbose = false,
+    slogFile = undefined as string | undefined,
     defaultManagerType = 'local' as ManagerType,
   } = {},
 ) => {
@@ -342,6 +345,17 @@ export const makeSwingsetTestKit = async (
     }
   };
 
+  let slogSender;
+  if (slogFile) {
+    slogSender = await makeSlogSender({
+      stateDir: '.',
+      env: {
+        ...process.env,
+        SLOGFILE: slogFile,
+        SLOGSENDER: '',
+      },
+    });
+  }
   const { controller, timer } = await buildSwingset(
     new Map(),
     bridgeOutbound,
@@ -349,7 +363,7 @@ export const makeSwingsetTestKit = async (
     configPath,
     [],
     {},
-    { debugName: 'TESTBOOT', verbose },
+    { debugName: 'TESTBOOT', verbose, slogSender },
   );
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 

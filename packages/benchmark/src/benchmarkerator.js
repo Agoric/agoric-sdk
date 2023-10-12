@@ -106,7 +106,7 @@ import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
  *
  * @typedef {{
  *    addBenchmark: (title: string, benchmark: Benchmark) => void,
- *    run: (name?: string) => Promise<void>,
+ *    run: () => Promise<void>,
  * }} Benchmarkerator
  */
 
@@ -117,7 +117,8 @@ const argv = process.argv.slice(2);
 let commandLineRounds;
 let verbose = false;
 let help = false;
-let dump = false;
+let dumpFile;
+let slogFile;
 /** @type ManagerType */
 let defaultManagerType = 'xs-worker';
 const options = {};
@@ -148,8 +149,11 @@ FLAGS may be:
   --local          - shorthand for '--vat-type local'
                      (less realistic perf numbers but faster and easier to debug)
 
-  -d
-  --dump           - output JSON-formatted benchmark data to a file
+  -s PATH
+  --slog PATH      - output a slog file into PATH
+
+  -d PATH
+  --dump PATH      - output JSON-formatted benchmark data into PATH
 
   -h
   --help           - output this helpful usage information and then exit
@@ -184,7 +188,7 @@ while (argv[0] && stillScanningArgs) {
       break;
     case '-d':
     case '--dump':
-      dump = true;
+      dumpFile = argv.shift();
       break;
     case '--vat-type': {
       const type = argv.shift();
@@ -208,6 +212,10 @@ while (argv[0] && stillScanningArgs) {
     case '-h':
     case '--help':
       help = true;
+      break;
+    case '-s':
+    case '--slog':
+      slogFile = argv.shift();
       break;
     case '-o':
     case '--option': {
@@ -433,6 +441,7 @@ export const makeBenchmarkerator = async () => {
   const swingsetTestKit = await makeSwingsetTestKit(console.log, undefined, {
     defaultManagerType,
     verbose,
+    slogFile,
   });
   const {
     runUtils,
@@ -526,11 +535,8 @@ export const makeBenchmarkerator = async () => {
 
   /**
    * Execute the benchmarks.
-   *
-   * @param {string} [name] - string identifying the set of benchmarks being
-   *    executed.  Used for logging and labeling the output data.
    */
-  const run = async (name = 'benchmark') => {
+  const run = async () => {
     /** @type {object} */
     const benchmarkContext = { ...context };
     await null;
@@ -575,11 +581,8 @@ export const makeBenchmarkerator = async () => {
     }
     await eventLoopIteration();
     await shutdown();
-    if (dump) {
-      fs.writeFileSync(
-        `benchmark-${name}.json`,
-        JSON.stringify(benchmarkReport, null, 2),
-      );
+    if (dumpFile) {
+      fs.writeFileSync(dumpFile, JSON.stringify(benchmarkReport, null, 2));
     }
   };
 
