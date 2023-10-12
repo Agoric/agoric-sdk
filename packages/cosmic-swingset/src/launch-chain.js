@@ -749,7 +749,7 @@ export async function launch({
         // This only runs for the very first block on the chain.
         if (isBootstrap) {
           verboseBlocks && blockManagerConsole.info('block bootstrap');
-          savedHeight === 0 ||
+          (savedHeight === 0 && savedBeginHeight === 0) ||
             Fail`Cannot run a bootstrap block at height ${savedHeight}`;
           const bootstrapBlockParams = parseParams(params);
           const blockHeight = 0;
@@ -759,7 +759,7 @@ export async function launch({
           });
           // Start a block transaction, but without changing state
           // for the upcoming begin block check
-          saveBeginHeight(0);
+          saveBeginHeight(savedBeginHeight);
           await processAction(action.type, async () =>
             bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
           );
