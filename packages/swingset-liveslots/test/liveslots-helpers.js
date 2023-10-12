@@ -1,6 +1,7 @@
 /* global WeakRef, FinalizationRegistry */
-import engineGC from './engine-gc.js';
+import { kser } from '@agoric/kmarshal';
 
+import engineGC from './engine-gc.js';
 import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
 import { makeDummyMeterControl } from './dummyMeterControl.js';
@@ -12,7 +13,6 @@ import {
   makeRetireExports,
   makeBringOutYourDead,
 } from './util.js';
-import { kser } from './kmarshal.js';
 
 /**
  * @param {object} [options]

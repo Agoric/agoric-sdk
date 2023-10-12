@@ -222,9 +222,13 @@ export const makeScheduler = async (
       liveSchedule.clockStep,
       Far('PriceStepWaker', {
         wake(time) {
-          setTimeMonotonically(time);
-          trace('wake step', now);
-          void clockTick(liveSchedule);
+          try {
+            setTimeMonotonically(time);
+            trace('wake step', now);
+            clockTick(liveSchedule);
+          } catch (e) {
+            console.error(`⚠️ Auction threw ${e}. Caught in PriceStepWaker.`);
+          }
         },
       }),
       stepCancelToken,
@@ -238,10 +242,14 @@ export const makeScheduler = async (
       start,
       Far('SchedulerWaker', {
         wake(time) {
-          setTimeMonotonically(time);
-          auctionDriver.capturePrices();
-          // eslint-disable-next-line no-use-before-define
-          return startAuction();
+          try {
+            setTimeMonotonically(time);
+            auctionDriver.capturePrices();
+            // eslint-disable-next-line no-use-before-define
+            return startAuction();
+          } catch (e) {
+            console.error(`⚠️ Auction threw ${e}. Caught in SchedulerWaker.`);
+          }
         },
       }),
     );

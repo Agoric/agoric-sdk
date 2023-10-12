@@ -2,11 +2,11 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
+import { krefOf, kser, kslot } from '@agoric/kmarshal';
 import {
   setupTestLiveslots,
   findSyscallsByType,
 } from '../liveslots-helpers.js';
-import { krefOf, kser, kslot } from '../kmarshal.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
 
 // Legs:

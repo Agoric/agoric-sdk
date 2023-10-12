@@ -11,7 +11,7 @@
 // "data is not callable" error is kind of unique to the way swingset handles
 // references, so we create a distinct error message.
 
-import { kunser, kser } from './kmarshal.js';
+import { kunser, kser } from '@agoric/kmarshal';
 
 export function makeUndeliverableError(methargs) {
   const method = kunser(methargs)[0];

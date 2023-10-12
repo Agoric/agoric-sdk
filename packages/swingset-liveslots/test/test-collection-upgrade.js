@@ -1,10 +1,10 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
+import { kser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
-import { kser } from './kmarshal.js';
 import { buildSyscall } from './liveslots-helpers.js';
 import { makeStartVat } from './util.js';
 import { makeMockGC } from './mock-gc.js';

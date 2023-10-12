@@ -2,13 +2,13 @@
 /* eslint-disable no-useless-concat */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/order
+
 import { createHash } from 'crypto';
+import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
-import { kser, kslot } from '../src/lib/kmarshal.js';
 import {
   enumeratePrefixedKeys,
   getPrefixedValues,

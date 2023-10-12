@@ -10,7 +10,7 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
+import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
 import {
   makePublishKit,

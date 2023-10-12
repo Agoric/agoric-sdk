@@ -1,29 +1,41 @@
 // @jessie-check
+// @ts-check
 
+import { ToFarFunction } from '@endo/captp';
+import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { TimeMath } from '@agoric/time/src/timeMath.js';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { instanceNameFor } from './price-feed-proposal.js';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
+
+const { quote: q } = assert;
 
 /**
  * @typedef {object} InterchainAssetOptions
  * @property {string} [issuerBoardId]
  * @property {string} [denom]
  * @property {number} [decimalPlaces]
- * @property {string} [proposedName]
- * @property {string} keyword
- * @property {string} oracleBrand
+ * @property {string} keyword - used in regstering with reserve, vaultFactory
+ * @property {string} [issuerName] - used in agoricNames for compatibility:
+ *   defaults to `keyword` if not provided
+ * @property {string} [proposedName] - defaults to `issuerName` if not provided
+ * @property {string} [oracleBrand] - defaults to `issuerName` if not provided
  * @property {number} [initialPrice]
  */
 
+/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {BootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
@@ -32,18 +44,22 @@ export const publishInterchainAssetFromBoardId = async (
   { consume: { board, agoricNamesAdmin } },
   { options: { interchainAssetOptions } },
 ) => {
-  const { issuerBoardId, keyword } = interchainAssetOptions;
+  const {
+    issuerBoardId,
+    keyword,
+    issuerName = keyword,
+  } = interchainAssetOptions;
   // Incompatible with denom.
   assert.equal(interchainAssetOptions.denom, undefined);
   assert.typeof(issuerBoardId, 'string');
-  assert.typeof(keyword, 'string');
+  assert.typeof(issuerName, 'string');
 
   const issuer = await E(board).getValue(issuerBoardId);
   const brand = await E(issuer).getBrand();
 
   return Promise.all([
-    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
-    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand),
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(issuerName, issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(issuerName, brand),
   ]);
 };
 
@@ -62,18 +78,23 @@ export const publishInterchainAssetFromBank = async (
   },
   { options: { interchainAssetOptions } },
 ) => {
-  const { denom, decimalPlaces, proposedName, keyword } =
-    interchainAssetOptions;
+  const {
+    denom,
+    decimalPlaces,
+    keyword,
+    issuerName = keyword,
+    proposedName = keyword,
+  } = interchainAssetOptions;
 
   // Incompatible with issuerBoardId.
   assert.equal(interchainAssetOptions.issuerBoardId, undefined);
   assert.typeof(denom, 'string');
-  assert.typeof(keyword, 'string');
   assert.typeof(decimalPlaces, 'number');
+  assert.typeof(issuerName, 'string');
   assert.typeof(proposedName, 'string');
 
   const terms = {
-    keyword,
+    keyword: issuerName, // "keyword" is a misnomer in mintHolder terms
     assetKind: AssetKind.NAT,
     displayInfo: {
       decimalPlaces,
@@ -83,7 +104,7 @@ export const publishInterchainAssetFromBank = async (
 
   const { creatorFacet: mint, publicFacet: issuer } = await E(startUpgradable)({
     installation: mintHolder,
-    label: keyword,
+    label: issuerName,
     privateArgs: undefined,
     terms,
   });
@@ -94,9 +115,9 @@ export const publishInterchainAssetFromBank = async (
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
   await Promise.all([
-    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
-    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand),
-    E(bankManager).addAsset(denom, keyword, proposedName, kit),
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(issuerName, issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(issuerName, brand),
+    E(bankManager).addAsset(denom, issuerName, proposedName, kit),
   ]);
 };
 
@@ -119,10 +140,11 @@ export const registerScaledPriceAuthority = async (
 ) => {
   const {
     keyword,
-    oracleBrand,
+    issuerName = keyword,
+    oracleBrand = issuerName,
     initialPrice: initialPriceRaw,
   } = interchainAssetOptions;
-  assert.typeof(keyword, 'string');
+  assert.typeof(issuerName, 'string');
   assert.typeof(oracleBrand, 'string');
 
   const [
@@ -133,7 +155,7 @@ export const registerScaledPriceAuthority = async (
   ] = await Promise.all([
     priceAuthority,
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('brand'), [
-      keyword,
+      issuerName,
       'IST',
     ]),
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
@@ -191,7 +213,7 @@ export const registerScaledPriceAuthority = async (
 
   const spaKit = await E(startUpgradable)({
     installation: scaledPriceAuthority,
-    label: `scaledPriceAuthority-${keyword}`,
+    label: `scaledPriceAuthority-${issuerName}`,
     terms,
   });
 
@@ -204,7 +226,74 @@ export const registerScaledPriceAuthority = async (
   );
 };
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+// wait a short while after end to allow things to settle
+const BUFFER = 5n * 60n;
+// let's insist on 20 minutes leeway for running the scripts
+const COMPLETION = 20n * 60n;
+
+/**
+ * This function works around an issue identified in #8307 and #8296, and fixed
+ * in #8301. The fix is needed until #8301 makes it into production.
+ *
+ * If there is a liveSchedule, 1) run now if start is far enough away,
+ * otherwise, 2) run after endTime. If neither liveSchedule nor nextSchedule is
+ * defined, 3) run now. If there is only a nextSchedule, 4) run now if startTime
+ * is far enough away, else 5) run after endTime
+ *
+ * @param {import('../auction/scheduler.js').FullSchedule} schedules
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {() => void} thunk
+ */
+const whenQuiescent = async (schedules, timer, thunk) => {
+  const { nextAuctionSchedule, liveAuctionSchedule } = schedules;
+  const now = await E(timer).getCurrentTimestamp();
+
+  const waker = Far('addAssetWaker', { wake: () => thunk() });
+
+  if (liveAuctionSchedule) {
+    const safeStart = TimeMath.subtractAbsRel(
+      liveAuctionSchedule.startTime,
+      COMPLETION,
+    );
+
+    if (TimeMath.compareAbs(safeStart, now) < 0) {
+      // case 2
+      console.warn(
+        `Add Asset after live schedule's endtime: ${q(
+          liveAuctionSchedule.endTime,
+        )}`,
+      );
+
+      return E(timer).setWakeup(
+        TimeMath.addAbsRel(liveAuctionSchedule.endTime, BUFFER),
+        waker,
+      );
+    }
+  }
+
+  if (!liveAuctionSchedule && nextAuctionSchedule) {
+    const safeStart = TimeMath.subtractAbsRel(
+      nextAuctionSchedule.startTime,
+      COMPLETION,
+    );
+    if (TimeMath.compareAbs(safeStart, now) < 0) {
+      // case 5
+      console.warn(
+        `Add Asset after next schedule's endtime: ${q(
+          nextAuctionSchedule.endTime,
+        )}`,
+      );
+      return E(timer).setWakeup(
+        TimeMath.addAbsRel(nextAuctionSchedule.endTime, BUFFER),
+        waker,
+      );
+    }
+  }
+
+  // cases 1, 3, and 4 fall through to here.
+  console.warn(`Add Asset immediately`, thunk);
+  return thunk();
+};
 
 /**
  * @param {EconomyBootstrapPowers} powers
@@ -216,7 +305,12 @@ export const registerScaledPriceAuthority = async (
  */
 export const addAssetToVault = async (
   {
-    consume: { vaultFactoryKit, agoricNamesAdmin, auctioneerKit },
+    consume: {
+      vaultFactoryKit,
+      agoricNamesAdmin,
+      auctioneerKit,
+      chainTimerService,
+    },
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
@@ -233,12 +327,17 @@ export const addAssetToVault = async (
     },
   },
 ) => {
-  const { keyword, oracleBrand } = interchainAssetOptions;
+  const {
+    keyword,
+    issuerName = keyword,
+    oracleBrand = issuerName,
+  } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
+  assert.typeof(issuerName, 'string');
   assert.typeof(oracleBrand, 'string');
   const [interchainIssuer] = await reserveThenGetNames(
     E(agoricNamesAdmin).lookupAdmin('issuer'),
-    [keyword],
+    [issuerName],
   );
 
   const oracleInstanceName = instanceNameFor(oracleBrand, 'USD');
@@ -246,9 +345,23 @@ export const addAssetToVault = async (
   // eslint-disable-next-line no-restricted-syntax -- allow this computed property
   await consumeInstance[oracleInstanceName];
 
+  const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
+  const schedules = await E(auctioneerCreator).getSchedule();
+
+  const finishPromiseKit = makePromiseKit();
+  const addBrandThenResolve = ToFarFunction('addBrandThenResolve', async () => {
+    await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
+    finishPromiseKit.resolve(undefined);
+  });
+
+  // schedules actions on a timer (or does it immediately).
+  // finishPromiseKit signals completion.
+  void whenQuiescent(schedules, chainTimerService, addBrandThenResolve);
+  await finishPromiseKit.promise;
+
   const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
-  await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
+  await E(vaultFactoryCreator).addVaultType(interchainIssuer, keyword, {
     debtLimit: AmountMath.make(stable, BigInt(debtLimitValue)),
     interestRate: makeRatio(interestRateValue, stable),
     // The rest of these we use safe defaults.
@@ -260,8 +373,6 @@ export const addAssetToVault = async (
     mintFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
   });
-  const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
-  await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
 };
 
 export const getManifestForAddAssetToVault = (
@@ -321,6 +432,7 @@ export const getManifestForAddAssetToVault = (
           auctioneerKit: 'auctioneer',
           vaultFactoryKit: 'vaultFactory',
           agoricNamesAdmin: true,
+          chainTimerService: true,
         },
         brand: {
           consume: { [Stable.symbol]: true },

@@ -2,9 +2,9 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
+import { kslot, kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
-import { kslot, kser } from './kmarshal.js';
 import { buildSyscall } from './liveslots-helpers.js';
 import {
   makeMessage,

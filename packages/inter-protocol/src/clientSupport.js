@@ -260,7 +260,9 @@ export const makeParseAmount =
   (agoricNames, makeError = msg => RangeError(msg)) =>
   opt => {
     assert.typeof(opt, 'string', 'parseAmount expected string');
-    const m = opt.match(/^(?<value>[\d_]+(\.[\d_]+)?)(?<brand>[A-Z]\w*?)$/);
+    const m = opt.match(
+      /^(?<value>[\d_]+(?:\.[\d_]+)?)\s*(?<brand>[A-Za-z]\w*)$/,
+    );
     if (!m || !m.groups) {
       throw makeError(`invalid amount: ${opt}`);
     }
