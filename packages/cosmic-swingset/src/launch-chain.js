@@ -787,6 +787,10 @@ export async function launch({
           return undefined;
         }
 
+        // Start a block transaction, but without changing state
+        // for the upcoming begin block check
+        saveBeginHeight(savedBeginHeight);
+
         controller.writeSlogObject({
           type: 'cosmic-swingset-upgrade-start',
           blockHeight,
