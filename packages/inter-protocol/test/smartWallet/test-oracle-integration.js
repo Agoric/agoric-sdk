@@ -10,9 +10,9 @@ import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { TimeMath } from '@agoric/time';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/far';
+import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregatorKit.js';
-import { instanceNameFor } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { buildRootObject } from './boot-psm.js';
 import {
@@ -126,7 +126,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
    */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
-    instanceNameFor('ATOM', 'USD'),
+    oracleBrandFeedName('ATOM', 'USD'),
   );
 
   return { oracleWallets, governedPriceAggregator };
@@ -476,7 +476,7 @@ test.serial('govern oracles list', async t => {
 
   const feed = await E(agoricNames).lookup(
     'instance',
-    instanceNameFor('ATOM', 'USD'),
+    oracleBrandFeedName('ATOM', 'USD'),
   );
   t.assert(feed);
 

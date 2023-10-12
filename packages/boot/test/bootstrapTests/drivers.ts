@@ -7,7 +7,7 @@ import {
   FakeStorageKit,
   slotToRemotable,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { instanceNameFor } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
+import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 
 import {
   AgoricNamesRemotes,
@@ -147,7 +147,7 @@ export const makePriceFeedDriver = async (
   walletFactoryDriver: WalletFactoryDriver,
   oracleAddresses: string[],
 ) => {
-  const priceFeedName = instanceNameFor(collateralBrandKey, 'USD');
+  const priceFeedName = oracleBrandFeedName(collateralBrandKey, 'USD');
 
   const oracleWallets = await Promise.all(
     oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),

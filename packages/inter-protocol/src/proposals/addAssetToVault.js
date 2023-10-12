@@ -12,8 +12,11 @@ import { Stable } from '@agoric/internal/src/tokens.js';
 import { TimeMath } from '@agoric/time/src/timeMath.js';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { instanceNameFor } from './price-feed-proposal.js';
-import { reserveThenGetNames } from './utils.js';
+import {
+  oracleBrandFeedName,
+  reserveThenGetNames,
+  scaledPriceFeedName,
+} from './utils.js';
 
 export * from './startPSM.js';
 
@@ -135,6 +138,7 @@ export const registerScaledPriceAuthority = async (
       priceAuthorityAdmin,
       priceAuthority,
     },
+    instance: { produce: produceInstance },
   },
   { options: { interchainAssetOptions } },
 ) => {
@@ -211,9 +215,11 @@ export const registerScaledPriceAuthority = async (
     }),
   );
 
+  const label = scaledPriceFeedName(issuerName);
+
   const spaKit = await E(startUpgradable)({
     installation: scaledPriceAuthority,
-    label: `scaledPriceAuthority-${issuerName}`,
+    label,
     terms,
   });
 
@@ -224,6 +230,11 @@ export const registerScaledPriceAuthority = async (
     stableBrand,
     true, // force
   );
+
+  // publish into agoricNames so that others can await its presence.
+  // This must stay after registerPriceAuthority above so it's evidence of registration.
+  // eslint-disable-next-line no-restricted-syntax -- computed property
+  produceInstance[label].resolve(spaKit.instance);
 };
 
 // wait a short while after end to allow things to settle
@@ -340,10 +351,12 @@ export const addAssetToVault = async (
     [issuerName],
   );
 
-  const oracleInstanceName = instanceNameFor(oracleBrand, 'USD');
   // don't add the collateral offering to vaultFactory until its price feed is available
   // eslint-disable-next-line no-restricted-syntax -- allow this computed property
-  await consumeInstance[oracleInstanceName];
+  await consumeInstance[oracleBrandFeedName(oracleBrand, 'USD')];
+  // await also the negotiable brand
+  // eslint-disable-next-line no-restricted-syntax -- allow this computed property
+  await consumeInstance[scaledPriceFeedName(issuerName)];
 
   const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
   const schedules = await E(auctioneerCreator).getSchedule();
@@ -420,8 +433,8 @@ export const getManifestForAddAssetToVault = (
           priceAuthorityAdmin: true,
           priceAuthority: true,
         },
-        produce: {
-          scaledPriceAuthorityKits: true,
+        instance: {
+          produce: true,
         },
         installation: {
           consume: { scaledPriceAuthority: true },
