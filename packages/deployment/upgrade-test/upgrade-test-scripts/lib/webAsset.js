@@ -33,7 +33,7 @@ export const makeWebRd = (root, { fetch }) => {
         console.log('WebRd fetch:', there);
         const res = await fetch(there);
         if (!res.ok) {
-          throw Error(res.statusText);
+          throw Error(`${res.statusText} @ ${there}`);
         }
         return res.text();
       },
