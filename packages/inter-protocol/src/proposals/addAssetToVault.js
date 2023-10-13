@@ -1,6 +1,5 @@
 // @jessie-check
 
-import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
@@ -9,8 +8,6 @@ import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { instanceNameFor } from './price-feed-proposal.js';
 import { reserveThenGetNames } from './utils.js';
-import { makePromiseKit } from '@endo/promise-kit';
-import { TimeMath } from '@agoric/time/src/timeMath.js';
 
 export * from './startPSM.js';
 
@@ -210,49 +207,6 @@ export const registerScaledPriceAuthority = async (
 /** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
 
 /**
- * @parameter {ERef<ChainTimerService>} timer
- * @parameter {ERef<PriceAuthority>} priceAuthority
- * @parameter {ERef<Issuer>} chainIssuer
- * @parameter {ERef<Brand>} stableBrand
- */
-const waitForQuote = async (
-  timer,
-  priceAuthority,
-  chainIssuer,
-  stableBrand,
-) => {
-  const [chainBrand, timerBrand] = await Promise.all([
-    E(chainIssuer).getBrand(),
-    E(timer).getTimerBrand(),
-  ]);
-  const cancelToken = Far('AddAssetCancelToken', {});
-  const promiseKit = makePromiseKit();
-
-  void E(timer).repeatAfter(
-    TimeMath.coerceRelativeTimeRecord(0n, timerBrand),
-    TimeMath.coerceRelativeTimeRecord(10n, timerBrand),
-    Far('BusyWaitWaker', {
-      async wake(_time) {
-        try {
-          await E(priceAuthority).quoteGiven(
-            AmountMath.make(chainBrand, 1n),
-            stableBrand,
-          );
-          trace(`received price for `, chainBrand);
-          await E(timer).cancel(cancelToken);
-          promiseKit.resolve(undefined);
-        } catch (e) {
-          trace(`Got Error (${e}) waiting to receive price for `, chainBrand);
-        }
-      },
-    }),
-    cancelToken,
-  );
-
-  await promiseKit.promise;
-};
-
-/**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
@@ -262,13 +216,7 @@ const waitForQuote = async (
  */
 export const addAssetToVault = async (
   {
-    consume: {
-      vaultFactoryKit,
-      agoricNamesAdmin,
-      auctioneerKit,
-      priceAuthority,
-      chainTimerService: timer,
-    },
+    consume: { vaultFactoryKit, agoricNamesAdmin, auctioneerKit },
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
@@ -293,15 +241,12 @@ export const addAssetToVault = async (
     [keyword],
   );
 
-  const stable = await stableP;
-  // Don't proceed until we know the priceAuthority is issuing quotes.
-  await waitForQuote(timer, priceAuthority, interchainIssuer, stable);
-
   const oracleInstanceName = instanceNameFor(oracleBrand, 'USD');
   // don't add the collateral offering to vaultFactory until its price feed is available
   // eslint-disable-next-line no-restricted-syntax -- allow this computed property
   await consumeInstance[oracleInstanceName];
 
+  const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, BigInt(debtLimitValue)),
