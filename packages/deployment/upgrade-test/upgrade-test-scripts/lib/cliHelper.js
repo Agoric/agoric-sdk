@@ -143,6 +143,11 @@ export const wellKnownIdentities = async (io = {}) => {
     );
     return Object.fromEntries(theEntries);
   };
+
+  const installation = fromSmallCapsEntries(
+    await follow('-lF', ':published.agoricNames.installation', '-o', 'text'),
+  );
+
   const instance = fromSmallCapsEntries(
     await follow('-lF', ':published.agoricNames.instance', '-o', 'text'),
   );
@@ -151,7 +156,7 @@ export const wellKnownIdentities = async (io = {}) => {
     await follow('-lF', ':published.agoricNames.brand', '-o', 'text'),
   );
 
-  return { brand, instance };
+  return { brand, installation, instance };
 };
 
 export const smallCapsContext = () => {
