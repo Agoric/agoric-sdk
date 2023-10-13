@@ -7,6 +7,7 @@ import * as cpAmbient from 'child_process'; // TODO: use execa
 import anyTest from 'ava';
 import dbOpenAmbient from 'better-sqlite3';
 import { tmpName as tmpNameAmbient } from 'tmp';
+import { ZipReader } from '@endo/zip';
 
 import { makeFileRW, makeWebCache, makeWebRd } from '../lib/webAsset.js';
 import { makeAgd } from '../lib/agd-lib.js';
@@ -32,6 +33,8 @@ const test = anyTest;
  */
 const assetInfo = {
   repo: {
+    release:
+      'https://github.com/dckc/agoric-vault-collateral-proposal/releases/tag/v13.0.0-alpha1',
     url: 'https://github.com/0xpatrickdev/agoric-vault-collateral-proposal',
     name: 'agoric-vault-collateral-proposal',
     description:
@@ -48,17 +51,15 @@ const assetInfo = {
         },
       ],
       bundles: [
-        // @@ not yet sure which bundles go with which evals
-        // @@ also: some are already on chain, no?
-        'bundles/b1-00093b027ab00556082702da2a5579fe311170e3bc45ec4d33dee2405f820fef3fb8b71c166fd31b5b8f2f9387e3a942649cfb7fb010c7f2aa2cca23fcbf85a4.json',
-        'bundles/b1-3253e162d5dd497dbc103651d0c2be3656448d3563e80e1ca9b0a9a020013b69089f365daad492b346d8970df92fe8fcc589a71b067c6ffc10b8fd548bce6f4e.json',
+        // price-feed-proposal.js
+        'bundles/b1-b9e881e987d10e9ee5aa5d827a1574a3aff2a4eee694b39da50ce28a5ba0c24753dea4f18a50338af6aa0ba0ca97a5544f5eef4db2263ca0ae9e4dd4d8f903be.json',
       ],
     },
     'add-stATOM': {
       evals: [{ permit: 'add-stATOM-permit.json', script: 'add-stATOM.js' }],
       bundles: [
-        'bundles/b1-69d40a0f9adc747213263332b35e6abc03b6b0299fc5ef27b690d406213150562d5ddd0bb92de85edd9e5cb6a1aed4f79caa067840d070babe588cafa14c4726.json',
-        'bundles/b1-8e2dcf513daf9530d347112cf403e8b3fd4f384e041cfa8f0819baa06a79e7f9f2b49fa77801e2d9bbf1717652004c4e65c1ca84d7345c4b44b97512cf8d1fdd.json',
+        // addAssetToVault.js
+        'bundles/b1-d17444291f831122875555d2bf0518f6b762d2f34c26a2b6d17b5c1c2b01157dcdc94b7e8f39144cbe2b36232e048d7aed461de4b9eaa800f8a1431fc70fe5cd.json',
       ],
     },
   },
@@ -70,7 +71,8 @@ const staticConfig = {
   proposer: 'validator',
   collateralPrice: 6, // conservatively low price. TODO: look up
   swingstorePath: '~/.agoric/data/agoric/swingstore.sqlite',
-  assetBase: `${assetInfo.repo.url}/raw/${assetInfo.branch}/`,
+  assetBase: `${assetInfo.repo.url}/raw/${assetInfo.branch}/`, // alternative
+  releaseAssets: assetInfo.repo.release.replace('/tag/', '/download/') + '/',
   title: assetInfo.repo.name,
   description: assetInfo.repo.description,
   buildInfo: Object.values(assetInfo.buildAssets),
@@ -94,7 +96,9 @@ const makeTestContext = async (t, io = {}) => {
     tmpName = tmpNameAmbient,
   } = io;
 
-  const src = makeWebRd(staticConfig.assetBase, { fetch });
+  // @@ const src = makeWebRd(staticConfig.assetBase, { fetch });
+  const src = makeWebRd(staticConfig.releaseAssets, { fetch });
+
   const td = await new Promise((resolve, reject) =>
     tmpName({ prefix: 'assets' }, (err, x) => (err ? reject(err) : resolve(x))),
   );
@@ -103,7 +107,8 @@ const makeTestContext = async (t, io = {}) => {
   //   t.teardown(() => assets.remove());
   const assets = makeWebCache(src, dest);
   // assume filenames don't overlap
-  const bundleAssets = makeWebCache(src.join('bundles/'), dest);
+  //@@alt const bundleAssets = makeWebCache(src.join('bundles/'), dest);
+  const bundleAssets = makeWebCache(src, dest);
   console.log(`bundleAssets: ${bundleAssets}`);
 
   const config = {
@@ -121,7 +126,7 @@ const makeTestContext = async (t, io = {}) => {
   const swingstore = dbTool(dbOpen(dbPath, { readonly: true }));
 
   const before = new Map();
-  return { agd, agoric, swingstore, config, before };
+  return { agd, agoric, swingstore, config, before, fetch };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -135,6 +140,52 @@ test.serial('bundles not yet installed', async t => {
     for (const bundle of bundles) {
       const { id } = bundleDetail(bundle);
       testIncludes(t, id, loaded, 'loaded bundles', false);
+    }
+  }
+});
+
+/**
+ * @param {{endoZipBase64:string}} bundle
+ * @param {{fetch: typeof fetch}} io - using fetch for base64 decoding is a bit of over-kill
+ */
+const bundleEntry = async (bundle, { fetch }) => {
+  const getZipReader = async () => {
+    const { endoZipBase64 } = bundle;
+    const toBlob = (base64, type = 'application/octet-stream') =>
+      fetch(`data:${type};base64,${base64}`).then(res => res.blob());
+    const zipBlob = await toBlob(endoZipBase64);
+    // https://github.com/endojs/endo/issues/1811#issuecomment-1751499626
+    const buffer = await zipBlob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    return new ZipReader(bytes);
+  };
+
+  const getCompartmentMap = zipRd => {
+    const { content } = zipRd.files.get('compartment-map.json');
+    const td = new TextDecoder();
+    const cmap = JSON.parse(td.decode(content));
+    return cmap;
+  };
+
+  const zipRd = await getZipReader();
+  const cmap = getCompartmentMap(zipRd);
+  return cmap.entry;
+};
+
+test.serial('bundle names: compartmentMap.entry', async t => {
+  const {
+    config: { bundleAssets },
+    fetch,
+  } = t.context;
+  const info = staticConfig.buildInfo;
+  for (const { bundles, evals } of info) {
+    for (const bundleRef of bundles) {
+      const { fileName } = bundleDetail(bundleRef);
+      const bundle = JSON.parse(await bundleAssets.getText(fileName));
+      const entry = await bundleEntry(bundle, { fetch });
+      t.log(entry, fileName.slice(0, 'b1-12345'.length));
+      t.truthy(entry.compartment);
+      t.truthy(entry.module);
     }
   }
 });
@@ -162,10 +213,10 @@ test.serial('core eval not permitted to add/replace installations', async t => {
   } = t.context;
   const { buildInfo } = staticConfig;
 
-  for (const { permit } of buildInfo.map(x => x.evals).flat()) {
-    const { installation } = JSON.parse(await assets.getText(permit));
-    t.log(installation.produce);
-    t.falsy(installation.produce);
+  for (const { permit: permitRef } of buildInfo.map(x => x.evals).flat()) {
+    const permit = JSON.parse(await assets.getText(permitRef));
+    t.log('installation.produce', permit?.installation?.produce, permitRef);
+    t.falsy(permit?.installation?.produce);
   }
 });
 
