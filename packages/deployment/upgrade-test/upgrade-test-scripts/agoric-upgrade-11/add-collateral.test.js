@@ -120,7 +120,8 @@ const makeTestContext = async (t, io = {}) => {
   const dbPath = staticConfig.swingstorePath.replace(/^~/, env.HOME);
   const swingstore = dbTool(dbOpen(dbPath, { readonly: true }));
 
-  return { agd, agoric, swingstore, config };
+  const before = new Map();
+  return { agd, agoric, swingstore, config, before };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -154,6 +155,27 @@ const readBundleSizes = async assets => {
   const totalSize = sum(bundleSizes);
   return { bundleSizes, totalSize };
 };
+
+test.serial('core eval not permitted to add/replace installations', async t => {
+  const {
+    config: { assets },
+  } = t.context;
+  const { buildInfo } = staticConfig;
+
+  for (const { permit } of buildInfo.map(x => x.evals).flat()) {
+    const { installation } = JSON.parse(await assets.getText(permit));
+    t.log(installation.produce);
+    t.falsy(installation.produce);
+  }
+});
+
+test.serial('save installations before the poposal', async t => {
+  const { agoric, before } = t.context;
+  const { installation } = await wellKnownIdentities({ agoric });
+  t.log(installation.priceAggregator);
+  t.truthy(installation.priceAggregator);
+  before.set('installation', installation);
+});
 
 test.serial('ensure enough IST to install bundles', async t => {
   const { agd, config } = t.context;
@@ -247,6 +269,15 @@ test.serial('core eval proposal passes', async t => {
   const detail = await voteLatestProposalAndWait();
   t.log(detail.proposal_id, detail.voting_end_time, detail.status);
   t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
+});
+
+test.serial('priceAuthority installation was not changed', async t => {
+  const { agoric, before } = t.context;
+  const { installation } = await wellKnownIdentities({ agoric });
+  const actual = installation.priceAggregator;
+  const expected = before.get('installation').priceAggregator;
+  t.log({ expected, actual });
+  t.deepEqual(actual, expected);
 });
 
 test('stATOM-USD price feed instance in agoricNames', async t => {
