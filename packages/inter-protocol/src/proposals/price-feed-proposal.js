@@ -276,10 +276,6 @@ export const getManifestForPriceFeed = async (
       },
     },
   },
-  installations: {
-    // ??? will every eval of price-feed-proposal install priceAggregator ?
-    priceAggregator: restoreRef(priceFeedOptions.priceAggregatorRef),
-  },
   options: {
     priceFeedOptions: {
       brandIn:

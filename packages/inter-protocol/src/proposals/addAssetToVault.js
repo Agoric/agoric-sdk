@@ -457,9 +457,6 @@ export const getManifestForAddAssetToVault = (
         },
       },
     },
-    installations: {
-      scaledPriceAuthority: restoreRef(scaledPriceAuthorityRef),
-    },
     options: {
       debtLimitValue,
       interchainAssetOptions,

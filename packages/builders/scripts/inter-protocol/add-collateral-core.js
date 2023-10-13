@@ -50,13 +50,6 @@ export const defaultProposalBuilder = async (
           proposedName,
           oracleBrand,
         },
-        scaledPriceAuthorityRef: publishRef(
-          install(
-            '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
-            '../bundles/bundle-scaledPriceAuthority.js',
-            { persist: true },
-          ),
-        ),
       },
     ],
   });

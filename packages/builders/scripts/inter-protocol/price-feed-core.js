@@ -56,12 +56,6 @@ export const defaultProposalBuilder = async (
         OUT_BRAND_NAME,
         brandInRef: brandIn && publishRef(brandIn),
         brandOutRef: brandOut && publishRef(brandOut),
-        priceAggregatorRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-            '../bundles/bundle-fluxAggregatorKit.js',
-          ),
-        ),
       },
     ],
   });
