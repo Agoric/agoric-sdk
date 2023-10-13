@@ -34,7 +34,7 @@ const test = anyTest;
 const assetInfo = {
   repo: {
     release:
-      'https://github.com/dckc/agoric-vault-collateral-proposal/releases/tag/v13.0.0-alpha1',
+      'https://github.com/dckc/agoric-vault-collateral-proposal/releases/tag/v0.13.0-beta1',
     url: 'https://github.com/0xpatrickdev/agoric-vault-collateral-proposal',
     name: 'agoric-vault-collateral-proposal',
     description:
@@ -43,6 +43,13 @@ const assetInfo = {
   branch: 'auction-update',
   /** @type {Record<string, import('./core-eval-support.js').ProposalInfo>} */
   buildAssets: {
+    'add-stATOM': {
+      evals: [{ permit: 'add-stATOM-permit.json', script: 'add-stATOM.js' }],
+      bundles: [
+        // addAssetToVault.js
+        'b1-903e41a7c448a41b456298404a1c32c69302574209c6a5228723ed19e2dd99f2a693641196445bc27a90e19e1dfadfe6b3d9c9a93f080ffa33a70908e5af4fff.json',
+      ],
+    },
     'add-stATOM-oracle': {
       evals: [
         {
@@ -52,14 +59,7 @@ const assetInfo = {
       ],
       bundles: [
         // price-feed-proposal.js
-        'bundles/b1-b9e881e987d10e9ee5aa5d827a1574a3aff2a4eee694b39da50ce28a5ba0c24753dea4f18a50338af6aa0ba0ca97a5544f5eef4db2263ca0ae9e4dd4d8f903be.json',
-      ],
-    },
-    'add-stATOM': {
-      evals: [{ permit: 'add-stATOM-permit.json', script: 'add-stATOM.js' }],
-      bundles: [
-        // addAssetToVault.js
-        'bundles/b1-d17444291f831122875555d2bf0518f6b762d2f34c26a2b6d17b5c1c2b01157dcdc94b7e8f39144cbe2b36232e048d7aed461de4b9eaa800f8a1431fc70fe5cd.json',
+        'b1-80e6fe68b299c82c2d26802c312bc37966a559f7b28f87d058887a79a9db48ad97da2240e71e3f98986071da8fc3c5d02358bec577b17a89cee2b1cb3cd23958.json',
       ],
     },
   },
@@ -132,6 +132,8 @@ const makeTestContext = async (t, io = {}) => {
 test.before(async t => (t.context = await makeTestContext(t)));
 
 test.serial('bundles not yet installed', async t => {
+  // TODO: also check that scaledPrice..., fluxAgg bundles match mainnet
+  // select bundleId from bundles where (bundleId like 'b1-4522b%' or bundleId like 'b1-0b217%')"
   const { swingstore } = t.context;
   const loaded = loadedBundleIds(swingstore);
   const info = staticConfig.buildInfo;
