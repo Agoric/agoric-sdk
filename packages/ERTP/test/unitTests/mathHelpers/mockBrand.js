@@ -1,3 +1,4 @@
+import { M } from '@endo/patterns';
 import { Far } from '@endo/marshal';
 import { AssetKind } from '../../../src/index.js';
 
@@ -6,10 +7,13 @@ import { AssetKind } from '../../../src/index.js';
 /** @type {Brand<'nat'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockNatBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
-  getAmountShape: () => ({}),
+  getAmountShape: () =>
+    harden({
+      brand: mockNatBrand,
+      value: M.nat(),
+    }),
   getDisplayInfo: () => ({
     assetKind: AssetKind.NAT,
   }),
@@ -18,8 +22,7 @@ export const mockNatBrand = Far('brand', {
 /** @type {Brand<'set'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockSetBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),
   getDisplayInfo: () => ({
@@ -30,8 +33,7 @@ export const mockSetBrand = Far('brand', {
 /** @type {Brand<'copySet'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockCopySetBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),
   getDisplayInfo: () => ({
@@ -42,8 +44,7 @@ export const mockCopySetBrand = Far('brand', {
 /** @type {Brand<'copyBag'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockCopyBagBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),
   getDisplayInfo: () => ({

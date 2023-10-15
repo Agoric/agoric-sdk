@@ -385,6 +385,13 @@ export {};
 // /////////////////////////// MathHelpers /////////////////////////////////////
 
 /**
+ * @template {AmountValue} [V=AmountValue]
+ * @typedef AmountValueSplit
+ * @property {V} matched
+ * @property {V} change
+ */
+
+/**
  * @template {AmountValue} V
  * @typedef {object} MathHelpers All of the difference in how digital asset
  *   amount are manipulated can be reduced to the behavior of the math on
@@ -410,6 +417,21 @@ export {};
  * @property {(left: V, right: V) => V} doSubtract Return what remains after
  *   removing the right from the left. If something in the right was not in the
  *   left, we throw an error.
+ * @property {(
+ *   totalValue: V,
+ *   valuePattern: Pattern,
+ * ) => AmountValueSplit<V> | undefined} doFrugalSplit
+ *   Only needs to deal with the helper-specific cases left over after the
+ *   `frugalValueSplit` in amountMath.js has taken case of the cases it can
+ *   handle optimally. When `valuePattern` is
+ *
+ *   - a concrete value (i.e., a `Key`), producing an exact subtract.
+ *   - Anything that matches `empty`, since that gives an optimally frugal success.
+ *
+ *   `doFrugalSplit` should return `undefined` anytime it has nothing further
+ *   contribute. That will not be interpreted as saying that failure to split
+ *   should be reported. Rather, the caller may then fall back to generic
+ *   conservative checks.
  */
 
 /** @typedef {bigint} NatValue */
