@@ -27,4 +27,5 @@ export const copySetMathHelpers = harden({
   doIsEqual: keyEQ,
   doAdd: setDisjointUnion,
   doSubtract: setDisjointSubtract,
+  doFrugalSplit: (_totalValue, _valuePattern) => undefined,
 });

@@ -1,10 +1,11 @@
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
+import { passStyleOf, assertRemotable, assertRecord } from '@endo/pass-style';
 
-import { M, matches } from '@agoric/store';
+import { M, isKey, kindOf, matches, mustMatch } from '@endo/patterns';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
+import { AmountShape } from './typeGuards.js';
 
 const { quote: q, Fail } = assert;
 
@@ -187,6 +188,172 @@ const isGTE = (leftAmount, rightAmount, brand = undefined) => {
   return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
 };
 
+// ////////////////////// Frugal Split /////////////////////////////////////////
+
+/**
+ * Best effort attempt to extract the smallest subset of `totalValue` needed to
+ * to match the `valuePattern`. We name this "frugal" rather than "minimal"
+ * because we only require this looser best-efforts requirement. Further, we
+ * require that successive versions of this code are monotonic non-worse
+ * efforts, i.e., that they do not become less precise than previous correct
+ * answers.
+ *
+ * @template {AmountValue} [V=AmountValue]
+ * @param {MathHelpers<V>} h
+ * @param {V} empty
+ * @param {V} totalValue
+ * @param {Pattern} valuePattern
+ * @returns {AmountValueSplit<V> | undefined}
+ */
+const frugalValueSplit = (h, empty, totalValue, valuePattern) => {
+  if (isKey(valuePattern)) {
+    if (h.doIsGTE(totalValue, valuePattern)) {
+      return harden({
+        matched: valuePattern,
+        change: h.doSubtract(totalValue, valuePattern),
+      });
+    }
+    return undefined;
+  }
+  if (matches(empty, valuePattern)) {
+    return harden({
+      matched: empty,
+      change: totalValue,
+    });
+  }
+  const valueSplit = h.doFrugalSplit(totalValue, valuePattern);
+  if (valueSplit !== undefined) {
+    return valueSplit;
+  }
+  if (matches(totalValue, valuePattern)) {
+    // Conservative safe overestimate. Over time, we may pick off
+    // more cases to become more precise (i.e., less conservative).
+    // This is consistent with the best-efforts sense of `frugalValueSplit`
+    // but means that clients should be prepared for these answers to
+    // become more precise over time while remaining safe.
+    return harden({
+      matched: totalValue,
+      change: empty,
+    });
+  }
+  // Some patterns might validly match only a non-empty strict subset of
+  // totalAmount, but in which the above case analysis fails to figure
+  // that out and we fall through here. As we expand this case analysis
+  // to pick off more cases, some of these cases may start succeeding.
+  // This is consistent with the best-efforts sense of
+  // `frugalValueSplit` but means that clients should be prepared for
+  // these false failures to become successes over time.
+  return undefined;
+};
+
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef AmountSplit
+ * @property {Amount<K>} matched
+ * @property {Amount<K>} change
+ */
+
+/**
+ * Best effort attempt to extract the smallest subset of `totalAmount` needed to
+ * to match the `pattern`. We name this "frugal" rather than "minimal" because
+ * we only require this looser best-efforts requirement. Further, we require
+ * that successive versions of this code are monotonic non-worse efforts, i.e.,
+ * that they do not become less precise than previous correct answers.
+ *
+ * @param {Amount} totalAmount
+ * @param {Pattern} pattern
+ * @returns {AmountSplit | undefined}
+ */
+const frugalSplit = (totalAmount, pattern) => {
+  mustMatch(
+    harden([totalAmount, pattern]),
+    harden([AmountShape, M.pattern()]),
+    'frugalSplit',
+  );
+  if (isKey(pattern)) {
+    if (isGTE(totalAmount, pattern)) {
+      return harden({
+        matched: pattern,
+        // eslint-disable-next-line no-use-before-define
+        change: AmountMath.subtract(totalAmount, pattern),
+      });
+    }
+    return undefined;
+  }
+  const { brand, value: totalValue } = totalAmount;
+  const h = assertValueGetHelpers(totalValue);
+  const empty = harden({
+    brand,
+    value: h.doMakeEmpty(),
+  });
+  if (matches(empty, pattern)) {
+    return harden({
+      matched: empty,
+      change: totalAmount,
+    });
+  }
+  const patternKind = kindOf(pattern);
+
+  switch (patternKind) {
+    case 'copyRecord': {
+      mustMatch(
+        pattern,
+        harden({
+          brand: M.pattern(),
+          value: M.pattern(),
+        }),
+        'amountPattern record',
+      );
+      const { brand: brandPattern, value: valuePattern } = pattern;
+      if (!matches(brand, brandPattern)) {
+        return undefined;
+      }
+      const valueSplit = frugalValueSplit(
+        h,
+        empty.value,
+        totalValue,
+        valuePattern,
+      );
+      if (valueSplit === undefined) {
+        return undefined;
+      }
+      return harden({
+        matched: {
+          brand,
+          value: valueSplit.matched,
+        },
+        change: {
+          brand,
+          value: valueSplit.change,
+        },
+      });
+    }
+    default: {
+      if (matches(totalAmount, pattern)) {
+        // Conservative safe overestimate. Over time, we may pick off
+        // more cases to become more precise (i.e., less conservative).
+        // This is consistent with the best-efforts sense of `frugalSplit`
+        // but means that clients should be prepared for these answers to
+        // become more precise over time while remaining safe.
+        return harden({
+          matched: totalAmount,
+          change: empty,
+        });
+      }
+      // Some patterns might validly match only a non-empty strict subset of
+      // totalAmount, but in which the above case analysis fails to figure
+      // that out and we fall through here. As we expand this case analysis
+      // to pick off more cases, some of these cases may start succeeding.
+      // This is consistent with the best-efforts sense of
+      // `frugalSplit` but means that clients should be prepared for
+      // these false failures to become successes over time.
+      return undefined;
+    }
+  }
+};
+
+// ////////////////////// AmountMath ///////////////////////////////////////////
+
 /**
  * Logic for manipulating amounts.
  *
@@ -367,6 +534,8 @@ const AmountMath = {
       : isGTE(y, x)
       ? y
       : Fail`${x} and ${y} are incomparable`,
+
+  frugalSplit,
 };
 harden(AmountMath);
 
