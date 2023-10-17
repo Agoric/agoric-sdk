@@ -1,6 +1,7 @@
 // @ts-check
 
 import { E } from "@endo/far";
+import { error } from "console";
 
 /**
  * Parses a Transfer memo to determine if there is a packet to forward or not.
@@ -34,15 +35,17 @@ export const remoteCall = async (call) => {};
  * If no memo is specified this function will just skip logic and return.
  *
  * @param {any} pegasus the pegasus publicFacet
+ * @param {PegasusConnectionActions} pegasusConnAction the pegasus connection actions
  * @param {ZoeService} zoe zoe instance
  * @param {string} memo the transfer memo
  * @param {Brand} localBrand the local ERTP brand you are transferring
- * @param {string} remoteDenom the local ERTP brand you are transferring
+ * @param {string} remoteDenom the remote (native denom) denom you are transferring
  * @param {Payment} payment the payment of the assets to transfer
  * @param {object} scratch the payment of the assets to transfer
+ * @param {Array<[string, any]>} pegasusConnections the pegasus connections
  * 
  */
-export const forward = async (pegasus, zoe, memo, localBrand, remoteDenom, payment, scratch) => {
+export const forward = async (pegasus, pegasusConnAction, zoe, memo, localBrand, remoteDenom, payment, scratch, pegasusConnections) => {
     let memoForward = parseTransferMemo(memo);
     if (memoForward) {
         if (memoForward.call) {
@@ -53,15 +56,23 @@ export const forward = async (pegasus, zoe, memo, localBrand, remoteDenom, payme
             const next = transfer.next;
             const pegKey = `peg-${transfer.channel}-${remoteDenom}`
             /** @type {Peg} */
-            const pegP = E(scratch).getValue(pegKey);
+            let pegP = E(scratch).getValue(pegKey);
             if (!pegP) {
-                const connections = await E(pegasusConnections).entries();
-                assert(connections.length > 0, `pegasusConnections nameHub is empty`);
-                console.log('pegasusConnections:', connections.length);
-                const [addr, conn] = connections.find(([a, _c]) =>
-                  a.endsWith(channel),
+                const connections = /** @type {IterableIterator<[number, PegasusConnection]>} */ (await E(pegasusConnections).entries());
+                assert(getLength(connections) > 0, `pegasusConnections nameHub is empty`);
+                console.log('pegasusConnections:', getLength(connections));
+                /** @type {[number, PegasusConnection] | undefined} */
+                const conn = Array.from(connections).find((/** @type {any} */ item) =>
+                    item[1].channel.includes(transfer.channel)
                 );
-                await E(pegasus).pegRemote();
+                if (conn === undefined) {
+                    throw error(`No channel found in Pegasus connections for ${transfer.channel}`);
+                }
+                if (conn[1].actions === undefined) {
+                    throw error(`No actions found in Pegasus connections channel for ${transfer.channel}`);
+                }
+                pegP = await E(conn[1].actions).pegRemote(remoteDenom, remoteDenom);
+                await E(scratch).setValue(pegKey, pegP);
             }
             /** @type {Invitation} */
             const transferInvitation = await E(pegasus).makeInvitationToTransfer(
@@ -83,3 +94,17 @@ export const forward = async (pegasus, zoe, memo, localBrand, remoteDenom, payme
         }
     }
 };
+
+/**
+ * Get the length of an iterable object.
+ * 
+ * @param {IterableIterator<[number, any]>} iterable - The iterable object.
+ * @returns {number} The number of items in the iterable object.
+ */
+function getLength(iterable) {
+    let length = 0;
+    for (const _ of iterable) {
+        length++;
+    }
+    return length;
+}
