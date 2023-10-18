@@ -125,9 +125,9 @@
 
 /**
  * @typedef {Object} ForwardCall
- * @property {string} contractKey the key the contract public facet is attached to
+ * @property {string} boardId the board id of the instance of the contract
  * @property {string} functionName the function name of the method to call in the public facet
- * @property {string} args json encoded string of the args to pass into the method to call from the public facet
+ * @property {any[]} args json encoded string of the args to pass into the method to call from the public facet
  */
 
 /**

@@ -28,24 +28,29 @@ export const parseTransferMemo = (memo) => {
  * @param {ForwardCall} call the call info for the remote call
  *
  */
-export const remoteCall = async (call) => {};
+export const remoteCall = async (call) => {
+    try {
+        const { contractKey, functionName, args } = call;
+        const contract = await E(scratch).get(contractKey);
+        const result = await E(contract)[functionName](...args);
+        console.log("PFM Remote Call Result: ", result);
+    } catch (error) {
+        console.error("PFM Remote Call Error: ", error);
+        throw error;
+    }
+};
 
 /**
  * Parses a transfer memo and then calls the appropriate functions to handle the logic defined in the memo.
  * If no memo is specified this function will just skip logic and return.
  *
- * @param {any} pegasus the pegasus publicFacet
- * @param {PegasusConnectionActions} pegasusConnAction the pegasus connection actions
- * @param {ZoeService} zoe zoe instance
  * @param {string} memo the transfer memo
  * @param {Brand} localBrand the local ERTP brand you are transferring
  * @param {string} remoteDenom the remote (native denom) denom you are transferring
  * @param {Payment} payment the payment of the assets to transfer
- * @param {object} scratch the payment of the assets to transfer
- * @param {Array<[string, any]>} pegasusConnections the pegasus connections
  * 
  */
-export const forward = async (pegasus, pegasusConnAction, zoe, memo, localBrand, remoteDenom, payment, scratch, pegasusConnections) => {
+export const forward = async (memo, localBrand, remoteDenom, payment) => {
     let memoForward = parseTransferMemo(memo);
     if (memoForward) {
         if (memoForward.call) {
