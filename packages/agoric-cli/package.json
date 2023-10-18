@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/main.js",
   "bin": {
-    "agoric": "src/entrypoint.js",
-    "agops": "src/bin-agops.js"
+    "agops": "src/bin-agops.js",
+    "agoric": "src/entrypoint.js"
   },
   "exports": {
     "./src/entrypoint.js": "./src/entrypoint.js",
@@ -28,8 +28,8 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/cosmic-swingset": "^0.41.3",
+    "@agoric/deploy-script-support": "^0.10.3",
     "ava": "^5.3.0",
     "c8": "^7.13.0",
     "dd-trace": "^4.11.1"
