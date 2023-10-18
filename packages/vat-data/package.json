@@ -19,10 +19,10 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/store": "^0.9.2",
-    "@agoric/swingset-liveslots": "^0.10.2"
+    "@agoric/assert": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/store": "workspace:*",
+    "@agoric/swingset-liveslots": "workspace:*"
   },
   "devDependencies": {
     "@endo/init": "^1.0.1",

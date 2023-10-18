@@ -22,9 +22,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/store": "^0.9.2",
+    "@agoric/assert": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/store": "workspace:*",
     "@endo/init": "^1.0.1",
     "@endo/marshal": "^1.0.1",
     "@endo/stream": "^1.0.1",

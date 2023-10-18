@@ -21,8 +21,8 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/internal": "^0.3.2",
+    "@agoric/assert": "workspace:*",
+    "@agoric/internal": "workspace:*",
     "@endo/base64": "^1.0.0",
     "@endo/bundle-source": "^3.0.1",
     "@endo/check-bundle": "^1.0.1",

@@ -21,7 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@agoric/assert": "workspace:*",
     "@endo/far": "^1.0.1",
     "@endo/marshal": "^1.0.1"
   },

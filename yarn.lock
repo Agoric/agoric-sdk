@@ -12,7 +12,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/access-token@^0.4.21, @agoric/access-token@workspace:packages/access-token":
+"@agoric/access-token@workspace:*, @agoric/access-token@workspace:packages/access-token":
   version: 0.0.0-use.local
   resolution: "@agoric/access-token@workspace:packages/access-token"
   dependencies:
@@ -26,7 +26,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/assert@^0.6.0, @agoric/assert@workspace:packages/assert":
+"@agoric/assert@workspace:*, @agoric/assert@workspace:packages/assert":
   version: 0.0.0-use.local
   resolution: "@agoric/assert@workspace:packages/assert"
   dependencies:
@@ -46,11 +46,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/base-zone@^0.1.0, @agoric/base-zone@workspace:packages/base-zone":
+"@agoric/base-zone@workspace:*, @agoric/base-zone@workspace:packages/base-zone":
   version: 0.0.0-use.local
   resolution: "@agoric/base-zone@workspace:packages/base-zone"
   dependencies:
-    "@agoric/store": ^0.9.2
+    "@agoric/store": "workspace:*"
     "@endo/exo": ^1.0.1
     "@endo/far": ^1.0.1
     "@endo/init": ^1.0.1
@@ -64,40 +64,40 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/benchmark@workspace:packages/benchmark"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/boot": ^0.1.0
-    "@agoric/cosmic-swingset": ^0.41.3
-    "@agoric/inter-protocol": ^0.16.1
-    "@agoric/internal": ^0.3.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/boot": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/init": ^1.0.1
   languageName: unknown
   linkType: soft
 
-"@agoric/boot@^0.1.0, @agoric/boot@workspace:packages/boot":
+"@agoric/boot@workspace:*, @agoric/boot@workspace:packages/boot":
   version: 0.0.0-use.local
   resolution: "@agoric/boot@workspace:packages/boot"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/builders": ^0.1.0
-    "@agoric/cosmic-swingset": ^0.41.3
-    "@agoric/deploy-script-support": ^0.10.3
-    "@agoric/ertp": ^0.16.2
-    "@agoric/governance": ^0.10.3
-    "@agoric/inter-protocol": ^0.16.1
-    "@agoric/internal": ^0.3.2
-    "@agoric/kmarshal": ^0.1.0
-    "@agoric/store": ^0.9.2
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/telemetry": ^0.6.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/vm-config": ^0.1.0
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/builders": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/telemetry": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/vm-config": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -113,26 +113,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/builders@^0.1.0, @agoric/builders@workspace:packages/builders":
+"@agoric/builders@workspace:*, @agoric/builders@workspace:packages/builders":
   version: 0.0.0-use.local
   resolution: "@agoric/builders@workspace:packages/builders"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/deploy-script-support": ^0.10.3
-    "@agoric/ertp": ^0.16.2
-    "@agoric/governance": ^0.10.3
-    "@agoric/inter-protocol": ^0.16.1
-    "@agoric/internal": ^0.3.2
-    "@agoric/network": ^0.1.0
-    "@agoric/notifier": ^0.6.2
-    "@agoric/smart-wallet": ^0.5.3
-    "@agoric/store": ^0.9.2
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -147,15 +147,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/cache@^0.3.2, @agoric/cache@workspace:packages/cache":
+"@agoric/cache@workspace:*, @agoric/cache@workspace:packages/cache":
   version: 0.0.0-use.local
   resolution: "@agoric/cache@workspace:packages/cache"
   dependencies:
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/zoe": ^0.26.2
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/far": ^1.0.1
     "@endo/marshal": ^1.0.1
     ava: ^5.3.0
@@ -163,15 +163,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/casting@^0.4.2, @agoric/casting@workspace:packages/casting":
+"@agoric/casting@workspace:*, @agoric/casting@workspace:packages/casting":
   version: 0.0.0-use.local
   resolution: "@agoric/casting@workspace:packages/casting"
   dependencies:
-    "@agoric/cosmic-proto": ^0.3.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/spawner": ^0.6.8
-    "@agoric/store": ^0.9.2
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/spawner": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@cosmjs/encoding": ^0.30.1
     "@cosmjs/proto-signing": ^0.30.1
     "@cosmjs/stargate": ^0.30.1
@@ -191,7 +191,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/cosmic-proto@^0.3.0, @agoric/cosmic-proto@workspace:packages/cosmic-proto":
+"@agoric/cosmic-proto@workspace:*, @agoric/cosmic-proto@workspace:packages/cosmic-proto":
   version: 0.0.0-use.local
   resolution: "@agoric/cosmic-proto@workspace:packages/cosmic-proto"
   dependencies:
@@ -200,20 +200,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/cosmic-swingset@^0.41.3, @agoric/cosmic-swingset@workspace:packages/cosmic-swingset":
+"@agoric/cosmic-swingset@workspace:*, @agoric/cosmic-swingset@workspace:packages/cosmic-swingset":
   version: 0.0.0-use.local
   resolution: "@agoric/cosmic-swingset@workspace:packages/cosmic-swingset"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/builders": ^0.1.0
-    "@agoric/cosmos": ^0.34.1
-    "@agoric/deploy-script-support": ^0.10.3
-    "@agoric/internal": ^0.3.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/telemetry": ^0.6.2
-    "@agoric/vm-config": ^0.1.0
+    "@agoric/assert": "workspace:*"
+    "@agoric/builders": "workspace:*"
+    "@agoric/cosmos": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/telemetry": "workspace:*"
+    "@agoric/vm-config": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/far": ^1.0.1
     "@endo/import-bundle": ^1.0.1
@@ -235,7 +235,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/cosmos@^0.34.1, @agoric/cosmos@workspace:golang/cosmos":
+"@agoric/cosmos@workspace:*, @agoric/cosmos@workspace:golang/cosmos":
   version: 0.0.0-use.local
   resolution: "@agoric/cosmos@workspace:golang/cosmos"
   dependencies:
@@ -245,19 +245,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/deploy-script-support@^0.10.3, @agoric/deploy-script-support@workspace:packages/deploy-script-support":
+"@agoric/deploy-script-support@workspace:*, @agoric/deploy-script-support@workspace:packages/deploy-script-support":
   version: 0.0.0-use.local
   resolution: "@agoric/deploy-script-support@workspace:packages/deploy-script-support"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/import-manager": ^0.3.11
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/import-manager": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/base64": ^1.0.0
     "@endo/bundle-source": ^3.0.1
     "@endo/far": ^1.0.1
@@ -275,7 +275,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/deployment@workspace:packages/deployment"
   dependencies:
-    "@agoric/assert": ^0.6.0
+    "@agoric/assert": "workspace:*"
     "@endo/init": ^1.0.1
     "@endo/marshal": ^1.0.1
     better-sqlite3: ^9.1.1
@@ -291,15 +291,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/ertp@^0.16.2, @agoric/ertp@workspace:packages/ERTP":
+"@agoric/ertp@workspace:*, @agoric/ertp@workspace:packages/ERTP":
   version: 0.0.0-use.local
   resolution: "@agoric/ertp@workspace:packages/ERTP"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/vat-data": ^0.5.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/eventual-send": ^1.0.1
     "@endo/far": ^1.0.1
@@ -333,20 +333,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/governance@^0.10.3, @agoric/governance@workspace:packages/governance":
+"@agoric/governance@workspace:*, @agoric/governance@workspace:packages/governance":
   version: 0.0.0-use.local
   resolution: "@agoric/governance@workspace:packages/governance"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/internal": ^0.3.2
-    "@agoric/network": ^0.1.0
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -361,34 +361,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/import-manager@^0.3.11, @agoric/import-manager@workspace:packages/import-manager":
+"@agoric/import-manager@workspace:*, @agoric/import-manager@workspace:packages/import-manager":
   version: 0.0.0-use.local
   resolution: "@agoric/import-manager@workspace:packages/import-manager"
   dependencies:
-    "@agoric/swingset-vat": ^0.32.2
+    "@agoric/swingset-vat": "workspace:*"
     ava: ^5.3.0
     c8: ^7.13.0
   languageName: unknown
   linkType: soft
 
-"@agoric/inter-protocol@^0.16.1, @agoric/inter-protocol@workspace:packages/inter-protocol":
+"@agoric/inter-protocol@workspace:*, @agoric/inter-protocol@workspace:packages/inter-protocol":
   version: 0.0.0-use.local
   resolution: "@agoric/inter-protocol@workspace:packages/inter-protocol"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/governance": ^0.10.3
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/smart-wallet": ^0.5.3
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
-    "@agoric/zone": ^0.2.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -406,12 +406,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/internal@^0.3.2, @agoric/internal@workspace:packages/internal":
+"@agoric/internal@workspace:*, @agoric/internal@workspace:packages/internal":
   version: 0.0.0-use.local
   resolution: "@agoric/internal@workspace:packages/internal"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/base-zone": ^0.1.0
+    "@agoric/assert": "workspace:*"
+    "@agoric/base-zone": "workspace:*"
     "@endo/far": ^1.0.1
     "@endo/init": ^1.0.1
     "@endo/marshal": ^1.0.1
@@ -425,25 +425,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/kmarshal@^0.1.0, @agoric/kmarshal@workspace:packages/kmarshal":
+"@agoric/kmarshal@workspace:*, @agoric/kmarshal@workspace:packages/kmarshal":
   version: 0.0.0-use.local
   resolution: "@agoric/kmarshal@workspace:packages/kmarshal"
   dependencies:
-    "@agoric/assert": ^0.6.0
+    "@agoric/assert": "workspace:*"
     "@endo/far": ^1.0.1
     "@endo/marshal": ^1.0.1
     ava: ^5.3.0
   languageName: unknown
   linkType: soft
 
-"@agoric/network@^0.1.0, @agoric/network@workspace:packages/network":
+"@agoric/network@workspace:*, @agoric/network@workspace:packages/network":
   version: 0.0.0-use.local
   resolution: "@agoric/network@workspace:packages/network"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-vat": ^0.32.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
     "@endo/base64": ^1.0.0
     "@endo/bundle-source": ^3.0.1
     "@endo/far": ^1.0.1
@@ -453,17 +453,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/notifier@^0.6.2, @agoric/notifier@workspace:packages/notifier":
+"@agoric/notifier@workspace:*, @agoric/notifier@workspace:packages/notifier":
   version: 0.0.0-use.local
   resolution: "@agoric/notifier@workspace:packages/notifier"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/kmarshal": ^0.1.0
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/vat-data": ^0.5.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/far": ^1.0.1
     "@endo/init": ^1.0.1
     "@endo/marshal": ^1.0.1
@@ -479,15 +479,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/pegasus@workspace:packages/pegasus"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/internal": ^0.3.2
-    "@agoric/network": ^0.1.0
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/far": ^1.0.1
@@ -504,8 +504,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/same-structure@workspace:packages/same-structure"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/store": ^0.9.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@endo/marshal": ^1.0.1
   languageName: unknown
   linkType: soft
@@ -543,21 +543,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/smart-wallet@^0.5.3, @agoric/smart-wallet@workspace:packages/smart-wallet":
+"@agoric/smart-wallet@workspace:*, @agoric/smart-wallet@workspace:packages/smart-wallet":
   version: 0.0.0-use.local
   resolution: "@agoric/smart-wallet@workspace:packages/smart-wallet"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/casting": ^0.4.2
-    "@agoric/cosmic-proto": ^0.3.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/casting": "workspace:*"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -575,21 +575,21 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/solo@workspace:packages/solo"
   dependencies:
-    "@agoric/access-token": ^0.4.21
-    "@agoric/assert": ^0.6.0
-    "@agoric/cache": ^0.3.2
-    "@agoric/cosmic-swingset": ^0.41.3
-    "@agoric/ertp": ^0.16.2
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/spawner": ^0.6.8
-    "@agoric/store": ^0.9.2
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/telemetry": ^0.6.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/wallet": ^0.18.3
+    "@agoric/access-token": "workspace:*"
+    "@agoric/assert": "workspace:*"
+    "@agoric/cache": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/spawner": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/telemetry": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/wallet": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -622,13 +622,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/spawner@^0.6.8, @agoric/spawner@workspace:packages/spawner":
+"@agoric/spawner@workspace:*, @agoric/spawner@workspace:packages/spawner":
   version: 0.0.0-use.local
   resolution: "@agoric/spawner@workspace:packages/spawner"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/swingset-vat": ^0.32.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/eventual-send": ^1.0.1
     "@endo/import-bundle": ^1.0.1
@@ -639,7 +639,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/stat-logger@^0.4.28, @agoric/stat-logger@workspace:packages/stat-logger":
+"@agoric/stat-logger@workspace:*, @agoric/stat-logger@workspace:packages/stat-logger":
   version: 0.0.0-use.local
   resolution: "@agoric/stat-logger@workspace:packages/stat-logger"
   peerDependencies:
@@ -656,12 +656,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/store@^0.9.2, @agoric/store@workspace:packages/store":
+"@agoric/store@workspace:*, @agoric/store@workspace:packages/store":
   version: 0.0.0-use.local
   resolution: "@agoric/store@workspace:packages/store"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/time": ^0.3.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/time": "workspace:*"
     "@endo/exo": ^1.0.1
     "@endo/init": ^1.0.1
     "@endo/marshal": ^1.0.1
@@ -672,12 +672,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/swing-store@^0.9.1, @agoric/swing-store@workspace:packages/swing-store":
+"@agoric/swing-store@workspace:*, @agoric/swing-store@workspace:packages/swing-store":
   version: 0.0.0-use.local
   resolution: "@agoric/swing-store@workspace:packages/swing-store"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
     "@endo/base64": ^1.0.0
     "@endo/bundle-source": ^3.0.1
     "@endo/check-bundle": ^1.0.1
@@ -691,14 +691,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/swingset-liveslots@^0.10.2, @agoric/swingset-liveslots@workspace:packages/swingset-liveslots":
+"@agoric/swingset-liveslots@workspace:*, @agoric/swingset-liveslots@workspace:packages/swingset-liveslots":
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-liveslots@workspace:packages/swingset-liveslots"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/kmarshal": ^0.1.0
-    "@agoric/store": ^0.9.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@endo/eventual-send": ^1.0.1
     "@endo/exo": ^1.0.1
     "@endo/far": ^1.0.1
@@ -716,19 +716,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-runner@workspace:packages/swingset-runner"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/deploy-script-support": ^0.10.3
-    "@agoric/ertp": ^0.16.2
-    "@agoric/inter-protocol": ^0.16.1
-    "@agoric/internal": ^0.3.2
-    "@agoric/kmarshal": ^0.1.0
-    "@agoric/stat-logger": ^0.4.28
-    "@agoric/store": ^0.9.2
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/telemetry": ^0.6.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/zoe": ^0.26.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/stat-logger": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/telemetry": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/eventual-send": ^1.0.1
     "@endo/init": ^1.0.1
@@ -743,21 +743,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/swingset-vat@^0.32.2, @agoric/swingset-vat@workspace:packages/SwingSet":
+"@agoric/swingset-vat@workspace:*, @agoric/swingset-vat@workspace:packages/SwingSet":
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-vat@workspace:packages/SwingSet"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/kmarshal": ^0.1.0
-    "@agoric/store": ^0.9.2
-    "@agoric/swing-store": ^0.9.1
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/swingset-xsnap-supervisor": ^0.10.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/xsnap": ^0.14.2
-    "@agoric/xsnap-lockdown": ^0.14.0
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-xsnap-supervisor": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
+    "@agoric/xsnap-lockdown": "workspace:*"
     "@endo/base64": ^1.0.0
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
@@ -793,12 +793,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/swingset-xsnap-supervisor@^0.10.2, @agoric/swingset-xsnap-supervisor@workspace:packages/swingset-xsnap-supervisor":
+"@agoric/swingset-xsnap-supervisor@workspace:*, @agoric/swingset-xsnap-supervisor@workspace:packages/swingset-xsnap-supervisor":
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-xsnap-supervisor@workspace:packages/swingset-xsnap-supervisor"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/swingset-liveslots": ^0.10.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/import-bundle": ^1.0.1
     "@endo/init": ^1.0.1
@@ -808,13 +808,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/telemetry@^0.6.2, @agoric/telemetry@workspace:packages/telemetry":
+"@agoric/telemetry@workspace:*, @agoric/telemetry@workspace:packages/telemetry":
   version: 0.0.0-use.local
   resolution: "@agoric/telemetry@workspace:packages/telemetry"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/store": ^0.9.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@endo/init": ^1.0.1
     "@endo/lockdown": ^1.0.1
     "@endo/marshal": ^1.0.1
@@ -838,11 +838,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/time@^0.3.2, @agoric/time@workspace:packages/time":
+"@agoric/time@workspace:*, @agoric/time@workspace:packages/time":
   version: 0.0.0-use.local
   resolution: "@agoric/time@workspace:packages/time"
   dependencies:
-    "@agoric/assert": ^0.6.0
+    "@agoric/assert": "workspace:*"
     "@endo/far": ^1.0.1
     "@endo/init": ^1.0.1
     "@endo/nat": ^5.0.1
@@ -851,14 +851,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/vat-data@^0.5.2, @agoric/vat-data@workspace:packages/vat-data":
+"@agoric/vat-data@workspace:*, @agoric/vat-data@workspace:packages/vat-data":
   version: 0.0.0-use.local
   resolution: "@agoric/vat-data@workspace:packages/vat-data"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-liveslots": ^0.10.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/init": ^1.0.1
     "@endo/ses-ava": ^1.0.1
     ava: ^5.3.0
@@ -866,23 +866,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/vats@^0.15.1, @agoric/vats@workspace:packages/vats":
+"@agoric/vats@workspace:*, @agoric/vats@workspace:packages/vats":
   version: 0.0.0-use.local
   resolution: "@agoric/vats@workspace:packages/vats"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/governance": ^0.10.3
-    "@agoric/internal": ^0.3.2
-    "@agoric/network": ^0.1.0
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/zoe": ^0.26.2
-    "@agoric/zone": ^0.2.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/far": ^1.0.1
     "@endo/import-bundle": ^1.0.1
@@ -898,7 +898,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/vm-config@^0.1.0, @agoric/vm-config@workspace:packages/vm-config":
+"@agoric/vm-config@workspace:*, @agoric/vm-config@workspace:packages/vm-config":
   version: 0.0.0-use.local
   resolution: "@agoric/vm-config@workspace:packages/vm-config"
   dependencies:
@@ -911,18 +911,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/wallet-backend@workspace:packages/wallet/api"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/cache": ^0.3.2
-    "@agoric/ertp": ^0.16.2
-    "@agoric/internal": ^0.3.2
-    "@agoric/notifier": ^0.6.2
-    "@agoric/smart-wallet": ^0.5.3
-    "@agoric/store": ^0.9.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
-    "@agoric/zone": ^0.2.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/cache": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/eventual-send": ^1.0.1
     "@endo/far": ^1.0.1
@@ -942,7 +942,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/wallet@^0.18.3, @agoric/wallet@workspace:packages/wallet":
+"@agoric/wallet@workspace:*, @agoric/wallet@workspace:packages/wallet":
   version: 0.0.0-use.local
   resolution: "@agoric/wallet@workspace:packages/wallet"
   dependencies:
@@ -953,7 +953,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap-lockdown@^0.14.0, @agoric/xsnap-lockdown@workspace:packages/xsnap-lockdown":
+"@agoric/xsnap-lockdown@workspace:*, @agoric/xsnap-lockdown@workspace:packages/xsnap-lockdown":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap-lockdown@workspace:packages/xsnap-lockdown"
   dependencies:
@@ -966,13 +966,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap@^0.14.2, @agoric/xsnap@workspace:packages/xsnap":
+"@agoric/xsnap@workspace:*, @agoric/xsnap@workspace:packages/xsnap":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/internal": ^0.3.2
-    "@agoric/xsnap-lockdown": ^0.14.0
+    "@agoric/assert": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/xsnap-lockdown": "workspace:*"
     "@endo/base64": ^1.0.0
     "@endo/bundle-source": ^3.0.1
     "@endo/eventual-send": ^1.0.1
@@ -992,20 +992,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/zoe@^0.26.2, @agoric/zoe@workspace:packages/zoe":
+"@agoric/zoe@workspace:*, @agoric/zoe@workspace:packages/zoe":
   version: 0.0.0-use.local
   resolution: "@agoric/zoe@workspace:packages/zoe"
   dependencies:
-    "@agoric/assert": ^0.6.0
-    "@agoric/ertp": ^0.16.2
-    "@agoric/internal": ^0.3.2
-    "@agoric/kmarshal": ^0.1.0
-    "@agoric/notifier": ^0.6.2
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/time": ^0.3.2
-    "@agoric/vat-data": ^0.5.2
+    "@agoric/assert": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/bundle-source": ^3.0.1
     "@endo/captp": ^4.0.1
     "@endo/eventual-send": ^1.0.1
@@ -1024,13 +1024,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/zone@^0.2.2, @agoric/zone@workspace:packages/zone":
+"@agoric/zone@workspace:*, @agoric/zone@workspace:packages/zone":
   version: 0.0.0-use.local
   resolution: "@agoric/zone@workspace:packages/zone"
   dependencies:
-    "@agoric/base-zone": ^0.1.0
-    "@agoric/swingset-liveslots": ^0.10.2
-    "@agoric/vat-data": ^0.5.2
+    "@agoric/base-zone": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/far": ^1.0.1
     "@endo/pass-style": ^1.0.1
     "@endo/patterns": ^1.0.1
@@ -4399,24 +4399,24 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "agoric@workspace:packages/agoric-cli"
   dependencies:
-    "@agoric/access-token": ^0.4.21
-    "@agoric/assert": ^0.6.0
-    "@agoric/cache": ^0.3.2
-    "@agoric/casting": ^0.4.2
-    "@agoric/cosmic-proto": ^0.3.0
-    "@agoric/cosmic-swingset": ^0.41.3
-    "@agoric/deploy-script-support": ^0.10.3
-    "@agoric/ertp": ^0.16.2
-    "@agoric/governance": ^0.10.3
-    "@agoric/inter-protocol": ^0.16.1
-    "@agoric/internal": ^0.3.2
-    "@agoric/network": ^0.1.0
-    "@agoric/smart-wallet": ^0.5.3
-    "@agoric/store": ^0.9.2
-    "@agoric/swingset-vat": ^0.32.2
-    "@agoric/vats": ^0.15.1
-    "@agoric/zoe": ^0.26.2
-    "@agoric/zone": ^0.2.2
+    "@agoric/access-token": "workspace:*"
+    "@agoric/assert": "workspace:*"
+    "@agoric/cache": "workspace:*"
+    "@agoric/casting": "workspace:*"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@confio/relayer": ^0.9.0
     "@cosmjs/crypto": ^0.30.1
     "@cosmjs/encoding": ^0.30.1

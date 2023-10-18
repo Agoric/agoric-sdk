@@ -19,7 +19,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@agoric/assert": "workspace:*",
     "@endo/init": "^1.0.1",
     "@endo/marshal": "^1.0.1",
     "better-sqlite3": "^9.1.1",

@@ -20,8 +20,8 @@
     "lint:types": "tsc"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/base-zone": "^0.1.0",
+    "@agoric/assert": "workspace:*",
+    "@agoric/base-zone": "workspace:*",
     "@endo/far": "^1.0.1",
     "@endo/init": "^1.0.1",
     "@endo/marshal": "^1.0.1",

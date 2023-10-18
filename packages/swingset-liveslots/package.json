@@ -17,9 +17,9 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/store": "^0.9.2",
+    "@agoric/assert": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/store": "workspace:*",
     "@endo/eventual-send": "^1.0.1",
     "@endo/exo": "^1.0.1",
     "@endo/far": "^1.0.1",
@@ -31,7 +31,7 @@
     "@endo/promise-kit": "^1.0.1"
   },
   "devDependencies": {
-    "@agoric/kmarshal": "^0.1.0",
+    "@agoric/kmarshal": "workspace:*",
     "ava": "^5.3.0"
   },
   "files": [
