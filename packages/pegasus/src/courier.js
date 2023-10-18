@@ -5,6 +5,7 @@ import { AmountMath } from '@agoric/ertp';
 import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
+import { parseTransferMemo } from './pfm.js';
 
 /**
  * Create or return an existing courier promise kit.
@@ -34,6 +35,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * @typedef {object} CourierArgs
  * @property {ZCF} zcf
  * @property {ERef<BoardDepositFacet>} board
+ * @property {ERef<import('@agoric/vats').Board>} publicBoard
  * @property {ERef<NameHub>} namesByAddress
  * @property {Denom} sendDenom
  * @property {Brand} localBrand
@@ -48,6 +50,7 @@ export const makeCourierMaker =
   ({
     zcf,
     board,
+    publicBoard,
     namesByAddress,
     sendDenom,
     localBrand,
@@ -91,7 +94,7 @@ export const makeCourierMaker =
     };
 
     /** @type {Receiver} */
-    const receive = async ({ value, depositAddress }) => {
+    const receive = async ({ value, depositAddress, memo }) => {
       const localAmount = AmountMath.make(localBrand, value);
 
       // Look up the deposit facet for this board address, if there is one.
@@ -117,6 +120,28 @@ export const makeCourierMaker =
       // won't be refunded on a failed receive.
       const payout = await E(userSeat).getPayout('Transfer');
 
+      // If we have a memo with Packet Forward Middleware, run through PFM contract.
+      const forward = parseTransferMemo(memo);
+      // Transfer Forward via PFM
+      if (forward && forward.transfer) {
+        await send(zcfSeat, forward.transfer.receiver, '', depositAddress);
+        console.log("Completed PFM Transfer Forward: ", forward.transfer);
+        return E(transferProtocol).makeTransferPacketAck(true);
+      }
+      // Contract Call Forward via PFM
+      if (forward && forward.call) {
+        const { boardId, functionName, args } = forward.call;
+        const instance = await E(publicBoard).getValue(boardId);
+        const zoe = zcf.getZoeService();
+        const contractPF = await E(zoe).getPublicFacet(instance);
+        const result = await E(contractPF)[functionName](...args);
+        console.log("Completed PFM Call Forward: ", forward.call);
+        console.log("PFM Call Result: ", result);
+        return E(transferProtocol).makeTransferPacketAck(true);
+      }
+
+      // If we get here there was no Packet Forward Middleware to run.
+      //
       // Send the payout promise to the deposit facet.
       //
       // We don't want to wait for the depositFacet to return, so that
