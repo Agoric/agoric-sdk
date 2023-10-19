@@ -143,7 +143,7 @@ require (
 
 // At least until post-v0.9.0 is released with
 // https://github.com/Zondax/hid/issues/4 resolved.
-replace github.com/zondax/hid => github.com/zondax/hid v0.9.1-0.20220302062450-5552068d2266
+replace github.com/zondax/hid => github.com/zondax/hid v0.9.2
 
 replace github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
