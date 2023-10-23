@@ -340,7 +340,7 @@ async function testRemotePeg(t) {
       address: "agoric1234567",
       contractKey: "pfmTest",
       functionName: "helloWorld",
-      args: []
+      args: ["PFM Land"]
     }
   }
   const sendPacketPFMCall = {

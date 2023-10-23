@@ -3,9 +3,9 @@ import { Far } from '@endo/far';
 const start = zcf => {  
     return harden({
       publicFacet: Far('publicFacet', {
-        helloWorld() {
-          console.log('Hello world from the PFM!');
-          return 'Hello world from the PFM!'
+        helloWorld(name) {
+          console.log(`Hello world from ${name}!`);
+          return `Hello world from ${name}!`
         },
       }),
     });
