@@ -316,9 +316,7 @@ async function testRemotePeg(t) {
       receiver: "cosmos1jmd7lwdyykrxm5h83nlhg74fctwnky04uq9q5a",
       port: "pegasus",
       channel: "channel-0",
-      timeout: "",
       retries: 2,
-      next: ""
     }
   }
 

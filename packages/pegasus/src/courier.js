@@ -28,6 +28,28 @@ export const getCourierPK = (key, keyToCourierPK) => {
 };
 
 /**
+ * Function to re-run an operation after a delay, up to a maximum number of retries.
+ *
+ * @param {function} operation
+ * @param {number} delay
+ * @param {number} retries
+ */
+function retryOperation(operation, delay, retries) {
+  return new Promise((resolve, reject) => {
+      return operation()
+          .then(resolve)
+          .catch((reason) => {
+              if (retries - 1 > 0) {
+                  return setTimeout(() => retryOperation(operation, delay, retries - 1)
+                      .then(resolve)
+                      .catch(reject), delay);
+              }
+              return reject(reason);
+          });
+  });
+}
+
+/**
  * Create the [send, receive] pair.
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
@@ -122,9 +144,16 @@ export const makeCourierMaker =
       const forward = parseTransferMemo(memo);
       // Transfer Forward via PFM
       if (forward && forward.transfer) {
-        await send(zcfSeat, forward.transfer.receiver, '', depositAddress);
-        console.log("Completed PFM Transfer Forward: ", forward.transfer);
-        return E(transferProtocol).makeTransferPacketAck(true);
+        const forwardTransfer = async () => {
+          if (forward.transfer) {
+            await send(zcfSeat, forward.transfer.receiver, '', depositAddress);
+            console.log("Completed PFM Transfer Forward: ", forward.transfer);
+            return E(transferProtocol).makeTransferPacketAck(true);
+          }
+        }
+        retryOperation(forwardTransfer, 1000, forward.transfer.retries || 1)
+        .then(response => console.log(response))
+        .catch(error => { throw error });
       }
       // Contract Call Forward via PFM
       if (forward && forward.call) {
