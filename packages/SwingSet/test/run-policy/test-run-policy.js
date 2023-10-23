@@ -1,7 +1,8 @@
 // @ts-nocheck
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
+import { kslot, kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import {
@@ -9,7 +10,6 @@ import {
   computronCounter,
   wallClockWaiter,
 } from '../../src/lib/runPolicies.js';
-import { kslot, kser } from '../../src/lib/kmarshal.js';
 
 async function testCranks(t, mode) {
   /** @type {SwingSetConfig} */

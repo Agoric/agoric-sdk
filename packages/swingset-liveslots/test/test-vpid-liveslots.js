@@ -3,11 +3,11 @@ import test from 'ava';
 
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
+import { Fail } from '@agoric/assert';
+import { kser, kslot } from '@agoric/kmarshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeResolve, makeReject } from './util.js';
-import { kser, kslot } from './kmarshal.js';
 
 function hush(p) {
   p.then(

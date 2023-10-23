@@ -2,7 +2,7 @@
 
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { kslot, kser } from './kmarshal.js';
+import { kslot, kser } from '@agoric/kmarshal';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 
 // These tests follow the model described in

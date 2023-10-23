@@ -1,5 +1,5 @@
+import { kunser } from '@agoric/kmarshal';
 import { insistCapData } from '../lib/capdata.js';
-import { kunser } from '../lib/kmarshal.js';
 
 /**
  * @param {string} vatID

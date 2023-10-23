@@ -24,12 +24,11 @@ import { makeMakeExiter } from './exit.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
 import { createSeatManager } from './zcfSeat.js';
 
-import '../internal-types.js';
-import './internal-types.js';
-
-import '@agoric/swingset-vat/src/types-ambient.js';
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
+
+/// <reference path="../internal-types.js" />
+/// <reference path="./internal-types.js" />
 
 /** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
 

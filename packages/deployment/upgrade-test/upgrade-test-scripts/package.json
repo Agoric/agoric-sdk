@@ -17,5 +17,8 @@
       "*/**/post.test.js"
     ],
     "timeout": "30m"
+  },
+  "typeCoverage": {
+    "atLeast": 0
   }
 }

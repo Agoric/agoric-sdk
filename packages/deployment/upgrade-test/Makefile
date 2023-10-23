@@ -9,11 +9,6 @@ else
 endif
 TARGET?=agoric-upgrade-12
 dockerLabel?=$(TARGET)
-ifdef TMUX_CC
-	tmuxCC=1
-else
-	tmuxCC=0
-endif
 @echo target: $(TARGET)
 
 local_sdk:
@@ -64,7 +59,7 @@ RUN = docker run --rm -it \
 	-e "DEBUG=$(DEBUG)"
 
 run:
-	$(RUN) -e "DEST=1" -e "TMUX_USE_CC=$(tmuxCC)" \
+	$(RUN) -e "DEST=1" \
 		--entrypoint /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh \
 		 $(REPOSITORY):$(dockerLabel)
 
@@ -73,5 +68,8 @@ run_test:
 
 run_bash:
 	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
+
+shell:
+	docker exec -it `docker ps --latest --format json | jq -r .Names` bash
 
 .PHONY: local_sdk agoric-upgrade-7-2 agoric-upgrade-8 agoric-upgrade-8-1 agoric-upgrade-9 agoric-upgrade-10 agoric-upgrade-11 agoric-upgrade-12 build build_test run

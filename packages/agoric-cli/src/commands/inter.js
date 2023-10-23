@@ -11,11 +11,6 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@agoric/store';
 
-// XXX scare away ambient type zombies to fix ScheduleNotification.activeStartTime etc.
-// https://github.com/Agoric/agoric-sdk/issues/6512
-// https://github.com/Agoric/agoric-sdk/issues/6343
-import '@agoric/inter-protocol/src/vaultFactory/types.js';
-
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   asBoardRemote,

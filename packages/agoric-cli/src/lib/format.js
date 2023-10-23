@@ -1,7 +1,5 @@
 // @ts-check
 
-// ambient types
-import '@agoric/ertp/src/types-ambient.js';
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */

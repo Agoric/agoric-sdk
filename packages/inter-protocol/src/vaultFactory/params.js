@@ -1,6 +1,6 @@
 // @jessie-check
 
-import './types.js';
+/// <reference path="./types.js" />
 
 import {
   CONTRACT_ELECTORATE,

@@ -3,6 +3,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
+import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
@@ -10,7 +11,6 @@ import {
   makeSwingsetController,
 } from '../../src/index.js';
 import { bundleOpts } from '../util.js';
-import { kser } from '../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

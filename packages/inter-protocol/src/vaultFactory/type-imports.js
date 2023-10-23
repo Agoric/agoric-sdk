@@ -1,4 +1,4 @@
 // @jessie-check
 
 import '@agoric/zoe/exported.js';
-import './types.js';
+/// <reference path="./types.js" />

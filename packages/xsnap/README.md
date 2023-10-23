@@ -22,7 +22,7 @@ Some time later, possibly on a different computer…
 
 ```js
 const decoder = new TextDecoder();
-const worker = await xsnap({ 
+const worker = await xsnap({
   snapshotStream: fs.createFileStream('bootstrap.xss'),
 });
 const response = await worker.issueCommand('1');
@@ -57,7 +57,7 @@ The REPL supports special commands `load` and `save` for snapshots, and `quit`
 to quit.
 Load and save don't take arguments; just type the file name on the next prompt.
 
-```sh
+```console
 $ xsrepl
 xs> globalThis.x = 42;
 xs> x
@@ -67,7 +67,7 @@ file> temp.xss
 xs> quit
 ```
 
-```sh
+```console
 $ xsrepl
 xs> load
 file> temp.xss

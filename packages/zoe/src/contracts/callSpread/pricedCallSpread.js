@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import './types.js';
+/// <reference path="./types.js" />
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';

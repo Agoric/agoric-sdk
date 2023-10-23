@@ -5,8 +5,6 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';
 
-import './types.js';
-
 /**
  * @param {(obj: unknown) => unknown} [sanitize]
  * @returns {(key: Passable) => Promise<string>}

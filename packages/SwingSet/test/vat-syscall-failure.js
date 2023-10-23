@@ -1,5 +1,5 @@
+import { kser } from '@agoric/kmarshal';
 import { extractMessage } from './vat-util.js';
-import { kser } from '../src/lib/kmarshal.js';
 
 export default function setup(syscall, _state, _helpers, vatPowers) {
   function dispatch(vatDeliverObject) {

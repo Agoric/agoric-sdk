@@ -15,7 +15,7 @@ this is insufficient to provide persistence across restarts.
 
 More docs are in the works. For now, try:
 
-```
+```console
 $ npm install
 $ npm test
 $ bin/vat run demo/encouragementBot
@@ -26,7 +26,7 @@ expected to stabilize for a while.
 
 ## REPL Shell
 
-```
+```console
 $ bin/vat shell demo/encouragementBot
 vat>
 ```

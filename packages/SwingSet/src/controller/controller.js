@@ -20,7 +20,7 @@ import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
-import { kslot, krefOf } from '../lib/kmarshal.js';
+import { kslot, krefOf } from '@agoric/kmarshal';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import {
   buildKernelBundle,

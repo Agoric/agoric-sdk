@@ -26,12 +26,16 @@
   },
   "devDependencies": {
     "@endo/init": "^0.5.59",
+    "@endo/ses-ava": "^0.2.43",
     "ava": "^5.3.0",
     "tsd": "^0.28.1"
   },
   "ava": {
     "require": [
       "@endo/init/debug.js"
+    ],
+    "files": [
+      "test/**/test-*.js"
     ]
   },
   "publishConfig": {
@@ -39,5 +43,8 @@
   },
   "engines": {
     "node": ">=14.15.0"
+  },
+  "typeCoverage": {
+    "atLeast": 98.23
   }
 }

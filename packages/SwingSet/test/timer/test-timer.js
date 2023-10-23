@@ -1,11 +1,10 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
+import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildTimer } from '../../src/devices/timer/timer.js';
-import { kunser } from '../../src/lib/kmarshal.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

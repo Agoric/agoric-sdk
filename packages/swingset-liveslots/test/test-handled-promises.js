@@ -7,7 +7,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 // Disabled to avoid circular dependencies.
 // import { makeStoreUtils } from '@agoric/vat-data/src/vat-data-bindings.js';
 // import { makeExoUtils } from '@agoric/vat-data/src/exo-utils.js';
-import { kslot, kser } from './kmarshal.js';
+import { kslot, kser } from '@agoric/kmarshal';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { makeResolve, makeReject } from './util.js';
 

@@ -143,52 +143,6 @@
  */
 
 /**
- * @template {AssetKind} K
- * @callback IssuerClaim Transfer all digital assets from the payment to a new
- *   payment and delete the original. `optAmount` is optional. If `optAmount` is
- *   present, the code will insist that the amount of digital assets in the
- *   payment is equal to `optAmount`, to prevent sending the wrong payment and
- *   other confusion.
- *
- *   If the payment is a promise, the operation will proceed upon resolution.
- * @param {ERef<Payment<K>>} payment
- * @param {Pattern} [optAmountShape]
- * @returns {Promise<Payment<K>>}
- */
-
-/**
- * @template {AssetKind} K
- * @callback IssuerCombine Combine multiple payments into one payment.
- *
- *   If any of the payments is a promise, the operation will proceed upon
- *   resolution.
- * @param {ERef<Payment<K>>[]} paymentsArray
- * @param {Amount<K>} [optTotalAmount]
- * @returns {Promise<Payment<K>>}
- */
-
-/**
- * @template {AssetKind} K
- * @callback IssuerSplit Split a single payment into two payments, A and B,
- *   according to the paymentAmountA passed in.
- *
- *   If the payment is a promise, the operation will proceed upon resolution.
- * @param {ERef<Payment<K>>} payment
- * @param {Amount<K>} paymentAmountA
- * @returns {Promise<Payment<K>[]>}
- */
-
-/**
- * @callback IssuerSplitMany Split a single payment into many payments,
- *   according to the amounts passed in.
- *
- *   If the payment is a promise, the operation will proceed upon resolution.
- * @param {ERef<Payment>} payment
- * @param {Amount[]} amounts
- * @returns {Promise<Payment[]>}
- */
-
-/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Issuer The issuer cannot mint a new amount, but it can
  *   create empty purses and payments. The issuer can also transform payments

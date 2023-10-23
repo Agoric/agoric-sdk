@@ -35,5 +35,8 @@
   },
   "devDependencies": {
     "readline-transform": "^1.0.0"
+  },
+  "typeCoverage": {
+    "atLeast": 61.49
   }
 }

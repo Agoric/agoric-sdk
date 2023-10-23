@@ -41,6 +41,7 @@
     "@agoric/casting": "^0.4.2",
     "@agoric/cosmic-proto": "^0.3.0",
     "@agoric/ertp": "^0.16.2",
+    "@agoric/governance": "^0.10.3",
     "@agoric/inter-protocol": "^0.16.1",
     "@agoric/internal": "^0.3.2",
     "@agoric/network": "^0.1.0",
@@ -63,6 +64,7 @@
     "@endo/init": "^0.5.59",
     "@endo/marshal": "^0.8.8",
     "@endo/nat": "^4.1.30",
+    "@endo/patterns": "^0.2.6",
     "@endo/promise-kit": "^0.2.59",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
@@ -92,5 +94,8 @@
     ],
     "timeout": "2m",
     "workerThreads": false
+  },
+  "typeCoverage": {
+    "atLeast": 77.53
   }
 }

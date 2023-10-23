@@ -48,5 +48,8 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 92.26
   }
 }

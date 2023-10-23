@@ -1,8 +1,8 @@
 // From https://github.com/Agoric/agoric-sdk/pull/6903#discussion_r1098067133
 
-import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+import { test } from './prepare-test-env-ava.js';
 
-import test from 'ava';
+// eslint-disable-next-line import/order
 import { M, makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
 
