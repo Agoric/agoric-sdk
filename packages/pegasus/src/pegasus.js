@@ -31,12 +31,11 @@ const TRANSFER_PROPOSAL_SHAPE = {
  *
  * @param {ZCF} zcf the Zoe Contract Facet
  * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
- * @param {ERef<import('@agoric/vats').Board>} publicBoard public board with all boardIDs
  * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
  */
-const makePegasus = (zcf, board, publicBoard, namesByAddress) => {
+const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * @typedef {object} LocalDenomState
    * @property {string} localAddr
@@ -183,7 +182,6 @@ const makePegasus = (zcf, board, publicBoard, namesByAddress) => {
           zcf,
           localBrand,
           board,
-          publicBoard,
           namesByAddress,
           sendDenom,
           retain: (zcfSeat, amounts) =>
@@ -264,7 +262,6 @@ const makePegasus = (zcf, board, publicBoard, namesByAddress) => {
         const courier = makeCourier({
           zcf,
           board,
-          publicBoard,
           namesByAddress,
           sendDenom,
           localBrand,
@@ -498,13 +495,13 @@ const makePegasus = (zcf, board, publicBoard, namesByAddress) => {
  */
 
 /**
- * @param {ZCF<{board: ERef<BoardDepositFacet>, publicBoard: ERef<import('@agoric/vats').Board>, namesByAddress: ERef<import('@agoric/vats').NameHub>}>} zcf
+ * @param {ZCF<{board: ERef<BoardDepositFacet>, namesByAddress: ERef<import('@agoric/vats').NameHub>}>} zcf
  */
 const start = zcf => {
-  const { board, namesByAddress, publicBoard } = zcf.getTerms();
+  const { board, namesByAddress } = zcf.getTerms();
 
   return {
-    publicFacet: makePegasus(zcf, board, publicBoard, namesByAddress),
+    publicFacet: makePegasus(zcf, board, namesByAddress),
   };
 };
 

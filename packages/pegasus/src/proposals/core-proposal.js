@@ -33,7 +33,7 @@ export const getManifestForPegasus = ({ restoreRef }, { pegasusRef }) => ({
 });
 
 export const startPegasus = async ({
-  consume: { board: boardP, namesByAddress: namesByAddressP, board: publicBoardP, zoe },
+  consume: { board: boardP, namesByAddress: namesByAddressP, zoe },
   installation: {
     consume: { [CONTRACT_NAME]: pegasusInstall },
   },
@@ -41,8 +41,8 @@ export const startPegasus = async ({
     produce: { [CONTRACT_NAME]: produceInstance },
   },
 }) => {
-  const [board, namesByAddress, publicBoard] = await Promise.all([boardP, namesByAddressP, publicBoardP]);
-  const terms = { board, namesByAddress, publicBoard };
+  const [board, namesByAddress] = await Promise.all([boardP, namesByAddressP]);
+  const terms = { board, namesByAddress };
 
   const { instance } = await E(zoe).startInstance(
     pegasusInstall,

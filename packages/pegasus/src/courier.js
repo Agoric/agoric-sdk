@@ -35,7 +35,6 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * @typedef {object} CourierArgs
  * @property {ZCF} zcf
  * @property {ERef<BoardDepositFacet>} board
- * @property {ERef<import('@agoric/vats').Board>} publicBoard
  * @property {ERef<NameHub>} namesByAddress
  * @property {Denom} sendDenom
  * @property {Brand} localBrand
@@ -50,7 +49,6 @@ export const makeCourierMaker =
   ({
     zcf,
     board,
-    publicBoard,
     namesByAddress,
     sendDenom,
     localBrand,
@@ -130,11 +128,12 @@ export const makeCourierMaker =
       }
       // Contract Call Forward via PFM
       if (forward && forward.call) {
-        const { boardId, functionName, args } = forward.call;
-        const instance = await E(publicBoard).getValue(boardId);
-        const zoe = zcf.getZoeService();
-        const contractPF = await E(zoe).getPublicFacet(instance);
-        const result = await E(contractPF)[functionName](...args);
+        const { address, contractKey, functionName, args } = forward.call;
+        if (!address || !contractKey || !functionName || !args) {
+          throw Error(`Invalid PFM Call Forward: ${JSON.stringify(forward.call)}`);
+        }
+        const instance = await E(namesByAddress).lookup(address, contractKey);
+        const result = await E(instance.publicFacet)[functionName](...args);
         console.log("Completed PFM Call Forward: ", forward.call);
         console.log("PFM Call Result: ", result);
         return E(transferProtocol).makeTransferPacketAck(true);

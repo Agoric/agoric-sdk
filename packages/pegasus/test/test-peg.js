@@ -35,7 +35,7 @@ const makeAsyncIteratorFromSubscription = sub =>
  * @param {import('ava').Assertions} t
  */
 async function testRemotePeg(t) {
-  t.plan(24);
+  t.plan(25);
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -51,16 +51,28 @@ async function testRemotePeg(t) {
       throw Error(`unrecognized board id ${id}`);
     },
   });
-  const fakeNamesByAddress = Far('fakeNamesByAddress', {
-    lookup(...keys) {
-      t.is(keys[0], 'agoric1234567', 'unrecognized fakeNamesByAddress');
-      t.is(keys[1], 'depositFacet', 'lookup not for the depositFacet');
-      t.is(keys.length, 2);
-      return localDepositFacet;
-    },
-  });
 
   const zoe = makeZoeForTest();
+
+  // Pack and launch test contract for PFM
+  const contractBundlePFM = await bundleSource(`${dirname}/test-contract-pfm.js`);
+  const installationHandlePfmTest = await E(zoe).install(contractBundlePFM);
+
+  const instancePfmTest = await E(zoe).startInstance(
+    installationHandlePfmTest
+  );
+
+  const fakeNamesByAddress = Far('fakeNamesByAddress', {
+    lookup(...keys) {
+      if (keys[0] === 'agoric1234567' && keys[1] === 'depositFacet') {
+        return localDepositFacet
+      }
+      if (keys[0] === 'agoric1234567' && keys[1] === 'pfmTest') {
+        return instancePfmTest
+      }
+      throw Error(`unrecognized namesByAddress lookup ${keys}`);
+    },
+  });
 
   // Pack the contract.
   const contractBundle = await bundleSource(contractPath);
@@ -100,7 +112,7 @@ async function testRemotePeg(t) {
               t.deepEqual(
                 packet,
                 {
-                  amount: '100000000000000000001',
+                  amount: '100000000000000000171',
                   denom: 'portdef/chanabc/uatom',
                   memo: 'I am a memo!',
                   receiver: 'markaccount',
@@ -136,7 +148,7 @@ async function testRemotePeg(t) {
 
   // Get some local Atoms.
   const sendPacket = {
-    amount: '200000000000000000002',
+    amount: '400000000000000000004',
     denom: 'uatom',
     receiver: '0x1234',
     sender: 'FIXME:sender',
@@ -188,7 +200,7 @@ async function testRemotePeg(t) {
   const localAtomsAmount = await E(localPurseP).getCurrentAmount();
   t.deepEqual(
     localAtomsAmount,
-    { brand: localBrand, value: 200000000000000000002n },
+    { brand: localBrand, value: 400000000000000000004n },
     'we received the shadow atoms',
   );
 
@@ -211,7 +223,7 @@ async function testRemotePeg(t) {
   const localAtomsAmount2 = await E(localPurseP).getCurrentAmount();
   t.deepEqual(
     localAtomsAmount2,
-    { brand: localBrand, value: 200000000000000000172n },
+    { brand: localBrand, value: 400000000000000000174n },
     'we received more shadow atoms',
   );
 
@@ -238,7 +250,7 @@ async function testRemotePeg(t) {
   // test sending with memo
   const localAtoms = await E(localPurseP).withdraw({
     brand: localBrand,
-    value: 100000000000000000001n,
+    value: 100000000000000000171n,
   });
 
   const allegedName = await E(pegP).getAllegedName();
@@ -252,7 +264,7 @@ async function testRemotePeg(t) {
   const seat = await E(zoe).offer(
     transferInvitation,
     {
-      give: { Transfer: { brand: localBrand, value: 100000000000000000001n } },
+      give: { Transfer: { brand: localBrand, value: 100000000000000000171n } },
     },
     { Transfer: localAtoms },
   );
@@ -296,6 +308,51 @@ async function testRemotePeg(t) {
 
   const stillIsLive2 = await E(localIssuerP).isLive(localAtoms2);
   t.assert(!stillIsLive2, 'payment is consumed');
+
+  // test sending with PFM memo fungible IBC forward
+  /** @type {Forward} */
+  const transferForward = {
+    transfer: {
+      receiver: "cosmos1jmd7lwdyykrxm5h83nlhg74fctwnky04uq9q5a",
+      port: "pegasus",
+      channel: "channel-0",
+      timeout: "",
+      retries: 2,
+      next: ""
+    }
+  }
+
+  const sendPacketPfmTransfer = {
+    amount: '400000000000000000004',
+    denom: 'uatom',
+    receiver: '0x1234',
+    sender: 'FIXME:sender',
+    memo: JSON.stringify(transferForward)
+  };
+  t.assert(await connP);
+  const sendAckDataPPfmTransfer = await E(gaiaConnection).send(JSON.stringify(sendPacketPfmTransfer));
+  t.deepEqual(JSON.parse(sendAckDataPPfmTransfer), {"result":"AQ=="}, 'Gaia sent the atoms with PFM transfer memo');
+
+  // test sending with PFM memo forward contract call
+  /** @type {Forward} */
+  const callForward = {
+    call: {
+      address: "agoric1234567",
+      contractKey: "pfmTest",
+      functionName: "helloWorld",
+      args: []
+    }
+  }
+  const sendPacketPFMCall = {
+    amount: '400000000000000000004',
+    denom: 'uatom',
+    receiver: '0x1234',
+    sender: 'FIXME:sender',
+    memo: JSON.stringify(callForward)
+  };
+  t.assert(await connP);
+  const sendAckDataPPFMCall = await E(gaiaConnection).send(JSON.stringify(sendPacketPFMCall));
+  t.deepEqual(JSON.parse(sendAckDataPPFMCall), {"result":"AQ=="}, 'Gaia sent the atoms with PFM contract call memo');
 
   await E(connP).close();
   await t.throwsAsync(() => remoteDenomAit.next(), {
