@@ -157,12 +157,14 @@ export const makeCourierMaker =
       }
       // Contract Call Forward via PFM
       if (forward && forward.call) {
-        const { address, contractKey, functionName, args } = forward.call;
-        if (!address || !contractKey || !functionName || !args) {
+        const { address, contractKey, functionName, args: argString } = forward.call;
+        if (!address || !contractKey || !functionName || !argString) {
           throw Error(`Invalid PFM Call Forward: ${JSON.stringify(forward.call)}`);
         }
+        let args = JSON.parse(argString)
         const instance = await E(namesByAddress).lookup(address, contractKey);
-        const result = await E(instance.publicFacet)[functionName](...args);
+        args['funds'] = payout;
+        const result = await E(instance.publicFacet)[functionName](args);
         console.log("Completed PFM Call Forward: ", forward.call);
         console.log("PFM Call Result: ", result);
         return E(transferProtocol).makeTransferPacketAck(true);
