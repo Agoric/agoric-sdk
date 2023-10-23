@@ -40,9 +40,9 @@ function retryOperation(operation, delay, retries) {
           .then(resolve)
           .catch((reason) => {
               if (retries - 1 > 0) {
-                  return setTimeout(() => retryOperation(operation, delay, retries - 1)
+                  return retryOperation(operation, delay, retries - 1)
                       .then(resolve)
-                      .catch(reject), delay);
+                      .catch(reject);
               }
               return reject(reason);
           });
@@ -113,50 +113,34 @@ export const makeCourierMaker =
       });
     };
 
-    /** @type {Receiver} */
-    const receive = async ({ value, depositAddress, memo }) => {
-      const localAmount = AmountMath.make(localBrand, value);
-
-      // Look up the deposit facet for this board address, if there is one.
-      /** @type {DepositFacet} */
-      const depositFacet = await E(board)
-        .getValue(depositAddress)
-        .catch(_ =>
-          E(namesByAddress).lookup(depositAddress, WalletName.depositFacet),
-        );
-
-      const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
-
-      // Redeem the backing payment.
-      try {
+    /**
+     * Handle the transfer part of the Packet Forward Middleware (PFM).
+     *
+     * @param {Forward} forward - The parsed transfer memo.
+     * @param {ZCFSeat} zcfSeat - The Zoe contract facet seat.
+     * @param {Amount} localAmount - The local amount to be transferred.
+     * @param {string} depositAddress - The deposit address.
+     * @returns {Promise} - A promise that resolves when the transfer is handled.
+     */
+    const handleTransfer = async (forward, zcfSeat, localAmount, depositAddress) => {
+      if (forward.transfer) {
         redeem(zcfSeat, { Transfer: localAmount });
-        zcfSeat.exit();
-      } catch (e) {
-        zcfSeat.fail(e);
-        throw e;
+        const next = (typeof forward.transfer.next === "string" && typeof forward.transfer.next != undefined) ? JSON.parse(forward.transfer.next) : forward.transfer.next;
+        await send(zcfSeat, forward.transfer.receiver, next ? next : "PFM Transfer", depositAddress);
+        console.log("Completed PFM Transfer Forward: ", forward);
       }
+    };
 
-      // Once we've gotten to this point, their payment is committed and
-      // won't be refunded on a failed receive.
-      const payout = await E(userSeat).getPayout('Transfer');
-
-      // If we have a memo with Packet Forward Middleware, run through PFM contract.
-      const forward = parseTransferMemo(memo);
-      // Transfer Forward via PFM
-      if (forward && forward.transfer) {
-        const forwardTransfer = async () => {
-          if (forward.transfer) {
-            await send(zcfSeat, forward.transfer.receiver, '', depositAddress);
-            console.log("Completed PFM Transfer Forward: ", forward.transfer);
-            return E(transferProtocol).makeTransferPacketAck(true);
-          }
-        }
-        retryOperation(forwardTransfer, 1000, forward.transfer.retries || 1)
-        .then(response => console.log(response))
-        .catch(error => { throw error });
-      }
-      // Contract Call Forward via PFM
-      if (forward && forward.call) {
+    /**
+     * Handle the contract call part of the Packet Forward Middleware (PFM).
+     *
+     * @param {Forward} forward - The parsed transfer memo.
+     * @param {Payment} payout - The payout object.
+     * @param {Object} namesByAddress - The names by address object.
+     * @returns {Promise} - A promise that resolves when the call is handled.
+     */
+    const handleCall = async (forward, payout, namesByAddress) => {
+      if (forward.call) {
         const { address, contractKey, functionName, args: argString } = forward.call;
         if (!address || !contractKey || !functionName || !argString) {
           throw Error(`Invalid PFM Call Forward: ${JSON.stringify(forward.call)}`);
@@ -167,19 +151,46 @@ export const makeCourierMaker =
         const result = await E(instance.publicFacet)[functionName](args);
         console.log("Completed PFM Call Forward: ", forward.call);
         console.log("PFM Call Result: ", result);
-        return E(transferProtocol).makeTransferPacketAck(true);
       }
+    };
 
-      // If we get here there was no Packet Forward Middleware to run.
-      //
-      // Send the payout promise to the deposit facet.
-      //
-      // We don't want to wait for the depositFacet to return, so that
-      // it can't hang up (i.e. DoS) an ordered channel, which relies on
-      // us returning promptly.
-      E(depositFacet)
-        .receive(payout)
-        .catch(_ => {});
+    /**
+     * Redeem the backing payment.
+     *
+     * @param {Object} zcfSeat - The Zoe contract facet seat.
+     * @param {Object} localAmount - The local amount to be redeemed.
+     * @param {Object} userSeat - The user seat.
+     * @returns {Promise} - A promise that resolves to the payout.
+     */
+    const redeemPayment = async (zcfSeat, localAmount, userSeat) => {
+      try {
+        redeem(zcfSeat, { Transfer: localAmount });
+        zcfSeat.exit();
+      } catch (e) {
+        zcfSeat.fail(e);
+        throw e;
+      }
+      return await E(userSeat).getPayout('Transfer');
+    };
+
+    /** @type {Receiver} */
+    const receive = async ({ value, depositAddress, memo }) => {
+      const localAmount = AmountMath.make(localBrand, value);
+      const depositFacet = await E(board).getValue(depositAddress).catch(_ => E(namesByAddress).lookup(depositAddress, WalletName.depositFacet));
+      const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
+      const forward = parseTransferMemo(memo);
+
+      if (forward) {
+        if (forward.transfer) {
+          await retryOperation(() => handleTransfer(forward, zcfSeat, localAmount, depositAddress), 1000, forward.transfer.retries || 1);
+        } else {
+          const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
+          await handleCall(forward, payout, namesByAddress);
+        }
+      } else {
+        const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
+        E(depositFacet).receive(payout).catch(_ => {});
+      }
 
       return E(transferProtocol).makeTransferPacketAck(true);
     };

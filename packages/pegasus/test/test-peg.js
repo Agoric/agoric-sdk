@@ -35,7 +35,7 @@ const makeAsyncIteratorFromSubscription = sub =>
  * @param {import('ava').Assertions} t
  */
 async function testRemotePeg(t) {
-  t.plan(25);
+  t.plan(28);
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -109,17 +109,31 @@ async function testRemotePeg(t) {
           async onReceive(_c, packetBytes) {
             const packet = JSON.parse(packetBytes);
             if (packet.memo) {
-              t.deepEqual(
-                packet,
-                {
-                  amount: '100000000000000000171',
-                  denom: 'portdef/chanabc/uatom',
-                  memo: 'I am a memo!',
-                  receiver: 'markaccount',
-                  sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
-                },
-                'expected transfer packet',
-              );
+              if (packet.memo != "PFM Transfer") {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000171',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: 'I am a memo!',
+                    receiver: 'markaccount',
+                    sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
+                  },
+                  'expected transfer packet with memo',
+                )
+              } else {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: 'PFM Transfer',
+                    receiver: 'markaccount',
+                    sender: 'agoric1234567',
+                  },
+                  'expected transfer packet from pfm forward',
+                )
+              }
               return JSON.stringify({ result: 'AQ==' });
             } else {
               t.deepEqual(
@@ -313,7 +327,7 @@ async function testRemotePeg(t) {
   /** @type {Forward} */
   const transferForward = {
     transfer: {
-      receiver: "cosmos1jmd7lwdyykrxm5h83nlhg74fctwnky04uq9q5a",
+      receiver: "markaccount",
       port: "pegasus",
       channel: "channel-0",
       retries: 2,
@@ -321,10 +335,10 @@ async function testRemotePeg(t) {
   }
 
   const sendPacketPfmTransfer = {
-    amount: '400000000000000000004',
+    amount: '100000000000000000001',
     denom: 'uatom',
-    receiver: '0x1234',
-    sender: 'FIXME:sender',
+    receiver: 'agoric1234567',
+    sender: 'FIXME:sender2',
     memo: JSON.stringify(transferForward)
   };
   t.assert(await connP);
@@ -342,10 +356,10 @@ async function testRemotePeg(t) {
     }
   }
   const sendPacketPFMCall = {
-    amount: '400000000000000000004',
+    amount: '100000000000000000001',
     denom: 'uatom',
-    receiver: '0x1234',
-    sender: 'FIXME:sender',
+    receiver: 'agoric1234567',
+    sender: 'FIXME:sender2',
     memo: JSON.stringify(callForward)
   };
   t.assert(await connP);
