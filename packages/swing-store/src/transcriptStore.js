@@ -238,6 +238,49 @@ export function makeTranscriptStore(
     return bounds;
   }
 
+  const sqlGetCurrentIncarnation = db.prepare(`
+    SELECT incarnation
+    FROM transcriptSpans
+    WHERE vatID = ? AND isCurrent = 1
+    ORDER BY incarnation DESC LIMIT 1
+  `);
+  sqlGetCurrentIncarnation.pluck()
+
+  const sqlGetIncarnationStartPos = db.prepare(`
+    SELECT startPos
+    FROM transcriptSpans
+    WHERE vatID = ? AND incarnation = ?
+    ORDER BY startPos ASC LIMIT 1
+  `);
+  sqlGetIncarnationStartPos.pluck()
+
+  const sqlGetIncarnationEndPos = db.prepare(`
+    SELECT endPos
+    FROM transcriptSpans
+    WHERE vatID = ? AND incarnation = ?
+    ORDER BY endPos DESC LIMIT 1
+  `);
+  sqlGetIncarnationEndPos.pluck()
+
+  /**
+   * Get the start/end points of the current incarnation for a given vat.
+   *
+   * @param {string} vatID
+   * @returns {{incarnation: number, startPos: number, endPos: number}}
+   */
+  function getCurrentIncarnationBounds(vatID) {
+    const incarnation = sqlGetCurrentIncarnation.get(vatID);
+    if (incarnation === undefined) {
+      throw Error(`no current transcript for ${vatID}`);
+    }
+    const startPos = sqlGetIncarnationStartPos.get(vatID, incarnation);
+    assert(startPos !== undefined);
+    const endPos = sqlGetIncarnationEndPos.get(vatID, incarnation);
+    assert(endPos !== undefined);
+    const bounds = harden({incarnation, startPos, endPos});
+    return bounds;
+  }
+
   const sqlEndCurrentSpan = db.prepare(`
     UPDATE transcriptSpans
     SET isCurrent = null
@@ -903,6 +946,7 @@ export function makeTranscriptStore(
     rolloverSpan,
     rolloverIncarnation,
     getCurrentSpanBounds,
+    getCurrentIncarnationBounds,
     addItem,
     readSpan,
     stopUsingTranscript,
