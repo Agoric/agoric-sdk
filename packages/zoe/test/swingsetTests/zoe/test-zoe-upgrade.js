@@ -241,6 +241,6 @@ test('zoe vat upgrade trauma', async t => {
   // Verify completion of each paused flow.
   for (const { result, remainingSteps } of pausedFlows) {
     const [beforeStepName] = remainingSteps[0];
-    await doSteps(`resumed-${beforeStepName}`, flow, result);
+    await doSteps(`resumed-${beforeStepName}`, remainingSteps, result);
   }
 });
