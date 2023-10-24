@@ -41,11 +41,13 @@ default: all
 # "blocks" as soon as they come in.
 FAKE_CHAIN_DELAY = 0
 
-NUM_SOLOS?=1
+NUM_SOLOS?=2
 BASE_PORT?=8000
+BASE_PORT_1?=8001
 
 OTEL_EXPORTER_PROMETHEUS_PORT = 9464
 SOLO_OTEL_EXPORTER_PROMETHEUS_PORT = 9465
+SOLO_OTEL_EXPORTER_PROMETHEUS_PORT_1 = 9466
 GAS_ADJUSTMENT = 1.2
 
 AGC_START_ARGS =
@@ -189,6 +191,8 @@ t1/$(BASE_PORT)/owner-address:
 # Provision and start a client of ag-solo
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
+scenario2-run-client-1: t1-provision-one-with-powers-1 t1-start-ag-solo-1
+
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.ALL_THE_POWERS
 SOLO_COINS = 13000000ubld,12345000000uist,1122000000ibc/toyusdc,3344000000ibc/toyatom
@@ -231,6 +235,19 @@ t1-provision-one-with-powers: wait-for-cosmos
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
+
+t1-provision-one-with-powers-1: wait-for-cosmos
+	@addrfile=t1/$(BASE_PORT_1)/cosmos-client-account; \
+		test -f $$addrfile || addrfile=t1/$(BASE_PORT_1)/ag-cosmos-helper-address; \
+		addr=$$(cat $$addrfile); \
+	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+		{ while ! $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+			bootstrap $$addr $(SOLO_COINS); do sleep 2; done && \
+	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  t1/$(BASE_PORT_1) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
+
 
 # Send some USDC to the vbank/provision module account where it can be traded for IST.
 fund-provision-pool:
@@ -290,12 +307,26 @@ t1/$(BASE_PORT)/cosmos-client-account.setup:
 		$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address) generic --msg-type=/agoric.swingset.MsgDeliverInbound
 	date > $@
 
+t1/$(BASE_PORT_1)/cosmos-client-account.setup:
+	test ! -f t1/$(BASE_PORT_1)/cosmos-client-account || \
+	  $(AGCH) --home=t1/$(BASE_PORT_1)/owner --keyring-backend=test tx authz grant \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
+		$$(cat t1/$(BASE_PORT_1)/ag-cosmos-helper-address) generic --msg-type=/agoric.swingset.MsgDeliverInbound
+	date > $@	
+
 t1/$(BASE_PORT)/cosmos-fee-account.setup:
 	test ! -f t1/$(BASE_PORT)/cosmos-fee-account || \
 	  $(AGCH) --home=t1/$(BASE_PORT)/owner --keyring-backend=test tx feegrant grant \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
 		--period=5 --period-limit=200uist $$(cat t1/$(BASE_PORT)/cosmos-fee-account) $$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address)
 	date > $@
+
+t1/$(BASE_PORT_1)/cosmos-fee-account.setup:
+	test ! -f t1/$(BASE_PORT_1)/cosmos-fee-account || \
+	  $(AGCH) --home=t1/$(BASE_PORT_1)/owner --keyring-backend=test tx feegrant grant \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
+		--period=5 --period-limit=200uist $$(cat t1/$(BASE_PORT_1)/cosmos-fee-account) $$(cat t1/$(BASE_PORT_1)/ag-cosmos-helper-address)
+	date > $@	
 
 # Actually start the ag-solo.
 t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/cosmos-fee-account.setup
@@ -307,6 +338,16 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 	cd t1/$(BASE_PORT) && \
 		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
+
+t1-start-ag-solo-1: t1/$(BASE_PORT_1)/cosmos-client-account.setup t1/$(BASE_PORT_1)/cosmos-fee-account.setup
+	addr=$$(cat t1/$(BASE_PORT_1)/ag-cosmos-helper-address); \
+	$(AGCH) query auth account $$addr >/dev/null 2>&1 || \
+		$(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		bootstrap $$addr 1uist
+	cd t1/$(BASE_PORT_1) && \
+		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT_1) \
+		$(AG_SOLO) start		
 
 scenario2-core-eval: $(EVAL_CLEAN)
 	$(AGCH) --home=t1/bootstrap tx gov submit-proposal swingset-core-eval \
