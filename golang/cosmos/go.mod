@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/armon/go-metrics v0.4.1
 	github.com/cosmos/cosmos-sdk v0.45.16
-	github.com/cosmos/gaia/v7 v7.0.0-00010101000000-000000000000
 	github.com/cosmos/ibc-go/v4 v4.4.2
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
@@ -29,6 +28,7 @@ require (
 	cosmossdk.io/core v0.5.1 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.3 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
+	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
@@ -52,7 +52,6 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.19.5 // indirect
-	github.com/cosmos/ibc-go/v3 v3.0.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
@@ -91,7 +90,6 @@ require (
 	github.com/improbable-eng/grpc-web v0.14.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -143,14 +141,11 @@ require (
 	nhooyr.io/websocket v1.8.6 // indirect
 )
 
-// Silence a warning on MacOS
-replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
-
 // At least until post-v0.9.0 is released with
 // https://github.com/Zondax/hid/issues/4 resolved.
 replace github.com/zondax/hid => github.com/zondax/hid v0.9.1-0.20220302062450-5552068d2266
 
-replace github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+replace github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
 replace github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
 
@@ -164,8 +159,6 @@ replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.3
 
 // We need a fork of cosmos-sdk until all of the differences are merged.
 replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.1
-
-replace github.com/cosmos/gaia/v7 => github.com/Agoric/ag0/v7 v7.0.2-alpha.agoric.1
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
