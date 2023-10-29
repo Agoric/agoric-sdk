@@ -1,0 +1,49 @@
+{
+  "name": "@agoric/whenable",
+  "version": "0.1.0",
+  "description": "Remote (shortening and disconnection-tolerant) Promise-likes",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
+    "test": "exit 0",
+    "test:nyc": "exit 0",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:eslint": "eslint .",
+    "lint:types": "tsc"
+  },
+  "dependencies": {
+    "@agoric/base-zone": "^0.1.0",
+    "@agoric/internal": "^0.3.2",
+    "@endo/far": "^0.2.21",
+    "@endo/patterns": "^0.2.5",
+    "@endo/promise-kit": "^0.2.59"
+  },
+  "devDependencies": {
+    "@endo/init": "^0.5.59",
+    "ava": "^5.3.0"
+  },
+  "ava": {
+    "require": [
+      "@endo/init/debug.js"
+    ]
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "files": [
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 92.26
+  }
+}
