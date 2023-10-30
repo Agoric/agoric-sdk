@@ -4,7 +4,7 @@
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { basename } from 'path';
+import { basename, join } from 'path';
 import { inspect } from 'util';
 
 import { Fail, NonNullish } from '@agoric/assert';
@@ -215,13 +215,23 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
 
-  const runPackageScript = async (pkg, name, env) => {
-    console.warn(pkg, 'running package script:', name);
-    const pkgPath = getPkgPath(pkg);
-    return childProcess.execFileSync('yarn', ['run', name], {
-      cwd: pkgPath,
+  const importSpec = spec =>
+    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+
+  const runPackageScript = async (outputDir, scriptPath, env) => {
+    console.info('running package script:', scriptPath);
+    const out = await childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+      cwd: outputDir,
       env,
     });
+    return childProcess.execFileSync(
+      out.toString().trim(),
+      ['run', scriptPath],
+      {
+        cwd: outputDir,
+        env,
+      },
+    );
   };
 
   const loadJSON = async filePath =>
@@ -247,26 +257,20 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     return { evals, bundles };
   };
 
-  const buildAndExtract = async ({
-    package: packageName,
-    packageScriptName,
-    env = {},
-  }: {
-    package: string;
-    packageScriptName: string;
-    env?: Record<string, string>;
-  }) => {
-    const scriptEnv = Object.assign(Object.create(process.env), env);
+  const buildAndExtract = async (builderPath: string) => {
+    const scriptEnv = Object.assign(Object.create(process.env));
+
+    const pkgPath = getPkgPath('builders');
+    const tmpDir = await fsAmbientPromises.mkdtemp(join(pkgPath, 'proposal-'));
+
+    const scriptPath = await importSpec(builderPath);
+
     // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(
-      packageName,
-      packageScriptName,
-      scriptEnv,
-    );
+    const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
     const built = parseProposalParts(out.toString());
 
     const loadAndRmPkgFile = async fileName => {
-      const filePath = getPkgPath(packageName, fileName);
+      const filePath = join(tmpDir, fileName);
       const content = await fs.readFile(filePath, 'utf8');
       await fs.rm(filePath);
       return content;

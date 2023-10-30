@@ -142,11 +142,7 @@ test('run restart-vats proposal', async t => {
 
   t.log('building proposal');
   // /////// Upgrading ////////////////////////////////
-  const zcfPackageSpec = {
-    package: 'builders',
-    packageScriptName: 'build:zcf-proposal',
-  };
-  await buildAndExecuteProposal(zcfPackageSpec);
+  await buildAndExecuteProposal('@agoric/builders/scripts/vats/replace-zoe.js');
 
   t.log('upgrade zoe&zcf proposal executed');
   await zoeDriver.upgradeProbe(zcfProbeBundle);

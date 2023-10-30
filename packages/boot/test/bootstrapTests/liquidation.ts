@@ -349,10 +349,9 @@ const addSTARsCollateral = async (
   const { controller, buildProposal } = t.context;
 
   t.log('building proposal');
-  const proposal = await buildProposal({
-    package: 'builders',
-    packageScriptName: 'build:add-STARS-proposal',
-  });
+  const proposal = await buildProposal(
+    '@agoric/builders/scripts/inter-protocol/add-STARS.js',
+  );
 
   for await (const bundle of proposal.bundles) {
     await controller.validateAndInstallBundle(bundle);
