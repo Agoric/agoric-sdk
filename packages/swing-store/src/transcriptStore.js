@@ -730,6 +730,25 @@ export function makeTranscriptStore(
   }
   harden(getArtifactNames);
 
+  const sqlReadSpanItem = db.prepare(`
+    SELECT item
+    FROM transcriptItems
+    WHERE vatID = ? AND position = ?
+  `);
+  sqlReadSpanItem.pluck(true);
+
+  /**
+   * Read a single transcript item
+   *
+   * @param {string} vatID  The vat whose transcript is being read
+   * @param {number} position The item position
+   *
+   * @returns {string | null}  A transcript item, or null if the position was out-of-range
+   */
+  function readItem(vatID, position) {
+    return sqlReadSpanItem.get(vatID, position);
+  }
+
   const sqlAddItem = db.prepare(`
     INSERT INTO transcriptItems (vatID, item, position, incarnation)
     VALUES (?, ?, ?, ?)
@@ -956,6 +975,7 @@ export function makeTranscriptStore(
     getCurrentSpanBounds,
     getCurrentIncarnationBounds,
     addItem,
+    readItem,
     readSpan,
     stopUsingTranscript,
     deleteVatTranscripts,
