@@ -287,11 +287,9 @@ const checkFlow1 = async (
 
     // restart Zoe
     // /////// Upgrading ////////////////////////////////
-    const zoeUpgradeSpec = {
-      package: 'builders',
-      packageScriptName: 'build:null-upgrade-zoe-proposal',
-    };
-    await buildAndExecuteProposal(zoeUpgradeSpec);
+    await buildAndExecuteProposal(
+      '@agoric/builders/scripts/vats/null-upgrade-zoe-proposal.js',
+    );
 
     await buyer.tryExitOffer(`${collateralBrandKey}-bid3`);
     t.like(readLatest('published.wallet.agoric1buyer'), {
