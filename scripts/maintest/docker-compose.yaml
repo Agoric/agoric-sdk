@@ -1,0 +1,71 @@
+version: '3.8'
+
+networks:
+  validator_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.99.0.0/16
+
+services:
+  initializer:
+    image: alpine:latest
+    command: |
+      /bin/sh --verbose -c "
+        if [ ! -f /state/initialized ]; then \
+          apk add --no-cache axel \
+          axel -v -n 10 -o /state/agoric1.tar.gz https://storage.googleapis.com/agoric-snapshots-public/agoric1.tar.gz \
+          axel -v -o /state/agoric2.tar.gz https://storage.googleapis.com/agoric-snapshots-public/agoric2.tar.gz \
+          tar -xvzf /state/agoric1.tar.gz -C /state \
+          tar -xvzf /state/agoric2.tar.gz -C /state \
+          mv /state/agoric2/data/priv_validator_state.json /state/agoric2/priv_validator_state.json \
+          cp -v -r /state/agoric1/data/* /state/agoric2/data/ \
+          cp -v -r /state/agoric1/config/genesis.json /state/agoric2/config/ \
+          mv -v /state/agoric2/priv_validator_state.json /state/agoric2/data/priv_validator_state.json \
+          sed -i 's/172\.17\.0\.2/10\.99\.0\.2/g' /state/agoric1/config/config.toml \
+          sed -i 's/172\.17\.0\.3/10\.99\.0\.3/g' /state/agoric1/config/config.toml \
+          cp -v /state/agoric1/config/config.toml /state/agoric2/config/config.toml \
+          touch /state/initialized \
+        fi
+      "
+    volumes:
+      - .:/state
+    restart: "no"
+
+  validator1:
+    image: ghcr.io/agoric/agoric-sdk:36
+    depends_on:
+      - initializer
+    volumes:
+      - .:/state
+    networks:
+      validator_network:
+        ipv4_address: 10.99.0.2
+    entrypoint: |
+      /bin/sh -c "
+        while [ ! -f /state/initialized ]; do \
+          echo 'waiting for initialization to complete...'; \
+          sleep 15; \
+        done; \
+        agd start --home /state/agoric1 --x-crisis-skip-assert-invariants --iavl-disable-fastnode false
+      "
+
+  validator2:
+    image: ghcr.io/agoric/agoric-sdk:36
+    depends_on:
+      - initializer
+    volumes:
+      - .:/state
+    networks:
+      validator_network:
+        ipv4_address: 10.99.0.3
+    entrypoint: |
+      /bin/sh -c "
+        while [ ! -f /state/initialized ]; do \
+          echo 'waiting for initialization to complete...'; \
+          sleep 15; \
+        done; \
+        agd start --home /state/agoric2 --x-crisis-skip-assert-invariants --iavl-disable-fastnode false
+      "
+
