@@ -42,10 +42,34 @@ func GetTxCmd(storeKey string) *cobra.Command {
 	return swingsetTxCmd
 }
 
+// parseInput handles an input argument that may refer to a file.
+// If the input does not start with a @, it is returned as-is.
+// The slice after the @ represents the filename. If the filename is -
+// a single line from stdin is returned, otherwise the full content
+// of the file is returned.
+func parseInput(input string) (output string, err error) {
+	if input[0] != '@' {
+		return input, nil
+	}
+
+	fname := input[1:]
+	if fname == "-" {
+		// Reading from stdin.
+		_, err = fmt.Scanln(&output)
+		return output, err
+	} else {
+		jsonBytes, err := os.ReadFile(fname)
+		if err != nil {
+			return "", err
+		}
+		return string(jsonBytes), nil
+	}
+}
+
 // GetCmdDeliver is the CLI command for sending a DeliverInbound transaction
 func GetCmdDeliver() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deliver [json string]",
+		Use:   "deliver <json string>/@<FILE>/@-",
 		Short: "deliver inbound messages",
 		Args:  cobra.ExactArgs(1),
 
@@ -55,22 +79,11 @@ func GetCmdDeliver() *cobra.Command {
 				return err
 			}
 
-			jsonIn := args[0]
-			if jsonIn[0] == '@' {
-				fname := args[0][1:]
-				if fname == "-" {
-					// Reading from stdin.
-					if _, err := fmt.Scanln(&jsonIn); err != nil {
-						return err
-					}
-				} else {
-					jsonBytes, err := os.ReadFile(fname)
-					if err != nil {
-						return err
-					}
-					jsonIn = string(jsonBytes)
-				}
+			jsonIn, err := parseInput(args[0])
+			if err != nil {
+				return err
 			}
+
 			msgs, err := types.UnmarshalMessagesJSON(jsonIn)
 			if err != nil {
 				return err
@@ -92,7 +105,7 @@ func GetCmdDeliver() *cobra.Command {
 // InstallBundle message in a transaction.
 func GetCmdInstallBundle() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "install-bundle <JSON>/@<FILE>/-",
+		Use:  "install-bundle <JSON>/@<FILE>/@-",
 		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -101,21 +114,9 @@ func GetCmdInstallBundle() *cobra.Command {
 				return err
 			}
 
-			jsonIn := args[0]
-			if jsonIn[0] == '@' {
-				fname := args[0][1:]
-				if fname == "-" {
-					// Reading from stdin.
-					if _, err := fmt.Scanln(&jsonIn); err != nil {
-						return err
-					}
-				} else {
-					jsonBytes, err := os.ReadFile(fname)
-					if err != nil {
-						return err
-					}
-					jsonIn = string(jsonBytes)
-				}
+			jsonIn, err := parseInput(args[0])
+			if err != nil {
+				return err
 			}
 
 			msg := types.NewMsgInstallBundle(jsonIn, cctx.GetFromAddress())
@@ -186,7 +187,7 @@ func GetCmdProvisionOne() *cobra.Command {
 // GetCmdWalletAction is the CLI command for sending a WalletAction or WalletSpendAction transaction
 func GetCmdWalletAction() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "wallet-action [json string]",
+		Use:   "wallet-action <json string>/@<FILE>/@-",
 		Short: "perform a wallet action",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -196,7 +197,11 @@ func GetCmdWalletAction() *cobra.Command {
 			}
 
 			owner := clientCtx.GetFromAddress()
-			action := args[0]
+
+			action, err := parseInput(args[0])
+			if err != nil {
+				return err
+			}
 
 			spend, err := cmd.Flags().GetBool(FlagAllowSpend)
 			if err != nil {
