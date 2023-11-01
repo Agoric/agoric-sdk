@@ -91,7 +91,7 @@ export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} offer
  * @param {Pick<import('stream').Writable,'write'>} [stdout]
  */
 export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {

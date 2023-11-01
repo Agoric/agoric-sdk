@@ -46,7 +46,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  * source: 'continuing',
- * previousOffer: import('./offers.js').OfferId,
+ * previousOffer: import('./smartWallet.js').OfferId,
  * invitationMakerName: string,
  * invitationArgs?: any[],
  * }} ContinuingInvitationSpec

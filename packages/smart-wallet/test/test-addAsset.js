@@ -185,7 +185,7 @@ const makeScenario = t => {
     const uiBridge = Far('UIBridge', {
       /** @param {import('@endo/marshal').CapData<string>} offerEncoding */
       proposeOffer: async offerEncoding => {
-        /** @type {import('../src/offers.js').OfferSpec} */
+        /** @type {import('../src/smartWallet.js').OfferSpec} */
         const offer = ctx.fromBoard.fromCapData(offerEncoding);
         const { give, want } = offer.proposal;
         for await (const [kw, amt] of entries({ ...give, ...want })) {
@@ -341,7 +341,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       ),
     };
     const give = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
-    /** @type {import('../src/offers.js').OfferSpec} */
+    /** @type {import('../src/smartWallet.js').OfferSpec} */
     const offer1 = harden({
       id: 'joinGame1234',
       invitationSpec: {
@@ -484,7 +484,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     };
     const want = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
 
-    /** @type {import('../src/offers.js').OfferSpec} */
+    /** @type {import('../src/smartWallet.js').OfferSpec} */
     const offer1 = harden({
       id: 'joinGame2345',
       invitationSpec: {

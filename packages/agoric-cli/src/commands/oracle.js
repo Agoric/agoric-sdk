@@ -107,7 +107,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       const { lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

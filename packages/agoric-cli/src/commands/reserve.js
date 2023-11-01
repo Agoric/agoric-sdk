@@ -70,7 +70,7 @@ export const makeReserveCommand = (_logger, io = {}) => {
 
       const feesToBurn = { brand: agoricNames.brand.IST, value: opts.value };
 
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

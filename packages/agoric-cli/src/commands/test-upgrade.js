@@ -73,7 +73,7 @@ export const makeTestCommand = (
       const { home, keyringBackend: backend } = testCmd.opts();
 
       const io = { ...networkConfig, execFileSync, delay, stdout };
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

@@ -198,7 +198,7 @@ export const makePsmCommand = logger => {
       const { lookupPsmInstance } = await rpcTools();
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -255,7 +255,7 @@ export const makePsmCommand = logger => {
         brand: istBrand,
         value: BigInt(opts.limit * 1_000_000),
       });
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

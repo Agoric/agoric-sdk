@@ -150,7 +150,7 @@ export const makeAuctionCommand = (
           path: { paramPath: { key: 'governedParams' } },
         };
 
-        /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+        /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
         const offer = {
           id: opts.offerId,
           invitationSpec: {

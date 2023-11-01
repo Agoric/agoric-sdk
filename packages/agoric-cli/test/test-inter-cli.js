@@ -188,7 +188,7 @@ const makeProcess = (t, keyring, out) => {
 };
 
 /**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ * @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferStatus &
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
  */
 const offerStatus2 = harden({
@@ -253,7 +253,7 @@ test('amount parsing', t => {
 test.todo('want as max collateral wanted');
 
 /**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ * @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferStatus &
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
  */
 const offerStatus1 = harden({

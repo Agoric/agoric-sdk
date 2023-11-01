@@ -72,7 +72,7 @@ const makeVaultProposal = ({ brand }, opts) => {
  *   giveCollateral: number;
  *   collateralBrandKey: string;
  * }} opts
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makeOpenOffer = ({ brand }, opts) => {
   const proposal = makeVaultProposal({ brand }, opts);
@@ -111,7 +111,7 @@ const makeOpenOffer = ({ brand }, opts) => {
  *   wantMinted?: number;
  * }} opts
  * @param {string} previousOffer
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makeAdjustOffer = ({ brand }, opts, previousOffer) => {
   // NB: not really a Proposal because the brands are not remotes
@@ -141,7 +141,7 @@ const makeAdjustOffer = ({ brand }, opts, previousOffer) => {
  *   giveMinted: number;
  * }} opts
  * @param {string} previousOffer
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makeCloseOffer = ({ brand }, opts, previousOffer) => {
   const proposal = makeVaultProposal({ brand }, opts);
@@ -218,7 +218,7 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  *   | { wantMinted: number }
  *   | { giveMinted: number }
  * )} opts
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makePsmSwapOffer = ({ brand }, instance, opts) => {
   const method =
@@ -309,7 +309,7 @@ export const makeParseAmount =
  *       discount: number; // -1 to 1. e.g. 0.10 for 10% discount, -0.05 for 5% markup
  *     }
  * )} opts
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makeBidOffer = (agoricNames, opts) => {
   assertAllDefined({
@@ -352,7 +352,7 @@ const makeBidOffer = (agoricNames, opts) => {
           ),
         };
 
-  /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
   const offerSpec = {
     id: opts.offerId,
     invitationSpec: {
@@ -376,7 +376,7 @@ const makeBidOffer = (agoricNames, opts) => {
  *   give: number;
  *   collateralBrandKey: string;
  * }} opts
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makeAddCollateralOffer = ({ brand }, opts) => {
   /** @type {AmountKeywordRecord} */
@@ -388,7 +388,7 @@ const makeAddCollateralOffer = ({ brand }, opts) => {
     ),
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec} */
   const offerSpec = {
     id: opts.offerId,
     invitationSpec: {
@@ -409,7 +409,7 @@ const makeAddCollateralOffer = ({ brand }, opts) => {
  *   unitPrice: bigint;
  * }} opts
  * @param {string} previousOffer
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/smartWallet.js').OfferSpec}
  */
 const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
   return {

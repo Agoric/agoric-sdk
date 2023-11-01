@@ -49,17 +49,36 @@ const trace = makeTracer('SmrtWlt');
  * @see {@link ../README.md}}
  */
 
+/** @typedef {number | string} OfferId */
+
+/**
+ * @typedef {{
+ *   id: OfferId,
+ *   invitationSpec: import('./invitations').InvitationSpec,
+ *   proposal: Proposal,
+ *   offerArgs?: unknown
+ * }} OfferSpec
+ */
+
+/**
+ * @typedef {{
+ *   logger:  {info: (...args: any[]) => void, error: (...args: any[]) => void},
+ *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher,
+ *   invitationFromSpec: import('./invitations.js').InvitationFromSpec,
+ * }} ExecutorPowers
+ */
+
 /**
  * @typedef {{
  *   method: 'executeOffer'
- *   offer: import('./offers.js').OfferSpec,
+ *   offer: OfferSpec,
  * }} ExecuteOfferAction
  */
 
 /**
  * @typedef {{
  *   method: 'tryExitOffer'
- *   offerId: import('./offers.js').OfferId,
+ *   offerId: OfferId,
  * }} TryExitOfferAction
  */
 
@@ -90,12 +109,12 @@ const trace = makeTracer('SmrtWlt');
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
  *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
- *   liveOffers: Array<[import('./offers.js').OfferId, import('./offers.js').OfferStatus]>,
+ *   liveOffers: Array<[OfferId, import('./offerWatcher.js').OfferStatus]>,
  * }} CurrentWalletRecord
  */
 
 /**
- * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
+ * @typedef {{ updated: 'offerStatus', status: import('./offerWatcher.js').OfferStatus }
  *   | { updated: 'balance'; currentAmount: Amount }
  *   | { updated: 'walletAction'; status: { error: string } }
  * } UpdateRecord Record of an update to the state of this wallet.
@@ -154,8 +173,8 @@ const trace = makeTracer('SmrtWlt');
  *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
- *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
- *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
+ *   liveOffers: MapStore<OfferId, import('./offerWatcher.js').OfferStatus>,
+ *   liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>,
  * }>} ImmutableState
  *
  * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
@@ -705,7 +724,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * Take an offer description provided in capData, augment it with payments and call zoe.offer()
          *
-         * @param {import('./offers.js').OfferSpec} offerSpec
+         * @param {OfferSpec} offerSpec
          * @returns {Promise<void>} after the offer has been both seated and exited by Zoe.
          * @throws if any parts of the offer can be determined synchronously to be invalid
          */
