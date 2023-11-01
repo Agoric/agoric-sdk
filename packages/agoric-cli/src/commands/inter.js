@@ -101,7 +101,7 @@ const makeFormatters = assets => {
 /**
  * Dynamic check that an OfferStatus is also a BidSpec.
  *
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').OfferStatus} offerStatus
+ * @param {import('@agoric/smart-wallet/src/offerWatcher.js').OfferStatus} offerStatus
  * @param {import('../lib/wallet.js').AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
  * returns null if offerStatus is not a BidSpec
@@ -125,7 +125,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
   }
 
   /**
-   * @type {import('@agoric/smart-wallet/src/smartWallet.js').OfferStatus &
+   * @type {import('@agoric/smart-wallet/src/offerWatcher.js').OfferStatus &
    *        { offerArgs: BidSpec}}
    */
   // @ts-expect-error dynamic cast
@@ -136,7 +136,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
 /**
  * Format amounts etc. in a BidSpec OfferStatus
  *
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').OfferStatus &
+ * @param {import('@agoric/smart-wallet/src/offerWatcher.js').OfferStatus &
  *         { offerArgs: BidSpec}} bid
  * @param {import('agoric/src/lib/format.js').AssetDescriptor[]} assets
  */

@@ -65,7 +65,7 @@ export const likePayouts = ({ Bid, Collateral }) => ({
 
 export const makeWalletFactoryContext = async t => {
   const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
-    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json'
+    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
   });
 
   const { runUtils, storage } = swingsetTestKit;
@@ -82,7 +82,7 @@ export const makeWalletFactoryContext = async t => {
   const refreshAgoricNamesRemotes = () => {
     Object.assign(
       agoricNamesRemotes,
-      makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage)
+      makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage),
     );
   };
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
@@ -91,7 +91,7 @@ export const makeWalletFactoryContext = async t => {
   const walletFactoryDriver = await makeWalletFactoryDriver(
     runUtils,
     storage,
-    agoricNamesRemotes
+    agoricNamesRemotes,
   );
   return {
     ...swingsetTestKit,
@@ -112,8 +112,8 @@ export const makeLiquidationTestContext = async t => {
     swingsetTestKit,
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
-    walletFactoryDriver
-  }  = await makeWalletFactoryContext(t);
+    walletFactoryDriver,
+  } = await makeWalletFactoryContext(t);
 
   console.timeLog('DefaultTestContext', 'walletFactoryDriver');
 

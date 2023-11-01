@@ -265,7 +265,6 @@ export const prepareSmartWallet = (baggage, shared) => {
   const makeOfferWatcher = makeOfferWatcherMaker(baggage);
 
   /**
-   *
    * @param {UniqueParams} unique
    * @returns {State}
    */

@@ -4,14 +4,13 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import process from 'process';
 import type { ExecutionContext, TestFn } from 'ava';
 
-import { ERef } from '@endo/far';
 import { BridgeHandler } from '@agoric/vats';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
   LiquidationTestContext,
   makeLiquidationTestContext,
   LiquidationSetup,
 } from './liquidation.ts';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 
