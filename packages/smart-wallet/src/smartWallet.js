@@ -735,61 +735,88 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           facets.helper.assertUniqueOfferId(String(offerSpec.id));
 
-          const invitationFromSpec = makeInvitationsHelper(
-            zoe,
-            agoricNames,
-            invitationBrand,
-            invitationPurse,
-            state.offerToInvitationMakers.get,
-          );
+          let seatRef;
+          let watcher;
+          try {
+            const invitationFromSpec = makeInvitationsHelper(
+              zoe,
+              agoricNames,
+              invitationBrand,
+              invitationPurse,
+              state.offerToInvitationMakers.get,
+            );
 
-          console.info(
-            'wallet',
-            address,
-            'starting executeOffer',
-            offerSpec.id,
-          );
+            console.info(
+              'wallet',
+              address,
+              'starting executeOffer',
+              offerSpec.id,
+            );
 
-          // 1. Prepare values and validate synchronously.
-          const { proposal } = offerSpec;
+            // 1. Prepare values and validate synchronously.
+            const { proposal } = offerSpec;
 
-          const invitation = invitationFromSpec(offerSpec.invitationSpec);
+            const invitation = invitationFromSpec(offerSpec.invitationSpec);
 
-          const [paymentKeywordRecord, invitationAmount] = await Promise.all([
-            proposal?.give &&
-              deeplyFulfilledObject(
-                facets.payments.withdrawGive(proposal.give),
-              ),
-            E(invitationIssuer).getAmountOf(invitation),
-          ]);
+            const [paymentKeywordRecord, invitationAmount] = await Promise.all([
+              proposal?.give &&
+                deeplyFulfilledObject(
+                  facets.payments.withdrawGive(proposal.give),
+                ),
+              E(invitationIssuer).getAmountOf(invitation),
+            ]);
 
-          // 2. Begin executing offer
-          // No explicit signal to user that we reached here but if anything above
-          // failed they'd get an 'error' status update.
+            // 2. Begin executing offer
+            // No explicit signal to user that we reached here but if anything above
+            // failed they'd get an 'error' status update.
 
-          /** @type {UserSeat} */
-          const seatRef = await E(zoe).offer(
-            invitation,
-            proposal,
-            paymentKeywordRecord,
-            offerSpec.offerArgs,
-          );
+            /** @type {UserSeat} */
+            seatRef = await E(zoe).offer(
+              invitation,
+              proposal,
+              paymentKeywordRecord,
+              offerSpec.offerArgs,
+            );
+            console.info('wallet', address, offerSpec.id, 'seated');
 
-          console.info('wallet', address, offerSpec.id, 'seated');
+            watcher = makeOfferWatcher(
+              facets.helper,
+              facets.deposit,
+              offerSpec,
+              address,
+              invitationAmount,
+              seatRef,
+            );
 
-          const watcher = makeOfferWatcher(
-            facets.helper,
-            facets.deposit,
-            offerSpec,
-            address,
-            invitationAmount,
-            seatRef,
-          );
+            watchOfferOutcomes(watcher, seatRef);
+            state.liveOffers.init(offerSpec.id, offerSpec);
+            facets.helper.publishCurrentState();
+            state.liveOfferSeats.init(offerSpec.id, seatRef);
+          } catch (err) {
+            console.error('OFFER ERROR:', err);
+            // Notify the user
+            debugger;
+            if (watcher) {
+              watcher.helper.updateStatus({ error: err.toString() });
+            } else {
+              facets.helper.updateStatus(
+                {
+                  error: err.toString(),
+                  ...offerSpec,
+                },
+                address,
+              );
+            }
 
-          watchOfferOutcomes(watcher, seatRef);
-          state.liveOffers.init(offerSpec.id, offerSpec);
-          facets.helper.publishCurrentState();
-          state.liveOfferSeats.init(offerSpec.id, seatRef);
+            if (seatRef) {
+              E.when(E(seatRef).hasExited(), hasExited => {
+                if (!hasExited) {
+                  void E(seatRef).tryExit();
+                }
+              });
+            }
+            throw err;
+          }
         },
         /**
          * Take an offer's id, look up its seat, try to exit.

@@ -11,10 +11,10 @@ import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeDefaultTestContext } from './contexts.js';
-import { ActionType, headValue, makeMockTestSpace } from './supports.js';
+import { ActionType, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
@@ -376,8 +376,10 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     );
     const wallet = simpleProvideWallet(addr);
     t.log('deposit', istQty, 'IST into wallet of', addr);
-    await E(E(wallet).getDepositFacet()).receive(spendingPmt);
+
+    // order of updates changed so offerStatus might not be last
     const updates = await E(wallet).getUpdatesSubscriber();
+    await E(E(wallet).getDepositFacet()).receive(spendingPmt);
     return updates;
   };
 
@@ -418,10 +420,21 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       ['Boardwalk', 1n],
     ];
 
-    /** @type {import('../src/smartWallet.js').UpdateRecord} */
-    const update = await headValue(updates);
-    assert(update.updated === 'offerStatus');
-    // t.log(update.status);
+    // status update used to be last, but now we have to look for the right one
+    let record = await E(updates).subscribeAfter();
+    while (
+      record.head.value.updated !== 'offerStatus' ||
+      !record.head.value.status.numWantsSatisfied ||
+      !record.head.value.status.payouts?.Places
+    ) {
+      record = await E(updates).subscribeAfter(record.publishCount);
+    }
+    const update = record.head.value;
+
+    assert(
+      update.updated === 'offerStatus',
+      `Should have had "updated":"offerStatus", had "${q(update)}"`,
+    );
     t.like(update, {
       updated: 'offerStatus',
       status: {
@@ -435,7 +448,6 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     const {
       status: { id, result, payouts },
     } = update;
-    // @ts-expect-error cast value to copyBag
     const names = payouts?.Places.value.payload.map(([name, _qty]) => name);
     t.log(id, 'result:', result, ', payouts:', names.join(', '));
 
@@ -495,13 +507,15 @@ test.serial('non-vbank asset: give before deposit', async t => {
       proposal: { give, want },
     });
     t.log('goofy client: propose to give', choices.join(', '));
-    await E(walletBridge).proposeOffer(ctx.fromBoard.toCapData(offer1));
+    await t.throwsAsync(
+      () => E(walletBridge).proposeOffer(ctx.fromBoard.toCapData(offer1)),
+      { message: /Withdrawal of .* failed because the purse only contained/ },
+    );
   };
 
   {
     const addr2 = 'agoric1player2';
     const walletUIbridge = makePromiseKit();
-    // await eventLoopIteration();
 
     const { simpleProvideWallet, consume, sendToBridge } = t.context;
     const wallet = simpleProvideWallet(addr2);
@@ -512,8 +526,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     const { aPlayer } = makeScenario(t);
 
     await aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
-    const c2 = goofyClient(mockStorage, walletUIbridge.promise);
-    await t.throwsAsync(c2, { message: /Withdrawal of {.*} failed/ });
+    await goofyClient(mockStorage, walletUIbridge.promise);
     await eventLoopIteration();
 
     // wallet balance was also updated
