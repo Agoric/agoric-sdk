@@ -838,7 +838,7 @@ export function makeWalletRoot({
         );
       },
       fail(reason) {
-        console.error(`failed updateState observer`, reason);
+        console.error(`+++failed updateState observer ${reason}+++`);
       },
     });
 

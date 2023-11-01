@@ -166,3 +166,5 @@ export const makeInvitationsHelper = (
   return invitationFromSpec;
 };
 harden(makeInvitationsHelper);
+
+/** @typedef {ReturnType<makeInvitationsHelper>} InvitationFromSpec */
