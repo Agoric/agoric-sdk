@@ -2,8 +2,9 @@
 /* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../src/parseVatSlots.js';
+import { isPromise } from '@endo/promise-kit';
 
+import { makeVatSlot, parseVatSlot } from '../src/parseVatSlots.js';
 import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
@@ -163,6 +164,11 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return vrm.allocateNextID('exportID');
   }
 
+  function allocatePromiseID() {
+    const promiseID = vrm.allocateNextID('promiseID');
+    return makeVatSlot('promise', true, promiseID);
+  }
+
   function allocateCollectionID() {
     return vrm.allocateNextID('collectionID');
   }
@@ -195,7 +201,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function convertValToSlot(val) {
     if (!valToSlot.has(val)) {
-      const slot = `o+${allocateExportID()}`;
+      const slot = isPromise(val)
+        ? allocatePromiseID()
+        : `o+${allocateExportID()}`;
       valToSlot.set(val, slot);
       setValForSlot(slot, val);
     }
@@ -314,7 +322,7 @@ export function makeFakeWatchedPromiseManager(
   collectionManager,
   fakeStuff,
 ) {
-  return makeWatchedPromiseManager({
+  const mpm = makeWatchedPromiseManager({
     syscall: fakeStuff.syscall,
     vrm,
     vom,
@@ -323,7 +331,10 @@ export function makeFakeWatchedPromiseManager(
     convertSlotToVal: fakeStuff.convertSlotToVal,
     maybeExportPromise: fakeStuff.maybeExportPromise,
   });
+  mpm.preparePromiseWatcherTables();
+  return mpm;
 }
+
 /**
  * Configure virtual stuff with relaxed durability rules and fake liveslots
  *
