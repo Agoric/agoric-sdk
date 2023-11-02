@@ -103,6 +103,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -794,7 +795,7 @@ func NewAgoricApp(
 		upgradeName     = "agoric-upgrade-12"
 		upgradeNameTest = "agorictest-upgrade-12"
 	)
-	
+
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		upgrade12Handler(app, upgradeName),
@@ -830,6 +831,11 @@ func upgrade12Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 		app.CheckControllerInited(false)
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
+
+		// Reflect default BlockParams.MaxBytes change to current params
+		cp := app.BaseApp.GetConsensusParams(ctx)
+		cp.Block.MaxBytes = tmtypes.DefaultBlockParams().MaxBytes
+		app.BaseApp.StoreConsensusParams(ctx, cp)
 
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
