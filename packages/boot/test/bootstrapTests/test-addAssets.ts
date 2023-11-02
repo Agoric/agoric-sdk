@@ -22,10 +22,9 @@ const auctioneerPath = 'published.auction';
 
 test.before(async t => {
   const context = await makeLiquidationTestContext(t);
-  const proposal = await context.buildProposal({
-    package: 'builders',
-    packageScriptName: 'build:add-STARS-proposal',
-  });
+  const proposal = await context.buildProposal(
+    '@agoric/builders/scripts/inter-protocol/add-STARS.js',
+  );
 
   t.log('installing proposal');
   // share a single proposal so tests don't stomp on each other's files; It has
