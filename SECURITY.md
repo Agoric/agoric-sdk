@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The current `master` and `release-pismo` branches are supported with security updates.
+The current `master` and only the latest `agoric-upgrade-*` tagged release and pre-release are supported with security updates.
 
 ## Coordinated Vulnerability Disclosure
 
