@@ -178,8 +178,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} PaymentLedger
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse Useful only to get the recovery set
- *   associated with minted payments that are still live.
+ * @property {Purse<K>} mintRecoveryPurse Externally useful only if this issuer
+ *   uses recovery sets.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
@@ -188,8 +188,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse Useful only to get the recovery set
- *   associated with minted payments that are still live.
+ * @property {Purse<K>} mintRecoveryPurse Externally useful only if this issuer
+ *   uses recovery sets.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
@@ -218,6 +218,31 @@
  * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
  * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment Creates a new
  *   Payment containing newly minted amount.
+ */
+
+// /////////////////////////// Purse / Payment /////////////////////////////////
+
+/**
+ * Issuers first became durable with recovery sets and no option to suppress
+ * them. Thus, absence of a `RecoverySetsOption` state is equivalent to
+ * `'hasRecoverySets'`. By contrast, the absence of `RecoverySetsOption` provide
+ * parameter defaults to the predecessor's `RecoverySetsOption` state, or
+ * `'hasRecoverySets'` if none.
+ *
+ * The `'noRecoverySets'` state, if used for the first incarnation, makes an
+ * issuer without recovery sets. If used for a successor incarnation, no matter
+ * whether the predecessor was `'hasRecoverySets'` or `'noRecoverySets'`,
+ *
+ * - will start emptying recovery sets,
+ * - will prevent any new payments from being added to recovery sets,
+ * - and (controversially) will not provide access via recovery sets of any
+ *   payments that have not yet been emptied out.
+ *
+ * At this time, a `'noRecoverySets'` predecessor cannot be upgraded to a
+ * `'hasRecoverySets'` successor. If it turns out this transition is needed, it
+ * can likely be supported in a future upgrade.
+ *
+ * @typedef {'hasRecoverySets' | 'noRecoverySets'} RecoverySetsOption
  */
 
 // /////////////////////////// Purse / Payment /////////////////////////////////
@@ -281,10 +306,14 @@
  *   can spend the assets at stake on other things. Afterwards, if the recipient
  *   of the original check finally gets around to depositing it, their deposit
  *   fails.
+ *
+ *   Returns an empty set if this issuer does not support recovery sets.
  * @property {() => Amount<K>} recoverAll For use in emergencies, such as coming
  *   back from a traumatic crash and upgrade. This deposits all the payments in
  *   this purse's recovery set into the purse itself, returning the total amount
  *   of assets recovered.
+ *
+ *   Returns an empty amount if this issuer does not support recovery sets.
  */
 
 /**

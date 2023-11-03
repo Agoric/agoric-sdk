@@ -2,7 +2,7 @@
 
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M, keyEQ } from '@agoric/store';
+import { mustMatch, M, keyEQ } from '@endo/patterns';
 import {
   provideDurableWeakMapStore,
   prepareExo,
@@ -79,6 +79,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
+ * @param {RecoverySetsOption} recoverySetsState
  * @param {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
@@ -88,6 +89,7 @@ export const preparePaymentLedger = (
   assetKind,
   displayInfo,
   elementShape,
+  recoverySetsState,
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
@@ -162,6 +164,12 @@ export const preparePaymentLedger = (
    * - A purse's recovery set only contains payments withdrawn from that purse and
    *   not yet consumed.
    *
+   * If `recoverySetsState === 'noRecoverySets'`, then nothing should ever be
+   * added to this WeakStore. If upgrading from a previous state with recovery
+   * sets, whether implicitly or explicitly, then this WeakStore should
+   * eventually become empty. But because this store is weak, the responsibility
+   * emptying it out lies elsewhere (purse.js).
+   *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
   const paymentRecoverySets = provideDurableWeakMapStore(
@@ -178,6 +186,9 @@ export const preparePaymentLedger = (
    * @param {SetStore<Payment>} [optRecoverySet]
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
+    if (recoverySetsState === 'noRecoverySets') {
+      assert(optRecoverySet === undefined);
+    }
     if (optRecoverySet !== undefined) {
       optRecoverySet.add(payment);
       paymentRecoverySets.init(payment, optRecoverySet);
@@ -283,14 +294,14 @@ export const preparePaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
    *   purse balance
    * @param {Amount} amount - the amount to be withdrawn
-   * @param {SetStore<Payment>} recoverySet
+   * @param {SetStore<Payment>} [recoverySet]
    * @returns {Payment}
    */
   const withdrawInternal = (
     currentBalance,
     updatePurseBalance,
     amount,
-    recoverySet,
+    recoverySet = undefined,
   ) => {
     amount = coerce(amount);
     AmountMath.isGTE(currentBalance, amount) ||
@@ -322,6 +333,8 @@ export const preparePaymentLedger = (
       depositInternal,
       withdrawInternal,
     }),
+    recoverySetsState,
+    recoverySetsState === 'noRecoverySets' ? undefined : paymentRecoverySets,
   );
 
   /** @type {Issuer<K>} */
