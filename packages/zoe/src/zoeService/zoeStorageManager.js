@@ -3,7 +3,7 @@ import {
   AssetKind,
   makeDurableIssuerKit,
   AmountMath,
-  prepareIssuerKit,
+  upgradeIssuerKit,
 } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
@@ -122,7 +122,7 @@ export const makeZoeStorageManager = (
     'zoeMintBaggageSet',
   );
   for (const issuerBaggage of zoeMintBaggageSet.values()) {
-    prepareIssuerKit(issuerBaggage);
+    upgradeIssuerKit(issuerBaggage);
   }
 
   const makeZoeMint = prepareExoClass(
