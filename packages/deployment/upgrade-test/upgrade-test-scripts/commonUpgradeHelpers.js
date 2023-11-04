@@ -177,16 +177,19 @@ export const voteLatestProposalAndWait = async () => {
     'test',
   );
 
-  let status = '';
-
-  do {
-    const proposalData = await agd.query('gov', 'proposal', lastProposalId);
-    status = proposalData.status;
-    console.log(`Waiting for proposal to pass (status=${status})`);
-  } while (
-    status !== 'PROPOSAL_STATUS_REJECTED' &&
-    status !== 'PROPOSAL_STATUS_PASSED'
-  );
+  let info = {};
+  for (
+    ;
+    info.status !== 'PROPOSAL_STATUS_REJECTED' &&
+    info.status !== 'PROPOSAL_STATUS_PASSED';
+    await waitForBlock()
+  ) {
+    info = await agd.query('gov', 'proposal', lastProposalId);
+    console.log(
+      `Waiting for proposal ${lastProposalId} to pass (status=${info.status})`,
+    );
+  }
+  return info;
 };
 
 const Fail = (template, ...args) => {
