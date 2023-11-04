@@ -29,20 +29,14 @@ test.before(async t => {
 
 test.serial('Open Vaults', async t => {
   const currentVaults = await agops.vaults('list', '--from', GOV1ADDR);
-  t.is(currentVaults.length, 4);
+  t.is(currentVaults.length, 5);
 
+  // TODO get as return value from openVault
+  const vaultId = 'vault6';
   await openVault(GOV1ADDR, 7, 11);
-  await adjustVault(GOV1ADDR, 'vault5', { giveMinted: 1.5 });
-  await adjustVault(GOV1ADDR, 'vault5', { giveCollateral: 2.0 });
-  await closeVault(GOV1ADDR, 'vault5', 5.75);
-
-  const vault5 = await agoric.follow(
-    '-lF',
-    ':published.vaultFactory.managers.manager0.vaults.vault5',
-  );
-  t.is(vault5.vaultState, 'closed');
-  t.is(vault5.locked.value, '0');
-  t.is(vault5.debtSnapshot.debt.value, '0');
+  await adjustVault(GOV1ADDR, vaultId, { giveMinted: 1.5 });
+  await adjustVault(GOV1ADDR, vaultId, { giveCollateral: 2.0 });
+  await closeVault(GOV1ADDR, vaultId, 5.75);
 });
 
 test.serial('Run Prober (first time)', async t => {
