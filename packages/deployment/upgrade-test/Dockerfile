@@ -9,16 +9,10 @@ ARG BOOTSTRAP_MODE=main
 FROM ${BASE_IMAGE} as propose-agoric-upgrade-12
 # TODO: Replace with actual Zoe core proposal for upgrade 12 (MCS, Kread, Zoe, restart-contracts, etc)
 ARG BOOTSTRAP_MODE UPGRADE_INFO_12='{"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}'
-ENV THIS_NAME=propose-agoric-upgrade-12 UPGRADE_TO=agoric-upgrade-12 UPGRADE_INFO=${UPGRADE_INFO_12} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
+ENV THIS_NAME= UPGRADE_TO=agoric-upgrade-12 UPGRADE_INFO=${UPGRADE_INFO_12} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
-# start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/
-COPY ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
-RUN cd upgrade-test-scripts && yarn
-RUN echo '. /usr/src/agoric-sdk/upgrade-test-scripts/env_setup.sh' >> ~/.bashrc
-
-COPY ./${THIS_NAME} ./upgrade-test-scripts/${THIS_NAME}/
-RUN chmod +x ./upgrade-test-scripts/*.sh
+COPY --chmod=755 ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 

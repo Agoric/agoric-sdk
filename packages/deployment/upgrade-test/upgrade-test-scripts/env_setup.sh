@@ -215,7 +215,7 @@ if [[ "$BOOTSTRAP_MODE" == "main" ]]; then
 fi
 
 # additional env specific to a version
-if test -f ./upgrade-test-scripts/$THIS_NAME/env_setup.sh; then
+if [[ -n "$THIS_NAME" ]] && test -f ./upgrade-test-scripts/$THIS_NAME/env_setup.sh; then
   echo ENV_SETUP found $THIS_NAME specific env, importing...
   . ./upgrade-test-scripts/$THIS_NAME/env_setup.sh
   echo ENV_SETUP imported $THIS_NAME specific env
