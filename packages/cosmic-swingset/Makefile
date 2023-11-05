@@ -156,11 +156,16 @@ scenario2-run-chain: ../vats/decentral-devnet-config.json
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
+tools:
+	cd ../../golang/cosmos && make compile-tools
+
 # Run a chain with an explicit halt.
 BLOCKS_TO_RUN=3
-scenario2-run-chain-to-halt: t1/decentral-economy-config.json
+scenario2-run-chain-to-halt: t1/decentral-economy-config.json tools
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
-		$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + $(BLOCKS_TO_RUN))); \
+		DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" \
+		../../golang/cosmos/build/runtillmsg "halt application" \
+		"$(SDK_ROOT)/bin/agd" --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + $(BLOCKS_TO_RUN))); \
 		test "$$?" -eq 98
 	echo ran to $(INITIAL_HEIGHT) + $(BLOCKS_TO_RUN)
 
