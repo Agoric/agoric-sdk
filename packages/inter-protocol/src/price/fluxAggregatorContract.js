@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { reallyPrepareIssuerKit } from '@agoric/ertp';
+import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
@@ -68,7 +68,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
   /** @type {import('./roundsManager.js').QuoteKit} */
-  const quoteIssuerKit = reallyPrepareIssuerKit(
+  const quoteIssuerKit = prepareIssuerKit(
     baggage,
     'quote',
     'set',

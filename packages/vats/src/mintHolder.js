@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { reallyPrepareIssuerKit } from '@agoric/ertp';
+import { prepareIssuerKit } from '@agoric/ertp';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -23,7 +23,7 @@ import { reallyPrepareIssuerKit } from '@agoric/ertp';
  */
 function provideIssuerKit(zcf, baggage) {
   const { keyword, assetKind, displayInfo } = zcf.getTerms();
-  return reallyPrepareIssuerKit(baggage, keyword, assetKind, displayInfo);
+  return prepareIssuerKit(baggage, keyword, assetKind, displayInfo);
 }
 
 /** @type {ContractMeta} */

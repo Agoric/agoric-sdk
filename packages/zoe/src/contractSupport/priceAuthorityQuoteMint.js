@@ -1,4 +1,4 @@
-import { AssetKind, reallyPrepareIssuerKit } from '@agoric/ertp';
+import { AssetKind, prepareIssuerKit } from '@agoric/ertp';
 import { provideDurableMapStore } from '@agoric/vat-data';
 
 /**
@@ -11,7 +11,7 @@ export const provideQuoteMint = baggage => {
     baggage,
     'quoteMintIssuerBaggage',
   );
-  const issuerKit = reallyPrepareIssuerKit(
+  const issuerKit = prepareIssuerKit(
     issuerBaggage,
     'quote',
     AssetKind.SET,

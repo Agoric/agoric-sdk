@@ -2,7 +2,7 @@
 
 import { Fail, q } from '@agoric/assert';
 import { provideDurableMapStore } from '@agoric/vat-data';
-import { AssetKind, hasIssuer, reallyPrepareIssuerKit } from '@agoric/ertp';
+import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 
 /**
@@ -28,7 +28,7 @@ export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     // Upgrade this legacy state by simply deleting it.
     invitationKitBaggage.delete(ZOE_INVITATION_KIT);
   }
-  const invitationKit = reallyPrepareIssuerKit(
+  const invitationKit = prepareIssuerKit(
     invitationKitBaggage,
     'Zoe Invitation',
     AssetKind.SET,

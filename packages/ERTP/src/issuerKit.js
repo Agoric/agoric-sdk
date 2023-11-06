@@ -106,17 +106,6 @@ export const upgradeIssuerKit = (
 harden(upgradeIssuerKit);
 
 /**
- * Confusingly, `prepareIssuerKit` was the original name for `upgradeIssuerKit`,
- * even though it is used only to upgrade a predecessor issuerKit. Use
- * `makeDurableIssuerKit` to make a new one.
- *
- * @deprecated Use `upgradeIssuerKit` instead if that's what you want. Or
- *   `reallyPrepareIssuerKit` if you want the behavior that should have been
- *   bound to this name.
- */
-export const prepareIssuerKit = upgradeIssuerKit;
-
-/**
  * Does baggage already have an issuerKit?
  *
  * @param {Baggage} baggage
@@ -183,9 +172,8 @@ export const makeDurableIssuerKit = (
 harden(makeDurableIssuerKit);
 
 /**
- * What _should_ have been named `prepareIssuerKit`. Used to either revive a
- * predecessor issuerKit, or to make a new durable one if it is absent, and to
- * place it in baggage for the next successor.
+ * Used to either revive a predecessor issuerKit, or to make a new durable one
+ * if it is absent, and to place it in baggage for the next successor.
  *
  * @template {AssetKind} K The name becomes part of the brand in asset
  *   descriptions. The name is useful for debugging and double-checking
@@ -213,7 +201,7 @@ harden(makeDurableIssuerKit);
  * @param {IssuerOptionsRecord} [options]
  * @returns {IssuerKit<K>}
  */
-export const reallyPrepareIssuerKit = (
+export const prepareIssuerKit = (
   issuerBaggage,
   name,
   // @ts-expect-error K could be instantiated with a different subtype of AssetKind
@@ -244,7 +232,7 @@ export const reallyPrepareIssuerKit = (
     return issuerKit;
   }
 };
-harden(reallyPrepareIssuerKit);
+harden(prepareIssuerKit);
 
 /**
  * Used _only_ to make a new issuerKit that is effectively non-durable. This is
