@@ -248,6 +248,29 @@ const startContractShape = M.splitRecord({
     },
   ]),
 });
+const startZcfShape = M.splitRecord({
+  sourceVatID: ZOE_VAT_ID,
+  methargs: makeMethargsShape(
+    'startZcf',
+    M.splitArray([
+      M.remotable('zoeInstanceAdmin'),
+      // InstanceRecord
+      {
+        installation: M.remotable(),
+        instance: M.remotable(),
+        terms: M.record(),
+      },
+    ]),
+  ),
+});
+const installBundleShape = M.splitRecord({
+  targetKref: ZOE_SERVICE_KREF,
+  methargs: makeMethargsShape('installBundleID', M.splitArray([M.string()])),
+});
+const extractInstallationBundleID = syscall => {
+  if (!matches(syscall, installBundleShape)) return undefined;
+  return syscall.methargs[1][0];
+};
 
 /** `getPayouts()` and `numWantsSatisfied()` methargs */
 const methargsZoeSeatMethodShape = harden([
@@ -415,6 +438,11 @@ const main = rawArgv => {
         sourceVatID: WALLET_FACTORY_VAT_ID,
         methargs: makeMethargsShape('getCurrentAmountNotifier'),
       });
+      const getExitSubscriberShape = M.splitRecord({
+        methargs: makeMethargsShape('getExitSubscriber', [
+          M.remotable('SeatHandle'),
+        ]),
+      });
       if (
         !failure &&
         matches(request, walletNotifierRequestShape) &&
@@ -425,6 +453,46 @@ const main = rawArgv => {
         classify(
           'WalletFactory E(likelyPurse).getCurrentAmountNotifier(...) .getUpdateSince(...)',
           { likelyPurseKref: request.targetKref },
+        );
+        continue nextPromise;
+      } else if (
+        !failure &&
+        request.sourceVatID === subscriber &&
+        matches(request, getExitSubscriberShape) &&
+        request.methargsPresences[0]?.iface() === 'Alleged: SeatHandle'
+      ) {
+        // targetKref identifies the result of a `getExitSubscriber(...)` call,
+        // presumably against a zoeInstanceAdmin.
+        // Let's investigate the latter.
+        const targetTrace = /** @type {SyscallTraceSuccess} */ (
+          traceSyscalls(getSyscallsForKref, request.targetKref)
+        );
+        let installationTrace;
+        if (
+          matches(targetTrace.request, startZcfShape) &&
+          krefOf(targetTrace.request.methargs[1][0]) === request.targetKref
+        ) {
+          const [_zoeInstanceAdmin, { installation }] =
+            targetTrace.request.methargs[1];
+          installationTrace = traceSyscalls(
+            getSyscallsForKref,
+            krefOf(installation),
+          );
+          const contractBundleID = extractInstallationBundleID(
+            // @ts-expect-error `request` may be missing
+            installationTrace.request,
+          );
+          if (contractBundleID) {
+            classify(
+              'E(zoeInstanceAdmin).getExitSubscriber(likelySeatHandle) .getUpdateSince(...)',
+              { contractBundleID },
+            );
+            continue nextPromise;
+          }
+        }
+        classify(
+          'unknown E(likelyZoeInstanceAdmin).getExitSubscriber(likelySeatHandle) .getUpdateSince(...)',
+          { targetKref, targetTrace, installationTrace },
         );
         continue nextPromise;
       }
