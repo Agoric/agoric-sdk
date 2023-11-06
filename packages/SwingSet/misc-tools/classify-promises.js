@@ -11,6 +11,7 @@ import { M, matches, mustMatch } from '@endo/patterns';
 
 const EX_USAGE = 64;
 const {
+  BRIDGE_VAT_ID = 'v10',
   WALLET_FACTORY_VAT_ID = 'v43',
   ZOE_VAT_ID = 'v9',
   VAT_ADMIN_SERVICE_KREF = 'ko25',
@@ -309,6 +310,7 @@ const main = rawArgv => {
   const { _: args, ...options } = yargsParser(rawArgv.slice(2));
   if (Reflect.ownKeys(options).length > 0 || args.length !== 1) {
     const envVars = Object.entries({
+      BRIDGE_VAT_ID,
       WALLET_FACTORY_VAT_ID,
       ZOE_VAT_ID,
       VAT_ADMIN_SERVICE_KREF,
@@ -558,8 +560,31 @@ const main = rawArgv => {
         classify(`unknown E(invitation)[${methargs[0]}](...)`, { trace });
         continue nextPromise;
       }
+    } else if (
+      subscriber === BRIDGE_VAT_ID &&
+      decider === WALLET_FACTORY_VAT_ID &&
+      matches(
+        methargs,
+        makeMethargsShape('fromBridge', [
+          M.splitRecord({
+            type: 'WALLET_SPEND_ACTION',
+            owner: M.string(),
+            spendAction: M.string(),
+          }),
+        ]),
+      )
+    ) {
+      // kpid corresponds with the results of a wallet spend action sent from the bridge vat to the wallet factory.
+      const spendAction = fromCapData(
+        harden(JSON.parse(methargs[1][0].spendAction)),
+      );
+      classify(
+        `wallet spend action: ${spendAction?.method || '<unknown method>'}`,
+        { ...methargs[1][0], spendAction },
+      );
+      continue nextPromise;
     }
-    classify(`unknown send result E(...).${String(methargs[0])}(...)`, {
+    classify(`unknown send result E(...)[${String(methargs[0])}](...)`, {
       targetKref,
       methargs,
       resultKpid,
