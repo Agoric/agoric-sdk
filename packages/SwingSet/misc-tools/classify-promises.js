@@ -498,14 +498,23 @@ const main = rawArgv => {
         );
         continue nextPromise;
       }
-      classify('unknown E(...).getUpdateSince(...)', {
-        targetKref,
-        failure,
-        krefHistory,
-        syscalls,
-        request,
-        useRecord,
-      });
+      const targetIface =
+        useRecord?.data && useRecord.data === useRecord.presences[0]
+          ? useRecord.presences[0].iface()
+          : undefined;
+      classify(
+        `unknown E(${
+          targetIface ? `<${targetIface}>` : '...'
+        }).getUpdateSince(...)`,
+        {
+          targetKref,
+          failure,
+          krefHistory,
+          syscalls,
+          request,
+          useRecord,
+        },
+      );
       continue nextPromise;
     } else if (matches(methargs, methargsZoeSeatMethodShape)) {
       // kpid corresponds with the results of a method call on targetKref that looks like a Zoe seat method.
