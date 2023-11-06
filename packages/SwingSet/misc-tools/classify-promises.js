@@ -238,6 +238,19 @@ const traceSyscalls = (getSyscallsForKref, kref) => {
   return harden({ failure: `trace truncated`, krefHistory, syscalls });
 };
 
+const installBundleShape = M.splitRecord({
+  targetKref: ZOE_SERVICE_KREF,
+  methargs: makeMethargsShape('installBundleID', M.splitArray([M.string()])),
+});
+const extractInstallationBundleID = syscall => {
+  if (!matches(syscall, installBundleShape)) return undefined;
+  return syscall.methargs[1][0];
+};
+const publicationRecordShape = harden({
+  publishCount: M.bigint(),
+  head: { done: M.boolean(), value: M.any() },
+  tail: M.promise(),
+});
 const startContractShape = M.splitRecord({
   sourceVatID: ZOE_VAT_ID,
   targetKref: VAT_ADMIN_SERVICE_KREF,
@@ -264,14 +277,6 @@ const startZcfShape = M.splitRecord({
     ]),
   ),
 });
-const installBundleShape = M.splitRecord({
-  targetKref: ZOE_SERVICE_KREF,
-  methargs: makeMethargsShape('installBundleID', M.splitArray([M.string()])),
-});
-const extractInstallationBundleID = syscall => {
-  if (!matches(syscall, installBundleShape)) return undefined;
-  return syscall.methargs[1][0];
-};
 
 /** `getPayouts()` and `numWantsSatisfied()` methargs */
 const methargsZoeSeatMethodShape = harden([
@@ -380,9 +385,24 @@ const main = rawArgv => {
     // @ts-expect-error destructuring of union type
     const { kpidSyscalls, targetKref, methargs, resultKpid } = sendData;
     // @ts-expect-error destructuring of union type
-    const { failure: generalFailure } = sendData;
-    if (generalFailure) {
-      classify(`unknown - ${generalFailure}`, { kpidSyscalls });
+    const { failure: decodeSendFailure } = sendData;
+    if (decodeSendFailure) {
+      // kpid does not identify syscall.send results, but it might be the tail promise of a PublishKit.
+      const trace = /** @type {SyscallTraceSuccess} */ (
+        traceSyscalls(getSyscallsForKref, kpid)
+      );
+      if (
+        trace.request?.methargs[0] === 'subscribeAfter' &&
+        matches(trace.useRecord?.data, publicationRecordShape) &&
+        krefOf(trace.useRecord?.data.tail) === kpid
+      ) {
+        classify('unknown PublishKit tail', {
+          subscribeRequest: trace.request,
+          containingResult: trace.useRecord,
+        });
+        continue nextPromise;
+      }
+      classify(`unknown - ${decodeSendFailure}`, { kpidSyscalls, trace });
       continue nextPromise;
     }
     // kpid corresponds with the results of a syscall.send.
