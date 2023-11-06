@@ -23,7 +23,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @template T
- * @typedef {{ getStorageNode(): StorageNode, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
+ * @typedef {{ getStorageNode(): Awaited<import('@endo/far').FarRef<StorageNode>>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
  */
 
 /**
@@ -55,7 +55,7 @@ export const prepareRecorder = (baggage, marshaller) => {
     /**
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
-     * @param {StorageNode} storageNode
+     * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
      * @param {TypedMatcher<T>} [valueShape]
      */
     (
@@ -144,13 +144,19 @@ harden(prepareRecorder);
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {StorageNode} storageNode
+   * @param {StorageNode | Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
    * @param {TypedMatcher<T>} [valueShape]
    * @returns {RecorderKit<T>}
    */
   const makeRecorderKit = (storageNode, valueShape) => {
     const { subscriber, publisher } = makeDurablePublishKit();
-    const recorder = makeRecorder(publisher, storageNode, valueShape);
+    const recorder = makeRecorder(
+      publisher,
+      /** @type { Awaited<import('@endo/far').FarRef<StorageNode>> } */ (
+        storageNode
+      ),
+      valueShape,
+    );
     return harden({ subscriber, recorder });
   };
   return makeRecorderKit;
@@ -174,7 +180,12 @@ export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   const makeERecorderKit = (storageNodeP, valueShape) => {
     const { publisher, subscriber } = makeDurablePublishKit();
     const recorderP = E.when(storageNodeP, storageNode =>
-      makeRecorder(publisher, storageNode, valueShape),
+      makeRecorder(
+        publisher,
+        // @ts-expect-error Casting because it's remote
+        /** @type { import('@endo/far').FarRef<StorageNode> } */ (storageNode),
+        valueShape,
+      ),
     );
     return { subscriber, recorderP };
   };
