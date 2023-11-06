@@ -278,9 +278,9 @@ const startZcfShape = M.splitRecord({
   ),
 });
 
-/** `getPayouts()` and `numWantsSatisfied()` methargs */
+/** methargs for Zoe UserSeat `getOfferResult()`/`getPayouts()`/`numWantsSatisfied()` */
 const methargsZoeSeatMethodShape = harden([
-  M.or('getPayouts', 'numWantsSatisfied'),
+  M.or('getOfferResult', 'getPayouts', 'numWantsSatisfied'),
   [],
 ]);
 
@@ -429,10 +429,10 @@ const main = rawArgv => {
         for (const [pattern, re] of Object.entries(VAT_NAME_PATTERNS)) {
           const match = vatName && vatName.match(re);
           if (match) {
-            classify(`Zoe E(contractInstanceAdminNode).done()`, {
-              pattern,
-              ...match.groups,
-            });
+            classify(
+              `Zoe E(${pattern} contractInstanceAdminNode).done()`,
+              match.groups,
+            );
             continue nextPromise;
           }
         }
@@ -579,14 +579,14 @@ const main = rawArgv => {
             targetKref: invitationCreatorKref,
             resultKpid: invitationKpid,
           } = trace.request;
-          classify(`E(invitation)[${methargs[0]}](...)`, {
+          classify(`E(ZoeSeat)[${methargs[0]}](...)`, {
             invitationSourceVatID,
             invitationCreatorKref,
             invitationKpid,
           });
           continue nextPromise;
         }
-        classify(`unknown E(invitation)[${methargs[0]}](...)`, { trace });
+        classify(`unknown E(ZoeSeat)[${methargs[0]}](...)`, { trace });
         continue nextPromise;
       }
     } else if (
