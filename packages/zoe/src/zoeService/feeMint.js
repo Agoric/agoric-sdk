@@ -2,7 +2,7 @@ import {
   AssetKind,
   IssuerShape,
   BrandShape,
-  reallyPrepareIssuerKit,
+  prepareIssuerKit,
   hasIssuer,
 } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
@@ -43,7 +43,7 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   }
 
   const feeIssuerKit = /** @type {IssuerKit<'nat'>} */ (
-    reallyPrepareIssuerKit(
+    prepareIssuerKit(
       mintBaggage,
       feeIssuerConfig.name,
       feeIssuerConfig.assetKind,
