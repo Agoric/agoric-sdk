@@ -1,8 +1,10 @@
+// @ts-check
 // eslint-disable-next-line import/order
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
+import { when } from '@agoric/whenable';
 
 import {
   parse,
@@ -13,15 +15,17 @@ import {
   makeRouter,
 } from '../src/index.js';
 
+import '../src/types.js';
+
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
 
 /**
  * @param {any} t
- * @returns {import('../src').ProtocolHandler} A testing handler
+ * @returns {ProtocolHandler} A testing handler
  */
 const makeProtocolHandler = t => {
-  /** @type {import('../src').ListenHandler} */
+  /** @type {ListenHandler} */
   let l;
   let lp;
   let nonce = 0;
@@ -41,12 +45,11 @@ const makeProtocolHandler = t => {
       t.assert(port, `port is tracked in onConnect`);
       t.assert(localAddr, `local address is supplied to onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
-      if (lp) {
-        return l
-          .onAccept(lp, localAddr, remoteAddr, l)
-          .then(ch => [localAddr, ch]);
+      if (!lp) {
+        return { handler: makeEchoConnectionHandler() };
       }
-      return { handler: makeEchoConnectionHandler() };
+      const ch = await when(l.onAccept(lp, localAddr, remoteAddr, l));
+      return { localAddr, handler: ch };
     },
     async onListen(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
@@ -59,8 +62,11 @@ const makeProtocolHandler = t => {
     async onListenRemove(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
       t.assert(localAddr, `local address is supplied to onListen`);
-      t.is(listenHandler, l, `listenHandler is tracked in onListenRemove`);
-      l = undefined;
+      t.is(
+        listenHandler,
+        lp && l,
+        `listenHandler is tracked in onListenRemove`,
+      );
       lp = undefined;
       log('port done listening', port.getLocalAddress());
     },
@@ -76,21 +82,21 @@ test('handled protocol', async t => {
   const protocol = makeNetworkProtocol(makeProtocolHandler(t));
 
   const closed = makePromiseKit();
-  const port = await protocol.bind('/ibc/*/ordered');
+  const port = await when(protocol.bind('/ibc/*/ordered'));
   await port.connect(
     '/ibc/*/ordered/echo',
     Far('ProtocolHandler', {
       async onOpen(connection, localAddr, remoteAddr) {
         t.is(localAddr, '/ibc/*/ordered');
         t.is(remoteAddr, '/ibc/*/ordered/echo');
-        const ack = await connection.send('ping');
+        const ack = await E(connection).send('ping');
         // log(ack);
         t.is(`${ack}`, 'ping', 'received pong');
         void connection.close();
       },
       async onClose(_connection, reason) {
         t.is(reason, undefined, 'no close reason');
-        closed.resolve();
+        closed.resolve(null);
       },
       async onReceive(_connection, bytes) {
         t.is(`${bytes}`, 'ping');
@@ -99,7 +105,7 @@ test('handled protocol', async t => {
     }),
   );
   await closed.promise;
-  await port.revoke();
+  port.revoke();
 });
 
 test('protocol connection listen', async t => {
@@ -107,9 +113,9 @@ test('protocol connection listen', async t => {
 
   const closed = makePromiseKit();
 
-  const port = await protocol.bind('/net/ordered/ordered/some-portname');
+  const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
 
-  /** @type {import('../src').ListenHandler} */
+  /** @type {ListenHandler} */
   const listener = Far('listener', {
     async onListen(p, listenHandler) {
       t.is(p, port, `port is tracked in onListen`);
@@ -125,9 +131,9 @@ test('protocol connection listen', async t => {
         async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
           t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
           handler = connectionHandler;
-          const ack = await connection.send('ping');
+          const ack = await when(connection.send('ping'));
           t.is(`${ack}`, 'ping', 'received pong');
-          connection.close();
+          await when(connection.close());
         },
         async onClose(c, reason, connectionHandler) {
           t.is(
@@ -138,7 +144,7 @@ test('protocol connection listen', async t => {
           handler = undefined;
           t.assert(c, 'connection is passed to onClose');
           t.is(reason, undefined, 'no close reason');
-          closed.resolve();
+          closed.resolve(null);
         },
         async onReceive(c, packet, connectionHandler) {
           t.is(
@@ -155,7 +161,7 @@ test('protocol connection listen', async t => {
     async onError(p, rej, listenHandler) {
       t.is(p, port, `port is tracked in onError`);
       t.is(listenHandler, listener, `listenHandler is tracked in onError`);
-      t.isNot(rej, rej, 'unexpected error');
+      t.not(rej, rej, 'unexpected error');
     },
     async onRemove(p, listenHandler) {
       t.is(listenHandler, listener, `listenHandler is tracked in onRemove`);
@@ -165,25 +171,29 @@ test('protocol connection listen', async t => {
 
   await port.addListener(listener);
 
-  const port2 = await protocol.bind('/net/ordered');
+  const port2 = await when(protocol.bind('/net/ordered'));
   const connectionHandler = makeEchoConnectionHandler();
-  await port2.connect(
-    '/net/ordered/ordered/some-portname',
-    Far('connectionHandlerWithOpen', {
-      ...connectionHandler,
-      async onOpen(connection, localAddr, remoteAddr, c) {
-        if (connectionHandler.onOpen) {
-          await connectionHandler.onOpen(connection, localAddr, remoteAddr, c);
-        }
-        void connection.send('ping');
-      },
-    }),
+  await when(
+    port2.connect(
+      '/net/ordered/ordered/some-portname',
+      Far('connectionHandlerWithOpen', {
+        ...connectionHandler,
+        async onOpen(connection, localAddr, remoteAddr, c) {
+          if (connectionHandler.onOpen) {
+            await when(
+              connectionHandler.onOpen(connection, localAddr, remoteAddr, c),
+            );
+          }
+          void connection.send('ping');
+        },
+      }),
+    ),
   );
 
   await closed.promise;
 
-  await port.removeListener(listener);
-  await port.revoke();
+  await when(port.removeListener(listener));
+  await when(port.revoke());
 });
 
 test('loopback protocol', async t => {
@@ -191,9 +201,9 @@ test('loopback protocol', async t => {
 
   const closed = makePromiseKit();
 
-  const port = await protocol.bind('/loopback/foo');
+  const port = await when(protocol.bind('/loopback/foo'));
 
-  /** @type {import('../src').ListenHandler} */
+  /** @type {ListenHandler} */
   const listener = Far('listener', {
     async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
       return harden({
@@ -204,20 +214,22 @@ test('loopback protocol', async t => {
       });
     },
   });
-  await port.addListener(listener);
+  await when(port.addListener(listener));
 
-  const port2 = await protocol.bind('/loopback/bar');
-  await port2.connect(
-    port.getLocalAddress(),
-    Far('opener', {
-      async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
-        t.is(localAddr, '/loopback/bar/nonce/1');
-        t.is(remoteAddr, '/loopback/foo/nonce/2');
-        const pingack = await c.send('ping');
-        t.is(pingack, 'pingack', 'expected pingack');
-        closed.resolve();
-      },
-    }),
+  const port2 = await when(protocol.bind('/loopback/bar'));
+  await when(
+    port2.connect(
+      port.getLocalAddress(),
+      Far('opener', {
+        async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
+          t.is(localAddr, '/loopback/bar/nonce/1');
+          t.is(remoteAddr, '/loopback/foo/nonce/2');
+          const pingack = await when(c.send('ping'));
+          t.is(pingack, 'pingack', 'expected pingack');
+          closed.resolve(null);
+        },
+      }),
+    ),
   );
 
   await closed.promise;
