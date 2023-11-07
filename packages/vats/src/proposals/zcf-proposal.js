@@ -1,10 +1,16 @@
+// @ts-check
 import { E } from '@endo/far';
+
+const { details: X } = assert;
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<string, CreateVatResults>;
+ *     vatStore: MapStore<
+ *       string,
+ *       import('@agoric/swingset-vat').CreateVatResults
+ *     >;
  *   };
  * }} powers
  * @param {object} options
@@ -16,8 +22,15 @@ export const upgradeZcf = async (
 ) => {
   const { zoeRef, zcfRef } = options.options;
 
-  const zoeBundleCap = await E(vatAdminSvc).getBundleCap(zoeRef.bundleID);
-  console.log(`ZOE BUNDLE ID: `, zoeRef.bundleID);
+  let zoeBundleID = zoeRef.bundleID;
+  await null;
+  if (!zoeBundleID) {
+    const zoeBundleName = zoeRef.bundleName;
+    assert(zoeBundleName, X`zoeRef ${zoeRef} must have bundleID or bundleName`);
+    zoeBundleID = await E(vatAdminSvc).getBundleIDByName(zoeBundleName);
+  }
+  const zoeBundleCap = await E(vatAdminSvc).getBundleCap(zoeBundleID);
+  console.log(`ZOE BUNDLE ID: `, zoeBundleID);
 
   const { adminNode, root: zoeRoot } = await E(vatStore).get('zoe');
 
