@@ -1,6 +1,7 @@
 /* global globalThis */
 /* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
+import { isPromise } from '@endo/promise-kit';
 import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 
@@ -167,6 +168,10 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return vrm.allocateNextID('collectionID');
   }
 
+  function allocatePromiseID() {
+    return vrm.allocateNextID('promiseID');
+  }
+
   // note: The real liveslots slotToVal() maps slots (vrefs) to a WeakRef,
   // and the WeakRef may or may not contain the target value. Use
   // options={weak:true} to match that behavior, or the default weak:false to
@@ -195,7 +200,12 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function convertValToSlot(val) {
     if (!valToSlot.has(val)) {
-      const slot = `o+${allocateExportID()}`;
+      let slot;
+      if (isPromise(val)) {
+        slot = `p+${allocatePromiseID()}`;
+      } else {
+        slot = `o+${allocateExportID()}`;
+      }
       valToSlot.set(val, slot);
       setValForSlot(slot, val);
     }
@@ -348,6 +358,7 @@ export function makeFakeVirtualStuff(options = {}) {
   vom.initializeKindHandleKind();
   const cm = makeFakeCollectionManager(vrm, fakeStuff, actualOptions);
   const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
+  wpm.preparePromiseWatcherTables();
   return { fakeStuff, vrm, vom, cm, wpm };
 }
 
