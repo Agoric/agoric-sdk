@@ -25,7 +25,7 @@ const EMPTY_COPY_SET = makeCopySet([]);
  *   withdrawInternal: any;
  * }} purseMethods
  * @param {RecoverySetsOption} recoverySetsState
- * @param {WeakMapStore<Payment, SetStore<Payment>>} [paymentRecoverySets]
+ * @param {WeakMapStore<Payment, SetStore<Payment>>} paymentRecoverySets
  */
 export const preparePurseKind = (
   issuerBaggage,
@@ -35,7 +35,7 @@ export const preparePurseKind = (
   PurseIKit,
   purseMethods,
   recoverySetsState,
-  paymentRecoverySets = undefined,
+  paymentRecoverySets,
 ) => {
   const amountShape = brand.getAmountShape();
 

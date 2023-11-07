@@ -334,7 +334,7 @@ export const preparePaymentLedger = (
       withdrawInternal,
     }),
     recoverySetsState,
-    recoverySetsState === 'noRecoverySets' ? undefined : paymentRecoverySets,
+    paymentRecoverySets,
   );
 
   /** @type {Issuer<K>} */
