@@ -6,6 +6,10 @@ import {
   makeNonceMaker,
 } from '@agoric/network';
 
+// NOTE: Heap-based whenable resolution is used for this module because the
+// bootstrap vat can't yet be upgraded.
+import { when } from '@agoric/whenable';
+
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
@@ -57,7 +61,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   await Promise.all(ps);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await E(vats.network).bind('/ibc-port/echo');
+  const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
 
   return E(echoPort).addListener(
     Far('listener', {

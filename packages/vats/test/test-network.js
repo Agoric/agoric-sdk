@@ -1,19 +1,38 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import { E, Far } from '@endo/far';
 import { makeSubscriptionKit } from '@agoric/notifier';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { prepareWhen, prepareWhenableKit } from '@agoric/whenable';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 
+import '../src/types.js';
+
+const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
+const provideBaggage = key => {
+  const root = fakeVomKit.cm.provideBaggage();
+  const zone = makeDurableZone(root);
+  return zone.mapStore(`${key} baggage`);
+};
+
 test('network - ibc', async t => {
-  const networkVat = E(networkBuildRootObject)();
-  const ibcVat = E(ibcBuildRootObject)();
+  const networkVat = E(networkBuildRootObject)(
+    null,
+    null,
+    provideBaggage('network'),
+  );
+  const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
+  const zone = makeDurableZone(provideBaggage('network - ibc'));
+  const when = prepareWhen(zone);
+  const makeWhenableKit = prepareWhenableKit(zone);
 
   const { subscription, publication } = makeSubscriptionKit();
 
   const events = subscription[Symbol.asyncIterator]();
-  const callbacks = Far('ibcCallbacks', {
+  const callbacks = zone.exo('ibcCallbacks', undefined, {
     downcall: (method, params) => {
       publication.updateState([method, params]);
       if (method === 'sendPacket') {
@@ -32,8 +51,7 @@ test('network - ibc', async t => {
 
   // Actually test the ibc port binding.
   // TODO: Do more tests on the returned Port object.
-  const p = E(networkVat).bind('/ibc-port/');
-  await p;
+  const p = await when(E(networkVat).bind('/ibc-port/'));
   const ev1 = await events.next();
   t.assert(!ev1.done);
   t.deepEqual(ev1.value, ['bindPort', { packet: { source_port: 'port-1' } }]);
@@ -45,7 +63,9 @@ test('network - ibc', async t => {
           /** @type {ConnectionHandler} */
           const handler = Far('plusOne', {
             async onReceive(_c, packetBytes) {
-              return `${packetBytes}1`;
+              const { whenable, settler } = makeWhenableKit();
+              settler.resolve(`${packetBytes}1`);
+              return whenable;
             },
             async onOpen(_c, localAddr, remoteAddr, _connectionHandler) {
               publication.updateState([
@@ -62,19 +82,18 @@ test('network - ibc', async t => {
       }),
     );
 
-    const c = E(p).connect('/ibc-port/port-1/unordered/foo');
+    const c = await when(E(p).connect('/ibc-port/port-1/unordered/foo'));
 
-    const ack = await E(c).send('hello198');
+    const ack = await when(E(c).send('hello198'));
     t.is(ack, 'hello1981', 'expected echo');
-    await c;
 
-    await E(c).close();
+    await when(E(c).close());
   };
 
   await testEcho();
 
   const testIBCOutbound = async () => {
-    const c = E(p).connect(
+    const cP = E(p).connect(
       '/ibc-hop/connection-11/ibc-port/port-98/unordered/bar',
     );
 
@@ -109,7 +128,8 @@ test('network - ibc', async t => {
       connectionHops: ['connection-11'],
     });
 
-    await c;
+    const c = await when(cP);
+    // console.log('@@@transfer', await E(c).send('some-transfer-message'));
     const ack = E(c).send('some-transfer-message');
 
     const ev3 = await events.next();
@@ -141,7 +161,7 @@ test('network - ibc', async t => {
       acknowledgement: 'YS10cmFuc2Zlci1yZXBseQ==',
     });
 
-    t.is(await ack, 'a-transfer-reply');
+    t.is(await when(ack), 'a-transfer-reply');
 
     await E(c).close();
   };
