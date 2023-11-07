@@ -49,7 +49,7 @@ export const preparePurseKind = (
   };
 
   /**
-   * How may payments to clean out of the recoverySet on each call to
+   * How many payments to clean out of the recoverySet on each call to
    * `cleanerRecoverySet`.
    */
   const CLEANING_BUDGET = 10;
@@ -62,7 +62,7 @@ export const preparePurseKind = (
    * `CLEANING_BUDGET` payments from `state.recoverySet`, to eventually clean it
    * out. Then return `undefined`. Callers must be aware that the `undefined`
    * return happens iff `recoverySetsState === 'noRecoverySets'`, and to avoid
-   * avoid storing or retrieving anything from the actual recovery set.
+   * storing or retrieving anything from the actual recovery set.
    *
    * @param {{ recoverySet: SetStore<Payment> }} state
    * @returns {SetStore<Payment> | undefined}
@@ -89,7 +89,7 @@ export const preparePurseKind = (
         // To avoid depending on that, this code does the incremental removal
         // of payments from recovery sets here. Doing so means that the cleanup
         // only happens when touched, which would be a potential problem if
-        // an idle purse's recovert set held onto a lot of unneeded payments.
+        // an idle purse's recovery set held onto a lot of unneeded payments.
         // However, we currently only have this problem for quote issuers,
         // which we know store minted payments only in the mintRecoveryPurse's
         // recovery purse, which we also know to be perpetually active.

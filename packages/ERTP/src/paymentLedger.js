@@ -168,7 +168,7 @@ export const preparePaymentLedger = (
    * added to this WeakStore. If upgrading from a previous state with recovery
    * sets, whether implicitly or explicitly, then this WeakStore should
    * eventually become empty. But because this store is weak, the responsibility
-   * emptying it out lies elsewhere (purse.js).
+   * for emptying it out lies elsewhere (purse.js).
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
