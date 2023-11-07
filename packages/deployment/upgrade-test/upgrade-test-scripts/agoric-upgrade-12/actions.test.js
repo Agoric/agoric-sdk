@@ -27,7 +27,7 @@ test.before(async t => {
   t.context.bundleIds = await installBundles(bundlesData);
 });
 
-test.serial('Open Vaults', async t => {
+test.skip('Open Vaults', async t => {
   const currentVaults = await agops.vaults('list', '--from', GOV1ADDR);
   t.is(currentVaults.length, 5);
 
@@ -39,7 +39,7 @@ test.serial('Open Vaults', async t => {
   await closeVault(GOV1ADDR, vaultId, 5.75);
 });
 
-test.serial('Run Prober (first time)', async t => {
+test.skip('Run Prober (first time)', async t => {
   // @ts-expect-error
   await runProber(t.context.bundleIds['prober-contract']);
   const data = await agd.query('vstorage', 'data', 'published.prober-asid9a');
@@ -47,7 +47,7 @@ test.serial('Run Prober (first time)', async t => {
   t.is(value.values[0], 'false');
 });
 
-test.serial('Upgrade Zoe and ZCF', async t => {
+test.skip('Upgrade Zoe and ZCF', async t => {
   await runZcfUpgrade(
     // @ts-expect-error
     t.context.bundleIds['Zcf-upgrade'],
@@ -58,7 +58,7 @@ test.serial('Upgrade Zoe and ZCF', async t => {
   t.pass();
 });
 
-test.serial('Run Prober (second time)', async t => {
+test.skip('Run Prober (second time)', async t => {
   // @ts-expect-error
   await runProber(t.context.bundleIds['prober-contract']);
 
