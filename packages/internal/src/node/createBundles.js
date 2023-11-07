@@ -1,3 +1,4 @@
+/* global process */
 // Use modules not prefixed with `node:` since some deploy scripts may
 // still be running in esm emulation
 import path from 'path';
@@ -29,7 +30,13 @@ export const createBundlesFromAbsolute = async sourceBundles => {
 
   for (const args of cacheToArgs.values()) {
     console.log(BUNDLE_SOURCE_PROGRAM, ...args);
-    const { status } = spawnSync(prog, args, { stdio: 'inherit' });
+    const env = /** @type {NodeJS.ProcessEnv} */ (
+      /** @type {unknown} */ ({
+        __proto__: process.env,
+        LOCKDOWN_OVERRIDE_TAMING: 'severe',
+      })
+    );
+    const { status } = spawnSync(prog, args, { stdio: 'inherit', env });
     status === 0 ||
       Fail`${q(BUNDLE_SOURCE_PROGRAM)} failed with status ${q(status)}`;
   }
