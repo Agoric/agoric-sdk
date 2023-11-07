@@ -1,3 +1,4 @@
+// @ts-check
 import { Far, E as defaultE } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { Fail } from '@agoric/assert';
@@ -61,7 +62,7 @@ export default function makeRouter() {
 
 /**
  * @typedef {object} RouterProtocol
- * @property {(prefix: string) => Promise<Port>} bind
+ * @property {(prefix: string) => PromiseWhenable<Port>} bind
  * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
