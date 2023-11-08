@@ -288,7 +288,7 @@ const checkFlow1 = async (
     // restart Zoe
     // /////// Upgrading ////////////////////////////////
     await buildAndExecuteProposal(
-      '@agoric/builders/scripts/vats/null-upgrade-zoe-proposal.js',
+      '@agoric/builders/scripts/vats/upgrade-zoe-proposal.js',
     );
 
     await buyer.tryExitOffer(`${collateralBrandKey}-bid3`);
