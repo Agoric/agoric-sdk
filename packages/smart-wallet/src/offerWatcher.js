@@ -10,7 +10,7 @@ import {
   SeatShape,
 } from '@agoric/zoe/src/typeGuards.js';
 import { AmountShape } from '@agoric/store/test/borrow-guards.js';
-import { objectMap } from '@agoric/internal';
+import { objectMap, deeplyFulfilledObject } from '@agoric/internal';
 
 /** Value for "result" field when the result can't be published */
 export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
@@ -59,7 +59,9 @@ const offerWatcherGuard = harden({
     exitOpenSeats: M.call(M.any()).returns(),
   }),
   paymentWatcher: M.interface('paymentWatcher', {
-    onFulfilled: M.call(PaymentPKeywordRecordShape, SeatShape).returns(),
+    onFulfilled: M.call(PaymentPKeywordRecordShape, SeatShape).returns(
+      M.promise(),
+    ),
     onRejected: M.call(M.any(), SeatShape).returns(),
   }),
   resultWatcher: M.interface('resultWatcher', {
@@ -158,18 +160,16 @@ export const makeOfferWatcherMaker = baggage => {
       },
 
       paymentWatcher: {
-        onFulfilled(payouts) {
+        async onFulfilled(payouts) {
           const { state, facets } = this;
 
           // This will block until all payouts succeed, but user will be updated
-          // as each payout will trigger its corresponding purse notifier.
-          objectMap(payouts, paymentRef =>
-            E.when(paymentRef, payment =>
-              state.deposit.receive(payment).then(amountsOrDeferred => {
-                facets.helper.updateStatus({ payouts: amountsOrDeferred });
-              }),
-            ),
+          // since each payout will trigger its corresponding purse notifier.
+          const amountPKeywordRecord = objectMap(payouts, paymentRef =>
+            E.when(paymentRef, payment => state.deposit.receive(payment)),
           );
+          const amounts = await deeplyFulfilledObject(amountPKeywordRecord);
+          facets.helper.updateStatus({ payouts: amounts });
         },
         onRejected(reason, seat) {
           const { facets } = this;

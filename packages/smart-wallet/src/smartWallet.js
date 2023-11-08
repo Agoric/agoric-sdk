@@ -34,6 +34,7 @@ import {
   AmountKeywordRecordShape,
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
+
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
@@ -175,6 +176,7 @@ const trace = makeTracer('SmrtWlt');
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
  *   liveOffers: MapStore<OfferId, import('./offerWatcher.js').OfferStatus>,
  *   liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>,
+ *   liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>,
  * }>} ImmutableState
  *
  * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
@@ -231,7 +233,7 @@ const getBrandToPurses = (walletPurses, key) => {
   return brandToPurses;
 };
 
-const REPAIRED_UNWATCHED_SEATS = 'true';
+const REPAIRED_UNWATCHED_SEATS = 'repairedUnwatchedSeats';
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
@@ -328,6 +330,9 @@ export const prepareSmartWallet = (baggage, shared) => {
       liveOfferSeats: makeScalarBigMapStore('live offer seats', {
         durable: true,
       }),
+      liveOfferPayments: makeScalarBigMapStore('live offer payments', {
+        durable: true,
+      }),
     };
 
     return {
@@ -357,6 +362,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       ).returns(M.promise()),
       purseForBrand: M.call(BrandShape).returns(M.promise()),
     }),
+
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
     }),
@@ -364,7 +370,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       withdrawGive: M.call(AmountKeywordRecordShape).returns(
         PaymentPKeywordRecordShape,
       ),
-      depositPayouts: M.call(PaymentPKeywordRecordShape).returns(M.promise()),
+      tryReclaimingWithdrawnPayments: M.call(M.string()).returns(M.promise()),
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
@@ -405,6 +411,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const {
             liveOffers,
             liveOfferSeats,
+            liveOfferPayments,
             offerToInvitationMakers,
             offerToPublicSubscriberPaths,
             offerToUsedInvitation,
@@ -412,6 +419,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const used =
             liveOffers.has(id) ||
             liveOfferSeats.has(id) ||
+            liveOfferPayments.has(id) ||
             offerToInvitationMakers.has(id) ||
             offerToPublicSubscriberPaths.has(id) ||
             offerToUsedInvitation.has(id);
@@ -554,6 +562,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           if (baggage.has(REPAIRED_UNWATCHED_SEATS)) {
             return;
           }
+          baggage.init(REPAIRED_UNWATCHED_SEATS, true);
 
           const invitationFromSpec = makeInvitationsHelper(
             zoe,
@@ -592,6 +601,10 @@ export const prepareSmartWallet = (baggage, shared) => {
           if (isSeatExited) {
             if (state.liveOfferSeats.has(offerStatus.id)) {
               state.liveOfferSeats.delete(offerStatus.id);
+            }
+
+            if (state.liveOfferPayments.has(offerStatus.id)) {
+              state.liveOfferPayments.delete(offerStatus.id);
             }
 
             if (state.liveOffers.has(offerStatus.id)) {
@@ -694,28 +707,58 @@ export const prepareSmartWallet = (baggage, shared) => {
       payments: {
         /**
          * @param {AmountKeywordRecord} give
+         * @param {OfferId} offerId
          * @returns {PaymentPKeywordRecord}
          */
-        withdrawGive(give) {
-          const { facets } = this;
+        withdrawGive(give, offerId) {
+          const { state, facets } = this;
+
+          /** @type {MapStore<Brand, Payment>} */
+          const brandPaymentRecord = makeScalarBigMapStore('paymentToBrand', {
+            durable: true,
+          });
+          state.liveOfferPayments.init(offerId, brandPaymentRecord);
+
+          // Add each payment to liveOfferPayments as it is withdrawn. If
+          // there's an error partway through, we can recover the withdrawals.
           return objectMap(give, amount => {
             /** @type {Promise<Purse>} */
             const purseP = facets.helper.purseForBrand(amount.brand);
-            return E(purseP).withdraw(amount);
+            const paymentP = E(purseP).withdraw(amount);
+            void E.when(
+              paymentP,
+              payment => brandPaymentRecord.init(amount.brand, payment),
+              e => {
+                // recovery will be handled by tryReclaimingWithdrawnPayments()
+                console.log(`Payment withdrawal failed.`, offerId, e);
+              },
+            );
+            return paymentP;
           });
         },
 
-        /**
-         * @param {PaymentPKeywordRecord} payouts
-         * @returns {Promise<AmountKeywordRecord>} amounts for deferred deposits will be empty
-         */
-        async depositPayouts(payouts) {
-          const { facets } = this;
-          /** Record<string, Promise<Amount>> */
-          const amountPKeywordRecord = objectMap(payouts, paymentRef =>
-            E.when(paymentRef, payment => facets.deposit.receive(payment)),
-          );
-          return deeplyFulfilledObject(amountPKeywordRecord);
+        async tryReclaimingWithdrawnPayments(offerId) {
+          const { state, facets } = this;
+          const { liveOfferPayments } = state;
+
+          if (liveOfferPayments.has(offerId)) {
+            const brandPaymentRecord = liveOfferPayments.get(offerId);
+            if (!brandPaymentRecord) {
+              return Promise.resolve(undefined);
+            }
+            // Use allSettled to ensure we attempt all the deposits, regardless of
+            // individual rejections.
+            return Promise.allSettled(
+              Array.from(brandPaymentRecord.entries()).map(async ([b, p]) => {
+                // Wait for the withdrawal to complete.  This protects against a
+                // race when updating paymentToPurse.
+                const purseP = facets.helper.purseForBrand(b);
+
+                // Now send it back to the purse.
+                return E(purseP).deposit(p);
+              }),
+            );
+          }
         },
       },
 
@@ -734,6 +777,8 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { invitationBrand, invitationIssuer } = shared;
 
           facets.helper.assertUniqueOfferId(String(offerSpec.id));
+
+          await null;
 
           let seatRef;
           let watcher;
@@ -761,7 +806,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             const [paymentKeywordRecord, invitationAmount] = await Promise.all([
               proposal?.give &&
                 deeplyFulfilledObject(
-                  facets.payments.withdrawGive(proposal.give),
+                  facets.payments.withdrawGive(proposal.give, offerSpec.id),
                 ),
               E(invitationIssuer).getAmountOf(invitation),
             ]);
@@ -795,7 +840,6 @@ export const prepareSmartWallet = (baggage, shared) => {
           } catch (err) {
             console.error('OFFER ERROR:', err);
             // Notify the user
-            debugger;
             if (watcher) {
               watcher.helper.updateStatus({ error: err.toString() });
             } else {
@@ -808,8 +852,16 @@ export const prepareSmartWallet = (baggage, shared) => {
               );
             }
 
+            if (offerSpec?.proposal?.give) {
+              facets.payments
+                .tryReclaimingWithdrawnPayments(offerSpec.id)
+                .catch(e =>
+                  console.error('recovery failed reclaiming payments', e),
+                );
+            }
+
             if (seatRef) {
-              E.when(E(seatRef).hasExited(), hasExited => {
+              void E.when(E(seatRef).hasExited(), hasExited => {
                 if (!hasExited) {
                   void E(seatRef).tryExit();
                 }
