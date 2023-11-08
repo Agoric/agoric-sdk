@@ -150,7 +150,7 @@ RUN . ./upgrade-test-scripts/start_to_to.sh
 ARG DEST_IMAGE
 FROM ${DEST_IMAGE} as agoric-upgrade-12
 ARG BOOTSTRAP_MODE
-ENV THIS_NAME=agoric-upgrade-12 BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
+ENV THIS_NAME=agoric-upgrade-12 BOOTSTRAP_MODE=${BOOTSTRAP_MODE} USE_JS=1
 COPY --from=propose-agoric-upgrade-12 /root/.agoric /root/.agoric
 # start-chain boilerplate
 WORKDIR /usr/src/agoric-sdk/

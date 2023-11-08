@@ -1,11 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import {
-  hasIssuer,
-  makeDurableIssuerKit,
-  prepareIssuerKit,
-} from '@agoric/ertp';
+import { prepareIssuerKit } from '@agoric/ertp';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -26,12 +22,8 @@ import {
  * @param {Baggage} baggage
  */
 function provideIssuerKit(zcf, baggage) {
-  if (!hasIssuer(baggage)) {
-    const { keyword, assetKind, displayInfo } = zcf.getTerms();
-    return makeDurableIssuerKit(baggage, keyword, assetKind, displayInfo);
-  } else {
-    return prepareIssuerKit(baggage);
-  }
+  const { keyword, assetKind, displayInfo } = zcf.getTerms();
+  return prepareIssuerKit(baggage, keyword, assetKind, displayInfo);
 }
 
 /** @type {ContractMeta} */

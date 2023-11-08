@@ -3,8 +3,26 @@ import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
+// TODO `InterfaceGuard` type parameter
+/** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
 const { Fail } = assert;
 
+/**
+ * @param {Baggage} issuerBaggage
+ * @param {string} name
+ * @param {AssetKind} assetKind
+ * @param {Brand} brand
+ * @param {{
+ *   purse: InterfaceGuard;
+ *   depositFacet: InterfaceGuard;
+ * }} PurseIKit
+ * @param {{
+ *   depositInternal: any;
+ *   withdrawInternal: any;
+ * }} purseMethods
+ */
 export const preparePurseKind = (
   issuerBaggage,
   name,

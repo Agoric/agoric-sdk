@@ -8,7 +8,7 @@ import {
 import {
   AssetKind,
   makeDurableIssuerKit,
-  prepareIssuerKit,
+  upgradeIssuerKit,
 } from '../../../src/index.js';
 
 export const prepareErtpService = (baggage, exitVatWithFailure) => {
@@ -36,7 +36,7 @@ export const prepareErtpService = (baggage, exitVatWithFailure) => {
   });
 
   for (const issuerBaggage of issuerBaggageSet.values()) {
-    prepareIssuerKit(issuerBaggage, exitVatWithFailure);
+    upgradeIssuerKit(issuerBaggage, exitVatWithFailure);
   }
 
   return ertpService;
