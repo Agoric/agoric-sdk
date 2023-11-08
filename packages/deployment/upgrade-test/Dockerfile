@@ -7,8 +7,7 @@ ARG BOOTSTRAP_MODE=main
 
 # UPGRADE
 FROM ${BASE_IMAGE} as propose-agoric-upgrade-12
-# TODO: Replace with actual Zoe core proposal for upgrade 12 (MCS, Kread, Zoe, restart-contracts, etc)
-ARG BOOTSTRAP_MODE UPGRADE_INFO_12='{"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}'
+ARG BOOTSTRAP_MODE UPGRADE_INFO_12
 ENV THIS_NAME= UPGRADE_TO=agoric-upgrade-12 UPGRADE_INFO=${UPGRADE_INFO_12} BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
 
 WORKDIR /usr/src/agoric-sdk/
