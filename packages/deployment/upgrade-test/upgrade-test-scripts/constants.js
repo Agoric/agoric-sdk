@@ -1,5 +1,3 @@
-export const BINARY = process.env.binary;
-
 export const GOV1ADDR = process.env.GOV1ADDR;
 export const GOV2ADDR = process.env.GOV2ADDR;
 export const GOV3ADDR = process.env.GOV3ADDR;

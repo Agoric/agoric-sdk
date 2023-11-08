@@ -249,7 +249,9 @@ jobs:
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
         # TODO: Build this only once, not for every bootstrap-version.
-        run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+        # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+        # XXX skip TAP test output and collection for now; it hides the output from the logs
+        run: cd packages/deployment && make docker-build-sdk
       - name: docker build upgrade test
         run: |
           cd packages/deployment/upgrade-test && \
