@@ -104,7 +104,7 @@ async function testRemotePeg(t) {
                   denom: 'portdef/chanabc/uatom',
                   memo: 'I am a memo!',
                   receiver: 'markaccount',
-                  sender: 'pegasus',
+                  sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
                 },
                 'expected transfer packet',
               );
@@ -247,6 +247,7 @@ async function testRemotePeg(t) {
     pegP,
     'markaccount',
     'I am a memo!',
+    { sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc' },
   );
   const seat = await E(zoe).offer(
     transferInvitation,
