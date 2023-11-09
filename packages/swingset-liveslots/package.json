@@ -38,6 +38,7 @@
     "src/**/*.js",
     "src/**/*.d.ts",
     "test/**/*.js",
+    "tools",
     "exported.js"
   ],
   "repository": {

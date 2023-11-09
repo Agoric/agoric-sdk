@@ -7,7 +7,7 @@ import 'esm';
 
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)
-import '@endo/init';
+import '@endo/init/legacy.js';
 
 import process from 'process';
 import path from 'path';

@@ -28,6 +28,7 @@ const autoRefundBundleP = makeBundle(
  * @param {import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerService} timer
  * @param {{ [k: string]: any, governedParams?: Record<string, unknown>, governedApis?: string[] }} termsOfGoverned
  * @param {{}} privateArgsOfGoverned
+ * @param {IssuerKeywordRecord} [issuerKeywordRecord]
  */
 export const setUpGovernedContract = async (
   zoe,
@@ -35,6 +36,7 @@ export const setUpGovernedContract = async (
   timer,
   termsOfGoverned = {},
   privateArgsOfGoverned = {},
+  issuerKeywordRecord = {},
 ) => {
   const [contractGovernorBundle, autoRefundBundle] = await Promise.all([
     contractGovernorBundleP,
@@ -87,7 +89,7 @@ export const setUpGovernedContract = async (
     governedContractInstallation: governed,
     governed: {
       terms: governedTermsWithElectorate,
-      issuerKeywordRecord: {},
+      issuerKeywordRecord,
     },
   };
 

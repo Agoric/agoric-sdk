@@ -483,8 +483,14 @@ const start = async (basedir, argv) => {
   const { 'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {} } =
     JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 
+  const htmlBasePath = String(htmlBasedir).replace(
+    /^\.\.\/\.\.\/node_modules\//,
+    '',
+  );
+
   const agWallet = path.dirname(pjs);
-  const agWalletHtml = path.resolve(agWallet, htmlBasedir);
+  const agWalletHtmlUrl = await importMetaResolve(htmlBasePath, packageUrl);
+  const agWalletHtml = new URL(agWalletHtmlUrl).pathname;
 
   let hostport;
   await Promise.all(
