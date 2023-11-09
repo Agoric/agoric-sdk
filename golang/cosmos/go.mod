@@ -155,10 +155,10 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 // At least until post-v0.34.14 is released with
 // https://github.com/tendermint/tendermint/issue/6899 resolved.
-replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.27-alpha.agoric.2
+replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.27-alpha.agoric.3
 
 // We need a fork of cosmos-sdk until all of the differences are merged.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.1
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.2
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
