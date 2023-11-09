@@ -47,7 +47,7 @@ SHARED_BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(sh
 
 all: compile-chain
 
-compile-chain: compile-agd compile-daemon compile-tools
+compile-chain: compile-agd compile-daemon
 compile-go: compile-agd compile-libdaemon
 compile-node: node-compile-gyp
 
@@ -76,9 +76,6 @@ compile-gyp:
 compile-libdaemon: go-mod-cache
 	go build -v $(MOD_READONLY) $(SHARED_BUILD_FLAGS) -buildmode=c-shared \
 		-o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
-
-compile-tools:
-	go build -o build/runtillmsg ./cmd/runtillmsg
 
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
@@ -109,7 +106,7 @@ t:
 
 TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
 GOGO_PROTO_URL   := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
-IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v4)/proto/ibc/core
+IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v3)/proto/ibc/core
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
