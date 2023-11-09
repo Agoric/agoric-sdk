@@ -20,7 +20,8 @@ globalThis.VatData = harden({
   canBeDurable: (...args) => fakeVomKit.vom.canBeDurable(...args),
   providePromiseWatcher: (...args) =>
     fakeVomKit.wpm.providePromiseWatcher(...args),
-  watchPromise: (...args) => fakeVomKit.wpm.watchPromise(...args),
+  watchPromise: (p, watcher, ...args) =>
+    fakeVomKit.wpm.watchPromise(p, watcher, ...args),
   makeScalarBigMapStore: (...args) =>
     fakeVomKit.cm.makeScalarBigMapStore(...args),
   makeScalarBigWeakMapStore: (...args) =>
