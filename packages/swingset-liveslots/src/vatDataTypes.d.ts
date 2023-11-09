@@ -32,13 +32,14 @@ type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
   : [];
 
-type MinusContext<
-  F extends (context, ...rest: any[]) => any,
-  P extends any[] = Parameters<F>, // P: are the parameters of F
-  R = ReturnType<F>, // R: the return type of F
-> = (...args: Tail<P>) => R;
+// used to omit the 'context' parameter
+type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
+  ? (...args: P) => R
+  : never;
 
-export type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
+export type KindFacet<O> = {
+  [K in keyof O]: OmitFirstArg<O[K]>; // omit the 'context' parameter
+};
 
 export type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
