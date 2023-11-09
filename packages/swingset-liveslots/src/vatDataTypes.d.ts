@@ -13,6 +13,7 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
 // TODO should be moved into @endo/patterns and eventually imported here
 // instead of this local definition.
@@ -24,6 +25,8 @@ export type { MapStore, Pattern };
 // would need explicit runtime checks or casts for every fetch, which is
 // onerous.
 export type Baggage = MapStore<string, any>;
+
+type WatchedPromisesManager = ReturnType<typeof makeWatchedPromiseManager>;
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
@@ -169,8 +172,8 @@ export type VatData = {
     options?: DefineKindOptions<MultiKindContext<S, B>>,
   ) => (...args: P) => KindFacets<B>;
 
-  providePromiseWatcher: unknown;
-  watchPromise: unknown;
+  providePromiseWatcher: WatchedPromisesManager['providePromiseWatcher'];
+  watchPromise: WatchedPromisesManager['watchPromise'];
 
   makeScalarBigMapStore: <K, V>(
     label: string,
