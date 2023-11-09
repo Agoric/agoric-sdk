@@ -11,10 +11,14 @@ const { WeakMap, WeakSet } = globalThis;
 let fakeVomKit;
 
 globalThis.VatData = harden({
+  // @ts-expect-error spread argument for non-rest parameter
   defineKind: (...args) => fakeVomKit.vom.defineKind(...args),
+  // @ts-expect-error spread argument for non-rest parameter
   defineKindMulti: (...args) => fakeVomKit.vom.defineKindMulti(...args),
+  // @ts-expect-error spread argument for non-rest parameter
   defineDurableKind: (...args) => fakeVomKit.vom.defineDurableKind(...args),
   defineDurableKindMulti: (...args) =>
+    // @ts-expect-error spread argument for non-rest parameter
     fakeVomKit.vom.defineDurableKindMulti(...args),
   makeKindHandle: tag => fakeVomKit.vom.makeKindHandle(tag),
   canBeDurable: (...args) => fakeVomKit.vom.canBeDurable(...args),
