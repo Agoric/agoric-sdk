@@ -1,5 +1,7 @@
 #! /usr/bin/env node
-import '@endo/init';
+// Adopting legacy until Babel heals from property override mistakes.
+// https://github.com/endojs/endo/issues/1846
+import '@endo/init/legacy.js';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
