@@ -636,16 +636,6 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
-  test-vats:
-    # XXX remove once this is no longer a required check (and test-boot is)
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        engine: ['16.x', '18.x', 'xs']
-    steps:
-      - name: yarn test (vats)
-        run: exit 0
-
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
