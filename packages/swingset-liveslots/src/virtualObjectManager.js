@@ -322,7 +322,7 @@ const insistSameCapData = (oldCD, newCD) => {
  * recursion if our returned WeakMap/WeakSet wrappers are subsequently installed
  * on globalThis.
  *
- * @returns {object} a new virtual object manager.
+ * @returns a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides five

@@ -16,7 +16,7 @@ globalThis.VatData = harden({
   defineDurableKind: (...args) => fakeVomKit.vom.defineDurableKind(...args),
   defineDurableKindMulti: (...args) =>
     fakeVomKit.vom.defineDurableKindMulti(...args),
-  makeKindHandle: (...args) => fakeVomKit.vom.makeKindHandle(...args),
+  makeKindHandle: tag => fakeVomKit.vom.makeKindHandle(tag),
   canBeDurable: (...args) => fakeVomKit.vom.canBeDurable(...args),
   providePromiseWatcher: (...args) =>
     fakeVomKit.wpm.providePromiseWatcher(...args),
@@ -48,7 +48,9 @@ export const reincarnate = (options = {}) => {
     WeakSet,
   });
 
+  // @ts-expect-error toStringTag set imperatively so it doesn't show up in the type
   globalThis.WeakMap = fakeVomKit.vom.VirtualObjectAwareWeakMap;
+  // @ts-expect-error ditto
   globalThis.WeakSet = fakeVomKit.vom.VirtualObjectAwareWeakSet;
 
   return { ...options, fakeStore, fakeVomKit };
