@@ -5,8 +5,8 @@ import anylogger from 'anylogger';
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
+import { kser, kunser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';
@@ -24,7 +24,6 @@ import {
   makeRetireExports,
   makeRetireImports,
 } from './util.js';
-import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
 function makeConsole(tag) {
   const log = anylogger(tag);

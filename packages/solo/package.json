@@ -76,5 +76,8 @@
     ],
     "timeout": "20m",
     "workerThreads": false
+  },
+  "typeCoverage": {
+    "atLeast": 68.59
   }
 }

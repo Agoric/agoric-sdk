@@ -1,8 +1,8 @@
 import { Nat } from '@endo/nat';
 import { assert } from '@agoric/assert';
+import { kunser } from '@agoric/kmarshal';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
-import { kunser } from '../../lib/kmarshal.js';
 
 /*
 

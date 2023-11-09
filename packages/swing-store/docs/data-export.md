@@ -39,30 +39,41 @@ The exporter is created by calling `makeSwingStoreExporter(dirpath)`, passing it
 After calling `hostStorage.commit()`, the host application can extract the first-stage export data, and then the second-stage export artifacts:
 
 ```js
-   import { buffer } from 'node:stream/consumers';
-
-   const dirPath = '.../swing-store';
-   const swingStore = openSwingStore(dirPath);
-   ...
-   await controller.run();
-   hostStorage.commit();
-   // spawn a child process
-
-  // child process does:
-  const exporter = makeSwingStoreExporter(dirPath);
-  // exporter now has a txn, parent process is free to proceed forward
-  const exportData = new Map();
-  for (const [key, value] of exporter.getExportData()) {
-    exportData.set(key, value);
+const dirPath = '.../swing-store';
+const swingStore = openSwingStore(dirPath);
+...
+await controller.run();
+hostStorage.commit();
+// spawn a child process and wait for it to open a transaction
+const started = makePromiseKit();
+const child = fork(path, args);
+child.on('error', started.reject);
+child.on('exit', started.reject);
+child.on('message', msg => {
+  if (msg?.type === 'started') {
+    started.resolve();
   }
-  const exportArtifacts = new Map();
-  for (const name of exporter.getArtifactNames()) {
-    const reader = exporter.getArtifact(name);
-    // reader is an async iterable of Uint8Array, e.g. a stream
-    const data = await buffer(reader);
-    exportArtifacts.set(name, data);
-  }
-  // export is 'exportData' and 'exportArtifacts'
+});
+await started.promise;
+...
+
+// child process does:
+import { buffer } from 'node:stream/consumers';
+const exporter = makeSwingStoreExporter(dirPath);
+// exporter now has a txn, so parent process is free to proceed forward
+process.send({ type: 'started' });
+const exportData = new Map();
+for (const [key, value] of exporter.getExportData()) {
+  exportData.set(key, value);
+}
+const exportArtifacts = new Map();
+for (const name of exporter.getArtifactNames()) {
+  const reader = exporter.getArtifact(name);
+  // reader is an async iterable of Uint8Array, e.g. a stream
+  const data = await buffer(reader);
+  exportArtifacts.set(name, data);
+}
+// export is the combination of 'exportData' and 'exportArtifacts'
 ```
 
 ![image 3](./images/data-export-3.jpg)
@@ -92,35 +103,51 @@ Then, on the few occasions when the application needs to build a full state-sync
 ![image 4](./images/data-export-4.jpg)
 
 ```js
-   const dirPath = '.../swing-store';
-   const iavl = ...;
-   function exportCallback(key, value) {
-     const iavlKey = `ssed.${key}`; // 'ssed' is short for SwingStoreExportData
-     if (value) {
-       iavl.set(iavlKey, value);
-     } else {
-       iavl.delete(iavlKey); // value===undefined means delete
-     }
-   }
-   const swingStore = openSwingStore(dirPath, { exportCallback });
-   ...
-   await controller.run();
-   hostStorage.commit();
-
-   // now, if the validator is configured to publish state-sync snapshots,
-   // and if this block height is one of the publishing points,
-   // do the following:
-
-  // spawn a child process
-
-  // child process does:
-  const exporter = makeSwingStoreExporter(dirPath);
-  // note: no exporter.getExportData(), the first-stage data is already in IAVL
-  const artifacts = new Map();
-  for (const name of exporter.getArtifactNames()) {
-    artifacts.set(name, exporter.getArtifact(name));
+const dirPath = '.../swing-store';
+const iavl = ...;
+function exportCallback(key, value) {
+  const iavlKey = `ssed.${key}`; // 'ssed' is short for SwingStoreExportData
+  if (value === undefined) {
+    iavl.delete(iavlKey);
+  } else {
+    iavl.set(iavlKey, value);
   }
-  // instruct cosmos-sdk to include 'artifacts' in the state-sync snapshot
+}
+const swingStore = openSwingStore(dirPath, { exportCallback });
+...
+await controller.run();
+hostStorage.commit();
+
+// now, if the validator is configured to publish state-sync snapshots,
+// and if this block height is one of the publishing points,
+// do the following:
+
+// spawn a child process and wait for it to open a transaction
+const started = makePromiseKit();
+const child = fork(path, args);
+child.on('error', started.reject);
+child.on('exit', started.reject);
+child.on('message', msg => {
+  if (msg?.type === 'started') {
+    started.resolve();
+  }
+});
+try {
+  await started.promise;
+} catch (err) {
+  ...
+}
+...
+
+// child process does:
+const exporter = makeSwingStoreExporter(dirPath);
+process.send({ type: 'started' });
+// note: no exporter.getExportData(), the first-stage data is already in IAVL
+const artifacts = new Map();
+for (const name of exporter.getArtifactNames()) {
+  artifacts.set(name, exporter.getArtifact(name));
+}
+// instruct cosmos-sdk to include 'artifacts' in the state-sync snapshot
 ```
 
 ## Import

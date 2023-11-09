@@ -2,14 +2,13 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
 import { objectMap } from '@agoric/internal';
+import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
-import { kser, kunser, krefOf } from '../../src/lib/kmarshal.js';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -82,8 +81,10 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @returns {Promise<{
  *   controller: Awaited<ReturnType<typeof makeSwingsetController>>,
  *   kvStore: KVStore,
- *   run: (method: string, args?: unknown[]) => Promise<unknown>,
- *   runAndRetain: (method: string, args?: unknown[]) => Promise<unknown>,
+ *   messageToVat: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   messageToVatAndRetain: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   messageToObject: (target: unknown, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   messageToObjectAndRetain: (target: unknown, method: string, ...args: unknown[]) => Promise<unknown>,
  * }>}
  */
 const initKernelForTest = async (t, bundleData, config, options = {}) => {
@@ -96,27 +97,39 @@ const initKernelForTest = async (t, bundleData, config, options = {}) => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  const makeRun = kpResolutionOptions => {
-    const run = async (method, args = [], vatName = 'bootstrap') => {
-      assert(Array.isArray(args));
-      const kpid = c.queueToVatRoot(vatName, method, args);
-      await c.run();
-      const status = c.kpStatus(kpid);
-      if (status === 'fulfilled') {
-        const result = c.kpResolution(kpid, kpResolutionOptions);
-        return kunser(result);
-      }
-      assert(status === 'rejected');
-      const err = c.kpResolution(kpid, kpResolutionOptions);
-      throw kunser(err);
-    };
-    return run;
+  const awaitRun = async (kpid, kpResolutionOptions) => {
+    await c.run();
+    const status = c.kpStatus(kpid);
+    if (status === 'fulfilled') {
+      const result = c.kpResolution(kpid, kpResolutionOptions);
+      return kunser(result);
+    }
+    assert(status === 'rejected');
+    const err = c.kpResolution(kpid, kpResolutionOptions);
+    throw kunser(err);
   };
+  const makeRun = kpResolutionOptions => {
+    const messageToVat = async (vatName, method, ...args) => {
+      const kpid = c.queueToVatRoot(vatName, method, args);
+      return awaitRun(kpid, kpResolutionOptions);
+    };
+    const messageToObject = async (target, method, ...args) => {
+      const kpid = c.queueToVatObject(target, method, args);
+      return awaitRun(kpid, kpResolutionOptions);
+    };
+    return [messageToVat, messageToObject];
+  };
+  const [messageToVat, messageToObject] = makeRun({ incref: holdObjectRefs });
+  const [messageToVatAndRetain, messageToObjectAndRetain] = makeRun({
+    incref: true,
+  });
   return {
     controller: c,
     kvStore,
-    run: makeRun({ incref: holdObjectRefs }),
-    runAndRetain: makeRun({ incref: true }),
+    messageToVat,
+    messageToVatAndRetain,
+    messageToObject,
+    messageToObjectAndRetain,
   };
 };
 
@@ -128,46 +141,28 @@ const testNullUpgrade = async (t, defaultManagerType) => {
       exporter: '../vat-exporter.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat, messageToObject } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
 
-  await run('createVat', [
-    {
-      name: 'exporter',
-      bundleCapName: 'exporter',
-      vatParameters: { version: 'v1' },
-    },
-  ]);
-  t.is(
-    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
-    'v1',
-  );
-  const counter = await run('messageVat', [
-    { name: 'exporter', methodName: 'getDurableCounter' },
-  ]);
-  const val1 = await run('messageVatObject', [
-    {
-      presence: counter,
-      methodName: 'increment',
-    },
-  ]);
+  const exporterRoot = await messageToVat('bootstrap', 'createVat', {
+    name: 'exporter',
+    bundleCapName: 'exporter',
+    vatParameters: { version: 'v1' },
+  });
+  t.is(await messageToObject(exporterRoot, 'getVersion'), 'v1');
+  const counter = await messageToObject(exporterRoot, 'getDurableCounter');
+  const val1 = await messageToObject(counter, 'increment');
   t.is(val1, 1);
-  await run('upgradeVat', [
-    {
-      name: 'exporter',
-      bundleCapName: 'exporter',
-      vatParameters: { version: 'v2' },
-    },
-  ]);
-  t.is(
-    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
-    'v2',
-  );
-  const val2 = await run('messageVatObject', [
-    {
-      presence: counter,
-      methodName: 'increment',
-    },
-  ]);
+  await messageToVat('bootstrap', 'upgradeVat', {
+    name: 'exporter',
+    bundleCapName: 'exporter',
+    vatParameters: { version: 'v2' },
+  });
+  t.is(await messageToObject(exporterRoot, 'getVersion'), 'v2');
+  const val2 = await messageToObject(counter, 'increment');
   t.is(val2, 2);
 };
 
@@ -198,12 +193,10 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
       deliveries.push(slogEntry);
     }
   };
-  const { controller, kvStore, run } = await initKernelForTest(
-    t,
-    t.context.data,
-    config,
-    { extraRuntimeOpts: { slogSender: deliverySpy } },
-  );
+  const { controller, kvStore, messageToVat, messageToObject } =
+    await initKernelForTest(t, t.context.data, config, {
+      extraRuntimeOpts: { slogSender: deliverySpy },
+    });
 
   // ava t.like does not support array shapes, but object analogs are fine
   const arrayShape = sparseArr => Object.fromEntries(Object.entries(sparseArr));
@@ -232,7 +225,7 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
   const bundle = await bundleSource(config.vats.staticVat.sourceSpec);
   const bundleID = await controller.validateAndInstallBundle(bundle);
   isSlogging = true;
-  const staticVatV1 = await run('getVersion', [], 'staticVat');
+  const staticVatV1 = await messageToVat('staticVat', 'getVersion');
   t.is(staticVatV1, undefined);
   const staticVatUpgradeKpid = controller.upgradeStaticVat(
     'staticVat',
@@ -244,7 +237,7 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
   );
   await controller.run();
   t.is(controller.kpStatus(staticVatUpgradeKpid), 'fulfilled');
-  const staticVatV2 = await run('getVersion', [], 'staticVat');
+  const staticVatV2 = await messageToVat('staticVat', 'getVersion');
   t.is(staticVatV2, 'v2');
   isSlogging = false;
 
@@ -265,33 +258,22 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
   t.is(staticVatDeliveries.length, expectedDeliveries.length);
 
   // Repeat the process with a dynamic vat.
-  await run('createVat', [
-    {
-      name: 'dynamicVat',
-      bundleCapName: 'exporter',
-      vatParameters: { version: 'v1' },
-    },
-  ]);
-  const dynamicVat = await run('getVatRoot', [
-    { name: 'dynamicVat', rawOutput: true },
-  ]);
+  const dynamicVat = await messageToVat('bootstrap', 'createVat', {
+    name: 'dynamicVat',
+    bundleCapName: 'exporter',
+    vatParameters: { version: 'v1' },
+  });
   const dynamicVatKref = krefOf(dynamicVat);
   const dynamicVatID = kvStore.get(`${dynamicVatKref}.owner`); // probably 'v7'
   isSlogging = true;
-  const dynamicVatV1 = await run('messageVat', [
-    { name: 'dynamicVat', methodName: 'getVersion' },
-  ]);
+  const dynamicVatV1 = await messageToObject(dynamicVat, 'getVersion');
   t.is(dynamicVatV1, 'v1');
-  await run('upgradeVat', [
-    {
-      name: 'dynamicVat',
-      bundleCapName: 'exporter',
-      vatParameters: { version: 'v2' },
-    },
-  ]);
-  const dynamicVatV2 = await run('messageVat', [
-    { name: 'dynamicVat', methodName: 'getVersion' },
-  ]);
+  await messageToVat('bootstrap', 'upgradeVat', {
+    name: 'dynamicVat',
+    bundleCapName: 'exporter',
+    vatParameters: { version: 'v2' },
+  });
+  const dynamicVatV2 = await messageToObject(dynamicVat, 'getVersion');
   t.is(dynamicVatV2, 'v2');
   isSlogging = false;
 
@@ -330,8 +312,8 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const {
     controller: c,
     kvStore,
-    run,
-    runAndRetain,
+    messageToVat,
+    messageToVatAndRetain,
   } = await initKernelForTest(t, bundleData, config, {
     holdObjectRefs: false,
   });
@@ -350,14 +332,14 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
     return kref;
   };
 
-  const marker = await runAndRetain('getMarker');
+  const marker = await messageToVatAndRetain('bootstrap', 'getMarker');
   const markerKref = verifyPresence(marker, 'marker'); // probably 'ko26'
 
   // fetch all the "import sensors": exported by bootstrap, imported by
   // the upgraded vat. We'll determine their krefs and later query the
   // upgraded vat to see if it's still importing them or not
   const sensors = /** @type {[unknown, ...object]} */ (
-    await runAndRetain('getImportSensors', [])
+    await messageToVatAndRetain('bootstrap', 'getImportSensors')
   );
   const sensorKrefs = [
     'skip0',
@@ -370,7 +352,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
 
   // create initial version
   /** @type {any} */
-  const v1result = await run('buildV1', []);
+  const v1result = await messageToVat('bootstrap', 'buildV1');
   t.like(v1result, {
     version: 'v1',
     youAre: 'v1',
@@ -457,7 +439,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
 
   // now perform the upgrade
   /** @type {any} */
-  const v2result = await run('upgradeV2', []);
+  const v2result = await messageToVat('bootstrap', 'upgradeV2');
   // dumpState(debug, vatID);
   t.like(v2result, {
     version: 'v2',
@@ -525,10 +507,13 @@ test('vat upgrade - omit vatParameters', async t => {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
-  const result = await run('doUpgradeWithoutVatParameters', []);
+  const result = await messageToVat(
+    'bootstrap',
+    'doUpgradeWithoutVatParameters',
+  );
   t.deepEqual(result, [undefined, undefined]);
 });
 
@@ -539,23 +524,18 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
       exporter: '../vat-exporter.js',
     },
   });
-  const { controller, run } = await initKernelForTest(
+  const { controller, messageToVat, messageToObject } = await initKernelForTest(
     t,
     t.context.data,
     config,
   );
 
-  await run('createVat', [
-    {
-      name: 'exporter',
-      bundleCapName: 'exporter',
-      vatParameters: { version: 'v1' },
-    },
-  ]);
-  t.is(
-    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
-    'v1',
-  );
+  const exporterRoot = await messageToVat('bootstrap', 'createVat', {
+    name: 'exporter',
+    bundleCapName: 'exporter',
+    vatParameters: { version: 'v1' },
+  });
+  t.is(await messageToObject(exporterRoot, 'getVersion'), 'v1');
 
   // Export some objects.
   const counterGetters = {
@@ -565,15 +545,16 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
   };
   /** @type {Record<string, { presence: unknown, kref: string }>} */
   const counters = {};
-  const runIncrement = presence =>
-    run('messageVatObject', [{ presence, methodName: 'increment' }]);
+  const runIncrement = presence => messageToObject(presence, 'increment');
   for (const [name, methodName] of Object.entries(counterGetters)) {
-    const counter = await run('messageVat', [{ name: 'exporter', methodName }]);
+    const counter = await messageToObject(exporterRoot, methodName);
     const val = await runIncrement(counter);
     t.is(val, 1, `initial increment of ${name}`);
-    const counterRef = await run('awaitVatObject', [
-      { presence: counter, rawOutput: true },
-    ]);
+    const counterRef = await messageToVat(
+      'bootstrap',
+      'awaitVatObject',
+      counter,
+    );
     const kref = krefOf(counterRef);
     counters[name] = { presence: counter, kref };
   }
@@ -602,13 +583,11 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
 
   // Upgrade and then check new kernel state for `objects` rows like
   // [kref, vatID | null, ...] and `kernelTable` rows like [kref, vatID, vref].
-  await run('upgradeVat', [
-    {
-      name: 'exporter',
-      bundleCapName: 'exporter',
-      vatParameters: { version: 'v2' },
-    },
-  ]);
+  await messageToVat('bootstrap', 'upgradeVat', {
+    name: 'exporter',
+    bundleCapName: 'exporter',
+    vatParameters: { version: 'v2' },
+  });
   const { kernelTable: kt2, objects: rc2 } = controller.dump();
   const ephCounterRC2 = findRowByKref(rc2, counters.ephCounter.kref);
   const virCounterRC2 = findRowByKref(rc2, counters.virCounter.kref);
@@ -640,10 +619,7 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
   );
 
   // Verify post-upgrade behavior.
-  t.is(
-    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
-    'v2',
-  );
+  t.is(await messageToObject(exporterRoot, 'getVersion'), 'v2');
   await t.throwsAsync(
     () => runIncrement(counters.ephCounter.presence),
     { message: 'vat terminated' },
@@ -675,7 +651,7 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
     parameters: { vatName: 'observer' },
     creationOptions: { enableSetup: true },
   };
-  const { controller, kvStore, run } = await initKernelForTest(
+  const { controller, kvStore, messageToVat } = await initKernelForTest(
     t,
     t.context.data,
     config,
@@ -686,20 +662,18 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
 
   // Export two objects from exporter to observer,
   // one to be held strongly and the other weakly.
-  const observer = await run('getVatRoot', [
-    { name: 'observer', rawOutput: true },
+  const observer = await messageToVat('bootstrap', 'getVatRoot', 'observer');
+  const strongObj = await messageToVat('exporter', 'exportFakeObject');
+  await messageToVat('exporter', 'syscall-send', observer, 'acceptImports', [
+    strongObj,
   ]);
-  const strongObj = await run('exportFakeObject', [], 'exporter');
-  await run(
-    'syscall-send',
-    [observer, 'acceptImports', [strongObj]],
+  const weakObj = await messageToVat('exporter', 'exportFakeObject');
+  await messageToVat(
     'exporter',
-  );
-  const weakObj = await run('exportFakeObject', [], 'exporter');
-  await run(
     'syscall-send',
-    [observer, 'acceptWeakImports', [weakObj]],
-    'exporter',
+    observer,
+    'acceptWeakImports',
+    [weakObj],
   );
 
   // Verify kernel tracking of the objects.
@@ -746,7 +720,7 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
   //   undefined,
   //   'unreachable abandoned object is forgotten',
   // );
-  // const observerLog = await run('getDispatchLog', [], 'observer');
+  // const observerLog = await messageToVat('observer', 'getDispatchLog');
 });
 
 // No longer valid as of removing stopVat per #6650
@@ -758,13 +732,13 @@ test.failing('failed upgrade - relaxed durable rules', async t => {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
-  await run('buildV1', []);
+  await messageToVat('bootstrap', 'buildV1');
 
   // upgrade should fail
-  await t.throwsAsync(run('upgradeV2', []), {
+  await t.throwsAsync(messageToVat('bootstrap', 'upgradeV2'), {
     instanceOf: Error,
     message: /vat-upgrade failure/,
   });
@@ -779,15 +753,15 @@ test('failed upgrade - lost kind', async t => {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
-  const v1result = await run('buildV1WithLostKind', []);
+  const v1result = await messageToVat('bootstrap', 'buildV1WithLostKind');
   t.deepEqual(v1result, ['ping 1']);
 
   // upgrade should fail, get rewound
   console.log(`note: expect a 'defineDurableKind not called' error below`);
-  const events = await run('upgradeV2WhichLosesKind', []);
+  const events = await messageToVat('bootstrap', 'upgradeV2WhichLosesKind');
   t.is(events[0], 'ping 2');
 
   // The v2 vat starts with a 'ping from v2' (which will be unwound).
@@ -825,14 +799,14 @@ test('failed upgrade - explode', async t => {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
-  const v1result = await run('buildV1WithPing', []);
+  const v1result = await messageToVat('bootstrap', 'buildV1WithPing');
   t.deepEqual(v1result, ['hello from v1', 'ping 1']);
 
   // upgrade should fail, error returned in array
-  const events = await run('upgradeV2WhichExplodes', []);
+  const events = await messageToVat('bootstrap', 'upgradeV2WhichExplodes');
   const e = events[0];
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
@@ -858,13 +832,13 @@ async function testKindMode(t, v1mode, v2mode, complaint) {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
-  await run('buildV1KindModeTest', [v1mode]);
+  await messageToVat('bootstrap', 'buildV1KindModeTest', v1mode);
 
   // upgrade
-  const resultP = run('upgradeV2KindModeTest', [v2mode]);
+  const resultP = messageToVat('bootstrap', 'upgradeV2KindModeTest', v2mode);
   if (!complaint) {
     await resultP;
     t.pass();
@@ -926,9 +900,9 @@ test('failed upgrade - unknown options', async t => {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
-  const { run } = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat } = await initKernelForTest(t, t.context.data, config);
 
-  await t.throwsAsync(run('doUpgradeWithBadOption', []), {
+  await t.throwsAsync(messageToVat('bootstrap', 'doUpgradeWithBadOption'), {
     instanceOf: Error,
     message: /upgrade\(\) received unknown options: "bad"/,
   });
@@ -941,7 +915,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
       ulrik1: 'vat-ulrik-1.js',
     },
   });
-  const { controller: c, run } = await initKernelForTest(
+  const { controller: c, messageToVat } = await initKernelForTest(
     t,
     t.context.data,
     config,
@@ -961,7 +935,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   t.regex(vaUpgradeResult.message, /vat-upgrade failure/);
 
   // Now try doing something that uses vatAdmin to verify that original vatAdmin is intact.
-  const v1result = await run('buildV1', []);
+  const v1result = await messageToVat('bootstrap', 'buildV1');
   // Just a taste to verify that the create went right; other tests check the rest
   t.deepEqual(v1result.data, ['some', 'data']);
 });

@@ -24,6 +24,7 @@
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/inter-protocol": "^0.16.1",
+    "@agoric/kmarshal": "^0.1.0",
     "@agoric/stat-logger": "^0.4.28",
     "@agoric/store": "^0.9.2",
     "@agoric/swing-store": "^0.9.1",
@@ -56,5 +57,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "2m"
+  },
+  "typeCoverage": {
+    "atLeast": 53.14
   }
 }

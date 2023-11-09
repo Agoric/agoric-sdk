@@ -1,6 +1,5 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
 import { makeHeapZone } from '@agoric/zone';
 import {
   makeVatSpace,
@@ -165,7 +164,6 @@ export const makeBootstrap = (
 
   // For testing supports
   const vatData = new Map();
-  const { encodePassable, decodePassable } = makePassableEncoding();
 
   return Far('bootstrap', {
     /**
@@ -201,31 +199,12 @@ export const makeBootstrap = (
     },
 
     //#region testing supports
-    messageVat: async ({ name, methodName, args = [] }) => {
-      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
-      const { root } = vat;
-      const decodedArgs = args.map(decodePassable);
-      const result = await E(root)[methodName](...decodedArgs);
-      return encodePassable(result);
-    },
-    messageVatObject: async ({ presence, methodName, args = [] }) => {
-      const object = decodePassable(presence);
-      const decodedArgs = args.map(decodePassable);
-      const result = await E(object)[methodName](...decodedArgs);
-      return encodePassable(result);
-    },
-    /* Like `messageVatObject` but does not await return value */
-    messageVatObjectSendOnly: ({ presence, methodName, args = [] }) => {
-      const object = decodePassable(presence);
-      const decodedArgs = args.map(decodePassable);
-      void E(object)[methodName](...decodedArgs);
-    },
-    awaitVatObject: async ({ presence, path = [], rawOutput = false }) => {
-      let value = await decodePassable(presence);
+    awaitVatObject: async (presence, path = []) => {
+      let value = await presence;
       for (const key of path) {
         value = await value[key];
       }
-      return rawOutput ? value : encodePassable(value);
+      return value;
     },
     /**
      * @template K, V

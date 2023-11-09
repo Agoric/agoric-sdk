@@ -9,11 +9,6 @@ else
 endif
 TARGET?=agoric-upgrade-12
 dockerLabel?=$(TARGET)
-ifdef TMUX_CC
-	tmuxCC=1
-else
-	tmuxCC=0
-endif
 @echo target: $(TARGET)
 
 local_sdk:
@@ -23,28 +18,7 @@ BUILD = docker build --progress=plain $(BUILD_OPTS) \
 	--build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) \
 	-f Dockerfile upgrade-test-scripts
 
-agoric-upgrade-7-2:
-	$(BUILD) --target agoric-upgrade-7-2 -t $(REPOSITORY):agoric-upgrade-7-2$(TAG_SUFFIX)
-
-agoric-upgrade-8: agoric-upgrade-7-2
-	$(BUILD) --target agoric-upgrade-8 -t $(REPOSITORY):agoric-upgrade-8$(TAG_SUFFIX)
-
-agoric-upgrade-8-1: agoric-upgrade-8
-	$(BUILD) --target agoric-upgrade-8-1 -t $(REPOSITORY):agoric-upgrade-8-1$(TAG_SUFFIX)
-
-agoric-upgrade-9: agoric-upgrade-8-1
-	$(BUILD) --target agoric-upgrade-9 -t $(REPOSITORY):agoric-upgrade-9$(TAG_SUFFIX)
-
-agoric-upgrade-10: agoric-upgrade-9
-	$(BUILD) --target agoric-upgrade-10 -t $(REPOSITORY):agoric-upgrade-10$(TAG_SUFFIX)
-
-propose-agoric-upgrade-11: agoric-upgrade-10
-	$(BUILD) --target propose-agoric-upgrade-11 -t $(REPOSITORY):propose-agoric-upgrade-11$(TAG_SUFFIX)
-
-agoric-upgrade-11: propose-agoric-upgrade-11
-	$(BUILD) --target agoric-upgrade-11 -t $(REPOSITORY):agoric-upgrade-11$(TAG_SUFFIX)
-
-propose-agoric-upgrade-12: agoric-upgrade-11
+propose-agoric-upgrade-12:
 	$(BUILD) --target propose-agoric-upgrade-12 -t $(REPOSITORY):propose-agoric-upgrade-12$(TAG_SUFFIX)
 
 agoric-upgrade-12: propose-agoric-upgrade-12
@@ -64,7 +38,7 @@ RUN = docker run --rm -it \
 	-e "DEBUG=$(DEBUG)"
 
 run:
-	$(RUN) -e "DEST=1" -e "TMUX_USE_CC=$(tmuxCC)" \
+	$(RUN) -e "DEST=1" \
 		--entrypoint /usr/src/agoric-sdk/upgrade-test-scripts/start_to_to.sh \
 		 $(REPOSITORY):$(dockerLabel)
 
@@ -73,5 +47,8 @@ run_test:
 
 run_bash:
 	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
+
+shell:
+	docker exec -it `docker ps --latest --format json | jq -r .Names` bash
 
 .PHONY: local_sdk agoric-upgrade-7-2 agoric-upgrade-8 agoric-upgrade-8-1 agoric-upgrade-9 agoric-upgrade-10 agoric-upgrade-11 agoric-upgrade-12 build build_test run

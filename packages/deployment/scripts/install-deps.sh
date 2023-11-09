@@ -57,7 +57,14 @@ if test -d /etc/apt; then
     echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu $VERSION_CODENAME main" > /etc/apt/sources.list.d/ansible.list
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
     apt-get update --allow-releaseinfo-change -y
-    apt-get install -y ansible rsync curl sudo gnupg2 jq libbsd-dev
+    apt-get install -y rsync curl sudo gnupg2 jq libbsd-dev
+    if apt-get install -y ansible; then : # success
+    else
+      # Failed to install Ansible, try workaround based on
+      # https://github.com/ansible-community/ppa/issues/77#issuecomment-1802847056
+      sed -i -e '1s/^[^#]*//' /usr/lib/python3/dist-packages/ansible_collections/netapp/ontap/plugins/modules/na_ontap_s3_users.py
+      apt-get install -y --fix-broken
+    fi
     apt-get clean -y
   }
 elif test "$uname_s" == darwin; then

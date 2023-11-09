@@ -31,7 +31,8 @@
     "@endo/promise-kit": "^0.2.59"
   },
   "devDependencies": {
-    "ava": "^5.3.0"
+    "ava": "^5.3.0",
+    "@agoric/kmarshal": "^0.1.0"
   },
   "files": [
     "src/**/*.js",
@@ -62,5 +63,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 71.48
   }
 }

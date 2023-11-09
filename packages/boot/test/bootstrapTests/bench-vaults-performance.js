@@ -70,7 +70,7 @@ const collateralBrandKey = 'ATOM';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults');
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

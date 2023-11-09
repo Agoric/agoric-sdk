@@ -310,6 +310,8 @@ export const preparePaymentLedger = (
     return payment;
   };
 
+  /** @type {() => Purse<K>} */
+  // @ts-expect-error type parameter confusion
   const makeEmptyPurse = preparePurseKind(
     issuerBaggage,
     name,

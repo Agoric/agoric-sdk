@@ -10,10 +10,8 @@ import {
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import {
-  createPriceFeed,
-  instanceNameFor,
-} from '../../src/proposals/price-feed-proposal.js';
+import { oracleBrandFeedName } from '../../src/proposals/utils.js';
+import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
 
 // referenced by TS
@@ -187,7 +185,10 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       {
         options: {
           priceFeedOptions: {
-            AGORIC_INSTANCE_NAME: instanceNameFor(inBrandName, outBrandName),
+            AGORIC_INSTANCE_NAME: oracleBrandFeedName(
+              inBrandName,
+              outBrandName,
+            ),
             contractTerms: {
               minSubmissionCount: 2,
               minSubmissionValue: 1,

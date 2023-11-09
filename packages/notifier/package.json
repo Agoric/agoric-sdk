@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build tsconfig.build.json",
+    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build --clean tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' src/types.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
@@ -42,6 +42,7 @@
     "@endo/promise-kit": "^0.2.59"
   },
   "devDependencies": {
+    "@agoric/kmarshal": "^0.1.0",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",
@@ -73,5 +74,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "2m"
+  },
+  "typeCoverage": {
+    "atLeast": 89.74
   }
 }

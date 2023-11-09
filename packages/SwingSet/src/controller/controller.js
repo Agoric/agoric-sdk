@@ -20,7 +20,7 @@ import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
-import { kslot } from '../lib/kmarshal.js';
+import { kslot, krefOf } from '@agoric/kmarshal';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import {
   buildKernelBundle,
@@ -360,6 +360,7 @@ export async function makeSwingsetController(
       kernelStorage.emitCrankHashes();
       return result;
     },
+
     vatNameToID(vatName) {
       return kernel.vatNameToID(vatName);
     },
@@ -371,15 +372,39 @@ export async function makeSwingsetController(
      * Queue a method call into the named vat
      *
      * @param {string} vatName
-     * @param {string} method
+     * @param {string|symbol} method
      * @param {unknown[]} args
      * @param {ResolutionPolicy} resultPolicy
      */
     queueToVatRoot(vatName, method, args = [], resultPolicy = 'ignore') {
       const vatID = kernel.vatNameToID(vatName);
-      assert.typeof(method, 'string');
+      if (typeof method !== 'symbol') {
+        assert.typeof(method, 'string');
+      }
       const kref = kernel.getRootObject(vatID);
       const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
+      if (kpid) {
+        kernel.kpRegisterInterest(kpid);
+      }
+      kernelStorage.emitCrankHashes();
+      return kpid;
+    },
+
+    /**
+     * Queue a method call to an object represented by a kmarshal token
+     *
+     * @param {any} target
+     * @param {string|symbol} method
+     * @param {unknown[]} args
+     * @param {ResolutionPolicy} resultPolicy
+     */
+    queueToVatObject(target, method, args = [], resultPolicy = 'ignore') {
+      const targetKref = krefOf(target);
+      assert.typeof(targetKref, 'string');
+      if (typeof method !== 'symbol') {
+        assert.typeof(method, 'string');
+      }
+      const kpid = kernel.queueToKref(targetKref, method, args, resultPolicy);
       if (kpid) {
         kernel.kpRegisterInterest(kpid);
       }

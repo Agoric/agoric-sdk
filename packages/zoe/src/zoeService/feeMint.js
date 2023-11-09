@@ -1,9 +1,9 @@
 import {
-  makeDurableIssuerKit,
   AssetKind,
-  prepareIssuerKit,
   IssuerShape,
   BrandShape,
+  prepareIssuerKit,
+  hasIssuer,
 } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 import {
@@ -13,8 +13,9 @@ import {
 } from '@agoric/vat-data';
 import { FeeMintAccessShape } from '../typeGuards.js';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
+/** @deprecated Redundant. Just omit it. */
 const FEE_MINT_KIT = 'FeeMintKit';
 
 export const defaultFeeIssuerConfig = harden(
@@ -32,19 +33,24 @@ export const defaultFeeIssuerConfig = harden(
  */
 const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
-  if (!mintBaggage.has(FEE_MINT_KIT)) {
-    /** @type {IssuerKit} */
-    const feeIssuerKit = makeDurableIssuerKit(
+  if (mintBaggage.has(FEE_MINT_KIT)) {
+    hasIssuer(mintBaggage) ||
+      Fail`Legacy ${q(
+        FEE_MINT_KIT,
+      )} must be redundant with normal storing of issuerKit in issuerBaggage`;
+    // Upgrade this legacy state by simply deleting it.
+    mintBaggage.delete(FEE_MINT_KIT);
+  }
+
+  const feeIssuerKit = /** @type {IssuerKit<'nat'>} */ (
+    prepareIssuerKit(
       mintBaggage,
       feeIssuerConfig.name,
       feeIssuerConfig.assetKind,
       feeIssuerConfig.displayInfo,
       shutdownZoeVat,
-    );
-    mintBaggage.init(FEE_MINT_KIT, feeIssuerKit);
-  } else {
-    prepareIssuerKit(mintBaggage, shutdownZoeVat);
-  }
+    )
+  );
 
   const FeeMintIKit = harden({
     feeMint: M.interface('FeeMint', {
@@ -66,13 +72,13 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
           const { facets } = this;
           facets.feeMintAccess === allegedFeeMintAccess ||
             Fail`The object representing access to the fee brand mint was not provided`;
-          return mintBaggage.get(FEE_MINT_KIT);
+          return feeIssuerKit;
         },
         getFeeIssuer() {
-          return mintBaggage.get(FEE_MINT_KIT).issuer;
+          return feeIssuerKit.issuer;
         },
         getFeeBrand() {
-          return mintBaggage.get(FEE_MINT_KIT).brand;
+          return feeIssuerKit.brand;
         },
       },
       // feeMintAccess is an opaque durable object representing the right to get

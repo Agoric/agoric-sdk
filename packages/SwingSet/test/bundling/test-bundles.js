@@ -2,13 +2,12 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import fs from 'fs';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
+import { kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

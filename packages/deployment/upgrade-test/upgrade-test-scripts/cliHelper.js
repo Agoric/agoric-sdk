@@ -1,6 +1,7 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 import { $, execaCommand } from 'execa';
-import { BINARY } from './constants.js';
+
+const BINARY = 'agd';
 
 export const executeCommand = async (command, params, options = {}) => {
   const { stdout } = await execaCommand(

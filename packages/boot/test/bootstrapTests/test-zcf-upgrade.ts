@@ -1,17 +1,18 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
-import path from 'path';
 import processAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
+import path from 'path';
 
+import { BridgeHandler } from '@agoric/vats';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { TestFn } from 'ava';
-import { BridgeHandler } from '@agoric/vats';
 import { makeZoeDriver } from './drivers.ts';
+import { matchAmount } from './supports.js';
 import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
 
 const filename = new URL(import.meta.url).pathname;
@@ -41,7 +42,7 @@ const ZCF_PROBE_SRC = './zcfProbe.js';
 
 export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/zoe', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/zoe', {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
 
@@ -126,7 +127,6 @@ test('run restart-vats proposal', async t => {
 
   const brandRecord = await zoeDriver.instantiateProbeContract(zcfProbeBundle);
   const { brand, issuer } = brandRecord;
-  const ducatAmountRecord = v => ({ Ducats: { brand, value: v } });
 
   t.deepEqual(await zoeDriver.verifyRealloc(), {});
 
@@ -138,15 +138,11 @@ test('run restart-vats proposal', async t => {
   t.true(beforeResult.helperResult);
   // In this version of the test, we're upgrading from new ZCF to new ZCF
   t.true(beforeResult.internalResult);
-  t.deepEqual(await zoeDriver.verifyRealloc(), ducatAmountRecord(3n));
+  matchAmount(t, (await zoeDriver.verifyRealloc()).Ducats, brand, 3n);
 
   t.log('building proposal');
   // /////// Upgrading ////////////////////////////////
-  const zcfPackageSpec = {
-    package: 'builders',
-    packageScriptName: 'build:zcf-proposal',
-  };
-  await buildAndExecuteProposal(zcfPackageSpec);
+  await buildAndExecuteProposal('@agoric/builders/scripts/vats/replace-zoe.js');
 
   t.log('upgrade zoe&zcf proposal executed');
   await zoeDriver.upgradeProbe(zcfProbeBundle);
@@ -157,5 +153,5 @@ test('run restart-vats proposal', async t => {
   t.true(afterResult.stagingResult);
   t.true(afterResult.helperResult);
   t.true(afterResult.internalResult);
-  t.deepEqual(await zoeDriver.verifyRealloc(), ducatAmountRecord(6n));
+  matchAmount(t, (await zoeDriver.verifyRealloc()).Ducats, brand, 6n);
 });

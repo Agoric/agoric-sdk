@@ -68,6 +68,51 @@ and `data` \<serialized protobuf per [vstorage/query.proto](../../proto/agoric/v
 * /agoric.vstorage.Query/Children
 * /agoric.vstorage.Query/Data
 
+Example:
+```sh
+$ curl -sS 'https://main.rpc.agoric.net/' -H 'Content-Type: application/json' -X POST --data "$(
+    jq -n --arg queryChildrenRequestHex 0a147075626c69736865642e636f6d6d697474656573 '{
+      id: 1,
+      method: "abci_query",
+      params: { path: "/agoric.vstorage.Query/Children", data: $queryChildrenRequestHex }
+    }' | \
+    tee /dev/stderr \
+  )" | \
+  jq . | \
+  tee /dev/stderr | \
+  jq -r '.result.response.value' | \
+  base64 -d | \
+  protoc -I golang/cosmos/proto/agoric/vstorage/ -I golang/cosmos/third_party/proto/ \
+    --decode=agoric.vstorage.QueryChildrenResponse golang/cosmos/proto/agoric/vstorage/query.proto 
+{
+  "id": 1,
+  "method": "abci_query",
+  "params": {
+    "path": "/agoric.vstorage.Query/Children",
+    "data": "0a147075626c69736865642e636f6d6d697474656573"
+  }
+}
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "response": {
+      "code": 0,
+      "log": "",
+      "info": "",
+      "index": "0",
+      "key": null,
+      "value": "ChJFY29ub21pY19Db21taXR0ZWUKCWtyZWFkLWdvdg==",
+      "proofOps": null,
+      "height": "12222836",
+      "codespace": ""
+    }
+  }
+}
+children: "Economic_Committee"
+children: "kread-gov"
+```
+
 ## External JSON interface
 
 As described at [Cosmos SDK: Using the REST Endpoints](https://docs.cosmos.network/main/run-node/interact-node#using-the-rest-endpoints), a blockchain node whose [`app.toml` configuration](https://docs.cosmos.network/main/run-node/run-node#configuring-the-node-using-apptoml-and-configtoml) enables the "REST" API server uses [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) and `google.api.http` annotations in [vstorage/query.proto](../../proto/agoric/vstorage/query.proto) to automatically translate the protobuf-based RPC endpoints into URL paths that accept query parameters and emit JSON.

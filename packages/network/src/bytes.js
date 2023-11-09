@@ -1,4 +1,4 @@
-import './types.js';
+/// <reference path="./types.js" />
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 
 /* eslint-disable no-bitwise */

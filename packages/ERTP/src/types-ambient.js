@@ -115,7 +115,7 @@
 /**
  * @callback IssuerIsLive Return true if the payment continues to exist.
  *
- *   If the payment is a promise, the operation will proceed upon resolution.
+ *   If the payment is a promise, the operation will proceed upon fulfillment.
  * @param {ERef<Payment>} payment
  * @returns {Promise<boolean>}
  */
@@ -125,67 +125,28 @@
  *   Because the payment is not trusted, we cannot call a method on it directly,
  *   and must use the issuer instead.
  *
- *   If the payment is a promise, the operation will proceed upon resolution.
+ *   If the payment is a promise, the operation will proceed upon fulfillment.
  * @param {ERef<Payment>} payment
  * @returns {Promise<Amount<K>>}
  */
 
 /**
  * @callback IssuerBurn Burn all of the digital assets in the payment.
- *   `optAmount` is optional. If `optAmount` is present, the code will insist
- *   that the amount of the digital assets in the payment is equal to
- *   `optAmount`, to prevent sending the wrong payment and other confusion.
+ *   `optAmountShape` is optional. If the `optAmountShape` pattern is present,
+ *   the amount of the digital assets in the payment must match
+ *   `optAmountShape`, to prevent sending the wrong payment and other
+ *   confusion.
  *
- *   If the payment is a promise, the operation will proceed upon resolution.
+ *   If the payment is a promise, the operation will proceed upon fulfillment.
+ *
+ *   As always with optional `Pattern` arguments, keep in mind that technically
+ *   the value `undefined` itself is a valid `Key` and therefore a valid
+ *   `Pattern`. But in optional pattern position, a top level `undefined` will
+ *   be interpreted as absence. If you want to express a `Pattern` that will
+ *   match only `undefined`, use `M.undefined()` instead.
  * @param {ERef<Payment>} payment
  * @param {Pattern} [optAmountShape]
  * @returns {Promise<Amount>}
- */
-
-/**
- * @template {AssetKind} K
- * @callback IssuerClaim Transfer all digital assets from the payment to a new
- *   payment and delete the original. `optAmount` is optional. If `optAmount` is
- *   present, the code will insist that the amount of digital assets in the
- *   payment is equal to `optAmount`, to prevent sending the wrong payment and
- *   other confusion.
- *
- *   If the payment is a promise, the operation will proceed upon resolution.
- * @param {ERef<Payment<K>>} payment
- * @param {Pattern} [optAmountShape]
- * @returns {Promise<Payment<K>>}
- */
-
-/**
- * @template {AssetKind} K
- * @callback IssuerCombine Combine multiple payments into one payment.
- *
- *   If any of the payments is a promise, the operation will proceed upon
- *   resolution.
- * @param {ERef<Payment<K>>[]} paymentsArray
- * @param {Amount<K>} [optTotalAmount]
- * @returns {Promise<Payment<K>>}
- */
-
-/**
- * @template {AssetKind} K
- * @callback IssuerSplit Split a single payment into two payments, A and B,
- *   according to the paymentAmountA passed in.
- *
- *   If the payment is a promise, the operation will proceed upon resolution.
- * @param {ERef<Payment<K>>} payment
- * @param {Amount<K>} paymentAmountA
- * @returns {Promise<Payment<K>[]>}
- */
-
-/**
- * @callback IssuerSplitMany Split a single payment into many payments,
- *   according to the amounts passed in.
- *
- *   If the payment is a promise, the operation will proceed upon resolution.
- * @param {ERef<Payment>} payment
- * @param {Amount[]} amounts
- * @returns {Promise<Payment[]>}
  */
 
 /**
@@ -217,7 +178,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} PaymentLedger
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse
+ * @property {Purse<K>} mintRecoveryPurse Useful only to get the recovery set
+ *   associated with minted payments that are still live.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
@@ -226,7 +188,8 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse
+ * @property {Purse<K>} mintRecoveryPurse Useful only to get the recovery set
+ *   associated with minted payments that are still live.
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
@@ -256,6 +219,8 @@
  * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment Creates a new
  *   Payment containing newly minted amount.
  */
+
+// /////////////////////////// Purse / Payment /////////////////////////////////
 
 /**
  * @callback DepositFacetReceive
@@ -343,6 +308,8 @@
  *   use. Because payments are not trusted, any method calls on payments should
  *   be treated with suspicion and verified elsewhere.
  */
+
+// /////////////////////////// MathHelpers /////////////////////////////////////
 
 /**
  * @template {AmountValue} V

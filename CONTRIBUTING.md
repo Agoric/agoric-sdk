@@ -23,7 +23,7 @@ also need:
 To check that everything is working before you start, or
 to thoroughly check a contribution, run:
 
-```
+```sh
 yarn # short for: yarn install
 yarn build
 yarn test

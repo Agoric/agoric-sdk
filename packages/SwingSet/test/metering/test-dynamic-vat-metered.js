@@ -2,12 +2,11 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
+import { kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { restartVatAdminVat } from '../util.js';
-import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 
 async function prepare() {

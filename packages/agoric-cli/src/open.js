@@ -5,8 +5,8 @@ import { getAccessToken } from '@agoric/access-token';
 
 import { assert, details as X } from '@agoric/assert';
 
-export default async function walletMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs } = powers;
+export default async function walletMain(_progname, _rawArgs, powers, opts) {
+  const { anylogger } = powers;
   const console = anylogger('agoric:wallet');
 
   let suffix;
@@ -39,10 +39,10 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
     1000,
   );
 
-  const walletAccessToken = await getAccessToken(opts.hostport, {
-    console,
-    fs,
-  }).catch(e => console.error(`Trying to fetch access token:`, e));
+  const walletAccessToken = await getAccessToken(opts.hostport).catch(e => {
+    console.error(`Trying to fetch access token:`, e);
+    throw e;
+  });
 
   clearInterval(progressTimer);
   process.stderr.write('\n');

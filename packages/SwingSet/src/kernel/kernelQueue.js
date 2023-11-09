@@ -1,8 +1,8 @@
+import { kser } from '@agoric/kmarshal';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistMessage } from '../lib/message.js';
 import { insistVatID } from '../lib/id.js';
-import { kser } from '../lib/kmarshal.js';
 
 /**
  * @param {object} tools
@@ -84,7 +84,7 @@ export function makeKernelQueueHandler(tools) {
    * by some other vat. This requires a kref as a target.
    *
    * @param {string} kref  Target of the message
-   * @param {string} method  The method name
+   * @param {string|symbol} method  The method name
    * @param {any[]} args  The arguments array
    * @param {ResolutionPolicy} [policy] How the kernel should handle an eventual
    *    resolution or rejection of the message's result promise. Should be

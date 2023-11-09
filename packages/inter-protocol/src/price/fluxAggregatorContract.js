@@ -1,10 +1,6 @@
 // @jessie-check
 
-import {
-  hasIssuer,
-  makeDurableIssuerKit,
-  prepareIssuerKit,
-} from '@agoric/ertp';
+import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
@@ -72,9 +68,13 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
   /** @type {import('./roundsManager.js').QuoteKit} */
-  const quoteIssuerKit = hasIssuer(baggage)
-    ? prepareIssuerKit(baggage)
-    : makeDurableIssuerKit(baggage, 'quote', 'set');
+  const quoteIssuerKit = prepareIssuerKit(
+    baggage,
+    'quote',
+    'set',
+    undefined,
+    undefined,
+  );
 
   const {
     highPrioritySendersManager,

@@ -2,7 +2,6 @@ import { assert } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
 import { buildManualTimer } from './manual-timer.js';
-import { makePassableEncoding } from './passableEncoding.js';
 
 const { Fail, quote: q } = assert;
 
@@ -12,8 +11,6 @@ export const buildRootObject = () => {
   const vatData = new Map();
   const devicesByName = new Map();
   const callLogsByRemotable = new Map();
-
-  const { encodePassable, decodePassable } = makePassableEncoding();
 
   return Far('root', {
     bootstrap: async (vats, devices) => {
@@ -28,17 +25,16 @@ export const buildRootObject = () => {
       }
     },
 
-    getDevice: async deviceName =>
-      encodePassable(devicesByName.get(deviceName)),
+    getDevice: async deviceName => devicesByName.get(deviceName),
 
-    getVatAdmin: async () => encodePassable(vatAdmin),
+    getVatAdmin: async () => vatAdmin,
 
-    getTimer: async () => encodePassable(timer),
+    getTimer: async () => timer,
 
-    getVatRoot: async ({ name, rawOutput = false }) => {
-      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
+    getVatRoot: async vatName => {
+      const vat = vatData.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
       const { root } = vat;
-      return rawOutput ? root : encodePassable(root);
+      return root;
     },
 
     createVat: async ({ name, bundleCapName, vatParameters = {} }) => {
@@ -46,7 +42,7 @@ export const buildRootObject = () => {
       const options = { vatParameters };
       const { adminNode, root } = await E(vatAdmin).createVat(bcap, options);
       vatData.set(name, { adminNode, root });
-      return encodePassable(root);
+      return root;
     },
 
     upgradeVat: async ({ name, bundleCapName, vatParameters = {} }) => {
@@ -60,14 +56,11 @@ export const buildRootObject = () => {
 
     /**
      * Derives a remotable from an object by mapping each object property into a method that returns the value.
-     * This function is intended to be called from testing code outside of the vat environment,
-     * but methods of the returned remotable are intended to be called from *inside* that environment
-     * and therefore do not perform argument/response translation.
      *
      * @param {string} label
-     * @param {Record<string, any>} encodedMethodReturnValues
+     * @param {Record<string, any>} returnValues
      */
-    makeRemotable: (label, encodedMethodReturnValues) => {
+    makeRemotable: (label, returnValues) => {
       const callLogs = [];
       const makeGetterFunction = (value, name) => {
         const getValue = (...args) => {
@@ -76,51 +69,33 @@ export const buildRootObject = () => {
         };
         return getValue;
       };
-      const methodReturnValues = decodePassable(encodedMethodReturnValues);
       // `objectMap` hardens its result, but...
-      const methods = objectMap(methodReturnValues, makeGetterFunction);
+      const methods = objectMap(returnValues, makeGetterFunction);
       // ... `Far` requires its methods argument not to be hardened.
-      const unhardenedMethods = { ...methods };
-      const remotable = Far(label, unhardenedMethods);
+      const remotable = Far(label, { ...methods });
       callLogsByRemotable.set(remotable, callLogs);
-      return encodePassable(remotable);
+      return remotable;
     },
 
     /**
      * Returns a copy of a remotable's logs.
      *
-     * @param {object} encodedRemotable
+     * @param {object} remotable
      */
-    getLogForRemotable: encodedRemotable => {
-      const remotable = decodePassable(encodedRemotable);
-      const decodedLogs =
+    getLogForRemotable: remotable => {
+      const logs =
         callLogsByRemotable.get(remotable) ||
         Fail`logs not found for ${q(remotable)}`;
       // Return a copy so that the original remains mutable.
-      return encodePassable(harden([...decodedLogs]));
+      return harden([...logs]);
     },
 
-    messageVat: async ({ name, methodName, args = [] }) => {
-      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
-      const { root } = vat;
-      const decodedArgs = args.map(decodePassable);
-      const result = await E(root)[methodName](...decodedArgs);
-      return encodePassable(result);
-    },
-
-    messageVatObject: async ({ presence, methodName, args = [] }) => {
-      const object = decodePassable(presence);
-      const decodedArgs = args.map(decodePassable);
-      const result = await E(object)[methodName](...decodedArgs);
-      return encodePassable(result);
-    },
-
-    awaitVatObject: async ({ presence, path = [], rawOutput = false }) => {
-      let value = await decodePassable(presence);
+    awaitVatObject: async (presence, path = []) => {
+      let value = await presence;
       for (const key of path) {
         value = await value[key];
       }
-      return rawOutput ? value : encodePassable(value);
+      return value;
     },
   });
 };

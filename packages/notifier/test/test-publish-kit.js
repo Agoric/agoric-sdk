@@ -10,7 +10,7 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
+import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
 import {
   makePublishKit,
@@ -259,9 +259,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
+  const awaitRun = async kpid => {
     await c.run();
     const status = c.kpStatus(kpid);
     if (status === 'fulfilled') {
@@ -273,39 +271,47 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     throw kunser(err);
   };
 
+  const messageToVat = async (vatName, method, ...args) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot(vatName, method, args);
+    return awaitRun(kpid);
+  };
+  const messageToObject = async (presence, method, ...args) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatObject(presence, method, args);
+    return awaitRun(kpid);
+  };
+
   // Create the vat and get its subscriber.
-  await run('createVat', [
-    {
-      name: 'pubsub',
-      bundleCapName: 'pubsub',
-      vatParameters: { version: 'v1' },
-    },
-  ]);
-  await run('createVat', [
-    {
-      name: 'pubsub2',
-      bundleCapName: 'pubsub',
-    },
-  ]);
-  t.is(
-    await run('messageVat', [{ name: 'pubsub', methodName: 'getVersion' }]),
-    'v1',
+  const pubsubRoot = await messageToVat('bootstrap', 'createVat', {
+    name: 'pubsub',
+    bundleCapName: 'pubsub',
+    vatParameters: { version: 'v1' },
+  });
+  const pubsub2Root = await messageToVat('bootstrap', 'createVat', {
+    name: 'pubsub2',
+    bundleCapName: 'pubsub',
+  });
+  t.is(await messageToObject(pubsubRoot, 'getVersion'), 'v1');
+  const sub1 = await messageToObject(pubsubRoot, 'getSubscriber');
+  const eachIterable = await messageToObject(
+    pubsub2Root,
+    'subscribeEach',
+    sub1,
   );
-  const sub1 = await run('messageVat', [
-    { name: 'pubsub', methodName: 'getSubscriber' },
-  ]);
-  const eachIterable = await run('messageVat', [
-    { name: 'pubsub2', methodName: 'subscribeEach', args: [sub1] },
-  ]);
-  const eachIterator1 = await run('messageVatObject', [
-    { presence: eachIterable, methodName: Symbol.asyncIterator },
-  ]);
-  const latestIterable = await run('messageVat', [
-    { name: 'pubsub2', methodName: 'subscribeLatest', args: [sub1] },
-  ]);
-  const latestIterator1 = await run('messageVatObject', [
-    { presence: latestIterable, methodName: Symbol.asyncIterator },
-  ]);
+  const eachIterator1 = await messageToObject(
+    eachIterable,
+    Symbol.asyncIterator,
+  );
+  const latestIterable = await messageToObject(
+    pubsub2Root,
+    'subscribeLatest',
+    sub1,
+  );
+  const latestIterator1 = await messageToObject(
+    latestIterable,
+    Symbol.asyncIterator,
+  );
 
   /**
    * Advances the publisher.
@@ -314,9 +320,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
    * @returns {Promise<void>}
    */
   const publish = async value => {
-    await run('messageVat', [
-      { name: 'pubsub', methodName: 'publish', args: [value] },
-    ]);
+    await messageToObject(pubsubRoot, 'publish', value);
   };
 
   // Verify receipt of a published value via subscribeAfter
@@ -324,13 +328,9 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const value1 = Symbol.for('value1');
   await publish(value1);
   const expectedV1FirstResult = { value: value1, done: false };
-  const v1FirstCell = await run('messageVatObject', [
-    { presence: sub1, methodName: 'subscribeAfter' },
-  ]);
+  const v1FirstCell = await messageToObject(sub1, 'subscribeAfter');
   assertCells(t, 'v1 first', [v1FirstCell], 1n, expectedV1FirstResult);
-  const eachIteratorFirstResult = await run('messageVatObject', [
-    { presence: eachIterator1, methodName: 'next' },
-  ]);
+  const eachIteratorFirstResult = await messageToObject(eachIterator1, 'next');
   t.deepEqual(
     eachIteratorFirstResult,
     expectedV1FirstResult,
@@ -338,9 +338,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   );
   // Don't ask the latest iterator for its first result so we can observe
   // that it skips intermediate results.
-  // const latestIteratorFirstResult = await run('messageVatObject', [
-  //   { presence: latestIterator1, methodName: 'next' },
-  // ]);
+  // const latestIteratorFirstResult = await messageToObject(latestIterator1, 'next');
   // t.deepEqual(
   //   latestIteratorFirstResult,
   //   expectedV1FirstResult,
@@ -352,25 +350,15 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const value2 = Symbol.for('value2');
   await publish(value2);
   const expectedV1SecondResult = { value: value2, done: false };
-  await run('messageVatObject', [
-    { presence: sub1, methodName: 'subscribeAfter' },
-  ]);
+  await messageToObject(sub1, 'subscribeAfter');
   const v1SecondCells = [
-    await run('awaitVatObject', [{ presence: v1FirstCell.tail }]),
-    await run('messageVatObject', [
-      { presence: sub1, methodName: 'subscribeAfter' },
-    ]),
-    await run('messageVatObject', [
-      { presence: sub1, methodName: 'subscribeAfter' },
-    ]),
+    await messageToVat('bootstrap', 'awaitVatObject', v1FirstCell.tail),
+    await messageToObject(sub1, 'subscribeAfter'),
+    await messageToObject(sub1, 'subscribeAfter'),
   ];
   const v1SecondIterationResults = {
-    eachIterator: await run('messageVatObject', [
-      { presence: eachIterator1, methodName: 'next' },
-    ]),
-    latestIterator: await run('messageVatObject', [
-      { presence: latestIterator1, methodName: 'next' },
-    ]),
+    eachIterator: await messageToObject(eachIterator1, 'next'),
+    latestIterator: await messageToObject(latestIterator1, 'next'),
   };
   assertCells(t, 'v1 second', v1SecondCells, 2n, expectedV1SecondResult, {
     strict: false,
@@ -378,23 +366,17 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   });
 
   // Upgrade the vat, breaking promises from v1.
-  await run('upgradeVat', [
-    {
-      name: 'pubsub',
-      bundleCapName: 'pubsub',
-      vatParameters: { version: 'v2' },
-    },
-  ]);
-  t.is(
-    await run('messageVat', [{ name: 'pubsub', methodName: 'getVersion' }]),
-    'v2',
+  await messageToVat('bootstrap', 'upgradeVat', {
+    name: 'pubsub',
+    bundleCapName: 'pubsub',
+    vatParameters: { version: 'v2' },
+  });
+  t.is(await messageToObject(pubsubRoot, 'getVersion'), 'v2');
+  const sub2 = await messageToObject(pubsubRoot, 'getSubscriber');
+  const eachIterator2 = await messageToObject(
+    eachIterable,
+    Symbol.asyncIterator,
   );
-  const sub2 = await run('messageVat', [
-    { name: 'pubsub', methodName: 'getSubscriber' },
-  ]);
-  const eachIterator2 = await run('messageVatObject', [
-    { presence: eachIterable, methodName: Symbol.asyncIterator },
-  ]);
   // eslint-disable-next-line ava/prefer-async-await
   const assertDisconnection = (p, label) => {
     const expected = {
@@ -410,18 +392,14 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     );
   };
   await assertDisconnection(
-    run('awaitVatObject', [{ presence: v1SecondCells[0].tail }]),
+    messageToVat('bootstrap', 'awaitVatObject', v1SecondCells[0].tail),
     'tail promise of old vat',
   );
 
   // Verify receipt of the last published value from v1.
-  const v2FirstCell = await run('messageVatObject', [
-    { presence: sub2, methodName: 'subscribeAfter' },
-  ]);
+  const v2FirstCell = await messageToObject(sub2, 'subscribeAfter');
   const v2FirstIterationResults = {
-    eachIterator: await run('messageVatObject', [
-      { presence: eachIterator2, methodName: 'next' },
-    ]),
+    eachIterator: await messageToObject(eachIterator2, 'next'),
   };
   assertCells(t, 'v2 first', [v2FirstCell], 2n, expectedV1SecondResult, {
     iterationResults: v2FirstIterationResults,
@@ -432,24 +410,14 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   await publish(value3);
   const expectedV2SecondResult = { value: value3, done: false };
   const v2SecondCells = [
-    await run('awaitVatObject', [{ presence: v2FirstCell.tail }]),
-    await run('messageVatObject', [
-      { presence: sub2, methodName: 'subscribeAfter' },
-    ]),
-    await run('messageVatObject', [
-      { presence: sub2, methodName: 'subscribeAfter' },
-    ]),
+    await messageToVat('bootstrap', 'awaitVatObject', v2FirstCell.tail),
+    await messageToObject(sub2, 'subscribeAfter'),
+    await messageToObject(sub2, 'subscribeAfter'),
   ];
   const v2SecondIterationResults = {
-    eachIterator1: await run('messageVatObject', [
-      { presence: eachIterator1, methodName: 'next' },
-    ]),
-    eachIterator2: await run('messageVatObject', [
-      { presence: eachIterator2, methodName: 'next' },
-    ]),
-    latestIterator: await run('messageVatObject', [
-      { presence: latestIterator1, methodName: 'next' },
-    ]),
+    eachIterator1: await messageToObject(eachIterator1, 'next'),
+    eachIterator2: await messageToObject(eachIterator2, 'next'),
+    latestIterator: await messageToObject(latestIterator1, 'next'),
   };
   assertCells(t, 'v2 second', v2SecondCells, 3n, expectedV2SecondResult, {
     strict: false,

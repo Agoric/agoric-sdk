@@ -4,20 +4,17 @@
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { basename } from 'path';
+import { basename, join } from 'path';
 import { inspect } from 'util';
 
 import { Fail, NonNullish } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import {
-  FakeStorageKit,
-  makeFakeStorageKit,
-} from '@agoric/internal/src/storage-test-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/swingset-liveslots/test/kmarshal.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { krefOf, kunser } from '@agoric/kmarshal';
 import { TimeMath, Timestamp } from '@agoric/time';
 import {
   boardSlottingMarshaller,
@@ -27,8 +24,8 @@ import { makeQueue } from '@endo/stream';
 
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot';
-import type { ExecutionContext } from 'ava';
 import type { E } from '@endo/eventual-send';
+import type { ExecutionContext as AvaT } from 'ava';
 
 const sink = () => {};
 
@@ -39,9 +36,6 @@ export const bootstrapMethods: { [P in keyof BootstrapRootObject]: P } = {
   consumeItem: 'consumeItem',
   produceItem: 'produceItem',
   resetItem: 'resetItem',
-  messageVat: 'messageVat',
-  messageVatObject: 'messageVatObject',
-  messageVatObjectSendOnly: 'messageVatObjectSendOnly',
   awaitVatObject: 'awaitVatObject',
   snapshotStore: 'snapshotStore',
 };
@@ -58,7 +52,7 @@ const keysToObject = <K extends PropertyKey, V>(
  * strings.
  */
 export const keyArrayEqual = (
-  t: ExecutionContext,
+  t: AvaT,
   a: PropertyKey[],
   b: PropertyKey[],
   message?: string,
@@ -99,14 +93,14 @@ export const makeRunUtils = (
     return result;
   };
 
-  const runMethod = async (method: string, args: object[] = []) => {
-    log('runMethod', method, args, 'at', cranksRun);
-    assert(Array.isArray(args));
+  const queueAndRun = async (deliveryThunk, voidResult = false) => {
+    log('queueAndRun at', cranksRun);
 
-    const kpid = await runThunk(() =>
-      controller.queueToVatRoot('bootstrap', method, args),
-    );
+    const kpid = await runThunk(deliveryThunk);
 
+    if (voidResult) {
+      return undefined;
+    }
     const status = controller.kpStatus(kpid);
     switch (status) {
       case 'fulfilled':
@@ -114,7 +108,7 @@ export const makeRunUtils = (
       case 'rejected':
         throw kunser(controller.kpResolution(kpid));
       case 'unresolved':
-        throw Error(`unresolved for method ${method}`);
+        throw Error(`unresolved value for ${kpid}`);
       default:
         throw Fail`unknown status ${status}`;
     }
@@ -123,59 +117,59 @@ export const makeRunUtils = (
   type EVProxy = typeof E & {
     sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
     vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-    rawBoot: Record<string, (...args: any) => Promise<any>>;
   };
-  // @ts-expect-error XXX casting
+  // @ts-expect-error cast, approximate
   const EV: EVProxy = presence =>
     new Proxy(harden({}), {
-      get: (_t, methodName, _rx) =>
+      get: (_t, method, _rx) =>
         harden((...args) =>
-          runMethod('messageVatObject', [{ presence, methodName, args }]),
+          queueAndRun(() =>
+            controller.queueToVatObject(presence, method, args),
+          ),
         ),
     });
-  EV.vat = name =>
+  EV.vat = vatName =>
     new Proxy(harden({}), {
-      get: (_t, methodName, _rx) =>
-        harden((...args) => {
-          assert.string(methodName);
-          if (name === 'meta') {
-            return runMethod(methodName, args);
-          }
-          return runMethod('messageVat', [{ name, methodName, args }]);
-        }),
+      get: (_t, method, _rx) =>
+        harden((...args) =>
+          queueAndRun(() => controller.queueToVatRoot(vatName, method, args)),
+        ),
     });
-  EV.rawBoot = new Proxy(harden({}), {
-    get: (_t, methodName, _rx) =>
-      // @ts-expect-error FIXME runMethod takes string but proxy allows symbol
-      harden((...args) => runMethod(methodName, args)),
-  });
   // @ts-expect-error xxx
   EV.sendOnly = presence =>
-    new Proxy(
-      {},
-      {
-        get:
-          (_t, methodName, _rx) =>
-          (...args) =>
-            runMethod('messageVatObjectSendOnly', [
-              { presence, methodName, args },
-            ]),
-      },
-    );
-  // @ts-expect-error 'get' is a read-only property
+    new Proxy(harden({}), {
+      get: (_t, method, _rx) =>
+        harden((...args) =>
+          queueAndRun(
+            () => controller.queueToVatObject(presence, method, args),
+            true,
+          ),
+        ),
+    });
+  // @ts-expect-error xxx
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
-        runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+        queueAndRun(() =>
+          controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
+            presence,
+            [pathElement],
+          ]),
+        ),
     });
-
   return harden({ runThunk, EV });
 };
 export type RunUtils = ReturnType<typeof makeRunUtils>;
 
+/**
+ * @param {string} bundleDir
+ * @param {string} specifier
+ * @param {ManagerType} [defaultManagerType]
+ */
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
+  defaultManagerType = 'local',
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -184,8 +178,14 @@ export const getNodeTestVaultsConfig = async (
     await loadSwingsetConfigFile(fullPath),
   );
 
-  // speed up (e.g. 80s vs 133s with xs-worker in production config)
-  config.defaultManagerType = 'local';
+  // Manager types:
+  //   'local':
+  //     - much faster (~3x speedup)
+  //     - much easier to use debugger
+  //     - exhibits inconsistent GC behavior from run to run
+  //   'xs-worker'
+  //     - timing results more accurately reflect production
+  config.defaultManagerType = defaultManagerType as ManagerType;
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
@@ -215,13 +215,23 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
 
-  const runPackageScript = async (pkg, name, env) => {
-    console.warn(pkg, 'running package script:', name);
-    const pkgPath = getPkgPath(pkg);
-    return childProcess.execFileSync('yarn', ['run', name], {
-      cwd: pkgPath,
+  const importSpec = spec =>
+    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+
+  const runPackageScript = async (outputDir, scriptPath, env) => {
+    console.info('running package script:', scriptPath);
+    const out = await childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+      cwd: outputDir,
       env,
     });
+    return childProcess.execFileSync(
+      out.toString().trim(),
+      ['run', scriptPath],
+      {
+        cwd: outputDir,
+        env,
+      },
+    );
   };
 
   const loadJSON = async filePath =>
@@ -247,26 +257,20 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     return { evals, bundles };
   };
 
-  const buildAndExtract = async ({
-    package: packageName,
-    packageScriptName,
-    env = {},
-  }: {
-    package: string;
-    packageScriptName: string;
-    env?: Record<string, string>;
-  }) => {
-    const scriptEnv = Object.assign(Object.create(process.env), env);
+  const buildAndExtract = async (builderPath: string) => {
+    const scriptEnv = Object.assign(Object.create(process.env));
+
+    const pkgPath = getPkgPath('builders');
+    const tmpDir = await fsAmbientPromises.mkdtemp(join(pkgPath, 'proposal-'));
+
+    const scriptPath = await importSpec(builderPath);
+
     // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(
-      packageName,
-      packageScriptName,
-      scriptEnv,
-    );
+    const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
     const built = parseProposalParts(out.toString());
 
     const loadAndRmPkgFile = async fileName => {
-      const filePath = getPkgPath(packageName, fileName);
+      const filePath = join(tmpDir, fileName);
       const content = await fs.readFile(filePath, 'utf8');
       await fs.rm(filePath);
       return content;
@@ -297,33 +301,76 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
 };
 harden(makeProposalExtractor);
 
+export const matchRef = (
+  t: AvaT,
+  ref1: unknown,
+  ref2: unknown,
+  message?: string,
+) => t.is(krefOf(ref1), krefOf(ref2), message);
+
+export const matchAmount = (
+  t: AvaT,
+  amount: Amount,
+  refBrand: Brand,
+  refValue,
+  message?: string,
+) => {
+  matchRef(t, amount.brand, refBrand);
+  t.is(amount.value, refValue, message);
+};
+
+export const matchValue = (t: AvaT, value, ref) => {
+  matchRef(t, value.brand, ref.brand);
+  t.is(value.denom, ref.denom);
+  matchRef(t, value.issuer, ref.issuer);
+  t.is(value.issuerName, ref.issuerName);
+  t.is(value.proposedName, ref.proposedName);
+};
+
+export const matchIter = (t: AvaT, iter, valueRef) => {
+  t.is(iter.done, false);
+  matchValue(t, iter.value, valueRef);
+};
+
 /**
- * Start a SwingSet kernel to be shared across all tests. By default Ava tests
- * run in parallel, so be careful to avoid ordering dependencies between them.
- * For example, test accounts balances using separate wallets or test vault
- * factory metrics using separate collateral managers. (Or use test.serial)
+ * Start a SwingSet kernel to be used by tests and benchmarks.
  *
- * The shutdown() function _must_ be called after the test is complete, or else
- * V8 will see the xsnap workers still running, and will never exit (leading to
- * a timeout error). Use t.after.always(shutdown), because the normal t.after()
- * hooks are not run if a test fails.
+ * In the case of Ava tests, this kernel is expected to be shared across all
+ * tests in a given test module. By default Ava tests run in parallel, so be
+ * careful to avoid ordering dependencies between them.  For example, test
+ * accounts balances using separate wallets or test vault factory metrics using
+ * separate collateral managers. (Or use test.serial)
  *
- * @param t
+ * The shutdown() function _must_ be called after the test or benchmarks are
+ * complete, else V8 will see the xsnap workers still running, and will never
+ * exit (leading to a timeout error). Ava tests should use
+ * t.after.always(shutdown), because the normal t.after() hooks are not run if a
+ * test fails.
+ *
+ * @param log
  * @param bundleDir directory to write bundles and config to
  * @param [options]
  * @param [options.configSpecifier] bootstrap config specifier
  * @param [options.storage]
+ * @param [options.verbose]
+ * @param [options.defaultManagerType]
  */
 export const makeSwingsetTestKit = async (
-  t: ExecutionContext,
-  bundleDir: string = 'bundles',
+  log: (..._: any[]) => void,
+  bundleDir = 'bundles',
   {
-    configSpecifier,
+    configSpecifier = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
-  }: { configSpecifier?: string; storage?: FakeStorageKit } = {},
+    verbose = false,
+    defaultManagerType = 'local' as ManagerType,
+  } = {},
 ) => {
-  console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(bundleDir, configSpecifier);
+  console.time('makeBaseSwingsetTestKit');
+  const configPath = await getNodeTestVaultsConfig(
+    bundleDir,
+    configSpecifier,
+    defaultManagerType,
+  );
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
@@ -413,18 +460,18 @@ export const makeSwingsetTestKit = async (
     configPath,
     [],
     {},
-    { debugName: 'TESTBOOT' },
+    { debugName: 'TESTBOOT', verbose },
   );
-  console.timeLog('makeSwingsetTestKit', 'buildSwingset');
+  console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller, t.log);
+  const runUtils = makeRunUtils(controller, log);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
     fs: fsAmbientPromises,
   });
 
-  console.timeEnd('makeSwingsetTestKit');
+  console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
   const jumpTimeTo = (targetTime: Timestamp) => {
@@ -463,11 +510,14 @@ export const makeSwingsetTestKit = async (
   const shutdown = async () =>
     Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
 
+  const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
+
   return {
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
     controller,
+    getCrankNumber,
     jumpTimeTo,
     readLatest,
     runUtils,

@@ -7,8 +7,8 @@ import {
   insistVatSyscallObject,
   insistVatDeliveryResult,
 } from '../../lib/message.js';
-import '../../types-ambient.js';
-import './types.js';
+
+/// <reference path="../../types-ambient.js" />
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
@@ -27,7 +27,7 @@ function parentLog(first, ...args) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-/** @param { (item: Tagged) => unknown } [handleUpstream] */
+/** @param { (item: import('./types.js').Tagged) => unknown } [handleUpstream] */
 const makeRevokableHandleCommandKit = handleUpstream => {
   /**
    * @param {Uint8Array} msg
@@ -96,7 +96,7 @@ export function makeXsSubprocessFactory({
 
     const mk = makeManagerKit();
 
-    /** @type { (item: Tagged) => unknown } */
+    /** @type { (item: import('./types.js').Tagged) => unknown } */
     function handleUpstream([type, ...args]) {
       parentLog(vatID, `handleUpstream`, type, args.length);
       switch (type) {
@@ -148,7 +148,7 @@ export function makeXsSubprocessFactory({
       init: snapshotInfo && { from: 'snapStore', vatID },
     });
 
-    /** @type { (item: Tagged) => Promise<WorkerResults> } */
+    /** @type { (item: import('./types.js').Tagged) => Promise<import('./types.js').WorkerResults> } */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
@@ -185,7 +185,7 @@ export function makeXsSubprocessFactory({
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
-      /** @type { WorkerResults } */
+      /** @type { import('./types.js').WorkerResults } */
       let result;
       await null;
       try {

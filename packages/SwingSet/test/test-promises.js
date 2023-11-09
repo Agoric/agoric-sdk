@@ -2,12 +2,12 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
+import { kser, kslot, kunser } from '@agoric/kmarshal';
 import {
   buildVatController,
   loadBasedir,
   buildKernelBundles,
 } from '../src/index.js';
-import { kser, kslot, kunser } from '../src/lib/kmarshal.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
@@ -238,9 +238,7 @@ test('local promises are rejected by vat upgrade', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
+  const awaitRun = async kpid => {
     await c.run();
     const status = c.kpStatus(kpid);
     if (status === 'fulfilled') {
@@ -251,24 +249,34 @@ test('local promises are rejected by vat upgrade', async t => {
     const err = c.kpResolution(kpid);
     throw kunser(err);
   };
-  const messageVat = (name, methodName, args) =>
-    run('messageVat', [{ name, methodName, args }]);
-  // eslint-disable-next-line no-unused-vars
-  const messageObject = (presence, methodName, args) =>
-    run('messageVatObject', [{ presence, methodName, args }]);
+
+  const messageToVat = async (vatName, method, ...args) => {
+    const kpid = c.queueToVatRoot(vatName, method, args);
+    return awaitRun(kpid);
+  };
+  const messageToObject = async (presence, method, ...args) => {
+    const kpid = c.queueToVatObject(presence, method, args);
+    return awaitRun(kpid);
+  };
 
   const S = Symbol.for('passable');
-  await run('createVat', [{ name: 'watcher', bundleCapName: 'watcher' }]);
-  await messageVat('watcher', 'watchLocalPromise', ['orphaned']);
-  await messageVat('watcher', 'watchLocalPromise', ['fulfilled', S]);
-  await messageVat('watcher', 'watchLocalPromise', ['rejected', undefined, S]);
-  const v1Settlements = await messageVat('watcher', 'getSettlements');
+  const watcher = await messageToVat('bootstrap', 'createVat', {
+    name: 'watcher',
+    bundleCapName: 'watcher',
+  });
+  await messageToObject(watcher, 'watchLocalPromise', 'orphaned');
+  await messageToObject(watcher, 'watchLocalPromise', 'fulfilled', S);
+  await messageToObject(watcher, 'watchLocalPromise', 'rejected', undefined, S);
+  const v1Settlements = await messageToObject(watcher, 'getSettlements');
   t.deepEqual(v1Settlements, {
     fulfilled: { status: 'fulfilled', value: S },
     rejected: { status: 'rejected', reason: S },
   });
-  await run('upgradeVat', [{ name: 'watcher', bundleCapName: 'watcher' }]);
-  const v2Settlements = await messageVat('watcher', 'getSettlements');
+  await messageToVat('bootstrap', 'upgradeVat', {
+    name: 'watcher',
+    bundleCapName: 'watcher',
+  });
+  const v2Settlements = await messageToObject(watcher, 'getSettlements');
   t.deepEqual(v2Settlements, {
     fulfilled: { status: 'fulfilled', value: S },
     rejected: { status: 'rejected', reason: S },

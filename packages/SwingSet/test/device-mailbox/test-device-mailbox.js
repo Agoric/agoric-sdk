@@ -1,9 +1,9 @@
 // @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/order
-import bundleSource from '@endo/bundle-source';
 
+import bundleSource from '@endo/bundle-source';
+import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   initializeSwingset,
@@ -15,7 +15,6 @@ import {
   buildMailbox,
 } from '../../src/devices/mailbox/mailbox.js';
 import { bundleOpts } from '../util.js';
-import { kunser } from '../../src/lib/kmarshal.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

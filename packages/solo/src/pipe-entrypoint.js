@@ -1,7 +1,7 @@
 /* global process */
 // @ts-check
 import '@endo/init/pre-bundle-source.js';
-import '@endo/init';
+import '@endo/init/unsafe-fast.js';
 
 import { parse, stringify } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';

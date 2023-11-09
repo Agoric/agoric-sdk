@@ -1,12 +1,12 @@
 // @ts-nocheck
 import test from 'ava';
 
+import { kslot, kunser } from '@agoric/kmarshal';
 import {
   setupTestLiveslots,
   findSyscallsByType,
 } from '../liveslots-helpers.js';
 import { buildRootObject, mainHeldIdx, mapRef } from '../gc-helpers.js';
-import { kslot, kunser } from '../kmarshal.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
 
 // These tests follow the model described in

@@ -13,6 +13,7 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { TestFn } from 'ava';
 import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import {
+  LiquidationSetup,
   LiquidationTestContext,
   makeLiquidationTestContext,
   scale6,
@@ -24,7 +25,7 @@ const test = anyTest as TestFn<LiquidationTestContext>;
 const collateralBrandKey = 'ATOM';
 
 //#region Product spec
-const setup = {
+const setup: LiquidationSetup = {
   vaults: [
     {
       atom: 15,
@@ -61,8 +62,12 @@ const setup = {
       collateral: 45,
       debt: 309.54,
     },
+    end: {
+      collateral: 31.414987,
+      debt: 209.54,
+    },
   },
-} as const;
+};
 
 const outcome = {
   bids: [
@@ -125,92 +130,32 @@ test.serial('scenario: Flow 2b', async t => {
   const {
     advanceTimeBy,
     advanceTimeTo,
-    agoricNamesRemotes,
     check,
-    setupStartingState,
     priceFeedDrivers,
     readLatest,
-    walletFactoryDriver,
+    setupVaults,
+    placeBids,
   } = t.context;
 
-  await setupStartingState({ collateralBrandKey: 'ATOM', managerIndex: 0 });
+  const managerIndex = 0;
+  const metricPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
 
-  const minter = await walletFactoryDriver.provideSmartWallet('agoric1minter');
-
-  for (let i = 0; i < setup.vaults.length; i += 1) {
-    const offerId = `open-vault${i}`;
-    await minter.executeOfferMaker(Offers.vaults.OpenVault, {
-      offerId,
-      collateralBrandKey,
-      wantMinted: setup.vaults[i].ist,
-      giveCollateral: setup.vaults[i].atom,
-    });
-    t.like(minter.getLatestUpdateRecord(), {
-      updated: 'offerStatus',
-      status: { id: offerId, numWantsSatisfied: 1 },
-    });
-  }
-
-  // Verify starting balances
-  for (let i = 0; i < setup.vaults.length; i += 1) {
-    check.vaultNotification(0, i, {
-      debtSnapshot: { debt: { value: scale6(setup.vaults[i].debt) } },
-      locked: { value: scale6(setup.vaults[i].atom) },
-      vaultState: 'active',
-    });
-  }
-
-  const buyer = await walletFactoryDriver.provideSmartWallet('agoric1buyer');
-  {
-    // ---------------
-    //  Place bids
-    // ---------------
-
-    await buyer.sendOffer(
-      Offers.psm.swap(
-        agoricNamesRemotes,
-        agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        {
-          offerId: 'print-ist',
-          wantMinted: 1_000,
-          pair: ['IST', 'USDC_axl'],
-        },
-      ),
-    );
-
-    const maxBuy = '10000ATOM';
-
-    for (let i = 0; i < setup.bids.length; i += 1) {
-      const offerId = `bid${i}`;
-      // bids are long-lasting offers so we can't wait here for completion
-      await buyer.sendOfferMaker(Offers.auction.Bid, {
-        offerId,
-        ...setup.bids[i],
-        maxBuy,
-      });
-      t.like(readLatest('published.wallet.agoric1buyer'), {
-        status: {
-          id: offerId,
-          result: 'Your bid has been accepted',
-          payouts: undefined,
-        },
-      });
-    }
-  }
+  await setupVaults(collateralBrandKey, managerIndex, setup);
+  await placeBids(collateralBrandKey, 'agoric1buyer', setup);
 
   {
     // ---------------
     //  Change price to trigger liquidation
     // ---------------
 
-    await priceFeedDrivers.ATOM.setPrice(9.99);
+    await priceFeedDrivers.ATOM.setPrice(setup.price.trigger);
 
     // check nothing liquidating yet
     const liveSchedule: ScheduleNotification = readLatest(
       'published.auction.schedule',
     );
     t.is(liveSchedule.activeStartTime, null);
-    t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
+    t.like(readLatest(metricPath), {
       numActiveVaults: setup.vaults.length,
       numLiquidatingVaults: 0,
     });
@@ -218,7 +163,7 @@ test.serial('scenario: Flow 2b', async t => {
     // advance time to start an auction
     console.log('step 0 of 10');
     await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
-    t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
+    t.like(readLatest(metricPath), {
       numActiveVaults: 0,
       numLiquidatingVaults: setup.vaults.length,
       liquidatingCollateral: {
@@ -229,7 +174,7 @@ test.serial('scenario: Flow 2b', async t => {
 
     console.log('step 1 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest('published.auction.book0'), {
+    t.like(readLatest(`published.auction.book${managerIndex}`), {
       collateralAvailable: { value: scale6(setup.auction.start.collateral) },
       startCollateral: { value: scale6(setup.auction.start.collateral) },
       startProceedsGoal: { value: scale6(setup.auction.start.debt) },
@@ -246,7 +191,7 @@ test.serial('scenario: Flow 2b', async t => {
 
     console.log('step 5 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest('published.auction.book0'), {
+    t.like(readLatest(`published.auction.book${managerIndex}`), {
       collateralAvailable: { value: scale6(45) },
     });
 
@@ -300,7 +245,7 @@ test.serial('scenario: Flow 2b', async t => {
     shortfallBalance: { value: scale6(outcome.reserve.shortfall) },
   });
 
-  t.like(readLatest('published.vaultFactory.managers.manager0.metrics'), {
+  t.like(readLatest(metricPath), {
     // reconstituted
     numActiveVaults: 2,
     numLiquidationsCompleted: 1,

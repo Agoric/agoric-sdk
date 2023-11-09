@@ -1,6 +1,6 @@
 In agoric-sdk, start the chain:
 
-```
+```sh
 yarn build
 cd packages/cosmic-swingset
 make scenario2-setup-nobuild
@@ -26,7 +26,7 @@ enabled = false
 host = '127.0.0.1'
 port = 3001
 
-[[chains]]                                                               
+[[chains]]
 id = 'agoric'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
@@ -39,13 +39,13 @@ max_gas = 3000000
 gas_price = { price = 0.001, denom = 'uist' }
 gas_adjustment = 0.1
 clock_drift = '5s'
-trusting_period = '14days'                                               
+trusting_period = '14days'
 
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
 
-[[chains]]                                                               
+[[chains]]
 id = 'cosmoshub-testnet'
 rpc_addr = 'https://rpc.testnet.cosmos.network:443'
 grpc_addr = 'https://grpc.testnet.cosmos.network:443'
@@ -58,7 +58,7 @@ max_gas = 3000000
 gas_price = { price = 0.001, denom = 'uphoton' }
 gas_adjustment = 0.1
 clock_drift = '5s'
-trusting_period = '14days'                                               
+trusting_period = '14days'
 
 [chains.trust_threshold]
 numerator = '1'
@@ -128,7 +128,7 @@ hermes start
 
 Using golang relayer:
 
-```
+```sh
 i=7; rly light init -f agoric && rly light init -f stargate-final && rly paths generate stargate-final agoric transfer$i --port=transfer && rly tx link transfer$i -d -o 3s && rly start transfer$i -d --time-threshold=5m
 ```
 

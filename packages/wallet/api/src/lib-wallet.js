@@ -47,7 +47,7 @@ import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
 
 import './internal-types.js';
-import './types.js';
+/// <reference path="./types.js" />
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};

@@ -217,6 +217,9 @@ jobs:
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (kmarshal)
+        if: (success() || failure())
+        run: cd packages/kmarshal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (network)
         if: (success() || failure())
         run: cd packages/network && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -632,16 +635,6 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  test-vats:
-    # XXX remove once this is no longer a required check (and test-boot is)
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        engine: ['16.x', '18.x', 'xs']
-    steps:
-      - name: yarn test (vats)
-        run: exit 0
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE

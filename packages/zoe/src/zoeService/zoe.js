@@ -10,11 +10,10 @@
  * currently. When the brand has an assetKind itself, AmountMath will
  * validate that.
  */
-// Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/ertp/exported.js';
-import '@agoric/store/exported.js';
 
-import '../internal-types.js';
+/// <reference path="../../../ERTP/exported.js" />
+/// <reference path="../../../store/exported.js" />
+/// <reference path="../internal-types.js" />
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

@@ -20,7 +20,7 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
     configSpecifier: PLATFORM_CONFIG,
   });
 
@@ -98,10 +98,9 @@ test.serial('run restart-vats proposal', async t => {
   const { controller, buildProposal } = t.context;
 
   t.log('building proposal');
-  const proposal = await buildProposal({
-    package: 'builders',
-    packageScriptName: 'build:restart-vats-proposal',
-  });
+  const proposal = await buildProposal(
+    '@agoric/builders/scripts/vats/restart-vats.js',
+  );
 
   for await (const bundle of proposal.bundles) {
     await controller.validateAndInstallBundle(bundle);

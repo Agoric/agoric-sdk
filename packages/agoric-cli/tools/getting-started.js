@@ -154,6 +154,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     t.is(await startResult.promise, true, `swingset running before timeout`);
     clearTimeout(timeout);
 
+    const openP = myMain(['open', '--no-browser'], {
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    t.is(await openP, 0, `open --no-browser exits successfully`);
+
     const testDeploy = async (deployCmd, opts = {}) => {
       const deployResult = makePromiseKit();
       const deployP = myMain(

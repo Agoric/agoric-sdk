@@ -180,6 +180,7 @@ type WellKnownName = {
     | 'Pegasus'
     | 'reserve'
     | 'psm'
+    | 'scaledPriceAuthority'
     | 'econCommitteeCharter'
     | 'priceAggregator';
   instance:

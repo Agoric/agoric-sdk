@@ -1,7 +1,8 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
+// eslint-disable-next-line import/order
+import { kunser, kslot, krefOf } from '@agoric/kmarshal';
 import { buildVatController } from '../src/index.js';
-import { kunser, kslot, krefOf } from '../src/lib/kmarshal.js';
 
 async function beginning(t, mode) {
   const config = {

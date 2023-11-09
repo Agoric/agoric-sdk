@@ -109,7 +109,7 @@ const build = async (log, zoe) => {
  * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
  */
 
-/** @type {BuildRootObjectForTestVat} */
+/** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
   Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),

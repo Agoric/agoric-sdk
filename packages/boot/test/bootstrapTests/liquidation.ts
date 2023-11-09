@@ -7,12 +7,48 @@ import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { ExecutionContext } from 'ava';
 import {
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
 } from './drivers.ts';
 import { makeSwingsetTestKit } from './supports.ts';
+
+export type LiquidationSetup = {
+  vaults: {
+    atom: number;
+    ist: number;
+    debt: number;
+  }[];
+  bids: (
+    | {
+        give: string;
+        discount: number;
+        price?: undefined;
+      }
+    | {
+        give: string;
+        price: number;
+        discount?: undefined;
+      }
+  )[];
+  price: {
+    starting: number;
+    trigger: number;
+  };
+  auction: {
+    start: {
+      collateral: number;
+      debt: number;
+    };
+    end: {
+      collateral: number;
+      debt: number;
+    };
+  };
+};
 
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
@@ -29,7 +65,7 @@ export const likePayouts = ({ Bid, Collateral }) => ({
 
 export const makeLiquidationTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults', {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
   });
 
@@ -85,9 +121,11 @@ export const makeLiquidationTestContext = async t => {
   const setupStartingState = async ({
     collateralBrandKey,
     managerIndex,
+    price,
   }: {
     collateralBrandKey: string;
     managerIndex: number;
+    price: number;
   }) => {
     const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
     const { advanceTimeBy, readLatest } = swingsetTestKit;
@@ -111,7 +149,7 @@ export const makeLiquidationTestContext = async t => {
     // price feed logic treats zero time as "unset" so advance to nonzero
     await advanceTimeBy(1, 'seconds');
 
-    await priceFeedDrivers[collateralBrandKey].setPrice(12.34);
+    await priceFeedDrivers[collateralBrandKey].setPrice(price);
 
     // raise the VaultFactory DebtLimit
     await governanceDriver.changeParams(
@@ -205,6 +243,89 @@ export const makeLiquidationTestContext = async t => {
     },
   };
 
+  const setupVaults = async (
+    collateralBrandKey: string,
+    managerIndex: number,
+    setup: LiquidationSetup,
+  ) => {
+    await setupStartingState({
+      collateralBrandKey,
+      managerIndex,
+      price: setup.price.starting,
+    });
+
+    const minter =
+      await walletFactoryDriver.provideSmartWallet('agoric1minter');
+
+    for (let i = 0; i < setup.vaults.length; i += 1) {
+      const offerId = `open-${collateralBrandKey}-vault${i}`;
+      await minter.executeOfferMaker(Offers.vaults.OpenVault, {
+        offerId,
+        collateralBrandKey,
+        wantMinted: setup.vaults[i].ist,
+        giveCollateral: setup.vaults[i].atom,
+      });
+      t.like(minter.getLatestUpdateRecord(), {
+        updated: 'offerStatus',
+        status: { id: offerId, numWantsSatisfied: 1 },
+      });
+    }
+
+    // Verify starting balances
+    for (let i = 0; i < setup.vaults.length; i += 1) {
+      check.vaultNotification(managerIndex, i, {
+        debtSnapshot: {
+          debt: { value: scale6(setup.vaults[i].debt) },
+        },
+        locked: { value: scale6(setup.vaults[i].atom) },
+        vaultState: 'active',
+      });
+    }
+  };
+
+  const placeBids = async (
+    collateralBrandKey: string,
+    buyerWalletAddress: string,
+    setup: LiquidationSetup,
+  ) => {
+    const buyer =
+      await walletFactoryDriver.provideSmartWallet(buyerWalletAddress);
+
+    await buyer.sendOffer(
+      Offers.psm.swap(
+        agoricNamesRemotes,
+        agoricNamesRemotes.instance['psm-IST-USDC_axl'],
+        {
+          offerId: `print-${collateralBrandKey}-ist`,
+          wantMinted: 1_000,
+          pair: ['IST', 'USDC_axl'],
+        },
+      ),
+    );
+
+    const maxBuy = `10000${collateralBrandKey}`;
+
+    for (let i = 0; i < setup.bids.length; i += 1) {
+      const offerId = `${collateralBrandKey}-bid${i + 1}`;
+      // bids are long-lasting offers so we can't wait here for completion
+      await buyer.sendOfferMaker(Offers.auction.Bid, {
+        offerId,
+        ...setup.bids[i],
+        maxBuy,
+      });
+      t.like(
+        swingsetTestKit.readLatest(`published.wallet.${buyerWalletAddress}`),
+        {
+          status: {
+            id: offerId,
+            result: 'Your bid has been accepted',
+            payouts: undefined,
+          },
+        },
+      );
+    }
+  };
+
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
@@ -212,11 +333,67 @@ export const makeLiquidationTestContext = async t => {
     governanceDriver,
     priceFeedDrivers,
     refreshAgoricNamesRemotes,
-    setupStartingState,
     walletFactoryDriver,
+    setupVaults,
+    placeBids,
   };
 };
 
 export type LiquidationTestContext = Awaited<
   ReturnType<typeof makeLiquidationTestContext>
 >;
+
+const addSTARsCollateral = async (
+  t: ExecutionContext<LiquidationTestContext>,
+) => {
+  const { controller, buildProposal } = t.context;
+
+  t.log('building proposal');
+  const proposal = await buildProposal(
+    '@agoric/builders/scripts/inter-protocol/add-STARS.js',
+  );
+
+  for await (const bundle of proposal.bundles) {
+    await controller.validateAndInstallBundle(bundle);
+  }
+  t.log('installed', proposal.bundles.length, 'bundles');
+
+  t.log('launching proposal');
+  const bridgeMessage = {
+    type: 'CORE_EVAL',
+    evals: proposal.evals,
+  };
+  t.log({ bridgeMessage });
+
+  const { EV } = t.context.runUtils;
+  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
+  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+    'coreEvalBridgeHandler',
+  );
+  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+
+  t.context.refreshAgoricNamesRemotes();
+
+  t.log('add-STARS proposal executed');
+};
+
+export const ensureVaultCollateral = async (
+  collateralBrandKey: string,
+  t: ExecutionContext<LiquidationTestContext>,
+) => {
+  // TODO: we'd like to have this work on any brand
+  const SUPPORTED_BRANDS = ['ATOM', 'STARS'];
+
+  if (!SUPPORTED_BRANDS.includes(collateralBrandKey)) {
+    throw Error('Unsupported brand type');
+  }
+
+  if (collateralBrandKey === 'ATOM') {
+    return;
+  }
+
+  if (collateralBrandKey === 'STARS') {
+    // eslint-disable-next-line @jessie.js/safe-await-separator
+    await addSTARsCollateral(t);
+  }
+};
