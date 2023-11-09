@@ -1124,6 +1124,7 @@ export const makeVirtualObjectManager = (
     return id;
   };
 
+  /** @type {import('./vatDataTypes').VatData['defineKind']} */
   const defineKind = (tag, init, behavior, options) => {
     const kindID = `${allocateExportID()}`;
     saveVirtualKindDescriptor(kindID, { kindID, tag });
@@ -1139,6 +1140,7 @@ export const makeVirtualObjectManager = (
     );
   };
 
+  /** @type {import('./vatDataTypes').VatData['defineKindMulti']} */
   const defineKindMulti = (tag, init, behavior, options) => {
     const kindID = `${allocateExportID()}`;
     saveVirtualKindDescriptor(kindID, { kindID, tag });
@@ -1178,6 +1180,7 @@ export const makeVirtualObjectManager = (
     return kindHandle;
   };
 
+  /** @type {import('./vatDataTypes').VatData['defineDurableKind']} */
   const defineDurableKind = (kindHandle, init, behavior, options) => {
     kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
@@ -1200,6 +1203,7 @@ export const makeVirtualObjectManager = (
     return maker;
   };
 
+  /** @type {import('./vatDataTypes').VatData['defineDurableKindMulti']} */
   const defineDurableKindMulti = (kindHandle, init, behavior, options) => {
     kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
