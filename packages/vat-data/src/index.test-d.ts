@@ -6,6 +6,7 @@ import type {
   KindFacet,
   FunctionsPlusContext,
 } from '@agoric/swingset-liveslots';
+import { VirtualObjectManager } from '@agoric/swingset-liveslots/src/virtualObjectManager.js';
 import {
   defineKind,
   defineKindMulti,
@@ -13,6 +14,9 @@ import {
   defineDurableKind,
   partialAssign,
 } from '.';
+
+// for use in assignments below
+const anyVal = null as any;
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
@@ -154,7 +158,13 @@ const someBehavior: FunctionsPlusContext<SomeContext, SomeFacet> = {
     return b > context.state.a;
   },
 };
-const someFacet: KindFacet<typeof someBehavior> = null as any;
+const someFacet: KindFacet<typeof someBehavior> = anyVal;
 // @ts-expect-error
 someFacet.gt();
 expectType<boolean>(someFacet.gt(1));
+
+const vom: VirtualObjectManager = anyVal;
+// @ts-expect-error
+vom.missingMethod;
+// @ts-expect-error Expected 0-4 arguments but got 5
+vom.defineDurableKind(anyVal, anyVal, anyVal, anyVal, 'extra');
