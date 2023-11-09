@@ -27,7 +27,10 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   const { artifactMode = 'operational', ...makeSwingStoreOptions } = options;
   validateArtifactMode(artifactMode);
 
-  const store = makeSwingStore(dirPath, true, makeSwingStoreOptions);
+  const store = makeSwingStore(dirPath, true, {
+    unsafeFastMode: true,
+    ...makeSwingStoreOptions,
+  });
   const { kernelStorage, internal } = store;
 
   // For every exportData entry, we add a DB record. 'kv' entries are
