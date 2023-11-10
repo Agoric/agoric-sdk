@@ -3,30 +3,25 @@
 grep -qF 'env_setup.sh' /root/.bashrc || echo ". ./upgrade-test-scripts/env_setup.sh" >> /root/.bashrc
 grep -qF 'printKeys' /root/.bashrc || echo "printKeys" >> /root/.bashrc
 
-tmux -V 2>/dev/null || apt-get install -y tmux
-
-if [[ "$DEST" == "1" ]] && [[ "$TMUX" == "" ]]; then
-  echo "launching entrypoint"
-  cd /usr/src/agoric-sdk || exit 1
-  . ./upgrade-test-scripts/bash_entrypoint.sh
-  exit 0
-fi
-
 . ./upgrade-test-scripts/env_setup.sh
+
+export SLOGFILE=slog.slog
 
 startAgd
 
-if ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
-  runActions "pre_test"
-  runActions "actions"
-  runActions "test"
+if [[ -n "$THIS_NAME" ]] && ! test -f "$HOME/.agoric/runActions-${THIS_NAME}"; then
+  pushd upgrade-test-scripts || exit 1
+  yarn upgrade-tests || exit 1
+  popd || exit 1
+  runActions "legacy"
+  
   touch "$HOME/.agoric/runActions-${THIS_NAME}"
 fi
 
 if [[ "$DEST" != "1" ]]; then
   #Destined for an upgrade
   if [[ -z "${UPGRADE_TO}" ]]; then
-    echo "no upgrade set.  running for a few blocks and exiting"
+    echo "no UPGRADE_TO specified.  running for a few blocks and exiting"
     waitForBlock 5
     exit 0
   fi
@@ -55,7 +50,7 @@ if [[ "$DEST" != "1" ]]; then
 
   voteLatestProposalAndWait
 
-  echo "Chain in to be upgraded state for $UPGRADE_TO"
+  echo "Chain in to-be-upgraded state for $UPGRADE_TO"
 
   while true; do
     latest_height=$(agd status | jq -r .SyncInfo.latest_block_height)

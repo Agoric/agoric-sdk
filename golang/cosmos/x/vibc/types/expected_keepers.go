@@ -16,7 +16,8 @@ type ChannelKeeper interface {
 	WriteAcknowledgement(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
 	ChanOpenInit(ctx sdk.Context, order channel.Order, connectionHops []string, portID string,
 		portCap *capability.Capability, counterparty channel.Counterparty, version string) (string, *capability.Capability, error)
-
+	WriteOpenInitChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
+		connectionHops []string, counterparty channel.Counterparty, version string)
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capability.Capability) error
 	TimeoutExecuted(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
 }

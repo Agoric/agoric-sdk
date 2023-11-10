@@ -82,7 +82,7 @@ in this branch. The release tags will be human-meaningful, the release branch ne
 ```sh
 # Create a release branch.
 now=`date -u +%Y%m%dT%H%M%S`
-git checkout -b release-$now
+git checkout -b prepare-release-$now
 ```
 
 - [ ] Do a `yarn install` to generate tooling needed for the release.

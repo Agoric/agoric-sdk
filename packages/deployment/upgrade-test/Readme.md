@@ -39,19 +39,13 @@ make local_sdk build
 make run
 ```
 
-This will start a container with tmux, with the first window `0` being chain logs `agd start` and the second and current window `1` being a bash shell. You can navigate using `bind-key+B N` (assuming `bind-key` is CTRL/CMD) and N is the window. For more shortcuts see [tmux shortcuts & cheatsheet](https://gist.github.com/MohamedAlaa/2961058#list-all-shortcuts).
+This will start a container with the output of chain start.
+
+To get a shell: `make shell`
+
+  For more info: https://phase2.github.io/devtools/common-tasks/ssh-into-a-container/
 
 The container and chain will halt once you detach from the session.
-
-### Using tmux control mode
-
-If you use [iTerm you can use tmux with native integration](https://iterm2.com/documentation-tmux-integration.html), called control mode, which will make your tmux session appear as a physical window. Pass `TMUX_CC=1`:
-
-```shell
-TMUX_CC=1 make run
-```
-
-**Note:** If your terminal does not support control mode, do not use this. It will show raw control codes, garbling your terminal.
 
 ### Troubleshooting
 If you get an error about port 26656 already in use, you have a local chain running on your OS.
@@ -96,11 +90,31 @@ If when reattaching you get a log tail, you need to start a new TTY (with the co
 docker exec -it sweet_edison bash
 ```
 
+or just use this helper,
+```
+make shell
+```
+
 
 **To test GUI**
 
 To make the wallet ui talk to your local chain, set the network config to
 `https://local.agoric.net/network-config`
+
+## To add an upgrade
+
+1. Update the upgrade handler in app.go
+2. Duplicate the last pair of UPGRADE and TEST blocks
+3. Update their number from the UPGRADE / DEST block at the end
+4. Make directory for tests (e.g. `agoric-upgrade-12`)
+4. Make directory for ugprade (e.g. `propose-agoric-upgrade-12` with a `.keep`)
+5. Update the UPGRADE/DEST pair to be your new upgrade (THIS_NAME matching the upgrade handler string in app.go)
+6. Update the `Makefile`
+  - the two targets to `Makefile` (e.g. `propose-agoric-upgrade-12` and `agoric-upgrade-12`)
+  - set the default TARGET (e.g. `agoric-upgrade-12`)
+  - add the DEST target to the `.phony` in `Makefile`
+7. Test with `make local_sdk build run`
+
 
 ## Development
 

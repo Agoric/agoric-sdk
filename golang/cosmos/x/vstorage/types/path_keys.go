@@ -7,9 +7,17 @@ import (
 	"strings"
 )
 
-// - A "path" is a sequence of zero or more dot-separated nonempty strings of
-// 7-bit non-nul, non-dot ASCII characters. So `""`, `"foo"`, and
-// `"foo.bar.baz"` are paths but `"."`, "foo.", and "fo\0o" are not.
+// - A "path" is a sequence of zero or more dot-separated nonempty segments
+// using a restricted alphabet of ASCII alphanumerics plus underscore and dash,
+// consistent with packages/internal/src/lib-chainStorage.js but not currently
+// enforcing a length restriction on path segments.
+// So `""`, `"foo"`, and `"foo.bar__baz.qux--quux"` are paths but `"."`,
+// `"foo/bar"`, `"fo\to"`, and `"foö"` are not.
+// This alphabet might be expanded in the future, but such expansion SHOULD NOT
+// include control characters (including those that are not ASCII, such as
+// U+202E RIGHT-TO-LEFT OVERRIDE), slash `/` (which separates ABCI request path
+// segments in e.g. `custom/vstorage/data/foo`), or backslash `\` (which should
+// be reserved for adding escape sequences).
 //
 // - An encoded key for a path is the path prefixed with its length (in ASCII
 // digits), separated by nul, followed by the path with dots replaced with nul.
@@ -42,22 +50,26 @@ func EncodedKeyToPath(key []byte) string {
 	return string(pathBytes)
 }
 
-var pathPattern = regexp.MustCompile(`[-a-zA-Z0-9_` + PathSeparator + `]*`)
+var pathSegmentPattern = `[a-zA-Z0-9_-]+`
+var pathSeparatorPattern = `\` + PathSeparator
+var pathPattern = fmt.Sprintf(`^$|^%[1]s(%[2]s%[1]s)*$`, pathSegmentPattern, pathSeparatorPattern)
+var pathMatcher = regexp.MustCompile(pathPattern)
 
 func ValidatePath(path string) error {
-	if !pathPattern.MatchString(path) {
-		return fmt.Errorf("path %q contains invalid characters", path)
+	if pathMatcher.MatchString(path) {
+		return nil
 	}
-	if strings.Contains(path, PathSeparator+PathSeparator) {
-		return fmt.Errorf("path %q contains doubled separators", path)
-	}
+	// Rescan the string to give a useful error message.
 	if strings.HasPrefix(path, PathSeparator) {
 		return fmt.Errorf("path %q starts with separator", path)
 	}
 	if strings.HasSuffix(path, PathSeparator) {
 		return fmt.Errorf("path %q ends with separator", path)
 	}
-	return nil
+	if strings.Contains(path, PathSeparator+PathSeparator) {
+		return fmt.Errorf("path %q contains doubled separators", path)
+	}
+	return fmt.Errorf("path %q contains invalid characters", path)
 }
 
 // PathToEncodedKey converts a path to a byte slice key

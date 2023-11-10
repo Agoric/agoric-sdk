@@ -11,14 +11,16 @@ import { assertComplete } from './assertComplete.js';
  */
 
 /**
- * Function used to create a new swingStore from an object implementing the
+ * Function used to populate a swingStore from an object implementing the
  * exporter API. The exporter API may be provided by a swingStore instance, or
- * implemented by a host to restore data that was previously exported.
+ * implemented by a host to restore data that was previously exported. The
+ * returned swingStore is not suitable for execution, and thus only contains
+ * the host facet for committing the populated swingStore.
  *
  * @param {import('./exporter').SwingStoreExporter} exporter
  * @param {string | null} [dirPath]
  * @param {ImportSwingStoreOptions} [options]
- * @returns {Promise<import('./swingStore').SwingStore>}
+ * @returns {Promise<Pick<import('./swingStore').SwingStore, 'hostStorage' | 'debug'>>}
  */
 export async function importSwingStore(exporter, dirPath = null, options = {}) {
   if (dirPath && typeof dirPath !== 'string') {
@@ -27,8 +29,14 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   const { artifactMode = 'operational', ...makeSwingStoreOptions } = options;
   validateArtifactMode(artifactMode);
 
-  const store = makeSwingStore(dirPath, true, makeSwingStoreOptions);
-  const { kernelStorage, internal } = store;
+  const { hostStorage, kernelStorage, internal, debug } = makeSwingStore(
+    dirPath,
+    true,
+    {
+      unsafeFastMode: true,
+      ...makeSwingStoreOptions,
+    },
+  );
 
   // For every exportData entry, we add a DB record. 'kv' entries are
   // the "kvStore shadow table", and are not associated with any
@@ -121,5 +129,5 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   assertComplete(internal, checkMode);
 
   await exporter.close();
-  return store;
+  return { hostStorage, debug };
 }
