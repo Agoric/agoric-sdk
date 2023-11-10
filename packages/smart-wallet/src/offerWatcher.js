@@ -56,7 +56,7 @@ const offerWatcherGuard = harden({
       .optional(M.record())
       .returns(),
     publishResult: M.call(M.any()).returns(),
-    exitOpenSeats: M.call(M.any()).returns(),
+    exitOpenSeat: M.call(M.any()).returns(),
   }),
   paymentWatcher: M.interface('paymentWatcher', {
     onFulfilled: M.call(PaymentPKeywordRecordShape, SeatShape).returns(
@@ -146,7 +146,7 @@ export const makeOfferWatcherMaker = baggage => {
           }
         },
 
-        exitOpenSeats(reason) {
+        exitOpenSeat(reason) {
           const { state } = this;
           void E.when(E(state.seatRef).hasExited(), hasExited => {
             if (!hasExited) {
@@ -171,15 +171,16 @@ export const makeOfferWatcherMaker = baggage => {
           const amounts = await deeplyFulfilledObject(amountPKeywordRecord);
           facets.helper.updateStatus({ payouts: amounts });
         },
-        onRejected(reason, seat) {
+        onRejected(err, seat) {
           const { facets } = this;
 
-          if (isUpgradeDisconnection(reason)) {
-            console.log(`resetting payments watcher after upgrade`, reason);
+          if (isUpgradeDisconnection(err)) {
+            console.log(`resetting payments watcher after upgrade`, err);
             // eslint-disable-next-line no-use-before-define
             watchForPayout(seat);
           } else {
-            facets.helper.exitOpenSeats(reason);
+            facets.helper.updateStatus({ error: err.toString() });
+            facets.helper.exitOpenSeat(err);
           }
         },
       },
@@ -189,13 +190,14 @@ export const makeOfferWatcherMaker = baggage => {
           const { facets } = this;
           facets.helper.publishResult(result);
         },
-        onRejected(reason, seat) {
+        onRejected(err, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(reason)) {
-            console.log(`resetting offerResults watcher after upgrade`, reason);
+          if (isUpgradeDisconnection(err)) {
+            console.log(`resetting offerResults watcher after upgrade`, err);
             watchForOfferResult(facets, seat);
           } else {
-            facets.helper.exitOpenSeats(reason);
+            facets.helper.updateStatus({ error: err.toString() });
+            facets.helper.exitOpenSeat(err);
           }
         },
       },
@@ -206,13 +208,14 @@ export const makeOfferWatcherMaker = baggage => {
 
           facets.helper.updateStatus({ numWantsSatisfied: numSatisfied });
         },
-        onRejected(reason, seat) {
+        onRejected(err, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(reason)) {
-            console.log(`resetting numWants watcher after upgrade`, reason);
+          if (isUpgradeDisconnection(err)) {
+            console.log(`resetting numWants watcher after upgrade`, err);
             watchForNumWants(facets, seat);
           } else {
-            facets.helper.exitOpenSeats(reason);
+            facets.helper.updateStatus({ error: err.toString() });
+            facets.helper.exitOpenSeat(err);
           }
         },
       },

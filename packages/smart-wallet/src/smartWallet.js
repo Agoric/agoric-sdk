@@ -597,8 +597,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             status: offerStatus,
           });
 
-          const isSeatExited = 'numWantsSatisfied' in offerStatus;
-          if (isSeatExited) {
+          if ('numWantsSatisfied' in offerStatus) {
             if (state.liveOfferSeats.has(offerStatus.id)) {
               state.liveOfferSeats.delete(offerStatus.id);
             }
@@ -609,6 +608,8 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             if (state.liveOffers.has(offerStatus.id)) {
               state.liveOffers.delete(offerStatus.id);
+              // This might get skipped in subsequent passes, since we .delete()
+              // the first time through
               facets.helper.publishCurrentState();
             }
           }
@@ -833,10 +834,12 @@ export const prepareSmartWallet = (baggage, shared) => {
               seatRef,
             );
 
-            watchOfferOutcomes(watcher, seatRef);
             state.liveOffers.init(offerSpec.id, offerSpec);
-            facets.helper.publishCurrentState();
             state.liveOfferSeats.init(offerSpec.id, seatRef);
+
+            watchOfferOutcomes(watcher, seatRef);
+
+            facets.helper.publishCurrentState();
           } catch (err) {
             console.error('OFFER ERROR:', err);
             // Notify the user
@@ -867,6 +870,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               });
             }
+
             throw err;
           }
         },

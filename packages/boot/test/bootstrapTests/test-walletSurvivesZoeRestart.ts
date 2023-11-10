@@ -95,7 +95,6 @@ const checkFlow = async (
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
   };
 
-  const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
   // restart Zoe
@@ -107,9 +106,6 @@ const checkFlow = async (
   };
   await buildAndExecuteProposal(zoeUpgradeSpec);
 
-  // const zoe = await EV.vat('bootstrap').consumeItem('zoe');
-  // const invitationIssuer = await EV(zoe).getInvitationIssuer();
-  // const invitationBrand = await EV(invitationIssuer).getBrand()
   t.like(await buyer.getLatestUpdateRecord(), {
     currentAmount: {
       // brand from EV() doesn't compare correctly
