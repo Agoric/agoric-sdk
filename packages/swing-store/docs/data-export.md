@@ -152,21 +152,9 @@ for (const name of exporter.getArtifactNames()) {
 
 ## Import
 
-On other end of the export process is an importer. This is a new host application, which wants to start from the contents of the export, rather than initializing a brand new (empty) kernel state.
+On the other end of the export process is an importer. This is used to restore kernel state, so that a new host application can simply continue mostly as if it had been previously executing. The expectation is that the import and the execution are 2 independent events, and the execution doesn't need to be aware it was imported.
 
-When starting a brand new instance, host applications would normally call `openSwingStore(dirPath)` to create a new (empty) SwingStore, then call SwingSet's `initializeSwingset(config, .., kernelStorage)` to let the kernel initialize the DB with a config-dependent starting state:
-
-```js
-// this is done only the first time an instance is created:
-
-import { openSwingStore } from '@agoric/swing-store';
-import { initializeSwingset } from '@agoric/swingset-vat';
-const dirPath = './swing-store';
-const { hostStorage, kernelStorage } = openSwingStore(dirPath);
-await initializeSwingset(config, argv, kernelStorage);
-```
-
-Once the initial state is created, each time the application is launched, it will build a controller around the existing state:
+For reference, after the initial state is created, each time the application is launched, it builds a controller around the existing state:
 
 ```js
 import { openSwingStore } from '@agoric/swing-store';
@@ -177,7 +165,7 @@ const controller = await makeSwingsetController(kernelStorage);
 // ... now do things like controller.run(), etc
 ```
 
-When cloning an existing kernel, the initialization step is replaced with `importSwingStore`. The host application should feed the importer with the export data and artifacts, by passing an object that has the same API as the SwingStore's exporter:
+When cloning an existing kernel, the host application first imports and commits the restored state using `importSwingStore`. The host application should feed the importer with the export data and artifacts, by passing an object that has the same API as the SwingStore's exporter:
 
 ```js
 import { importSwingStore } from '@agoric/swing-store';
@@ -188,11 +176,13 @@ const exporter = {
   getArtifact(name) { // return blob of artifact data },
 };
 const { hostStorage } = importSwingStore(exporter, dirPath);
-hostStorage.commit();
-// now the swingstore is fully populated
+// Update any hostStorage as needed
+await hostStorage.commit();
+await hostStorage.close();
+// now the populated swingstore can be re-opened using `openSwingStore``
 ```
 
-Once the new SwingStore is fully populated with the previously-exported data, the host application can use `makeSwingsetController()` to build a kernel that will start from the exported state.
+Once the new SwingStore is fully populated with the previously-exported data, the host application can update any host specific state before committing and closing the SwingStore. `importSwingStore` returns only the host facet of the SwingStore instance, as it is not suitable for immediate execution.
 
 ## Optional / Historical Data
 
@@ -223,14 +213,14 @@ Also note that when a vat is terminated, we delete all information about it, inc
 
 When importing, the `importSwingStore()` function's options bag takes a property named `artifactMode`, with the same meanings as for export. Importing with the `operational` mode will ignore any artifacts other than those needed for current operations, and will fail unless all such artifacts were available. Importing with `replay` will ignore spans from old incarnations, but will fail unless all spans from current incarnations are present. Importing with `archival` will fail unless all spans from all incarnations are present. There is no `debug` option during import.
 
-`importSwingStore()` returns a swingstore, which means its options bag also contains the same options as `openSwingStore()`, including the `keepTranscripts` option. This defaults to `true`, but if it were overridden to `false`, then the new swingstore will delete transcript spans as soon as they are no longer needed for operational purposes (e.g. when `transcriptStore.rolloverSpan()` is called).
+While `importSwingStore()`'s options bag accepts the same options as `openSwingStore()`, since it returns only the host facet of a SwingStore, some of these options might not be meaningful, such as `keepTranscripts`.
 
 So, to avoid pruning current-incarnation historical transcript spans when exporting from one swingstore to another, you must set (or avoid overriding) the following options along the way:
 
 * the original swingstore must not be opened with `{ keepTranscripts: false }`, otherwise the old spans will be pruned immediately
 * the export must use `makeSwingStoreExporter(dirpath, { artifactMode: 'replay'})`, otherwise the export will omit the old spans
 * the import must use `importSwingStore(exporter, dirPath, { artifactMode: 'replay'})`, otherwise the import will ignore the old spans
-  * the `importSwingStore` call (and all subsequent `openSwingStore` calls) must not use `keepTranscripts: false`, otherwise the new swingstore will prune historical spans as new ones are created (during `rolloverSpan`).
+  * subsequent `openSwingStore` calls must not use `keepTranscripts: false`, otherwise the new swingstore will prune historical spans as new ones are created (during `rolloverSpan`).
 
 ## Implementation Details
 
