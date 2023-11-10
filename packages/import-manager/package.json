@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-manager",
-  "version": "0.3.12-u11wf.0",
+  "version": "0.3.12-u12.0",
   "description": "Share code across vat boundaries",
   "type": "module",
   "main": "./src/importManager.js",
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.32.3-u11wf.0",
+    "@agoric/swingset-vat": "^0.32.3-u12.0",
     "ava": "^5.2.0",
     "c8": "^7.13.0"
   },

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-xsnap-supervisor",
-  "version": "0.10.3-u11wf.0",
+  "version": "0.10.3-u12.0",
   "description": "Supervisor/Liveslots bundle for swingset xsnap workers",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@agoric/assert": "^0.6.1-u11wf.0",
-    "@agoric/swingset-liveslots": "^0.10.3-u11wf.0",
+    "@agoric/swingset-liveslots": "^0.10.3-u12.0",
     "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/import-bundle": "0.3.4",
     "@endo/init": "0.5.56",

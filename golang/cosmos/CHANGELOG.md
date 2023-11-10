@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u11wf.0...@agoric/cosmos@0.35.0-u12.0) (2023-11-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vstorage:** Enforce path validation
+
+### Features
+
+* **cosmos:** Lower `BlockParams.MaxBytes` to 5MB ([84908e5](https://github.com/Agoric/agoric-sdk/commit/84908e5a5a181e3f64da0e298d0105fedb97570a))
+
+### Bug Fixes
+
+* **vibc:** accommodate ibc-go v3 breaking changes ([f582901](https://github.com/Agoric/agoric-sdk/commit/f582901fb3835d95d493c777aac6a63fc3ee4681))
+* **vibc:** put extraneous `CounterpartyChannelID` in `Counterparty` struct ([9469971](https://github.com/Agoric/agoric-sdk/commit/946997192cec0ed6b07fdaa18d8f380f460ab004))
+* **vstorage:** Enforce path validation ([d8db331](https://github.com/Agoric/agoric-sdk/commit/d8db3310fb21a8546388694752889f3563733010)), closes [#8337](https://github.com/Agoric/agoric-sdk/issues/8337)
+* **cosmos:** Update cosmos-sdk with fix for state-sync restore of large payloads ([e04b398](https://github.com/Agoric/agoric-sdk/commit/e04b398bf16d884fa4708c16d4c03b39cc4e0f1b)), closes [#8325](https://github.com/Agoric/agoric-sdk/issues/8325)
+
+
+
 ## [0.35.0-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u11.0...@agoric/cosmos@0.35.0-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/cosmos

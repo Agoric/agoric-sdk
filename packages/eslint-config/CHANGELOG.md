@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.1-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.4.1-u11wf.0...@agoric/eslint-config@0.4.1-u12.0) (2023-11-10)
+
+
+### Bug Fixes
+
+* export of eslint-config.cjs ([3f6b83b](https://github.com/Agoric/agoric-sdk/commit/3f6b83b55c320c710aa57c796a6c166ae396fe38))
+
+
+
 ### [0.4.1-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.4.0...@agoric/eslint-config@0.4.1-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/eslint-config
