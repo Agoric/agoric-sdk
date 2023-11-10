@@ -270,13 +270,13 @@ export const makeExoUtils = VatData => {
   harden(prepareExoClassKit);
 
   /**
-   * @template {Record<PropertyKey, CallableFunction>} M methods
+   * @template {InterfaceGuard} I
    * @param {Baggage} baggage
    * @param {string} kindName
-   * @param {InterfaceGuard | undefined} interfaceGuard
-   * @param {M} methods
-   * @param {DefineKindOptions<{ self: M }>} [options]
-   * @returns {M & RemotableBrand<{}, M>}
+   * @param {I | undefined} interfaceGuard
+   * @param {import('./types.js').GuardedMethods<I>} methods
+   * @param {DefineKindOptions<{ self: import('./types.js').GuardedMethods<I> }>} [options]
+   * @returns {import('./types.js').GuardedMethods<I> & RemotableBrand<{}, import('./types.js').GuardedMethods<I>>}
    */
   const prepareExo = (
     baggage,
