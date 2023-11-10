@@ -4,7 +4,7 @@ import path from 'path';
 import test from 'ava';
 import sqlite3 from 'better-sqlite3';
 
-import { importSwingStore } from '../src/index.js';
+import { importSwingStore, openSwingStore } from '../src/index.js';
 
 import { makeExporter, buildData } from './exports.js';
 import { tmpDir } from './util.js';
@@ -19,8 +19,9 @@ test('repair metadata', async t => {
   // then manually deleting the historical metadata entries from the
   // DB
   const exporter = makeExporter(exportData, artifacts);
-  const ss = await importSwingStore(exporter, dbDir);
-  await ss.hostStorage.commit();
+  const ssi = await importSwingStore(exporter, dbDir);
+  await ssi.hostStorage.commit();
+  await ssi.hostStorage.close();
 
   const filePath = path.join(dbDir, 'swingstore.sqlite');
   const db = sqlite3(filePath);
@@ -51,6 +52,8 @@ test('repair metadata', async t => {
   t.deepEqual(ss2, [7]);
 
   // now fix it
+  const ss = openSwingStore(dbDir);
+  t.teardown(ss.hostStorage.close);
   await ss.hostStorage.repairMetadata(exporter);
   await ss.hostStorage.commit();
 
@@ -62,6 +65,7 @@ test('repair metadata', async t => {
 
   // repair should be idempotent
   await ss.hostStorage.repairMetadata(exporter);
+  await ss.hostStorage.commit();
 
   const ts4 = getTS.all('v1');
   t.deepEqual(ts4, [0, 2, 5, 8]); // still there
@@ -76,11 +80,15 @@ test('repair metadata ignores kvStore entries', async t => {
   const { exportData, artifacts } = buildData();
 
   const exporter = makeExporter(exportData, artifacts);
-  const ss = await importSwingStore(exporter, dbDir);
-  await ss.hostStorage.commit();
+  const ssi = await importSwingStore(exporter, dbDir);
+  await ssi.hostStorage.commit();
+  await ssi.hostStorage.close();
 
   // perform the repair with spurious kv entries
   exportData.set('kv.key2', 'value2');
+
+  const ss = openSwingStore(dbDir);
+  t.teardown(ss.hostStorage.close);
   await ss.hostStorage.repairMetadata(exporter);
   await ss.hostStorage.commit();
 
@@ -95,14 +103,17 @@ test('repair metadata rejects mismatched snapshot entries', async t => {
   const { exportData, artifacts } = buildData();
 
   const exporter = makeExporter(exportData, artifacts);
-  const ss = await importSwingStore(exporter, dbDir);
-  await ss.hostStorage.commit();
+  const ssi = await importSwingStore(exporter, dbDir);
+  await ssi.hostStorage.commit();
+  await ssi.hostStorage.close();
 
   // perform the repair with mismatched snapshot entry
   const old = JSON.parse(exportData.get('snapshot.v1.4'));
   const wrong = { ...old, hash: 'wrong' };
   exportData.set('snapshot.v1.4', JSON.stringify(wrong));
 
+  const ss = openSwingStore(dbDir);
+  t.teardown(ss.hostStorage.close);
   await t.throwsAsync(async () => ss.hostStorage.repairMetadata(exporter), {
     message: /repairSnapshotRecord metadata mismatch/,
   });
@@ -115,14 +126,17 @@ test('repair metadata rejects mismatched transcript span', async t => {
   const { exportData, artifacts } = buildData();
 
   const exporter = makeExporter(exportData, artifacts);
-  const ss = await importSwingStore(exporter, dbDir);
-  await ss.hostStorage.commit();
+  const ssi = await importSwingStore(exporter, dbDir);
+  await ssi.hostStorage.commit();
+  await ssi.hostStorage.close();
 
   // perform the repair with mismatched transcript span entry
   const old = JSON.parse(exportData.get('transcript.v1.0'));
   const wrong = { ...old, hash: 'wrong' };
   exportData.set('transcript.v1.0', JSON.stringify(wrong));
 
+  const ss = openSwingStore(dbDir);
+  t.teardown(ss.hostStorage.close);
   await t.throwsAsync(async () => ss.hostStorage.repairMetadata(exporter), {
     message: /repairTranscriptSpanRecord metadata mismatch/,
   });

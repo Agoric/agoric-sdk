@@ -322,6 +322,7 @@ async function testExportImport(
   }
   t.is(failureMode, 'none');
   const ssIn = await doImport();
+  t.teardown(ssIn.hostStorage.close);
   await ssIn.hostStorage.commit();
   let dumpsShouldMatch = true;
   if (runMode === 'operational') {

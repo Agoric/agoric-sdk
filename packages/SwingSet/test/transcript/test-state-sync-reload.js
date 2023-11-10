@@ -6,6 +6,7 @@ import tmp from 'tmp';
 import { kunser } from '@agoric/kmarshal';
 import {
   initSwingStore,
+  openSwingStore,
   makeSwingStoreExporter,
   importSwingStore,
 } from '@agoric/swing-store';
@@ -36,7 +37,9 @@ test.before(async t => {
 
 test('state-sync reload', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
+  const [importDbDir, cleanupImport] = await tmpDir('importtestdb');
   t.teardown(cleanup);
+  t.teardown(cleanupImport);
 
   const config = {
     snapshotInitial: 2,
@@ -106,7 +109,11 @@ test('state-sync reload', async t => {
     getArtifact: name => artifacts.get(name),
     close: () => 0,
   };
-  const ss2 = await importSwingStore(datasetExporter);
+  const ssi = await importSwingStore(datasetExporter, importDbDir);
+  await ssi.hostStorage.commit();
+  await ssi.hostStorage.close();
+  const ss2 = openSwingStore(importDbDir);
+  t.teardown(ss2.hostStorage.close);
   const c2 = await makeSwingsetController(
     ss2.kernelStorage,
     {},
