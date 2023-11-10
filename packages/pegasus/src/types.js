@@ -13,6 +13,7 @@
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  * @property {string} memo
+ * @property {SenderOptions} opts
  */
 
 /**
@@ -47,7 +48,7 @@
  */
 
 /**
- * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress, memo: string) => Promise<void>} Sender
+ * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress, memo: string, opt: SenderOptions) => Promise<void>} Sender
  * Successive transfers are not guaranteed to be processed in the order in which they were sent.
  * @typedef {(parts: PacketParts) => Promise<Bytes>} Receiver
  * @typedef {object} Courier
@@ -110,4 +111,9 @@
  * @typedef {object} PegasusConnectionKit
  * @property {ConnectionHandler} handler
  * @property {Subscription<PegasusConnection>} subscription
+ */
+
+/**
+ * @typedef {object} SenderOptions
+ * @property {string} [sender] the sender address attached to the packet to receive any refund
  */
