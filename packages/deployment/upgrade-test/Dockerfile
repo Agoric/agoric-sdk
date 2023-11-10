@@ -1,5 +1,5 @@
 # Defaults
-ARG BASE_IMAGE=ghcr.io/agoric/agoric-3-proposals:main
+ARG BASE_IMAGE=ghcr.io/agoric/agoric-3-proposals@sha256:ac10c09b5927d759d37b1525b5a0bc4aeb3034df8d0f0fbb15b51203555ffb1b
 ARG DEST_IMAGE=ghcr.io/agoric/agoric-sdk:dev
 ARG BOOTSTRAP_MODE=main
 
