@@ -92,7 +92,11 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   validateArtifactMode(artifactMode);
 
   const filePath = dbFileInDirectory(dirPath);
-  const db = sqlite3(filePath);
+  const db = sqlite3(filePath, { timeout: 30000 });
+  const journalMode = db.pragma(`journal_mode=wal`, {
+    simple: true,
+  });
+  journalMode === 'wal' || Fail`DB not in WAL mode (is in ${journalMode} mode)`;
 
   // Execute the data export in a (read) transaction, to ensure that we are
   // capturing the state of the database at a single point in time. Our close()
