@@ -81,6 +81,7 @@ test('import empty', async t => {
   t.teardown(cleanup);
   const exporter = makeExporter(new Map(), new Map());
   const ss = await importSwingStore(exporter, dbDir);
+  t.teardown(ss.hostStorage.close);
   await ss.hostStorage.commit();
   const data = convert(ss.debug.dump());
   t.deepEqual(data, {
@@ -164,6 +165,7 @@ const importTest = test.macro(async (t, mode) => {
 
   // now import
   const ss = await importSwingStore(exporter, dbDir, { artifactMode });
+  t.teardown(ss.hostStorage.close);
   await ss.hostStorage.commit();
   const data = convert(ss.debug.dump());
 

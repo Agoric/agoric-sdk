@@ -112,6 +112,7 @@ test('state-sync reload', async t => {
   await ssi.hostStorage.commit();
   await ssi.hostStorage.close();
   const ss2 = openSwingStore(importDbDir);
+  t.teardown(ss2.hostStorage.close);
   const c2 = await makeSwingsetController(
     ss2.kernelStorage,
     {},
