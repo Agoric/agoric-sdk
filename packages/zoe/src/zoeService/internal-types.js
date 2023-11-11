@@ -133,7 +133,7 @@
  * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
- * @property {import('./utils').GetTerms} getTerms
+ * @property {import('./utils.js').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
  * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance

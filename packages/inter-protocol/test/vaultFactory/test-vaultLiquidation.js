@@ -62,7 +62,7 @@ const contractRoots = {
   auctioneer: './src/auction/auctioneer.js',
 };
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
+/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
 
 const trace = makeTracer('TestST', false);
 

@@ -29,7 +29,7 @@ import {
   withAmountUtils,
 } from '../supports.js';
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
+/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
 
 const trace = makeTracer('VFDriver');
 

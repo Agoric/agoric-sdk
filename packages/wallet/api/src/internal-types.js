@@ -7,7 +7,7 @@
  * @property {PurseActions} actions
  */
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
 
 /**
  * @typedef {PursesJSONState & PursesAddedState} PursesFullState
@@ -93,6 +93,6 @@
  * would make them part of the WalletUser available as `home.wallet` in the
  * REPL.  Then, the Wallet UI could use that instead.
  *
- * @typedef {import('./lib-wallet').WalletRoot['admin']}
+ * @typedef {import('./lib-wallet.js').WalletRoot['admin']}
  * WalletAdminFacet
  */

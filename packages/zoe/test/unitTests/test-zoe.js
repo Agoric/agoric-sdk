@@ -96,7 +96,7 @@ test(`E(zoe).getPublicFacet`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   await t.throwsAsync(() =>
@@ -224,7 +224,7 @@ test(`zoe.getTerms`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,
