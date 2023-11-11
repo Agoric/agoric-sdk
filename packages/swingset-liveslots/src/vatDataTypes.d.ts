@@ -13,6 +13,7 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
 // TODO should be moved into @endo/patterns and eventually imported here
 // instead of this local definition.
@@ -25,17 +26,20 @@ export type { MapStore, Pattern };
 // onerous.
 export type Baggage = MapStore<string, any>;
 
+type WatchedPromisesManager = ReturnType<typeof makeWatchedPromiseManager>;
+
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
   : [];
 
-type MinusContext<
-  F extends (context, ...rest: any[]) => any,
-  P extends any[] = Parameters<F>, // P: are the parameters of F
-  R = ReturnType<F>, // R: the return type of F
-> = (...args: Tail<P>) => R;
+// used to omit the 'context' parameter
+type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
+  ? (...args: P) => R
+  : never;
 
-export type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
+export type KindFacet<O> = {
+  [K in keyof O]: OmitFirstArg<O[K]>; // omit the 'context' parameter
+};
 
 export type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
@@ -169,8 +173,8 @@ export type VatData = {
     options?: DefineKindOptions<MultiKindContext<S, B>>,
   ) => (...args: P) => KindFacets<B>;
 
-  providePromiseWatcher: unknown;
-  watchPromise: unknown;
+  providePromiseWatcher: WatchedPromisesManager['providePromiseWatcher'];
+  watchPromise: WatchedPromisesManager['watchPromise'];
 
   makeScalarBigMapStore: <K, V>(
     label: string,

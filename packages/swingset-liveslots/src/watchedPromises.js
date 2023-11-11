@@ -147,6 +147,12 @@ export function makeWatchedPromiseManager({
     }
   }
 
+  /**
+   *
+   * @param {Promise} p
+   * @param {{onFulfilled?: Function, onRejected?: Function}} watcher
+   * @param  {...any} args
+   */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a
     // later turn so that if the promise to be watched was the return value from
