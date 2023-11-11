@@ -374,7 +374,7 @@ test.serial('govern oracles list', async t => {
     'econCommitteeCharter',
   );
   /**
-   * @type {import('@agoric/zoe/src/zoeService/utils').Instance<
+   * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
    *   import('@agoric/governance/src/committee.js')['start']
    * >}
    */
@@ -419,7 +419,7 @@ test.serial('govern oracles list', async t => {
 
   // Accept the EC invitation makers ///////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+    /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
     const getInvMakersSpec = {
       source: 'purse',
       instance: econCharter,
@@ -482,7 +482,7 @@ test.serial('govern oracles list', async t => {
 
   // Call for a vote to addOracles ////////////////////////////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+    /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',
@@ -538,7 +538,7 @@ test.serial('govern oracles list', async t => {
 
   // Call for a vote to removeOracles ////////////////////////////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+    /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',

@@ -314,7 +314,7 @@ const insistSameCapData = (oldCD, newCD) => {
  * @param {import('@endo/marshal').FromCapData<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
- * @param {import('./types').LiveSlotsOptions} [liveSlotsOptions]
+ * @param {import('./types.js').LiveSlotsOptions} [liveSlotsOptions]
  * @param {{ WeakMap: typeof WeakMap, WeakSet: typeof WeakSet }} [powers]
  * Specifying the underlying WeakMap/WeakSet objects to wrap with
  * VirtualObjectAwareWeakMap/Set.  By default, capture the ones currently

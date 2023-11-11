@@ -106,7 +106,7 @@ const trace = makeTracer('SmrtWlt');
  *   brand: Brand,
  *   displayInfo: DisplayInfo,
  *   issuer: Issuer,
- *   petname: import('./types').Petname
+ *   petname: import('./types.js').Petname
  * }} BrandDescriptor
  * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
  */
@@ -114,7 +114,7 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @typedef {{
  *   address: string,
- *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
+ *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>,
  *   currentStorageNode: StorageNode,
  *   invitationPurse: Purse<'set'>,
  *   walletStorageNode: StorageNode,
@@ -139,7 +139,7 @@ const trace = makeTracer('SmrtWlt');
  *
  * @typedef {Readonly<UniqueParams & {
  *   paymentQueues: MapStore<Brand, Array<Payment>>,
- *   offerToInvitationMakers: MapStore<string, import('./types').InvitationMakers>,
+ *   offerToInvitationMakers: MapStore<string, import('./types.js').InvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
  *   purseBalances: MapStore<Purse, Amount>,
@@ -621,7 +621,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               }
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
+            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types.js').InvitationMakers, publicSubscribers?: import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,

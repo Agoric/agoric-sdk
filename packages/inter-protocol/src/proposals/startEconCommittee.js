@@ -21,7 +21,7 @@ const sanitizePathSegment = name => {
  */
 
 /**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} [config.options]
  * @param {EconCommitteeOptions} [config.options.econCommitteeOptions]

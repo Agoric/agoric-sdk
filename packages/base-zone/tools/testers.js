@@ -65,7 +65,7 @@ const secondThrows = (t, fn, spec = alreadyExceptionSpec) => {
 
 /**
  * @param {import('ava').Assertions} t
- * @param {import('../src/index').Zone} rootZone
+ * @param {import('../src/index.js').Zone} rootZone
  */
 export const testFirstZoneIncarnation = (t, rootZone) => {
   const subZone = secondThrows(t, () => rootZone.subZone('sub'));
@@ -94,7 +94,7 @@ export const testFirstZoneIncarnation = (t, rootZone) => {
 
 /**
  * @param {import('ava').Assertions} t
- * @param {import('../src/index').Zone} rootZone
+ * @param {import('../src/index.js').Zone} rootZone
  */
 export const testSecondZoneIncarnation = (t, rootZone) => {
   const subZone = secondThrows(t, () => rootZone.subZone('sub'));

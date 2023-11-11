@@ -9,7 +9,7 @@
 
 /**
  * @template T
- * @typedef {import('./defer').Deferred<T>} Deferred
+ * @typedef {import('./defer.js').Deferred<T>} Deferred
  */
 
 import { finished } from 'stream/promises';

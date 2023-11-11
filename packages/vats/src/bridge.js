@@ -42,7 +42,7 @@ const prepareScopedManager = zone => {
      * @param {{
      *   outbound: (bridgeId: string, obj: unknown) => Promise<any>;
      * }} toBridge
-     * @param {import('./types').BridgeHandler} [inboundHandler]
+     * @param {import('./types.js').BridgeHandler} [inboundHandler]
      */
     (bridgeId, toBridge, inboundHandler) => ({
       bridgeId,

@@ -63,7 +63,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool')['start']>} */
+  /** @type {Installation<import('../src/provisionPool.js')['start']>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -328,7 +328,7 @@ const makeWalletFactoryKitForAddresses = async addresses => {
   };
 
   const done = new Set();
-  /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
+  /** @type {import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']} */
   const walletFactory = Far('mock walletFactory', {
     provideSmartWallet: async (addr, _b, nameAdmin) => {
       const wallet = wallets.get(addr);

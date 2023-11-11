@@ -9,7 +9,7 @@ import { makePaymentsHelper } from './payments.js';
 /**
  * @typedef {{
  *   id: OfferId,
- *   invitationSpec: import('./invitations').InvitationSpec,
+ *   invitationSpec: import('./invitations.js').InvitationSpec,
  *   proposal: Proposal,
  *   offerArgs?: unknown
  * }} OfferSpec
@@ -35,10 +35,10 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {ERef<Issuer<'set'>>} opts.invitationIssuer
  * @param {object} opts.powers
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
- * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
+ * @param {(spec: import('./invitations.js').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => Promise<Purse>} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
+ * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types.js').InvitationMakers, publicSubscribers: import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,

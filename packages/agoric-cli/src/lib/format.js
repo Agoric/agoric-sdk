@@ -89,7 +89,7 @@ export const asBoardRemote = x => {
 /**
  * Summarize the balances array as user-facing informative tuples
  *
- * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord['purses']} purses
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['purses']} purses
  * @param {AssetDescriptor[]} assets
  */
 export const purseBalanceTuples = (purses, assets) => {
@@ -172,7 +172,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} current
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
  * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
  */
