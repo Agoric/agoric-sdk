@@ -77,7 +77,7 @@ const checkFlow = async (
 
   const buyer = await walletFactoryDriver.provideSmartWallet('agoric1buyer');
 
-  const buildAndExecuteProposal = async packageSpec => {
+  const buildAndExecuteProposal = async (packageSpec: string) => {
     const proposal = await buildProposal(packageSpec);
 
     for await (const bundle of proposal.bundles) {
@@ -100,11 +100,7 @@ const checkFlow = async (
   // restart Zoe
 
   // /////// Upgrading ////////////////////////////////
-  const zoeUpgradeSpec = {
-    package: 'builders',
-    packageScriptName: 'build:null-upgrade-zoe-proposal',
-  };
-  await buildAndExecuteProposal(zoeUpgradeSpec);
+  await buildAndExecuteProposal('@agoric/builders/scripts/vats/upgrade-zoe.js');
 
   t.like(await buyer.getLatestUpdateRecord(), {
     currentAmount: {
