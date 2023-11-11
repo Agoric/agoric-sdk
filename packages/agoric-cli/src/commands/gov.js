@@ -79,7 +79,7 @@ export const makeGovCommand = (_logger, io = {}) => {
    * given a sendFrom address; else print it.
    *
    * @param {{
-   *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined) => OfferSpec,
+   *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord | undefined) => OfferSpec,
    *   sendFrom?: string | undefined,
    *   keyringBackend: string,
    *   instanceName?: string,

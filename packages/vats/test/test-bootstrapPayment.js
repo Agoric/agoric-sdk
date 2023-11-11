@@ -12,7 +12,7 @@ import { feeIssuerConfig } from '../src/core/utils.js';
 
 /**
  * @template T @typedef
- *   {import('@agoric/zoe/src/zoeService/utils').Installation<T>}
+ *   {import('@agoric/zoe/src/zoeService/utils.js').Installation<T>}
  *   Installation<T>
  */
 /**

@@ -3,7 +3,7 @@ import { insistCapData } from './capdata.js';
 
 /**
  * @typedef {{
- * methargs: import('./types').SwingSetCapData, // of [method, args]
+ * methargs: import('./types.js').SwingSetCapData, // of [method, args]
  * result: string | undefined | null,
  * }} Message
  */

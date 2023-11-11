@@ -498,7 +498,7 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
 };
 harden(connectChainFaucet);
 
-/** @type {import('./lib-boot').BootstrapManifest} */
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   ...BASIC_BOOTSTRAP_PERMITS,
 

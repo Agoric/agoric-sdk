@@ -5,7 +5,7 @@ const { toAscii } = encodingStar;
 
 /**
  * @param {string} storagePath
- * @returns {import('./types').CastingSpec}
+ * @returns {import('./types.js').CastingSpec}
  */
 const swingsetPathToCastingSpec = storagePath =>
   harden({
@@ -22,7 +22,7 @@ const NO_DATA_VALUE = new Uint8Array([255]);
 /**
  * @param {string} storagePath
  * @param {string} [storeName]
- * @returns {import('./types').CastingSpec}
+ * @returns {import('./types.js').CastingSpec}
  */
 const vstoragePathToCastingSpec = (storagePath, storeName = 'vstorage') => {
   const elems = storagePath ? storagePath.split('.') : [];
@@ -58,7 +58,7 @@ export const vstorageKeySpecToPath = ({ storeName, storeSubkey }) => {
 export const DEFAULT_PATH_CONVERTER = vstoragePathToCastingSpec;
 
 /**
- * @type {Record<string, (path: string) => import('./types').CastingSpec>}
+ * @type {Record<string, (path: string) => import('./types.js').CastingSpec>}
  */
 export const pathPrefixToConverters = harden({
   'swingset:': swingsetPathToCastingSpec,
@@ -68,7 +68,7 @@ export const pathPrefixToConverters = harden({
 
 /**
  * @param {string} specString
- * @returns {import('./types').CastingSpec}
+ * @returns {import('./types.js').CastingSpec}
  */
 export const makeCastingSpecFromString = specString => {
   assert.typeof(specString, 'string');
@@ -88,7 +88,7 @@ const te = new TextEncoder();
 
 /**
  * @param {any} specObj
- * @returns {import('./types').CastingSpec}
+ * @returns {import('./types.js').CastingSpec}
  */
 export const makeCastingSpecFromObject = specObj => {
   const {
@@ -127,7 +127,7 @@ export const makeCastingSpecFromObject = specObj => {
 
 /**
  * @param {ERef<any>} specCap
- * @returns {Promise<import('./types').CastingSpec>}
+ * @returns {Promise<import('./types.js').CastingSpec>}
  */
 export const makeCastingSpecFromRef = async specCap => {
   const specObj = await E(specCap).getStoreKey();
@@ -138,7 +138,7 @@ export const makeCastingSpecFromRef = async specCap => {
  * Create an abstract type from a given source representation
  *
  * @param {ERef<unknown>} sourceP
- * @returns {Promise<import('./types').CastingSpec>}
+ * @returns {Promise<import('./types.js').CastingSpec>}
  */
 export const makeCastingSpec = async sourceP => {
   const spec = await sourceP;

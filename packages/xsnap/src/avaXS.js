@@ -91,7 +91,7 @@ function isMatch(specimen, pattern) {
  *
  * @typedef {{ total: number, pass: number, fail: { filename: string, name: string }[] }} TestResults
  * @typedef { 'ok' | 'not ok' | 'SKIP' } Status
- * @typedef {ReturnType<typeof import('./xsnap').xsnap>} XSnap
+ * @typedef {ReturnType<typeof import('./xsnap.js').xsnap>} XSnap
  */
 async function runTestScript(
   filename,

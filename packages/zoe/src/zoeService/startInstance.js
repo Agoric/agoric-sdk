@@ -23,7 +23,7 @@ const { Fail, quote: q } = assert;
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} zoeBaggage
- * @returns {import('./utils').StartInstance}
+ * @returns {import('./utils.js').StartInstance}
  */
 export const makeStartInstance = (
   startInstanceAccess,

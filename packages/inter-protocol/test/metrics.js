@@ -89,7 +89,7 @@ export const metricsTracker = async (t, publicFacet) => {
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {import('../src/vaultFactory/vaultManager').CollateralManager} publicFacet
+ * @param {import('../src/vaultFactory/vaultManager.js').CollateralManager} publicFacet
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
@@ -97,7 +97,7 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
    * @type {Awaited<
    *   ReturnType<
    *     typeof subscriptionTracker<
-   *       import('../src/vaultFactory/vaultManager').MetricsNotification
+   *       import('../src/vaultFactory/vaultManager.js').MetricsNotification
    *     >
    *   >
    * >}

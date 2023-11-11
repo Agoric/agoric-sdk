@@ -244,7 +244,7 @@ export const currentPurseBalance = (record, brand) => {
  * @param {ERef<CommitteeElectoratePublic>} committeePublic
  * @param {string} voterAcceptanceOID
  * @returns {Promise<
- *   import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec
+ *   import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec
  * >}
  */
 export const voteForOpenQuestion = async (
@@ -257,7 +257,7 @@ export const voteForOpenQuestion = async (
   const { positions, questionHandle } = await E(question).getDetails();
   const yesPosition = harden([positions[0]]);
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const getVoteSpec = {
     source: 'continuing',
     previousOffer: voterAcceptanceOID,

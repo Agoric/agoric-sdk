@@ -68,7 +68,7 @@ export const makeAssetRegistry = assetPublisher => {
    *   brand: Brand,
    *   displayInfo: DisplayInfo,
    *   issuer: Issuer,
-   *   petname: import('./types').Petname
+   *   petname: import('./types.js').Petname
    * }} BrandDescriptor
    * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
    */
@@ -119,12 +119,12 @@ export const makeAssetRegistry = assetPublisher => {
  *
  * @typedef {{
  *   getAssetSubscription: () => ERef<
- *     IterableEachTopic<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ *     IterableEachTopic<import('@agoric/vats/src/vat-bank.js').AssetDescriptor>>
  * }} AssetPublisher
  *
  * @typedef {boolean} isRevive
  * @typedef {{
- *   reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>,
+ *   reviveWallet: (address: string) => Promise<import('./smartWallet.js').SmartWallet>,
  *   ackWallet: (address: string) => isRevive,
  * }} WalletReviver
  */
@@ -250,16 +250,16 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        * @param {string} address
-       * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-       * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[wallet: import('./smartWallet').SmartWallet, isNew: boolean]>} wallet
+       * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
+       * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
+       * @returns {Promise<[wallet: import('./smartWallet.js').SmartWallet, isNew: boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
-        /** @type {(address: string) => Promise<import('./smartWallet').SmartWallet>} */
+        /** @type {(address: string) => Promise<import('./smartWallet.js').SmartWallet>} */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);

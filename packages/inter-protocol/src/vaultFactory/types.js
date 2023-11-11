@@ -1,15 +1,15 @@
 // @jessie-check
 
 /**
- * @typedef {import('./vault').VaultNotification} VaultNotification
+ * @typedef {import('./vault.js').VaultNotification} VaultNotification
  *
- * @typedef {import('./vault').Vault} Vault
+ * @typedef {import('./vault.js').Vault} Vault
  *
- * @typedef {import('./vaultKit').VaultKit} VaultKit
+ * @typedef {import('./vaultKit.js').VaultKit} VaultKit
  *
- * @typedef {import('./vaultManager').VaultManager} VaultManager
+ * @typedef {import('./vaultManager.js').VaultManager} VaultManager
  *
- * @typedef {import('./vaultManager').CollateralManager} CollateralManager
+ * @typedef {import('./vaultManager.js').CollateralManager} CollateralManager
  *
  * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
  *
