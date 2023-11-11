@@ -26,11 +26,11 @@ import { buffer } from './util.js';
 
 /**
  * @template T
- *  @typedef { import('./exporter').AnyIterableIterator<T> } AnyIterableIterator<T>
+ *  @typedef { import('./exporter.js').AnyIterableIterator<T> } AnyIterableIterator<T>
  */
 
 /**
- * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./exporter.js').SwingStoreExporter } SwingStoreExporter
  * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
  *
  * @typedef {{

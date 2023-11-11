@@ -76,7 +76,7 @@ const makeVaultDirectorParams = (
 harden(makeVaultDirectorParams);
 
 /**
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<
+ * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').ParamTypesMapFromRecord<
  *     ReturnType<typeof makeVaultDirectorParams>
  *   >} VaultDirectorParams
  */

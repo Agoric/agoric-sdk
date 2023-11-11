@@ -141,7 +141,7 @@ export const prepareNameHubKit = zone => {
   /** @param {{}} me */
   const my = me => provideWeak(ephemera, me, init1);
 
-  /** @type {() => import('./types').NameHubKit} */
+  /** @type {() => import('./types.js').NameHubKit} */
   const makeNameHubKit = zone.exoClassKit(
     'NameHubKit',
     NameHubIKit,
@@ -150,7 +150,7 @@ export const prepareNameHubKit = zone => {
       /** @type {MapStore<string, unknown>} */
       keyToValue: zone.detached().mapStore('nameKey'),
 
-      /** @type {MapStore<string, import('./types').NameAdmin>} */
+      /** @type {MapStore<string, import('./types.js').NameAdmin>} */
       keyToAdmin: zone.detached().mapStore('nameKey'),
 
       /** @type {undefined | { write: (item: unknown) => void }} */

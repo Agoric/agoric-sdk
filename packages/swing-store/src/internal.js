@@ -1,9 +1,9 @@
 import { Fail, q } from '@agoric/assert';
 
 /**
- * @typedef { import('./snapStore').SnapStoreInternal } SnapStoreInternal
- * @typedef { import('./transcriptStore').TranscriptStoreInternal } TranscriptStoreInternal
- * @typedef { import('./bundleStore').BundleStoreInternal } BundleStoreInternal
+ * @typedef { import('./snapStore.js').SnapStoreInternal } SnapStoreInternal
+ * @typedef { import('./transcriptStore.js').TranscriptStoreInternal } TranscriptStoreInternal
+ * @typedef { import('./bundleStore.js').BundleStoreInternal } BundleStoreInternal
  *
  * @typedef {{
  *    transcriptStore: TranscriptStoreInternal,

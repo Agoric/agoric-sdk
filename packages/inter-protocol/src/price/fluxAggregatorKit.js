@@ -27,8 +27,8 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  *
  * @typedef {import('@agoric/time').Timestamp} Timestamp
  *
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime // TODO: use
- *   RelativeTime, not RelativeTimeValue
+ * @typedef {import('@agoric/time').RelativeTime} RelativeTime //
+ *   TODO: use RelativeTime, not RelativeTimeValue
  *
  * @typedef {import('@agoric/time').RelativeTimeValue} RelativeTimeValue
  *

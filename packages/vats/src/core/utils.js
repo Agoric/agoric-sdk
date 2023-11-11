@@ -199,7 +199,7 @@ harden(runModuleBehaviors);
 const noop = harden(() => {});
 
 /**
- * @param {ERef<import('../types').NameAdmin>} nameAdmin
+ * @param {ERef<import('../types.js').NameAdmin>} nameAdmin
  * @param {typeof console.log} [log]
  */
 export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
@@ -227,7 +227,7 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {ERef<import('../types').NameAdmin>} parentAdmin
+ * @param {ERef<import('../types.js').NameAdmin>} parentAdmin
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
  */
@@ -299,7 +299,7 @@ export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
   const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
-  /** @type {import('../types').MyAddressNameAdmin} */
+  /** @type {import('../types.js').MyAddressNameAdmin} */
   const myAddressNameAdmin = Far('myAddressNameAdmin', {
     ...rawMyAddressNameAdmin,
     getMyAddress: () => address,
