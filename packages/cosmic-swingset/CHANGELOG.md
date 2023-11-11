@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u11wf.0...@agoric/cosmic-swingset@0.42.0-u12.0) (2023-11-10)
+
+
+### Features
+
+* **cosmic-swingset:** add begin block check and transaction ([#8432](https://github.com/Agoric/agoric-sdk/issues/8432)) ([06302a2](https://github.com/Agoric/agoric-sdk/commit/06302a2d28271e1a962545e2952703af77a28f53))
+
+
+
 ## [0.42.0-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u11.0...@agoric/cosmic-swingset@0.42.0-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@4.0.0-u11wf.0...@agoric/deployment@4.0.0-u12.0) (2023-11-10)
+
+
+### Features
+
+* **Docker:** make shell ([b217c44](https://github.com/Agoric/agoric-sdk/commit/b217c440385cc546f288e9b4c4bd266c465f538e))
+* port bash tests to javascript ([90b1a06](https://github.com/Agoric/agoric-sdk/commit/90b1a06cc6dfe1320005d3a17867108c2111a475))
+
+
+### Bug Fixes
+
+* hard code working agoric-3-proposals image ([664f59f](https://github.com/Agoric/agoric-sdk/commit/664f59f698934ce4cb4bf34bc7d3bb2eed1e7ebd))
+
+
+
 ## [4.0.0-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ssh-node@4.0.0-u11.0...@agoric/deployment@4.0.0-u11wf.0) (2023-09-23)
 
 **Note:** Packaged renamed from @agoric/ssh-node to @agoric/deployment

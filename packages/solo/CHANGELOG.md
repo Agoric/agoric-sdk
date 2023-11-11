@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.10.4-u11wf.0...@agoric/solo@0.10.4-u12.0) (2023-11-10)
+
+
+### Bug Fixes
+
+* **solo:** correct lookup of wallet-ui ([670fc25](https://github.com/Agoric/agoric-sdk/commit/670fc25f30964c40fc887fac77ebf54bf58c7b8e))
+* **solo:** use alternative endo init ([60a680a](https://github.com/Agoric/agoric-sdk/commit/60a680a2124ee9868ba3b8352a3a5a9f30ce7ab6))
+
+
+
 ### [0.10.4-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.10.4-u11.0...@agoric/solo@0.10.4-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/solo

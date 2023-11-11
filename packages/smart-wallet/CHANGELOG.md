@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.4-u12.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u11wf.0...@agoric/smart-wallet@0.5.4-u12.0) (2023-11-10)
+
+
+### Bug Fixes
+
+* **walletFactory:** move upgrading check before baggage is populated ([#8322](https://github.com/Agoric/agoric/issues/8322)) ([330b7a2](https://github.com/Agoric/agoric/commit/330b7a26da9a8eefb95e3e0fd082714fdfad7873))
+
+
+
 ### [0.5.4-u11wf.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u11.0...@agoric/smart-wallet@0.5.4-u11wf.0) (2023-09-23)
 
 

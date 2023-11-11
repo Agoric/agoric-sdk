@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.7.13-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.13-u11wf.0...@agoric/pegasus@0.7.13-u12.0) (2023-11-10)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
 ### [0.7.13-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.13-u11.0...@agoric/pegasus@0.7.13-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/pegasus

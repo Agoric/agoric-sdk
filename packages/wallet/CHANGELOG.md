@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.4-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.18.4-u11wf.0...@agoric/wallet@0.18.4-u12.0) (2023-11-10)
+
+
+### Bug Fixes
+
+* **wallet:** don't assume node_modules layout ([a17b5cc](https://github.com/Agoric/agoric-sdk/commit/a17b5ccabad92a91de7db4a61f7812b9f696ef71))
+
+
+
 ### [0.18.4-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.18.4-u11.0...@agoric/wallet@0.18.4-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/wallet

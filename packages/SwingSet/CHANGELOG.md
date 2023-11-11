@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.3-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.3-u11wf.0...@agoric/swingset-vat@0.32.3-u12.0) (2023-11-10)
+
+
+### Features
+
+* **swing-store:** faster import of swing-store ([35aef87](https://github.com/Agoric/agoric-sdk/commit/35aef87ec0f10b7f0cdce462ac0509296e8bd752))
+* **swing-store:** prevent SwingSet usage of imported swing-store ([03f642d](https://github.com/Agoric/agoric-sdk/commit/03f642d39f90ef9465a439723c3a69beef73bd61))
+
+
+
 ### [0.32.3-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.3-u11.0...@agoric/swingset-vat@0.32.3-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/swingset-vat

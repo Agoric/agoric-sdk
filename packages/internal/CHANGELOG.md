@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.3-u11wf.0...@agoric/internal@0.4.0-u12.0) (2023-11-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vstorage:** Enforce path validation
+
+### Bug Fixes
+
+* **internal:** severe override taming for bundle-source ([9486c77](https://github.com/Agoric/agoric-sdk/commit/9486c772ab7daaebad0a19ac85653307ba461065))
+* **vstorage:** Enforce path validation ([d8db331](https://github.com/Agoric/agoric-sdk/commit/d8db3310fb21a8546388694752889f3563733010)), closes [#8337](https://github.com/Agoric/agoric-sdk/issues/8337)
+
+
+
 ### [0.3.3-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.3-u11.0...@agoric/internal@0.3.3-u11wf.0) (2023-09-23)
 
 

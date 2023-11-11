@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.10.4-u11wf.0...@agoric/governance@0.10.4-u12.0) (2023-11-10)
+
+
+### Features
+
+* puppetGovernor pass the Issuerkeywordrecord through ([#8351](https://github.com/Agoric/agoric-sdk/issues/8351)) ([90f43ba](https://github.com/Agoric/agoric-sdk/commit/90f43ba8a2430804ceccfd1152cd21fc812242a6)), closes [#8350](https://github.com/Agoric/agoric-sdk/issues/8350)
+
+
+
 ### [0.10.4-u11wf.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.10.4-u11.0...@agoric/governance@0.10.4-u11wf.0) (2023-09-23)
 
 **Note:** Version bump only for package @agoric/governance
