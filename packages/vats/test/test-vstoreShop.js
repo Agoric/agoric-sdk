@@ -38,23 +38,26 @@ test('buy and write to storage', async t => {
 
   const money = withAmountUtils(makeIssuerKit('Money'));
 
-  const basePrice = money.units(3);
-
   const { rootNode, data } = makeFakeStorageKit('X');
-  const { publicFacet } = await E(zoe).startInstance(
+  const { publicFacet, instance: shopInstance } = await E(zoe).startInstance(
     installation,
     { Payment: money.issuer },
-    { basePrice },
+    { basePrice: money.units(3) },
     { storageNode: rootNode },
   );
 
-  /** @param {Purse} purse */
-  const alice = async purse => {
+  /**
+   * @param {Instance} shop
+   * @param {Purse} purse
+   */
+  const alice = async (shop, purse) => {
     const toBuy = await E(publicFacet).makeBuyStorageInvitation();
-    const Payment = await E(purse).withdraw(basePrice);
+    const { basePrice } = await E(zoe).getTerms(shop);
+    const proposal = { give: { Payment: basePrice } };
+    const Payment = await E(purse).withdraw(proposal.give.Payment);
     const seat = await E(zoe).offer(
       toBuy,
-      { give: { Payment: basePrice } },
+      proposal,
       { Payment },
       { slug: 'alice-info' },
     );
@@ -66,8 +69,8 @@ test('buy and write to storage', async t => {
   };
 
   const ap = money.issuer.makeEmptyPurse();
-  ap.deposit(money.mint.mintPayment(basePrice));
-  await alice(ap);
+  ap.deposit(money.mint.mintPayment(money.units(10)));
+  await alice(shopInstance, ap);
 
   t.deepEqual(
     [...data.entries()],
