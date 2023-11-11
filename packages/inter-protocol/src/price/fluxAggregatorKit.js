@@ -25,14 +25,14 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
  *
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types.js').Timestamp} Timestamp
  *
- * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime //
+ * @typedef {import('@agoric/time/src/types.js').RelativeTime} RelativeTime //
  *   TODO: use RelativeTime, not RelativeTimeValue
  *
- * @typedef {import('@agoric/time/src/types').RelativeTimeValue} RelativeTimeValue
+ * @typedef {import('@agoric/time/src/types.js').RelativeTimeValue} RelativeTimeValue
  *
- * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ * @typedef {import('@agoric/time/src/types.js').TimerService} TimerService
  */
 
 /** @type {(quote: PriceQuote) => PriceDescription} */

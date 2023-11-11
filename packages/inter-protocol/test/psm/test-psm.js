@@ -750,7 +750,7 @@ const makeMockBankManager = t => {
 };
 
 test('restore PSM: startPSM with previous metrics, params', async t => {
-  /** @type {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} */
+  /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
   const { agoricNames, agoricNamesAdmin, spaces } =

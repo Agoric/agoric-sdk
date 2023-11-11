@@ -20,12 +20,12 @@ import { TimeMath } from '@agoric/time';
 // client). Everything else should remain in the DB.
 
 /**
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
- * @typedef {import('@agoric/time/src/types').TimestampRecord} TimestampRecord
- * @typedef {import('@agoric/time/src/types').TimestampValue} TimestampValue
- * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
- * @typedef {import('@agoric/time/src/types').RelativeTimeValue} RelativeTimeValue
- * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ * @typedef {import('@agoric/time/src/types.js').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types.js').TimestampRecord} TimestampRecord
+ * @typedef {import('@agoric/time/src/types.js').TimestampValue} TimestampValue
+ * @typedef {import('@agoric/time/src/types.js').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time/src/types.js').RelativeTimeValue} RelativeTimeValue
+ * @typedef {import('@agoric/time/src/types.js').TimerService} TimerService
  *
  * @typedef {object} Handler
  * Handler is a user-provided Far object with .wake(time) used for callbacks

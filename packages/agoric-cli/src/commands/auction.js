@@ -114,7 +114,7 @@ export const makeAuctionCommand = (
          * but TimeMath.toRel prodocues a RelativeTime (which may be a bare bigint).
          *
          * @param {bigint} relValue
-         * @returns {import('@agoric/time/src/types').RelativeTimeRecord}
+         * @returns {import('@agoric/time/src/types.js').RelativeTimeRecord}
          */
         const toRel = relValue => ({ timerBrand, relValue });
 

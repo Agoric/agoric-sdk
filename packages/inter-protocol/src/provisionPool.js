@@ -46,7 +46,7 @@ harden(meta);
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
- *   metricsOverride?: import('./provisionPoolKit').MetricsNotification;
+ *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

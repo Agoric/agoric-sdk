@@ -238,7 +238,7 @@ export async function makeSwingsetController(
     warehousePolicy,
     overrideVatManagerOptions,
   };
-  /** @type { ReturnType<typeof import('../kernel').default> } */
+  /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
   const kernel = buildKernel(
     kernelEndowments,
     deviceEndowments,

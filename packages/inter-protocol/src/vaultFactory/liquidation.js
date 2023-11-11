@@ -13,10 +13,10 @@ import { makeCancelTokenMaker } from '../auction/util.js';
 
 const trace = makeTracer('LIQ');
 
-/** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
-/** @typedef {import('@agoric/time/src/types').TimerWaker} TimerWaker */
-/** @typedef {import('@agoric/time/src/types').CancelToken} CancelToken */
-/** @typedef {import('@agoric/time/src/types').RelativeTimeRecord} RelativeTimeRecord */
+/** @typedef {import('@agoric/time/src/types.js').TimerService} TimerService */
+/** @typedef {import('@agoric/time/src/types.js').TimerWaker} TimerWaker */
+/** @typedef {import('@agoric/time/src/types.js').CancelToken} CancelToken */
+/** @typedef {import('@agoric/time/src/types.js').RelativeTimeRecord} RelativeTimeRecord */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
 
@@ -65,7 +65,7 @@ const cancelWakeups = timer => {
  * @param {TimerWaker} opts.liquidationWaker
  * @param {TimerWaker} opts.reschedulerWaker
  * @param {import('../auction/scheduler.js').Schedule} opts.nextAuctionSchedule
- * @param {import('@agoric/time/src/types').TimestampRecord} opts.now
+ * @param {import('@agoric/time/src/types.js').TimestampRecord} opts.now
  * @param {ParamStateRecord} opts.params
  * @returns {void}
  */

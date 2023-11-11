@@ -68,7 +68,7 @@ harden(validateQuestionFromCounter);
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
- * @property {import('@agoric/time/src/types').TimerService} timer
+ * @property {import('@agoric/time/src/types.js').TimerService} timer
  * @property {Installation} governedContractInstallation
  */
 
@@ -122,7 +122,7 @@ harden(validateQuestionFromCounter);
  * GovernorPublic,
  * GovernorCreatorFacet<PF,CF>,
  * {
- *   timer: import('@agoric/time/src/types').TimerService,
+ *   timer: import('@agoric/time/src/types.js').TimerService,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -136,7 +136,7 @@ harden(validateQuestionFromCounter);
  *
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time/src/types').TimerService,
+ *   timer: import('@agoric/time/src/types.js').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,

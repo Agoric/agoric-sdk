@@ -6,12 +6,12 @@ const { Fail, quote: q } = assert;
 /**
  * @typedef {import('@endo/marshal').RankComparison} RankComparison
  *
- * @typedef {import('./types').TimerBrand} TimerBrand
- * @typedef {import('./types').Timestamp} Timestamp
- * @typedef {import('./types').RelativeTime} RelativeTime
- * @typedef {import('./types').RelativeTimeValue} RelativeTimeValue
- * @typedef {import('./types').TimestampValue} TimestampValue
- * @typedef {import('./types').TimeMathType} TimeMathType
+ * @typedef {import('./types.js').TimerBrand} TimerBrand
+ * @typedef {import('./types.js').Timestamp} Timestamp
+ * @typedef {import('./types.js').RelativeTime} RelativeTime
+ * @typedef {import('./types.js').RelativeTimeValue} RelativeTimeValue
+ * @typedef {import('./types.js').TimestampValue} TimestampValue
+ * @typedef {import('./types.js').TimeMathType} TimeMathType
  */
 
 /**

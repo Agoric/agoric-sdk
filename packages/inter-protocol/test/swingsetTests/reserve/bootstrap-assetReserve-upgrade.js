@@ -56,20 +56,20 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<
-   *     import('@agoric/governance/src/committee')['start']
+   *     import('@agoric/governance/src/committee.js')['start']
    *   >;
    *   assetReserveV1?: Installation<
-   *     import('../../../src/reserve/assetReserve')['start']
+   *     import('../../../src/reserve/assetReserve.js')['start']
    *   >;
    *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor')['start']
+   *     import('@agoric/governance/tools/puppetContractGovernor.js')['start']
    *   >;
    * }}
    */
   const installations = {};
 
   /**
-   * @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<
+   * @type {import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<
    *     import('../../../src/reserve/assetReserve.js').start
    *   >}
    */

@@ -71,9 +71,9 @@ const nominalStartTime = nextSchedule =>
 
 /**
  * @param {AuctionDriver} auctionDriver
- * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {import('@agoric/time/src/types.js').TimerService} timer
  * @param {Awaited<import('./params.js').AuctionParamManager>} params
- * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
+ * @param {import('@agoric/time/src/types.js').TimerBrand} timerBrand
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
  * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
  */
@@ -362,8 +362,8 @@ export const makeScheduler = async (
 
 /**
  * @typedef {object} Schedule
- * @property {import('@agoric/time/src/types').TimestampRecord} startTime
- * @property {import('@agoric/time/src/types').TimestampRecord} endTime
+ * @property {import('@agoric/time/src/types.js').TimestampRecord} startTime
+ * @property {import('@agoric/time/src/types.js').TimestampRecord} endTime
  * @property {NatValue} steps
  * @property {NatValue} endRate
  * @property {RelativeTime} startDelay

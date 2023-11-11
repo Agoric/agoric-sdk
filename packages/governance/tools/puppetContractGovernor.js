@@ -17,7 +17,7 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 /**
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time/src/types').TimerService,
+ *   timer: import('@agoric/time/src/types.js').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord?: IssuerKeywordRecord,

@@ -64,7 +64,7 @@ export const PriceAuthorityI = M.interface('PriceAuthority', {
  * @param {object} opts
  * @param {Issuer<'set'>} opts.quoteIssuer
  * @param {ERef<Notifier<unknown>>} opts.notifier
- * @param {ERef<import('@agoric/time/src/types').TimerService>} opts.timer
+ * @param {ERef<import('@agoric/time/src/types.js').TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote
  * @param {Brand<'nat'>} opts.actualBrandIn
  * @param {Brand<'nat'>} opts.actualBrandOut

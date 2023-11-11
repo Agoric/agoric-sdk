@@ -26,7 +26,7 @@ const makeOfferFilterPositions = strings => {
 /**
  * Setup to allow governance to block some invitations.
  *
- * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {ERef<import('@agoric/time/src/types.js').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @param {GovernedCreatorFacet<{}>} governedCF
  * @returns {FilterGovernor}

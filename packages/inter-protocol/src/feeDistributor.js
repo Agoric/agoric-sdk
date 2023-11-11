@@ -20,9 +20,9 @@ export const meta = {
 harden(meta);
 
 /**
- * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time/src/types.js').RelativeTime} RelativeTime
  *
- * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ * @typedef {import('@agoric/time/src/types.js').TimerService} TimerService
  */
 
 /**

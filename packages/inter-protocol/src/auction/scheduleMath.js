@@ -83,7 +83,7 @@ export const computeRoundTiming = (params, baseTime) => {
   // computed start is `startDelay + baseTime + freq - (baseTime mod freq)`.
   // That is, if there are hourly starts, we add an hour to the time, and
   // subtract baseTime mod freq. Then we add the delay.
-  /** @type {import('@agoric/time/src/types').TimestampRecord} */
+  /** @type {import('@agoric/time/src/types.js').TimestampRecord} */
   const startTime = TimeMath.addAbsRel(
     TimeMath.addAbsRel(
       baseTime,

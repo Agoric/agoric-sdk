@@ -70,7 +70,7 @@ export const auctioneerParamTypes = harden({
  * @property {bigint} DiscountStep
  * @property {RelativeTime} AuctionStartDelay
  * @property {RelativeTime} PriceLockPeriod
- * @property {import('@agoric/time/src/types').TimerBrand} TimerBrand
+ * @property {import('@agoric/time/src/types.js').TimerBrand} TimerBrand
  */
 
 /** @param {AuctionParams} initial */

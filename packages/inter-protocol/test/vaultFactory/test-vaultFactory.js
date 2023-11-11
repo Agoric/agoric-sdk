@@ -61,7 +61,7 @@ const contractRoots = {
   auctioneer: './src/auction/auctioneer.js',
 };
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
+/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
 
 const trace = makeTracer('TestVF', false);
 
@@ -128,7 +128,7 @@ test.before(async t => {
  * @param {import('ava').ExecutionContext<Context>} t
  * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
- * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {import('@agoric/time/src/types.js').TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} stableInitialLiquidity
  * @param {bigint} [startFrequency]

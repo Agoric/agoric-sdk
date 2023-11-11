@@ -10,7 +10,7 @@ import { makeNotifier } from '@agoric/notifier';
  * @param {Brand<'set'>} quoteBrand
  * @param {Amount<'nat'>} amountIn
  * @param {Amount<'nat'>} amountOut
- * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {ERef<import('@agoric/time/src/types.js').TimerService>} timer
  * @param {import('@agoric/time').Timestamp} timestamp
  * @param {ERef<Mint<'set'>>} quoteMint
  * @returns {Promise<PriceQuote>}

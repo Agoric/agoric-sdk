@@ -25,7 +25,7 @@ const charterRoot = './src/econCommitteeCharter.js'; // package relative
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
 /**
- * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {import('@agoric/time/src/types.js').TimerService} timer
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsmBootstrap = async (
