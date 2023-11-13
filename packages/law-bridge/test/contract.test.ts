@@ -79,10 +79,8 @@ test('makeBindingInvitation', async t => {
     {}, // terms
     { feeMintAccess, storageNode, marshaller },
   );
-  const key = 'myArtwork';
-  // TODO make an offer
   const seat = await E(zoe).offer(
-    E(publicFacet).makeBindingInvitation({ key }),
+    E(publicFacet).makeBindingInvitation(),
     // TODO pay a buck
     // harden({
     //   give: { Fee: minted.units(1) },
@@ -92,11 +90,8 @@ test('makeBindingInvitation', async t => {
   await eventLoopIteration();
 
   // verify the key was reserved
-  t.deepEqual(chainStorage.keys(), [`mockChainStorageRoot.lawBridge.${key}`]);
+  t.deepEqual(chainStorage.keys(), [
+    `mockChainStorageRoot.lawBridge.bindings.1`,
+  ]);
   //   t.deepEqual(chainStorage.getBody('lawBridge', marshaller), {});
-
-  //   what happens if we do it again with the same key?
-  await t.throwsAsync(() => E(publicFacet).makeBindingInvitation({ key }), {
-    message: 'Binding already exists: myArtwork',
-  });
 });

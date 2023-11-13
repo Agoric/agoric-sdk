@@ -1,4 +1,3 @@
-import { makeExo } from '@agoric/store';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/eventual-send';
@@ -46,29 +45,24 @@ export const prepareLawBridgeKit = async (
         /**
          * Generates a binding invitation.
          *
-         * @param {object} opts
-         * @param {string} opts.key - The requested key for the new binding
          */
-        // FIXME don't allow UGC into vstorage
-        makeBindingInvitation({ key }) {
+        makeBindingInvitation() {
           const { bindings } = this.state;
-          assert.string(key);
-          if (bindings.has(key)) {
-            throw new Error(`Binding already exists: ${key}`);
-          }
+
           const hook =
             /** @param {ZCFSeat} seat */
             async seat => {
               const {
                 give: { Fee: given },
               } = seat.getProposal();
-              console.info('makeBindingInvitation', key, given);
-              console.error('NOT YET IMPLEMENTED: reserve key in vstorage');
-              // what happens if key is already in vstorage ?
+              console.info('makeBindingInvitation', given);
+              const key = String(bindings.getSize() + 1);
               /**
                * @type {StorageNode}
                */
-              const bindingNode = await E(storageNode).makeChildNode(key);
+              const bindingNode = await E(
+                E(storageNode).makeChildNode('bindings'),
+              ).makeChildNode(key);
               await E(bindingNode).setValue('RESERVED');
               // TODO save something more useful
               bindings.init(key, bindingNode);
