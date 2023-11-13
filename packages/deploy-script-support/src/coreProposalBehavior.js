@@ -43,18 +43,27 @@ export const makeCoreProposalBehavior = ({
 }) => {
   const { entries, fromEntries } = Object;
 
-  // deeplyFulfilled is a bit overkill for what we need.
+  /**
+   * Given an object whose properties may be promise-valued, return a promise
+   * for an analogous object in which each such value has been replaced with its
+   * fulfillment.
+   * This is a non-recursive form of endo `deeplyFulfilled`.
+   *
+   * @template T
+   * @param {{[K in keyof T]: (T[K] | Promise<T[K]>)}} obj
+   * @returns {Promise<T>}
+   */
   const shallowlyFulfilled = async obj => {
     if (!obj) {
       return obj;
     }
-    const ents = await Promise.all(
+    const awaitedEntries = await Promise.all(
       entries(obj).map(async ([key, valueP]) => {
         const value = await valueP;
         return [key, value];
       }),
     );
-    return fromEntries(ents);
+    return fromEntries(awaitedEntries);
   };
 
   const makeRestoreRef = (vatAdminSvc, zoe) => {
@@ -126,7 +135,7 @@ export const makeCoreProposalBehavior = ({
       ...manifestGetterArgs,
     );
 
-    // Await references in the options or installations.
+    // Await promises in the returned options and installations records.
     const [options, installations] = await Promise.all(
       [rawOptions, rawInstallations].map(shallowlyFulfilled),
     );
