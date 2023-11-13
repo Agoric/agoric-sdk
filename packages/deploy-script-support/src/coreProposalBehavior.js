@@ -26,7 +26,7 @@ export const permits = {
  *
  * @param {object} opts
  * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
- * @param {[string, ...unknown[]]} opts.getManifestCall
+ * @param {[methodName: string, ...args: unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
@@ -35,7 +35,7 @@ export const permits = {
  */
 export const makeCoreProposalBehavior = ({
   manifestBundleRef,
-  getManifestCall,
+  getManifestCall: [manifestGetterName, ...manifestGetterArgs],
   overrideManifest,
   E,
   log = console.info,
@@ -86,12 +86,11 @@ export const makeCoreProposalBehavior = ({
         utils: { runModuleBehaviors },
       },
     } = powers;
-    const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
     // Get the on-chain installation containing the manifest and behaviors.
     console.info('evaluateBundleCap', {
       manifestBundleRef,
-      exportedGetManifest,
+      exportedGetManifest: manifestGetterName,
       vatAdminSvc,
     });
     let bcapP;
@@ -106,7 +105,7 @@ export const makeCoreProposalBehavior = ({
 
     // Get the manifest and its metadata.
     console.error('execute', {
-      exportedGetManifest,
+      exportedGetManifest: manifestGetterName,
       behaviors: Object.keys(manifestNS),
     });
     const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
@@ -114,9 +113,9 @@ export const makeCoreProposalBehavior = ({
       manifest,
       options: rawOptions,
       installations: rawInstallations,
-    } = await manifestNS[exportedGetManifest](
+    } = await manifestNS[manifestGetterName](
       harden({ restoreRef }),
-      ...manifestArgs,
+      ...manifestGetterArgs,
     );
 
     // Await references in the options or installations.
