@@ -7,17 +7,20 @@ import { prepareLawBridgeKit } from './lawBridgeKit.js';
  *
  * @param {ZCF} zcf
  * @param {{
- *   feeMintAccess: FeeMintAccess;
+ *   feeMintAccess?: FeeMintAccess;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
+ *   stableBrand: Brand<'nat'>;
 }} privateArgs
  * @param {*} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { stableMint } = await provideAll(baggage, {
-    stableMint: () => zcf.registerFeeMint('Binding', privateArgs.feeMintAccess),
-  });
-  const { brand: stableBrand } = stableMint.getIssuerRecord();
+  // const { stableMint } = await provideAll(baggage, {
+  //   stableMint: () => zcf.registerFeeMint('Binding', privateArgs.feeMintAccess),
+  // });
+  // const { brand: stableBrand } = stableMint.getIssuerRecord();
+
+  const { stableBrand } = privateArgs;
 
   const makeLawBridgeKit = await prepareLawBridgeKit(baggage, zcf, {
     stableBrand,

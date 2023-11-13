@@ -1,13 +1,15 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+
+import { makeIssuerKit } from '@agoric/ertp';
+import { withAmountUtils } from '@agoric/inter-protocol/test/supports.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import path from 'node:path';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { withAmountUtils } from '@agoric/inter-protocol/test/supports.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { TestFn } from 'ava';
+import path from 'node:path';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -30,13 +32,7 @@ const makeTestContext = async () => {
   const chainStorage = makeMockChainStorageRoot();
   const storageNode = chainStorage.makeChildNode('lawBridge');
 
-  const mintedIssuer = await E(zoe).getFeeIssuer();
-  // @ts-expect-error missing IssuerKit properties not needed in the test
-  const mintedKit: IssuerKit<'nat'> = {
-    issuer: mintedIssuer,
-    brand: await E(mintedIssuer).getBrand(),
-  };
-  const minted = withAmountUtils(mintedKit);
+  const stable = withAmountUtils(makeIssuerKit('FakeStable'));
 
   return {
     zoe: await zoe,
@@ -46,7 +42,7 @@ const makeTestContext = async () => {
     installs,
     board,
     marshaller,
-    minted,
+    stable,
   };
 };
 
@@ -57,32 +53,33 @@ test.before(async t => {
 });
 
 test('starts', async t => {
-  const { zoe } = t.context;
+  const { stable, zoe } = t.context;
   const { creatorFacet } = await E(zoe).startInstance(
     t.context.installs.lawBridge,
     {}, // IssuerKeyword record
     {}, // terms
-    { feeMintAccess: t.context.feeMintAccess },
+    { feeMintAccess: t.context.feeMintAccess, stableBrand: stable.brand },
   );
   t.truthy(creatorFacet);
 });
 
-test('makeBindingInvitation', async t => {
-  const { zoe, feeMintAccess, storageNode, chainStorage, marshaller, minted } =
+test('basic flow', async t => {
+  const { zoe, feeMintAccess, storageNode, chainStorage, marshaller, stable } =
     t.context;
   const { publicFacet } = await E(zoe).startInstance(
     t.context.installs.lawBridge,
-    {}, // IssuerKeyword record
+    { FakeStable: stable.issuer }, // IssuerKeyword record
     {}, // terms
-    { feeMintAccess, storageNode, marshaller },
+    { feeMintAccess, stableBrand: stable.brand, storageNode, marshaller },
   );
-  const seat = await E(zoe).offer(
+  const Fee = stable.units(1);
+  const providerSeat = await E(zoe).offer(
     E(publicFacet).makeBindingInvitation(),
-    // TODO pay a buck
-    // harden({
-    //   give: { Fee: minted.units(1) },
-    // }),
-    // harden({ In: anchor.mint.mintPayment(giveAnchor) }),
+    harden({
+      give: { Fee },
+      want: { Compensation: stable.units(100) },
+    }),
+    harden({ Fee: stable.mint.mintPayment(Fee) }),
   );
   await eventLoopIteration();
 
@@ -90,5 +87,44 @@ test('makeBindingInvitation', async t => {
   t.deepEqual(chainStorage.keys(), [
     `mockChainStorageRoot.lawBridge.bindings.1`,
   ]);
-  //   t.deepEqual(chainStorage.getBody('lawBridge', marshaller), {});
+  //   XXX getBody() assumes json
+  //   t.deepEqual(
+  //     chainStorage.getBody(
+  //       'mockChainStorageRoot.lawBridge.bindings.1',
+  //       marshaller,
+  //     ),
+  //     {},
+  //   );
+
+  const funder1Seat = await E(zoe).offer(
+    E(publicFacet).makeFundingInvitation({ key: '1' }),
+    harden({
+      give: { Contribution: stable.units(99) },
+    }),
+    harden({ Contribution: stable.mint.mintPayment(stable.units(99)) }),
+  );
+
+  const funder2Seat = await E(zoe).offer(
+    E(publicFacet).makeFundingInvitation({ key: '1' }),
+    harden({
+      give: { Contribution: stable.units(1) },
+    }),
+    harden({ Contribution: stable.mint.mintPayment(stable.units(1)) }),
+  );
+
+  await eventLoopIteration();
+
+  t.deepEqual(await E(providerSeat).getOfferResult(), undefined);
+  t.deepEqual(await E(providerSeat).getFinalAllocation(), {
+    // note, they'll get whatever amount put it over the threshold
+    Compensation: stable.units(100),
+    Fee: stable.units(1),
+  });
+  // no money left in funding seats
+  t.deepEqual(await E(funder1Seat).getFinalAllocation(), {
+    Contribution: stable.makeEmpty(),
+  });
+  t.deepEqual(await E(funder2Seat).getFinalAllocation(), {
+    Contribution: stable.makeEmpty(),
+  });
 });
