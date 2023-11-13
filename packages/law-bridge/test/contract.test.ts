@@ -20,7 +20,6 @@ const makeTestContext = async () => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
 
   const installs = {
-    // @ts-expect-error bad ZoeService type
     lawBridge: await E(zoe).install(lawBridgeBundle),
   };
 
@@ -59,7 +58,6 @@ test.before(async t => {
 
 test('starts', async t => {
   const { zoe } = t.context;
-  // @ts-expect-error bad ZoeService type
   const { creatorFacet } = await E(zoe).startInstance(
     t.context.installs.lawBridge,
     {}, // IssuerKeyword record
@@ -72,7 +70,6 @@ test('starts', async t => {
 test('makeBindingInvitation', async t => {
   const { zoe, feeMintAccess, storageNode, chainStorage, marshaller, minted } =
     t.context;
-  // @ts-expect-error bad ZoeService type
   const { publicFacet } = await E(zoe).startInstance(
     t.context.installs.lawBridge,
     {}, // IssuerKeyword record

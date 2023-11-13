@@ -57,9 +57,6 @@ export const prepareLawBridgeKit = async (
               } = seat.getProposal();
               console.info('makeBindingInvitation', given);
               const key = String(bindings.getSize() + 1);
-              /**
-               * @type {StorageNode}
-               */
               const bindingNode = await E(
                 E(storageNode).makeChildNode('bindings'),
               ).makeChildNode(key);

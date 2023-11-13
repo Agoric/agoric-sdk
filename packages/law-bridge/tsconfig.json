@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "maxNodeModuleJsDepth": 2,
+  },
+  "include": [
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "test/**/*.ts"
+  ]
+}
