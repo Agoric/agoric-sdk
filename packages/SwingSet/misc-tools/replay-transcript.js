@@ -1004,7 +1004,7 @@ async function replay(transcriptFile) {
         //     JSON.stringify(s.response[1]).slice(0, 200),
         //   );
         // }
-        const snapshotIDs = await Promise.all(
+        const snapshotData = await Promise.all(
           workers.map(async workerData => {
             const { manager, xsnapPID } = workerData;
             workerData.timeOfLastCommand = performance.now();
@@ -1043,15 +1043,15 @@ async function replay(transcriptFile) {
                 } deliveries.`,
               );
               workerData.deliveryTimeSinceLastSnapshot = 0;
-              return snapshotID;
+              return { snapshotID, workerData };
             } else {
               return null;
             }
           }),
         );
-        const uniqueSnapshotIDs = [...new Set(snapshotIDs)].filter(
-          snapshotID => snapshotID != null,
-        );
+        const uniqueSnapshotIDs = [
+          ...new Set(snapshotData.map(data => data?.snapshotID)),
+        ].filter(snapshotID => snapshotID != null);
 
         const divergent = uniqueSnapshotIDs.length !== 1;
 
@@ -1067,7 +1067,22 @@ async function replay(transcriptFile) {
         }
 
         if (argv.forcedReloadFromSnapshot) {
-          for (const snapshotID of uniqueSnapshotIDs) {
+          let reloadSnapshotIDs = new Set(uniqueSnapshotIDs);
+          if (
+            !argv.keepWorkerHashDifference &&
+            uniqueSnapshotIDs.length > argv.keepWorkerRecent
+          ) {
+            reloadSnapshotIDs = new Set(
+              snapshotData
+                .filter(data => data && data.workerData.keep)
+                .map(data => data?.snapshotID),
+            );
+            for (const data of snapshotData.reverse()) {
+              if (reloadSnapshotIDs.size >= argv.keepWorkerRecent) break;
+              reloadSnapshotIDs.add(data?.snapshotID);
+            }
+          }
+          for (const snapshotID of reloadSnapshotIDs) {
             // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
               {
