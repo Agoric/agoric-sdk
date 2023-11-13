@@ -109,19 +109,19 @@ export const makeCoreProposalBehavior = ({
     }
     const bundleCap = await bcapP;
 
-    const manifestNS = await evaluateBundleCap(bundleCap);
+    const installationNS = await evaluateBundleCap(bundleCap);
 
     // Get the manifest and its metadata.
     console.error('execute', {
       exportedGetManifest: manifestGetterName,
-      behaviors: Object.keys(manifestNS),
+      behaviors: Object.keys(installationNS),
     });
     const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
       installations: rawInstallations,
-    } = await manifestNS[manifestGetterName](
+    } = await installationNS[manifestGetterName](
       harden({ restoreRef }),
       ...manifestGetterArgs,
     );
@@ -131,7 +131,7 @@ export const makeCoreProposalBehavior = ({
       [rawOptions, rawInstallations].map(shallowlyFulfilled),
     );
 
-    // Publish the installations for behavior dependencies.
+    // Publish the installations for our dependencies.
     const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
     await Promise.all(
       entries(installations || {}).map(([key, value]) => {
@@ -140,10 +140,10 @@ export const makeCoreProposalBehavior = ({
       }),
     );
 
-    // Evaluate the manifest for our behaviors.
+    // Evaluate the manifest.
     return runModuleBehaviors({
       allPowers: powers,
-      behaviors: manifestNS,
+      behaviors: installationNS,
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
@@ -152,7 +152,6 @@ export const makeCoreProposalBehavior = ({
     });
   };
 
-  // Make the behavior the completion value.
   return behavior;
 };
 
