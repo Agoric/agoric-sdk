@@ -6,6 +6,8 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import path from 'node:path';
 import { E } from '@endo/far';
+import { withAmountUtils } from '@agoric/inter-protocol/test/supports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -27,14 +29,25 @@ const makeTestContext = async () => {
   const marshaller = board.getReadonlyMarshaller();
 
   const chainStorage = makeMockChainStorageRoot();
+  const storageNode = chainStorage.makeChildNode('lawBridge');
+
+  const mintedIssuer = await E(zoe).getFeeIssuer();
+  // @ts-expect-error missing IssuerKit properties not needed in the test
+  const mintedKit: IssuerKit<'nat'> = {
+    issuer: mintedIssuer,
+    brand: await E(mintedIssuer).getBrand(),
+  };
+  const minted = withAmountUtils(mintedKit);
 
   return {
     zoe: await zoe,
     feeMintAccess: await feeMintAccessP,
     chainStorage,
+    storageNode,
     installs,
     board,
     marshaller,
+    minted,
   };
 };
 
@@ -54,4 +67,31 @@ test('starts', async t => {
     { feeMintAccess: t.context.feeMintAccess },
   );
   t.truthy(creatorFacet);
+});
+
+test('makeBindingInvitation', async t => {
+  const { zoe, feeMintAccess, storageNode, chainStorage, marshaller, minted } =
+    t.context;
+  // @ts-expect-error bad ZoeService type
+  const { publicFacet } = await E(zoe).startInstance(
+    t.context.installs.lawBridge,
+    {}, // IssuerKeyword record
+    {}, // terms
+    { feeMintAccess, storageNode, marshaller },
+  );
+  const key = 'myArtwork';
+  // TODO make an offer
+  const seat = E(zoe).offer(
+    E(publicFacet).makeBindingInvitation({ key }),
+    // TODO pay a buck
+    // harden({
+    //   give: { Fee: minted.units(1) },
+    // }),
+    // harden({ In: anchor.mint.mintPayment(giveAnchor) }),
+  );
+  await eventLoopIteration();
+
+  // verify the key was reserved
+  t.deepEqual(chainStorage.keys(), [`mockChainStorageRoot.lawBridge.${key}`]);
+  //   t.deepEqual(chainStorage.getBody('lawBridge', marshaller), {});
 });

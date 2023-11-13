@@ -16,8 +16,17 @@ const LawBridgeKitI = {
  *
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {ZCF} zcf - the zcf parameter
+ * @param {{
+ *   stableBrand: Brand;
+ *   storageNode: StorageNode;
+ *   marshaller: Marshaller;
+ * }} opts
  */
-export const prepareLawBridgeKit = async (baggage, zcf, { stableBrand }) => {
+export const prepareLawBridgeKit = async (
+  baggage,
+  zcf,
+  { stableBrand, storageNode, marshaller },
+) => {
   const { stableAmountShape } = await provideAll(baggage, {
     stableAmountShape: () => E(stableBrand).getAmountShape(),
   });
@@ -34,23 +43,38 @@ export const prepareLawBridgeKit = async (baggage, zcf, { stableBrand }) => {
     {
       creator: {},
       public: {
-        makeBindingInvitation: () => {
+        /**
+         * Generates a binding invitation.
+         *
+         * @param {object} opts
+         * @param {string} opts.key - The requested key for the new binding
+         */
+        makeBindingInvitation({ key }) {
+          assert.string(key);
           const hook =
             /** @param {ZCFSeat} seat */
-            seat => {
+            async seat => {
               const {
-                give: { In: given },
+                give: { Fee: given },
               } = seat.getProposal();
-              console.info('makeBindingInvitation', given);
+              console.info('makeBindingInvitation', key, given);
+              console.error('NOT YET IMPLEMENTED: reserve key in vstorage');
+              // what happens if key is already in vstorage ?
+              /**
+               * @type {StorageNode}
+               */
+              const bindingNode = await E(storageNode).makeChildNode(key);
+              await E(bindingNode).setValue('RESERVED');
               seat.exit();
             };
 
           return zcf.makeInvitation(
             hook,
-            'wantBinding',
+            'binding',
             undefined,
             M.splitRecord({
-              give: { In: stableAmountShape },
+              // TODO charge a buck
+              //   give: { Fee: stableAmountShape },
             }),
           );
         },

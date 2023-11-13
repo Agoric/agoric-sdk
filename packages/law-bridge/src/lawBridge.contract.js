@@ -6,7 +6,11 @@ import { prepareLawBridgeKit } from './lawBridgeKit.js';
 /**
  *
  * @param {ZCF} zcf
- * @param {*} privateArgs
+ * @param {{
+ *   feeMintAccess: FeeMintAccess;
+ *   storageNode: StorageNode;
+ *   marshaller: Marshaller;
+}} privateArgs
  * @param {*} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
@@ -17,6 +21,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const makeLawBridgeKit = await prepareLawBridgeKit(baggage, zcf, {
     stableBrand,
+    storageNode: privateArgs.storageNode,
+    marshaller: privateArgs.marshaller,
   });
   const lbKit = makeLawBridgeKit();
   return { creatorFacet: lbKit.creator, publicFacet: lbKit.public };
