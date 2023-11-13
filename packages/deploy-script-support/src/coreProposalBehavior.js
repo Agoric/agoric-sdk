@@ -96,8 +96,16 @@ export const makeCoreProposalBehavior = ({
     let bcapP;
     if ('bundleName' in manifestBundleRef) {
       bcapP = E(vatAdminSvc).getNamedBundleCap(manifestBundleRef.bundleName);
-    } else {
+    } else if ('bundleID' in manifestBundleRef) {
       bcapP = E(vatAdminSvc).getBundleCap(manifestBundleRef.bundleID);
+    } else {
+      const keys = Reflect.ownKeys(manifestBundleRef).map(key =>
+        typeof key === 'string' ? JSON.stringify(key) : String(key),
+      );
+      const keysStr = `[${keys.join(', ')}]`;
+      throw Error(
+        `bundleRef must have own bundleName or bundleID, missing in ${keysStr}`,
+      );
     }
     const bundleCap = await bcapP;
 
