@@ -57,6 +57,23 @@ export const makeCoreProposalBehavior = ({
     return fromEntries(ents);
   };
 
+  const makeRestoreRef = (vatAdminSvc, zoe) => {
+    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
+    const defaultRestoreRef = async bundleRef => {
+      // extract-proposal.js creates these records, and bundleName is
+      // the name under which the bundle was installed into
+      // config.bundles
+      const bundleIdP =
+        'bundleName' in bundleRef
+          ? E(vatAdminSvc).getBundleIDByName(bundleRef.bundleName)
+          : bundleRef.bundleID;
+      const bundleID = await bundleIdP;
+      const label = bundleID.slice(0, 8);
+      return E(zoe).installBundleID(bundleID, label);
+    };
+    return defaultRestoreRef;
+  };
+
   /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers */
   const behavior = async powers => {
     // NOTE: If updating any of these names extracted from `powers`, you must
@@ -70,21 +87,6 @@ export const makeCoreProposalBehavior = ({
       },
     } = powers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
-
-    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
-    const defaultRestoreRef = async ref => {
-      // extract-proposal.js creates these records, and bundleName is
-      // the name under which the bundle was installed into
-      // config.bundles
-      const p =
-        'bundleName' in ref
-          ? E(vatAdminSvc).getBundleIDByName(ref.bundleName)
-          : ref.bundleID;
-      const bundleID = await p;
-      const label = bundleID.slice(0, 8);
-      return E(zoe).installBundleID(bundleID, label);
-    };
-    const restoreRef = overrideRestoreRef || defaultRestoreRef;
 
     // Get the on-chain installation containing the manifest and behaviors.
     console.info('evaluateBundleCap', {
@@ -102,10 +104,12 @@ export const makeCoreProposalBehavior = ({
 
     const manifestNS = await evaluateBundleCap(bundleCap);
 
+    // Get the manifest and its metadata.
     console.error('execute', {
       exportedGetManifest,
       behaviors: Object.keys(manifestNS),
     });
+    const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
