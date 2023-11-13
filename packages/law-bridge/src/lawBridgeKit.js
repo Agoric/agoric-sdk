@@ -1,5 +1,5 @@
 import { makeExo } from '@agoric/store';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/eventual-send';
 
@@ -32,7 +32,7 @@ export const prepareLawBridgeKit = async (
   });
 
   const initState = () => {
-    return {};
+    return { bindings: makeScalarBigMapStore('bindings') };
   };
 
   const makeLawBridgeKit = prepareExoClassKit(
@@ -49,8 +49,13 @@ export const prepareLawBridgeKit = async (
          * @param {object} opts
          * @param {string} opts.key - The requested key for the new binding
          */
+        // FIXME don't allow UGC into vstorage
         makeBindingInvitation({ key }) {
+          const { bindings } = this.state;
           assert.string(key);
+          if (bindings.has(key)) {
+            throw new Error(`Binding already exists: ${key}`);
+          }
           const hook =
             /** @param {ZCFSeat} seat */
             async seat => {
@@ -65,6 +70,8 @@ export const prepareLawBridgeKit = async (
                */
               const bindingNode = await E(storageNode).makeChildNode(key);
               await E(bindingNode).setValue('RESERVED');
+              // TODO save something more useful
+              bindings.init(key, bindingNode);
               seat.exit();
             };
 

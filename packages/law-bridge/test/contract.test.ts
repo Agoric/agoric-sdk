@@ -81,7 +81,7 @@ test('makeBindingInvitation', async t => {
   );
   const key = 'myArtwork';
   // TODO make an offer
-  const seat = E(zoe).offer(
+  const seat = await E(zoe).offer(
     E(publicFacet).makeBindingInvitation({ key }),
     // TODO pay a buck
     // harden({
@@ -94,4 +94,9 @@ test('makeBindingInvitation', async t => {
   // verify the key was reserved
   t.deepEqual(chainStorage.keys(), [`mockChainStorageRoot.lawBridge.${key}`]);
   //   t.deepEqual(chainStorage.getBody('lawBridge', marshaller), {});
+
+  //   what happens if we do it again with the same key?
+  await t.throwsAsync(() => E(publicFacet).makeBindingInvitation({ key }), {
+    message: 'Binding already exists: myArtwork',
+  });
 });
