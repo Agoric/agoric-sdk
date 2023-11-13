@@ -8,7 +8,8 @@ const t = 'makeCoreProposalBehavior';
  * @typedef {*} BootstrapPowers
  */
 
-// These permits apply to `allPowers` in `behavior` below.
+// These permits limit the powers passed to the `behavior` function returned by
+// `makeCoreProposalBehavior`.
 export const permits = {
   consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
   evaluateBundleCap: t,
@@ -56,9 +57,9 @@ export const makeCoreProposalBehavior = ({
     return fromEntries(ents);
   };
 
-  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} allPowers */
-  const behavior = async allPowers => {
-    // NOTE: If updating any of these names extracted from `allPowers`, you must
+  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers */
+  const behavior = async powers => {
+    // NOTE: If updating any of these names extracted from `powers`, you must
     // change `permits` above to reflect their accessibility.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },
@@ -67,7 +68,7 @@ export const makeCoreProposalBehavior = ({
       modules: {
         utils: { runModuleBehaviors },
       },
-    } = allPowers;
+    } = powers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
     /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
@@ -130,7 +131,7 @@ export const makeCoreProposalBehavior = ({
 
     // Evaluate the manifest for our behaviors.
     return runModuleBehaviors({
-      allPowers,
+      allPowers: powers,
       behaviors: manifestNS,
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
@@ -146,7 +147,7 @@ export const makeCoreProposalBehavior = ({
 
 export const makeEnactCoreProposalsFromBundleRef =
   ({ makeCoreProposalArgs, E }) =>
-  async allPowers => {
+  async powers => {
     await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
         const subBehavior = makeCoreProposalBehavior({
@@ -155,7 +156,7 @@ export const makeEnactCoreProposalsFromBundleRef =
           overrideManifest,
           E,
         });
-        return subBehavior(allPowers);
+        return subBehavior(powers);
       }),
     );
   };
