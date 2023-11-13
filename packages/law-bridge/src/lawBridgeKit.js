@@ -45,8 +45,10 @@ export const prepareLawBridgeKit = async (
         /**
          * Generates a binding invitation.
          *
+         * @param {object} opts
+         * @param {bigint} opts.threshold
          */
-        makeBindingInvitation() {
+        makeBindingInvitation({ threshold }) {
           const { bindings } = this.state;
 
           const hook =
