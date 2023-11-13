@@ -127,7 +127,7 @@ export const InvitationElementShape = M.splitRecord({
 });
 
 export const OfferHandlerI = M.interface('OfferHandler', {
-  handle: M.call(SeatShape).optional(M.any()).returns(M.string()),
+  handle: M.call(SeatShape).optional(M.any()).returns(M.any()),
 });
 
 export const SeatHandleAllocationsShape = M.arrayOf(
