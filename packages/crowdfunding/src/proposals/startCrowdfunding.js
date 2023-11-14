@@ -49,6 +49,8 @@ export const startCrowdfunding = async (
     privateArgs,
     'crowdfunding',
   );
+  crowdfundingKit.resolve(startResult);
+
   await E(diagnostics).savePrivateArgs(startResult.instance, privateArgs);
 
   crowdfundingInstance.resolve(startResult.instance);

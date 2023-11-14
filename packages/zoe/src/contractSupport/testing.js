@@ -4,7 +4,7 @@ import { makeRatio } from './ratio.js';
 
 /** @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit */
 export const withAmountUtils = kit => {
-  const decimalPlaces = kit.issuer.getDisplayInfo?.()?.decimalPlaces ?? 6;
+  const decimalPlaces = kit.issuer?.getDisplayInfo?.()?.decimalPlaces ?? 6;
   return {
     ...kit,
     /** @param {NatValue} v */

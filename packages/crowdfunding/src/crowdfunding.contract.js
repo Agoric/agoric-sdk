@@ -1,6 +1,5 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contractFacet/types-ambient.js';
-import { provideAll } from '@agoric/zoe/src/contractSupport/index.js';
 import { prepareCrowdfundingKit } from './crowdfundingKit.js';
 
 /**
