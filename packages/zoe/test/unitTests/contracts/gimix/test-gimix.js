@@ -1,16 +1,19 @@
+/* global setImmediate */
 // @ts-check
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-// difference? import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+/* eslint-disable no-unused-vars */
+// eslint-disable-next-line import/order
+import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
+
 import url from 'url';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeCopyBag } from '@endo/patterns';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { TimeMath } from '@agoric/time';
+import { setUpZoeForTest } from '../../../../tools/setup-zoe.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -128,12 +131,12 @@ test('start contract; make work agreement', async t => {
 
   const { rootNode, data } = makeFakeStorageKit('X');
 
-  const _faucet = () => {
+  const faucet = () => {
     const purse = E(agoricNames.issuer.IST).makeEmptyPurse();
     return purse;
   };
 
-  await Promise.all([alice(_faucet())]);
+  await Promise.all([alice(faucet())]);
   t.pass();
 });
 
