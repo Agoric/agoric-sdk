@@ -1,6 +1,5 @@
-// @ts-nocheck
 /* eslint-disable no-unused-vars */
-import { prepareExoClass } from '@agoric/vat-data';
+import { prepareExoClass, prepareExoClassKit } from '@agoric/vat-data';
 import { M } from '@endo/patterns';
 import { OfferHandlerI } from '../../typeGuards';
 
@@ -54,8 +53,9 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     {
       handle(seat) {
         const { self, state } = this;
-        const jobReportInvitationMaker = makeJobReportInvitationHandler();
-        return jobReportInvitationMaker;
+        // eslint-disable-next-line no-use-before-define
+        const jobReportContinuing = makeJobReportContinuing();
+        return jobReportContinuing;
       },
     },
   );
@@ -86,6 +86,25 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     return jobReportInvitationP;
   };
 
+  const makeJobReportContinuing = prepareExoClassKit(
+    baggage,
+    'JobsReportContinuing',
+    {
+      invitationMakers: M.interface('makeJobReportInvitation', {
+        JobReport: M.call().returns(M.any()),
+      })
+    },
+    () => ({}),
+    {
+      invitationMakers: {
+        JobReport() {
+          const { facets, state } = this;
+          return makeJobReportInvitation();
+        },
+      },
+    }
+  );
+
   const makeOracleInvitation = () => {
     const oracleInvitationHandler = makeOracleInvitationHandler();
 
@@ -109,5 +128,39 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     );
     return workAgreementP;
   };
+
+  const GimixContractFacetsI = harden({
+    creatorFacet: M.interface('GimixCreatorFacet', {
+      makeOracleInvitation: M.call().returns(M.any()),
+    }),
+    publicFacet: M.interface('GimixPublicFacet', {
+      makeWorkAgreementInvitation: M.call().returns(M.any()),
+    }),
+  });
+
+  const makeGimixContractFacets = prepareExoClassKit(
+    baggage,
+    'GimixContractFacets',
+    GimixContractFacetsI,
+    () => ({}),
+    {
+      creatorFacet: {
+        makeOracleInvitation() {
+          const { facets, state } = this;
+          return makeOracleInvitation();
+        },
+      },
+      publicFacet: {
+        makeWorkAgreementInvitation() {
+          const { facets, state } = this;
+          return makeWorkAgreementInvitation();
+        }
+      },
+    },
+  );
+
+  const gimixContractFacets = makeGimixContractFacets();
+
+  return gimixContractFacets;
 };
 harden(prepare);
