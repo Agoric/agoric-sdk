@@ -46,7 +46,7 @@ export const prepareCrowdfundingKit = async (
   const initState = () => {
     return {
       /** @type {MapStore<string, Binding>} */
-      bindings: makeScalarBigMapStore('bindings'),
+      bindings: makeScalarBigMapStore('bindings', { durable: true }),
     };
   };
 
@@ -124,7 +124,9 @@ export const prepareCrowdfundingKit = async (
                 E(storageNode).makeChildNode('bindings'),
               ).makeChildNode(key);
               await E(bindingNode).setValue('RESERVED');
-              const funderAmounts = makeScalarBigMapStore('funderAmounts');
+              const funderAmounts = makeScalarBigMapStore('funderAmounts', {
+                durable: true,
+              });
               bindings.init(
                 key,
                 harden({
@@ -136,6 +138,9 @@ export const prepareCrowdfundingKit = async (
                 }),
               );
               // exit the seat when the binding is fully funded
+              return harden({
+                key,
+              });
             };
 
           return zcf.makeInvitation(

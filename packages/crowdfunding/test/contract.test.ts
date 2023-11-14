@@ -112,7 +112,7 @@ test('basic flow', async t => {
 
   await eventLoopIteration();
 
-  t.deepEqual(await E(providerSeat).getOfferResult(), undefined);
+  t.deepEqual(await E(providerSeat).getOfferResult(), { key: '1' });
   t.deepEqual(await E(providerSeat).getFinalAllocation(), {
     // note, they'll get whatever amount put it over the threshold
     Compensation: stable.units(100),

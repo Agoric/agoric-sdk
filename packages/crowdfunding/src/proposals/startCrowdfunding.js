@@ -23,7 +23,7 @@ export const startCrowdfunding = async (
       produce: { crowdfunding: crowdfundingInstance },
     },
     brand: {
-      consume: { [Stable.symbol]: feeBrand },
+      consume: { [Stable.symbol]: feeBrandP },
     },
   },
   { options },
@@ -39,10 +39,13 @@ export const startCrowdfunding = async (
     storageNode,
     marshaller,
   };
+  /**
+   * @type {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/crowdfunding/src/crowdfunding.contract.js')['start']>}
+   */
   const startResult = await E(zoe).startInstance(
     crowdfundingInstallation,
     {}, // IssuerKeyword record
-    { feeBrand }, // terms
+    { feeBrand: await feeBrandP }, // terms
     privateArgs,
     'crowdfunding',
   );
