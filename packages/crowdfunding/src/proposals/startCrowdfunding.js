@@ -17,10 +17,10 @@ export const startCrowdfunding = async (
     consume: { board, chainStorage, diagnostics, zoe },
     produce: { crowdfundingKit },
     installation: {
-      consume: { crowdfunding },
+      consume: { crowdfunding: crowdfundingInstallation },
     },
     instance: {
-      produce: { economicCommittee },
+      produce: { crowdfunding: crowdfundingInstance },
     },
     brand: {
       consume: { [Stable.symbol]: feeBrand },
@@ -40,17 +40,15 @@ export const startCrowdfunding = async (
     marshaller,
   };
   const startResult = await E(zoe).startInstance(
-    crowdfunding,
+    crowdfundingInstallation,
     {}, // IssuerKeyword record
     { feeBrand }, // terms
     privateArgs,
     'crowdfunding',
   );
-  const { instance } = startResult;
-
   await E(diagnostics).savePrivateArgs(startResult.instance, privateArgs);
 
-  economicCommittee.resolve(instance);
+  crowdfundingInstance.resolve(startResult.instance);
 };
 harden(startCrowdfunding);
 
