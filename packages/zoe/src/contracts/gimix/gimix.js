@@ -8,6 +8,7 @@ import { OfferHandlerI, TimerShape } from '../../typeGuards';
 /**
  * @typedef {object} GiMiXTerms
  * @property {import('@agoric/vats').NameHub} namesByAddress
+ * @property {import('@agoric/time/src/types').TimerService} timer
  */
 
 const JobReportProposalShape = M.splitRecord({
@@ -26,6 +27,7 @@ const JobsReportContinuingIKit = {
   invitationMakers: M.interface('JobReportInvitationMaker', {
     JobReport: M.call().returns(M.any()),
   }),
+  kitMustHaveMultipleFacets: M.interface('Stub', {}),
 };
 
 const GimixContractFacetsIKit = harden({
@@ -69,6 +71,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
           return makeJobReportInvitation();
         },
       },
+      kitMustHaveMultipleFacets: {},
     },
   );
 
