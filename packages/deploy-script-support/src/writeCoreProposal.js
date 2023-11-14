@@ -48,6 +48,12 @@ export const makeWriteCoreProposal = (
     return bundlerCache;
   };
 
+  /**
+   * Merges a proposal with additional permits.
+   *
+   * @param {import('./externalTypes.js').ProposalResult} proposal - The proposal to merge.
+   * @param {Record<string, unknown>} additionalPermits - Additional permits to merge.
+   */
   const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
       sourceSpec,
