@@ -792,8 +792,9 @@ func NewAgoricApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	const (
-		upgradeName     = "agoric-upgrade-12"
-		upgradeNameTest = "agorictest-upgrade-12"
+		upgradeName         = "agoric-upgrade-12"
+		upgradeNameTest     = "agorictest-upgrade-12"
+		upgradeNameEmerynet = "agoric-upgrade-12-rc0"
 	)
 
 	app.UpgradeKeeper.SetUpgradeHandler(
@@ -802,6 +803,10 @@ func NewAgoricApp(
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
+		upgrade12Handler(app, upgradeNameTest),
+	)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeNameEmerynet,
 		upgrade12Handler(app, upgradeNameTest),
 	)
 
