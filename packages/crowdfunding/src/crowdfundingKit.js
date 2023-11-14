@@ -29,7 +29,7 @@ const CrowdfundingKitI = {
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {ZCF} zcf - the zcf parameter
  * @param {{
- *   stableBrand: Brand;
+ *   feeBrand: Brand;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
  * }} opts
@@ -37,10 +37,10 @@ const CrowdfundingKitI = {
 export const prepareCrowdfundingKit = async (
   baggage,
   zcf,
-  { stableBrand, storageNode, marshaller },
+  { feeBrand, storageNode, marshaller },
 ) => {
   const { stableAmountShape } = await provideAll(baggage, {
-    stableAmountShape: () => E(stableBrand).getAmountShape(),
+    stableAmountShape: () => E(feeBrand).getAmountShape(),
   });
 
   const initState = () => {
@@ -132,7 +132,7 @@ export const prepareCrowdfundingKit = async (
                   funderAmounts,
                   providerSeat,
                   threshold: Compensation,
-                  totalFunding: AmountMath.makeEmpty(stableBrand),
+                  totalFunding: AmountMath.makeEmpty(feeBrand),
                 }),
               );
               // exit the seat when the binding is fully funded

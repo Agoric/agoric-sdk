@@ -5,25 +5,20 @@ import { prepareCrowdfundingKit } from './crowdfundingKit.js';
 
 /**
  *
- * @param {ZCF} zcf
+ * @param {ZCF<{
+ *   feeBrand: Brand<'nat'>;
+ * }>} zcf
  * @param {{
- *   feeMintAccess?: FeeMintAccess;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
- *   stableBrand: Brand<'nat'>;
 }} privateArgs
  * @param {*} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  // const { stableMint } = await provideAll(baggage, {
-  //   stableMint: () => zcf.registerFeeMint('Binding', privateArgs.feeMintAccess),
-  // });
-  // const { brand: stableBrand } = stableMint.getIssuerRecord();
-
-  const { stableBrand } = privateArgs;
+  const { feeBrand } = zcf.getTerms();
 
   const makeCrowdfundingKit = await prepareCrowdfundingKit(baggage, zcf, {
-    stableBrand,
+    feeBrand,
     storageNode: privateArgs.storageNode,
     marshaller: privateArgs.marshaller,
   });

@@ -19,7 +19,7 @@ const crowdfundPath = `${dirname}/../src/crowdfunding.contract.js`;
 const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const crowdfundBundle = await bundleCache.load(crowdfundPath, 'crowdfund');
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { zoe } = await setUpZoeForTest();
 
   const installs = {
     crowdfund: await E(zoe).install(crowdfundBundle),
@@ -36,7 +36,6 @@ const makeTestContext = async () => {
 
   return {
     zoe: await zoe,
-    feeMintAccess: await feeMintAccessP,
     chainStorage,
     storageNode,
     installs,
@@ -57,20 +56,19 @@ test('starts', async t => {
   const { creatorFacet } = await E(zoe).startInstance(
     t.context.installs.crowdfund,
     {}, // IssuerKeyword record
-    {}, // terms
-    { feeMintAccess: t.context.feeMintAccess, stableBrand: stable.brand },
+    { feeBrand: stable.brand }, // terms
+    {}, // privateArgs
   );
   t.truthy(creatorFacet);
 });
 
 test('basic flow', async t => {
-  const { zoe, feeMintAccess, storageNode, chainStorage, marshaller, stable } =
-    t.context;
+  const { zoe, storageNode, chainStorage, marshaller, stable } = t.context;
   const { publicFacet } = await E(zoe).startInstance(
     t.context.installs.crowdfund,
     { FakeStable: stable.issuer }, // IssuerKeyword record
-    {}, // terms
-    { feeMintAccess, stableBrand: stable.brand, storageNode, marshaller },
+    { feeBrand: stable.brand }, // terms
+    { storageNode, marshaller }, // privateArgs
   );
   const Fee = stable.units(1);
   const providerSeat = await E(zoe).offer(
