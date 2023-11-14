@@ -26,7 +26,7 @@ const test = anyTest;
 
 const asset = ref => url.fileURLToPath(new URL(ref, import.meta.url));
 
-const makeTestContext = async _t => {
+const makeTestContext = async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
 
   const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest();
@@ -36,8 +36,9 @@ const makeTestContext = async _t => {
     'gimix',
   );
 
+  const istIssuer = await E(zoe).getFeeIssuer();
+  const istBrand = await E(istIssuer).getBrand();
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  const stableIssuer = await E(zoe).getFeeIssuer();
 
   /** @param {bigint} value */
   const faucet = async value => {
@@ -47,37 +48,46 @@ const makeTestContext = async _t => {
       zoe,
     });
 
-    const purse = await E(stableIssuer).makeEmptyPurse();
+    const purse = await E(istIssuer).makeEmptyPurse();
     await E(purse).deposit(pmt);
     return purse;
   };
 
   const eventLoopIteration = () => new Promise(setImmediate);
 
-  return { zoe, bundle, faucet, eventLoopIteration };
+  const manualTimer = buildManualTimer(
+    t.log,
+    BigInt((2020 - 1970) * 365.25 * DAY),
+    {
+      timeStep: BigInt(DAY),
+      eventLoopIteration,
+    },
+  );
+  /** @type {import('@agoric/time/src/types').TimerService} */
+  const chainTimerService = manualTimer;
+  const timerBrand = await E(chainTimerService).getTimerBrand();
+
+  // really a namehub...
+  const agoricNames = {
+    issuer: { IST: istIssuer },
+    brand: { timerBrand, IST: istBrand },
+    installation: { centralSupply },
+    instance: {},
+  };
+
+  const powers = { zoe, chainTimerService, agoricNames };
+  return { bundle, faucet, manualTimer, powers };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
 test('start contract; make work agreement', async t => {
-  const { zoe } = t.context;
-
   const coreEval = async () => {
-    const { bundle } = t.context;
+    const { powers, bundle } = t.context;
+    const { chainTimerService, zoe, agoricNames } = powers;
 
-    const manualTimer = buildManualTimer(
-      t.log,
-      BigInt((2020 - 1970) * 365.25 * DAY),
-      {
-        timeStep: BigInt(DAY),
-        eventLoopIteration: t.context.eventLoopIteration,
-      },
-    );
-    /** @type {import('@agoric/time/src/types').TimerService} */
-    const timer = manualTimer;
-    const timerBrand = await E(timer).getTimerBrand();
     const board = new Map(); // sort of
-    board.set('board123', timer);
+    board.set('board123', chainTimerService);
 
     // TODO: add bob's address
     const { nameHub: namesByAddress } = makeNameHubKit();
@@ -85,35 +95,35 @@ test('start contract; make work agreement', async t => {
     /** @type {Installation<import('../../../../src/contracts/gimix/gimix').prepare>} */
     const installation = await E(zoe).install(bundle);
 
-    const istIssuer = await E(zoe).getFeeIssuer();
-    const istBrand = await E(istIssuer).getBrand();
     const { instance: gimixInstance } = await E(zoe).startInstance(
       installation,
-      { Stable: istIssuer },
-      { namesByAddress, timer },
+      { Stable: agoricNames.issuer.IST },
+      { namesByAddress, timer: chainTimerService },
     );
     const {
       brands: { GimixOracle },
     } = await E(zoe).getTerms(gimixInstance);
 
     // really a namehub...
-    const agoricNames = {
-      issuer: { IST: istIssuer },
-      brand: { timerBrand, IST: istBrand, GimixOracle },
-      installation: { gimix: installation },
-      instance: { gimix: gimixInstance },
+    const withGiMix = {
+      ...agoricNames,
+      brand: { ...agoricNames.brand, GimixOracle },
+      installation: { ...agoricNames.installation, gimix: installation },
+      instance: { ...agoricNames.instance, gimix: gimixInstance },
     };
-    return { agoricNames, board };
+    return { agoricNames: withGiMix, board };
   };
   const { agoricNames, board } = await coreEval();
 
   /**
+   * @param {ZoeService} zoe
    * @param {ERef<Purse>} purseP
    * @param {string} issue
    * @param {bigint} when
    * @param {string} timerBoardId
    */
   const alice = async (
+    zoe,
     purseP,
     issue = 'https://github.com/Agoric/agoric-sdk/issues/8523',
     bounty = 12n,
@@ -154,8 +164,11 @@ test('start contract; make work agreement', async t => {
 
   const { rootNode, data } = makeFakeStorageKit('X');
 
-  const { faucet } = t.context;
-  await Promise.all([alice(faucet(25n * UNIT6))]);
+  const {
+    faucet,
+    powers: { zoe },
+  } = t.context;
+  await Promise.all([alice(zoe, faucet(25n * UNIT6))]);
   t.pass();
 });
 
