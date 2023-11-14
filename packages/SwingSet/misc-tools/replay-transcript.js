@@ -789,7 +789,7 @@ async function replay(transcriptFile) {
             firstTranscriptNum,
           } = workerData;
           // eslint-disable-next-line no-await-in-loop
-          await manager.shutdown();
+          await manager?.shutdown();
           console.log(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
@@ -897,7 +897,7 @@ async function replay(transcriptFile) {
         /** @param {WorkerData} workerData */
         const doWorkerSnapshot = async workerData => {
           const { manager, xsnapPID, firstTranscriptNum } = workerData;
-          if (!manager.makeSnapshot) return null;
+          if (!manager?.makeSnapshot) return null;
           const { hash, rawSaveSeconds } = await manager.makeSnapshot(
             snapStore,
           );
@@ -1136,7 +1136,7 @@ async function replay(transcriptFile) {
           deliveryTimeTotal,
           firstTranscriptNum,
         }) => {
-          await manager.shutdown();
+          await manager?.shutdown();
           console.log(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
