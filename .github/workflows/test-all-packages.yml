@@ -204,6 +204,8 @@ jobs:
       - name: yarn test (casting)
         if: (success() || failure())
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (create-dapp)
+        run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
