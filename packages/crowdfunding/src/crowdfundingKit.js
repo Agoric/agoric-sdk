@@ -5,9 +5,9 @@ import { atomicRearrange } from '@agoric/zoe/src/contractSupport/atomicTransfer.
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/eventual-send';
 
-const LawBridgeKitI = {
-  creator: M.interface('LawBridgeKit creator facet', {}),
-  public: M.interface('LawBridgeKit public facet', {
+const CrowdfundingKitI = {
+  creator: M.interface('CrowdfundingKit creator facet', {}),
+  public: M.interface('CrowdfundingKit public facet', {
     makeBindingInvitation: M.call().returns(M.promise()),
     makeFundingInvitation: M.call().returns(M.promise()),
   }),
@@ -34,7 +34,7 @@ const LawBridgeKitI = {
  *   marshaller: Marshaller;
  * }} opts
  */
-export const prepareLawBridgeKit = async (
+export const prepareCrowdfundingKit = async (
   baggage,
   zcf,
   { stableBrand, storageNode, marshaller },
@@ -97,10 +97,10 @@ export const prepareLawBridgeKit = async (
     return { ...binding, totalFunding };
   };
 
-  const makeLawBridgeKit = prepareExoClassKit(
+  const makeCrowdfundingKit = prepareExoClassKit(
     baggage,
-    'LawBridgeKit',
-    LawBridgeKitI,
+    'CrowdfundingKit',
+    CrowdfundingKitI,
     initState,
     {
       creator: {},
@@ -185,6 +185,6 @@ export const prepareLawBridgeKit = async (
     },
   );
 
-  return makeLawBridgeKit;
+  return makeCrowdfundingKit;
 };
-harden(prepareLawBridgeKit);
+harden(prepareCrowdfundingKit);

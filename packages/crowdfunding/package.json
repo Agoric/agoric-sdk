@@ -1,8 +1,8 @@
 {
   "private": true,
-  "name": "@agoric/law-bridge",
+  "name": "@agoric/crowdfunding",
   "version": "0.1.1",
-  "description": "Smart contract for legal bindings to vstorage state",
+  "description": "Smart contract for crowd funding (aka assurance)",
   "type": "module",
   "main": "src/index.js",
   "engines": {

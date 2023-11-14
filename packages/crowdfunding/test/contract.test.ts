@@ -14,15 +14,15 @@ import path from 'node:path';
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 // TODO(turadg) see if we can get it working with .ts
-const lawBridgePath = `${dirname}/../src/lawBridge.contract.js`;
+const crowdfundPath = `${dirname}/../src/crowdfunding.contract.js`;
 
 const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
-  const lawBridgeBundle = await bundleCache.load(lawBridgePath, 'lawBridge');
+  const crowdfundBundle = await bundleCache.load(crowdfundPath, 'crowdfund');
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
 
   const installs = {
-    lawBridge: await E(zoe).install(lawBridgeBundle),
+    crowdfund: await E(zoe).install(crowdfundBundle),
   };
 
   const board = makeFakeBoard();
@@ -30,7 +30,7 @@ const makeTestContext = async () => {
   const marshaller = board.getReadonlyMarshaller();
 
   const chainStorage = makeMockChainStorageRoot();
-  const storageNode = chainStorage.makeChildNode('lawBridge');
+  const storageNode = chainStorage.makeChildNode('crowdfund');
 
   const stable = withAmountUtils(makeIssuerKit('FakeStable'));
 
@@ -55,7 +55,7 @@ test.before(async t => {
 test('starts', async t => {
   const { stable, zoe } = t.context;
   const { creatorFacet } = await E(zoe).startInstance(
-    t.context.installs.lawBridge,
+    t.context.installs.crowdfund,
     {}, // IssuerKeyword record
     {}, // terms
     { feeMintAccess: t.context.feeMintAccess, stableBrand: stable.brand },
@@ -67,7 +67,7 @@ test('basic flow', async t => {
   const { zoe, feeMintAccess, storageNode, chainStorage, marshaller, stable } =
     t.context;
   const { publicFacet } = await E(zoe).startInstance(
-    t.context.installs.lawBridge,
+    t.context.installs.crowdfund,
     { FakeStable: stable.issuer }, // IssuerKeyword record
     {}, // terms
     { feeMintAccess, stableBrand: stable.brand, storageNode, marshaller },
@@ -85,12 +85,12 @@ test('basic flow', async t => {
 
   // verify the key was reserved
   t.deepEqual(chainStorage.keys(), [
-    `mockChainStorageRoot.lawBridge.bindings.1`,
+    `mockChainStorageRoot.crowdfund.bindings.1`,
   ]);
   //   XXX getBody() assumes json
   //   t.deepEqual(
   //     chainStorage.getBody(
-  //       'mockChainStorageRoot.lawBridge.bindings.1',
+  //       'mockChainStorageRoot.crowdfund.bindings.1',
   //       marshaller,
   //     ),
   //     {},

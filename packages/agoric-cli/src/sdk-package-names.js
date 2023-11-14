@@ -12,6 +12,7 @@ export default [
   "@agoric/cosmic-proto",
   "@agoric/cosmic-swingset",
   "@agoric/cosmos",
+  "@agoric/crowdfunding",
   "@agoric/deploy-script-support",
   "@agoric/deployment",
   "@agoric/ertp",
