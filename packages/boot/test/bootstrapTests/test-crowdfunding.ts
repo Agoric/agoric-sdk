@@ -3,8 +3,11 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { withAmountUtils } from '@agoric/zoe/src/contractSupport/testing.js';
 import type { TestFn } from 'ava';
 import { makeSwingsetTestKit } from './supports.ts';
+import { makeWalletFactoryDriver } from './drivers.ts';
+import { Offers } from '@agoric/crowdfunding/src/clientSupport.js';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
@@ -16,7 +19,7 @@ const makeDefaultTestContext = async t => {
     },
   );
 
-  const { runUtils } = swingsetTestKit;
+  const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
@@ -30,9 +33,16 @@ const makeDefaultTestContext = async t => {
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
+  const walletFactoryDriver = await makeWalletFactoryDriver(
+    runUtils,
+    storage,
+    agoricNamesRemotes,
+  );
+  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+
   console.timeEnd('DefaultTestContext');
 
-  return { ...swingsetTestKit, agoricNamesRemotes };
+  return { ...swingsetTestKit, agoricNamesRemotes, walletFactoryDriver };
 };
 
 const test = anyTest as TestFn<
@@ -51,17 +61,47 @@ test('instantiated', async t => {
   t.truthy(agoricNamesRemotes.instance.crowdfunding);
 });
 
-test('register a fund', async t => {
+test('register and use a fund', async t => {
+  const { agoricNamesRemotes } = t.context;
+  const ist = withAmountUtils(
+    // @ts-expect-error close enough
+    { brand: agoricNamesRemotes.brand.IST },
+  );
   const { EV } = t.context.runUtils;
   const crowdfundingKit: StartedInstanceKit<
     (typeof import('@agoric/crowdfunding/src/crowdfunding.contract.js'))['start']
   > = await EV.vat('bootstrap').consumeItem('crowdfundingKit');
-  const inv = await EV(crowdfundingKit.publicFacet).makeProvisionInvitation();
-  console.log('inv', inv);
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
-  const seat = await EV(zoe).offer(inv, { give: {}, want: {} }, {});
-  const result = await EV(seat).getOfferResult();
-  t.deepEqual(result, {
-    key: '1',
-  });
+  const { walletFactoryDriver } = t.context;
+
+  const providerWallet =
+    await walletFactoryDriver.provideSmartWallet('agoric1provider');
+  t.true(providerWallet.isNew);
+  const funder1Wallet =
+    await walletFactoryDriver.provideSmartWallet('agoric1funder1');
+  t.true(funder1Wallet.isNew);
+
+  // provider starts a fund
+  {
+    const inv = await EV(crowdfundingKit.publicFacet).makeProvisionInvitation();
+    const seat = await EV(zoe).offer(
+      inv,
+      // TODO test with an actual want, with a remote brand that has getKref().
+      // Alternately, test through smartWalletDriver with an agoricNames brand.
+      { give: {}, want: {} },
+      {},
+    );
+    const result = await EV(seat).getOfferResult();
+    t.deepEqual(result, {
+      key: '1',
+    });
+  }
+
+  // FIXME how to get IST into the wallet?
+  // funder pays it off
+  // await funder1Wallet.executeOfferMaker(Offers.crowdfunding.Fund, {
+  //   offerId: 'open1',
+  //   compensationBrandKey: 'IST',
+  //   contribution: 1.0,
+  // });
 });
