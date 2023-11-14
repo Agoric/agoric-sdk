@@ -72,7 +72,7 @@ test('basic flow', async t => {
   );
   const Fee = stable.units(1);
   const providerSeat = await E(zoe).offer(
-    E(publicFacet).makeBindingInvitation(),
+    E(publicFacet).makeProvisionInvitation(),
     harden({
       give: { Fee },
       want: { Compensation: stable.units(100) },

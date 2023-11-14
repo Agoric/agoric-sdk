@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 const CrowdfundingKitI = {
   creator: M.interface('CrowdfundingKit creator facet', {}),
   public: M.interface('CrowdfundingKit public facet', {
-    makeBindingInvitation: M.call().returns(M.promise()),
+    makeProvisionInvitation: M.call().returns(M.promise()),
     makeFundingInvitation: M.call().returns(M.promise()),
   }),
 };
@@ -108,7 +108,7 @@ export const prepareCrowdfundingKit = async (
         /**
          * Generates a binding invitation.
          */
-        makeBindingInvitation() {
+        makeProvisionInvitation() {
           const { bindings } = this.state;
 
           const hook =
@@ -118,7 +118,7 @@ export const prepareCrowdfundingKit = async (
                 give: { Fee: given },
                 want: { Compensation },
               } = providerSeat.getProposal();
-              console.info('makeBindingInvitation', given);
+              console.info('makeProvisionInvitation', given);
               const key = String(bindings.getSize() + 1);
               const bindingNode = await E(
                 E(storageNode).makeChildNode('bindings'),

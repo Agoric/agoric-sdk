@@ -56,7 +56,7 @@ test('register a fund', async t => {
   const crowdfundingKit: StartedInstanceKit<
     (typeof import('@agoric/crowdfunding/src/crowdfunding.contract.js'))['start']
   > = await EV.vat('bootstrap').consumeItem('crowdfundingKit');
-  const inv = await EV(crowdfundingKit.publicFacet).makeBindingInvitation();
+  const inv = await EV(crowdfundingKit.publicFacet).makeProvisionInvitation();
   console.log('inv', inv);
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const seat = await EV(zoe).offer(inv, { give: {}, want: {} }, {});
