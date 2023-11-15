@@ -17,6 +17,7 @@ import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 
 import { mintStablePayment } from './mintStable.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import { TimeMath } from '@agoric/time';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UNIT6 = 1_000_000n;
@@ -204,7 +205,7 @@ const makeGitHub = log => {
   return self;
 };
 
-test('start contract; make work agreement', async t => {
+test('execute work agreement', async t => {
   /**
    * @param {Promise<DepositFacet>} oracleDepositP
    * @param {PromiseKit<unknown>} oracleInvitedPK
@@ -277,7 +278,7 @@ test('start contract; make work agreement', async t => {
     gitHub,
     wallet,
     assignIssuePK,
-    when = 1234n,
+    dur = 21n,
     timerBoardId = 'board123',
     bounty = 12n,
   ) => {
@@ -301,8 +302,16 @@ test('start contract; make work agreement', async t => {
       Stamp: make(wkBrand.GimixOracle, makeCopyBag([[`Fixed ${issue}`, 1n]])),
     };
 
-    /** @type {import('@agoric/time/src/types').TimestampRecord} */
-    const deadline = { timerBrand, absValue: when };
+    const t0 = await E(timer).getCurrentTimestamp();
+    const deadline = TimeMath.addAbsRel(
+      t0,
+      TimeMath.relValue(
+        harden({
+          timerBrand: t0.timerBrand,
+          relValue: dur,
+        }),
+      ),
+    );
     const exit = { afterDeadline: { deadline, timer } };
 
     const toMakeAgreement = await E(gpf).makeWorkAgreementInvitation(issue);
@@ -334,7 +343,7 @@ test('start contract; make work agreement', async t => {
       t.log('alice payout', kw, amt);
       amts[kw] = amt;
     }
-    // t.deepEqual(amts, { Acceptance: make(wkBrand.IST, 0n), Stamp: want.Stamp });
+    t.deepEqual(amts, { Acceptance: make(wkBrand.IST, 0n), Stamp: want.Stamp });
   };
 
   /**
@@ -537,10 +546,35 @@ test('start contract; make work agreement', async t => {
     const ok = await E(oracle).deliver(pr, jobID, deliverDepositAddr);
     t.truthy(ok);
     await reportedP;
-    const invitationsAmt = await E(
-      E(wallet.offers).getPurseForBrand(agoricNames.brand.Invitation),
-    ).getCurrentAmount();
+    /** @type {Purse<'set'>} */
+    // @ts-expect-error assetkind
+    const invitationPurse = await E(wallet.offers).getPurseForBrand(
+      agoricNames.brand.Invitation,
+    );
+    const invitationsAmt = await E(invitationPurse).getCurrentAmount();
     t.log('bob has invitations', invitationsAmt);
+
+    const ipmt = await E(invitationPurse).withdraw(invitationsAmt);
+    const { make } = AmountMath;
+    const { brand } = agoricNames;
+    const want = { Acceptance: make(brand.IST, 12n * UNIT6) };
+    const { seat, result } = await E(wallet.offers).executeOffer(ipmt, {
+      give: {},
+      want,
+    });
+    t.log('bob accepts deliver invitation', seat, result);
+
+    const { issuer: wkIssuer } = agoricNames;
+    const issuers = { Acceptance: wkIssuer.IST };
+    const payouts = await E(seat).getPayouts();
+    const amts = {};
+    for await (const [kw, pmtP] of Object.entries(payouts)) {
+      const pmt = await pmtP;
+      const amt = await E(issuers[kw]).getAmountOf(pmt);
+      t.log('bob payout', kw, amt);
+      amts[kw] = amt;
+    }
+    t.deepEqual(amts, want);
   };
 
   const { rootNode, data } = makeFakeStorageKit('X');
