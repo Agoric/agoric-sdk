@@ -1,6 +1,5 @@
 /* global setImmediate */
 // @ts-check
-/* eslint-disable no-unused-vars */
 // eslint-disable-next-line import/order
 import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
 
@@ -185,7 +184,7 @@ const makeGitHub = _log => {
     openPR: ({ owner, repo, author, fixes }) => {
       const num = status.size + 1;
       const prURL = `https://github.com/${owner}/${repo}/pull/${num}`;
-      const pk = makePromiseKit();
+      // const pk = makePromiseKit();
       status.set(prURL, { type: 'pull', num, author, fixes });
       notifyIssue(fixes, prURL);
       return prURL;
