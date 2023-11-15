@@ -142,7 +142,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
           Fail`Gimix job ${q(jobID)} expected issue ${q(
             expectedIssueURL,
           )} not ${q(issueURL)}`;
-        const deliverInvitation = zcf.makeInvitation(
+        const deliverInvitationP = zcf.makeInvitation(
           makeDeliverHandler(requestorSeat, acceptanceAmount, report),
           'gimix delivery',
           {
@@ -151,7 +151,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
           },
           DeliverProposalShape,
         );
-        return E(depositFacetP).receive(deliverInvitation);
+        return deliverInvitationP.then(pmt => E(depositFacetP).receive(pmt));
       },
     },
     harden({
