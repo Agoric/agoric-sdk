@@ -4,7 +4,7 @@
 // eslint-disable-next-line import/order
 import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
 
-import url from 'url';
+import { fileURLToPath } from 'url';
 import { E, Far } from '@endo/far';
 import { makeCopyBag } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -32,7 +32,7 @@ const NonNullish = x => {
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-const asset = ref => url.fileURLToPath(new URL(ref, import.meta.url));
+const asset = ref => fileURLToPath(new URL(ref, import.meta.url));
 
 const makeTestContext = async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
@@ -146,28 +146,28 @@ const makeGitHub = log => {
      */
     openIssue: ({ owner, repo }) => {
       const num = status.size + 1;
-      const url = `https://github.com/${owner}/${repo}/issues/${num}`;
+      const issueURL = `https://github.com/${owner}/${repo}/issues/${num}`;
       const pk = makePromiseKit();
-      status.set(url, { ...pk, type: 'issue', num, status: 'open' });
-      return url;
+      status.set(issueURL, { ...pk, type: 'issue', num, status: 'open' });
+      return issueURL;
     },
-    assignIssue: (url, name) => {
-      const st = NonNullish(status.get(url));
+    assignIssue: (issueURL, name) => {
+      const st = NonNullish(status.get(issueURL));
       assert(st.type === 'issue');
-      status.set(url, { ...st, assignee: name });
+      status.set(issueURL, { ...st, assignee: name });
     },
-    /** @param {string} url */
-    getIssuePromise: url => {
-      const st = NonNullish(status.get(url));
+    /** @param {string} issueURL */
+    getIssuePromise: issueURL => {
+      const st = NonNullish(status.get(issueURL));
       assert(st.type === 'issue');
       return st.promise;
     },
-    /** @param {string} url */
-    closeIssue: url => {
-      const st = NonNullish(status.get(url));
+    /** @param {string} issueURL */
+    closeIssue: issueURL => {
+      const st = NonNullish(status.get(issueURL));
       assert(st.type === 'issue');
-      status.set(url, { ...st, status: 'closed' });
-      // log('closed', url);
+      status.set(issueURL, { ...st, status: 'closed' });
+      // log('closed', issueURL);
     },
 
     /**
@@ -179,23 +179,23 @@ const makeGitHub = log => {
      */
     openPR: ({ owner, repo, author, fixes }) => {
       const num = status.size + 1;
-      const url = `https://github.com/${owner}/${repo}/pull/${num}`;
+      const prURL = `https://github.com/${owner}/${repo}/pull/${num}`;
       const pk = makePromiseKit();
-      status.set(url, { type: 'pull', num, author, fixes });
-      notifyIssue(fixes, url);
-      return url;
+      status.set(prURL, { type: 'pull', num, author, fixes });
+      notifyIssue(fixes, prURL);
+      return prURL;
     },
-    /** @param {string} url */
-    mergePR: url => {
-      const st = NonNullish(status.get(url));
+    /** @param {string} prURL */
+    mergePR: prURL => {
+      const st = NonNullish(status.get(prURL));
       assert(st.type === 'pull');
-      status.set(url, { ...st, status: 'merged' });
+      status.set(prURL, { ...st, status: 'merged' });
       const { fixes } = st;
       self.closeIssue(fixes);
     },
-    /** @param {string} url */
-    queryPR: url => {
-      const pull = NonNullish(status.get(url));
+    /** @param {string} prURL */
+    queryPR: prURL => {
+      const pull = NonNullish(status.get(prURL));
       assert(pull.type === 'pull');
       const issue = NonNullish(status.get(pull.fixes));
       assert(issue.type === 'issue');
