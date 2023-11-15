@@ -11,7 +11,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+// import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { TimeMath } from '@agoric/time';
@@ -22,6 +22,8 @@ import { mintStablePayment } from './mintStable.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UNIT6 = 1_000_000n;
+
+const { entries } = Object;
 
 /** @type {<T>(x: T | null | undefined) => T} */
 const NonNullish = x => {
@@ -94,7 +96,7 @@ const makeTestContext = async t => {
   const powers = await bootstrap();
 
   const {
-    agoricNames: { installation, issuer },
+    agoricNames: { installation },
   } = powers;
   /** @param {bigint} value */
   const faucet = async value =>
@@ -127,7 +129,8 @@ test.before(async t => (t.context = await makeTestContext(t)));
  *   status?: 'merged'
  * }} PRStatus
  */
-const makeGitHub = log => {
+
+const makeGitHub = _log => {
   /** @type {Map<string, IssueStatus | PRStatus>} */
   const status = new Map();
 
@@ -213,14 +216,8 @@ test('execute work agreement', async t => {
    */
   const coreEval = async (oracleDepositP, oracleInvitedPK) => {
     const { powers, bundle } = t.context;
-    const {
-      agoricNames,
-      board,
-      chainTimerService,
-      namesByAddress,
-      namesByAddressAdmin,
-      zoe,
-    } = powers;
+    const { agoricNames, board, chainTimerService, namesByAddress, zoe } =
+      powers;
 
     // const id = await E(board).getId(chainTimerService);
     board.set('board123', chainTimerService);
@@ -274,6 +271,9 @@ test('execute work agreement', async t => {
    * @param {ERef<GitHub>} gitHub
    * @param {SmartWallet} wallet
    * @param {PromiseKit<{jobID: string, issue: string}>} assignIssuePK
+   * @param {bigint} dur
+   * @param {string} timerBoardId
+   * @param {bigint} bounty
    */
   const alice = async (
     gitHub,
@@ -285,9 +285,9 @@ test('execute work agreement', async t => {
   ) => {
     const { make } = AmountMath;
     const { brand: wkBrand, instance, issuer: wkIssuer } = agoricNames;
-    const { timerBrand } = wkBrand;
     const timer = board.get(timerBoardId);
 
+    // eslint-disable-next-line no-use-before-define
     const gpf = await E(zoe).getPublicFacet(instance.gimix);
 
     const issue = await E(gitHub).openIssue({
@@ -364,9 +364,8 @@ test('execute work agreement', async t => {
    * }} SmartWallet
    */
   const makeWalletFactory = (namesByAddressAdmin, zoe) => {
-    /** @type {Map<Address, SmartWallet>} */
-    const wallets = new Map();
-    const { entries } = Object;
+    // /** @type {Map<Address, SmartWallet>} */
+    // const wallets = new Map();
 
     /**
      * @param {Address} address
@@ -408,7 +407,6 @@ test('execute work agreement', async t => {
          * @param {unknown} [offerArgs]
          */
         executeOffer: async (invitation, proposal, offerArgs) => {
-          const { entries } = Object;
           /** @type {Record<string, Payment>} */
           const payments = {};
           for await (const [kw, amt] of entries(proposal.give || {})) {
@@ -577,7 +575,7 @@ test('execute work agreement', async t => {
     t.deepEqual(amts, want);
   };
 
-  const { rootNode, data } = makeFakeStorageKit('X');
+  // const { rootNode, data } = makeFakeStorageKit('X');
 
   const gitHub = Promise.resolve(makeGitHub(t.log));
   const {
