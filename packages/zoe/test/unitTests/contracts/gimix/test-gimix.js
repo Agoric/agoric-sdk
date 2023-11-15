@@ -14,9 +14,11 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { makeNameHubKit } from '@agoric/vats';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { TimeMath } from '@agoric/time';
+import { deeplyFulfilledObject } from '@agoric/internal';
 
-import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
+import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
+import { startGiMiX } from '../../../../src/contracts/gimix/start-gimix.js/index.js';
 import { mintStablePayment } from './mintStable.js';
 
 const DAY = 24 * 60 * 60 * 1000;
