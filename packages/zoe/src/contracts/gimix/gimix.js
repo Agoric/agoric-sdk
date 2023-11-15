@@ -128,7 +128,10 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
         } = this;
         const { deliverDepositAddr, jobID, issueURL } = report;
 
-        const depositFacetP = E(namesByAddress).lookup(deliverDepositAddr);
+        const depositFacetP = E(namesByAddress).lookup(
+          deliverDepositAddr,
+          'depositFacet',
+        );
         workByJob.has(jobID) || Fail`Gimix job ${q(jobID)} not found`;
         const {
           issueURL: expectedIssueURL,
