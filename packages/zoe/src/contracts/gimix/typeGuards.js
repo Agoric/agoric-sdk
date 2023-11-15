@@ -1,7 +1,7 @@
 import { M, makeCopyBag } from '@endo/patterns';
 import { AmountShape } from '@agoric/ertp';
 import { TimestampShape } from '@agoric/time';
-import { TimerShape } from '../../typeGuards';
+import { TimerShape } from '../../typeGuards.js';
 
 export const DeliverProposalShape = M.splitRecord({
   give: {},
