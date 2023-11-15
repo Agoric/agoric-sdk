@@ -5,19 +5,20 @@
 import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
 
 import url from 'url';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, Far } from '@endo/far';
+import { makeCopyBag } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
+
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeCopyBag } from '@endo/patterns';
 import { makeNameHubKit } from '@agoric/vats';
-import buildManualTimer from '../../../../tools/manualTimer.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-
-import { mintStablePayment } from './mintStable.js';
-import { makePromiseKit } from '@endo/promise-kit';
 import { TimeMath } from '@agoric/time';
+
+import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
+import { mintStablePayment } from './mintStable.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UNIT6 = 1_000_000n;
