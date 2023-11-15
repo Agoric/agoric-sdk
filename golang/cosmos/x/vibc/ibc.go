@@ -7,11 +7,11 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -167,8 +167,8 @@ func (im IBCModule) OnChanOpenInit(
 	channelCap *capability.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
-	return sdkerrors.Wrap(
+) (string, error) {
+	return "", sdkerrors.Wrap(
 		channeltypes.ErrChannelNotFound,
 		fmt.Sprintf("vibc does not allow synthetic channelOpenInit for port %s", portID),
 	)
@@ -224,15 +224,15 @@ func (im IBCModule) OnChanOpenTry(
 }
 
 type channelOpenAckEvent struct {
-	Type                  string                    `json:"type"`  // IBC
-	Event                 string                    `json:"event"` // channelOpenAck
-	PortID                string                    `json:"portID"`
-	ChannelID             string                    `json:"channelID"`
-	CounterpartyVersion   string                    `json:"counterpartyVersion"`
-	Counterparty          channeltypes.Counterparty `json:"counterparty"`
-	ConnectionHops        []string                  `json:"connectionHops"`
-	BlockHeight           int64                     `json:"blockHeight"`
-	BlockTime             int64                     `json:"blockTime"`
+	Type                string                    `json:"type"`  // IBC
+	Event               string                    `json:"event"` // channelOpenAck
+	PortID              string                    `json:"portID"`
+	ChannelID           string                    `json:"channelID"`
+	CounterpartyVersion string                    `json:"counterpartyVersion"`
+	Counterparty        channeltypes.Counterparty `json:"counterparty"`
+	ConnectionHops      []string                  `json:"connectionHops"`
+	BlockHeight         int64                     `json:"blockHeight"`
+	BlockTime           int64                     `json:"blockTime"`
 }
 
 func (im IBCModule) OnChanOpenAck(
@@ -248,15 +248,15 @@ func (im IBCModule) OnChanOpenAck(
 
 	channel.Counterparty.ChannelId = counterpartyChannelID
 	event := channelOpenAckEvent{
-		Type:                  "IBC_EVENT",
-		Event:                 "channelOpenAck",
-		PortID:                portID,
-		ChannelID:             channelID,
-		CounterpartyVersion:   counterpartyVersion,
-		Counterparty:          channel.Counterparty,
-		ConnectionHops:        channel.ConnectionHops,
-		BlockHeight:           ctx.BlockHeight(),
-		BlockTime:             ctx.BlockTime().Unix(),
+		Type:                "IBC_EVENT",
+		Event:               "channelOpenAck",
+		PortID:              portID,
+		ChannelID:           channelID,
+		CounterpartyVersion: counterpartyVersion,
+		Counterparty:        channel.Counterparty,
+		ConnectionHops:      channel.ConnectionHops,
+		BlockHeight:         ctx.BlockHeight(),
+		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
 	return im.PushAction(ctx, event)
@@ -373,7 +373,7 @@ func (im IBCModule) OnRecvPacket(
 
 	err := im.PushAction(ctx, event)
 	if err != nil {
-		return channeltypes.NewErrorAcknowledgement(err.Error())
+		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
 	return nil
