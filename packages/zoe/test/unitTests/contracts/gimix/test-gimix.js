@@ -95,17 +95,12 @@ const makeTestContext = async t => {
     agoricNames: { installation, issuer },
   } = powers;
   /** @param {bigint} value */
-  const faucet = async value => {
-    const pmt = await mintStablePayment(value, {
+  const faucet = async value =>
+    mintStablePayment(value, {
       centralSupply: installation.centralSupply,
       feeMintAccess: powers.feeMintAccess,
       zoe: powers.zoe,
     });
-
-    const purse = await E(issuer.IST).makeEmptyPurse();
-    await E(purse).deposit(pmt);
-    return purse;
-  };
 
   return { bundle, faucet, manualTimer, powers };
 };
@@ -118,17 +113,19 @@ test.before(async t => (t.context = await makeTestContext(t)));
  *
  * @typedef {PromiseKit<string> & {
  *   type: 'issue',
+ *   num: number,
  *   status: 'open' | 'closed'
  *   assignee?: string
  * }} IssueStatus
  * @typedef {{
  *   type: 'pull',
+ *   num: number,
  *   author: string,
  *   fixes: string,
  *   status?: 'merged'
  * }} PRStatus
  */
-const makeGitHub = () => {
+const makeGitHub = log => {
   /** @type {Map<string, IssueStatus | PRStatus>} */
   const status = new Map();
 
@@ -141,14 +138,15 @@ const makeGitHub = () => {
 
   const self = Far('github', {
     /**
-     * @param {string} owner
-     * @param {string} repo
+     * @param {object} opts
+     * @param {string} opts.owner
+     * @param {string} opts.repo
      */
-    openIssue: (owner, repo) => {
+    openIssue: ({ owner, repo }) => {
       const num = status.size + 1;
       const url = `https://github.com/${owner}/${repo}/issues/${num}`;
       const pk = makePromiseKit();
-      status.set(url, { ...pk, type: 'issue', status: 'open' });
+      status.set(url, { ...pk, type: 'issue', num, status: 'open' });
       return url;
     },
     assignIssue: (url, name) => {
@@ -167,19 +165,21 @@ const makeGitHub = () => {
       const st = NonNullish(status.get(url));
       assert(st.type === 'issue');
       status.set(url, { ...st, status: 'closed' });
+      log('closed', url);
     },
 
     /**
-     * @param {string} owner
-     * @param {string} repo
-     * @param {string} author - TODO refator as capability
-     * @param {string} fixes issue URL
+     * @param {object} opts
+     * @param {string} opts.owner
+     * @param {string} opts.repo
+     * @param {string} opts.author - TODO refator as capability
+     * @param {string} opts.fixes issue URL
      */
-    openPR: (owner, repo, author, fixes) => {
+    openPR: ({ owner, repo, author, fixes }) => {
       const num = status.size + 1;
       const url = `https://github.com/${owner}/${repo}/pull/${num}`;
       const pk = makePromiseKit();
-      status.set(url, { type: 'pull', author, fixes });
+      status.set(url, { type: 'pull', num, author, fixes });
       notifyIssue(fixes, url);
       return url;
     },
@@ -189,7 +189,7 @@ const makeGitHub = () => {
       assert(st.type === 'pull');
       status.set(url, { ...st, status: 'merged' });
       const { fixes } = st;
-      return self.closeIssue(fixes);
+      self.closeIssue(fixes);
     },
     /** @param {string} url */
     queryPR: url => {
@@ -197,15 +197,19 @@ const makeGitHub = () => {
       assert(pull.type === 'pull');
       const issue = NonNullish(status.get(pull.fixes));
       assert(issue.type === 'issue');
-      // TODO: data propoerties only. no rights to resolve, etc.
-      return harden({ pull, issue });
+      const { promise: _p, resolve: _r1, reject: _r2, ...issueData } = issue;
+      return harden({ pull, issue: issueData });
     },
   });
   return self;
 };
 
 test('start contract; make work agreement', async t => {
-  const coreEval = async oracleDepositP => {
+  /**
+   * @param {Promise<DepositFacet>} oracleDepositP
+   * @param {PromiseKit<unknown>} oracleInvitedPK
+   */
+  const coreEval = async (oracleDepositP, oracleInvitedPK) => {
     const { powers, bundle } = t.context;
     const {
       agoricNames,
@@ -218,9 +222,6 @@ test('start contract; make work agreement', async t => {
 
     // const id = await E(board).getId(chainTimerService);
     board.set('board123', chainTimerService);
-
-    // TODO: add bob's address
-    namesByAddressAdmin.update('agoric1oracle', oracleDepositP);
 
     /** @type {Installation<import('../../../../src/contracts/gimix/gimix').prepare>} */
     const installation = await E(zoe).install(bundle);
@@ -235,7 +236,9 @@ test('start contract; make work agreement', async t => {
     const { brands, issuers } = await E(zoe).getTerms(gimixInstance);
 
     const oracleInvitation = await E(creatorFacet).makeOracleInvitation();
-    void E(oracleDepositP).receive(oracleInvitation);
+    void E(oracleDepositP)
+      .receive(oracleInvitation)
+      .then(amt => oracleInvitedPK.resolve(amt));
 
     // really a namehub...
     const withGiMix = {
@@ -251,9 +254,12 @@ test('start contract; make work agreement', async t => {
   const sync = {
     assignIssue: makePromiseKit(),
     oracleDeposit: makePromiseKit(),
-    oracle: makePromiseKit(),
+    oracleInvited: makePromiseKit(),
   };
-  const { agoricNames, board } = await coreEval(sync.oracleDeposit.promise);
+  const { agoricNames, board } = await coreEval(
+    sync.oracleDeposit.promise,
+    sync.oracleInvited,
+  );
 
   /**
    * @param {ERef<GitHub>} gitHub
@@ -275,7 +281,10 @@ test('start contract; make work agreement', async t => {
 
     const gpf = await E(zoe).getPublicFacet(instance.gimix);
 
-    const issue = await E(gitHub).openIssue('alice', 'project1');
+    const issue = await E(gitHub).openIssue({
+      owner: 'alice',
+      repo: 'project1',
+    });
 
     const give = {
       Acceptance: make(wkBrand.IST, bounty * UNIT6),
@@ -319,11 +328,11 @@ test('start contract; make work agreement', async t => {
       t.log('payout', kw, amt);
       amts[kw] = amt;
     }
-    t.deepEqual(amts, '@@todo');
+    t.deepEqual(amts, { Acceptance: make(wkBrand.IST, 0n), Stamp: want.Stamp });
   };
 
   /**
-   * @param {import('@agoric/vats').NameAdmin} agoricNamesAdmin
+   * @param {import('@agoric/vats').NameAdmin} namesByAddressAdmin
    * @param {ERef<ZoeService>} zoe
    * @typedef {string} Address
    *
@@ -334,7 +343,7 @@ test('start contract; make work agreement', async t => {
    *   }
    * }} SmartWallet
    */
-  const makeWalletFactory = (agoricNamesAdmin, zoe) => {
+  const makeWalletFactory = (namesByAddressAdmin, zoe) => {
     /** @type {Map<Address, SmartWallet>} */
     const wallets = new Map();
     const { entries } = Object;
@@ -343,7 +352,7 @@ test('start contract; make work agreement', async t => {
      * @param {Address} address
      * @param {(amt: Amount) => void} [onDeposit]
      */
-    const provideWallet = (address, onDeposit) => {
+    const provideWallet = (address, onDeposit = () => {}) => {
       const purses = new Map();
       const getPurseForBrand = async brand => {
         if (purses.has(brand)) {
@@ -392,7 +401,7 @@ test('start contract; make work agreement', async t => {
         },
       });
 
-      agoricNamesAdmin.update(address, depositFacet);
+      namesByAddressAdmin.update(address, depositFacet);
       /** @type {SmartWallet} */
       const sw = { depositFacet, offers };
       return sw;
@@ -404,20 +413,20 @@ test('start contract; make work agreement', async t => {
   /**
    * @param {SmartWallet} wallet
    * @param {ERef<GitHub>} gitHub
-   * @param {import('@endo/promise-kit').PromiseKit<Oracle>} oraclePK
+   * @param {Promise<Amount>} oracleInvited
    * @typedef {{
    *   deliver: (pr: string) => Promise<boolean>,
    * }} Oracle
    */
-  const githubOracle = async (wallet, gitHub, oraclePK) => {
+  const githubOracle = async (wallet, gitHub, oracleInvited) => {
     const offerResults = new Map();
 
     const acceptId = 'oracleAccept1';
 
     const reportIssueDone = async issue => {
       t.log('ReportIssue', issue);
-      const reporter = offerResults.get(acceptId);
-      const toReport = await E(reporter).JobReport();
+      const reporter = NonNullish(offerResults.get(acceptId));
+      const toReport = await E(reporter.invitationMakers).JobReport();
       const seat = await E(zoe).offer(toReport);
       const result = await E(seat).getOfferResult();
       t.log('ReportIssue result', result, issue);
@@ -446,8 +455,8 @@ test('start contract; make work agreement', async t => {
     const it = Far('OracleWebSvc', {
       /** @param {string} pr */
       deliver: async pr => {
-        t.log('oracle claim', pr);
         const { pull, issue } = await E(gitHub).queryPR(pr);
+        t.log('oracle claim', pr, { pull, issue });
         const ok =
           pull.author === issue.assignee &&
           pull.status === 'merged' &&
@@ -458,7 +467,11 @@ test('start contract; make work agreement', async t => {
         return ok;
       },
     });
-    oraclePK.resolve(it);
+
+    return oracleInvited.then(async amt => {
+      await setup(amt);
+      return it;
+    });
   };
 
   /**
@@ -469,35 +482,41 @@ test('start contract; make work agreement', async t => {
    */
   const bob = async (gitHub, assignIssueP, wallet, oracle) => {
     const issue = await assignIssueP;
-    const pr = await E(gitHub).openPR('bob', 'alice', 'project1', issue);
+    const pr = await E(gitHub).openPR({
+      author: 'bob',
+      owner: 'alice',
+      repo: 'project1',
+      fixes: issue,
+    });
     t.log('bob opens PR', pr);
+    await null; // XXX wait for alice to close. FRAGILE
     const ok = await E(oracle).deliver(pr);
     t.truthy(ok);
   };
 
   const { rootNode, data } = makeFakeStorageKit('X');
 
-  const gitHub = Promise.resolve(makeGitHub());
+  const gitHub = Promise.resolve(makeGitHub(t.log));
   const {
     faucet,
-    powers: { zoe, agoricNamesAdmin },
+    powers: { zoe, namesByAddressAdmin },
   } = t.context;
-  const wf = makeWalletFactory(agoricNamesAdmin, zoe);
+  const wf = makeWalletFactory(namesByAddressAdmin, zoe);
 
+  const wallet = {
+    alice: wf.provideWallet('agoric1alice'),
+    oracle: wf.provideWallet('agoric1oracle'),
+    bob: wf.provideWallet('agoric1bob'),
+  };
+  wallet.alice.depositFacet.receive(await faucet(25n * UNIT6));
+  const oracleSvc = githubOracle(
+    wallet.oracle,
+    gitHub,
+    sync.oracleInvited.promise,
+  );
   await Promise.all([
-    alice(
-      gitHub,
-      wf.provideWallet('agoric1alice'),
-      // faucet(25n * UNIT6),
-      sync.assignIssue,
-    ),
-    githubOracle(wf.provideWallet('agoric1oracle'), gitHub, sync.oracle),
-    bob(
-      gitHub,
-      sync.assignIssue.promise,
-      wf.provideWallet('agoric1bob'),
-      sync.oracle.promise,
-    ),
+    alice(gitHub, wallet.alice, sync.assignIssue),
+    bob(gitHub, sync.assignIssue.promise, wallet.bob, oracleSvc),
   ]);
   t.log('done');
   t.pass();
