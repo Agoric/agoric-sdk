@@ -77,7 +77,7 @@ export const Offers = {
         invitationSpec: {
           source: 'agoricContract',
           instancePath: ['crowdfunding'],
-          callPipe: [['makeFundInvitation', []]],
+          callPipe: [['makeFundingInvitation', []]],
         },
         proposal,
       };

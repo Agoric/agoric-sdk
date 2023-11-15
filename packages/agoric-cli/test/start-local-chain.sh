@@ -68,6 +68,7 @@ echo "Funding your wallet account..."
 # After `fund-provision-pool` there is 900 IST remaining for other account funding.
 # A wallet can be tested with 20 BLD for provisioning wallet and 20 USDC for psm trading
 # Also include 1M ATOM
+# TODO include IST
 make ACCT_ADDR="$WALLET_BECH32" FUNDS=20000000ubld,20000000ibc/toyusdc,1000000000000ibc/toyatom fund-acct
 agd query bank balances "$WALLET_BECH32" | grep ubld || exit 1
 
