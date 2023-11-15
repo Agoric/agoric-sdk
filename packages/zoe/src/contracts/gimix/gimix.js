@@ -29,6 +29,8 @@ const { details: X, Fail, quote: q } = assert;
 
 /**
  * @param {ZCF<GiMiXTerms>} zcf
+ * @param {unknown} _privateArgs
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const prepare = async (zcf, _privateArgs, baggage) => {
   const { namesByAddress } = zcf.getTerms();
