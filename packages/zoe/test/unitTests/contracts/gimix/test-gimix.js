@@ -27,7 +27,9 @@ const { entries } = Object;
 
 /** @type {<T>(x: T | null | undefined) => T} */
 const NonNullish = x => {
-  if (!x) throw Error('null/undefined');
+  if (x === null || x === undefined) {
+    throw Error('null/undefined');
+  }
   return x;
 };
 
