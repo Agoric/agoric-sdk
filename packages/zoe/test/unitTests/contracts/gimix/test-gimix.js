@@ -254,7 +254,7 @@ test('start contract; make work agreement', async t => {
   };
 
   const sync = {
-    /** @type {PromiseKit<{jobId: string, issue: string}>} */
+    /** @type {PromiseKit<{jobID: string, issue: string}>} */
     assignIssue: makePromiseKit(),
     /** @type {PromiseKit<DepositFacet>} */
     oracleDeposit: makePromiseKit(),
@@ -271,7 +271,7 @@ test('start contract; make work agreement', async t => {
   /**
    * @param {ERef<GitHub>} gitHub
    * @param {SmartWallet} wallet
-   * @param {PromiseKit<{jobId: string, issue: string}>} assignIssuePK
+   * @param {PromiseKit<{jobID: string, issue: string}>} assignIssuePK
    */
   const alice = async (
     gitHub,
@@ -306,17 +306,17 @@ test('start contract; make work agreement', async t => {
     const exit = { afterDeadline: { deadline, timer } };
 
     const toMakeAgreement = await E(gpf).makeWorkAgreementInvitation(issue);
-    const { seat, result: jobId } = await wallet.offers.executeOffer(
+    const { seat, result: jobID } = await wallet.offers.executeOffer(
       toMakeAgreement,
       { give, want, exit },
     );
 
-    t.log('resulting job id', jobId);
-    t.deepEqual(typeof jobId, 'string');
+    t.log('resulting job id', jobID);
+    t.deepEqual(typeof jobID, 'bigint');
 
     const assignee = 'bob';
     await E(gitHub).assignIssue(issue, assignee);
-    assignIssuePK.resolve({ jobId, issue });
+    assignIssuePK.resolve({ jobID, issue });
     t.log('alice assigns to', assignee, 'and waits for news on', issue, '...');
     const pr = await E(gitHub).getIssuePromise(issue);
     t.log('alice decides to merge', pr);
@@ -348,6 +348,7 @@ test('start contract; make work agreement', async t => {
    *   };
    *   depositFacet: DepositFacet,
    *   offers: {
+   *     getPurseForBrand: (brand: Brand) => Promise<Purse>,
    *     executeOffer: (invitation: Invitation, proposal: Proposal, offerArgs?: any) => Promise<{seat: UserSeat, result: any}>
    *   }
    * }} SmartWallet
@@ -435,7 +436,7 @@ test('start contract; make work agreement', async t => {
    * @param {Promise<Amount>} oracleInvited
    * @param {PromiseKit<string>} reported
    * @typedef {{
-   *   deliver: (pr: string, jobId: string, authorAddress: string) => Promise<boolean>,
+   *   deliver: (pr: string, jobID: string, deliverDepositAddr: string) => Promise<boolean>,
    * }} Oracle
    */
   const githubOracle = async (wallet, gitHub, oracleInvited, reported) => {
@@ -443,24 +444,36 @@ test('start contract; make work agreement', async t => {
 
     const acceptId = 'oracleAccept1';
 
-    const reportJobDone = async ({ jobId, issueURL, authorAddress }) => {
-      t.log('reportJobDone', { jobId, issueURL, authorAddress });
+    const reportJobDone = async ({
+      jobID,
+      issueURL,
+      prURL,
+      deliverDepositAddr,
+    }) => {
+      t.log('reportJobDone', { jobID, issueURL, deliverDepositAddr });
       const reporter = NonNullish(offerResults.get(acceptId));
-      const toReport = await E(reporter.invitationMakers).JobReport(jobId);
+      const toReport = await E(reporter.invitationMakers).JobReport({
+        deliverDepositAddr,
+        issueURL,
+        jobID,
+        prURL,
+      });
       const { seat, result } = await E(wallet.offers).executeOffer(
         toReport,
         {},
-        { issueURL, authorAddress },
+        { issueURL, deliverDepositAddr },
       );
-      t.log('JobReport result', result, jobId);
+      t.log('JobReport result', result, jobID);
       // get payouts?
       await E(seat).tryExit();
-      reported.resolve(jobId);
+      reported.resolve(jobID);
     };
 
     // oracle operator does this
     const setup = async amt => {
       t.log('oracle invation amount', amt);
+      /** @type {Promise<Purse<'set'>>} */
+      // @ts-expect-error assetkind
       const invitationPurse = wallet.offers.getPurseForBrand(amt.brand);
       const invitation = await E(invitationPurse).withdraw(amt);
       const { result: reporter } = await wallet.offers.executeOffer(
@@ -474,19 +487,24 @@ test('start contract; make work agreement', async t => {
     /** @type {Oracle} */
     const it = Far('OracleWebSvc', {
       /**
-       * @param {string} pr
-       * @param {string} jobId
-       * @param {string} authorAddress
+       * @param {string} prURL
+       * @param {string} jobID
+       * @param {string} deliverDepositAddr
        */
-      deliver: async (pr, jobId, authorAddress) => {
-        const { pull, issue } = await E(gitHub).queryPR(pr);
-        t.log('oracle claim', pr, { pull, issue });
+      deliver: async (prURL, jobID, deliverDepositAddr) => {
+        const { pull, issue } = await E(gitHub).queryPR(prURL);
+        t.log('oracle claim', prURL, { pull, issue });
         const ok =
           pull.author === issue.assignee &&
           pull.status === 'merged' &&
           issue.status === 'closed';
         if (ok) {
-          await reportJobDone({ jobId, issueURL: pull.fixes, authorAddress });
+          await reportJobDone({
+            jobID,
+            prURL,
+            issueURL: pull.fixes,
+            deliverDepositAddr,
+          });
         }
         return ok;
       },
@@ -501,13 +519,13 @@ test('start contract; make work agreement', async t => {
   /**
    * @param {ERef<GitHub>} gitHub
    * @param {SmartWallet} wallet
-   * @param {Promise<{jobId: string, issue: string}>} assignIssueP - issue publication
+   * @param {Promise<{jobID: string, issue: string}>} assignIssueP - issue publication
    * @param {Promise<string>} reportedP - issue reported
    * @param {ERef<Oracle>} oracle
    */
   const bob = async (gitHub, wallet, assignIssueP, reportedP, oracle) => {
-    const { issue, jobId } = await assignIssueP;
-    const authorAddress = wallet.id.getAddress();
+    const { issue, jobID } = await assignIssueP;
+    const deliverDepositAddr = wallet.id.getAddress();
     const pr = await E(gitHub).openPR({
       author: 'bob',
       owner: 'alice',
@@ -516,7 +534,7 @@ test('start contract; make work agreement', async t => {
     });
     t.log('bob opens PR', pr);
     await null; // XXX wait for alice to close. FRAGILE
-    const ok = await E(oracle).deliver(pr, jobId, authorAddress);
+    const ok = await E(oracle).deliver(pr, jobID, deliverDepositAddr);
     t.truthy(ok);
     await reportedP;
     const invitationsAmt = await E(
